@@ -31,6 +31,12 @@ Additionally, by using a vps, they can more easily offer a censorship resistant 
   c. Log back in and run `run_2.sh`, this will install prysm, geth, nginx, setup systemctl for eth2 services and prompt for getting a ssl cert for the rpc. Also contains commands to begin syncing prysm and geth
   c1. You can revisit this step and the certbot command if you do not have a domain yet. See step 4 for details. You can stil continue to the next step.  
   d. Start your services via systemctl! eth1, beacon-chain & validator
+  d1. 
+  ```
+   sudo systemctl start eth1
+   sudo systemctl start beacon-chain
+   sudo systemctl start validator
+  ```
 3. Once geth & prysm are synced, verify nginx is working and configured correctly using the following command and tutorials: 
 
 ```
