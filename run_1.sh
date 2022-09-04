@@ -2,17 +2,16 @@
 export LOGIN_UNAME='eth'
 export YourSSHPortNumber='22'
 export maxretry='3'
-
 export REPO_NAME="eth2-quickstart"
-
-# setup sshd safe defaults
-mv /etc/ssh/sshd_config /etc/ssh/sshd_config.bkup
-mv sshd_config /etc/ssh/sshd_config
 
 sudo apt update -y
 sudo apt upgrade -y
 sudo apt full-upgrade -y
 sudo apt autoremove -y
+
+# setup sshd safe defaults
+mv /etc/ssh/sshd_config /etc/ssh/sshd_config.bkup
+mv sshd_config /etc/ssh/sshd_config
 
 # Basic hardening
 # install and config fail2ban
@@ -37,6 +36,7 @@ chmod 600 /home/$LOGIN_UNAME/.ssh/authorized_keys
 usermod -aG sudo $LOGIN_UNAME
 
 cp -r ../$REPO_NAME /home/$LOGIN_UNAME/
+chmod -R +x /home/$LOGIN_UNAME/$REPO_NAME
 chown -R $LOGIN_UNAME:$LOGIN_UNAME /home/$LOGIN_UNAME/$REPO_NAME
 
 # Whitelist and only allow certain users
@@ -84,6 +84,13 @@ sudo ss -tulpn
 sshd -t
 ufw status
 
+echo "Manual action required!"
+echo "1. Please check the settings above"
+echo "2. Please run the following cmd and add the line to the file that pops up to enable $LOGIN_UNAME"
+echo "sudo visudo"
+echo "Add this to the end of the file: '$LOGIN_UNAME ALL=(ALL) NOPASSWD: ALL' "
+echo "3. Set a password for your new user when prompted"
+passwd $LOGIN_UNAME
 
-echo "Please check the settings above and run 'sudo reboot' for all changes to take effect"
-echo "Afterwards re-login via ssh $LOGIN_UNAME@$(curl -s v4.ident.me) after and run './run_2.sh'"
+echo "Run 'sudo reboot' for all changes to take effect"
+echo "Re-login via ssh $LOGIN_UNAME@$(curl -s v4.ident.me) after and run './run_2.sh'"
