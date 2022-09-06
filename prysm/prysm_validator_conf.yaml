@@ -1,0 +1,10 @@
+p2p-allowlist: public
+web: true
+enable-doppelganger: true
+enable-slashing-protection-history-pruning: true
+attest-timely: true
+
+# only needed for mev boost
+enable-builder: true
+http-mev-relay: http://localhost:18550
+enable-validator-registration: true

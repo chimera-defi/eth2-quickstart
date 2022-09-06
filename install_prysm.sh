@@ -1,6 +1,5 @@
 #!/bin/bash
-# SECRETS_PATH=$(echo $HOME)/secrets/jwt.hex
-# export pcmd=$(echo $HOME)/prysm/prysm.sh beacon-chain --config-file=$(echo $HOME)/prysm/prysm_beacon_conf.yaml --p2p-host-ip=$(curl -s v4.ident.me) 
+
 mkdir ~/prysm && cd ~/prysm 
 curl https://raw.githubusercontent.com/prysmaticlabs/prysm/master/prysm.sh --output prysm.sh && chmod +x prysm.sh 
 ./prysm.sh beacon-chain generate-auth-secret
@@ -10,6 +9,16 @@ mv ./jwt.hex ~/secrets
 cp ~/eth2-quickstart/prysm/prysm_beacon_conf.yaml ~/prysm/prysm_beacon_conf.yaml
 cp ~/eth2-quickstart/prysm/prysm_beacon_sync_conf.yaml ~/prysm/prysm_beacon_sync_conf.yaml
 cp ~/eth2-quickstart/prysm/prysm_validator_conf.yaml ~/prysm/prysm_validator_conf.yaml
+
+# Append user custom settings for fee recipient and grafitti
+echo "graffiti: $GRAFITTI" >> ~/prysm/prysm_validator_conf.yaml
+
+echo "suggested-fee-recipient: $FEE_RECIPIENT" >> ~/prysm/prysm_beacon_conf.yaml
+echo "suggested-fee-recipient: $FEE_RECIPIENT" >> ~/prysm/prysm_beacon_sync_conf.yaml
+echo "suggested-fee-recipient: $FEE_RECIPIENT" >> ~/prysm/prysm_validator_conf.yaml
+
+echo "p2p-max-peers: $MAX_PEERS" >> ~/prysm/prysm_beacon_conf.yaml
+echo "p2p-max-peers: $MAX_PEERS" >> ~/prysm/prysm_beacon_sync_conf.yaml
 
 
 cat > $HOME/beacon-chain.service << EOF 
@@ -48,7 +57,7 @@ After           = network-online.target
 
 [Service]
 User            = $(whoami)
-ExecStart       = $(echo $HOME)/prysm/prysm.sh validator --p2p-host-ip=$(curl -s v4.ident.me) --config-file=$(echo $HOME)/prysm/prysm_validator_conf.yaml --jwt-secret $(echo $HOME)/secrets/jwt.hex
+ExecStart       = $(echo $HOME)/prysm/prysm.sh validator --config-file=$(echo $HOME)/prysm/prysm_validator_conf.yaml --wallet-password-file=$(echo $HOME)/prysm/pass.txt
 
 Restart         = on-failure
 

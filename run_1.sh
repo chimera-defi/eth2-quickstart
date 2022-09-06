@@ -1,8 +1,6 @@
 #!/bin/bash
-export LOGIN_UNAME='eth'
-export YourSSHPortNumber='22'
-export maxretry='3'
-export REPO_NAME="eth2-quickstart"
+
+source ./exports.sh
 
 sudo apt update -y
 sudo apt upgrade -y
@@ -12,8 +10,11 @@ sudo apt autoremove -y
 # setup sshd safe defaults
 mv /etc/ssh/sshd_config /etc/ssh/sshd_config.bkup
 mv sshd_config /etc/ssh/sshd_config
+# Copy it back for review / commit 
+cp /etc/ssh/sshd_config ./
 
 # Basic hardening
+
 # install and config fail2ban
 apt install fail2ban -y
 echo "[sshd]
@@ -54,6 +55,7 @@ ufw allow 13000/tcp
 ufw allow 12000/udp
 ufw allow in ssh
 ufw allow 22/tcp
+ufw allow 443/tcp
 
 # # Disable outbound on private / reserved / rfc1981 ips to prevent netscan abuse warnings 
 # block all private networks to prevent netscan abuse
@@ -75,22 +77,29 @@ ufw deny out on any to 240.0.0.0/4
 ufw enable
 
 # confirm time date sync
-sudo timedatectl set-ntp on
+timedatectl set-ntp on
 
 # Disable shared memory
 echo "tmpfs	/run/shm	tmpfs	ro,noexec,nosuid	0 0" >> /etc/fstab
 
-sudo ss -tulpn
+ss -tulpn
 sshd -t
 ufw status
 
 echo "Manual action required!"
 echo "1. Please check the settings above"
-echo "2. Please run the following cmd and add the line to the file that pops up to enable $LOGIN_UNAME"
-echo "sudo visudo"
-echo "Add this to the end of the file: '$LOGIN_UNAME ALL=(ALL) NOPASSWD: ALL' "
+
+read -n 1 -p "Press enter to continue when done ^:" 
+
+echo "2. Please run the following cmd in another shell and add the line to the file that pops up to enable $LOGIN_UNAME no-prompt sudo to help run_2.sh"
+echo "$ sudo visudo"
+echo "Add this to the end of the file:"
+echo "$ $LOGIN_UNAME ALL=(ALL) NOPASSWD: ALL "
+
+read -n 1 -p "Press enter to continue when done ^:" 
+
 echo "3. Set a password for your new user when prompted"
 passwd $LOGIN_UNAME
 
-echo "Run 'sudo reboot' for all changes to take effect"
+echo "Done. Run 'sudo reboot' for all changes to take effect"
 echo "Re-login via ssh $LOGIN_UNAME@$(curl -s v4.ident.me) after and run './run_2.sh'"

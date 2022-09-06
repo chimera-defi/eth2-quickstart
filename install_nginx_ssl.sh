@@ -1,15 +1,17 @@
 #!/bin/bash
 source ./exports.sh
 
-echo "Installing NGINX... Relies on SERVER_NAME => $SERVER_NAME & LOGIN_UNAME => $LOGIN_UNAME"
-# install nginx and tools
-sudo apt-get install nginx apache2-utils snapd -y
-
+# Override nginx conf to use SSL certs
 cat > $HOME/nginx_conf_temp << EOF
 server {
   listen 80;
   listen [::]:80;
   server_name $(echo $SERVER_NAME);
+
+  listen [::]:443 ssl ipv6only=on;
+  listen 443 ssl;
+  ssl_certificate /etc/letsencrypt/live/$(echo $SERVER_NAME)/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/$(echo $SERVER_NAME)/privkey.pem;
 
   location ^~ /ws {
       proxy_http_version 1.1;
@@ -38,6 +40,7 @@ EOF
 sudo mv $HOME/nginx_conf_temp /etc/nginx/sites-enabled/default
 
 sudo ufw allow "Nginx Full"
+sudo ufw allow https
 sudo ufw enable
 
 sudo service nginx restart

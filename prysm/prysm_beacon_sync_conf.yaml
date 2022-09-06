@@ -1,24 +1,25 @@
 # You may want to change the following few lines
 execution-endpoint: http://localhost:8551
-suggested-fee-recipient: 0xa1feaf41d843d53d0f6bed86a8cf592ce21c409e
-graffiti: "SharedStake.org"
 
 http-web3provider: http://localhost:8545 # Old alias only used maybe till the merge with fallbacks
 accept-terms-of-use: true
 enable-db-backup-webhook: true
 db-backup-output-dir: ./prysm_backup_beaconchain/
-web: true
-log-file: ./logs_beacon2.txt
+web: false
+# log-file: ./logs_beacon2.txt
 p2p-udp-port: 12000
 p2p-tcp-port: 13000
 rpc-max-page-size: 10000
 p2p-max-peers: 200
-dev: true
+dev: false
 p2p-allowlist: public
 
 # Speed up initial sync
-max-goroutines: 12000
-block-batch-limit-burst-factor: 1024
-block-batch-limit: 512
-slotes-per-archive-point: 16384
-disable-grpc-gateway: true
+# max-goroutines: 12000
+# block-batch-limit-burst-factor: 1024
+# block-batch-limit: 512
+# slotes-per-archive-point: 16384
+# disable-grpc-gateway: true
+
+# mev
+http-mev-relay: http://localhost:18550

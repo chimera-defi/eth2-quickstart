@@ -8,7 +8,6 @@ sudo apt dist-upgrade -y
 sudo apt install ethereum -y
 sudo apt upgrade geth -y
 
-# cmd=/usr/bin/geth --config $(echo $HOME)/geth/geth_conf_rpc.yaml --cache 4096 --http --http.addr "127.0.0.1" --http.corsdomain "*" --http.port "8545" --http.api "db, eth, net, web3, personal" --ws --ws.port 8546 --ws.addr "127.0.0.1" --ws.origins "*" --ws.api "web3, eth" --maxpeers=100
 cat > $HOME/eth1.service << EOF 
 [Unit]
 Description     = geth execution client service
