@@ -1,9 +1,12 @@
 #!/bin/bash
+source ./exports.sh
 sudo apt install golang-go make gcc -y
 
 git clone https://github.com/flashbots/mev-boost
 cd mev-boost
+git checkout stable
 make build
+mv mev-boost $HOME
 
 cat > $HOME/mev.service << EOF 
 # The eth2 mev service (part of systemd)
@@ -16,7 +19,7 @@ After           = network-online.target
 
 [Service]
 User            = $(whoami)
-ExecStart       = $(echo $HOME)/mev-boost/mev-boost -mainnet -relay-check -relays $MEV_RELAYS
+ExecStart       = $(echo $HOME)/mev-boost -mainnet -relay-check -min-bid $MIN_BID -relays $MEV_RELAYS
 
 Restart         = on-failure
 
@@ -29,3 +32,4 @@ sudo chmod 644 /etc/systemd/system/mev.service
 
 sudo systemctl daemon-reload
 sudo systemctl enable mev
+sudo systemctl start mev
