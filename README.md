@@ -1,15 +1,14 @@
 # Introduction
 
-Get a ETH2 compatible rpc node setup in seconds! And get ready for the ETH2 merge!  
+Get a ETH2 compatible rpc node setup in seconds! And get ready for the ETH2 merge!   
 
+Eth2quickstart makes the tedious process of reading guides on setting up Ethereum validators as easy as running 2 scripts that contain the best practices and setup process. (Don't blindly run scripts near sensistive data)   
 
 # Benefits:
 - Save at least 2 days compared to CoinCashew and Somersats guides using the automated scripts and included prysm checkpoint state here!!   
 - Get your own uncensored & unmetered RPC node! 
 - Simplified script will follow sane defaults from tutorials to get you set up seamlessly and prompt for extra input not added in exports.sh
 - Includes firewall and client rules to prevent scanning private IPs/limit to public, to avoid Abuse alerts from cloud / bare metal hosting providers
-
-
 
 We try to setup guideline to quickly, safely and secury setup ETH2 capable nodes on a cloud vps or bare metal server.  
 Addditionally, there's firewall rules and settings for the clients to not cause alerts from your infra provider.    
@@ -34,6 +33,8 @@ Additionally, by using a vps, they can more easily offer a censorship resistant 
 
 # Quickstart 
 
+## Installation
+
 1. Download these scripts, initially as root via running this from the terminal    
 `
 git clone https://github.com/chimera-defi/eth2-quickstart
@@ -43,15 +44,16 @@ cd eth2-quickstart
 `
 
   
-2. Run provided scripts. First make changes in `exports.sh` to your preferred values for setup via vscode or:     
+2. Run provided scripts. First make changes in `exports.sh` to your preferred values for setup via logging into the server with VsCode or:     
     `nano exports.sh`  
-  a. Run  `./run_1.sh` 
+3. Run  `./run_1.sh` 
     - will upgrade ubuntu and installed programs,   
     - setup firewalls, do security hardening,   
     - install needed programs for setting up a node,  
   
-  b. After it finishes, verify the results and run `sudo reboot`  
-  c. Log back in as the user and run   
+4. After it finishes, verify the results and run `sudo reboot`  
+
+5. Log back in as the new non-root user and run   
   `./run_2.sh`  
    this will setup:
  
@@ -60,20 +62,25 @@ cd eth2-quickstart
      - mev-boost
      - setup systemctl for eth2 services 
      - Also contains commands to begin syncing prysm and geth
-  d. Start your services via systemctl to confirm succesful installation! eth1, beacon-chain & validator  
-    - d.  
-Start eth services
-`sudo systemctl start eth1`
-`sudo systemctl start beacon-chain`
-`sudo systemctl start validator`
-`sudo systemctl start mev`   
-Verify they work
-   `sudo systemctl status eth1`
-    `sudo systemctl status beacon-chain`
-    `sudo systemctl status validator`
-    `sudo systemctl status mev `
-   
-    - e. Sync prysm instantly
+6. Start your services via systemctl to confirm successful installation! eth1, beacon-chain & validator
+  
+    ```
+    sudo systemctl start eth1
+    sudo systemctl start beacon-chain
+    sudo systemctl start validator
+    sudo systemctl start mev
+    ```
+    Verify they work normally
+    ```
+
+    sudo systemctl status eth1
+    sudo systemctl status beacon-chain
+    sudo systemctl status validator
+    sudo systemctl status mev
+    ```
+
+## Sync and configure 
+1. Sync prysm instantly / faster thanks to provided checkpoint files in this repo
 
     ```
     sudo systemctl stop beacon-chain
@@ -82,30 +89,34 @@ Verify they work
     ```
     
     Remember to restart the beacon-chain and validator afterwards.   
- 
-    - f. Continue using prysm docs to set up the validator using new or old imported keys : https://docs.prylabs.network/docs/install/install-with-script#step-5-run-a-validator-using-prysm
-   
-    - g. Create a pass.txt file in ~/prysm with your wallets password to enable using the validator service
+    ```
+    sudo systemctl restart beacon-chain
+    sudo systemctl restart validator
+    ```
+2. Continue using prysm docs to set up the validator using new or old imported keys : https://docs.prylabs.network/docs/install/install-with-script#step-5-run-a-validator-using-prysm
+    - Create a `pass.txt` file in `~/prysm` with your wallets password to enable using the validator service
+3. To speed up geth sync you can try to restart it with other flags in its config, but most likely it will just take a little time running in the background.  Benchmark is 1-3 days.   
 
+## Setup public RPC endpoint using Nginx
+Setup a secure uncensored outward facing Ethereum RPC for you and your friends!  It's been faster than Infura/alchemy etc for me.
 
-  
-3. [Optional RPC] Once geth & prysm are synced, install nginx   
+1. [Optional RPC] Once geth & prysm are synced, install nginx   
 `./install_nginx.sh`  
 and verify it is working and configured correctly if you want to use the RPC.  
 Use the following command to verify locally:
-```
-curl -X POST http://<ip>/rpc --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":32}' -H 'Content-Type: application/json'
-```
-Replace <ip> w/ `$(curl v4.ident.me)` for local.  
-Replace <ip> with your domain name to see if it works for real from a different host.   
-Use https to check SSL.  
+    ```
+    curl -X POST http://<ip>/rpc --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":32}' -H 'Content-Type: application/json'
+    ```
+    Replace `<ip>` w/ `$(curl v4.ident.me)` for local.  
+    Replace `<ip>` with your domain name to see if it works for real from a different host.   
+    Use https to check SSL.  
 
-4. Setup a domain (Optional, helps w/ public RPC)  
+2. Setup a domain (Optional, helps w/ public RPC)  
    a. Get a website - e.g. via namecheap  
   b. Setup DNS records from it to point to your servers public IP  
   c. Setup Nginx on your server to handle requests and provide a rpc   
 
-5. Setup SSL for your domain. You will need to use `sudo su` to switch back to super user to properly install NGINX an SSL with the provide scripts. 
+3. Setup SSL for your domain. You will need to use `sudo su` to switch back to super user to properly install NGINX an SSL with the provide scripts. 
   - There are 2 options to configure SSL and NGINX:
   - `./install_acme_ssl.sh` will use sensible defaults, letencrypt, acme.sh and nginx to setup certificates.  
   - You can otherwise use `./install_ssl_certbot.sh` to use certbot.
@@ -115,14 +126,21 @@ Use https to check SSL.
     b. Follow the tutorials here after they finish:   https://certbot.eff.org/  
     c. Verify it works using `curl -X POST http://$(curl -s v4.ident.me)/rpc --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":32}' -H 'Content-Type: application/json'`
 
-6. Confirm mev boost is configured and working correctly 
+4. Confirm mev boost is configured and working correctly 
   - https://github.com/flashbots/mev-boost/wiki/Testing
   - Check validators register properly (Note: Need a 0x prefix on the validator pub key) https://boost.flashbots.net/mev-boost-status-updates/query-validator-registration-status-now
 
 
-7. Further security hardening tips: (TODO)
+5. Further security hardening tips: (TODO)
   - Disable root login after everything is confirmed to be working by setting `PermitRootLogin no` in `/etc/ssh/sshd_config`  
 
+# Troubleshooting & tips
+
+- need to update? just run `./update.sh`   
+- make sure the files are executable 
+```
+chmod u+x run1.sh..
+```
 
 # Credits
 This was made possible by the great guides written by:
@@ -141,6 +159,8 @@ https://Sharedstake.org
 And 
 https://sharedtools.org
 
-# Contact: 
+# Contact for qs / collab: 
 
 Chimera_defi@protonmail.com
+
+Twitter: https://twitter.com/chimeradefi
