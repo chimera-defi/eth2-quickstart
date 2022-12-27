@@ -17,7 +17,17 @@ cp /etc/ssh/sshd_config ./
 
 # install and config fail2ban
 apt install fail2ban -y
-echo "[sshd]
+echo "
+## block hosts trying to abuse our server as a forward proxy
+[nginx-proxy]
+enabled = true
+port    = 80,443
+filter = nginx-proxy
+logpath = /var/log/nginx/access.log
+maxretry = 2
+bantime  = 86400
+
+[sshd]
 enabled = true
 port = $YourSSHPortNumber
 filter = sshd

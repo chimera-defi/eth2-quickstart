@@ -72,7 +72,6 @@ cd eth2-quickstart
     ```
     Verify they work normally
     ```
-
     sudo systemctl status eth1
     sudo systemctl status beacon-chain
     sudo systemctl status validator

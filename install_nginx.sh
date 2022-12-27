@@ -41,3 +41,5 @@ sudo ufw allow "Nginx Full"
 sudo ufw enable
 
 sudo service nginx restart
+
+./nginx_harden.sh

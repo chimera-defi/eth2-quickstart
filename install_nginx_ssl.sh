@@ -44,3 +44,5 @@ sudo ufw allow https
 sudo ufw enable
 
 sudo service nginx restart
+
+./nginx_harden.sh

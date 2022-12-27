@@ -41,3 +41,8 @@ echo $MEV_BOOST_VERSION
 echo $GETH_VERSION
 echo $PRYSM_VERSION
 echo $NGINX_VERSION
+
+sudo systemctl status eth1
+sudo systemctl status beacon-chain
+sudo systemctl status validator
+sudo systemctl status mev
