@@ -29,7 +29,7 @@ source ./exports.sh
 
 ./install_geth.sh
 ./install_prysm.sh
-./install_mev_boost_censored.sh
+./install_mev_boost.sh
 
 echo "Installed Geth"
 echo "Installed Prysm"

@@ -2,11 +2,13 @@
 source ./exports.sh
 sudo apt install golang-go make gcc -y
 
+cd $HOME
+rm -rf mev-boost
 git clone https://github.com/flashbots/mev-boost
 cd mev-boost
 git checkout stable
+git pull
 make build
-mv mev-boost $HOME
 
 cat > $HOME/mev.service << EOF 
 # The eth2 mev service (part of systemd)
@@ -19,9 +21,10 @@ After           = network-online.target
 
 [Service]
 User            = $(whoami)
-ExecStart       = $(echo $HOME)/mev-boost -mainnet -relay-check -min-bid $MIN_BID -relays $MEV_RELAYS
+ExecStart       = $(echo $HOME)/mev-boost/mev-boost -mainnet -relay-check -min-bid $MIN_BID -relays $MEV_RELAYS  -request-timeout-getheader $MEVGETHEADERT -request-timeout-getpayload $MEVGETPAYLOADT -request-timeout-regval $MEVREGVALT
 
-Restart         = on-failure
+Restart         = always
+RestartSec      = 5
 
 [Install]
 WantedBy	= multi-user.target

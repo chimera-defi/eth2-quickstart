@@ -4,20 +4,6 @@ Get a ETH2 compatible rpc node setup in seconds! And get ready for the ETH2 merg
 
 Eth2quickstart makes the tedious process of reading guides on setting up Ethereum validators as easy as running 2 scripts that contain the best practices and setup process. (Don't blindly run scripts near sensistive data)   
 
-# Benefits:
-- Save at least 2 days compared to CoinCashew and Somersats guides using the automated scripts and included prysm checkpoint state here!!   
-- Get your own uncensored & unmetered RPC node! 
-- Simplified script will follow sane defaults from tutorials to get you set up seamlessly and prompt for extra input not added in exports.sh
-- Includes firewall and client rules to prevent scanning private IPs/limit to public, to avoid Abuse alerts from cloud / bare metal hosting providers
-
-We try to setup guideline to quickly, safely and secury setup ETH2 capable nodes on a cloud vps or bare metal server.  
-Addditionally, there's firewall rules and settings for the clients to not cause alerts from your infra provider.    
-
-The goal is to allow soverign individuals to set up independent validators, and validating services easily.    
-On their own hardware, in their own location, safe from government overreach and censorship.    
-
-Additionally, by using a vps, they can more easily offer a censorship resistant rpc node for their fellow etherians.   
-
 # Pre-reqs
 1. Set up cloud vps with a ssh pub key
     a. Prefer a bare metal vps as it wont finish syncing on cloud
@@ -79,6 +65,7 @@ cd eth2-quickstart
     ```
 
 ## Sync and configure 
+**Note: You may be able to skip this step now with checkpoint urls added**
 1. Sync prysm instantly / faster thanks to provided checkpoint files in this repo
 
     ```
@@ -140,6 +127,20 @@ Use the following command to verify locally:
 ```
 chmod u+x run1.sh..
 ```
+
+# Benefits:
+- Save at least 2 days compared to CoinCashew and Somersats guides using the automated scripts and included prysm checkpoint state here!!   
+- Get your own uncensored & unmetered RPC node! 
+- Simplified script will follow sane defaults from tutorials to get you set up seamlessly and prompt for extra input not added in exports.sh
+- Includes firewall and client rules to prevent scanning private IPs/limit to public, to avoid Abuse alerts from cloud / bare metal hosting providers
+
+We try to setup guideline to quickly, safely and secury setup ETH2 capable nodes on a cloud vps or bare metal server.  
+Addditionally, there's firewall rules and settings for the clients to not cause alerts from your infra provider.    
+
+The goal is to allow soverign individuals to set up independent validators, and validating services easily.    
+On their own hardware, in their own location, safe from government overreach and censorship.    
+
+Additionally, by using a vps, they can more easily offer a censorship resistant rpc node for their fellow etherians.   
 
 # Credits
 This was made possible by the great guides written by:

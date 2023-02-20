@@ -84,6 +84,12 @@ ufw deny out on any to 203.0.113.0/24
 ufw deny out on any to 224.0.0.0/4 
 ufw deny out on any to 240.0.0.0/4 
 
+# updates feb '23 from prysm docs'
+ufw deny in 4000/tcp
+ufw deny in 3500/tcp
+ufw deny in 8551/tcp
+ufw deny in 8545/tcp
+
 ufw enable
 
 # confirm time date sync

@@ -1,5 +1,5 @@
 #!/bin/bash
-
+source ./exports.sh
 mkdir ~/prysm && cd ~/prysm 
 curl https://raw.githubusercontent.com/prysmaticlabs/prysm/master/prysm.sh --output prysm.sh && chmod +x prysm.sh 
 ./prysm.sh beacon-chain generate-auth-secret
@@ -14,12 +14,11 @@ cp ~/eth2-quickstart/prysm/prysm_validator_conf.yaml ~/prysm/prysm_validator_con
 echo "graffiti: $GRAFITTI" >> ~/prysm/prysm_validator_conf.yaml
 
 echo "suggested-fee-recipient: $FEE_RECIPIENT" >> ~/prysm/prysm_beacon_conf.yaml
-echo "suggested-fee-recipient: $FEE_RECIPIENT" >> ~/prysm/prysm_beacon_sync_conf.yaml
 echo "suggested-fee-recipient: $FEE_RECIPIENT" >> ~/prysm/prysm_validator_conf.yaml
 
 echo "p2p-max-peers: $MAX_PEERS" >> ~/prysm/prysm_beacon_conf.yaml
-echo "p2p-max-peers: $MAX_PEERS" >> ~/prysm/prysm_beacon_sync_conf.yaml
-
+echo "checkpoint-sync-url: $PRYSM_CPURL" >> ~/prysm/prysm_beacon_conf.yaml
+echo "genesis-beacon-api-url: $PRYSM_CPURL" >> ~/prysm/prysm_beacon_conf.yaml
 
 cat > $HOME/beacon-chain.service << EOF 
 # The eth2 beacon chain service (part of systemd)
@@ -67,7 +66,8 @@ EOF
 sudo mv $HOME/validator.service /etc/systemd/system/validator.service
 sudo chmod 644 /etc/systemd/system/validator.service
 
-
 sudo systemctl daemon-reload
 sudo systemctl enable beacon-chain
 sudo systemctl enable validator
+
+echo "DONE! Files generated in $HOME/prysm/ ; systemd services: /etc/systemd/system/validator.service , /etc/systemd/system/beacon-chain.service "

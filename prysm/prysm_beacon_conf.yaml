@@ -1,11 +1,8 @@
-# You may want to change the following few lines
 execution-endpoint: http://localhost:8551
-
-http-web3provider: http://localhost:8545 # Old alias only used maybe till the merge with fallbacks
 accept-terms-of-use: true
 enable-db-backup-webhook: true
 db-backup-output-dir: ./prysm_backup_beaconchain/
-# web: true
+# web: true // change and restart prysm to access web
 p2p-udp-port: 12000
 p2p-tcp-port: 13000
 rpc-max-page-size: 10000
@@ -14,6 +11,3 @@ p2p-allowlist: public
 # mev boost
 enable-builder: true
 http-mev-relay: http://localhost:18550
-
-suggested-fee-recipient: 0xa1feaf41d843d53d0f6bed86a8cf592ce21c409e
-graffiti: "SharedStake.org - not yet censored"
