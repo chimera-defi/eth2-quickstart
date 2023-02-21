@@ -1,15 +1,10 @@
-
-graffiti: "SharedStake!(Merge, Merge)WAGMI!"
-suggested-fee-recipient: 0xa1feaf41d843d53d0f6bed86a8cf592ce21c409e
-
 p2p-allowlist: public
 web: false
 enable-doppelganger: true
 enable-slashing-protection-history-pruning: true
 attest-timely: true
-p2p-max-peers: 100
 
-# only neede for mev boost
+# mev boost
 enable-builder: true
 http-mev-relay: http://127.0.0.1:18550
 enable-validator-registration: true
