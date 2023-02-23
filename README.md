@@ -1,18 +1,19 @@
 # Introduction
 
-Get a ETH2 compatible rpc node setup in seconds! And get ready for the ETH2 merge!   
+Setup an ETH2 node quickly with ~2 commands. 
+Simple shell scripts contain community best practices to remove tedious setup. 
+Supports servers, home solo stakers, pool node operators. 
 
-Eth2quickstart makes the tedious process of reading guides on setting up Ethereum validators as easy as running 2 scripts that contain the best practices and setup process. (Don't blindly run scripts near sensistive data)   
+(Don't blindly run scripts near sensistive data)   
 
 # Pre-reqs
-1. Set up cloud vps with a ssh pub key
+1. Set up cloud vps with a ssh pub key or local server
     a. Prefer a bare metal vps as it wont finish syncing on cloud
     b. Recommended specs based on Geth and Prysm
       - 2 - 4+ TB SSD or NVMe
       - 16-64+GB of RAM
       - 4-8+ cores
       - ubuntu 20+
-  c. Referral link for $20 free in cloud credits https://hetzner.cloud/?ref=d4Hoyi2u3pwn
   d. SSH in, set up your server
   e. (Optional) Configure VSCode to work with your server https://code.visualstudio.com/docs/remote/ssh
 
@@ -21,7 +22,7 @@ Eth2quickstart makes the tedious process of reading guides on setting up Ethereu
 
 ## Installation
 
-1. Download these scripts, initially as root via running this from the terminal    
+1. Download these scripts, initially as root via running this from the terminal; we will automatically create a eth user for safety    
 `
 git clone https://github.com/chimera-defi/eth2-quickstart
 `

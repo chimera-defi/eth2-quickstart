@@ -35,4 +35,3 @@ sudo chmod 644 /etc/systemd/system/mev.service
 
 sudo systemctl daemon-reload
 sudo systemctl enable mev
-sudo systemctl start mev
