@@ -32,7 +32,7 @@ readonly BCM="$(echo $HOME)/prysm/prysm.sh beacon-chain
 readonly VCM="$(echo $HOME)/prysm/prysm.sh validator
 --config-file=$(echo $HOME)/prysm/prysm_validator\conf.yaml"
 
-cat > $HOME/beacon-chain.service << EOF 
+cat > $HOME/cl.service << EOF 
 # The eth2 beacon chain service (part of systemd)
 # file: /etc/systemd/system/beacon-chain.service 
 
@@ -51,8 +51,8 @@ Restart         = on-failure
 WantedBy    = multi-user.target
 EOF
 
-sudo mv $HOME/beacon-chain.service /etc/systemd/system/beacon-chain.service
-sudo chmod 644 /etc/systemd/system/beacon-chain.service
+sudo mv $HOME/cl.service /etc/systemd/system/cl.service
+sudo chmod 644 /etc/systemd/system/cl.service
 
 
 # Setup validator
@@ -79,7 +79,7 @@ sudo mv $HOME/validator.service /etc/systemd/system/validator.service
 sudo chmod 644 /etc/systemd/system/validator.service
 
 sudo systemctl daemon-reload
-sudo systemctl enable beacon-chain
+sudo systemctl enable cl
 sudo systemctl enable validator
 
 echo "DONE! Files generated in $HOME/prysm/ ; systemd services: /etc/systemd/system/validator.service , /etc/systemd/system/beacon-chain.service "

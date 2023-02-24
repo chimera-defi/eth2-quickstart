@@ -4,13 +4,13 @@ source ./exports.sh
 # Hot patch prysm installation with mev prysm 
 
 # prereqs to build from src
-sudo apt install cmake libssl-dev libgmp-dev libtinfo5 libprotoc
+sudo apt install cmake libssl-dev libgmp-dev libtinfo5 libprotoc -y
 # bazel 
 sudo apt install apt-transport-https curl gnupg -y
 curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor >bazel-archive-keyring.gpg
 sudo mv bazel-archive-keyring.gpg /usr/share/keyrings
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
-sudo apt update && sudo apt install bazel-5.3.0
+sudo apt update && sudo apt install bazel bazel-5.3.0
 
 
 rm -rf prysm-src
@@ -34,7 +34,7 @@ rm ~/secrets/jwt.hex
 mv ./jwt.hex ~/secrets
 
 # overwrite pre-installed prysm bin with our commands
-cat > $HOME/beacon-chain.service << EOF 
+cat > $HOME/cl.service << EOF 
 # The eth2 beacon chain service (part of systemd)
 # file: /etc/systemd/system/beacon-chain.service 
 
@@ -53,8 +53,8 @@ Restart         = on-failure
 WantedBy    = multi-user.target
 EOF
 
-sudo mv $HOME/beacon-chain.service /etc/systemd/system/beacon-chain.service
-sudo chmod 644 /etc/systemd/system/beacon-chain.service
+sudo mv $HOME/cl.service /etc/systemd/system/cl.service
+sudo chmod 644 /etc/systemd/system/cl.service
 
 
 # Setup validator
