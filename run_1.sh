@@ -53,10 +53,10 @@ chown -R $LOGIN_UNAME:$LOGIN_UNAME /home/$LOGIN_UNAME/$REPO_NAME
 # Whitelist and only allow certain users
 # AllowUsers root
 # AllowUsers $LOGIN_UNAME
-./firewall.sh
+sudo ./firewall.sh
 
 # confirm time date sync
-sudo apt install chrony
+sudo apt install chrony -y
 timedatectl set-ntp on
 
 # Disable shared memory
@@ -72,6 +72,7 @@ echo "1. Please check the settings above"
 read -n 1 -p "Press enter to continue when done ^:" 
 
 echo "2. Please run the following cmd in another shell and add the line to the file that pops up to enable $LOGIN_UNAME no-prompt sudo to help run_2.sh"
+echo "Re-login via ssh root@$(curl -s v4.ident.me) "
 echo "$ sudo visudo"
 echo "Add this to the end of the file:"
 echo "$ $LOGIN_UNAME ALL=(ALL) NOPASSWD: ALL "
