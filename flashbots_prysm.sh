@@ -13,20 +13,24 @@ echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] h
 sudo apt update && sudo apt install bazel-5.3.0
 
 
-cd $HOME && rm -rf ~/prysm
+rm -rf prysm-src
+mkdir prysm-src 
+cd prysm-src
+
 git clone --recurse-submodules https://github.com/flashbots/prysm.git
 cd prysm
-git checkout develop-boost-capella
+# git checkout develop-boost-capella
 git pull
 bazel build //cmd/beacon-chain:beacon-chain --config=release
 bazel build //cmd/validator:validator --config=release
 
-cp bazel-bin/cmd/validator/validator_/validator $HOME/prysm/
-cp bazel-bin/cmd/beacon-chain/beacon-chain_/beacon-chain $HOME/prysm/
+cp ./bazel-bin/cmd/validator/validator_/validator $HOME/prysm/
+cp ./bazel-bin/cmd/beacon-chain/beacon-chain_/beacon-chain $HOME/prysm/
 
 # gen jwt again
 $HOME/prysm/beacon-chain generate-auth-secret
 mkdir ~/secrets
+rm ~/secrets/jwt.hex
 mv ./jwt.hex ~/secrets
 
 # overwrite pre-installed prysm bin with our commands
