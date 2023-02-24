@@ -5,7 +5,6 @@ source ./exports.sh
 
 # prereqs to build from src
 sudo apt install cmake libssl-dev libgmp-dev libtinfo5 libprotoc
-# go install github.com/bazelbuild/bazelisk@latest
 # bazel 
 sudo apt install apt-transport-https curl gnupg -y
 curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor >bazel-archive-keyring.gpg
@@ -14,20 +13,11 @@ echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] h
 sudo apt update && sudo apt install bazel-5.3.0
 
 
-rm -rf prysm
-git clone --recurse-submodules https://github.com/flashbots/prysm.git
-cd prysm
-bazel build //cmd/beacon-chain:beacon-chain --config=release
-bazel build //cmd/validator:validator --config=release
-sudo apt update && sudo apt install bazel
-
-# ?? 
-# $(echo $HOME)/prysm/prysm.sh
-# 
-
 cd $HOME && rm -rf ~/prysm
 git clone --recurse-submodules https://github.com/flashbots/prysm.git
 cd prysm
+git checkout develop-boost-capella
+git pull
 bazel build //cmd/beacon-chain:beacon-chain --config=release
 bazel build //cmd/validator:validator --config=release
 
@@ -39,9 +29,7 @@ $HOME/prysm/beacon-chain generate-auth-secret
 mkdir ~/secrets
 mv ./jwt.hex ~/secrets
 
-
 # overwrite pre-installed prysm bin with our commands
-
 cat > $HOME/beacon-chain.service << EOF 
 # The eth2 beacon chain service (part of systemd)
 # file: /etc/systemd/system/beacon-chain.service 

@@ -13,7 +13,7 @@ graffiti: $GRAFITTI
 suggested-fee-recipient: $FEE_RECIPIENT
 wallet-password-file: $HOME/secrets/pass.txt
 EOF
-cat ~/eth2-quickstart/prysm/prysm_validator_conf.yaml ~/prysm/prysm_validator_conf.yaml >> ~/prysm/prysm_beacon_conf.yaml
+cat ~/eth2-quickstart/prysm/prysm_validator_conf.yaml ~/prysm/prysm_validator_conf.yaml >> ~/prysm/prysm_validator_conf.yaml
 
 cat > ~/prysm/prysm_beacon_conf.yaml << EOF 
 graffiti: $GRAFITTI

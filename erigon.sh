@@ -21,8 +21,8 @@ cd erigon
 git pull
 make erigon
 
-mkdir $HOME/erigon
 rm -rf $HOME/erigon/*
+mkdir $HOME/erigon
 
 cat > $HOME/erigon/config.yaml << EOF
 chain : "mainnet"
@@ -64,5 +64,3 @@ sudo mv $HOME/eth1.service /etc/systemd/system/eth1.service
 sudo chmod 644 /etc/systemd/system/eth1.service
 sudo systemctl daemon-reload
 sudo systemctl enable eth1
-sudo systemctl daemon-reload
-
