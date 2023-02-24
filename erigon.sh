@@ -18,18 +18,26 @@ sudo ufw allow 4001/udp
 # devrel
 git clone --recurse-submodules https://github.com/ledgerwatch/erigon.git
 cd erigon
+git pull
 make erigon
 
-cat > $HOME/erigon.yaml << EOF
+mkdir $HOME/erigon
+rm -rf $HOME/erigon/*
+
+cat > $HOME/erigon/config.yaml << EOF
 chain : "mainnet"
 http : true
 http.api : ["admin","eth","debug","net","web3","engine"]
 authrpc.jwtsecret: '$HOME/secrets/jwt.hex'
 externalcl: true
-snapshot: true
+snapshots: true
+nat: any
+rpc.batch.limit: 1000
+torrent.download.rate: 512mb
+prune: hrtc
 EOF
 
-cp ./build/bin/erigon $HOME/
+cp ./build/bin/erigon $HOME/erigon/
 
 
 # overwrite the eth1 servicwe
@@ -42,7 +50,7 @@ After           = network-online.target
 
 [Service]
 User            = $(whoami)
-ExecStart       = $HOME/erigon --config $HOME/config.yaml
+ExecStart       = $HOME/erigon/erigon --config $HOME/erigon/config.yaml --externalcl
 Restart         = on-failure
 TimeoutStopSec  = 600
 RestartSec      = 5
@@ -56,4 +64,5 @@ sudo mv $HOME/eth1.service /etc/systemd/system/eth1.service
 sudo chmod 644 /etc/systemd/system/eth1.service
 sudo systemctl daemon-reload
 sudo systemctl enable eth1
+sudo systemctl daemon-reload
 

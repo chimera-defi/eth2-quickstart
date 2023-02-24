@@ -48,3 +48,5 @@ echo "2. '  ./install_ssl_certbot.sh '  - use certbot and manual DNS verificatio
 
 echo 
 echo "If you are new to NGINX, strongly recommend running only ' ./install_nginx.sh ' first and confirming it works without SSL, locally, then remotely via your domain name using the curl cmd in the readme for geth rpc on step 5"
+
+echo "Next step is to start syncing via 'systemctl start prysm'"

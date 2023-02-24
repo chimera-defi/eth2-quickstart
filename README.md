@@ -14,36 +14,44 @@ Supports servers, home solo stakers, pool node operators.
       - 16-64+GB of RAM
       - 4-8+ cores
       - ubuntu 20+
-  d. SSH in, set up your server
+  d. SSH in, set up your server.
+      - set swraid 1 & swraidlevel 0 for full disk access and better performance
+      - Note: Fingerprint will change, you will need to rm it from known-hosts after setup every time
   e. (Optional) Configure VSCode to work with your server https://code.visualstudio.com/docs/remote/ssh
+    - `cmd shift p` -> add new remote host -> `ssh root@my.ip.`  -> connect
 
 
 # Quickstart 
 
 ## Installation
 
-1. Download these scripts, initially as root via running this from the terminal; we will automatically create a eth user for safety    
-`
+1. Download these scripts, initially as root via running this from the terminal; we will automatically create a eth user for safety.     
+
+```
 git clone https://github.com/chimera-defi/eth2-quickstart
-`
-`
 cd eth2-quickstart
-`
+chmod +x run_1.sh
+```
 
   
-2. Run provided scripts. First make changes in `exports.sh` to your preferred values for setup via logging into the server with VsCode or:     
-    `nano exports.sh`  
-3. Run  `./run_1.sh` 
-    - will upgrade ubuntu and installed programs,   
-    - setup firewalls, do security hardening,   
-    - install needed programs for setting up a node,  
+2. Run server setup script 
+```
+./run_1.sh
+``` 
+  - will upgrade ubuntu and installed programs,   
+  - guide the user on manual steps
+  - setup firewalls, do security hardening,   
+  - install needed programs for setting up a node  
+
   
 4. After it finishes, verify the results and run `sudo reboot`  
+Log back in as the new non-root user `eth@ip`
+- configure `exports.sh` 
 
-5. Log back in as the new non-root user and run   
-  `./run_2.sh`  
+5. Log back in as the new non-root user `eth@ip`
+- configure `exports.sh` 
+- Run`./run_2.sh`  
    this will setup:
- 
      - prysm
      - geth
      - mev-boost

@@ -7,19 +7,30 @@ curl https://raw.githubusercontent.com/prysmaticlabs/prysm/master/prysm.sh --out
 mkdir ~/secrets
 mv ./jwt.hex ~/secrets
 
-cp ~/eth2-quickstart/prysm/prysm_beacon_conf.yaml ~/prysm/prysm_beacon_conf.yaml
-cp ~/eth2-quickstart/prysm/prysm_beacon_sync_conf.yaml ~/prysm/prysm_beacon_sync_conf.yaml
-cp ~/eth2-quickstart/prysm/prysm_validator_conf.yaml ~/prysm/prysm_validator_conf.yaml
-
 # Append user custom settings for fee recipient and grafitti
-echo "graffiti: $GRAFITTI" >> ~/prysm/prysm_validator_conf.yaml
+cat > ~/prysm/prysm_validator_conf.yaml << EOF 
+graffiti: $GRAFITTI
+suggested-fee-recipient: $FEE_RECIPIENT
+wallet-password-file: $HOME/secrets/pass.txt
+EOF
+cat ~/eth2-quickstart/prysm/prysm_validator_conf.yaml ~/prysm/prysm_validator_conf.yaml >> ~/prysm/prysm_beacon_conf.yaml
 
-echo "suggested-fee-recipient: $FEE_RECIPIENT" >> ~/prysm/prysm_beacon_conf.yaml
-echo "suggested-fee-recipient: $FEE_RECIPIENT" >> ~/prysm/prysm_validator_conf.yaml
+cat > ~/prysm/prysm_beacon_conf.yaml << EOF 
+graffiti: $GRAFITTI
+suggested-fee-recipient: $FEE_RECIPIENT
+p2p-host-ip: $(echo $(curl -s v4.ident.me))
+p2p-max-peers: $MAX_PEERS
+checkpoint-sync-url: $PRYSM_CPURL
+genesis-beacon-api-url: $PRYSM_CPURL
+jwt-secret: $HOME/secrets/jwt.hex
+EOF
+cat ~/eth2-quickstart/prysm/prysm_beacon_conf.yaml ~/prysm/prysm_beacon_conf.yaml >> ~/prysm/prysm_beacon_conf.yaml
 
-echo "p2p-max-peers: $MAX_PEERS" >> ~/prysm/prysm_beacon_conf.yaml
-echo "checkpoint-sync-url: $PRYSM_CPURL" >> ~/prysm/prysm_beacon_conf.yaml
-echo "genesis-beacon-api-url: $PRYSM_CPURL" >> ~/prysm/prysm_beacon_conf.yaml
+
+readonly BCM="$(echo $HOME)/prysm/prysm.sh beacon-chain 
+--config-file=$(echo $HOME)/prysm/prysm_beacon_conf.yaml"
+readonly VCM="$(echo $HOME)/prysm/prysm.sh validator
+--config-file=$(echo $HOME)/prysm/prysm_validator\conf.yaml"
 
 cat > $HOME/beacon-chain.service << EOF 
 # The eth2 beacon chain service (part of systemd)
@@ -33,7 +44,7 @@ After           = network-online.target
 [Service]
 Type            = simple
 User            = $(whoami)
-ExecStart       = $(echo $HOME)/prysm/prysm.sh beacon-chain --p2p-host-ip=$(curl -s v4.ident.me) --config-file=$(echo $HOME)/prysm/prysm_beacon_conf.yaml --jwt-secret $(echo $HOME)/secrets/jwt.hex
+ExecStart       = $(echo $BCM)
 Restart         = on-failure
 
 [Install]
@@ -57,7 +68,7 @@ After           = network-online.target
 
 [Service]
 User            = $(whoami)
-ExecStart       = $(echo $HOME)/prysm/prysm.sh validator --config-file=$(echo $HOME)/prysm/prysm_validator_conf.yaml --wallet-password-file=$(echo $HOME)/prysm/pass.txt
+ExecStart       = $(echo $VCM)
 
 Restart         = on-failure
 
