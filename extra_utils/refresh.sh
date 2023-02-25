@@ -4,6 +4,6 @@
 
 sudo systemctl restart eth1
 sudo systemctl restart mev
-sudo systemctl restart beacon-chain
+sudo systemctl restart cl
 sudo systemctl restart validator
 sudo service nginx restart

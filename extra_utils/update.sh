@@ -16,7 +16,7 @@ sudo apt upgrade geth -y
 sudo systemctl start eth1
 
 # prysm
-sudo systemctl restart beacon-chain
+sudo systemctl restart cl
 sudo systemctl restart validator
 
 # mev / flashbots

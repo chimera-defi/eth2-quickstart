@@ -20,6 +20,8 @@ git clone --recurse-submodules https://github.com/ledgerwatch/erigon.git
 cd erigon
 git pull
 make erigon
+make rpcdaemon
+make integration
 
 rm -rf $HOME/erigon/*
 mkdir $HOME/erigon
@@ -27,7 +29,7 @@ mkdir $HOME/erigon
 cat > $HOME/erigon/config.yaml << EOF
 chain : "mainnet"
 http : true
-http.api : ["admin","eth","debug","net","web3","engine"]
+http.api : ["admin","engine","eth","erigon","web3","net","debug","db","trace","txpool","personal"]
 authrpc.jwtsecret: '$HOME/secrets/jwt.hex'
 externalcl: true
 snapshots: true
@@ -64,3 +66,6 @@ sudo mv $HOME/eth1.service /etc/systemd/system/eth1.service
 sudo chmod 644 /etc/systemd/system/eth1.service
 sudo systemctl daemon-reload
 sudo systemctl enable eth1
+
+# print integration stages
+./build/bin/integration print_stages --chain mainnet --datadir ~/.local/share/erigon
