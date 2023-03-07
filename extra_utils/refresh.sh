@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# refreshes / restarts all our services
-
-sudo systemctl restart eth1
-sudo systemctl restart mev
-sudo systemctl restart cl
+# refreshes / restarts / potentially upgrades all our services
+sudo systemctl restart eth1 &&
+sudo systemctl restart mev && 
+sudo systemctl restart beacon-chain && 
 sudo systemctl restart validator
-sudo service nginx restart
+
+./$HOME/eth2-quickstart/extra_utils/stats.sh
