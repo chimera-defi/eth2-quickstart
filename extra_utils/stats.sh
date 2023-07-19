@@ -13,7 +13,7 @@ echo ''
 
 echo "Versions of clients"
 ../mev-boost/mev-boost -version
-../prysm/prysm.sh cl -version
+../prysm/prysm.sh beacon-chain -version
 ../prysm/prysm.sh validator -version
 geth version
 echo "End version output --"

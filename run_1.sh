@@ -62,6 +62,9 @@ timedatectl set-ntp on
 
 # Disable shared memory
 echo "tmpfs	/run/shm	tmpfs	ro,noexec,nosuid	0 0" >> /etc/fstab
+echo "Disabled shared memory"
+
+echo "Begin network settings output:"
 
 ss -tulpn
 sshd -t
@@ -72,11 +75,11 @@ echo "1. Please check the settings above"
 
 read -n 1 -p "Press enter to continue when done ^:" 
 
-echo "2. Please run the following cmd in another shell and add the line to the file that pops up to enable $LOGIN_UNAME no-prompt sudo to help run_2.sh"
-echo "Re-login via ssh root@$(curl -s v4.ident.me) "
-echo "$ sudo visudo"
+echo "2. Please run the following cmds now in another shell and add the line to the file that pops up to enable $LOGIN_UNAME no-prompt sudo to help run the second stage"
+echo "ssh root@$(curl -s v4.ident.me) "
+echo "sudo visudo"
 echo "Add this to the end of the file:"
-echo "$ $LOGIN_UNAME ALL=(ALL) NOPASSWD: ALL "
+echo "$LOGIN_UNAME ALL=(ALL) NOPASSWD: ALL "
 
 read -n 1 -p "Press enter to continue when done ^:" 
 

@@ -1,6 +1,8 @@
 #!/bin/bash
 source ./exports.sh
-sudo apt install golang-go make gcc -y
+sudo apt install make gcc -y
+sudo snap install --classic go
+sudo ln -s /snap/bin/go /usr/bin/go
 
 cd $HOME
 rm -rf mev-boost

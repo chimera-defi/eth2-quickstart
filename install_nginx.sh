@@ -3,7 +3,7 @@ source ./exports.sh
 
 echo "Installing NGINX... Relies on SERVER_NAME => $SERVER_NAME & LOGIN_UNAME => $LOGIN_UNAME"
 # install nginx and tools
-sudo apt-get install nginx apache2-utils snapd -y
+sudo apt-get install nginx apache2-utils -y
 
 cat > $HOME/nginx_conf_temp << EOF
 server {

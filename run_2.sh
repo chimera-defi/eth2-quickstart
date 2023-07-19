@@ -27,6 +27,8 @@
 #  ./prysm.sh beacon-chain --checkpoint-block=$PWD/block_mainnet_altair_4620512-0xef9957e6a709223202ab00f4ee2435e1d42042ad35e160563015340df677feb0.ssz --checkpoint-state=$PWD/state_mainnet_altair_4620512-0xc1397f57149c99b3a2166d422a2ee50602e2a2c7da2e31d7ea740216b8fd99ab.ssz --genesis-state=$PWD/genesis.ssz --config-file=$PWD/prysm_beacon_conf.yaml --p2p-host-ip=88.99.65.230
 source ./exports.sh
 
+sudo apt install snapd
+
 ./install_geth.sh
 ./install_prysm.sh
 ./install_mev_boost.sh
@@ -49,4 +51,4 @@ echo "2. '  ./install_ssl_certbot.sh '  - use certbot and manual DNS verificatio
 echo 
 echo "If you are new to NGINX, strongly recommend running only ' ./install_nginx.sh ' first and confirming it works without SSL, locally, then remotely via your domain name using the curl cmd in the readme for geth rpc on step 5"
 
-echo "Next step is to start syncing via 'systemctl start prysm'"
+echo "Next step is to start syncing via 'systemctl start eth1' or try `./extra_utils/start_all.sh`"

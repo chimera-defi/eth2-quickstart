@@ -16,7 +16,7 @@ Supports servers, home solo stakers, pool node operators.
       - ubuntu 20+
   d. SSH in, set up your server.
       - set swraid 1 & swraidlevel 0 for full disk access and better performance
-      - Note: Fingerprint will change, you will need to rm it from known-hosts after setup every time
+      - Note: Fingerprint will change, you will need to rm it from known-hosts after setup every time -> `nano ~/.ssh/known_hosts` and remove the last line corresponding to your new server or run: `sed -i '' -e '$ d' ~/.ssh/known_hosts`
   e. (Optional) Configure VSCode to work with your server https://code.visualstudio.com/docs/remote/ssh
     - `cmd shift p` -> add new remote host -> `ssh root@my.ip.`  -> connect
 
@@ -61,14 +61,14 @@ Log back in as the new non-root user `eth@ip`
   
     ```
     sudo systemctl start eth1
-    sudo systemctl start beacon-chain
+    sudo systemctl start cl
     sudo systemctl start validator
     sudo systemctl start mev
     ```
     Verify they work normally
     ```
     sudo systemctl status eth1
-    sudo systemctl status beacon-chain
+    sudo systemctl status cl
     sudo systemctl status validator
     sudo systemctl status mev
     ```
@@ -78,14 +78,14 @@ Log back in as the new non-root user `eth@ip`
 1. Sync prysm instantly / faster thanks to provided checkpoint files in this repo
 
     ```
-    sudo systemctl stop beacon-chain
+    sudo systemctl stop cl
     sudo systemctl stop validator
-    $(echo $HOME)/prysm/prysm.sh beacon-chain --checkpoint-block=$PWD/prysm/block_mainnet_altair_4620512-0xef9957e6a709223202ab00f4ee2435e1d42042ad35e160563015340df677feb0.ssz --checkpoint-state=$PWD/prysm/state_mainnet_altair_4620512-0xc1397f57149c99b3a2166d422a2ee50602e2a2c7da2e31d7ea740216b8fd99ab.ssz --genesis-state=$PWD/prysm/genesis.ssz --config-file=$PWD/prysm/prysm_beacon_conf.yaml --p2p-host-ip=$(curl -s v4.ident.me)
+    $(echo $HOME)/prysm/prysm.sh cl --checkpoint-block=$PWD/prysm/block_mainnet_altair_4620512-0xef9957e6a709223202ab00f4ee2435e1d42042ad35e160563015340df677feb0.ssz --checkpoint-state=$PWD/prysm/state_mainnet_altair_4620512-0xc1397f57149c99b3a2166d422a2ee50602e2a2c7da2e31d7ea740216b8fd99ab.ssz --genesis-state=$PWD/prysm/genesis.ssz --config-file=$PWD/prysm/prysm_beacon_conf.yaml --p2p-host-ip=$(curl -s v4.ident.me)
     ```
     
     Remember to restart the beacon-chain and validator afterwards.   
     ```
-    sudo systemctl restart beacon-chain
+    sudo systemctl restart cl
     sudo systemctl restart validator
     ```
 2. Continue using prysm docs to set up the validator using new or old imported keys : https://docs.prylabs.network/docs/install/install-with-script#step-5-run-a-validator-using-prysm
@@ -136,6 +136,11 @@ Use the following command to verify locally:
 ```
 chmod u+x run1.sh..
 ```
+- check disk space and setup
+```
+df -hT
+```
+
 
 # Benefits:
 - Save at least 2 days compared to CoinCashew and Somersats guides using the automated scripts and included prysm checkpoint state here!!   

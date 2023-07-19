@@ -22,7 +22,7 @@ export GRAFITTI="SharedStake.org!"
 export MAX_PEERS=100 # You may want to reduce this if you have banwidth restrictions
 export PRYSM_CPURL="https://beaconstate.ethstaker.cc"
 export USE_PRYSM_MODERN=true
-
+export PRYSM_ALLOW_UNVERIFIED_BINARIES=1
 
 # GETH opts
 export LH='127.0.0.1'

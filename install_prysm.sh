@@ -30,7 +30,7 @@ cat ~/eth2-quickstart/prysm/prysm_beacon_conf.yaml ~/prysm/prysm_beacon_conf.yam
 readonly BCM="$(echo $HOME)/prysm/prysm.sh beacon-chain 
 --config-file=$(echo $HOME)/prysm/prysm_beacon_conf.yaml"
 readonly VCM="$(echo $HOME)/prysm/prysm.sh validator
---config-file=$(echo $HOME)/prysm/prysm_validator\conf.yaml"
+--config-file=$(echo $HOME)/prysm/prysm_validator_conf.yaml"
 
 cat > $HOME/cl.service << EOF 
 # The eth2 beacon chain service (part of systemd)
