@@ -21,6 +21,7 @@ export FEE_RECIPIENT=0xa1feaF41d843d53d0F6bEd86a8cF592cE21C409e
 export GRAFITTI="SharedStake.org!"
 export MAX_PEERS=100 # You may want to reduce this if you have banwidth restrictions
 export PRYSM_CPURL="https://beaconstate.ethstaker.cc"
+# Goerli link if needed for checkpoint sync https://goerli.checkpoint-sync.ethpandaops.io/
 export USE_PRYSM_MODERN=true
 export PRYSM_ALLOW_UNVERIFIED_BINARIES=1
 

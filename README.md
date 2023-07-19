@@ -140,6 +140,10 @@ chmod u+x run1.sh..
 ```
 df -hT
 ```
+- Use on goerli - do the following before running `run_2.sh`
+  - There is a Goerli checkpt url in `exports.sh`; change the prysm cp url to it
+  - Add `--prater` to the prysm start cmds in `install_prysm.sh`
+  - Add `--goerli` to the geth start cmd in `install_geth.sh`
 
 
 # Benefits:
