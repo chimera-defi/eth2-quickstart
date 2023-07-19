@@ -10,3 +10,5 @@ p2p-allowlist: public
 # mev boost
 enable-builder: true
 http-mev-relay: http://localhost:18550
+disable-broadcast-slashings: true
+aggregate-parallel: true

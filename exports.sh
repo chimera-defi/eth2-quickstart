@@ -21,6 +21,8 @@ export FEE_RECIPIENT=0xa1feaF41d843d53d0F6bEd86a8cF592cE21C409e
 export GRAFITTI="SharedStake.org!"
 export MAX_PEERS=100 # You may want to reduce this if you have banwidth restrictions
 export PRYSM_CPURL="https://beaconstate.ethstaker.cc"
+export USE_PRYSM_MODERN=true
+
 
 # GETH opts
 export LH='127.0.0.1'
@@ -39,10 +41,10 @@ MEV_RELAYS=$MEV_RELAYS',https://0xb3ee7afcf27f1f1259ac1787876318c6584ee353097a50
 # started failing register a lot - feb 19 23
 # Bloxroute fails on registerValidator w/ timeout so only flashbots for now
 # sketchy, proven lies about returns 
-MEV_RELAYS=$MEV_RELAYS',https://0x98650451ba02064f7b000f5768cf0cf4d4e492317d82871bdc87ef841a0743f69f0f1eea11168503240ac35d101c9135@mainnet-relay.securerpc.com'
-MEV_RELAYS=$MEV_RELAYS',https://0x8b5d2e73e2a3a55c6c87b8b6eb92e0149a125c852751db1422fa951e42a09b82c142c3ea98d0d9930b056a3bc9896b8f@bloxroute.max-profit.blxrbdn.com'
+# MEV_RELAYS=$MEV_RELAYS',https://0x98650451ba02064f7b000f5768cf0cf4d4e492317d82871bdc87ef841a0743f69f0f1eea11168503240ac35d101c9135@mainnet-relay.securerpc.com'
+# MEV_RELAYS=$MEV_RELAYS',https://0x8b5d2e73e2a3a55c6c87b8b6eb92e0149a125c852751db1422fa951e42a09b82c142c3ea98d0d9930b056a3bc9896b8f@bloxroute.max-profit.blxrbdn.com'
 # low vol
-MEV_RELAYS=$MEV_RELAYS',https://0xa15b52576bcbf1072f4a011c0f99f9fb6c66f3e1ff321f11f461d15e31b1cb359caa092c71bbded0bae5b5ea401aab7e@aestus.live'
+# MEV_RELAYS=$MEV_RELAYS',https://0xa15b52576bcbf1072f4a011c0f99f9fb6c66f3e1ff321f11f461d15e31b1cb359caa092c71bbded0bae5b5ea401aab7e@aestus.live'
 # ~1% chance of local block production for minimal opp cost
 export MIN_BID=0.002
 export MEVGETHEADERT=950

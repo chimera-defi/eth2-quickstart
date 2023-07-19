@@ -8,3 +8,5 @@ attest-timely: true
 enable-builder: true
 http-mev-relay: http://127.0.0.1:18550
 enable-validator-registration: true
+disable-broadcast-slashings: true
+aggregate-parallel: true
