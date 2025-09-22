@@ -1,15 +1,21 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
 
 source ./exports.sh
+source ./lib/utils.sh
+require_root
 
-sudo apt update -y
-sudo apt upgrade -y
-sudo apt full-upgrade -y
-sudo apt autoremove -y
+apt update -y
+apt upgrade -y
+apt full-upgrade -y
+apt autoremove -y
 
 # setup sshd safe defaults
+if [ -f /etc/ssh/sshd_config ]; then
 mv /etc/ssh/sshd_config /etc/ssh/sshd_config.bkup
-mv sshd_config /etc/ssh/sshd_config
+fi
+cp ./sshd_config /etc/ssh/sshd_config
 # Copy it back for review / commit 
 cp /etc/ssh/sshd_config ./
 
@@ -36,19 +42,19 @@ maxretry = $maxretry" >> /etc/fail2ban/jail.local
 systemctl restart fail2ban
 
 ## Add eth user
-useradd -m -d /home/$LOGIN_UNAME -s /bin/bash $LOGIN_UNAME
+id -u "$LOGIN_UNAME" >/dev/null 2>&1 || useradd -m -d /home/$LOGIN_UNAME -s /bin/bash "$LOGIN_UNAME"
 
 # Copy over authorized keys to created user to allow ssh
-mkdir /home/$LOGIN_UNAME/.ssh
-cp ~/.ssh/authorized_keys /home/$LOGIN_UNAME/.ssh/
+mkdir -p /home/$LOGIN_UNAME/.ssh
+cp ~/.ssh/authorized_keys /home/$LOGIN_UNAME/.ssh/ || true
 chown -R $LOGIN_UNAME:$LOGIN_UNAME /home/$LOGIN_UNAME/.ssh
 chmod 700 /home/$LOGIN_UNAME/.ssh
 chmod 600 /home/$LOGIN_UNAME/.ssh/authorized_keys
-usermod -aG sudo $LOGIN_UNAME
+usermod -aG sudo "$LOGIN_UNAME"
 
-cp -r ../$REPO_NAME /home/$LOGIN_UNAME/
-chmod -R +x /home/$LOGIN_UNAME/$REPO_NAME
-chown -R $LOGIN_UNAME:$LOGIN_UNAME /home/$LOGIN_UNAME/$REPO_NAME
+cp -r ../$REPO_NAME /home/$LOGIN_UNAME/ || true
+chmod -R +x /home/$LOGIN_UNAME/$REPO_NAME || true
+chown -R $LOGIN_UNAME:$LOGIN_UNAME /home/$LOGIN_UNAME/$REPO_NAME || true
 
 # Whitelist and only allow certain users
 # AllowUsers root
@@ -57,11 +63,11 @@ chmod +x ./firewall.sh
 ./firewall.sh
 
 # confirm time date sync
-sudo apt install chrony -y
+apt install chrony -y
 timedatectl set-ntp on
 
 # Disable shared memory
-echo "tmpfs	/run/shm	tmpfs	ro,noexec,nosuid	0 0" >> /etc/fstab
+append_once /etc/fstab $'tmpfs\t/run/shm\ttmpfs\tro,noexec,nosuid\t0 0'
 echo "Disabled shared memory"
 
 echo "Begin network settings output:"
@@ -73,7 +79,7 @@ ufw status
 echo "Manual action required!"
 echo "1. Please check the settings above"
 
-read -n 1 -p "Press enter to continue when done ^:" 
+read -n 1 -p "Press enter to continue when done ^:" || true
 
 echo "2. Please run the following cmds now in another shell and add the line to the file that pops up to enable $LOGIN_UNAME no-prompt sudo to help run the second stage"
 echo "ssh root@$(curl -s v4.ident.me) "
@@ -81,10 +87,10 @@ echo "sudo visudo"
 echo "Add this to the end of the file:"
 echo "$LOGIN_UNAME ALL=(ALL) NOPASSWD: ALL "
 
-read -n 1 -p "Press enter to continue when done ^:" 
+read -n 1 -p "Press enter to continue when done ^:" || true
 
 echo "3. Set a password for your new user when prompted"
-passwd $LOGIN_UNAME
+passwd "$LOGIN_UNAME"
 
 echo "Done. Run 'sudo reboot' for all changes to take effect"
 echo "Re-login via ssh $LOGIN_UNAME@$(curl -s v4.ident.me) after and run './run_2.sh'"
