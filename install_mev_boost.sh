@@ -1,39 +1,39 @@
 #!/bin/bash
+
+# Install MEV-Boost service
+# https://github.com/flashbots/mev-boost
+
 source ./exports.sh
-sudo apt install make gcc -y
-sudo snap install --classic go
-sudo ln -s /snap/bin/go /usr/bin/go
+source ./common_functions.sh
 
-cd $HOME
-rm -rf mev-boost
-git clone https://github.com/flashbots/mev-boost
-cd mev-boost
-git checkout stable
-git pull
-make build
+log_info "Installing MEV-Boost service..."
 
-cat > $HOME/mev.service << EOF 
-# The eth2 mev service (part of systemd)
-# file: /etc/systemd/system/mev.service 
+# Check if not running as root
+check_not_root
 
-[Unit]
-Description     = eth2 mev service
-Wants           = network-online.target
-After           = network-online.target 
+# Update system and install dependencies
+update_system
+install_common_deps
+install_go
 
-[Service]
-User            = $(whoami)
-ExecStart       = $(echo $HOME)/mev-boost/mev-boost -mainnet -relay-check -min-bid $MIN_BID -relays $MEV_RELAYS  -request-timeout-getheader $MEVGETHEADERT -request-timeout-getpayload $MEVGETPAYLOADT -request-timeout-regval $MEVREGVALT
+# Create MEV-Boost directory
+MEV_BOOST_DIR="$HOME/mev-boost"
+mkdir -p "$MEV_BOOST_DIR"
 
-Restart         = always
-RestartSec      = 5
+# Clone and build MEV-Boost
+log_info "Building MEV-Boost from source..."
+clone_and_build "https://github.com/flashbots/mev-boost.git" "mev-boost" "$MEV_BOOST_DIR" "make build" "stable"
 
-[Install]
-WantedBy	= multi-user.target
-EOF
+# Create MEV-Boost command
+MEV_BOOST_CMD="$MEV_BOOST_DIR/mev-boost -mainnet -relay-check -min-bid $MIN_BID -relays $MEV_RELAYS -request-timeout-getheader $MEVGETHEADERT -request-timeout-getpayload $MEVGETPAYLOADT -request-timeout-regval $MEVREGVALT"
 
-sudo mv $HOME/mev.service /etc/systemd/system/mev.service
-sudo chmod 644 /etc/systemd/system/mev.service
+# Create systemd service
+create_systemd_service "mev" "MEV-Boost service" "$MEV_BOOST_CMD" "$(whoami)" "network-online.target" "network-online.target" "always" "5"
 
-sudo systemctl daemon-reload
-sudo systemctl enable mev
+# Print installation summary
+print_installation_summary "MEV-Boost" "mev"
+
+log_info "MEV-Boost installation completed successfully!"
+log_info "Configuration:"
+log_info "  - Min bid: $MIN_BID ETH"
+log_info "  - Relays: $MEV_RELAYS"

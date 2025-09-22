@@ -1,15 +1,40 @@
 # Introduction
 
-Setup an ETH2 node quickly with ~2 commands. 
+Setup an Ethereum node quickly with automated scripts. 
 Simple shell scripts contain community best practices to remove tedious setup. 
 Supports servers, home solo stakers, pool node operators. 
 
-(Don't blindly run scripts near sensistive data)   
+**NEW**: Now supports multiple Ethereum clients with a unified installation experience!
+
+(Don't blindly run scripts near sensitive data)   
+
+# Supported Clients
+
+## Execution Clients
+- **Geth** - Most popular, battle-tested Go implementation
+- **Nethermind** - High performance .NET implementation  
+- **Besu** - Enterprise-focused Java implementation
+- **Erigon** - Fast sync Go implementation
+- **Reth** - High performance Rust implementation
+
+## Consensus Clients
+- **Prysm** - Most popular Go implementation
+- **Lighthouse** - High performance Rust implementation
+- **Teku** - Enterprise-focused Java implementation
+- **Nimbus** - Lightweight Nim implementation
+- **Lodestar** - TypeScript implementation
+
+## Validator Clients
+- **Prysm Validator** - Integrated with Prysm
+- **Lighthouse Validator** - Integrated with Lighthouse
+- **Teku Validator** - Integrated with Teku
+- **Nimbus Validator** - Integrated with Nimbus
+- **Lodestar Validator** - Integrated with Lodestar
 
 # Pre-reqs
 1. Set up cloud vps with a ssh pub key or local server
-    a. Prefer a bare metal vps as it wont finish syncing on cloud
-    b. Recommended specs based on Geth and Prysm
+    a. Prefer a bare metal vps as it won't finish syncing on cloud
+    b. Recommended specs based on client choice:
       - 2 - 4+ TB SSD or NVMe
       - 16-64+GB of RAM
       - 4-8+ cores
@@ -25,12 +50,15 @@ Supports servers, home solo stakers, pool node operators.
 
 ## Installation
 
+### Option 1: Interactive Client Selection (Recommended)
+
 1. Download these scripts, initially as root via running this from the terminal; we will automatically create a eth user for safety.     
 
 ```
 git clone https://github.com/chimera-defi/eth2-quickstart
 cd eth2-quickstart
 chmod +x run_1.sh
+chmod +x client_selector.sh
 ```
 
   
@@ -44,20 +72,55 @@ chmod +x run_1.sh
   - install needed programs for setting up a node  
 
   
-4. After it finishes, verify the results and run `sudo reboot`  
+3. After it finishes, verify the results and run `sudo reboot`  
 Log back in as the new non-root user `eth@ip`
 - configure `exports.sh` 
 
+4. Log back in as the new non-root user `eth@ip`
+- configure `exports.sh` 
+- Run the interactive client selector:
+```
+./client_selector.sh
+```
+   This will guide you through selecting:
+     - Execution client (Geth, Nethermind, Besu, Erigon, or Reth)
+     - Consensus client (Prysm, Lighthouse, Teku, Nimbus, or Lodestar)
+     - Validator client (if you plan to run a validator)
+     - MEV-Boost service
+
+### Option 2: Manual Installation
+
 5. Log back in as the new non-root user `eth@ip`
 - configure `exports.sh` 
-- Run`./run_2.sh`  
-   this will setup:
-     - prysm
-     - geth
-     - mev-boost
-     - setup systemctl for eth2 services 
-     - Also contains commands to begin syncing prysm and geth
-6. Start your services via systemctl to confirm successful installation! eth1, beacon-chain & validator
+- Run individual install scripts:
+```
+# Install execution client (choose one)
+./install_geth.sh
+# OR
+./install_nethermind.sh
+# OR
+./install_besu.sh
+# OR
+./erigon.sh
+# OR
+./install_reth.sh
+
+# Install consensus client (choose one)
+./install_prysm.sh
+# OR
+./lighthouse.sh
+# OR
+./install_teku.sh
+# OR
+./install_nimbus.sh
+# OR
+./install_lodestar.sh
+
+# Install MEV-Boost
+./install_mev_boost.sh
+```
+
+6. Start your services via systemctl to confirm successful installation!
   
     ```
     sudo systemctl start eth1
@@ -74,23 +137,38 @@ Log back in as the new non-root user `eth@ip`
     ```
 
 ## Sync and configure 
-**Note: You may be able to skip this step now with checkpoint urls added**
-1. Sync prysm instantly / faster thanks to provided checkpoint files in this repo
 
-    ```
-    sudo systemctl stop cl
-    sudo systemctl stop validator
-    $(echo $HOME)/prysm/prysm.sh cl --checkpoint-block=$PWD/prysm/block_mainnet_altair_4620512-0xef9957e6a709223202ab00f4ee2435e1d42042ad35e160563015340df677feb0.ssz --checkpoint-state=$PWD/prysm/state_mainnet_altair_4620512-0xc1397f57149c99b3a2166d422a2ee50602e2a2c7da2e31d7ea740216b8fd99ab.ssz --genesis-state=$PWD/prysm/genesis.ssz --config-file=$PWD/prysm/prysm_beacon_conf.yaml --p2p-host-ip=$(curl -s v4.ident.me)
-    ```
-    
-    Remember to restart the beacon-chain and validator afterwards.   
-    ```
-    sudo systemctl restart cl
-    sudo systemctl restart validator
-    ```
-2. Continue using prysm docs to set up the validator using new or old imported keys : https://docs.prylabs.network/docs/install/install-with-script#step-5-run-a-validator-using-prysm
-    - Create a `pass.txt` file in `~/prysm` with your wallets password to enable using the validator service
-3. To speed up geth sync you can try to restart it with other flags in its config, but most likely it will just take a little time running in the background.  Benchmark is 1-3 days.   
+### Checkpoint Sync (Fast Sync)
+Most consensus clients support checkpoint sync for faster initial synchronization:
+
+**Prysm:**
+```
+sudo systemctl stop cl
+sudo systemctl stop validator
+$(echo $HOME)/prysm/prysm.sh cl --checkpoint-block=$PWD/prysm/block_mainnet_altair_4620512-0xef9957e6a709223202ab00f4ee2435e1d42042ad35e160563015340df677feb0.ssz --checkpoint-state=$PWD/prysm/state_mainnet_altair_4620512-0xc1397f57149c99b3a2166d422a2ee50602e2a2c7da2e31d7ea740216b8fd99ab.ssz --genesis-state=$PWD/prysm/genesis.ssz --config-file=$PWD/prysm/prysm_beacon_conf.yaml --p2p-host-ip=$(curl -s v4.ident.me)
+```
+
+**Other clients:** Checkpoint sync is configured automatically in the client configurations.
+
+### Validator Setup
+1. **Prysm:** Follow the official docs: https://docs.prylabs.network/docs/install/install-with-script#step-5-run-a-validator-using-prysm
+   - Create a `pass.txt` file in `~/prysm` with your wallet password
+   
+2. **Lighthouse:** Follow the official docs: https://lighthouse.sigmaprime.io/validator.html
+   
+3. **Teku:** Follow the official docs: https://docs.teku.consensys.net/how-to/configure/validator-keys
+   
+4. **Nimbus:** Follow the official docs: https://nimbus.guide/validator.html
+   
+5. **Lodestar:** Follow the official docs: https://lodestar.chainsafe.io/validator/
+
+### Execution Client Sync
+Execution clients will sync in the background. Typical sync times:
+- **Geth:** 1-3 days
+- **Nethermind:** 1-2 days  
+- **Besu:** 2-4 days
+- **Erigon:** 6-12 hours (fastest)
+- **Reth:** 4-8 hours (very fast)   
 
 ## Setup public RPC endpoint using Nginx
 Setup a secure uncensored outward facing Ethereum RPC for you and your friends!  It's been faster than Infura/alchemy etc for me.
@@ -146,19 +224,42 @@ df -hT
   - Add `--goerli` to the geth start cmd in `install_geth.sh`
 
 
+# Client Comparison
+
+## Execution Clients
+
+| Client | Language | Sync Speed | Memory Usage | Best For |
+|--------|----------|------------|--------------|----------|
+| **Geth** | Go | Medium | Medium | Most users, battle-tested |
+| **Nethermind** | .NET | Fast | Low | High performance needs |
+| **Besu** | Java | Medium | High | Enterprise features |
+| **Erigon** | Go | Very Fast | Low | Fast sync, archival |
+| **Reth** | Rust | Very Fast | Low | Performance, new features |
+
+## Consensus Clients
+
+| Client | Language | Memory Usage | Best For |
+|--------|----------|--------------|----------|
+| **Prysm** | Go | Medium | Most users, easy setup |
+| **Lighthouse** | Rust | Low | High performance |
+| **Teku** | Java | High | Enterprise features |
+| **Nimbus** | Nim | Very Low | Resource-constrained |
+| **Lodestar** | TypeScript | Medium | JavaScript ecosystem |
+
 # Benefits:
-- Save at least 2 days compared to CoinCashew and Somersats guides using the automated scripts and included prysm checkpoint state here!!   
-- Get your own uncensored & unmetered RPC node! 
-- Simplified script will follow sane defaults from tutorials to get you set up seamlessly and prompt for extra input not added in exports.sh
-- Includes firewall and client rules to prevent scanning private IPs/limit to public, to avoid Abuse alerts from cloud / bare metal hosting providers
+- **Multiple Client Support:** Choose from 5 execution clients and 5 consensus clients
+- **Unified Installation:** Single script to install any client combination
+- **Fast Sync:** Checkpoint sync support for quick initial synchronization
+- **Reduced Code Duplication:** Common functions library for maintainable scripts
+- **Get your own uncensored & unmetered RPC node!** 
+- **Simplified setup** with community best practices
+- **Firewall rules** to prevent scanning private IPs and avoid hosting provider alerts
 
-We try to setup guideline to quickly, safely and secury setup ETH2 capable nodes on a cloud vps or bare metal server.  
-Addditionally, there's firewall rules and settings for the clients to not cause alerts from your infra provider.    
-
-The goal is to allow soverign individuals to set up independent validators, and validating services easily.    
+We provide guidelines to quickly, safely and securely setup Ethereum nodes on cloud VPS or bare metal servers.  
+The goal is to allow sovereign individuals to set up independent validators and validating services easily.    
 On their own hardware, in their own location, safe from government overreach and censorship.    
 
-Additionally, by using a vps, they can more easily offer a censorship resistant rpc node for their fellow etherians.   
+Additionally, by using a VPS, they can more easily offer a censorship resistant RPC node for their fellow etherians.   
 
 # Credits
 This was made possible by the great guides written by:
