@@ -1,13 +1,18 @@
 #!/bin/bash
 source ./exports.sh
+source ./lib/common_functions.sh
+
+log_info "Starting Geth installation..."
 
 # Installs and sets up geth as a systemctl service according to :
 # https://www.coincashew.com/coins/overview-eth/guide-or-how-to-setup-a-validator-on-eth2-mainnet/part-i-installation/installing-execution-client
+
+# Check system requirements
+check_system_requirements 16 2000
+
+# Add Ethereum PPA and install
 sudo add-apt-repository -y ppa:ethereum/ethereum
-sudo apt update -y
-sudo apt dist-upgrade -y
-sudo apt install ethereum -y
-sudo apt upgrade geth -y
+install_dependencies ethereum
 
 export GETH_CMD='/usr/bin/geth --cache='$GETH_CACHE' --syncmode snap 
 --http --http.corsdomain "*" --http.vhosts=* --http.api="admin, eth, net, web3, engine" 
@@ -16,25 +21,16 @@ export GETH_CMD='/usr/bin/geth --cache='$GETH_CACHE' --syncmode snap
 --miner.etherbase='$FEE_RECIPIENT' --miner.extradata='$GRAFITTI
 
 
-cat > $HOME/eth1.service << EOF 
-[Unit]
-Description     = geth execution client service
-Wants           = network-online.target
-After           = network-online.target 
+# Ensure JWT secret directory exists
+ensure_directory "$HOME/secrets"
 
-[Service]
-User            = $(whoami)
-ExecStart       = $(echo $GETH_CMD)
-Restart         = on-failure
-TimeoutStopSec  = 600
-RestartSec      = 5
-TimeoutSec      = 300
+# Create systemd service using common function
+create_systemd_service "eth1" "Geth Ethereum Execution Client" "$GETH_CMD" "$(whoami)" "on-failure" "600" "5" "300"
 
-[Install]
-WantedBy    = multi-user.target
-EOF
+# Enable the service
+enable_systemd_service "eth1"
 
-sudo mv $HOME/eth1.service /etc/systemd/system/eth1.service
-sudo chmod 644 /etc/systemd/system/eth1.service
-sudo systemctl daemon-reload
-sudo systemctl enable eth1
+log_info "Geth installation completed!"
+log_info "To start Geth: sudo systemctl start eth1"
+log_info "To check status: sudo systemctl status eth1"
+log_info "To view logs: journalctl -fu eth1"
