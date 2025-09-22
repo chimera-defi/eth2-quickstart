@@ -1,44 +1,30 @@
 #!/bin/bash
 source ./exports.sh
+source ./lib/common.sh
 
-mkdir ~/lighthouse && cd ~/lighthouse 
+mkdir -p ~/lighthouse && cd ~/lighthouse 
 curl -LO https://github.com/sigp/lighthouse/releases/download/v4.5.0/lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz
 tar -xvf lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz
 
-# jwt => $HOME/.local/share/reth/
-CLCMD="RUST_LOG=info /home/eth/lighthouse/lighthouse bn \
-    --checkpoint-sync-url https://mainnet.checkpoint.sigp.io \
-    --execution-endpoint http://localhost:8551 \
-    --execution-jwt $HOME/.local/share/reth/mainnet/jwt.hex \
+ensure_jwt_secret
+
+CLCMD="RUST_LOG=info $HOME/lighthouse/lighthouse bn \
+    --checkpoint-sync-url $PRYSM_CPURL \
+    --execution-endpoint http://127.0.0.1:8551 \
+    --execution-jwt $HOME/secrets/jwt.hex \
+    --suggested-fee-recipient $FEE_RECIPIENT \
+    --graffiti $GRAFITTI \
     --disable-deposit-contract-sync"
 
-cat > $HOME/cl.service << EOF 
-# The eth2 beacon chain service (part of systemd)
-# file: /etc/systemd/system/cl.service 
+VCCMD="$HOME/lighthouse/lighthouse vc \
+    --suggested-fee-recipient $FEE_RECIPIENT \
+    --graffiti $GRAFITTI \
+    --datadir $HOME/.lighthouse \
+    --beacon-nodes http://127.0.0.1:5052"
 
-[Unit]
-Description     = eth2 beacon chain service
-Wants           = network-online.target
-After           = network-online.target 
+create_systemd_service cl "lighthouse beacon chain service" "$CLCMD" simple "$(whoami)" on-failure 10 6000 3000
+create_systemd_service validator "lighthouse validator service" "$VCCMD" simple "$(whoami)" on-failure 10 6000 3000
 
-[Service]
-Type            = simple
-User            = $(whoami)
-ExecStart       = $(echo $CMD)
-Restart         = on-failure
-TimeoutStopSec  = 6000
-RestartSec      = 10
-TimeoutSec      = 3000
-
-[Install]
-WantedBy    = multi-user.target
-EOF
-
-sudo mv $HOME/cl.service /etc/systemd/system/cl.service
-sudo chmod 644 /etc/systemd/system/cl.service
-
-sudo systemctl daemon-reload
-sudo systemctl enable cl
-sudo systemctl stop cl
+sudo systemctl stop cl || true
 sudo systemctl start cl
-sudo systemctl status cl
+sudo systemctl status cl | cat

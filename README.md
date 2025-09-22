@@ -73,6 +73,48 @@ Log back in as the new non-root user `eth@ip`
     sudo systemctl status mev
     ```
 
+## Supported clients and install scripts
+
+Choose exactly one execution client and one consensus client (validator optional) to install. The scripts create systemd services with standard names: `eth1` (execution), `cl` (beacon), `validator` (validator), `mev` (mev-boost).
+
+- Execution clients:
+  - geth: `./install_geth.sh`
+  - nethermind: `./install_nethermind.sh`
+  - besu: `./install_besu.sh`
+  - erigon: `./erigon.sh`
+  - reth: `./reth.sh`
+
+- Consensus clients and validators:
+  - prysm: `./install_prysm.sh`
+  - teku: `./install_teku.sh`
+  - lighthouse: `./lighthouse.sh`
+  - nimbus: `./install_nimbus.sh`
+  - lodestar: `./install_lodestar.sh`
+
+- Builder/Relay:
+  - mev-boost: `./install_mev_boost.sh`
+
+Examples:
+```
+# Geth + Prysm + MEV-Boost
+./install_geth.sh
+./install_prysm.sh
+./install_mev_boost.sh
+
+# Nethermind + Teku
+./install_nethermind.sh
+./install_teku.sh
+```
+
+Switching clients:
+```
+sudo systemctl stop eth1 || true
+sudo systemctl stop cl || true
+# Install a different client
+./install_besu.sh
+./lighthouse.sh
+```
+
 ## Sync and configure 
 **Note: You may be able to skip this step now with checkpoint urls added**
 1. Sync prysm instantly / faster thanks to provided checkpoint files in this repo

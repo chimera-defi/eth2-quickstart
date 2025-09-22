@@ -1,5 +1,6 @@
 #!/bin/bash
 source ./exports.sh
+source ./lib/common.sh
 
 mkdir ~/prysm && cd ~/prysm 
 curl https://raw.githubusercontent.com/prysmaticlabs/prysm/master/prysm.sh --output prysm.sh && chmod +x prysm.sh 
@@ -34,54 +35,9 @@ readonly BCM="$(echo $HOME)/prysm/prysm.sh beacon-chain
 readonly VCM="$(echo $HOME)/prysm/prysm.sh validator
 --config-file=$(echo $HOME)/prysm/prysm_validator_conf.yaml"
 
-cat > $HOME/cl.service << EOF 
-# The eth2 beacon chain service (part of systemd)
-# file: /etc/systemd/system/beacon-chain.service 
-
-[Unit]
-Description     = eth2 beacon chain service
-Wants           = network-online.target
-After           = network-online.target 
-
-[Service]
-Type            = simple
-User            = $(whoami)
-ExecStart       = $(echo $BCM)
-Restart         = on-failure
-
-[Install]
-WantedBy    = multi-user.target
-EOF
-
-sudo mv $HOME/cl.service /etc/systemd/system/cl.service
-sudo chmod 644 /etc/systemd/system/cl.service
-
+create_systemd_service cl "eth2 beacon chain service" "$BCM"
 
 # Setup validator
-
-cat > $HOME/validator.service << EOF 
-# The eth2 validator service (part of systemd)
-# file: /etc/systemd/system/validator.service 
-
-[Unit]
-Description     = eth2 validator service
-Wants           = network-online.target beacon-chain.service
-After           = network-online.target 
-
-[Service]
-User            = $(whoami)
-ExecStart       = $(echo $VCM)
-
-Restart         = on-failure
-
-[Install]
-WantedBy	= multi-user.target
-EOF
-sudo mv $HOME/validator.service /etc/systemd/system/validator.service
-sudo chmod 644 /etc/systemd/system/validator.service
-
-sudo systemctl daemon-reload
-sudo systemctl enable cl
-sudo systemctl enable validator
+create_systemd_service validator "eth2 validator service" "$VCM"
 
 echo "DONE! Files generated in $HOME/prysm/ ; systemd services: /etc/systemd/system/validator.service , /etc/systemd/system/beacon-chain.service "

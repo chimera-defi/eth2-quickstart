@@ -1,17 +1,14 @@
 #!/bin/bash
 
 source ./exports.sh
+source ./lib/common.sh
 
 # Setup erigon devel 
 # https://github.com/ledgerwatch/erigon
 #
 
 # erigon uses some extra ports
-sudo ufw allow 30303
-sudo ufw allow 30304
-sudo ufw allow 42069 # lmao - Snap sync (Bittorent)
-sudo ufw allow 4000/udp # sentinel 
-sudo ufw allow 4001/udp
+allow_ufw_ports 30303 30304 42069 4000/udp 4001/udp
 
 # stable
 # git clone --branch stable --single-branch https://github.com/ledgerwatch/erigon.git
@@ -44,28 +41,9 @@ cp ./build/bin/erigon $HOME/erigon/
 
 # overwrite the eth1 servicwe
 
-cat > $HOME/eth1.service << EOF 
-[Unit]
-Description     = erigon execution client service
-Wants           = network-online.target
-After           = network-online.target 
+ensure_jwt_secret
 
-[Service]
-User            = $(whoami)
-ExecStart       = $HOME/erigon/erigon --config $HOME/erigon/config.yaml --externalcl
-Restart         = on-failure
-TimeoutStopSec  = 600
-RestartSec      = 5
-TimeoutSec      = 300
-
-[Install]
-WantedBy    = multi-user.target
-EOF
-
-sudo mv $HOME/eth1.service /etc/systemd/system/eth1.service
-sudo chmod 644 /etc/systemd/system/eth1.service
-sudo systemctl daemon-reload
-sudo systemctl enable eth1
+create_systemd_service eth1 "erigon execution client service" "$HOME/erigon/erigon --config $HOME/erigon/config.yaml --externalcl"
 
 # print integration stages
 ./build/bin/integration print_stages --chain mainnet --datadir ~/.local/share/erigon
