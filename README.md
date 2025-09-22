@@ -182,3 +182,9 @@ https://sharedtools.org
 Chimera_defi@protonmail.com
 
 Twitter: https://twitter.com/chimeradefi
+
+## Additional documentation
+
+- Scripts reference: docs/SCRIPTS.md
+- Setup workflow: docs/WORKFLOW.md
+- Terminology: docs/GLOSSARY.md
