@@ -57,7 +57,7 @@ cat > "$LODESTAR_DIR/beacon.config.json" << EOF
   "targetPeers": $MAX_PEERS,
   "execution": {
     "urls": ["http://127.0.0.1:8551"],
-    "jwtSecretHex": "$(cat $HOME/secrets/jwt.hex)"
+    "jwtSecretFile": "$HOME/secrets/jwt.hex"
   },
   "rest": {
     "enabled": true,

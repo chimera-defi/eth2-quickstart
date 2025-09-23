@@ -106,13 +106,10 @@ miner-extra-data="$GRAFITTI"
 
 # Logging
 logging="INFO"
-
-# Memory settings
-Xmx=${GETH_CACHE}m
 EOF
 
 # Create systemd service
-JAVA_OPTS="-Xmx${GETH_CACHE}m -XX:+UseG1GC -XX:+UnlockExperimentalVMOptions -XX:+UseZGC"
+JAVA_OPTS="-Xmx${GETH_CACHE}m -XX:+UseG1GC"
 EXEC_START="$BESU_DIR/bin/besu --config-file=$BESU_DIR/besu.toml"
 
 create_systemd_service "eth1" "Hyperledger Besu Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
