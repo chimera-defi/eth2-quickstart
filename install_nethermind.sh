@@ -65,8 +65,7 @@ cat > "$NETHERMIND_DIR/nethermind.cfg" << EOF
   "Network": {
     "DiscoveryPort": 30303,
     "P2PPort": 30303,
-    "LocalIp": "0.0.0.0",
-    "ExternalIp": "$(curl -s v4.ident.me)"
+    "LocalIp": "0.0.0.0"
   },
   "JsonRpc": {
     "Enabled": true,

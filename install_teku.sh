@@ -104,9 +104,6 @@ metrics-host-allowlist: ["127.0.0.1", "localhost"]
 log-destination: "CONSOLE"
 log-level: "INFO"
 
-# Memory settings
-Xmx: "${GETH_CACHE}m"
-
 # Builder/MEV settings
 builder-endpoint: "http://127.0.0.1:18550"
 
