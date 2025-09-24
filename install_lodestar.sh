@@ -89,9 +89,10 @@ cat > ./tmp/lodestar_validator_custom.json << EOF
 EOF
 
 # Merge base configurations with custom settings using jq (if available) or simple concatenation
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if command -v jq &> /dev/null; then
-    jq -s '.[0] * .[1]' ~/eth2-quickstart/configs/lodestar/lodestar_beacon_base.json ./tmp/lodestar_beacon_custom.json > "$LODESTAR_DIR/beacon.config.json"
-    jq -s '.[0] * .[1]' ~/eth2-quickstart/configs/lodestar/lodestar_validator_base.json ./tmp/lodestar_validator_custom.json > "$LODESTAR_DIR/validator.config.json"
+    jq -s '.[0] * .[1]' "$SCRIPT_DIR/configs/lodestar/lodestar_beacon_base.json" ./tmp/lodestar_beacon_custom.json > "$LODESTAR_DIR/beacon.config.json"
+    jq -s '.[0] * .[1]' "$SCRIPT_DIR/configs/lodestar/lodestar_validator_base.json" ./tmp/lodestar_validator_custom.json > "$LODESTAR_DIR/validator.config.json"
 else
     # Fallback: create complete configs with variables (TODO: implement proper JSON merging)
     cat > "$LODESTAR_DIR/beacon.config.json" << EOF

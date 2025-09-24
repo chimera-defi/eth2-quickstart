@@ -77,7 +77,8 @@ EOF
 
 # Merge base configuration with custom settings
 # Note: This is a simplified merge - in production, consider using jq for proper JSON merging
-cp ~/eth2-quickstart/configs/nethermind/nethermind_base.cfg "$NETHERMIND_DIR/nethermind_base.cfg"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cp "$SCRIPT_DIR/configs/nethermind/nethermind_base.cfg" "$NETHERMIND_DIR/nethermind_base.cfg"
 
 # For now, create a complete config with variables (TODO: implement proper JSON merging)
 cat > "$NETHERMIND_DIR/nethermind.cfg" << EOF

@@ -60,6 +60,7 @@ export TEKU_CHECKPOINT_URL="https://beaconstate.ethstaker.cc"
 export NIMBUS_CHECKPOINT_URL="https://beaconstate.ethstaker.cc"
 export LODESTAR_CHECKPOINT_URL="https://beaconstate.ethstaker.cc"
 export LIGHTHOUSE_CHECKPOINT_URL="https://mainnet.checkpoint.sigp.io"
+export GRANDINE_CHECKPOINT_URL="https://beaconstate.ethstaker.cc"
 
 # Mev boost opts
 
