@@ -66,50 +66,44 @@ ensure_directory "$NIMBUS_DATA_DIR"
 VALIDATOR_DATA_DIR="$NIMBUS_DATA_DIR/validators"
 ensure_directory "$VALIDATOR_DATA_DIR"
 
-# Create Nimbus configuration file
-cat > "$NIMBUS_DIR/nimbus.toml" << EOF
-# Nimbus Configuration File
+# Create temporary directory for custom configuration
+mkdir ./tmp
+
+# Create custom configuration variables file
+cat > ./tmp/nimbus_custom.toml << EOF
+# Nimbus Custom Configuration Variables
 
 # Network settings
-network = "mainnet"
-tcp-port = 9000
-udp-port = 9000
 max-peers = $MAX_PEERS
 
 # Data directory
 data-dir = "$NIMBUS_DATA_DIR"
 
 # Execution layer
-web3-url = "http://127.0.0.1:8551"
 jwt-secret = "$HOME/secrets/jwt.hex"
 
 # REST API
-rest = true
-rest-port = 5052
-rest-address = "127.0.0.1"
-rest-allow-origin = "*"
+rest-port = ${NIMBUS_REST_PORT}
 
 # Checkpoint sync
-trusted-node-url = "$PRYSM_CPURL"
+trusted-node-url = "$NIMBUS_CHECKPOINT_URL"
 
 # Metrics
-metrics = true
 metrics-port = 8008
-metrics-address = "127.0.0.1"
 
 # Logging
-log-level = "INFO"
 log-file = "$NIMBUS_DATA_DIR/beacon_node.log"
 
 # Performance
-in-process-validators = false
 suggested-fee-recipient = "$FEE_RECIPIENT"
 graffiti = "$GRAFITTI"
-
-# Builder/MEV
-payload-builder = true
-payload-builder-url = "http://127.0.0.1:18550"
 EOF
+
+# Merge base configuration with custom settings
+cat ~/eth2-quickstart/configs/nimbus/nimbus_base.toml ./tmp/nimbus_custom.toml > "$NIMBUS_DIR/nimbus.toml"
+
+# Clean up temporary files
+rm -rf ./tmp/
 
 # Create validator client configuration
 cat > "$NIMBUS_DIR/validator.toml" << EOF

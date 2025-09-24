@@ -58,49 +58,41 @@ ensure_directory "$GRANDINE_DATA_DIR"
 VALIDATOR_DATA_DIR="$GRANDINE_DATA_DIR/validators"
 ensure_directory "$VALIDATOR_DATA_DIR"
 
-# Create Grandine configuration file
-cat > "$GRANDINE_DIR/grandine.toml" << EOF
-# Grandine Configuration File
+# Create temporary directory for custom configuration
+mkdir ./tmp
+
+# Create custom configuration variables file
+cat > ./tmp/grandine_custom.toml << EOF
+# Grandine Custom Configuration Variables
 
 # Network settings
-network = "mainnet"
-listen_address = "0.0.0.0:9000"
-discovery_port = 9000
 target_peers = $MAX_PEERS
 
 # Data directory
 data_dir = "$GRANDINE_DATA_DIR"
 
 # Execution layer
-execution_endpoint = "http://127.0.0.1:8551"
 jwt_secret_path = "$HOME/secrets/jwt.hex"
 
 # HTTP API
-http_api_enabled = true
-http_api_listen_address = "127.0.0.1:5052"
+http_api_listen_address = "127.0.0.1:${GRANDINE_REST_PORT}"
 
 # Checkpoint sync
 checkpoint_sync_url = "$PRYSM_CPURL"
 
 # Metrics
-metrics_enabled = true
 metrics_listen_address = "127.0.0.1:8008"
 
 # Validator settings
 suggested_fee_recipient = "$FEE_RECIPIENT"
 graffiti = "$GRAFITTI"
-
-# Builder/MEV
-builder_boost_factor = 90
-builder_endpoint = "http://127.0.0.1:18550"
-
-# Logging
-log_level = "info"
-
-# Performance optimizations
-max_empty_slots = 50
-attestation_propagation_slot_range = 32
 EOF
+
+# Merge base configuration with custom settings
+cat ~/eth2-quickstart/configs/grandine/grandine_base.toml ./tmp/grandine_custom.toml > "$GRANDINE_DIR/grandine.toml"
+
+# Clean up temporary files
+rm -rf ./tmp/
 
 # Create validator client configuration (if Grandine supports separate validator client)
 cat > "$GRANDINE_DIR/validator.toml" << EOF

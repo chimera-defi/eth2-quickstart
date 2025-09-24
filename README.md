@@ -135,9 +135,10 @@ exports.sh → Base Template + Custom Variables → Final Client Config
 **Example Structure:**
 ```
 ├── exports.sh                    # All configuration variables
-├── teku/
-│   ├── teku_beacon_base.yaml     # Base beacon config template
-│   └── teku_validator_base.yaml  # Base validator config template
+├── configs/
+│   └── teku/
+│       ├── teku_beacon_base.yaml     # Base beacon config template
+│       └── teku_validator_base.yaml  # Base validator config template
 └── install_teku.sh               # Merges base + custom configs
 ```
 

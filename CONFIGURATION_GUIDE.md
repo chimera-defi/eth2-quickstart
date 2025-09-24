@@ -34,9 +34,10 @@ client_name/
 ```
 
 ### 3. Directory Structure
-Each client has its own configuration directory containing base templates:
+All client configuration templates are organized under the `configs/` directory:
 
 ```
+configs/
 ├── nethermind/
 │   └── nethermind_base.cfg      # JSON base configuration
 ├── besu/
@@ -49,8 +50,12 @@ Each client has its own configuration directory containing base templates:
 ├── lodestar/
 │   ├── lodestar_beacon_base.json    # JSON beacon base config
 │   └── lodestar_validator_base.json # JSON validator base config
-└── grandine/
-    └── grandine_base.toml      # TOML base configuration
+├── grandine/
+│   └── grandine_base.toml      # TOML base configuration
+└── prysm/
+    ├── prysm_beacon_conf.yaml      # YAML beacon base config
+    ├── prysm_validator_conf.yaml   # YAML validator base config
+    └── checkpoint_ssz/             # Checkpoint state files
 ```
 
 ## Configuration Flow
@@ -80,7 +85,7 @@ EOF
 ### 3. Configuration Merge
 ```bash
 # Merge base template with custom variables
-cat ~/eth2-quickstart/teku/teku_beacon_base.yaml ./tmp/teku_beacon_custom.yaml > "$TEKU_DIR/beacon.yaml"
+cat ~/eth2-quickstart/configs/teku/teku_beacon_base.yaml ./tmp/teku_beacon_custom.yaml > "$TEKU_DIR/beacon.yaml"
 
 # Clean up temporary files
 rm -rf ./tmp/
@@ -91,12 +96,12 @@ rm -rf ./tmp/
 ### Execution Clients
 
 #### Nethermind (JSON)
-- **Base Config**: `nethermind/nethermind_base.cfg`
+- **Base Config**: `configs/nethermind/nethermind_base.cfg`
 - **Custom Variables**: Memory, ports, fee recipient, graffiti
 - **Merge Strategy**: JSON concatenation (TODO: implement proper JSON merging with jq)
 
 #### Besu (TOML)  
-- **Base Config**: `besu/besu_base.toml`
+- **Base Config**: `configs/besu/besu_base.toml`
 - **Custom Variables**: Memory, ports, data path, mining settings
 - **Merge Strategy**: TOML concatenation
 
@@ -104,25 +109,25 @@ rm -rf ./tmp/
 
 #### Teku (YAML)
 - **Base Configs**: 
-  - `teku/teku_beacon_base.yaml`
-  - `teku/teku_validator_base.yaml`
+  - `configs/teku/teku_beacon_base.yaml`
+  - `configs/teku/teku_validator_base.yaml`
 - **Custom Variables**: Data paths, ports, checkpoint URLs, validator settings
 - **Merge Strategy**: YAML concatenation
 
 #### Nimbus (TOML)
-- **Base Config**: `nimbus/nimbus_base.toml`
+- **Base Config**: `configs/nimbus/nimbus_base.toml`
 - **Custom Variables**: Data paths, ports, checkpoint URLs, validator settings
 - **Merge Strategy**: TOML concatenation
 
 #### Lodestar (JSON)
 - **Base Configs**:
-  - `lodestar/lodestar_beacon_base.json`
-  - `lodestar/lodestar_validator_base.json`
+  - `configs/lodestar/lodestar_beacon_base.json`
+  - `configs/lodestar/lodestar_validator_base.json`
 - **Custom Variables**: Data paths, ports, checkpoint URLs, validator settings
 - **Merge Strategy**: JSON merging with jq (if available), fallback to complete config generation
 
 #### Grandine (TOML)
-- **Base Config**: `grandine/grandine_base.toml`
+- **Base Config**: `configs/grandine/grandine_base.toml`
 - **Custom Variables**: Data paths, ports, checkpoint URLs, validator settings
 - **Merge Strategy**: TOML concatenation
 
