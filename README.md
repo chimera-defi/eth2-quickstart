@@ -336,6 +336,22 @@ Twitter: https://twitter.com/chimeradefi
 
 ## Additional documentation
 
-- Scripts reference: docs/SCRIPTS.md
-- Setup workflow: docs/WORKFLOW.md
-- Terminology: docs/GLOSSARY.md
+### Core Documentation
+- Scripts reference: [docs/SCRIPTS.md](docs/SCRIPTS.md)
+- Setup workflow: [docs/WORKFLOW.md](docs/WORKFLOW.md)
+- Terminology: [docs/GLOSSARY.md](docs/GLOSSARY.md)
+
+### Technical Documentation
+- Configuration architecture: [docs/CONFIGURATION_GUIDE.md](docs/CONFIGURATION_GUIDE.md)
+- Refactoring summary: [docs/REFACTORING_SUMMARY.md](docs/REFACTORING_SUMMARY.md)
+- Project progress: [docs/progress.md](docs/progress.md)
+
+### Quality Assurance
+- Final verification report: [docs/FINAL_VERIFICATION.md](docs/FINAL_VERIFICATION.md)
+- Comprehensive testing report: [docs/COMPREHENSIVE_SCRIPT_TESTING_REPORT.md](docs/COMPREHENSIVE_SCRIPT_TESTING_REPORT.md)
+- Shell scripting best practices: [docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md](docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md)
+
+### Development Resources
+- Pull request documentation: [docs/CONSOLIDATED_PR.md](docs/CONSOLIDATED_PR.md)
+- Commit message templates: [docs/COMMIT_MESSAGES.md](docs/COMMIT_MESSAGES.md)
+- Configuration refactoring details: [docs/REFACTORING_CONFIGS.md](docs/REFACTORING_CONFIGS.md)
