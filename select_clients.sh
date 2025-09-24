@@ -178,7 +178,7 @@ interactive_selection() {
     echo "   b) Intermediate - some experience with crypto/servers"
     echo "   c) Advanced - experienced with blockchain infrastructure"
     echo
-    read -p "Select (a/b/c): " experience
+    read -r -p "Select (a/b/c): " experience
     
     # Ask about hardware
     echo
@@ -187,7 +187,7 @@ interactive_selection() {
     echo "   b) Mid-range system (16-32GB RAM, SSD)"
     echo "   c) Resource-constrained (Raspberry Pi, <16GB RAM)"
     echo
-    read -p "Select (a/b/c): " hardware
+    read -r -p "Select (a/b/c): " hardware
     
     # Ask about priorities
     echo
@@ -197,7 +197,7 @@ interactive_selection() {
     echo "   c) Client diversity"
     echo "   d) Learning and development"
     echo
-    read -p "Select (a/b/c/d): " priority
+    read -r -p "Select (a/b/c/d): " priority
     
     # Generate recommendation
     echo
@@ -254,14 +254,14 @@ main_menu() {
         echo "5. Interactive Client Selection"
         echo "6. Exit"
         echo
-        read -p "Select an option (1-6): " choice
+        read -r -p "Select an option (1-6): " choice
         
         case $choice in
-            1) clear; show_execution_clients; read -p "Press Enter to continue..." ;;
-            2) clear; show_consensus_clients; read -p "Press Enter to continue..." ;;
-            3) clear; show_recommendations; read -p "Press Enter to continue..." ;;
-            4) clear; show_system_requirements; read -p "Press Enter to continue..." ;;
-            5) clear; interactive_selection; read -p "Press Enter to continue..." ;;
+            1) clear; show_execution_clients; read -r -p "Press Enter to continue..." ;;
+            2) clear; show_consensus_clients; read -r -p "Press Enter to continue..." ;;
+            3) clear; show_recommendations; read -r -p "Press Enter to continue..." ;;
+            4) clear; show_system_requirements; read -r -p "Press Enter to continue..." ;;
+            5) clear; interactive_selection; read -r -p "Press Enter to continue..." ;;
             6) log_info "Thank you for using the Ethereum Client Selection Assistant!"; exit 0 ;;
             *) log_error "Invalid option. Please select 1-6." ;;
         esac
