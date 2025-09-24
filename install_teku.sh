@@ -131,7 +131,7 @@ BEACON_EXEC_START="$TEKU_DIR/bin/teku --config-file=$TEKU_DIR/beacon.yaml"
 create_systemd_service "cl" "Teku Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
 # Add Java options to beacon service file
-sudo sed -i "/\\[Service\\]/a Environment=\"JAVA_OPTS=$JAVA_OPTS\"" /etc/systemd/system/cl.service
+sudo sed -i "/\\[Service\\]/a Environment=JAVA_OPTS=\"$JAVA_OPTS\"" /etc/systemd/system/cl.service
 
 # Create systemd service for validator
 VALIDATOR_EXEC_START="$TEKU_DIR/bin/teku validator-client --config-file=$TEKU_DIR/validator.yaml"
@@ -139,7 +139,7 @@ VALIDATOR_EXEC_START="$TEKU_DIR/bin/teku validator-client --config-file=$TEKU_DI
 create_systemd_service "validator" "Teku Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target"
 
 # Add Java options to validator service file
-sudo sed -i "/\\[Service\\]/a Environment=\"JAVA_OPTS=$JAVA_OPTS\"" /etc/systemd/system/validator.service
+sudo sed -i "/\\[Service\\]/a Environment=JAVA_OPTS=\"$JAVA_OPTS\"" /etc/systemd/system/validator.service
 
 # Enable services
 enable_systemd_service "cl"

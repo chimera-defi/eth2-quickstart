@@ -45,7 +45,10 @@ fi
 
 # Build Grandine
 log_info "Building Grandine... This may take some time."
-cargo build --release --bin grandine
+if ! cargo build --release --bin grandine; then
+    log_error "Failed to build Grandine. Please check your Rust installation and try again."
+    exit 1
+fi
 
 # Ensure JWT secret exists
 ensure_jwt_secret "$HOME/secrets/jwt.hex"

@@ -37,7 +37,10 @@ ARCHIVE_FILE="nimbus-eth2_Linux_amd64_${LATEST_VERSION}.tar.gz"
 
 log_info "Downloading Nimbus ${LATEST_VERSION}..."
 if download_file "$DOWNLOAD_URL" "$ARCHIVE_FILE"; then
-    extract_archive "$ARCHIVE_FILE" "$NIMBUS_DIR" 1
+    if ! extract_archive "$ARCHIVE_FILE" "$NIMBUS_DIR" 1; then
+        log_error "Failed to extract Nimbus archive"
+        exit 1
+    fi
     rm -f "$ARCHIVE_FILE"
 else
     log_error "Failed to download Nimbus"

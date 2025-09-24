@@ -34,7 +34,10 @@ cd "$LODESTAR_DIR"
 
 # Install Lodestar globally using npm
 log_info "Installing Lodestar via npm..."
-npm install -g @chainsafe/lodestar
+if ! npm install -g @chainsafe/lodestar; then
+    log_error "Failed to install Lodestar via npm. Please check your Node.js installation and try again."
+    exit 1
+fi
 
 # Ensure JWT secret exists
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
