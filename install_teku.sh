@@ -65,59 +65,44 @@ ensure_directory "$TEKU_DATA_DIR"
 VALIDATOR_DATA_DIR="$HOME/.local/share/teku/validator"
 ensure_directory "$VALIDATOR_DATA_DIR"
 
-# Create Teku beacon node configuration
-cat > "$TEKU_DIR/beacon.yaml" << EOF
-# Teku Beacon Node Configuration
+# Create temporary directory for custom configuration
+mkdir ./tmp
+
+# Create custom beacon node configuration variables
+cat > ./tmp/teku_beacon_custom.yaml << EOF
+# Teku Beacon Node Custom Configuration
 
 # Network
-network: "mainnet"
-p2p-enabled: true
-p2p-port: 9000
-p2p-discovery-enabled: true
-p2p-peer-lower-bound: 64
 p2p-peer-upper-bound: $MAX_PEERS
 
 # Data storage
 data-path: "$TEKU_DATA_DIR"
-data-storage-mode: "prune"
 
 # Execution layer connection
 ee-endpoint: "http://127.0.0.1:8551"
 ee-jwt-secret-file: "$HOME/secrets/jwt.hex"
 
 # REST API
-rest-api-enabled: true
-rest-api-port: 5051
-rest-api-host-allowlist: ["127.0.0.1", "localhost"]
-rest-api-cors-origins: ["*"]
+rest-api-port: ${TEKU_REST_PORT}
 
 # Checkpoint sync
-initial-state: "$PRYSM_CPURL/eth/v2/debug/beacon/states/finalized"
-checkpoint-sync-url: "$PRYSM_CPURL"
+initial-state: "$TEKU_CHECKPOINT_URL/eth/v2/debug/beacon/states/finalized"
+checkpoint-sync-url: "$TEKU_CHECKPOINT_URL"
 
 # Metrics and monitoring
-metrics-enabled: true
 metrics-port: 8008
-metrics-host-allowlist: ["127.0.0.1", "localhost"]
-
-# Logging
-log-destination: "CONSOLE"
-log-level: "INFO"
-
-# Builder/MEV settings
-builder-endpoint: "http://127.0.0.1:18550"
 
 # Validator settings
 validators-graffiti: "$GRAFITTI"
 validators-proposer-default-fee-recipient: "$FEE_RECIPIENT"
 EOF
 
-# Create Teku validator configuration
-cat > "$TEKU_DIR/validator.yaml" << EOF
-# Teku Validator Configuration
+# Create custom validator configuration variables
+cat > ./tmp/teku_validator_custom.yaml << EOF
+# Teku Validator Custom Configuration
 
 # Beacon node connection
-beacon-node-api-endpoint: "http://127.0.0.1:5051"
+beacon-node-api-endpoint: "http://127.0.0.1:${TEKU_REST_PORT}"
 
 # Validator settings
 validator-keys: "$VALIDATOR_DATA_DIR/keys:$VALIDATOR_DATA_DIR/passwords"
@@ -128,20 +113,18 @@ validators-proposer-default-fee-recipient: "$FEE_RECIPIENT"
 data-path: "$VALIDATOR_DATA_DIR"
 
 # Metrics
-metrics-enabled: true
 metrics-port: 8009
-metrics-host-allowlist: ["127.0.0.1", "localhost"]
-
-# Logging
-log-destination: "CONSOLE"
-log-level: "INFO"
-
-# Performance
-validators-early-attestations-enabled: true
 EOF
 
+# Merge base configurations with custom settings
+cat ~/eth2-quickstart/teku/teku_beacon_base.yaml ./tmp/teku_beacon_custom.yaml > "$TEKU_DIR/beacon.yaml"
+cat ~/eth2-quickstart/teku/teku_validator_base.yaml ./tmp/teku_validator_custom.yaml > "$TEKU_DIR/validator.yaml"
+
+# Clean up temporary files
+rm -rf ./tmp/
+
 # Create systemd service for beacon node
-JAVA_OPTS="-Xmx${GETH_CACHE}m -XX:+UseG1GC"
+JAVA_OPTS="-Xmx${TEKU_CACHE}m -XX:+UseG1GC"
 BEACON_EXEC_START="$TEKU_DIR/bin/teku --config-file=$TEKU_DIR/beacon.yaml"
 
 create_systemd_service "cl" "Teku Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"

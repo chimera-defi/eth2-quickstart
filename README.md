@@ -117,6 +117,36 @@ This repository supports multiple Ethereum client implementations to promote cli
 | **Lodestar** | TypeScript | Developer-friendly, modern | Development, TypeScript devs | `./install_lodestar.sh` |
 | **Grandine** | Rust | High-performance, cutting-edge | Advanced users, performance | `./install_grandine.sh` |
 
+### Configuration Architecture
+
+This repository follows a consistent configuration pattern across all clients:
+
+#### **Configuration Conventions**
+1. **Centralized Variables**: All client-specific settings are defined in `exports.sh`
+2. **Template + Custom Pattern**: Each client has base template configs and custom variable overlays
+3. **Directory Structure**: Each client has its own config directory (e.g., `teku/`, `nimbus/`)
+4. **Merge Strategy**: Install scripts combine base templates with user-specific variables
+
+#### **Configuration Flow**
+```
+exports.sh → Base Template + Custom Variables → Final Client Config
+```
+
+**Example Structure:**
+```
+├── exports.sh                    # All configuration variables
+├── teku/
+│   ├── teku_beacon_base.yaml     # Base beacon config template
+│   └── teku_validator_base.yaml  # Base validator config template
+└── install_teku.sh               # Merges base + custom configs
+```
+
+#### **Key Variables in exports.sh**
+- `NETHERMIND_CACHE`, `BESU_CACHE`, `TEKU_CACHE` - Client-specific memory settings
+- `TEKU_REST_PORT`, `NIMBUS_REST_PORT` - Client-specific API ports  
+- `TEKU_CHECKPOINT_URL`, `LIGHTHOUSE_CHECKPOINT_URL` - Client-specific checkpoint URLs
+- `FEE_RECIPIENT`, `GRAFITTI` - Universal validator settings
+
 ### Client Selection Guide
 
 Run the interactive client selection assistant:
