@@ -14,7 +14,8 @@ graffiti: $GRAFITTI
 suggested-fee-recipient: $FEE_RECIPIENT
 wallet-password-file: $HOME/secrets/pass.txt
 EOF
-cat ~/eth2-quickstart/prysm/prysm_validator_conf.yaml ~/eth2-quickstart/tmp/prysm_validator_conf.yaml > ~/prysm/prysm_validator_conf.yaml
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cat "$SCRIPT_DIR/configs/prysm/prysm_validator_conf.yaml" ./tmp/prysm_validator_conf.yaml > ~/prysm/prysm_validator_conf.yaml
 
 cat > ./tmp/prysm_beacon_conf.yaml << EOF 
 graffiti: $GRAFITTI
@@ -25,7 +26,7 @@ checkpoint-sync-url: $PRYSM_CPURL
 genesis-beacon-api-url: $PRYSM_CPURL
 jwt-secret: $HOME/secrets/jwt.hex
 EOF
-cat ~/eth2-quickstart/prysm/prysm_beacon_conf.yaml ~/eth2-quickstart/tmp/prysm_beacon_conf.yaml > ~/prysm/prysm_beacon_conf.yaml
+cat "$SCRIPT_DIR/configs/prysm/prysm_beacon_conf.yaml" ./tmp/prysm_beacon_conf.yaml > ~/prysm/prysm_beacon_conf.yaml
 
 rm -rf ./tmp/
 

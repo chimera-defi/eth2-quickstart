@@ -29,6 +29,39 @@ export PRYSM_ALLOW_UNVERIFIED_BINARIES=1
 export LH='127.0.0.1'
 export GETH_CACHE=8192
 
+# Client-specific configuration
+# Execution clients
+export NETHERMIND_CACHE=8192
+export BESU_CACHE=8192
+export ERIGON_CACHE=8192
+export RETH_CACHE=8192
+
+# Consensus clients  
+export TEKU_CACHE=8192
+export NIMBUS_CACHE=4096  # Lighter client
+export LODESTAR_CACHE=8192
+export GRANDINE_CACHE=8192
+
+# Client-specific ports (to avoid conflicts when switching)
+export NETHERMIND_HTTP_PORT=8545
+export NETHERMIND_WS_PORT=8546
+export NETHERMIND_ENGINE_PORT=8551
+export BESU_HTTP_PORT=8545
+export BESU_WS_PORT=8546
+export BESU_ENGINE_PORT=8551
+
+export TEKU_REST_PORT=5051
+export NIMBUS_REST_PORT=5052
+export LODESTAR_REST_PORT=9596
+export GRANDINE_REST_PORT=5052
+
+# Client-specific checkpoint URLs (fallbacks if main fails)
+export TEKU_CHECKPOINT_URL="https://beaconstate.ethstaker.cc"
+export NIMBUS_CHECKPOINT_URL="https://beaconstate.ethstaker.cc"
+export LODESTAR_CHECKPOINT_URL="https://beaconstate.ethstaker.cc"
+export LIGHTHOUSE_CHECKPOINT_URL="https://mainnet.checkpoint.sigp.io"
+export GRANDINE_CHECKPOINT_URL="https://beaconstate.ethstaker.cc"
+
 # Mev boost opts
 
 # MEV relays based on flashbots data on perf

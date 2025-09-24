@@ -1,10 +1,10 @@
-# Introduction
+# Ethereum Node Quick Setup
 
-Setup an ETH2 node quickly with ~2 commands. 
-Simple shell scripts contain community best practices to remove tedious setup. 
-Supports servers, home solo stakers, pool node operators. 
+Setup an Ethereum node quickly with simple shell scripts containing community best practices. 
+Supports multiple client combinations for servers, home solo stakers, and pool node operators.
+Choose from various execution and consensus clients for optimal client diversity.
 
-(Don't blindly run scripts near sensistive data)   
+**⚠️ Security Notice:** Don't blindly run scripts near sensitive data. Review scripts before execution.   
 
 # Pre-reqs
 1. Set up cloud vps with a ssh pub key or local server
@@ -50,13 +50,13 @@ Log back in as the new non-root user `eth@ip`
 
 5. Log back in as the new non-root user `eth@ip`
 - configure `exports.sh` 
-- Run`./run_2.sh`  
-   this will setup:
-     - prysm
-     - geth
+- **Choose your clients:** Run `./select_clients.sh` to get recommendations
+- Run`./run_2.sh` OR manually install your chosen clients:
+   Default setup includes:
+     - prysm (consensus client)
+     - geth (execution client) 
      - mev-boost
-     - setup systemctl for eth2 services 
-     - Also contains commands to begin syncing prysm and geth
+     - setup systemctl for eth2 services
 6. Start your services via systemctl to confirm successful installation! eth1, beacon-chain & validator
   
     ```
@@ -91,6 +91,87 @@ Log back in as the new non-root user `eth@ip`
 2. Continue using prysm docs to set up the validator using new or old imported keys : https://docs.prylabs.network/docs/install/install-with-script#step-5-run-a-validator-using-prysm
     - Create a `pass.txt` file in `~/prysm` with your wallets password to enable using the validator service
 3. To speed up geth sync you can try to restart it with other flags in its config, but most likely it will just take a little time running in the background.  Benchmark is 1-3 days.   
+
+## Available Ethereum Clients
+
+This repository supports multiple Ethereum client implementations to promote client diversity and provide options for different use cases.
+
+### Execution Clients (ETH1)
+
+| Client | Language | Description | Best For | Install Script |
+|--------|----------|-------------|----------|----------------|
+| **Geth** | Go | Original Go implementation, most stable | Beginners, stability | `./install_geth.sh` |
+| **Erigon** | Go | Re-architected for efficiency | Performance, fast sync | `./erigon.sh` |
+| **Reth** | Rust | Modern Rust implementation | Performance, modularity | `./reth.sh` |
+| **Nethermind** | C# | Enterprise-focused .NET client | Enterprise, advanced features | `./install_nethermind.sh` |
+| **Besu** | Java | Apache 2.0 licensed, enterprise-ready | Private networks, compliance | `./install_besu.sh` |
+
+### Consensus Clients (ETH2)
+
+| Client | Language | Description | Best For | Install Script |
+|--------|----------|-------------|----------|----------------|
+| **Prysm** | Go | Well-documented, reliable | Beginners, documentation | `./install_prysm.sh` |
+| **Lighthouse** | Rust | Security-focused, high performance | Performance, security | `./lighthouse.sh` |
+| **Teku** | Java | ConsenSys-developed, enterprise features | Institutional, monitoring | `./install_teku.sh` |
+| **Nimbus** | Nim | Lightweight, resource efficient | Raspberry Pi, low resources | `./install_nimbus.sh` |
+| **Lodestar** | TypeScript | Developer-friendly, modern | Development, TypeScript devs | `./install_lodestar.sh` |
+| **Grandine** | Rust | High-performance, cutting-edge | Advanced users, performance | `./install_grandine.sh` |
+
+### Configuration Architecture
+
+This repository follows a consistent configuration pattern across all clients:
+
+#### **Configuration Conventions**
+1. **Centralized Variables**: All client-specific settings are defined in `exports.sh`
+2. **Template + Custom Pattern**: Each client has base template configs and custom variable overlays
+3. **Directory Structure**: Each client has its own config directory (e.g., `teku/`, `nimbus/`)
+4. **Merge Strategy**: Install scripts combine base templates with user-specific variables
+
+#### **Configuration Flow**
+```
+exports.sh → Base Template + Custom Variables → Final Client Config
+```
+
+**Example Structure:**
+```
+├── exports.sh                    # All configuration variables
+├── configs/
+│   └── teku/
+│       ├── teku_beacon_base.yaml     # Base beacon config template
+│       └── teku_validator_base.yaml  # Base validator config template
+└── install_teku.sh               # Merges base + custom configs
+```
+
+#### **Key Variables in exports.sh**
+- `NETHERMIND_CACHE`, `BESU_CACHE`, `TEKU_CACHE` - Client-specific memory settings
+- `TEKU_REST_PORT`, `NIMBUS_REST_PORT` - Client-specific API ports  
+- `TEKU_CHECKPOINT_URL`, `LIGHTHOUSE_CHECKPOINT_URL` - Client-specific checkpoint URLs
+- `FEE_RECIPIENT`, `GRAFITTI` - Universal validator settings
+
+### Client Selection Guide
+
+Run the interactive client selection assistant:
+```bash
+chmod +x select_clients.sh
+./select_clients.sh
+```
+
+**Recommendations by Use Case:**
+
+- **Beginners**: Geth + Prysm (most documentation and support)
+- **Performance**: Erigon/Reth + Lighthouse (optimized for speed)
+- **Resource-Constrained**: Geth + Nimbus (proven on various hardware)
+- **Enterprise**: Nethermind/Besu + Teku (enterprise features)
+- **Client Diversity**: Any minority client combination
+
+### System Requirements by Client
+
+| Resource | Minimum | Recommended | Notes |
+|----------|---------|-------------|-------|
+| **CPU** | 4 cores | 8+ cores | More cores help with sync |
+| **RAM** | 16GB | 32GB+ | Nimbus can run on 8GB |
+| **Storage** | 2TB SSD | 4TB NVMe | Fast storage crucial |
+| **Network** | Stable broadband | Unlimited data | Avoid metered connections |
 
 ## Setup public RPC endpoint using Nginx
 Setup a secure uncensored outward facing Ethereum RPC for you and your friends!  It's been faster than Infura/alchemy etc for me.
@@ -129,28 +210,98 @@ Use the following command to verify locally:
 5. Further security hardening tips: (TODO)
   - Disable root login after everything is confirmed to be working by setting `PermitRootLogin no` in `/etc/ssh/sshd_config`  
 
-# Troubleshooting & tips
+# Troubleshooting & Tips
 
-- need to update? just run `./update.sh`   
-- make sure the files are executable 
+## General Troubleshooting
+
+- **Need to update?** Run `./update.sh`   
+- **Make files executable:** 
+```bash
+chmod +x *.sh
+chmod +x lib/common_functions.sh
 ```
-chmod u+x run1.sh..
-```
-- check disk space and setup
-```
+- **Check disk space:** 
+```bash
 df -hT
 ```
-- Use on goerli - do the following before running `run_2.sh`
-  - There is a Goerli checkpt url in `exports.sh`; change the prysm cp url to it
-  - Add `--prater` to the prysm start cmds in `install_prysm.sh`
-  - Add `--goerli` to the geth start cmd in `install_geth.sh`
+- **Check service status:**
+```bash
+sudo systemctl status eth1 cl validator mev
+```
+- **View logs:**
+```bash
+journalctl -fu eth1    # Execution client logs
+journalctl -fu cl      # Consensus client logs  
+journalctl -fu validator # Validator logs
+journalctl -fu mev     # MEV-Boost logs
+```
+
+## Client-Specific Issues
+
+### Execution Clients
+- **Geth**: Most stable, check for port conflicts on 8545, 8546, 30303
+- **Erigon**: Requires more RAM during sync, check `config.yaml` settings
+- **Reth**: Compilation issues? Ensure Rust toolchain is updated
+- **Nethermind**: .NET runtime issues? Check Java installation
+- **Besu**: Java heap size issues? Adjust memory settings in config
+
+### Consensus Clients  
+- **Prysm**: Checkpoint sync failing? Update `PRYSM_CPURL` in `exports.sh`
+- **Lighthouse**: Rust compilation issues? Update Rust toolchain
+- **Teku**: Java out of memory? Increase heap size in service file
+- **Nimbus**: Resource constraints? It's designed for low-resource systems
+- **Lodestar**: Node.js issues? Ensure Node.js 16+ is installed
+- **Grandine**: Very new client, check official docs for latest updates
+
+## Network-Specific Setup
+
+### Testnet Usage (Goerli/Holesky)
+Before running client install scripts, modify configurations:
+- Update checkpoint URLs in `exports.sh`
+- Add network flags (e.g., `--goerli`, `--holesky`) to client commands
+- Ensure testnet-specific genesis and checkpoint files
+
+### Mainnet Optimization
+- Enable checkpoint sync for faster initial sync
+- Configure MEV-Boost with multiple relays
+- Set appropriate cache sizes based on available RAM
+- Use fast NVMe storage for better performance
 
 
-# Benefits:
-- Save at least 2 days compared to CoinCashew and Somersats guides using the automated scripts and included prysm checkpoint state here!!   
-- Get your own uncensored & unmetered RPC node! 
-- Simplified script will follow sane defaults from tutorials to get you set up seamlessly and prompt for extra input not added in exports.sh
-- Includes firewall and client rules to prevent scanning private IPs/limit to public, to avoid Abuse alerts from cloud / bare metal hosting providers
+# Benefits
+
+## Performance & Reliability
+- **Multiple Client Options**: Choose from 5 execution and 6 consensus clients
+- **Client Diversity**: Improve network resilience by using minority clients
+- **Optimized Configurations**: Pre-tuned settings for each client type
+- **Fast Sync**: Checkpoint sync enabled for rapid initial synchronization
+- **Resource Efficiency**: Options for resource-constrained environments (Nimbus)
+
+## Ease of Use
+- **Interactive Selection**: `./select_clients.sh` guides client choice
+- **Automated Setup**: Reduced setup time compared to manual configuration
+- **Common Functions**: Refactored codebase eliminates duplication
+- **Comprehensive Logging**: Detailed logs and status monitoring
+- **Systemd Integration**: Proper service management and auto-restart
+
+## Security & Infrastructure  
+- **Firewall Rules**: Automated security hardening
+- **JWT Authentication**: Secure execution/consensus client communication
+- **MEV-Boost Integration**: Maximize validator rewards
+- **Uncensored RPC**: Run your own censorship-resistant endpoint
+- **Enterprise Features**: Advanced monitoring and management (Teku, Nethermind, Besu)
+
+## Client-Specific Advantages
+- **Geth**: Battle-tested stability, extensive documentation
+- **Erigon**: Faster sync, lower disk usage, better performance  
+- **Reth**: Modern Rust implementation, modular architecture
+- **Nethermind**: Enterprise features, .NET ecosystem integration
+- **Besu**: Permissive licensing, private network support
+- **Lighthouse**: Security-focused, excellent performance
+- **Teku**: Institutional-grade monitoring and management
+- **Nimbus**: Ultra-lightweight, perfect for ARM devices
+- **Lodestar**: Developer-friendly TypeScript implementation
+- **Grandine**: Cutting-edge performance optimizations
 
 We try to setup guideline to quickly, safely and secury setup ETH2 capable nodes on a cloud vps or bare metal server.  
 Addditionally, there's firewall rules and settings for the clients to not cause alerts from your infra provider.    
