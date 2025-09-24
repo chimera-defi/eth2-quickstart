@@ -78,7 +78,7 @@ jwt_secret_path = "$HOME/secrets/jwt.hex"
 http_api_listen_address = "127.0.0.1:${GRANDINE_REST_PORT}"
 
 # Checkpoint sync
-checkpoint_sync_url = "$PRYSM_CPURL"
+checkpoint_sync_url = "$GRANDINE_CHECKPOINT_URL"
 
 # Metrics
 metrics_listen_address = "127.0.0.1:8008"
@@ -89,7 +89,8 @@ graffiti = "$GRAFITTI"
 EOF
 
 # Merge base configuration with custom settings
-cat ~/eth2-quickstart/configs/grandine/grandine_base.toml ./tmp/grandine_custom.toml > "$GRANDINE_DIR/grandine.toml"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cat "$SCRIPT_DIR/configs/grandine/grandine_base.toml" ./tmp/grandine_custom.toml > "$GRANDINE_DIR/grandine.toml"
 
 # Clean up temporary files
 rm -rf ./tmp/

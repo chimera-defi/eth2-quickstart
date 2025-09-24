@@ -87,7 +87,8 @@ miner-extra-data="$GRAFITTI"
 EOF
 
 # Merge base configuration with custom settings
-cat ~/eth2-quickstart/configs/besu/besu_base.toml ./tmp/besu_custom.toml > "$BESU_DIR/besu.toml"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cat "$SCRIPT_DIR/configs/besu/besu_base.toml" ./tmp/besu_custom.toml > "$BESU_DIR/besu.toml"
 
 # Clean up temporary files
 rm -rf ./tmp/
@@ -99,7 +100,7 @@ EXEC_START="$BESU_DIR/bin/besu --config-file=$BESU_DIR/besu.toml"
 create_systemd_service "eth1" "Hyperledger Besu Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
 # Add Java options to service file
-sudo sed -i '/\[Service\]/a Environment="JAVA_OPTS='$JAVA_OPTS'"' /etc/systemd/system/eth1.service
+sudo sed -i "/\\[Service\\]/a Environment=\"JAVA_OPTS=$JAVA_OPTS\"" /etc/systemd/system/eth1.service
 
 # Enable the service
 enable_systemd_service "eth1"
