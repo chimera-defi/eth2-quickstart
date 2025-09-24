@@ -87,7 +87,7 @@ miner-extra-data="$GRAFITTI"
 EOF
 
 # Merge base configuration with custom settings
-cat ~/eth2-quickstart/besu/besu_base.toml ./tmp/besu_custom.toml > "$BESU_DIR/besu.toml"
+cat ~/eth2-quickstart/configs/besu/besu_base.toml ./tmp/besu_custom.toml > "$BESU_DIR/besu.toml"
 
 # Clean up temporary files
 rm -rf ./tmp/

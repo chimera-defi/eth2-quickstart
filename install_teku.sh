@@ -117,8 +117,8 @@ metrics-port: 8009
 EOF
 
 # Merge base configurations with custom settings
-cat ~/eth2-quickstart/teku/teku_beacon_base.yaml ./tmp/teku_beacon_custom.yaml > "$TEKU_DIR/beacon.yaml"
-cat ~/eth2-quickstart/teku/teku_validator_base.yaml ./tmp/teku_validator_custom.yaml > "$TEKU_DIR/validator.yaml"
+cat ~/eth2-quickstart/configs/teku/teku_beacon_base.yaml ./tmp/teku_beacon_custom.yaml > "$TEKU_DIR/beacon.yaml"
+cat ~/eth2-quickstart/configs/teku/teku_validator_base.yaml ./tmp/teku_validator_custom.yaml > "$TEKU_DIR/validator.yaml"
 
 # Clean up temporary files
 rm -rf ./tmp/
