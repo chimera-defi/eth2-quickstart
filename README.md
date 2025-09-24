@@ -336,6 +336,22 @@ Twitter: https://twitter.com/chimeradefi
 
 ## Additional documentation
 
+### Core Documentation
 - Scripts reference: docs/SCRIPTS.md
 - Setup workflow: docs/WORKFLOW.md
 - Terminology: docs/GLOSSARY.md
+
+### Configuration & Development
+- Configuration guide: docs/CONFIGURATION_GUIDE.md
+- Shell scripting best practices: docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md
+- Refactoring summary: docs/REFACTORING_SUMMARY.md
+
+### Testing & Validation
+- Comprehensive testing report: docs/COMPREHENSIVE_SCRIPT_TESTING_REPORT.md
+- Shell script test results: docs/SHELL_SCRIPT_TEST_RESULTS.md
+- Final verification: docs/FINAL_VERIFICATION.md
+
+### Project Management
+- Consolidated PR details: docs/CONSOLIDATED_PR.md
+- Commit message conventions: docs/COMMIT_MESSAGES.md
+- Development progress: docs/progress.md

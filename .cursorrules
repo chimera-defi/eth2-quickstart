@@ -1,0 +1,39 @@
+# Ethereum Node Setup - Agent Context
+
+## Documentation Structure
+This project contains comprehensive documentation organized in the `docs/` folder:
+
+### Core Documentation
+- `docs/README.md` - Main project overview and quickstart guide
+- `docs/SCRIPTS.md` - Detailed script reference and usage
+- `docs/WORKFLOW.md` - Setup workflow and process documentation
+- `docs/GLOSSARY.md` - Technical terminology and definitions
+
+### Configuration & Architecture
+- `docs/CONFIGURATION_GUIDE.md` - Configuration architecture and conventions
+- `docs/REFACTORING_CONFIGS.md` - Configuration refactoring details
+- `docs/REFACTORING_SUMMARY.md` - Overall refactoring summary and changes
+
+### Development & Testing
+- `docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md` - Shell scripting standards
+- `docs/SHELL_SCRIPT_TEST_RESULTS.md` - Test results and validation
+- `docs/COMPREHENSIVE_SCRIPT_TESTING_REPORT.md` - Comprehensive testing documentation
+
+### Project Management
+- `docs/CONSOLIDATED_PR.md` - Pull request consolidation details
+- `docs/FINAL_VERIFICATION.md` - Final verification and validation
+- `docs/COMMIT_MESSAGES.md` - Commit message conventions
+- `docs/progress.md` - Development progress tracking
+
+## Key Architecture Patterns
+- **Centralized Configuration**: All variables in `exports.sh`
+- **Template + Custom Pattern**: Base configs + user customizations
+- **Common Functions**: Shared utilities in `lib/common_functions.sh`
+- **Client Diversity**: Support for 5 execution + 6 consensus clients
+
+## Agent Guidelines
+When working with this codebase:
+1. Follow shell scripting best practices from `docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md`
+2. Maintain configuration consistency per `docs/CONFIGURATION_GUIDE.md`
+3. Use common functions from `lib/common_functions.sh` to avoid duplication
+4. Reference appropriate documentation for context and standards
