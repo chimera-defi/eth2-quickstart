@@ -21,7 +21,7 @@ setup_firewall_rules 30303 8545 8546 8551
 BESU_DIR="$HOME/besu"
 ensure_directory "$BESU_DIR"
 
-cd "$BESU_DIR"
+cd "$BESU_DIR" || exit
 
 # Get latest release version
 log_info "Fetching latest Besu release..."

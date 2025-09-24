@@ -17,16 +17,16 @@ sudo ufw allow 4001/udp
 # git clone --branch stable --single-branch https://github.com/ledgerwatch/erigon.git
 # devrel
 git clone --recurse-submodules https://github.com/ledgerwatch/erigon.git
-cd erigon
+cd erigon || exit
 git pull
 make erigon
 make rpcdaemon
 make integration
 
-rm -rf $HOME/erigon/*
-mkdir $HOME/erigon
+rm -rf "$HOME"/erigon/*
+mkdir "$HOME"/erigon
 
-cat > $HOME/erigon/config.yaml << EOF
+cat > "$HOME"/erigon/config.yaml << EOF
 chain : "mainnet"
 http : true
 http.api : ["admin","engine","eth","erigon","web3","net","debug","db","trace","txpool","personal"]
@@ -39,12 +39,12 @@ torrent.download.rate: 512mb
 prune: hrtc
 EOF
 
-cp ./build/bin/erigon $HOME/erigon/
+cp ./build/bin/erigon "$HOME"/erigon/
 
 
 # overwrite the eth1 servicwe
 
-cat > $HOME/eth1.service << EOF 
+cat > "$HOME"/eth1.service << EOF 
 [Unit]
 Description     = erigon execution client service
 Wants           = network-online.target
@@ -62,7 +62,7 @@ TimeoutSec      = 300
 WantedBy    = multi-user.target
 EOF
 
-sudo mv $HOME/eth1.service /etc/systemd/system/eth1.service
+sudo mv "$HOME"/eth1.service /etc/systemd/system/eth1.service
 sudo chmod 644 /etc/systemd/system/eth1.service
 sudo systemctl daemon-reload
 sudo systemctl enable eth1

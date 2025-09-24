@@ -28,16 +28,20 @@ sudo service nginx restart
 
 # Try to output a report
 echo 'Upgraded from versions:'
-echo $MEV_BOOST_VERSION
-echo $GETH_VERSION
-echo $PRYSM_VERSION
-echo $NGINX_VERSION
+echo "$MEV_BOOST_VERSION"
+echo "$GETH_VERSION"
+echo "$PRYSM_VERSION"
+echo "$NGINX_VERSION"
 echo 'to version'
-export MEV_BOOST_VERSION=$(../mev-boost -version)
-export GETH_VERSION=$(geth version)
-export PRYSM_VERSION=$(../prysm/prysm.sh validator --version)
-export NGINX_VERSION=$(nginx -v)
-echo $MEV_BOOST_VERSION
-echo $GETH_VERSION
-echo $PRYSM_VERSION
-echo $NGINX_VERSION
+export MEV_BOOST_VERSION
+MEV_BOOST_VERSION=$(../mev-boost -version)
+export GETH_VERSION
+GETH_VERSION=$(geth version)
+export PRYSM_VERSION
+PRYSM_VERSION=$(../prysm/prysm.sh validator --version)
+export NGINX_VERSION
+NGINX_VERSION=$(nginx -v)
+echo "$MEV_BOOST_VERSION"
+echo "$GETH_VERSION"
+echo "$PRYSM_VERSION"
+echo "$NGINX_VERSION"

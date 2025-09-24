@@ -1,7 +1,7 @@
 #!/bin/bash
 source ./exports.sh
 
-mkdir ~/lighthouse && cd ~/lighthouse 
+mkdir ~/lighthouse && cd ~/lighthouse || exit 
 curl -LO https://github.com/sigp/lighthouse/releases/download/v4.5.0/lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz
 tar -xvf lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz
 
