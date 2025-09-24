@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Development Reference: Follows shell scripting best practices - see docs/best-practices/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md
+# Configuration Reference: See docs/configuration/CONFIGURATION_GUIDE.md for client configuration details
+
 # Ethereum Client Selection Script
 # This script helps users choose between different execution and consensus clients
 

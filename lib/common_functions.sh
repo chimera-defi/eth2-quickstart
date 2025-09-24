@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Development Reference: Follows shell scripting best practices - see docs/best-practices/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md
+# Testing Reference: See docs/testing/COMPREHENSIVE_SCRIPT_TESTING_REPORT.md for validation results
+
 # Common functions library for Ethereum client installation scripts
 # This library contains shared functions to reduce code duplication
 

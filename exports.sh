@@ -1,6 +1,9 @@
 #!/bin/bash
 
-# Add all shared env conf for shell scripts here 
+# Configuration Reference: See docs/configuration/CONFIGURATION_GUIDE.md for architecture details
+# Development Reference: Follows shell scripting best practices - see docs/best-practices/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md
+
+# Add all shared env conf for shell scripts here
 # You only need to change the values here for all the scripts
 
 set -o allexport

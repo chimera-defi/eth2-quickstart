@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
+# Development Reference: Follows shell scripting best practices - see docs/best-practices/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md
 source ./exports.sh
 source ./lib/utils.sh
 require_root

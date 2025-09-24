@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Development Reference: Follows shell scripting best practices - see docs/best-practices/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md
+# Development Reference: See docs/development/REFACTORING_SUMMARY.md for recent improvements
+
 # Updates the software stack
 # Verify the versions first
 export MEV_BOOST_VERSION

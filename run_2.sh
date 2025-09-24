@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Development Reference: Follows shell scripting best practices - see docs/best-practices/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md
+
 # This script should be run as the non-root user
 # It will install:
 # 1. Geth
