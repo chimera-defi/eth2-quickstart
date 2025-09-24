@@ -50,7 +50,36 @@ chmod +x "$NETHERMIND_DIR/Nethermind.Runner"
 # Ensure JWT secret exists
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
-# Create Nethermind configuration
+# Create temporary directory for custom configuration
+mkdir ./tmp
+
+# Create custom configuration variables file
+cat > ./tmp/nethermind_custom.cfg << EOF
+{
+  "Init": {
+    "MemoryHint": ${NETHERMIND_CACHE}000000
+  },
+  "JsonRpc": {
+    "Port": ${NETHERMIND_HTTP_PORT},
+    "WebSocketsPort": ${NETHERMIND_WS_PORT},
+    "JwtSecretFile": "$HOME/secrets/jwt.hex",
+    "EngineHost": "127.0.0.1",
+    "EnginePort": ${NETHERMIND_ENGINE_PORT},
+    "EnabledModules": ["Admin", "Eth", "Net", "Web3", "Engine"]
+  },
+  "Mining": {
+    "Enabled": false,
+    "Coinbase": "${FEE_RECIPIENT}",
+    "ExtraData": "${GRAFITTI}"
+  }
+}
+EOF
+
+# Merge base configuration with custom settings
+# Note: This is a simplified merge - in production, consider using jq for proper JSON merging
+cp ~/eth2-quickstart/nethermind/nethermind_base.cfg "$NETHERMIND_DIR/nethermind_base.cfg"
+
+# For now, create a complete config with variables (TODO: implement proper JSON merging)
 cat > "$NETHERMIND_DIR/nethermind.cfg" << EOF
 {
   "Init": {
@@ -60,7 +89,7 @@ cat > "$NETHERMIND_DIR/nethermind.cfg" << EOF
     "ChainSpecPath": "chainspec/mainnet.json",
     "BaseDbPath": "nethermind_db/mainnet",
     "LogFileName": "mainnet.logs.txt",
-    "MemoryHint": ${GETH_CACHE}000000
+    "MemoryHint": ${NETHERMIND_CACHE}000000
   },
   "Network": {
     "DiscoveryPort": 30303,
@@ -71,8 +100,11 @@ cat > "$NETHERMIND_DIR/nethermind.cfg" << EOF
     "Enabled": true,
     "Timeout": 20000,
     "Host": "127.0.0.1",
-    "Port": 8545,
-    "WebSocketsPort": 8546,
+    "Port": ${NETHERMIND_HTTP_PORT},
+    "WebSocketsPort": ${NETHERMIND_WS_PORT},
+    "JwtSecretFile": "$HOME/secrets/jwt.hex",
+    "EngineHost": "127.0.0.1",
+    "EnginePort": ${NETHERMIND_ENGINE_PORT},
     "EnabledModules": ["Admin", "Eth", "Net", "Web3", "Engine"]
   },
   "EthStats": {
@@ -114,17 +146,8 @@ cat > "$NETHERMIND_DIR/nethermind.cfg" << EOF
 }
 EOF
 
-# Create JWT configuration for Engine API
-cat > "$NETHERMIND_DIR/jwt.cfg" << EOF
-{
-  "JsonRpc": {
-    "JwtSecretFile": "$HOME/secrets/jwt.hex",
-    "EngineHost": "127.0.0.1",
-    "EnginePort": 8551,
-    "EnabledModules": ["Engine"]
-  }
-}
-EOF
+# Clean up temporary files
+rm -rf ./tmp/
 
 # Create systemd service
 EXEC_START="$NETHERMIND_DIR/Nethermind.Runner --config $NETHERMIND_DIR/nethermind.cfg --JsonRpc.JwtSecretFile $HOME/secrets/jwt.hex --JsonRpc.EngineHost 127.0.0.1 --JsonRpc.EnginePort 8551"

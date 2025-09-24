@@ -1,0 +1,22 @@
+{
+  "network": "mainnet",
+  "port": 9000,
+  "discoveryPort": 9000,
+  "execution": {
+    "urls": ["http://127.0.0.1:8551"]
+  },
+  "rest": {
+    "enabled": true,
+    "host": "127.0.0.1",
+    "cors": "*"
+  },
+  "metrics": {
+    "enabled": true,
+    "host": "127.0.0.1"
+  },
+  "builder": {
+    "enabled": true,
+    "urls": ["http://127.0.0.1:18550"]
+  },
+  "logLevel": "info"
+}

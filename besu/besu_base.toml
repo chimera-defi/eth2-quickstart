@@ -1,0 +1,36 @@
+# Besu Base Configuration File
+
+# Network settings
+network="mainnet"
+p2p-port=30303
+p2p-host="0.0.0.0"
+discovery-enabled=true
+max-peers=25
+
+# Data storage
+data-storage-format="BONSAI"
+
+# JSON-RPC settings
+rpc-http-enabled=true
+rpc-http-host="127.0.0.1"
+rpc-http-cors-origins=["*"]
+rpc-http-api=["ADMIN","ETH","NET","WEB3","ENGINE"]
+
+# WebSocket settings
+rpc-ws-enabled=true
+rpc-ws-host="127.0.0.1"
+rpc-ws-api=["WEB3","ETH","NET","ENGINE"]
+
+# Engine API settings (for consensus client communication)
+engine-rpc-enabled=true
+engine-host-allowlist=["localhost","127.0.0.1"]
+
+# Sync settings
+sync-mode="SNAP"
+fast-sync-min-peers=5
+
+# Mining settings (disabled for staking)
+miner-enabled=false
+
+# Logging
+logging="INFO"

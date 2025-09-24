@@ -47,8 +47,54 @@ ensure_directory "$LODESTAR_DATA_DIR"
 VALIDATOR_DATA_DIR="$LODESTAR_DATA_DIR/validators"
 ensure_directory "$VALIDATOR_DATA_DIR"
 
-# Create Lodestar beacon node configuration
-cat > "$LODESTAR_DIR/beacon.config.json" << EOF
+# Create temporary directory for custom configuration
+mkdir ./tmp
+
+# Create custom beacon node configuration variables
+cat > ./tmp/lodestar_beacon_custom.json << EOF
+{
+  "dataDir": "$LODESTAR_DATA_DIR/beacon",
+  "targetPeers": $MAX_PEERS,
+  "execution": {
+    "urls": ["http://127.0.0.1:8551"],
+    "jwtSecretFile": "$HOME/secrets/jwt.hex"
+  },
+  "rest": {
+    "port": ${LODESTAR_REST_PORT}
+  },
+  "metrics": {
+    "port": 8008
+  },
+  "checkpointSyncUrl": "$LODESTAR_CHECKPOINT_URL",
+  "suggestedFeeRecipient": "$FEE_RECIPIENT",
+  "graffiti": "$GRAFITTI",
+  "logFile": "$LODESTAR_DATA_DIR/beacon.log"
+}
+EOF
+
+# Create custom validator configuration variables  
+cat > ./tmp/lodestar_validator_custom.json << EOF
+{
+  "dataDir": "$LODESTAR_DATA_DIR/validator",
+  "keystoresDir": "$VALIDATOR_DATA_DIR/keystores",
+  "secretsDir": "$VALIDATOR_DATA_DIR/secrets",
+  "beaconNodes": ["http://127.0.0.1:${LODESTAR_REST_PORT}"],
+  "suggestedFeeRecipient": "$FEE_RECIPIENT",
+  "graffiti": "$GRAFITTI",
+  "metrics": {
+    "port": 8009
+  },
+  "logFile": "$LODESTAR_DATA_DIR/validator.log"
+}
+EOF
+
+# Merge base configurations with custom settings using jq (if available) or simple concatenation
+if command -v jq &> /dev/null; then
+    jq -s '.[0] * .[1]' ~/eth2-quickstart/lodestar/lodestar_beacon_base.json ./tmp/lodestar_beacon_custom.json > "$LODESTAR_DIR/beacon.config.json"
+    jq -s '.[0] * .[1]' ~/eth2-quickstart/lodestar/lodestar_validator_base.json ./tmp/lodestar_validator_custom.json > "$LODESTAR_DIR/validator.config.json"
+else
+    # Fallback: create complete configs with variables (TODO: implement proper JSON merging)
+    cat > "$LODESTAR_DIR/beacon.config.json" << EOF
 {
   "network": "mainnet",
   "dataDir": "$LODESTAR_DATA_DIR/beacon",
@@ -62,7 +108,7 @@ cat > "$LODESTAR_DIR/beacon.config.json" << EOF
   "rest": {
     "enabled": true,
     "host": "127.0.0.1",
-    "port": 9596,
+    "port": ${LODESTAR_REST_PORT},
     "cors": "*"
   },
   "metrics": {
@@ -70,7 +116,7 @@ cat > "$LODESTAR_DIR/beacon.config.json" << EOF
     "host": "127.0.0.1",
     "port": 8008
   },
-  "checkpointSyncUrl": "$PRYSM_CPURL",
+  "checkpointSyncUrl": "$LODESTAR_CHECKPOINT_URL",
   "suggestedFeeRecipient": "$FEE_RECIPIENT",
   "graffiti": "$GRAFITTI",
   "builder": {
@@ -82,14 +128,13 @@ cat > "$LODESTAR_DIR/beacon.config.json" << EOF
 }
 EOF
 
-# Create Lodestar validator configuration
-cat > "$LODESTAR_DIR/validator.config.json" << EOF
+    cat > "$LODESTAR_DIR/validator.config.json" << EOF
 {
   "network": "mainnet",
   "dataDir": "$LODESTAR_DATA_DIR/validator",
   "keystoresDir": "$VALIDATOR_DATA_DIR/keystores",
   "secretsDir": "$VALIDATOR_DATA_DIR/secrets",
-  "beaconNodes": ["http://127.0.0.1:9596"],
+  "beaconNodes": ["http://127.0.0.1:${LODESTAR_REST_PORT}"],
   "suggestedFeeRecipient": "$FEE_RECIPIENT",
   "graffiti": "$GRAFITTI",
   "metrics": {
@@ -107,6 +152,10 @@ cat > "$LODESTAR_DIR/validator.config.json" << EOF
   "logFile": "$LODESTAR_DATA_DIR/validator.log"
 }
 EOF
+fi
+
+# Clean up temporary files
+rm -rf ./tmp/
 
 # Create systemd service for beacon node
 BEACON_EXEC_START="lodestar beacon --paramsFile $LODESTAR_DIR/beacon.config.json"

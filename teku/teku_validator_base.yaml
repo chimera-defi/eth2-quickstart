@@ -1,0 +1,15 @@
+# Teku Validator Client Base Configuration
+
+# Beacon node connection
+beacon-node-api-endpoint: "http://127.0.0.1:5051"
+
+# Metrics
+metrics-enabled: true
+metrics-host-allowlist: ["127.0.0.1", "localhost"]
+
+# Logging
+log-destination: "CONSOLE"
+log-level: "INFO"
+
+# Performance
+validators-early-attestations-enabled: true

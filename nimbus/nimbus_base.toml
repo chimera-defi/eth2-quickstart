@@ -1,0 +1,28 @@
+# Nimbus Base Configuration File
+
+# Network settings
+network = "mainnet"
+tcp-port = 9000
+udp-port = 9000
+
+# Execution layer
+web3-url = "http://127.0.0.1:8551"
+
+# REST API
+rest = true
+rest-address = "127.0.0.1"
+rest-allow-origin = "*"
+
+# Metrics
+metrics = true
+metrics-address = "127.0.0.1"
+
+# Logging
+log-level = "INFO"
+
+# Performance
+in-process-validators = false
+
+# Builder/MEV
+payload-builder = true
+payload-builder-url = "http://127.0.0.1:18550"

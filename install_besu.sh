@@ -61,55 +61,39 @@ ensure_jwt_secret "$HOME/secrets/jwt.hex"
 BESU_DATA_DIR="$HOME/.local/share/besu"
 ensure_directory "$BESU_DATA_DIR"
 
-# Create Besu configuration file
-cat > "$BESU_DIR/besu.toml" << EOF
-# Besu Configuration File
+# Create temporary directory for custom configuration
+mkdir ./tmp
 
-# Network settings
-network="mainnet"
-p2p-port=30303
-p2p-host="0.0.0.0"
-discovery-enabled=true
-max-peers=25
+# Create custom configuration variables file
+cat > ./tmp/besu_custom.toml << EOF
+# Besu Custom Configuration Variables
 
 # Data storage
 data-path="$BESU_DATA_DIR"
-data-storage-format="BONSAI"
 
-# JSON-RPC settings
-rpc-http-enabled=true
-rpc-http-host="127.0.0.1"
-rpc-http-port=8545
-rpc-http-cors-origins=["*"]
-rpc-http-api=["ADMIN","ETH","NET","WEB3","ENGINE"]
+# JSON-RPC settings  
+rpc-http-port=${BESU_HTTP_PORT}
 
 # WebSocket settings
-rpc-ws-enabled=true
-rpc-ws-host="127.0.0.1"
-rpc-ws-port=8546
-rpc-ws-api=["WEB3","ETH","NET","ENGINE"]
+rpc-ws-port=${BESU_WS_PORT}
 
-# Engine API settings (for consensus client communication)
-engine-rpc-enabled=true
-engine-host-allowlist=["localhost","127.0.0.1"]
-engine-rpc-port=8551
+# Engine API settings
+engine-rpc-port=${BESU_ENGINE_PORT}
 engine-jwt-secret="$HOME/secrets/jwt.hex"
 
-# Sync settings
-sync-mode="SNAP"
-fast-sync-min-peers=5
-
 # Mining settings (disabled for staking)
-miner-enabled=false
 miner-coinbase="$FEE_RECIPIENT"
 miner-extra-data="$GRAFITTI"
-
-# Logging
-logging="INFO"
 EOF
 
+# Merge base configuration with custom settings
+cat ~/eth2-quickstart/besu/besu_base.toml ./tmp/besu_custom.toml > "$BESU_DIR/besu.toml"
+
+# Clean up temporary files
+rm -rf ./tmp/
+
 # Create systemd service
-JAVA_OPTS="-Xmx${GETH_CACHE}m -XX:+UseG1GC"
+JAVA_OPTS="-Xmx${BESU_CACHE}m -XX:+UseG1GC"
 EXEC_START="$BESU_DIR/bin/besu --config-file=$BESU_DIR/besu.toml"
 
 create_systemd_service "eth1" "Hyperledger Besu Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
