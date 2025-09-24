@@ -42,19 +42,19 @@ maxretry = $maxretry" >> /etc/fail2ban/jail.local
 systemctl restart fail2ban
 
 ## Add eth user
-id -u "$LOGIN_UNAME" >/dev/null 2>&1 || useradd -m -d /home/$LOGIN_UNAME -s /bin/bash "$LOGIN_UNAME"
+id -u "$LOGIN_UNAME" >/dev/null 2>&1 || useradd -m -d /home/"$LOGIN_UNAME" -s /bin/bash "$LOGIN_UNAME"
 
 # Copy over authorized keys to created user to allow ssh
-mkdir -p /home/$LOGIN_UNAME/.ssh
-cp ~/.ssh/authorized_keys /home/$LOGIN_UNAME/.ssh/ || true
-chown -R $LOGIN_UNAME:$LOGIN_UNAME /home/$LOGIN_UNAME/.ssh
-chmod 700 /home/$LOGIN_UNAME/.ssh
-chmod 600 /home/$LOGIN_UNAME/.ssh/authorized_keys
+mkdir -p /home/"$LOGIN_UNAME"/.ssh
+cp ~/.ssh/authorized_keys /home/"$LOGIN_UNAME"/.ssh/ || true
+chown -R "$LOGIN_UNAME":"$LOGIN_UNAME" /home/"$LOGIN_UNAME"/.ssh
+chmod 700 /home/"$LOGIN_UNAME"/.ssh
+chmod 600 /home/"$LOGIN_UNAME"/.ssh/authorized_keys
 usermod -aG sudo "$LOGIN_UNAME"
 
-cp -r ../$REPO_NAME /home/$LOGIN_UNAME/ || true
-chmod -R +x /home/$LOGIN_UNAME/$REPO_NAME || true
-chown -R $LOGIN_UNAME:$LOGIN_UNAME /home/$LOGIN_UNAME/$REPO_NAME || true
+cp -r ../"$REPO_NAME" /home/"$LOGIN_UNAME"/ || true
+chmod -R +x /home/"$LOGIN_UNAME"/"$REPO_NAME" || true
+chown -R "$LOGIN_UNAME":"$LOGIN_UNAME" /home/"$LOGIN_UNAME"/"$REPO_NAME" || true
 
 # Whitelist and only allow certain users
 # AllowUsers root
@@ -79,7 +79,7 @@ ufw status
 echo "Manual action required!"
 echo "1. Please check the settings above"
 
-read -n 1 -p "Press enter to continue when done ^:" || true
+read -r -n 1 -p "Press enter to continue when done ^:" || true
 
 echo "2. Please run the following cmds now in another shell and add the line to the file that pops up to enable $LOGIN_UNAME no-prompt sudo to help run the second stage"
 echo "ssh root@$(curl -s v4.ident.me) "
@@ -87,7 +87,7 @@ echo "sudo visudo"
 echo "Add this to the end of the file:"
 echo "$LOGIN_UNAME ALL=(ALL) NOPASSWD: ALL "
 
-read -n 1 -p "Press enter to continue when done ^:" || true
+read -r -n 1 -p "Press enter to continue when done ^:" || true
 
 echo "3. Set a password for your new user when prompted"
 passwd "$LOGIN_UNAME"

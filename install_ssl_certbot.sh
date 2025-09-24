@@ -14,6 +14,6 @@ echo "We will now prompt you to go through ssl certbot challenge for your domain
 
 certbot certonly --manual --preferred-challenges dns
 echo "Running certbot --nginx ; This is expected to fail but will generate needed files"
-certbot --nginx -d $SERVER_NAME
+certbot --nginx -d "$SERVER_NAME"
 
 ./install_nginx_ssl.sh

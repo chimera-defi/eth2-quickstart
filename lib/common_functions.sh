@@ -136,7 +136,8 @@ setup_firewall_rules() {
 # Create JWT secret if it doesn't exist
 ensure_jwt_secret() {
     local jwt_path="$1"
-    local jwt_dir=$(dirname "$jwt_path")
+    local jwt_dir
+    jwt_dir=$(dirname "$jwt_path")
     
     ensure_directory "$jwt_dir"
     
@@ -157,14 +158,14 @@ clone_or_update_repo() {
     
     if [[ -d "$target_dir" ]]; then
         log_info "Updating existing repository: $target_dir"
-        cd "$target_dir"
+        cd "$target_dir" || return
         git fetch origin
         git checkout "$branch"
         git pull origin "$branch"
     else
         log_info "Cloning repository: $repo_url"
         git clone --branch "$branch" "$repo_url" "$target_dir"
-        cd "$target_dir"
+        cd "$target_dir" || return
     fi
 }
 
@@ -244,7 +245,8 @@ validate_config() {
 # Get latest release version from GitHub
 get_latest_release() {
     local repo="$1"
-    local version=$(curl -s "https://api.github.com/repos/$repo/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    local version
+    version=$(curl -s "https://api.github.com/repos/$repo/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
     echo "$version"
 }
 
@@ -281,7 +283,8 @@ check_system_requirements() {
     local min_disk_gb="$2"
     
     # Check memory
-    local memory_gb=$(free -g | awk '/^Mem:/{print $2}')
+    local memory_gb
+    memory_gb=$(free -g | awk '/^Mem:/{print $2}')
     if [[ $memory_gb -lt $min_memory_gb ]]; then
         log_warn "System has ${memory_gb}GB RAM, recommended minimum is ${min_memory_gb}GB"
     else
@@ -289,7 +292,8 @@ check_system_requirements() {
     fi
     
     # Check disk space
-    local disk_gb=$(df -BG "$HOME" | tail -1 | awk '{print $4}' | sed 's/G//')
+    local disk_gb
+    disk_gb=$(df -BG "$HOME" | tail -1 | awk '{print $4}' | sed 's/G//')
     if [[ $disk_gb -lt $min_disk_gb ]]; then
         log_warn "Available disk space: ${disk_gb}GB, recommended minimum is ${min_disk_gb}GB"
     else

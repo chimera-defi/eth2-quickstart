@@ -4,10 +4,10 @@ sudo apt install make gcc -y
 sudo snap install --classic go
 sudo ln -s /snap/bin/go /usr/bin/go
 
-cd $HOME
+cd "$HOME" || exit
 rm -rf mev-boost
 git clone https://github.com/flashbots/mev-boost
-cd mev-boost
+cd mev-boost || exit
 git checkout stable
 git pull
 make build

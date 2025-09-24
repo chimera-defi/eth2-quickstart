@@ -2,10 +2,14 @@
 
 # Updates the software stack
 # Verify the versions first
-export MEV_BOOST_VERSION=$(../mev-boost/mev-boost -version)
-export GETH_VERSION=$(geth version)
-export PRYSM_VERSION=$(../prysm/prysm.sh validator --version)
-export NGINX_VERSION=$(nginx -v)
+export MEV_BOOST_VERSION
+MEV_BOOST_VERSION=$(../mev-boost/mev-boost -version)
+export GETH_VERSION
+GETH_VERSION=$(geth version)
+export PRYSM_VERSION
+PRYSM_VERSION=$(../prysm/prysm.sh validator --version)
+export NGINX_VERSION
+NGINX_VERSION=$(nginx -v)
 
 sudo systemctl stop eth1
 
@@ -32,19 +36,19 @@ sudo ./install_mev_boost_censored.sh && sudo systemctl restart mev
 sudo service nginx restart
 
 echo 'Upgraded from version:'
-echo $MEV_BOOST_VERSION
-echo $GETH_VERSION
-echo $PRYSM_VERSION
-echo $NGINX_VERSION
+echo "$MEV_BOOST_VERSION"
+echo "$GETH_VERSION"
+echo "$PRYSM_VERSION"
+echo "$NGINX_VERSION"
 echo 'to version'
-export MEV_BOOST_VERSION=$(../mev-boost -version)
-export GETH_VERSION=$(geth version)
-export PRYSM_VERSION=$(../prysm/prysm.sh validator --version)
-export NGINX_VERSION=$(nginx -v)
-echo $MEV_BOOST_VERSION
-echo $GETH_VERSION
-echo $PRYSM_VERSION
-echo $NGINX_VERSION
+MEV_BOOST_VERSION=$(../mev-boost -version)
+GETH_VERSION=$(geth version)
+PRYSM_VERSION=$(../prysm/prysm.sh validator --version)
+NGINX_VERSION=$(nginx -v)
+echo "$MEV_BOOST_VERSION"
+echo "$GETH_VERSION"
+echo "$PRYSM_VERSION"
+echo "$NGINX_VERSION"
 
 echo "Disk space"
 df -hT

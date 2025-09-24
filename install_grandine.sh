@@ -30,7 +30,7 @@ setup_firewall_rules 9000 5052
 GRANDINE_DIR="$HOME/grandine"
 ensure_directory "$GRANDINE_DIR"
 
-cd "$GRANDINE_DIR"
+cd "$GRANDINE_DIR" || exit
 
 # Clone Grandine repository (as it may not have regular releases yet)
 log_info "Cloning Grandine repository..."

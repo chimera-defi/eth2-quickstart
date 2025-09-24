@@ -30,7 +30,7 @@ setup_firewall_rules 9000 9596
 LODESTAR_DIR="$HOME/lodestar"
 ensure_directory "$LODESTAR_DIR"
 
-cd "$LODESTAR_DIR"
+cd "$LODESTAR_DIR" || exit
 
 # Install Lodestar globally using npm
 log_info "Installing Lodestar via npm..."

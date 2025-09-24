@@ -21,7 +21,7 @@ setup_firewall_rules 9000 5052
 NIMBUS_DIR="$HOME/nimbus"
 ensure_directory "$NIMBUS_DIR"
 
-cd "$NIMBUS_DIR"
+cd "$NIMBUS_DIR" || exit
 
 # Get latest release version
 log_info "Fetching latest Nimbus release..."

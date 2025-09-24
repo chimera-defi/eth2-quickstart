@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cat > $HOME/nginx-proxy.conf << EOF
+cat > "$HOME"/nginx-proxy.conf << EOF
 # Block IPs trying to use server as proxy.
 #
 # Matches e.g.
@@ -11,9 +11,9 @@ failregex = ^<HOST> -.*GET http.*
 ignoreregex =
 EOF
 
-mv $HOME/nginx-proxy.conf /etc/fail2ban/filter.d/nginx-proxy.conf
+mv "$HOME"/nginx-proxy.conf /etc/fail2ban/filter.d/nginx-proxy.conf
 
-cat /etc/fail2ban/jail.local > $HOME/jail.local << EOF
+cat /etc/fail2ban/jail.local > "$HOME"/jail.local << EOF
 ## block hosts trying to abuse our server as a forward proxy
 [nginx-proxy]
 enabled = true
@@ -24,7 +24,7 @@ maxretry = 2
 bantime  = 86400
 EOF
 
-sudo mv $HOME/jail.local  /etc/fail2ban/jail.local
+sudo mv "$HOME"/jail.local  /etc/fail2ban/jail.local
 
 systemctl restart fail2ban
 systemctl restart nginx

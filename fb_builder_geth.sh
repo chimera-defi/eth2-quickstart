@@ -1,6 +1,6 @@
 #!/bin/bash
 
 git clone https://github.com/flashbots/builder.git
-cd builder/
+cd builder/ || exit
 make geth
 sudo cp ./build/bin/geth /usr/bin/

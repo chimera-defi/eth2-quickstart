@@ -15,10 +15,10 @@ sudo apt update && sudo apt install bazel bazel-5.3.0
 
 rm -rf prysm-src
 mkdir prysm-src 
-cd prysm-src
+cd prysm || exit-src || exit
 
 git clone --recurse-submodules https://github.com/flashbots/prysm.git
-cd prysm
+cd prysm || exit
 # git checkout develop-boost-capella
 git pull
 bazel build //cmd/beacon-chain:beacon-chain --config=release

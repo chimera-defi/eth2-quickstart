@@ -1,7 +1,7 @@
 #!/bin/bash
 source ./exports.sh
 
-mkdir ~/prysm && cd ~/prysm 
+mkdir ~/prysm && cd ~/prysm || exit 
 curl https://raw.githubusercontent.com/prysmaticlabs/prysm/master/prysm.sh --output prysm.sh && chmod +x prysm.sh 
 ./prysm.sh beacon-chain generate-auth-secret
 mkdir ~/secrets

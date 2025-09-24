@@ -21,7 +21,7 @@ setup_firewall_rules 30303 8545 8546 8551
 NETHERMIND_DIR="$HOME/nethermind"
 ensure_directory "$NETHERMIND_DIR"
 
-cd "$NETHERMIND_DIR"
+cd "$NETHERMIND_DIR" || exit
 
 # Get latest release version
 log_info "Fetching latest Nethermind release..."

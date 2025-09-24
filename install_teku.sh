@@ -21,7 +21,7 @@ setup_firewall_rules 9000 5051
 TEKU_DIR="$HOME/teku"
 ensure_directory "$TEKU_DIR"
 
-cd "$TEKU_DIR"
+cd "$TEKU_DIR" || exit
 
 # Get latest release version
 log_info "Fetching latest Teku release..."

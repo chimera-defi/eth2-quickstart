@@ -6,4 +6,4 @@ sudo systemctl restart mev &&
 sudo systemctl restart beacon-chain && 
 sudo systemctl restart validator
 
-./$HOME/eth2-quickstart/extra_utils/stats.sh
+./"$HOME"/eth2-quickstart/extra_utils/stats.sh
