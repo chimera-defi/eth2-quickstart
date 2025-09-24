@@ -100,7 +100,7 @@ EXEC_START="$BESU_DIR/bin/besu --config-file=$BESU_DIR/besu.toml"
 create_systemd_service "eth1" "Hyperledger Besu Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
 # Add Java options to service file
-sudo sed -i "/\\[Service\\]/a Environment=\"JAVA_OPTS=$JAVA_OPTS\"" /etc/systemd/system/eth1.service
+sudo sed -i "/\\[Service\\]/a Environment=JAVA_OPTS=\"$JAVA_OPTS\"" /etc/systemd/system/eth1.service
 
 # Enable the service
 enable_systemd_service "eth1"
