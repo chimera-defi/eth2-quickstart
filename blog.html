@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog - Ethereum Node Setup Guide</title>
+    <meta name="description" content="Learn about Ethereum node setup, blockchain technology, client diversity, and best practices for running your own Ethereum node.">
+    <meta name="keywords" content="ethereum, blockchain, node setup, geth, prysm, lighthouse, teku, nimbus, lodestar, grandine, erigon, reth, nethermind, besu, staking, validator, consensus client, execution client">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Blog - Ethereum Node Setup Guide">
+    <meta property="og:description" content="Learn about Ethereum node setup, blockchain technology, client diversity, and best practices for running your own Ethereum node.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://your-domain.com/blog">
+    <meta property="og:image" content="https://your-domain.com/images/ethereum-node-blog-og.jpg">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Blog - Ethereum Node Setup Guide">
+    <meta name="twitter:description" content="Learn about Ethereum node setup, blockchain technology, client diversity, and best practices for running your own Ethereum node.">
+    <meta name="twitter:image" content="https://your-domain.com/images/ethereum-node-blog-twitter.jpg">
+    
+    <link rel="stylesheet" href="styles.css">
+    <link rel="canonical" href="https://your-domain.com/blog">
+    
+    <!-- Structured Data for SEO -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Ethereum Node Setup Guide",
+        "url": "https://your-domain.com",
+        "description": "Comprehensive guide for setting up Ethereum nodes with multiple client options",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://your-domain.com/blog?search={search_term_string}",
+            "query-input": "required name=search_term_string"
+        }
+    }
+    </script>
+</head>
+<body>
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-container">
+                <a href="index.html" class="nav-logo">
+                    <span class="logo-icon">⚡</span>
+                    Ethereum Node Setup
+                </a>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="index.html" class="nav-link">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="docs/README.md" class="nav-link">Documentation</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="blog.html" class="nav-link active">Blog</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="about.html" class="nav-link">About</a>
+                    </li>
+                </ul>
+                <div class="hamburger">
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <section class="blog-hero">
+            <div class="container">
+                <h1 class="blog-title">Ethereum Node Blog</h1>
+                <p class="blog-subtitle">Insights, tutorials, and updates on Ethereum node setup, client diversity, and blockchain technology</p>
+                <div class="blog-stats">
+                    <span class="stat-item">
+                        <strong id="total-posts">0</strong> Articles
+                    </span>
+                    <span class="stat-item">
+                        <strong>5</strong> Execution Clients
+                    </span>
+                    <span class="stat-item">
+                        <strong>6</strong> Consensus Clients
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <section class="blog-content">
+            <div class="container">
+                <div class="blog-filters">
+                    <button class="filter-btn active" data-filter="all">All Posts</button>
+                    <button class="filter-btn" data-filter="tutorial">Tutorials</button>
+                    <button class="filter-btn" data-filter="news">News</button>
+                    <button class="filter-btn" data-filter="technical">Technical</button>
+                    <button class="filter-btn" data-filter="client">Client Guides</button>
+                </div>
+
+                <div class="blog-grid" id="blog-grid">
+                    <!-- Blog posts will be dynamically loaded here -->
+                </div>
+                
+                <div class="blog-pagination" id="blog-pagination">
+                    <!-- Pagination will be dynamically generated -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Ethereum Node Setup</h3>
+                    <p>Your comprehensive guide to setting up and running Ethereum nodes with multiple client options for maximum diversity and security.</p>
+                    <div class="social-links">
+                        <a href="https://twitter.com/chimeradefi" target="_blank" rel="noopener">Twitter</a>
+                        <a href="mailto:Chimera_defi@protonmail.com">Email</a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="docs/README.md">Documentation</a></li>
+                        <li><a href="blog.html">Blog</a></li>
+                        <li><a href="docs/SCRIPTS.md">Scripts</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="docs/WORKFLOW.md">Setup Workflow</a></li>
+                        <li><a href="docs/GLOSSARY.md">Glossary</a></li>
+                        <li><a href="docs/CONFIGURATION_GUIDE.md">Configuration</a></li>
+                        <li><a href="docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md">Best Practices</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Clients</h4>
+                    <ul>
+                        <li><a href="#geth">Geth</a></li>
+                        <li><a href="#prysm">Prysm</a></li>
+                        <li><a href="#lighthouse">Lighthouse</a></li>
+                        <li><a href="#teku">Teku</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Ethereum Node Setup Guide. All rights reserved.</p>
+                <p>Built for the Ethereum community with ❤️</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="blog.js"></script>
+</body>
+</html>

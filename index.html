@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ethereum Node Setup Guide - Complete Setup Scripts</title>
+    <meta name="description" content="Quickly set up Ethereum nodes with our comprehensive shell scripts. Support for 5 execution clients and 6 consensus clients with automated configuration and security hardening.">
+    <meta name="keywords" content="ethereum, blockchain, node setup, geth, prysm, lighthouse, teku, nimbus, lodestar, grandine, erigon, reth, nethermind, besu, staking, validator">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Ethereum Node Setup Guide - Complete Setup Scripts">
+    <meta property="og:description" content="Quickly set up Ethereum nodes with our comprehensive shell scripts. Support for 5 execution clients and 6 consensus clients with automated configuration and security hardening.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://your-domain.com">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Ethereum Node Setup Guide - Complete Setup Scripts">
+    <meta name="twitter:description" content="Quickly set up Ethereum nodes with our comprehensive shell scripts. Support for 5 execution clients and 6 consensus clients with automated configuration and security hardening.">
+    
+    <link rel="stylesheet" href="styles.css">
+    <link rel="canonical" href="https://your-domain.com">
+</head>
+<body>
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-container">
+                <a href="index.html" class="nav-logo">
+                    <span class="logo-icon">⚡</span>
+                    Ethereum Node Setup
+                </a>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="index.html" class="nav-link active">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="docs/README.md" class="nav-link">Documentation</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="blog.html" class="nav-link">Blog</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="about.html" class="nav-link">About</a>
+                    </li>
+                </ul>
+                <div class="hamburger">
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <section class="hero">
+            <div class="container">
+                <h1 class="hero-title">Ethereum Node Quick Setup</h1>
+                <p class="hero-subtitle">Setup an Ethereum node quickly with simple shell scripts containing community best practices. Supports multiple client combinations for servers, home solo stakers, and pool node operators.</p>
+                
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">5</span>
+                        <span class="stat-label">Execution Clients</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">6</span>
+                        <span class="stat-label">Consensus Clients</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">11</span>
+                        <span class="stat-label">Total Clients</span>
+                    </div>
+                </div>
+                
+                <div class="hero-actions">
+                    <a href="docs/README.md" class="btn btn-primary">Get Started</a>
+                    <a href="blog.html" class="btn btn-secondary">Read Blog</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="container">
+                <h2 class="section-title">Why Choose Our Setup?</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🔧</div>
+                        <h3>Multiple Client Support</h3>
+                        <p>Choose from 5 execution clients (Geth, Erigon, Reth, Nethermind, Besu) and 6 consensus clients (Prysm, Lighthouse, Teku, Nimbus, Lodestar, Grandine) for maximum client diversity.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Quick Setup</h3>
+                        <p>Automated installation and configuration scripts reduce setup time from hours to minutes. Get your node running with minimal manual intervention.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🛡️</div>
+                        <h3>Security Hardening</h3>
+                        <p>Built-in security features including firewall configuration, user management, and system hardening to protect your validator.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <h3>Performance Optimized</h3>
+                        <p>Pre-tuned configurations for each client type to maximize performance and minimize resource usage on your hardware.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔄</div>
+                        <h3>Client Diversity</h3>
+                        <p>Promote network resilience by using minority clients. Our selection tool helps you choose the best combination for your needs.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📚</div>
+                        <h3>Comprehensive Docs</h3>
+                        <p>Detailed documentation, troubleshooting guides, and best practices to help you maintain and optimize your node.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="clients">
+            <div class="container">
+                <h2 class="section-title">Supported Clients</h2>
+                
+                <div class="clients-section">
+                    <h3>Execution Clients (ETH1)</h3>
+                    <div class="clients-grid">
+                        <div class="client-card">
+                            <h4>Geth</h4>
+                            <p>Original Go implementation, most stable and widely used</p>
+                            <span class="client-lang">Go</span>
+                        </div>
+                        <div class="client-card">
+                            <h4>Erigon</h4>
+                            <p>Re-architected for efficiency and faster sync times</p>
+                            <span class="client-lang">Go</span>
+                        </div>
+                        <div class="client-card">
+                            <h4>Reth</h4>
+                            <p>Modern Rust implementation with modular architecture</p>
+                            <span class="client-lang">Rust</span>
+                        </div>
+                        <div class="client-card">
+                            <h4>Nethermind</h4>
+                            <p>Enterprise-focused .NET client with advanced features</p>
+                            <span class="client-lang">C#</span>
+                        </div>
+                        <div class="client-card">
+                            <h4>Besu</h4>
+                            <p>Apache 2.0 licensed Java client, great for private networks</p>
+                            <span class="client-lang">Java</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="clients-section">
+                    <h3>Consensus Clients (ETH2)</h3>
+                    <div class="clients-grid">
+                        <div class="client-card">
+                            <h4>Prysm</h4>
+                            <p>Well-documented Go client, great for beginners</p>
+                            <span class="client-lang">Go</span>
+                        </div>
+                        <div class="client-card">
+                            <h4>Lighthouse</h4>
+                            <p>Security-focused Rust client with excellent performance</p>
+                            <span class="client-lang">Rust</span>
+                        </div>
+                        <div class="client-card">
+                            <h4>Teku</h4>
+                            <p>Java client with enterprise features and monitoring</p>
+                            <span class="client-lang">Java</span>
+                        </div>
+                        <div class="client-card">
+                            <h4>Nimbus</h4>
+                            <p>Lightweight Nim client, perfect for resource-constrained systems</p>
+                            <span class="client-lang">Nim</span>
+                        </div>
+                        <div class="client-card">
+                            <h4>Lodestar</h4>
+                            <p>TypeScript client, developer-friendly</p>
+                            <span class="client-lang">TypeScript</span>
+                        </div>
+                        <div class="client-card">
+                            <h4>Grandine</h4>
+                            <p>High-performance Rust client with cutting-edge optimizations</p>
+                            <span class="client-lang">Rust</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="quickstart">
+            <div class="container">
+                <h2 class="section-title">Quick Start</h2>
+                <div class="quickstart-content">
+                    <div class="quickstart-steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h3>Clone Repository</h3>
+                                <p>Download the setup scripts to your server</p>
+                                <pre><code>git clone https://github.com/chimera-defi/eth2-quickstart
+cd eth2-quickstart
+chmod +x run_1.sh</code></pre>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h3>Run Setup</h3>
+                                <p>Execute the automated setup script</p>
+                                <pre><code>./run_1.sh</code></pre>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h3>Choose Clients</h3>
+                                <p>Select your preferred client combination</p>
+                                <pre><code>./select_clients.sh</code></pre>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <h3>Install & Start</h3>
+                                <p>Install clients and start your node</p>
+                                <pre><code>./run_2.sh</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="blog-preview">
+            <div class="container">
+                <h2 class="section-title">Latest from Our Blog</h2>
+                <div class="blog-preview-grid" id="blog-preview">
+                    <!-- Blog preview will be loaded here -->
+                </div>
+                <div class="blog-preview-actions">
+                    <a href="blog.html" class="btn btn-primary">View All Posts</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Ethereum Node Setup</h3>
+                    <p>Your comprehensive guide to setting up and running Ethereum nodes with multiple client options for maximum diversity and security.</p>
+                    <div class="social-links">
+                        <a href="https://twitter.com/chimeradefi" target="_blank" rel="noopener">Twitter</a>
+                        <a href="mailto:Chimera_defi@protonmail.com">Email</a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="docs/README.md">Documentation</a></li>
+                        <li><a href="blog.html">Blog</a></li>
+                        <li><a href="docs/SCRIPTS.md">Scripts</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="docs/WORKFLOW.md">Setup Workflow</a></li>
+                        <li><a href="docs/GLOSSARY.md">Glossary</a></li>
+                        <li><a href="docs/CONFIGURATION_GUIDE.md">Configuration</a></li>
+                        <li><a href="docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md">Best Practices</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Clients</h4>
+                    <ul>
+                        <li><a href="#geth">Geth</a></li>
+                        <li><a href="#prysm">Prysm</a></li>
+                        <li><a href="#lighthouse">Lighthouse</a></li>
+                        <li><a href="#teku">Teku</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Ethereum Node Setup Guide. All rights reserved.</p>
+                <p>Built for the Ethereum community with ❤️</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="blog.js"></script>
+    <script>
+        // Load blog preview on homepage
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBlogPreview();
+            setupMobileMenu();
+        });
+
+        function loadBlogPreview() {
+            const blogPreview = document.getElementById('blog-preview');
+            if (!blogPreview || typeof blogData === 'undefined') return;
+
+            const featuredPosts = blogData.posts.filter(post => post.featured).slice(0, 3);
+            
+            blogPreview.innerHTML = featuredPosts.map(post => `
+                <article class="blog-card" onclick="navigateToArticle('${post.id}')">
+                    <div class="blog-card-image">
+                        ${getCategoryIcon(post.category)}
+                    </div>
+                    <div class="blog-card-content">
+                        <span class="blog-card-category">${post.category}</span>
+                        <h3 class="blog-card-title">${post.title}</h3>
+                        <p class="blog-card-excerpt">${post.excerpt}</p>
+                        <div class="blog-card-meta">
+                            <span class="blog-card-date">📅 ${formatDate(post.date)}</span>
+                            <span class="blog-card-read-time">⏱️ ${post.readTime}</span>
+                        </div>
+                    </div>
+                </article>
+            `).join('');
+        }
+
+        function setupMobileMenu() {
+            const hamburger = document.querySelector('.hamburger');
+            const navMenu = document.querySelector('.nav-menu');
+            
+            if (hamburger && navMenu) {
+                hamburger.addEventListener('click', function() {
+                    navMenu.classList.toggle('active');
+                    hamburger.classList.toggle('active');
+                });
+            }
+        }
+    </script>
+</body>
+</html>
