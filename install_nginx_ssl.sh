@@ -1,17 +1,26 @@
 #!/bin/bash
-source ./exports.sh
 
-# Override nginx conf to use SSL certs
-cat > $HOME/nginx_conf_temp << EOF
+# NGINX SSL Configuration Script
+# Configures NGINX to use SSL certificates
+
+source ./exports.sh
+source ./lib/common_functions.sh
+
+log_info "Starting NGINX SSL configuration..."
+log_info "Server name: $SERVER_NAME"
+
+# Create SSL-enabled NGINX configuration
+log_info "Creating SSL-enabled NGINX configuration..."
+cat > "$HOME/nginx_conf_temp" << EOF
 server {
   listen 80;
   listen [::]:80;
-  server_name $(echo $SERVER_NAME);
+  server_name $SERVER_NAME;
 
   listen [::]:443 ssl ipv6only=on;
   listen 443 ssl;
-  ssl_certificate /etc/letsencrypt/live/$(echo $SERVER_NAME)/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/$(echo $SERVER_NAME)/privkey.pem;
+  ssl_certificate /etc/letsencrypt/live/$SERVER_NAME/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/$SERVER_NAME/privkey.pem;
 
   location ^~ /ws {
       proxy_http_version 1.1;
@@ -37,12 +46,39 @@ server {
 }
 EOF
 
-sudo mv $HOME/nginx_conf_temp /etc/nginx/sites-enabled/default
+# Verify SSL certificates exist
+log_info "Verifying SSL certificates..."
+if [[ ! -f "/etc/letsencrypt/live/$SERVER_NAME/fullchain.pem" ]]; then
+    log_error "SSL certificate not found: /etc/letsencrypt/live/$SERVER_NAME/fullchain.pem"
+    log_error "Please run install_ssl_certbot.sh or install_acme_ssl.sh first"
+    exit 1
+fi
 
-sudo ufw allow "Nginx Full"
-sudo ufw allow https
-sudo ufw enable
+# Install SSL-enabled NGINX configuration
+log_info "Installing SSL-enabled NGINX configuration..."
+if ! sudo mv "$HOME/nginx_conf_temp" /etc/nginx/sites-enabled/default; then
+    log_error "Failed to install SSL NGINX configuration"
+    exit 1
+fi
 
-sudo service nginx restart
+# Setup firewall rules
+log_info "Configuring firewall for SSL..."
+setup_firewall_rules 80 443
 
-./nginx_harden.sh
+# Restart NGINX
+log_info "Restarting NGINX with SSL configuration..."
+if ! sudo service nginx restart; then
+    log_error "Failed to restart NGINX"
+    exit 1
+fi
+
+# Run NGINX hardening
+log_info "Running NGINX hardening..."
+if ! ./nginx_harden.sh; then
+    log_warn "NGINX hardening script failed, but continuing..."
+fi
+
+log_info "NGINX SSL configuration completed!"
+log_info "Server name: $SERVER_NAME"
+log_info "HTTPS WebSocket endpoint: https://$SERVER_NAME/ws"
+log_info "HTTPS RPC endpoint: https://$SERVER_NAME/rpc"

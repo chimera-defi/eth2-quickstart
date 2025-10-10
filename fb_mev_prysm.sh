@@ -1,87 +1,101 @@
 #!/bin/bash
+
+# Flashbots MEV Prysm Installation Script
+# This script builds Prysm from source with MEV support
+
 source ./exports.sh
+source ./lib/common_functions.sh
 
-# Hot patch prysm installation with mev prysm 
+log_info "Starting Flashbots MEV Prysm installation..."
 
-# prereqs to build from src
-sudo apt install cmake libssl-dev libgmp-dev libtinfo5 libprotoc -y
-# bazel 
-sudo apt install apt-transport-https curl gnupg -y
-curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor >bazel-archive-keyring.gpg
+# Check system requirements
+check_system_requirements 16 2000
+
+# Install build dependencies
+log_info "Installing build dependencies..."
+install_dependencies cmake libssl-dev libgmp-dev libtinfo5 libprotoc apt-transport-https curl gnupg
+
+# Install Bazel
+log_info "Installing Bazel..."
+if ! curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor >bazel-archive-keyring.gpg; then
+    log_error "Failed to download Bazel GPG key"
+    exit 1
+fi
+
 sudo mv bazel-archive-keyring.gpg /usr/share/keyrings
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
-sudo apt update && sudo apt install bazel bazel-5.3.0
 
+if ! sudo apt update && sudo apt install -y bazel bazel-5.3.0; then
+    log_error "Failed to install Bazel"
+    exit 1
+fi
 
-rm -rf prysm-src
-mkdir prysm-src 
-cd prysm || exit-src || exit
+# Create build directory
+PRYSM_SRC_DIR="$HOME/prysm-src"
+rm -rf "$PRYSM_SRC_DIR"
+ensure_directory "$PRYSM_SRC_DIR"
 
-git clone --recurse-submodules https://github.com/flashbots/prysm.git
+cd "$PRYSM_SRC_DIR" || exit
+
+# Clone and build Flashbots Prysm
+log_info "Cloning Flashbots Prysm repository..."
+if ! git clone --recurse-submodules https://github.com/flashbots/prysm.git; then
+    log_error "Failed to clone Flashbots Prysm repository"
+    exit 1
+fi
+
 cd prysm || exit
-# git checkout develop-boost-capella
 git pull
-bazel build //cmd/beacon-chain:beacon-chain --config=release
-bazel build //cmd/validator:validator --config=release
 
-cp ./bazel-bin/cmd/validator/validator_/validator $HOME/prysm/
-cp ./bazel-bin/cmd/beacon-chain/beacon-chain_/beacon-chain $HOME/prysm/
+log_info "Building beacon chain..."
+if ! bazel build //cmd/beacon-chain:beacon-chain --config=release; then
+    log_error "Failed to build beacon chain"
+    exit 1
+fi
 
-# gen jwt again
-$HOME/prysm/beacon-chain generate-auth-secret
-mkdir ~/secrets
-rm ~/secrets/jwt.hex
-mv ./jwt.hex ~/secrets
+log_info "Building validator..."
+if ! bazel build //cmd/validator:validator --config=release; then
+    log_error "Failed to build validator"
+    exit 1
+fi
 
-# overwrite pre-installed prysm bin with our commands
-cat > $HOME/cl.service << EOF 
-# The eth2 beacon chain service (part of systemd)
-# file: /etc/systemd/system/beacon-chain.service 
+# Copy binaries to Prysm directory
+PRYSM_DIR="$HOME/prysm"
+ensure_directory "$PRYSM_DIR"
 
-[Unit]
-Description     = eth2 beacon chain service
-Wants           = network-online.target
-After           = network-online.target 
+cp ./bazel-bin/cmd/validator/validator_/validator "$PRYSM_DIR/"
+cp ./bazel-bin/cmd/beacon-chain/beacon-chain_/beacon-chain "$PRYSM_DIR/"
 
-[Service]
-Type            = simple
-User            = $(whoami)
-ExecStart       = $HOME/prysm/beacon-chain --config-file=$(echo $HOME)/prysm/prysm_beacon_conf.yaml
-Restart         = on-failure
+# Generate JWT secret
+log_info "Generating JWT secret..."
+if ! "$PRYSM_DIR/beacon-chain" generate-auth-secret; then
+    log_error "Failed to generate JWT secret"
+    exit 1
+fi
 
-[Install]
-WantedBy    = multi-user.target
-EOF
+ensure_directory "$HOME/secrets"
+rm -f "$HOME/secrets/jwt.hex"
+mv ./jwt.hex "$HOME/secrets/"
 
-sudo mv $HOME/cl.service /etc/systemd/system/cl.service
-sudo chmod 644 /etc/systemd/system/cl.service
+# Create systemd services using common functions
+log_info "Creating systemd services..."
 
+# Create beacon chain service
+BEACON_EXEC_START="$PRYSM_DIR/beacon-chain --config-file=$PRYSM_DIR/prysm_beacon_conf.yaml"
+create_systemd_service "cl" "Flashbots MEV Prysm Beacon Chain" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
-# Setup validator
+# Create validator service
+VALIDATOR_EXEC_START="$PRYSM_DIR/validator --config-file=$PRYSM_DIR/prysm_validator_conf.yaml"
+create_systemd_service "validator" "Flashbots MEV Prysm Validator" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target"
 
-cat > $HOME/validator.service << EOF 
-# The eth2 validator service (part of systemd)
-# file: /etc/systemd/system/validator.service 
+# Enable services
+enable_systemd_service "cl"
+enable_systemd_service "validator"
 
-[Unit]
-Description     = eth2 validator service
-Wants           = network-online.target beacon-chain.service
-After           = network-online.target 
+# Show completion information
+show_installation_complete "Flashbots MEV Prysm" "cl" "$PRYSM_DIR/prysm_beacon_conf.yaml" "$PRYSM_DIR"
 
-[Service]
-User            = $(whoami)
-ExecStart       = $HOME/prysm/validator --config-file=$(echo $HOME)/prysm/prysm_validator_conf.yaml
-
-Restart         = on-failure
-
-[Install]
-WantedBy	= multi-user.target
-EOF
-sudo mv $HOME/validator.service /etc/systemd/system/validator.service
-sudo chmod 644 /etc/systemd/system/validator.service
-
-sudo systemctl daemon-reload
-sudo systemctl enable beacon-chain
-sudo systemctl enable validator
-
-echo "DONE! Files generated in $HOME/prysm/ ; systemd services: /etc/systemd/system/validator.service , /etc/systemd/system/beacon-chain.service "
+log_info "Flashbots MEV Prysm installation completed!"
+log_info "Beacon chain binary: $PRYSM_DIR/beacon-chain"
+log_info "Validator binary: $PRYSM_DIR/validator"
+log_info "Configuration files: $PRYSM_DIR/prysm_*_conf.yaml"
