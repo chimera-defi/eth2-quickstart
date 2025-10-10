@@ -300,3 +300,144 @@ check_system_requirements() {
         log_info "Disk space check passed: ${disk_gb}GB available"
     fi
 }
+
+# Service management functions
+start_all_services() {
+    local services=("eth1" "cl" "validator" "mev" "nginx")
+    log_info "Starting all Ethereum services..."
+    
+    for service in "${services[@]}"; do
+        if systemctl is-enabled "$service" >/dev/null 2>&1; then
+            log_info "Starting $service..."
+            sudo systemctl start "$service" || log_warn "Failed to start $service"
+        else
+            log_warn "Service $service is not enabled, skipping"
+        fi
+    done
+    
+    log_info "All services started"
+}
+
+stop_all_services() {
+    local services=("eth1" "cl" "validator" "mev" "nginx")
+    log_info "Stopping all Ethereum services..."
+    
+    for service in "${services[@]}"; do
+        if systemctl is-active --quiet "$service"; then
+            log_info "Stopping $service..."
+            sudo systemctl stop "$service" || log_warn "Failed to stop $service"
+        else
+            log_info "Service $service is not running"
+        fi
+    done
+    
+    log_info "All services stopped"
+}
+
+restart_all_services() {
+    local services=("eth1" "cl" "validator" "mev" "nginx")
+    log_info "Restarting all Ethereum services..."
+    
+    for service in "${services[@]}"; do
+        if systemctl is-enabled "$service" >/dev/null 2>&1; then
+            log_info "Restarting $service..."
+            sudo systemctl restart "$service" || log_warn "Failed to restart $service"
+        else
+            log_warn "Service $service is not enabled, skipping"
+        fi
+    done
+    
+    log_info "All services restarted"
+}
+
+show_service_status() {
+    local services=("eth1" "cl" "validator" "mev" "nginx")
+    log_info "Checking service status..."
+    
+    for service in "${services[@]}"; do
+        if systemctl is-enabled "$service" >/dev/null 2>&1; then
+            echo "=== $service Status ==="
+            systemctl status "$service" --no-pager -l
+            echo
+        else
+            log_warn "Service $service is not enabled"
+        fi
+    done
+}
+
+show_installation_complete() {
+    local client_name="$1"
+    local service_name="$2"
+    local config_file="$3"
+    local data_dir="$4"
+    
+    log_info "$client_name installation completed!"
+    
+    if [[ -n "$config_file" ]]; then
+        log_info "Configuration file: $config_file"
+    fi
+    
+    if [[ -n "$data_dir" ]]; then
+        log_info "Data directory: $data_dir"
+    fi
+    
+    log_info "To start $client_name: sudo systemctl start $service_name"
+    log_info "To check status: sudo systemctl status $service_name"
+    log_info "To view logs: journalctl -fu $service_name"
+}
+
+# Input validation functions
+require_command() {
+    if ! command -v "$1" >/dev/null 2>&1; then
+        log_error "Required command '$1' not found. Please install it and try again."
+        exit 1
+    fi
+}
+
+validate_ip() {
+    local ip="$1"
+    if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+validate_port() {
+    local port="$1"
+    if [[ $port =~ ^[0-9]+$ ]] && [[ $port -ge 1 ]] && [[ $port -le 65535 ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+validate_ethereum_address() {
+    local address="$1"
+    if [[ $address =~ ^0x[a-fA-F0-9]{40}$ ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Enhanced error handling
+check_service_health() {
+    local service_name="$1"
+    local max_wait="${2:-30}"
+    local wait_time=0
+    
+    log_info "Checking health of service: $service_name"
+    
+    while [[ $wait_time -lt $max_wait ]]; do
+        if systemctl is-active --quiet "$service_name"; then
+            log_info "Service $service_name is healthy"
+            return 0
+        fi
+        sleep 2
+        ((wait_time += 2))
+    done
+    
+    log_error "Service $service_name failed health check after ${max_wait} seconds"
+    return 1
+}
