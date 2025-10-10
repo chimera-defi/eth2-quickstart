@@ -30,7 +30,7 @@ sudo systemctl restart validator
 # mev / flashbots
 log_info "Updating MEV Boost..."
 rm -rf ./mev-boost # remove any pre-existing copies
-./install_mev_boost.sh && sudo systemctl restart mev
+../mev/install_mev_boost.sh && sudo systemctl restart mev
 
 #nginx
 log_info "Restarting Nginx..."

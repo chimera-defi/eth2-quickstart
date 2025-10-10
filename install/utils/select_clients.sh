@@ -49,31 +49,31 @@ show_execution_clients() {
         "The original Go implementation of Ethereum. Most widely used and battle-tested." \
         "• Most stable and mature\n• Extensive documentation\n• Wide community support\n• Proven track record" \
         "• Higher resource usage\n• Slower sync compared to newer clients" \
-        "./install_geth.sh"
+        "../execution/install_geth.sh"
     
     display_client_info "execution" "Erigon" "Go" \
         "Re-architected Geth focusing on efficiency and performance." \
         "• Faster sync times\n• Lower disk space usage\n• Better performance\n• Modular architecture" \
         "• More complex setup\n• Less mature than Geth\n• Higher memory usage during sync" \
-        "./erigon.sh"
+        "../execution/erigon.sh"
     
     display_client_info "execution" "Reth" "Rust" \
         "Modern Rust implementation focusing on performance and modularity." \
         "• Excellent performance\n• Modern codebase\n• Active development\n• Modular design" \
         "• Newer and less battle-tested\n• Rust compilation takes time\n• Still in development" \
-        "./reth.sh"
+        "../execution/reth.sh"
     
     display_client_info "execution" "Nethermind" ".NET/C#" \
         "Enterprise-focused .NET implementation with advanced features." \
         "• Enterprise features\n• Good performance\n• Active development\n• JSON-RPC compatibility" \
         "• Requires .NET runtime\n• Less common in home staking\n• Complex configuration" \
-        "./install_nethermind.sh"
+        "../execution/install_nethermind.sh"
     
     display_client_info "execution" "Besu" "Java" \
         "Apache 2.0 licensed Java client suitable for both public and private networks." \
         "• Permissive license\n• Enterprise support\n• Good for private networks\n• Hyperledger project" \
         "• Requires Java runtime\n• Higher resource usage\n• Less optimized for home staking" \
-        "./install_besu.sh"
+        "../execution/install_besu.sh"
 }
 
 show_consensus_clients() {
@@ -84,37 +84,37 @@ show_consensus_clients() {
         "Developed by Prysmatic Labs, known for reliability and documentation." \
         "• Excellent documentation\n• Stable and reliable\n• Good community support\n• Easy to use" \
         "• Higher resource usage\n• Less client diversity benefit" \
-        "./install_prysm.sh"
+        "../consensus/install_prysm.sh"
     
     display_client_info "consensus" "Lighthouse" "Rust" \
         "Rust implementation by Sigma Prime, focusing on security and performance." \
         "• Excellent performance\n• Security focused\n• Good documentation\n• Active development" \
         "• Rust compilation required\n• Less beginner-friendly setup" \
-        "./lighthouse.sh"
+        "../consensus/lighthouse.sh"
     
     display_client_info "consensus" "Teku" "Java" \
         "ConsenSys-developed client designed for institutional staking." \
         "• Enterprise features\n• Institutional support\n• Good for large operations\n• Comprehensive monitoring" \
         "• Higher resource usage\n• Requires Java runtime\n• Complex for home stakers" \
-        "./install_teku.sh"
+        "../consensus/install_teku.sh"
     
     display_client_info "consensus" "Nimbus" "Nim" \
         "Status-developed client optimized for resource efficiency." \
         "• Very lightweight\n• Perfect for Raspberry Pi\n• Low bandwidth usage\n• Easy to run" \
         "• Smaller community\n• Less feature-rich\n• Nim language less common" \
-        "./install_nimbus.sh"
+        "../consensus/install_nimbus.sh"
     
     display_client_info "consensus" "Lodestar" "TypeScript" \
         "ChainSafe-developed client written in TypeScript." \
         "• Developer-friendly (TypeScript)\n• Good for development\n• Active development\n• Modern architecture" \
         "• Higher resource usage\n• Less battle-tested\n• Node.js dependency" \
-        "./install_lodestar.sh"
+        "../consensus/install_lodestar.sh"
     
     display_client_info "consensus" "Grandine" "Rust" \
         "High-performance Rust client focused on correctness and efficiency." \
         "• High performance\n• Modern Rust implementation\n• Performance optimized\n• Advanced features" \
         "• Very new client\n• Less documentation\n• Advanced users only\n• Still in development" \
-        "./install_grandine.sh"
+        "../consensus/install_grandine.sh"
 }
 
 show_recommendations() {

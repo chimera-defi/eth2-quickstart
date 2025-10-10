@@ -11,7 +11,7 @@
 # Note: External ETH1 RPC calls expect SSL so you will have to 
 #       manually run: `sudo su`
 #       Followed by: 
-#       `./install_acme_ssl.sh`  or 
+#       `./install/ssl/install_acme_ssl.sh`  or 
 #       `./install_certbot_ssl.sh` 
 #       to get SSL certs and configure NGINX properly
 
@@ -53,27 +53,27 @@ read -r -p "Select option (1/2): " client_choice
 case "$client_choice" in
     1)
         log_info "Starting interactive client selection..."
-        ./select_clients.sh
+        ./install/utils/select_clients.sh
         log_info "Please run the recommended install scripts from the client selection tool"
-        log_info "Example: ./install_geth.sh && ./install_prysm.sh"
+        log_info "Example: ./install/execution/install_geth.sh && ./install/consensus/install_prysm.sh"
         ;;
     2)
         log_info "Installing default clients (Geth + Prysm + MEV Boost)..."
         
         log_info "Installing Geth..."
-        if ! ./install_geth.sh; then
+        if ! ./install/execution/install_geth.sh; then
             log_error "Failed to install Geth"
             exit 1
         fi
 
         log_info "Installing Prysm..."
-        if ! ./install_prysm.sh; then
+        if ! ./install/consensus/install_prysm.sh; then
             log_error "Failed to install Prysm"
             exit 1
         fi
 
         log_info "Installing Flashbots MEV Boost..."
-        if ! ./install_mev_boost.sh; then
+        if ! ./install/mev/install_mev_boost.sh; then
             log_error "Failed to install Flashbots MEV Boost"
             exit 1
         fi
@@ -86,19 +86,19 @@ case "$client_choice" in
         log_info "Installing default clients (Geth + Prysm + MEV Boost)..."
         
         log_info "Installing Geth..."
-        if ! ./install_geth.sh; then
+        if ! ./install/execution/install_geth.sh; then
             log_error "Failed to install Geth"
             exit 1
         fi
 
         log_info "Installing Prysm..."
-        if ! ./install_prysm.sh; then
+        if ! ./install/consensus/install_prysm.sh; then
             log_error "Failed to install Prysm"
             exit 1
         fi
 
         log_info "Installing Flashbots MEV Boost..."
-        if ! ./install_mev_boost.sh; then
+        if ! ./install/mev/install_mev_boost.sh; then
             log_error "Failed to install Flashbots MEV Boost"
             exit 1
         fi
@@ -117,14 +117,14 @@ To expose your own uncensored geth RPC proxy for use, install nginx with SSL:
 
 1. Switch to super user: sudo su
 2. Run one of the following SSL setup commands:
-   - ./install_acme_ssl.sh (Preferred - uses acme.sh)
-   - ./install_ssl_certbot.sh (uses certbot with manual DNS verification)
+   - ./install/ssl/install_acme_ssl.sh (Preferred - uses acme.sh)
+   - ./install/ssl/install_ssl_certbot.sh (uses certbot with manual DNS verification)
 
-If you are new to NGINX, strongly recommend running only './install_nginx.sh' first 
+If you are new to NGINX, strongly recommend running only './install/web/install_nginx.sh' first 
 and confirming it works without SSL, locally, then remotely via your domain name.
 
 Next step is to start syncing via:
 - sudo systemctl start eth1
-- Or try: ./extra_utils/start.sh
+- Or try: ./install/utils/start.sh
 
 EOF

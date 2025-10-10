@@ -76,8 +76,8 @@ chown -R "$LOGIN_UNAME":"$LOGIN_UNAME" /home/"$LOGIN_UNAME"/"$REPO_NAME" || true
 # Whitelist and only allow certain users
 # AllowUsers root
 # AllowUsers $LOGIN_UNAME
-chmod +x ./firewall.sh
-./firewall.sh
+chmod +x ./install/security/firewall.sh
+./install/security/firewall.sh
 
 # confirm time date sync
 apt install chrony -y
