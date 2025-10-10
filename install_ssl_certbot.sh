@@ -1,19 +1,72 @@
 #!/bin/bash
+
+# Certbot SSL Certificate Installation Script
+# Uses certbot to get SSL certificates from Let's Encrypt
+
 source ./exports.sh
+source ./lib/common_functions.sh
 
-./install_nginx.sh
+log_info "Starting Certbot SSL certificate installation..."
+log_info "Server name: $SERVER_NAME"
 
-# instal certbot
-sudo snap install core; sudo snap refresh core
-sudo snap install --classic certbot
-sudo ln -s /snap/bin/certbot /usr/bin/certbot
+# Validate required variables
+if [[ -z "$SERVER_NAME" ]]; then
+    log_error "SERVER_NAME is not set in exports.sh"
+    exit 1
+fi
 
-echo "For certbot to work server name records must be pre-set"
-echo "Ime certbot breaks the nginx config so we do it manually"
-echo "We will now prompt you to go through ssl certbot challenge for your domain"
+# Install NGINX first
+log_info "Installing NGINX..."
+if ! ./install_nginx.sh; then
+    log_error "Failed to install NGINX"
+    exit 1
+fi
 
-certbot certonly --manual --preferred-challenges dns
-echo "Running certbot --nginx ; This is expected to fail but will generate needed files"
-certbot --nginx -d "$SERVER_NAME"
+# Install certbot
+log_info "Installing certbot..."
+if ! sudo snap install core; then
+    log_error "Failed to install snap core"
+    exit 1
+fi
 
-./install_nginx_ssl.sh
+if ! sudo snap refresh core; then
+    log_error "Failed to refresh snap core"
+    exit 1
+fi
+
+if ! sudo snap install --classic certbot; then
+    log_error "Failed to install certbot"
+    exit 1
+fi
+
+if ! sudo ln -s /snap/bin/certbot /usr/bin/certbot; then
+    log_error "Failed to create certbot symlink"
+    exit 1
+fi
+
+# Display important information
+log_warn "IMPORTANT: For certbot to work, server name records must be pre-set"
+log_warn "Certbot may break the nginx config, so we do it manually"
+log_info "You will now be prompted to go through SSL certbot challenge for your domain"
+
+# Issue SSL certificate manually
+log_info "Issuing SSL certificate manually..."
+if ! certbot certonly --manual --preferred-challenges dns; then
+    log_error "Failed to issue SSL certificate manually"
+    exit 1
+fi
+
+# Try nginx integration (expected to fail but generates files)
+log_info "Running certbot --nginx (this may fail but will generate needed files)..."
+certbot --nginx -d "$SERVER_NAME" || log_warn "Certbot nginx integration failed as expected"
+
+# Configure NGINX with SSL
+log_info "Configuring NGINX with SSL..."
+if ! ./install_nginx_ssl.sh; then
+    log_error "Failed to configure NGINX with SSL"
+    exit 1
+fi
+
+log_info "Successfully installed NGINX with SSL using Certbot!"
+log_info "SSL certificate installed for: $SERVER_NAME"
+log_info "Certificate location: /etc/letsencrypt/live/$SERVER_NAME/"
