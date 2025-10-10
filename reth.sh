@@ -27,9 +27,24 @@ install_dependencies libclang-dev pkg-config build-essential cargo
 # Setup firewall rules for Reth
 setup_firewall_rules 30303 30304 42069 4000 4001
 
-# Install Reth
+# Clone and build Reth
+log_info "Cloning Reth repository..."
+if ! git clone https://github.com/paradigmxyz/reth.git; then
+    log_error "Failed to clone Reth repository"
+    exit 1
+fi
+
+cd reth || exit
+
+log_info "Building Reth..."
+if ! cargo build --release; then
+    log_error "Failed to build Reth"
+    exit 1
+fi
+
+# Install Reth globally
 log_info "Installing Reth..."
-if ! cargo install --locked --path bin/reth --bin reth; then
+if ! cargo install --path . --bin reth; then
     log_error "Failed to install Reth"
     exit 1
 fi
@@ -43,7 +58,13 @@ ensure_directory "$RETH_DIR"
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create systemd service
-EXEC_START="/home/eth/.cargo/bin/reth node"
+EXEC_START="$HOME/.cargo/bin/reth node"
+
+# Verify Reth binary exists
+if [[ ! -f "$HOME/.cargo/bin/reth" ]]; then
+    log_error "Reth binary not found at $HOME/.cargo/bin/reth"
+    exit 1
+fi
 
 create_systemd_service "eth1" "Reth Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "6000" "10" "3000"
 

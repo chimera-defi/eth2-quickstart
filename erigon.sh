@@ -45,8 +45,11 @@ fi
 
 # Create Erigon directory
 ERIGON_DIR="$HOME/erigon"
-rm -rf "$ERIGON_DIR"/*
-ensure_directory "$ERIGON_DIR"
+if [[ -d "$ERIGON_DIR" ]]; then
+    rm -rf "$ERIGON_DIR"/*
+else
+    ensure_directory "$ERIGON_DIR"
+fi
 
 # Create Erigon configuration
 log_info "Creating Erigon configuration..."

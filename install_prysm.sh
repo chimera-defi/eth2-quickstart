@@ -25,11 +25,18 @@ cd "$PRYSM_DIR" || exit
 
 # Download Prysm
 log_info "Downloading Prysm..."
-if ! curl https://raw.githubusercontent.com/prysmaticlabs/prysm/master/prysm.sh --output prysm.sh; then
+if ! download_file "https://raw.githubusercontent.com/prysmaticlabs/prysm/master/prysm.sh" "prysm.sh"; then
     log_error "Failed to download Prysm"
     exit 1
 fi
+
 chmod +x prysm.sh
+
+# Verify download
+if [[ ! -f "prysm.sh" || ! -x "prysm.sh" ]]; then
+    log_error "Prysm script not found or not executable"
+    exit 1
+fi
 
 # Generate JWT secret
 log_info "Generating JWT secret..."
