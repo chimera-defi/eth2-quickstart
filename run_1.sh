@@ -2,27 +2,44 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
+# System Setup Script - Phase 1
+# Initial system hardening and user setup
+
 source ./exports.sh
 source ./lib/utils.sh
+source ./lib/common_functions.sh
 require_root
 
+log_info "Starting system setup - Phase 1..."
+
+# Update system packages
+log_info "Updating system packages..."
 apt update -y
 apt upgrade -y
 apt full-upgrade -y
 apt autoremove -y
 
-# setup sshd safe defaults
+# Setup SSH with safe defaults
+log_info "Configuring SSH with safe defaults..."
 if [ -f /etc/ssh/sshd_config ]; then
-mv /etc/ssh/sshd_config /etc/ssh/sshd_config.bkup
+    log_info "Backing up existing SSH config"
+    mv /etc/ssh/sshd_config /etc/ssh/sshd_config.bkup
 fi
-cp ./sshd_config /etc/ssh/sshd_config
+
+if ! cp ./sshd_config /etc/ssh/sshd_config; then
+    log_error "Failed to copy SSH config"
+    exit 1
+fi
+
 # Copy it back for review / commit 
 cp /etc/ssh/sshd_config ./
 
 # Basic hardening
+log_info "Setting up basic system hardening..."
 
-# install and config fail2ban
-apt install fail2ban -y
+# Install and configure fail2ban
+log_info "Installing and configuring fail2ban..."
+install_dependencies fail2ban
 echo "
 ## block hosts trying to abuse our server as a forward proxy
 [nginx-proxy]
