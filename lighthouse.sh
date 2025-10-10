@@ -1,44 +1,51 @@
 #!/bin/bash
-source ./exports.sh
 
-mkdir ~/lighthouse && cd ~/lighthouse || exit 
-curl -LO https://github.com/sigp/lighthouse/releases/download/v4.5.0/lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz
+# Lighthouse Consensus Client Installation Script
+# Lighthouse is a Rust-based Ethereum consensus client developed by Sigma Prime
+
+source ./exports.sh
+source ./lib/common_functions.sh
+
+log_info "Starting Lighthouse installation..."
+
+# Check system requirements
+check_system_requirements 16 1000
+
+# Install dependencies
+install_dependencies wget curl
+
+# Setup firewall rules for Lighthouse
+setup_firewall_rules 9000 5052
+
+# Create Lighthouse directory
+LIGHTHOUSE_DIR="$HOME/lighthouse"
+ensure_directory "$LIGHTHOUSE_DIR"
+
+cd "$LIGHTHOUSE_DIR" || exit
+
+# Download Lighthouse
+log_info "Downloading Lighthouse..."
+if ! download_file "https://github.com/sigp/lighthouse/releases/download/v4.5.0/lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz" "lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz"; then
+    log_error "Failed to download Lighthouse"
+    exit 1
+fi
+
 tar -xvf lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz
 
-# jwt => $HOME/.local/share/reth/
-CLCMD="RUST_LOG=info /home/eth/lighthouse/lighthouse bn \
-    --checkpoint-sync-url https://mainnet.checkpoint.sigp.io \
-    --execution-endpoint http://localhost:8551 \
-    --execution-jwt $HOME/.local/share/reth/mainnet/jwt.hex \
-    --disable-deposit-contract-sync"
+# Ensure JWT secret exists
+ensure_jwt_secret "$HOME/.local/share/reth/mainnet/jwt.hex"
 
-cat > $HOME/cl.service << EOF 
-# The eth2 beacon chain service (part of systemd)
-# file: /etc/systemd/system/cl.service 
+# Create systemd service
+EXEC_START="RUST_LOG=info $LIGHTHOUSE_DIR/lighthouse bn --checkpoint-sync-url https://mainnet.checkpoint.sigp.io --execution-endpoint http://localhost:8551 --execution-jwt $HOME/.local/share/reth/mainnet/jwt.hex --disable-deposit-contract-sync"
 
-[Unit]
-Description     = eth2 beacon chain service
-Wants           = network-online.target
-After           = network-online.target 
+create_systemd_service "cl" "Lighthouse Ethereum Consensus Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
-[Service]
-Type            = simple
-User            = $(whoami)
-ExecStart       = $(echo $CMD)
-Restart         = on-failure
-TimeoutStopSec  = 6000
-RestartSec      = 10
-TimeoutSec      = 3000
+# Enable the service
+enable_systemd_service "cl"
 
-[Install]
-WantedBy    = multi-user.target
-EOF
+# Show completion information
+show_installation_complete "Lighthouse" "cl" "" "$LIGHTHOUSE_DIR"
 
-sudo mv $HOME/cl.service /etc/systemd/system/cl.service
-sudo chmod 644 /etc/systemd/system/cl.service
-
-sudo systemctl daemon-reload
-sudo systemctl enable cl
-sudo systemctl stop cl
+log_info "Starting Lighthouse service..."
 sudo systemctl start cl
 sudo systemctl status cl

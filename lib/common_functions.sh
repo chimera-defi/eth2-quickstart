@@ -307,15 +307,19 @@ start_all_services() {
     log_info "Starting all Ethereum services..."
     
     for service in "${services[@]}"; do
-        if systemctl is-enabled "$service" >/dev/null 2>&1; then
-            log_info "Starting $service..."
-            sudo systemctl start "$service" || log_warn "Failed to start $service"
+        if systemctl is-active --quiet "$service"; then
+            log_info "Service $service is already running"
         else
-            log_warn "Service $service is not enabled, skipping"
+            log_info "Starting $service..."
+            if sudo systemctl start "$service"; then
+                log_info "Successfully started $service"
+            else
+                log_error "Failed to start $service"
+            fi
         fi
     done
     
-    log_info "All services started"
+    log_info "Service start process completed"
 }
 
 stop_all_services() {
@@ -341,13 +345,17 @@ restart_all_services() {
     for service in "${services[@]}"; do
         if systemctl is-enabled "$service" >/dev/null 2>&1; then
             log_info "Restarting $service..."
-            sudo systemctl restart "$service" || log_warn "Failed to restart $service"
+            if sudo systemctl restart "$service"; then
+                log_info "Successfully restarted $service"
+            else
+                log_error "Failed to restart $service"
+            fi
         else
             log_warn "Service $service is not enabled, skipping"
         fi
     done
     
-    log_info "All services restarted"
+    log_info "Service restart process completed"
 }
 
 show_service_status() {
@@ -373,12 +381,16 @@ show_installation_complete() {
     
     log_info "$client_name installation completed!"
     
-    if [[ -n "$config_file" ]]; then
+    if [[ -n "$config_file" && -f "$config_file" ]]; then
         log_info "Configuration file: $config_file"
+    elif [[ -n "$config_file" ]]; then
+        log_warn "Configuration file specified but not found: $config_file"
     fi
     
-    if [[ -n "$data_dir" ]]; then
+    if [[ -n "$data_dir" && -d "$data_dir" ]]; then
         log_info "Data directory: $data_dir"
+    elif [[ -n "$data_dir" ]]; then
+        log_warn "Data directory specified but not found: $data_dir"
     fi
     
     log_info "To start $client_name: sudo systemctl start $service_name"
