@@ -1,4 +1,25 @@
 #!/bin/bash
-# Some extra ubuntu utilities user can install
+
+# Optional Tools Installation Script
+# Installs useful network monitoring and system utilities
 # https://askubuntu.com/questions/257263/how-to-display-network-traffic-in-the-terminal
-sudo apt-get install bmon slurm tcptrack
+
+source ../exports.sh
+source ../lib/common_functions.sh
+
+log_info "Starting optional tools installation..."
+
+# Install network monitoring tools
+log_info "Installing network monitoring tools..."
+install_dependencies bmon slurm tcptrack
+
+log_info "Optional tools installation completed!"
+log_info "Installed tools:"
+log_info "- bmon: Bandwidth monitoring"
+log_info "- slurm: Network traffic monitor"
+log_info "- tcptrack: TCP connection tracker"
+log_info ""
+log_info "Usage examples:"
+log_info "- bmon: Monitor bandwidth usage"
+log_info "- slurm: Monitor network traffic by interface"
+log_info "- tcptrack: Track TCP connections in real-time"
