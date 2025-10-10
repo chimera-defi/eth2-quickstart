@@ -1,29 +1,39 @@
 #!/bin/bash
 # Updates the software stack
 source ../exports.sh
+source ../lib/common_functions.sh
 
+log_info "Starting software stack update..."
+
+# Stop services before update
+log_info "Stopping services for update..."
 sudo systemctl stop eth1
 
 # regular linux housecleaning
+log_info "Updating system packages..."
 sudo apt-get update
 sudo apt upgrade -y
 sudo apt dist-upgrade -y
 sudo apt autoremove -y
 
 # geth - upgrade before already shouldve upgraded it for us but here is cmd in case needed
+log_info "Updating Geth..."
 sudo apt-get install ethereum -y
 sudo apt upgrade geth -y 
 sudo systemctl start eth1
 
 # prysm
+log_info "Restarting Prysm services..."
 sudo systemctl restart cl
 sudo systemctl restart validator
 
 # mev / flashbots
+log_info "Updating MEV Boost..."
 rm -rf ./mev-boost # remove any pre-existing copies
 ./install_mev_boost.sh && sudo systemctl restart mev
 
 #nginx
+log_info "Restarting Nginx..."
 sudo service nginx restart
 
 # Try to output a report

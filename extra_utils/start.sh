@@ -1,8 +1,6 @@
 #!/bin/bash
 
-# Starts all systemd units
-sudo systemctl start eth1
-sudo systemctl start cl
-sudo systemctl start validator
-sudo systemctl start mev
-sudo systemctl start nginx
+# Starts all systemd units using common functions
+source ../lib/common_functions.sh
+
+start_all_services

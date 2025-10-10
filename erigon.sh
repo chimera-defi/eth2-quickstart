@@ -1,32 +1,56 @@
 #!/bin/bash
 
+# Erigon Execution Client Installation Script
+# Erigon is a Go-based Ethereum client focused on efficiency and performance
+
 source ./exports.sh
+source ./lib/common_functions.sh
 
-# Setup erigon devel 
-# https://github.com/ledgerwatch/erigon
-#
+log_info "Starting Erigon installation..."
 
-# erigon uses some extra ports
-sudo ufw allow 30303
-sudo ufw allow 30304
-sudo ufw allow 42069 # lmao - Snap sync (Bittorent)
-sudo ufw allow 4000/udp # sentinel 
-sudo ufw allow 4001/udp
+# Check system requirements
+check_system_requirements 16 2000
 
-# stable
-# git clone --branch stable --single-branch https://github.com/ledgerwatch/erigon.git
-# devrel
-git clone --recurse-submodules https://github.com/ledgerwatch/erigon.git
+# Install dependencies
+install_dependencies git build-essential
+
+# Setup firewall rules for Erigon
+setup_firewall_rules 30303 30304 42069 4000 4001
+
+# Clone and build Erigon
+log_info "Cloning Erigon repository..."
+if ! git clone --recurse-submodules https://github.com/ledgerwatch/erigon.git; then
+    log_error "Failed to clone Erigon repository"
+    exit 1
+fi
+
 cd erigon || exit
 git pull
-make erigon
-make rpcdaemon
-make integration
 
-rm -rf "$HOME"/erigon/*
-mkdir "$HOME"/erigon
+log_info "Building Erigon..."
+if ! make erigon; then
+    log_error "Failed to build Erigon"
+    exit 1
+fi
 
-cat > "$HOME"/erigon/config.yaml << EOF
+if ! make rpcdaemon; then
+    log_error "Failed to build RPC daemon"
+    exit 1
+fi
+
+if ! make integration; then
+    log_error "Failed to build integration tools"
+    exit 1
+fi
+
+# Create Erigon directory
+ERIGON_DIR="$HOME/erigon"
+rm -rf "$ERIGON_DIR"/*
+ensure_directory "$ERIGON_DIR"
+
+# Create Erigon configuration
+log_info "Creating Erigon configuration..."
+cat > "$ERIGON_DIR/config.yaml" << EOF
 chain : "mainnet"
 http : true
 http.api : ["admin","engine","eth","erigon","web3","net","debug","db","trace","txpool","personal"]
@@ -39,33 +63,23 @@ torrent.download.rate: 512mb
 prune: hrtc
 EOF
 
-cp ./build/bin/erigon "$HOME"/erigon/
+# Copy Erigon binary
+cp ./build/bin/erigon "$ERIGON_DIR/"
 
+# Ensure JWT secret exists
+ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
-# overwrite the eth1 servicwe
+# Create systemd service
+EXEC_START="$ERIGON_DIR/erigon --config $ERIGON_DIR/config.yaml --externalcl"
 
-cat > "$HOME"/eth1.service << EOF 
-[Unit]
-Description     = erigon execution client service
-Wants           = network-online.target
-After           = network-online.target 
+create_systemd_service "eth1" "Erigon Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
-[Service]
-User            = $(whoami)
-ExecStart       = $HOME/erigon/erigon --config $HOME/erigon/config.yaml --externalcl
-Restart         = on-failure
-TimeoutStopSec  = 600
-RestartSec      = 5
-TimeoutSec      = 300
+# Enable the service
+enable_systemd_service "eth1"
 
-[Install]
-WantedBy    = multi-user.target
-EOF
+# Show completion information
+show_installation_complete "Erigon" "eth1" "$ERIGON_DIR/config.yaml" "$ERIGON_DIR"
 
-sudo mv "$HOME"/eth1.service /etc/systemd/system/eth1.service
-sudo chmod 644 /etc/systemd/system/eth1.service
-sudo systemctl daemon-reload
-sudo systemctl enable eth1
-
-# print integration stages
+# Print integration stages
+log_info "Erigon integration stages:"
 ./build/bin/integration print_stages --chain mainnet --datadir ~/.local/share/erigon

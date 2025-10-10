@@ -1,60 +1,58 @@
 #!/bin/bash
 
+# Reth Execution Client Installation Script
+# Reth is a Rust-based Ethereum client focused on performance and modularity
+
 source ./exports.sh
+source ./lib/common_functions.sh
 
-# Setup  reth
-# https://paradigmxyz.github.io/reth/installation/source.html
-#
+log_info "Starting Reth installation..."
 
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+# Check system requirements
+check_system_requirements 16 2000
 
-sudo apt-get install libclang-dev pkg-config build-essential cargo -y
+# Install Rust
+log_info "Installing Rust..."
+if ! curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh; then
+    log_error "Failed to install Rust"
+    exit 1
+fi
 
-# erigon uses some extra ports - we open these for reth too to be safe? 
-sudo ufw allow 30303
-sudo ufw allow 30304
-sudo ufw allow 42069 # Snap sync (Bittorent)
-sudo ufw allow 4000/udp # sentinel 
-sudo ufw allow 4001/udp
+# Source Rust environment
+source "$HOME/.cargo/env"
 
-# stable
-# git clone --branch stable --single-branch https://github.com/ledgerwatch/erigon.git
-# devrel
-# git clone --recurse-submodules https://github.com/paradigmxyz/reth
-# cd reth
-# git pull
-# RUSTFLAGS="-C target-cpu=native" cargo build --profile maxperf --release
+# Install dependencies
+install_dependencies libclang-dev pkg-config build-essential cargo
 
-cargo install --locked --path bin/reth --bin reth
-# cargo build --release
+# Setup firewall rules for Reth
+setup_firewall_rules 30303 30304 42069 4000 4001
 
+# Install Reth
+log_info "Installing Reth..."
+if ! cargo install --locked --path bin/reth --bin reth; then
+    log_error "Failed to install Reth"
+    exit 1
+fi
 
-rm -rf $HOME/reth/*
-mkdir $HOME/reth
+# Create Reth directory
+RETH_DIR="$HOME/reth"
+rm -rf "$RETH_DIR"/*
+ensure_directory "$RETH_DIR"
 
-# overwrite the eth1 servicwe
+# Ensure JWT secret exists
+ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
-cat > $HOME/eth1.service << EOF 
-[Unit]
-Description     = reth execution client service
-Wants           = network-online.target
-After           = network-online.target 
+# Create systemd service
+EXEC_START="/home/eth/.cargo/bin/reth node"
 
-[Service]
-User            = $(whoami)
-ExecStart       = /home/eth/.cargo/bin/reth node
-Restart         = on-failure
-TimeoutStopSec  = 6000
-RestartSec      = 10
-TimeoutSec      = 3000
+create_systemd_service "eth1" "Reth Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "6000" "10" "3000"
 
-[Install]
-WantedBy    = multi-user.target
-EOF
+# Enable the service
+enable_systemd_service "eth1"
 
-sudo mv $HOME/eth1.service /etc/systemd/system/eth1.service
-sudo chmod 644 /etc/systemd/system/eth1.service
-sudo systemctl daemon-reload
-sudo systemctl enable eth1
+# Show completion information
+show_installation_complete "Reth" "eth1" "" "$RETH_DIR"
+
+log_info "Starting Reth service..."
 sudo systemctl start eth1
 sudo systemctl status eth1

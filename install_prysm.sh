@@ -1,88 +1,113 @@
 #!/bin/bash
+
+# Prysm Consensus Client Installation Script
+# Prysm is a Go-based Ethereum consensus client developed by Prysmatic Labs
+
 source ./exports.sh
+source ./lib/common_functions.sh
 
-mkdir ~/prysm && cd ~/prysm || exit 
-curl https://raw.githubusercontent.com/prysmaticlabs/prysm/master/prysm.sh --output prysm.sh && chmod +x prysm.sh 
+log_info "Starting Prysm installation..."
+
+# Check system requirements
+check_system_requirements 16 1000
+
+# Install dependencies
+install_dependencies wget curl git
+
+# Setup firewall rules for Prysm
+setup_firewall_rules 13000 12000 5051
+
+# Create Prysm directory
+PRYSM_DIR="$HOME/prysm"
+ensure_directory "$PRYSM_DIR"
+
+cd "$PRYSM_DIR" || exit
+
+# Download Prysm
+log_info "Downloading Prysm..."
+if ! curl https://raw.githubusercontent.com/prysmaticlabs/prysm/master/prysm.sh --output prysm.sh; then
+    log_error "Failed to download Prysm"
+    exit 1
+fi
+chmod +x prysm.sh
+
+# Generate JWT secret
+log_info "Generating JWT secret..."
 ./prysm.sh beacon-chain generate-auth-secret
-mkdir ~/secrets
-mv ./jwt.hex ~/secrets
 
+# Ensure secrets directory exists
+ensure_directory "$HOME/secrets"
+mv ./jwt.hex "$HOME/secrets/"
+
+# Create temporary directory for custom configuration
 mkdir ./tmp
-# Append user custom settings for fee recipient and grafitti
-cat > ./tmp/prysm_validator_conf.yaml << EOF 
-graffiti: $GRAFITTI
-suggested-fee-recipient: $FEE_RECIPIENT
-wallet-password-file: $HOME/secrets/pass.txt
-EOF
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cat "$SCRIPT_DIR/configs/prysm/prysm_validator_conf.yaml" ./tmp/prysm_validator_conf.yaml > ~/prysm/prysm_validator_conf.yaml
 
-cat > ./tmp/prysm_beacon_conf.yaml << EOF 
+# Create custom beacon node configuration variables
+cat > ./tmp/prysm_beacon_custom.yaml << EOF
 graffiti: $GRAFITTI
 suggested-fee-recipient: $FEE_RECIPIENT
-p2p-host-ip: $(echo $(curl -s v4.ident.me))
+p2p-host-ip: $(curl -s v4.ident.me)
 p2p-max-peers: $MAX_PEERS
 checkpoint-sync-url: $PRYSM_CPURL
 genesis-beacon-api-url: $PRYSM_CPURL
 jwt-secret: $HOME/secrets/jwt.hex
 EOF
-cat "$SCRIPT_DIR/configs/prysm/prysm_beacon_conf.yaml" ./tmp/prysm_beacon_conf.yaml > ~/prysm/prysm_beacon_conf.yaml
 
+# Create custom validator configuration variables
+cat > ./tmp/prysm_validator_custom.yaml << EOF
+graffiti: $GRAFITTI
+suggested-fee-recipient: $FEE_RECIPIENT
+wallet-password-file: $HOME/secrets/pass.txt
+EOF
+
+# Merge base configurations with custom settings
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cat "$SCRIPT_DIR/configs/prysm/prysm_beacon_conf.yaml" ./tmp/prysm_beacon_custom.yaml > "$PRYSM_DIR/prysm_beacon_conf.yaml"
+cat "$SCRIPT_DIR/configs/prysm/prysm_validator_conf.yaml" ./tmp/prysm_validator_custom.yaml > "$PRYSM_DIR/prysm_validator_conf.yaml"
+
+# Clean up temporary files
 rm -rf ./tmp/
 
-readonly BCM="$(echo $HOME)/prysm/prysm.sh beacon-chain 
---config-file=$(echo $HOME)/prysm/prysm_beacon_conf.yaml"
-readonly VCM="$(echo $HOME)/prysm/prysm.sh validator
---config-file=$(echo $HOME)/prysm/prysm_validator_conf.yaml"
+# Create systemd service for beacon node
+BEACON_EXEC_START="$PRYSM_DIR/prysm.sh beacon-chain --config-file=$PRYSM_DIR/prysm_beacon_conf.yaml"
 
-cat > $HOME/cl.service << EOF 
-# The eth2 beacon chain service (part of systemd)
-# file: /etc/systemd/system/beacon-chain.service 
+create_systemd_service "cl" "Prysm Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
-[Unit]
-Description     = eth2 beacon chain service
-Wants           = network-online.target
-After           = network-online.target 
+# Create systemd service for validator
+VALIDATOR_EXEC_START="$PRYSM_DIR/prysm.sh validator --config-file=$PRYSM_DIR/prysm_validator_conf.yaml"
 
-[Service]
-Type            = simple
-User            = $(whoami)
-ExecStart       = $(echo $BCM)
-Restart         = on-failure
+create_systemd_service "validator" "Prysm Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target"
 
-[Install]
-WantedBy    = multi-user.target
+# Enable services
+enable_systemd_service "cl"
+enable_systemd_service "validator"
+
+# Show completion information
+show_installation_complete "Prysm" "cl" "$PRYSM_DIR/prysm_beacon_conf.yaml" "$PRYSM_DIR"
+
+# Display setup information
+cat << EOF
+
+=== Prysm Setup Information ===
+Prysm has been installed with the following components:
+1. Beacon Node (cl service) - Connects to execution client and other beacon nodes
+2. Validator Client (validator service) - Manages validator keys and duties
+
+Next Steps:
+1. Import your validator keys into: $PRYSM_DIR/
+2. Create keystore password files in: $HOME/secrets/
+3. Start the beacon node: sudo systemctl start cl
+4. Wait for beacon node to sync, then start validator: sudo systemctl start validator
+
+Key features:
+- REST API available on port 5051
+- P2P networking on ports 13000 (TCP) and 12000 (UDP)
+- Checkpoint sync enabled for faster initial sync
+- MEV-Boost integration ready
+- Comprehensive logging and monitoring
+
+Useful commands:
+- Check Prysm version: $PRYSM_DIR/prysm.sh beacon-chain --version
+- Import validator keys: $PRYSM_DIR/prysm.sh validator accounts import --keys-dir=/path/to/keys
+
 EOF
-
-sudo mv $HOME/cl.service /etc/systemd/system/cl.service
-sudo chmod 644 /etc/systemd/system/cl.service
-
-
-# Setup validator
-
-cat > $HOME/validator.service << EOF 
-# The eth2 validator service (part of systemd)
-# file: /etc/systemd/system/validator.service 
-
-[Unit]
-Description     = eth2 validator service
-Wants           = network-online.target beacon-chain.service
-After           = network-online.target 
-
-[Service]
-User            = $(whoami)
-ExecStart       = $(echo $VCM)
-
-Restart         = on-failure
-
-[Install]
-WantedBy	= multi-user.target
-EOF
-sudo mv $HOME/validator.service /etc/systemd/system/validator.service
-sudo chmod 644 /etc/systemd/system/validator.service
-
-sudo systemctl daemon-reload
-sudo systemctl enable cl
-sudo systemctl enable validator
-
-echo "DONE! Files generated in $HOME/prysm/ ; systemd services: /etc/systemd/system/validator.service , /etc/systemd/system/beacon-chain.service "
