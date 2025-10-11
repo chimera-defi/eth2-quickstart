@@ -1,6 +1,4 @@
 #!/bin/bash
-set -Eeuo pipefail
-IFS=$'\n\t'
 
 # Service Start Script
 # Starts all Ethereum client systemd services

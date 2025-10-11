@@ -1,6 +1,4 @@
 #!/bin/bash
-set -Eeuo pipefail
-IFS=$'\n\t'
 
 # System Update Script
 # Updates the Ethereum software stack and shows version changes

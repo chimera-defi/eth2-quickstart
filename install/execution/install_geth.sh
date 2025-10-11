@@ -1,6 +1,4 @@
 #!/bin/bash
-set -Eeuo pipefail
-IFS=$'\n\t'
 
 # Geth Installation Script
 # Installs and configures Geth Ethereum execution client
