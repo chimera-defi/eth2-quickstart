@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # refreshes / restarts / potentially upgrades all our services
-source ../lib/common_functions.sh
+source ../../lib/common_functions.sh
 
 log_info "Refreshing all Ethereum services..."
 restart_all_services

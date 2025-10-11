@@ -3,7 +3,7 @@
 # Ethereum Client Selection Script
 # This script helps users choose between different execution and consensus clients
 
-source ./lib/common_functions.sh
+source ../../lib/common_functions.sh
 
 # Colors for better readability
 BOLD='\033[1m'
