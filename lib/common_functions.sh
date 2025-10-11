@@ -112,25 +112,136 @@ enable_systemd_service() {
     log_info "Enabled systemd service: $service_name"
 }
 
-# Install dependencies
+# Check if command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Check system compatibility
+check_system_compatibility() {
+    log_info "Checking system compatibility..."
+    
+    # Check if we're on a supported system
+    if [[ ! -f /etc/os-release ]]; then
+        log_error "Cannot determine operating system"
+        return 1
+    fi
+    
+    source /etc/os-release
+    case "$ID" in
+        ubuntu|debian)
+            log_info "Detected $PRETTY_NAME - supported system"
+            ;;
+        *)
+            log_warn "Detected $PRETTY_NAME - may not be fully supported"
+            log_warn "Scripts are designed for Ubuntu/Debian systems"
+            ;;
+    esac
+    
+    # Check for required commands
+    local required_commands=("sudo" "curl" "wget")
+    local missing_commands=()
+    
+    for cmd in "${required_commands[@]}"; do
+        if ! command_exists "$cmd"; then
+            missing_commands+=("$cmd")
+        fi
+    done
+    
+    if [[ ${#missing_commands[@]} -gt 0 ]]; then
+        log_error "Missing required commands: ${missing_commands[*]}"
+        log_error "Please install missing commands and try again"
+        return 1
+    fi
+    
+    return 0
+}
+
+# Install dependencies with proper error handling
 install_dependencies() {
     local packages=("$@")
     
+    # Check if apt is available
+    if ! command_exists apt; then
+        log_error "apt package manager not found"
+        log_error "This script requires Ubuntu/Debian system with apt"
+        return 1
+    fi
+    
     log_info "Updating package lists..."
-    sudo apt update -y
+    if ! sudo apt update -y; then
+        log_error "Failed to update package lists"
+        log_error "Please check your internet connection and try again"
+        return 1
+    fi
     
     log_info "Installing dependencies: ${packages[*]}"
-    sudo apt install -y "${packages[@]}"
+    if ! sudo apt install -y "${packages[@]}"; then
+        log_error "Failed to install dependencies: ${packages[*]}"
+        log_error "Please check package names and try again"
+        return 1
+    fi
+    
+    log_info "Dependencies installed successfully"
 }
 
-# Setup firewall rules
+# Setup firewall rules with graceful degradation
 setup_firewall_rules() {
     local ports=("$@")
     
+    # Check if UFW is available
+    if ! command_exists ufw; then
+        log_warn "UFW not found - attempting to install..."
+        if ! install_dependencies ufw; then
+            log_warn "Failed to install UFW - firewall rules will not be configured"
+            log_warn "Please manually configure firewall for ports: ${ports[*]}"
+            return 0
+        fi
+    fi
+    
+    # Check if UFW is active
+    if ! sudo ufw status | grep -q "Status: active"; then
+        log_info "UFW is not active - enabling..."
+        if ! sudo ufw --force enable; then
+            log_warn "Failed to enable UFW - firewall rules will not be configured"
+            log_warn "Please manually configure firewall for ports: ${ports[*]}"
+            return 0
+        fi
+    fi
+    
+    # Configure firewall rules
     for port in "${ports[@]}"; do
         log_info "Opening firewall port: $port"
-        sudo ufw allow "$port"
+        if ! sudo ufw allow "$port"; then
+            log_warn "Failed to open port $port - please configure manually"
+        fi
     done
+    
+    log_info "Firewall configuration completed"
+}
+
+# Add PPA repository with graceful degradation
+add_ppa_repository() {
+    local ppa="$1"
+    
+    # Check if add-apt-repository is available
+    if ! command_exists add-apt-repository; then
+        log_warn "add-apt-repository not found - attempting to install..."
+        if ! install_dependencies software-properties-common; then
+            log_error "Failed to install software-properties-common"
+            log_error "Cannot add PPA repository: $ppa"
+            return 1
+        fi
+    fi
+    
+    log_info "Adding PPA repository: $ppa"
+    if ! sudo add-apt-repository -y "$ppa"; then
+        log_error "Failed to add PPA repository: $ppa"
+        return 1
+    fi
+    
+    log_info "PPA repository added successfully"
+    return 0
 }
 
 # Create JWT secret if it doesn't exist

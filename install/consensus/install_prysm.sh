@@ -9,6 +9,12 @@ source ../../lib/common_functions.sh
 
 log_info "Starting Prysm installation..."
 
+# Check system compatibility first
+if ! check_system_compatibility; then
+    log_error "System compatibility check failed"
+    exit 1
+fi
+
 # Check system requirements
 check_system_requirements 16 1000
 
