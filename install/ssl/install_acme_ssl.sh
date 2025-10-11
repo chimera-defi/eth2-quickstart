@@ -1,4 +1,7 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 
 # ACME.sh SSL Certificate Installation Script
 # Uses acme.sh to get SSL certificates from Let's Encrypt

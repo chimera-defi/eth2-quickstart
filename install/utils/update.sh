@@ -1,5 +1,11 @@
 #!/bin/bash
-# Updates the software stack
+set -Eeuo pipefail
+IFS=$'\n\t'
+
+# System Update Script
+# Updates the Ethereum software stack and shows version changes
+# Usage: ./update.sh
+# Note: Stops services before updating, restarts after completion
 source ../../exports.sh
 source ../../lib/common_functions.sh
 

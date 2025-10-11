@@ -1,4 +1,7 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 
 # Lodestar Consensus Client Installation Script
 # Lodestar is a TypeScript Ethereum consensus client developed by ChainSafe

@@ -1,6 +1,14 @@
 #!/bin/bash
-source ./exports.sh
-source ./lib/common_functions.sh
+set -Eeuo pipefail
+IFS=$'\n\t'
+
+# Geth Installation Script
+# Installs and configures Geth Ethereum execution client
+# Usage: ./install_geth.sh
+# Requirements: Ubuntu 20.04+, 16GB+ RAM, 2TB+ storage
+
+source ../../exports.sh
+source ../../lib/common_functions.sh
 
 log_info "Starting Geth installation..."
 
@@ -11,8 +19,17 @@ log_info "Starting Geth installation..."
 check_system_requirements 16 2000
 
 # Add Ethereum PPA and install
-sudo add-apt-repository -y ppa:ethereum/ethereum
-install_dependencies ethereum
+log_info "Adding Ethereum PPA repository..."
+if ! sudo add-apt-repository -y ppa:ethereum/ethereum; then
+    log_error "Failed to add Ethereum PPA repository"
+    exit 1
+fi
+
+log_info "Installing Geth..."
+if ! install_dependencies ethereum; then
+    log_error "Failed to install Geth"
+    exit 1
+fi
 
 export GETH_CMD='/usr/bin/geth --cache='$GETH_CACHE' --syncmode snap 
 --http --http.corsdomain "*" --http.vhosts=* --http.api="admin, eth, net, web3, engine" 

@@ -285,7 +285,7 @@ check_system_requirements() {
     # Check memory
     local memory_gb
     memory_gb=$(free -g | awk '/^Mem:/{print $2}')
-    if [[ $memory_gb -lt $min_memory_gb ]]; then
+    if [[ "$memory_gb" -lt "$min_memory_gb" ]]; then
         log_warn "System has ${memory_gb}GB RAM, recommended minimum is ${min_memory_gb}GB"
     else
         log_info "Memory check passed: ${memory_gb}GB RAM available"
@@ -294,7 +294,7 @@ check_system_requirements() {
     # Check disk space
     local disk_gb
     disk_gb=$(df -BG "$HOME" | tail -1 | awk '{print $4}' | sed 's/G//')
-    if [[ $disk_gb -lt $min_disk_gb ]]; then
+    if [[ "$disk_gb" -lt "$min_disk_gb" ]]; then
         log_warn "Available disk space: ${disk_gb}GB, recommended minimum is ${min_disk_gb}GB"
     else
         log_info "Disk space check passed: ${disk_gb}GB available"
@@ -408,7 +408,7 @@ require_command() {
 
 validate_ip() {
     local ip="$1"
-    if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+    if [[ "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
         return 0
     else
         return 1
@@ -417,7 +417,7 @@ validate_ip() {
 
 validate_port() {
     local port="$1"
-    if [[ $port =~ ^[0-9]+$ ]] && [[ $port -ge 1 ]] && [[ $port -le 65535 ]]; then
+    if [[ "$port" =~ ^[0-9]+$ ]] && [[ "$port" -ge 1 ]] && [[ "$port" -le 65535 ]]; then
         return 0
     else
         return 1
@@ -426,7 +426,7 @@ validate_port() {
 
 validate_ethereum_address() {
     local address="$1"
-    if [[ $address =~ ^0x[a-fA-F0-9]{40}$ ]]; then
+    if [[ "$address" =~ ^0x[a-fA-F0-9]{40}$ ]]; then
         return 0
     else
         return 1

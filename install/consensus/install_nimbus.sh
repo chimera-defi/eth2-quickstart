@@ -1,4 +1,7 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 
 # Nimbus Consensus Client Installation Script
 # Nimbus is a Nim-based Ethereum consensus client designed for resource efficiency

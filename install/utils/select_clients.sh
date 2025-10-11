@@ -1,4 +1,7 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 
 # Ethereum Client Selection Script
 # This script helps users choose between different execution and consensus clients

@@ -1,4 +1,7 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 
 # Hyperledger Besu Execution Client Installation Script
 # Besu is a Java-based Ethereum client designed for both public and private networks

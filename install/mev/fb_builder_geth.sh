@@ -1,4 +1,7 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 
 # Flashbots Builder Geth Installation Script
 # Builds Geth from Flashbots builder repository

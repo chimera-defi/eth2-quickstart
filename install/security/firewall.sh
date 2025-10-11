@@ -1,4 +1,7 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 
 # Firewall Configuration Script
 # Sets up UFW firewall with Ethereum client and security rules

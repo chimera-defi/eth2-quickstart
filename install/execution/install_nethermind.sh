@@ -1,4 +1,7 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 
 # Nethermind Execution Client Installation Script
 # Nethermind is a .NET Ethereum client designed for enterprise use
