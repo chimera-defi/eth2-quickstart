@@ -4,8 +4,8 @@
 # Installs useful network monitoring and system utilities
 # https://askubuntu.com/questions/257263/how-to-display-network-traffic-in-the-terminal
 
-source ../exports.sh
-source ../lib/common_functions.sh
+source ../../exports.sh
+source ../../lib/common_functions.sh
 
 log_info "Starting optional tools installation..."
 

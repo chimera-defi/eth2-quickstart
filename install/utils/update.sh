@@ -1,7 +1,7 @@
 #!/bin/bash
 # Updates the software stack
-source ../exports.sh
-source ../lib/common_functions.sh
+source ../../exports.sh
+source ../../lib/common_functions.sh
 
 log_info "Starting software stack update..."
 
@@ -48,7 +48,7 @@ MEV_BOOST_VERSION=$(../mev-boost -version)
 export GETH_VERSION
 GETH_VERSION=$(geth version)
 export PRYSM_VERSION
-PRYSM_VERSION=$(../prysm/prysm.sh validator --version)
+PRYSM_VERSION=$(../../prysm/prysm.sh validator --version)
 export NGINX_VERSION
 NGINX_VERSION=$(nginx -v)
 echo "$MEV_BOOST_VERSION"

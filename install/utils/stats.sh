@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Enhanced stats script using common functions
-source ../lib/common_functions.sh
+source ../../lib/common_functions.sh
 
 echo "=== Error Scan ==="
 journalctl -u cl -n 200 | grep error
