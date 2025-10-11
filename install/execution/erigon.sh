@@ -4,8 +4,8 @@
 # Erigon Execution Client Installation Script
 # Erigon is a Go-based Ethereum client focused on efficiency and performance
 
-source ./exports.sh
-source ./lib/common_functions.sh
+source ../../exports.sh
+source ../../lib/common_functions.sh
 
 log_info "Starting Erigon installation..."
 

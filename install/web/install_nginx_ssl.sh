@@ -4,8 +4,8 @@
 # NGINX SSL Configuration Script
 # Configures NGINX to use SSL certificates
 
-source ./exports.sh
-source ./lib/common_functions.sh
+source ../../exports.sh
+source ../../lib/common_functions.sh
 
 log_info "Starting NGINX SSL configuration..."
 log_info "Server name: $SERVER_NAME"

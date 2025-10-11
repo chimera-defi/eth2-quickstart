@@ -4,8 +4,8 @@
 # Prysm Consensus Client Installation Script
 # Prysm is a Go-based Ethereum consensus client developed by Prysmatic Labs
 
-source ./exports.sh
-source ./lib/common_functions.sh
+source ../../exports.sh
+source ../../lib/common_functions.sh
 
 log_info "Starting Prysm installation..."
 

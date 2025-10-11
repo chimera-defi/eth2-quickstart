@@ -5,8 +5,8 @@
 # Uses acme.sh to get SSL certificates from Let's Encrypt
 # Docs: https://github.com/acmesh-official/acme.sh
 
-source ./exports.sh
-source ./lib/common_functions.sh
+source ../../exports.sh
+source ../../lib/common_functions.sh
 
 log_info "Starting ACME.sh SSL certificate installation..."
 log_info "Server name: $SERVER_NAME"
