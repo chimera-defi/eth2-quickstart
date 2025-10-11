@@ -9,11 +9,6 @@ source ../../lib/common_functions.sh
 
 log_info "Starting Nimbus installation..."
 
-# Check system compatibility first
-if ! check_system_compatibility; then
-    log_error "System compatibility check failed"
-    exit 1
-fi
 
 # Check system requirements (Nimbus is lightweight)
 check_system_requirements 4 500

@@ -21,6 +21,12 @@ source ./exports.sh
 source ./lib/common_functions.sh
 
 log_info "Starting system setup - Phase 2..."
+
+# Check system compatibility first
+if ! check_system_compatibility; then
+    log_error "System compatibility check failed"
+    exit 1
+fi
 log_info "This script will install Ethereum clients and services"
 
 # Start syncing prysm and geth

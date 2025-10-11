@@ -10,11 +10,6 @@ source ../../lib/common_functions.sh
 
 log_info "Starting ACME.sh SSL certificate installation..."
 
-# Check system compatibility first
-if ! check_system_compatibility; then
-    log_error "System compatibility check failed"
-    exit 1
-fi
 log_info "Server name: $SERVER_NAME"
 log_info "Email: $EMAIL"
 
