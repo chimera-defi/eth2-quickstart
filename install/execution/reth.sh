@@ -1,6 +1,4 @@
 #!/bin/bash
-set -Eeuo pipefail
-IFS=$'\n\t'
 
 
 # Reth Execution Client Installation Script

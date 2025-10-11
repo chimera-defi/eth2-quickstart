@@ -1,6 +1,4 @@
 #!/bin/bash
-set -Eeuo pipefail
-IFS=$'\n\t'
 
 
 # Lodestar Consensus Client Installation Script

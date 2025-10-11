@@ -1,6 +1,4 @@
 #!/bin/bash
-set -Eeuo pipefail
-IFS=$'\n\t'
 
 # System Statistics Script
 # Displays comprehensive system and client statistics
