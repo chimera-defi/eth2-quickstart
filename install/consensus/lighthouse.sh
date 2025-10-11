@@ -1,4 +1,7 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 
 # Lighthouse Consensus Client Installation Script
 # Lighthouse is a Rust-based Ethereum consensus client developed by Sigma Prime

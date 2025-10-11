@@ -1,4 +1,7 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 
 # Teku Consensus Client Installation Script
 # Teku is a Java-based Ethereum consensus client developed by ConsenSys

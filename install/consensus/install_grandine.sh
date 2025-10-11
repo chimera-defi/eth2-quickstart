@@ -1,4 +1,7 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 
 # Grandine Consensus Client Installation Script
 # Grandine is a Rust-based Ethereum consensus client focused on performance

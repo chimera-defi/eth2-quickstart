@@ -1,6 +1,12 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
 
-# refreshes / restarts / potentially upgrades all our services
+
+# Service Refresh Script
+# Restarts all Ethereum client services
+# Usage: ./refresh.sh
+# Note: Restarts services without stopping them first
 source ../../lib/common_functions.sh
 
 log_info "Refreshing all Ethereum services..."

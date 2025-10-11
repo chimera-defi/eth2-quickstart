@@ -1,4 +1,7 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 
 # MEV Boost Installation Script
 # MEV Boost is a service that connects validators to MEV relays

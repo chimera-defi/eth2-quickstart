@@ -1,4 +1,7 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 
 # Certbot SSL Certificate Installation Script
 # Uses certbot to get SSL certificates from Let's Encrypt

@@ -1,4 +1,7 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 
 # Prysm Checkpoint Sync Example Script
 # This script demonstrates how to run Prysm with checkpoint sync

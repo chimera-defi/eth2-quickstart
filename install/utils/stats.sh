@@ -1,6 +1,12 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
 
-# Enhanced stats script using common functions
+# System Statistics Script
+# Displays comprehensive system and client statistics
+# Usage: ./stats.sh
+# Shows: Error logs, client versions, service status
+
 source ../../lib/common_functions.sh
 
 echo "=== Error Scan ==="

@@ -1,4 +1,7 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 
 # NGINX Hardening Script
 # Configures fail2ban to block IPs trying to use server as proxy

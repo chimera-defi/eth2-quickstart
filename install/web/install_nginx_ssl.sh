@@ -1,4 +1,7 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 
 # NGINX SSL Configuration Script
 # Configures NGINX to use SSL certificates

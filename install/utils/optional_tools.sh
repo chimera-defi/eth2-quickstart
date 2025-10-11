@@ -1,4 +1,7 @@
 #!/bin/bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 
 # Optional Tools Installation Script
 # Installs useful network monitoring and system utilities
