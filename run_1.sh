@@ -12,6 +12,12 @@ require_root
 
 log_info "Starting system setup - Phase 1..."
 
+# Check system compatibility first
+if ! check_system_compatibility; then
+    log_error "System compatibility check failed"
+    exit 1
+fi
+
 # Update system packages
 log_info "Updating system packages..."
 apt update -y
