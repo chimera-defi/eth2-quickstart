@@ -4,8 +4,8 @@
 # Flashbots Builder Geth Installation Script
 # Builds Geth from Flashbots builder repository
 
-source ./exports.sh
-source ./lib/common_functions.sh
+source ../../exports.sh
+source ../../lib/common_functions.sh
 
 log_info "Starting Flashbots Builder Geth installation..."
 

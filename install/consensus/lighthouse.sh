@@ -4,8 +4,8 @@
 # Lighthouse Consensus Client Installation Script
 # Lighthouse is a Rust-based Ethereum consensus client developed by Sigma Prime
 
-source ./exports.sh
-source ./lib/common_functions.sh
+source ../../exports.sh
+source ../../lib/common_functions.sh
 
 log_info "Starting Lighthouse installation..."
 
@@ -33,11 +33,18 @@ fi
 
 tar -xvf lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz
 
+# Generate JWT secret
+log_info "Generating JWT secret..."
+if ! openssl rand -hex 32 > "$HOME/secrets/jwt.hex"; then
+    log_error "Failed to generate JWT secret"
+    exit 1
+fi
+
 # Ensure JWT secret exists
-ensure_jwt_secret "$HOME/.local/share/reth/mainnet/jwt.hex"
+ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create systemd service
-EXEC_START="RUST_LOG=info $LIGHTHOUSE_DIR/lighthouse bn --checkpoint-sync-url https://mainnet.checkpoint.sigp.io --execution-endpoint http://localhost:8551 --execution-jwt $HOME/.local/share/reth/mainnet/jwt.hex --disable-deposit-contract-sync"
+EXEC_START="RUST_LOG=info $LIGHTHOUSE_DIR/lighthouse bn --checkpoint-sync-url https://mainnet.checkpoint.sigp.io --execution-endpoint http://localhost:8551 --execution-jwt $HOME/secrets/jwt.hex --disable-deposit-contract-sync"
 
 create_systemd_service "cl" "Lighthouse Ethereum Consensus Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 

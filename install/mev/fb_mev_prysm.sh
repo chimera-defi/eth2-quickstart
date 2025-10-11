@@ -4,8 +4,8 @@
 # Flashbots MEV Prysm Installation Script
 # This script builds Prysm from source with MEV support
 
-source ./exports.sh
-source ./lib/common_functions.sh
+source ../../exports.sh
+source ../../lib/common_functions.sh
 
 log_info "Starting Flashbots MEV Prysm installation..."
 

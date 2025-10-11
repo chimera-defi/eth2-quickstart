@@ -16,6 +16,9 @@ log_info "Starting Geth installation..."
 # Check system requirements
 check_system_requirements 16 2000
 
+# Setup firewall rules for Geth
+setup_firewall_rules 30303 8545 8546 8551
+
 # Add Ethereum PPA and install
 log_info "Adding Ethereum PPA repository..."
 if ! sudo add-apt-repository -y ppa:ethereum/ethereum; then
@@ -44,6 +47,9 @@ create_systemd_service "eth1" "Geth Ethereum Execution Client" "$GETH_CMD" "$(wh
 
 # Enable the service
 enable_systemd_service "eth1"
+
+# Show completion information
+show_installation_complete "Geth" "eth1" "" "$HOME"
 
 log_info "Geth installation completed!"
 log_info "To start Geth: sudo systemctl start eth1"

@@ -4,8 +4,8 @@
 # MEV Boost Installation Script
 # MEV Boost is a service that connects validators to MEV relays
 
-source ./exports.sh
-source ./lib/common_functions.sh
+source ../../exports.sh
+source ../../lib/common_functions.sh
 
 log_info "Starting MEV Boost installation..."
 

@@ -4,8 +4,8 @@
 # Certbot SSL Certificate Installation Script
 # Uses certbot to get SSL certificates from Let's Encrypt
 
-source ./exports.sh
-source ./lib/common_functions.sh
+source ../../exports.sh
+source ../../lib/common_functions.sh
 
 log_info "Starting Certbot SSL certificate installation..."
 log_info "Server name: $SERVER_NAME"

@@ -4,8 +4,8 @@
 # Nethermind Execution Client Installation Script
 # Nethermind is a .NET Ethereum client designed for enterprise use
 
-source ./exports.sh
-source ./lib/common_functions.sh
+source ../../exports.sh
+source ../../lib/common_functions.sh
 
 log_info "Starting Nethermind installation..."
 

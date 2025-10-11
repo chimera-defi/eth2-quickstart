@@ -4,8 +4,8 @@
 # NGINX Installation Script
 # Installs and configures NGINX web server
 
-source ./exports.sh
-source ./lib/common_functions.sh
+source ../../exports.sh
+source ../../lib/common_functions.sh
 
 log_info "Starting NGINX installation..."
 log_info "Server name: $SERVER_NAME"
