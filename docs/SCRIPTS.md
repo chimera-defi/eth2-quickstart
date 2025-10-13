@@ -93,6 +93,11 @@ sudo systemctl start mev
 - Generates Prysm config files by merging repo defaults with user overrides:
   - `prysm_validator_conf.yaml`: sets `graffiti`, `suggested-fee-recipient`, `wallet-password-file`
   - `prysm_beacon_conf.yaml`: sets `graffiti`, `suggested-fee-recipient`, `p2p-host-ip`, `p2p-max-peers`, `checkpoint-sync-url`, `genesis-beacon-api-url`, `jwt-secret`
+- **Updated Configuration Features (v6.1.2)**:
+  - Performance optimizations: `max-goroutines`, `block-batch-limit`, `slots-per-archive-point`
+  - Monitoring: Prometheus metrics on ports 8080 (beacon) and 8081 (validator)
+  - MEV boost: Standardized configuration with `enable-builder`, `http-mev-relay`
+  - Reliability: `dynamic-key-reload-debounce-interval`, `enable-doppelganger`
 - Creates systemd units and enables them:
   - `cl.service` (beacon chain) runs `prysm.sh beacon-chain --config-file=~/prysm/prysm_beacon_conf.yaml`
   - `validator.service` runs `prysm.sh validator --config-file=~/prysm/prysm_validator_conf.yaml`
@@ -186,6 +191,7 @@ sudo systemctl [start|stop|restart|status] eth1 cl validator mev
 - Geth HTTP JSON-RPC: 8545 (proxied by Nginx `/rpc`)
 - Geth WS: 8546 (proxied by Nginx `/ws`)
 - Engine API (authrpc): 8551 (localhost only; blocked by UFW inbound)
+- **Prysm Monitoring**: 8080 (beacon), 8081 (validator) - Prometheus metrics
 - Nginx: 80/443
 
 ### Useful references
