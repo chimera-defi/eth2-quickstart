@@ -114,16 +114,21 @@ cat > "$NETHERMIND_DIR/nethermind.cfg" << EOF
     "Enabled": false
   },
   "Metrics": {
-    "Enabled": false
+    "Enabled": true,
+    "NodeName": "Nethermind",
+    "PushGatewayUrl": "",
+    "IntervalSeconds": 5,
+    "ExposeHost": "127.0.0.1",
+    "ExposePort": 6060
   },
   "Sync": {
-    "FastSync": true,
+    "SnapSync": true,
     "PivotNumber": 0,
     "PivotHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
     "PivotTotalDifficulty": "0",
     "FastBlocks": true,
     "UseGethLimitsInFastBlocks": false,
-    "FastSyncCatchUpHeightDelta": 10000000000
+    "SnapSyncCatchUpHeightDelta": 10000000000
   },
   "Bloom": {
     "IndexLevelBucketSizes": [4, 8, 8]

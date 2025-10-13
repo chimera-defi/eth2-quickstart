@@ -41,7 +41,7 @@ Key variables are defined in `exports.sh`:
 
 ### Recent Updates
 - **Prysm v6.1.2 Configuration**: Updated with performance optimizations, monitoring capabilities, and deprecated flag fixes
-- **Monitoring**: Added Prometheus metrics on ports 8080 (beacon) and 8081 (validator)
+- **Monitoring**: Added Prometheus metrics on port 8080 (beacon node)
 - **Performance**: Added `max-goroutines`, `block-batch-limit`, and `slots-per-archive-point` flags
 - **MEV Boost**: Standardized configuration across all Prysm config files
 

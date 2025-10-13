@@ -3,7 +3,8 @@
   "port": 9000,
   "discoveryPort": 9000,
   "execution": {
-    "urls": ["http://127.0.0.1:8551"]
+    "urls": ["http://127.0.0.1:8551"],
+    "jwtSecretFile": "/home/eth/secrets/jwt.hex"
   },
   "rest": {
     "enabled": true,
@@ -12,11 +13,17 @@
   },
   "metrics": {
     "enabled": true,
-    "host": "127.0.0.1"
+    "host": "127.0.0.1",
+    "port": 8008
   },
   "builder": {
     "enabled": true,
     "urls": ["http://127.0.0.1:18550"]
   },
-  "logLevel": "info"
+  "doppelgangerProtection": {
+    "enabled": true
+  },
+  "logLevel": "info",
+  "maxPeers": 100,
+  "targetPeers": 50
 }
