@@ -28,3 +28,12 @@ log-level: "INFO"
 
 # Builder/MEV settings
 builder-endpoint: "http://127.0.0.1:18550"
+builder-registration-default-enabled: true
+
+# Performance optimizations
+validators-early-attestations-enabled: true
+validators-proposer-blinded-blocks-enabled: true
+
+# Monitoring
+metrics-port: 8008
+metrics-interface: "127.0.0.1"

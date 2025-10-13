@@ -5,7 +5,7 @@ network="mainnet"
 p2p-port=30303
 p2p-host="0.0.0.0"
 discovery-enabled=true
-max-peers=25
+max-peers=50
 
 # Data storage
 data-storage-format="BONSAI"
@@ -31,6 +31,16 @@ fast-sync-min-peers=5
 
 # Mining settings (disabled for staking)
 miner-enabled=false
+
+# Performance optimizations
+tx-pool-max-size=10000
+tx-pool-hash-limit=1000000
+tx-pool-retention-hours=13
+
+# Metrics and monitoring
+metrics-enabled=true
+metrics-host="127.0.0.1"
+metrics-port=6060
 
 # Logging
 logging="INFO"

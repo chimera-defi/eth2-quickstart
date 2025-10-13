@@ -3,7 +3,8 @@
   "beaconNodes": ["http://127.0.0.1:9596"],
   "metrics": {
     "enabled": true,
-    "host": "127.0.0.1"
+    "host": "127.0.0.1",
+    "port": 8009
   },
   "builder": {
     "enabled": true
@@ -11,5 +12,6 @@
   "doppelgangerProtection": {
     "enabled": true
   },
-  "logLevel": "info"
+  "logLevel": "info",
+  "attestationAggregationStrategy": "optimized"
 }

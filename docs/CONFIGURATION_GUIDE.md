@@ -141,7 +141,7 @@ rm -rf ./tmp/
 - **Version**: v6.1.2 with performance optimizations and monitoring
 - **Features**: 
   - Performance flags: `max-goroutines`, `block-batch-limit`, `slots-per-archive-point`
-  - Monitoring: Prometheus metrics on ports 8080 (beacon) and 8081 (validator)
+  - Monitoring: Prometheus metrics on port 8080 (beacon node)
   - MEV boost: Standardized `enable-builder`, `http-mev-relay` configuration
   - Reliability: `dynamic-key-reload-debounce-interval`, `enable-doppelganger`
 

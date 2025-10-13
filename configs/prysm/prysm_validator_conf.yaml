@@ -8,14 +8,5 @@ attest-timely: true
 dynamic-key-reload-debounce-interval: 1s
 enable-beacon-rest-api: false
 
-# Monitoring
-monitoring-host: 127.0.0.1
-monitoring-port: 8081
-enable-tracing: false
-
-# MEV boost configuration
-enable-builder: true
-http-mev-relay: http://localhost:18550
+# MEV boost configuration (validator registration only)
 enable-validator-registration: true
-disable-broadcast-slashings: true
-aggregate-parallel: true
