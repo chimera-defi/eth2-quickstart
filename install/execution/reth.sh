@@ -1,0 +1,81 @@
+#!/bin/bash
+
+
+# Reth Execution Client Installation Script
+# Reth is a Rust-based Ethereum client focused on performance and modularity
+
+source ../../exports.sh
+source ../../lib/common_functions.sh
+
+log_info "Starting Reth installation..."
+
+
+# Check system requirements
+check_system_requirements 16 2000
+
+# Install Rust
+log_info "Installing Rust..."
+if ! curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh; then
+    log_error "Failed to install Rust"
+    exit 1
+fi
+
+# Source Rust environment
+source "$HOME/.cargo/env"
+
+# Install dependencies
+install_dependencies libclang-dev pkg-config build-essential cargo
+
+# Setup firewall rules for Reth
+setup_firewall_rules 30303 30304 42069 4000 4001
+
+# Clone and build Reth
+log_info "Cloning Reth repository..."
+if ! git clone https://github.com/paradigmxyz/reth.git; then
+    log_error "Failed to clone Reth repository"
+    exit 1
+fi
+
+cd reth || exit
+
+log_info "Building Reth..."
+if ! cargo build --release; then
+    log_error "Failed to build Reth"
+    exit 1
+fi
+
+# Install Reth globally
+log_info "Installing Reth..."
+if ! cargo install --path . --bin reth; then
+    log_error "Failed to install Reth"
+    exit 1
+fi
+
+# Create Reth directory
+RETH_DIR="$HOME/reth"
+rm -rf "$RETH_DIR"/*
+ensure_directory "$RETH_DIR"
+
+# Ensure JWT secret exists
+ensure_jwt_secret "$HOME/secrets/jwt.hex"
+
+# Create systemd service
+EXEC_START="$HOME/.cargo/bin/reth node"
+
+# Verify Reth binary exists
+if [[ ! -f "$HOME/.cargo/bin/reth" ]]; then
+    log_error "Reth binary not found at $HOME/.cargo/bin/reth"
+    exit 1
+fi
+
+create_systemd_service "eth1" "Reth Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "6000" "10" "3000"
+
+# Enable the service
+enable_systemd_service "eth1"
+
+# Show completion information
+show_installation_complete "Reth" "eth1" "" "$RETH_DIR"
+
+log_info "Starting Reth service..."
+sudo systemctl start eth1
+sudo systemctl status eth1

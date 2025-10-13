@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# Geth Installation Script
+# Installs and configures Geth Ethereum execution client
+# Usage: ./install_geth.sh
+# Requirements: Ubuntu 20.04+, 16GB+ RAM, 2TB+ storage
+
+source ../../exports.sh
+source ../../lib/common_functions.sh
+
+log_info "Starting Geth installation..."
+
+
+# Installs and sets up geth as a systemctl service according to :
+# https://www.coincashew.com/coins/overview-eth/guide-or-how-to-setup-a-validator-on-eth2-mainnet/part-i-installation/installing-execution-client
+
+
+# Check system requirements
+check_system_requirements 16 2000
+
+# Setup firewall rules for Geth
+setup_firewall_rules 30303 8545 8546 8551
+
+# Add Ethereum PPA and install
+log_info "Adding Ethereum PPA repository..."
+if ! add_ppa_repository "ppa:ethereum/ethereum"; then
+    log_error "Failed to add Ethereum PPA repository"
+    exit 1
+fi
+
+log_info "Installing Geth..."
+if ! install_dependencies ethereum; then
+    log_error "Failed to install Geth"
+    exit 1
+fi
+
+export GETH_CMD='/usr/bin/geth --cache='$GETH_CACHE' --syncmode snap 
+--http --http.corsdomain "*" --http.vhosts=* --http.api="admin, eth, net, web3, engine" 
+--ws --ws.origins "*" --ws.api="web3, eth, net, engine" 
+--authrpc.jwtsecret='$HOME'/secrets/jwt.hex 
+--miner.etherbase='$FEE_RECIPIENT' --miner.extradata='$GRAFITTI
+
+
+# Ensure JWT secret directory exists
+ensure_directory "$HOME/secrets"
+
+# Create systemd service using common function
+create_systemd_service "eth1" "Geth Ethereum Execution Client" "$GETH_CMD" "$(whoami)" "on-failure" "600" "5" "300"
+
+# Enable the service
+enable_systemd_service "eth1"
+
+# Show completion information
+show_installation_complete "Geth" "eth1" "" "$HOME"
+
+log_info "Geth installation completed!"
+log_info "To start Geth: sudo systemctl start eth1"
+log_info "To check status: sudo systemctl status eth1"
+log_info "To view logs: journalctl -fu eth1"
