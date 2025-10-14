@@ -116,7 +116,7 @@ cat > "$NIMBUS_DIR/validator.toml" << EOF
 # Nimbus Validator Client Configuration
 
 # Beacon node connection
-beacon-node = "http://127.0.0.1:5052"
+beacon-node = "http://$CONSENSUS_HOST:5052"
 
 # Validator settings
 validators-dir = "$VALIDATOR_DATA_DIR"
@@ -127,7 +127,7 @@ graffiti = "$GRAFITTI"
 # Metrics
 metrics = true
 metrics-port = 8009
-metrics-address = "127.0.0.1"
+metrics-address = "$CONSENSUS_HOST"
 
 # Logging
 log-level = "INFO"

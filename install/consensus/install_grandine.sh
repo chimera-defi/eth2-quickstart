@@ -80,13 +80,13 @@ data_dir = "$GRANDINE_DATA_DIR"
 jwt_secret_path = "$HOME/secrets/jwt.hex"
 
 # HTTP API
-http_api_listen_address = "127.0.0.1:${GRANDINE_REST_PORT}"
+http_api_listen_address = "$CONSENSUS_HOST:${GRANDINE_REST_PORT}"
 
 # Checkpoint sync
 checkpoint_sync_url = "$GRANDINE_CHECKPOINT_URL"
 
 # Metrics
-metrics_listen_address = "127.0.0.1:8008"
+metrics_listen_address = "$CONSENSUS_HOST:8008"
 
 # Validator settings
 suggested_fee_recipient = "$FEE_RECIPIENT"
@@ -105,7 +105,7 @@ cat > "$GRANDINE_DIR/validator.toml" << EOF
 # Grandine Validator Configuration
 
 # Beacon node connection
-beacon_node_endpoint = "http://127.0.0.1:5052"
+beacon_node_endpoint = "http://$CONSENSUS_HOST:5052"
 
 # Validator settings
 validators_dir = "$VALIDATOR_DATA_DIR"
@@ -114,7 +114,7 @@ graffiti = "$GRAFITTI"
 
 # Metrics
 metrics_enabled = true
-metrics_listen_address = "127.0.0.1:8009"
+metrics_listen_address = "$CONSENSUS_HOST:8009"
 
 # Safety
 doppelganger_detection = true

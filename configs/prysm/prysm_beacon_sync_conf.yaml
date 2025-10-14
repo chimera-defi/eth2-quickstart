@@ -23,6 +23,6 @@ p2p-allowlist: public
 
 # MEV boost configuration
 enable-builder: false
-http-mev-relay: http://localhost:18550
+http-mev-relay: http://127.0.0.1:18550
 disable-broadcast-slashings: true
 aggregate-parallel: true
