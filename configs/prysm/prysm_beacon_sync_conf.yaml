@@ -22,7 +22,7 @@ p2p-allowlist: public
 # disable-grpc-gateway: true
 
 # MEV boost configuration
-enable-builder: true
+enable-builder: false
 http-mev-relay: http://localhost:18550
 disable-broadcast-slashings: true
 aggregate-parallel: true

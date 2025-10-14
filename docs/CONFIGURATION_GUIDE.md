@@ -142,7 +142,7 @@ rm -rf ./tmp/
 - **Features**: 
   - Performance flags: `max-goroutines`, `block-batch-limit`, `slots-per-archive-point`
   - Monitoring: Prometheus metrics on port 8080 (beacon node)
-  - MEV boost: Standardized `enable-builder`, `http-mev-relay` configuration
+  - MEV boost: Configured to use external MEV-Boost (local builder disabled)
   - Reliability: `dynamic-key-reload-debounce-interval`, `enable-doppelganger`
 
 ## Benefits of This Architecture
