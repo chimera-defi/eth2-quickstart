@@ -54,6 +54,11 @@ export BESU_HTTP_PORT=8545
 export BESU_WS_PORT=8546
 export BESU_ENGINE_PORT=8551
 
+# Common ports
+export ENGINE_PORT=8551  # JWT-secured Engine API port
+export METRICS_PORT=6060  # Prometheus metrics port
+export MEV_PORT=18550  # MEV-Boost port
+
 export TEKU_REST_PORT=5051
 export NIMBUS_REST_PORT=5052
 export LODESTAR_REST_PORT=9596
