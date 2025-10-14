@@ -35,8 +35,8 @@ if ! install_dependencies ethereum; then
 fi
 
 export GETH_CMD='/usr/bin/geth --cache='$GETH_CACHE' --syncmode snap 
---http --http.addr 127.0.0.1 --http.port 8545 --http.corsdomain "*" --http.vhosts=* --http.api="admin, eth, net, web3, engine" 
---ws --ws.addr 127.0.0.1 --ws.port 8546 --ws.origins "*" --ws.api="web3, eth, net, engine" 
+--http --http.addr 127.0.0.1 --http.corsdomain "*" --http.vhosts=* --http.api="admin, eth, net, web3, engine" 
+--ws --ws.addr 127.0.0.1 --ws.origins "*" --ws.api="web3, eth, net, engine" 
 --authrpc.addr 127.0.0.1 --authrpc.port 8551 --authrpc.jwtsecret='$HOME'/secrets/jwt.hex 
 --miner.etherbase='$FEE_RECIPIENT' --miner.extradata='$GRAFITTI' 
 --maxpeers 50 --txpool.globalslots 10000 --txpool.globalqueue 5000 

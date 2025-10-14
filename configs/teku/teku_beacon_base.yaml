@@ -18,10 +18,6 @@ rest-api-enabled: true
 rest-api-host-allowlist: ["127.0.0.1", "localhost"]
 rest-api-cors-origins: ["*"]
 
-# Metrics and monitoring
-metrics-enabled: true
-metrics-host-allowlist: ["127.0.0.1", "localhost"]
-
 # Logging
 log-destination: "CONSOLE"
 log-level: "INFO"
@@ -35,5 +31,6 @@ validators-early-attestations-enabled: true
 validators-proposer-blinded-blocks-enabled: true
 
 # Monitoring
+metrics-enabled: true
 metrics-port: 8008
 metrics-interface: "127.0.0.1"
