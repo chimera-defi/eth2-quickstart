@@ -7,7 +7,6 @@ udp-port = 9000
 
 # Execution layer
 web3-url = "http://127.0.0.1:8551"
-jwt-secret = "/home/eth/secrets/jwt.hex"
 
 # REST API
 rest = true
