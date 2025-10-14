@@ -20,7 +20,7 @@ monitoring-port: 8080
 enable-tracing: false
 
 # MEV boost configuration
-enable-builder: true
+enable-builder: false
 http-mev-relay: http://localhost:18550
 disable-broadcast-slashings: true
 aggregate-parallel: true

@@ -96,7 +96,7 @@ sudo systemctl start mev
 - **Updated Configuration Features (v6.1.2)**:
   - Performance optimizations: `max-goroutines`, `block-batch-limit`, `slots-per-archive-point`
   - Monitoring: Prometheus metrics on port 8080 (beacon node)
-  - MEV boost: Standardized configuration with `enable-builder`, `http-mev-relay`
+  - MEV boost: Configured to use external MEV-Boost (local builder disabled)
   - Reliability: `dynamic-key-reload-debounce-interval`, `enable-doppelganger`
 - Creates systemd units and enables them:
   - `cl.service` (beacon chain) runs `prysm.sh beacon-chain --config-file=~/prysm/prysm_beacon_conf.yaml`

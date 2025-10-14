@@ -16,7 +16,7 @@
     "port": 8008
   },
   "builder": {
-    "enabled": true,
+    "enabled": false,
     "urls": ["http://127.0.0.1:18550"]
   },
   "doppelgangerProtection": {

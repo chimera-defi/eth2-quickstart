@@ -24,7 +24,7 @@ log-level: "INFO"
 
 # Builder/MEV settings
 builder-endpoint: "http://127.0.0.1:18550"
-builder-registration-default-enabled: true
+builder-registration-default-enabled: false
 
 # Performance optimizations
 validators-early-attestations-enabled: true
