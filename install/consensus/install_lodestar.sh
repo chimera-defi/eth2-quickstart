@@ -61,7 +61,7 @@ cat > ./tmp/lodestar_beacon_custom.json << EOF
   "dataDir": "$LODESTAR_DATA_DIR/beacon",
   "targetPeers": $MAX_PEERS,
   "execution": {
-    "urls": ["http://$LH:8551"],
+    "urls": ["http://$LH:$ENGINE_PORT"],
     "jwtSecretFile": "$HOME/secrets/jwt.hex"
   },
   "rest": {
@@ -108,7 +108,7 @@ else
   "discoveryPort": 9000,
   "targetPeers": $MAX_PEERS,
   "execution": {
-    "urls": ["http://$LH:8551"],
+    "urls": ["http://$LH:$ENGINE_PORT"],
     "jwtSecretFile": "$HOME/secrets/jwt.hex"
   },
   "rest": {
@@ -127,7 +127,7 @@ else
   "graffiti": "$GRAFITTI",
   "builder": {
     "enabled": true,
-    "urls": ["http://$MEV_HOST:18550"]
+    "urls": ["http://$MEV_HOST:$MEV_PORT"]
   },
   "logLevel": "info",
   "logFile": "$LODESTAR_DATA_DIR/beacon.log"
