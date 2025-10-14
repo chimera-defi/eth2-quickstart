@@ -3,8 +3,7 @@
   "port": 9000,
   "discoveryPort": 9000,
   "execution": {
-    "urls": ["http://127.0.0.1:8551"],
-    "jwtSecretFile": "/home/eth/secrets/jwt.hex"
+    "urls": ["http://127.0.0.1:8551"]
   },
   "rest": {
     "enabled": true,

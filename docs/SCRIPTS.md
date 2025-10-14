@@ -191,7 +191,12 @@ sudo systemctl [start|stop|restart|status] eth1 cl validator mev
 - Geth HTTP JSON-RPC: 8545 (proxied by Nginx `/rpc`)
 - Geth WS: 8546 (proxied by Nginx `/ws`)
 - Engine API (authrpc): 8551 (localhost only; blocked by UFW inbound)
-- **Prysm Monitoring**: 8080 (beacon) - Prometheus metrics
+- **Monitoring Ports**:
+  - Geth/Nethermind/Besu: 6060 (Prometheus metrics)
+  - Prysm: 8080 (beacon node metrics)
+  - Teku: 8008 (beacon), 8009 (validator)
+  - Nimbus: 8008 (beacon)
+  - Lodestar: 8008 (beacon), 8009 (validator)
 - Nginx: 80/443
 
 ### Useful references
