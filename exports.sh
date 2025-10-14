@@ -25,8 +25,12 @@ export PRYSM_CPURL="https://beaconstate.ethstaker.cc"
 export USE_PRYSM_MODERN=true
 export PRYSM_ALLOW_UNVERIFIED_BINARIES=1
 
+# Host configuration
+export LH='127.0.0.1'  # Local host for execution clients
+export CONSENSUS_HOST='127.0.0.1'  # Host for consensus clients
+export MEV_HOST='127.0.0.1'  # Host for MEV-Boost
+
 # GETH opts
-export LH='127.0.0.1'
 export GETH_CACHE=8192
 
 # Client-specific configuration

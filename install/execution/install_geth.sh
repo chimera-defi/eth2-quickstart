@@ -35,12 +35,12 @@ if ! install_dependencies ethereum; then
 fi
 
 export GETH_CMD='/usr/bin/geth --cache='$GETH_CACHE' --syncmode snap 
---http --http.addr 127.0.0.1 --http.corsdomain "*" --http.vhosts=* --http.api="admin, eth, net, web3, engine" 
---ws --ws.addr 127.0.0.1 --ws.origins "*" --ws.api="web3, eth, net, engine" 
---authrpc.addr 127.0.0.1 --authrpc.port 8551 --authrpc.jwtsecret='$HOME'/secrets/jwt.hex 
+--http --http.addr '$LH' --http.corsdomain "*" --http.vhosts=* --http.api="admin, eth, net, web3, engine" 
+--ws --ws.addr '$LH' --ws.origins "*" --ws.api="web3, eth, net, engine" 
+--authrpc.addr '$LH' --authrpc.port 8551 --authrpc.jwtsecret='$HOME'/secrets/jwt.hex 
 --miner.etherbase='$FEE_RECIPIENT' --miner.extradata='$GRAFITTI' 
 --maxpeers 50 --txpool.globalslots 10000 --txpool.globalqueue 5000 
---metrics --metrics.addr 127.0.0.1 --metrics.port 6060'
+--metrics --metrics.addr '$LH' --metrics.port 6060'
 
 
 # Ensure JWT secret directory exists
