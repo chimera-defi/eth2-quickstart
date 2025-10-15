@@ -4,8 +4,14 @@
 # Updates the Ethereum software stack and shows version changes
 # Usage: ./update.sh
 # Note: Stops services before updating, restarts after completion
-source ../../exports.sh
-source ../../lib/common_functions.sh
+
+set -euo pipefail
+
+# Source common functions and configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+source "$PROJECT_ROOT/exports.sh"
+source "$PROJECT_ROOT/lib/common_functions.sh"
 
 log_info "Starting software stack update..."
 
