@@ -1,4 +1,4 @@
-execution-endpoint: http://localhost:8551
+execution-endpoint: http://$LH:$ENGINE_PORT
 accept-terms-of-use: true
 enable-db-backup-webhook: true
 db-backup-output-dir: ./prysm_backup_beaconchain/
@@ -15,12 +15,12 @@ block-batch-limit-burst-factor: 2
 slots-per-archive-point: 2048
 
 # Monitoring and observability
-monitoring-host: 127.0.0.1
+monitoring-host: $CONSENSUS_HOST
 monitoring-port: 8080
 enable-tracing: false
 
 # MEV boost configuration
 enable-builder: false
-http-mev-relay: http://127.0.0.1:18550
+http-mev-relay: http://$MEV_HOST:$MEV_PORT
 disable-broadcast-slashings: true
 aggregate-parallel: true
