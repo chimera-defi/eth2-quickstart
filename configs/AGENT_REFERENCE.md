@@ -37,5 +37,12 @@ Key variables are defined in `exports.sh`:
 - Port configurations (e.g., `TEKU_REST_PORT`, `NIMBUS_REST_PORT`)
 - Checkpoint URLs for fast sync
 - Universal settings (e.g., `FEE_RECIPIENT`, `GRAFITTI`)
+- Prysm-specific settings (e.g., `PRYSM_CPURL`, `USE_PRYSM_MODERN`)
+
+### Recent Updates
+- **Prysm v6.1.2 Configuration**: Updated with performance optimizations, monitoring capabilities, and deprecated flag fixes
+- **Monitoring**: Added Prometheus metrics on port 8080 (beacon node)
+- **Performance**: Added `max-goroutines`, `block-batch-limit`, and `slots-per-archive-point` flags
+- **MEV Boost**: Configured to use external MEV-Boost (local builder disabled)
 
 Refer to `docs/CONFIGURATION_GUIDE.md` for complete configuration architecture details.

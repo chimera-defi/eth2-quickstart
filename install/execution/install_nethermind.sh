@@ -65,7 +65,7 @@ cat > ./tmp/nethermind_custom.cfg << EOF
     "Port": ${NETHERMIND_HTTP_PORT},
     "WebSocketsPort": ${NETHERMIND_WS_PORT},
     "JwtSecretFile": "$HOME/secrets/jwt.hex",
-    "EngineHost": "127.0.0.1",
+    "EngineHost": "'$LH'",
     "EnginePort": ${NETHERMIND_ENGINE_PORT},
     "EnabledModules": ["Admin", "Eth", "Net", "Web3", "Engine"]
   },
@@ -102,11 +102,11 @@ cat > "$NETHERMIND_DIR/nethermind.cfg" << EOF
   "JsonRpc": {
     "Enabled": true,
     "Timeout": 20000,
-    "Host": "127.0.0.1",
+    "Host": "'$LH'",
     "Port": ${NETHERMIND_HTTP_PORT},
     "WebSocketsPort": ${NETHERMIND_WS_PORT},
     "JwtSecretFile": "$HOME/secrets/jwt.hex",
-    "EngineHost": "127.0.0.1",
+    "EngineHost": "'$LH'",
     "EnginePort": ${NETHERMIND_ENGINE_PORT},
     "EnabledModules": ["Admin", "Eth", "Net", "Web3", "Engine"]
   },
@@ -114,16 +114,21 @@ cat > "$NETHERMIND_DIR/nethermind.cfg" << EOF
     "Enabled": false
   },
   "Metrics": {
-    "Enabled": false
+    "Enabled": true,
+    "NodeName": "Nethermind",
+    "PushGatewayUrl": "",
+    "IntervalSeconds": 5,
+    "ExposeHost": "'$LH'",
+    "ExposePort": 6060
   },
   "Sync": {
-    "FastSync": true,
+    "SnapSync": true,
     "PivotNumber": 0,
     "PivotHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
     "PivotTotalDifficulty": "0",
     "FastBlocks": true,
     "UseGethLimitsInFastBlocks": false,
-    "FastSyncCatchUpHeightDelta": 10000000000
+    "SnapSyncCatchUpHeightDelta": 10000000000
   },
   "Bloom": {
     "IndexLevelBucketSizes": [4, 8, 8]
@@ -153,7 +158,7 @@ EOF
 rm -rf ./tmp/
 
 # Create systemd service
-EXEC_START="$NETHERMIND_DIR/Nethermind.Runner --config $NETHERMIND_DIR/nethermind.cfg --JsonRpc.JwtSecretFile $HOME/secrets/jwt.hex --JsonRpc.EngineHost 127.0.0.1 --JsonRpc.EnginePort 8551"
+EXEC_START="$NETHERMIND_DIR/Nethermind.Runner --config $NETHERMIND_DIR/nethermind.cfg --JsonRpc.JwtSecretFile $HOME/secrets/jwt.hex --JsonRpc.EngineHost $LH --JsonRpc.EnginePort 8551"
 
 create_systemd_service "eth1" "Nethermind Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 

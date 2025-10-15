@@ -1,7 +1,7 @@
 # You may want to change the following few lines
-execution-endpoint: http://localhost:8551
+execution-endpoint: http://$LH:$ENGINE_PORT
 
-http-web3provider: http://localhost:8545 # Old alias only used maybe till the merge with fallbacks
+# http-web3provider: http://localhost:8545 # Old alias only used maybe till the merge with fallbacks - DEPRECATED
 accept-terms-of-use: true
 enable-db-backup-webhook: true
 db-backup-output-dir: ./prysm_backup_beaconchain/
@@ -14,12 +14,15 @@ p2p-max-peers: 200
 dev: false
 p2p-allowlist: public
 
-# Speed up initial sync
+# Speed up initial sync - uncomment for faster sync on powerful hardware
 # max-goroutines: 12000
 # block-batch-limit-burst-factor: 1024
 # block-batch-limit: 512
-# slotes-per-archive-point: 16384
+# slots-per-archive-point: 16384
 # disable-grpc-gateway: true
 
-# mev
-http-mev-relay: http://localhost:18550
+# MEV boost configuration
+enable-builder: false
+http-mev-relay: http://$MEV_HOST:$MEV_PORT
+disable-broadcast-slashings: true
+aggregate-parallel: true

@@ -4,9 +4,9 @@ enable-doppelganger: true
 enable-slashing-protection-history-pruning: true
 attest-timely: true
 
-# mev boost
-enable-builder: true
-http-mev-relay: http://127.0.0.1:18550
+# Performance and reliability
+dynamic-key-reload-debounce-interval: 1s
+enable-beacon-rest-api: false
+
+# MEV boost configuration (validator registration only)
 enable-validator-registration: true
-disable-broadcast-slashings: true
-aggregate-parallel: true

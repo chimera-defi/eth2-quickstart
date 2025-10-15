@@ -81,14 +81,14 @@ p2p-peer-upper-bound: $MAX_PEERS
 data-path: "$TEKU_DATA_DIR"
 
 # Execution layer connection
-ee-endpoint: "http://127.0.0.1:8551"
+ee-endpoint: "http://$LH:8551"
 ee-jwt-secret-file: "$HOME/secrets/jwt.hex"
 
 # REST API
 rest-api-port: ${TEKU_REST_PORT}
 
 # Checkpoint sync
-initial-state: "$TEKU_CHECKPOINT_URL/eth/v2/debug/beacon/states/finalized"
+initial-state-url: "$TEKU_CHECKPOINT_URL/eth/v2/debug/beacon/states/finalized"
 checkpoint-sync-url: "$TEKU_CHECKPOINT_URL"
 
 # Metrics and monitoring
@@ -104,7 +104,7 @@ cat > ./tmp/teku_validator_custom.yaml << EOF
 # Teku Validator Custom Configuration
 
 # Beacon node connection
-beacon-node-api-endpoint: "http://127.0.0.1:${TEKU_REST_PORT}"
+beacon-node-api-endpoint: "http://$CONSENSUS_HOST:${TEKU_REST_PORT}"
 
 # Validator settings
 validator-keys: "$VALIDATOR_DATA_DIR/keys:$VALIDATOR_DATA_DIR/passwords"

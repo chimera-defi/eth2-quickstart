@@ -6,23 +6,29 @@ tcp-port = 9000
 udp-port = 9000
 
 # Execution layer
-web3-url = "http://127.0.0.1:8551"
+web3-url = "http://$LH:$ENGINE_PORT"
 
 # REST API
 rest = true
-rest-address = "127.0.0.1"
+rest-address = "$CONSENSUS_HOST"
 rest-allow-origin = "*"
 
 # Metrics
 metrics = true
-metrics-address = "127.0.0.1"
+metrics-address = "$CONSENSUS_HOST"
+metrics-port = 8008
 
 # Logging
 log-level = "INFO"
 
 # Performance
 in-process-validators = false
+max-peers = 100
+sync-committee-message-aggregation-enabled = true
 
 # Builder/MEV
-payload-builder = true
-payload-builder-url = "http://127.0.0.1:18550"
+payload-builder = false
+payload-builder-url = "http://$MEV_HOST:$MEV_PORT"
+
+# Safety
+doppelganger-detection = true

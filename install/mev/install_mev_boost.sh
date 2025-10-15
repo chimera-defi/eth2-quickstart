@@ -38,8 +38,7 @@ if ! git clone https://github.com/flashbots/mev-boost .; then
     exit 1
 fi
 
-git checkout stable
-git pull
+git checkout v1.9
 
 log_info "Building MEV Boost..."
 if ! make build; then
@@ -48,7 +47,7 @@ if ! make build; then
 fi
 
 # Create systemd service
-EXEC_START="$MEV_BOOST_DIR/mev-boost -mainnet -relay-check -min-bid $MIN_BID -relays $MEV_RELAYS -request-timeout-getheader $MEVGETHEADERT -request-timeout-getpayload $MEVGETPAYLOADT -request-timeout-regval $MEVREGVALT"
+EXEC_START="$MEV_BOOST_DIR/mev-boost -mainnet -relay-check -min-bid $MIN_BID -relays $MEV_RELAYS -request-timeout-getheader $MEVGETHEADERT -request-timeout-getpayload $MEVGETPAYLOADT -request-timeout-regval $MEVREGVALT -addr $MEV_HOST:$MEV_PORT -loglevel info -json"
 
 create_systemd_service "mev" "MEV Boost Service" "$EXEC_START" "$(whoami)" "always" "600" "5" "300"
 

@@ -61,7 +61,7 @@ cat > ./tmp/lodestar_beacon_custom.json << EOF
   "dataDir": "$LODESTAR_DATA_DIR/beacon",
   "targetPeers": $MAX_PEERS,
   "execution": {
-    "urls": ["http://127.0.0.1:8551"],
+    "urls": ["http://$LH:$ENGINE_PORT"],
     "jwtSecretFile": "$HOME/secrets/jwt.hex"
   },
   "rest": {
@@ -83,7 +83,7 @@ cat > ./tmp/lodestar_validator_custom.json << EOF
   "dataDir": "$LODESTAR_DATA_DIR/validator",
   "keystoresDir": "$VALIDATOR_DATA_DIR/keystores",
   "secretsDir": "$VALIDATOR_DATA_DIR/secrets",
-  "beaconNodes": ["http://127.0.0.1:${LODESTAR_REST_PORT}"],
+  "beaconNodes": ["http://$CONSENSUS_HOST:${LODESTAR_REST_PORT}"],
   "suggestedFeeRecipient": "$FEE_RECIPIENT",
   "graffiti": "$GRAFITTI",
   "metrics": {
@@ -108,18 +108,18 @@ else
   "discoveryPort": 9000,
   "targetPeers": $MAX_PEERS,
   "execution": {
-    "urls": ["http://127.0.0.1:8551"],
+    "urls": ["http://$LH:$ENGINE_PORT"],
     "jwtSecretFile": "$HOME/secrets/jwt.hex"
   },
   "rest": {
     "enabled": true,
-    "host": "127.0.0.1",
+    "host": "$CONSENSUS_HOST",
     "port": ${LODESTAR_REST_PORT},
     "cors": "*"
   },
   "metrics": {
     "enabled": true,
-    "host": "127.0.0.1",
+    "host": "$CONSENSUS_HOST",
     "port": 8008
   },
   "checkpointSyncUrl": "$LODESTAR_CHECKPOINT_URL",
@@ -127,7 +127,7 @@ else
   "graffiti": "$GRAFITTI",
   "builder": {
     "enabled": true,
-    "urls": ["http://127.0.0.1:18550"]
+    "urls": ["http://$MEV_HOST:$MEV_PORT"]
   },
   "logLevel": "info",
   "logFile": "$LODESTAR_DATA_DIR/beacon.log"
@@ -140,12 +140,12 @@ EOF
   "dataDir": "$LODESTAR_DATA_DIR/validator",
   "keystoresDir": "$VALIDATOR_DATA_DIR/keystores",
   "secretsDir": "$VALIDATOR_DATA_DIR/secrets",
-  "beaconNodes": ["http://127.0.0.1:${LODESTAR_REST_PORT}"],
+  "beaconNodes": ["http://$CONSENSUS_HOST:${LODESTAR_REST_PORT}"],
   "suggestedFeeRecipient": "$FEE_RECIPIENT",
   "graffiti": "$GRAFITTI",
   "metrics": {
     "enabled": true,
-    "host": "127.0.0.1",
+    "host": "$CONSENSUS_HOST",
     "port": 8009
   },
   "builder": {

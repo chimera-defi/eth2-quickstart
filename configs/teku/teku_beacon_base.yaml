@@ -11,20 +11,26 @@ p2p-peer-lower-bound: 64
 data-storage-mode: "prune"
 
 # Execution layer connection
-ee-endpoint: "http://127.0.0.1:8551"
+ee-endpoint: "http://$LH:$ENGINE_PORT"
 
 # REST API
 rest-api-enabled: true
-rest-api-host-allowlist: ["127.0.0.1", "localhost"]
+rest-api-host-allowlist: ["$CONSENSUS_HOST", "localhost"]
 rest-api-cors-origins: ["*"]
-
-# Metrics and monitoring
-metrics-enabled: true
-metrics-host-allowlist: ["127.0.0.1", "localhost"]
 
 # Logging
 log-destination: "CONSOLE"
 log-level: "INFO"
 
 # Builder/MEV settings
-builder-endpoint: "http://127.0.0.1:18550"
+builder-endpoint: "http://$MEV_HOST:$MEV_PORT"
+builder-registration-default-enabled: false
+
+# Performance optimizations
+validators-early-attestations-enabled: true
+validators-proposer-blinded-blocks-enabled: true
+
+# Monitoring
+metrics-enabled: true
+metrics-port: 8008
+metrics-interface: "$CONSENSUS_HOST"

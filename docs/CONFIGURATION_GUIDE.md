@@ -131,6 +131,20 @@ rm -rf ./tmp/
 - **Custom Variables**: Data paths, ports, checkpoint URLs, validator settings
 - **Merge Strategy**: TOML concatenation
 
+#### Prysm (YAML)
+- **Base Configs**: 
+  - `configs/prysm/prysm_beacon_conf.yaml`
+  - `configs/prysm/prysm_validator_conf.yaml`
+  - `configs/prysm/prysm_beacon_sync_conf.yaml` (checkpoint sync)
+- **Custom Variables**: Data paths, ports, checkpoint URLs, validator settings, MEV configuration
+- **Merge Strategy**: YAML concatenation
+- **Version**: v6.1.2 with performance optimizations and monitoring
+- **Features**: 
+  - Performance flags: `max-goroutines`, `block-batch-limit`, `slots-per-archive-point`
+  - Monitoring: Prometheus metrics on port 8080 (beacon node)
+  - MEV boost: Configured to use external MEV-Boost (local builder disabled)
+  - Reliability: `dynamic-key-reload-debounce-interval`, `enable-doppelganger`
+
 ## Benefits of This Architecture
 
 ### 1. Consistency

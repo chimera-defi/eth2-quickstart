@@ -3,20 +3,26 @@
   "port": 9000,
   "discoveryPort": 9000,
   "execution": {
-    "urls": ["http://127.0.0.1:8551"]
+    "urls": ["http://$LH:$ENGINE_PORT"]
   },
   "rest": {
     "enabled": true,
-    "host": "127.0.0.1",
+    "host": "$CONSENSUS_HOST",
     "cors": "*"
   },
   "metrics": {
     "enabled": true,
-    "host": "127.0.0.1"
+    "host": "$CONSENSUS_HOST",
+    "port": 8008
   },
   "builder": {
-    "enabled": true,
-    "urls": ["http://127.0.0.1:18550"]
+    "enabled": false,
+    "urls": ["http://$MEV_HOST:$MEV_PORT"]
   },
-  "logLevel": "info"
+  "doppelgangerProtection": {
+    "enabled": true
+  },
+  "logLevel": "info",
+  "maxPeers": 100,
+  "targetPeers": 50
 }
