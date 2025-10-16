@@ -202,29 +202,20 @@ sudo systemctl [start|stop|restart|status] eth1 cl validator mev
 ### Data Management and Client Switching
 
 `purge_ethereum_data.sh`
-- Comprehensive script to safely remove all Ethereum client data directories
-- Supports all execution clients (Geth, Nethermind, Besu, Erigon, Reth) and consensus clients (Prysm, Lighthouse, Teku, Nimbus, Lodestar, Grandine)
-- Allows clean switching between different client configurations on the same server
-- Features:
-  - **Safety measures**: Confirmation prompts, dry-run mode, backup creation
-  - **Complete cleanup**: Removes data directories, client directories, secrets, and systemd services
-  - **Backup support**: Creates timestamped backups before purging
-  - **Service management**: Stops and disables all Ethereum services before cleanup
-- Usage examples:
+- Removes all Ethereum client data directories for clean client switching
+- Supports all execution and consensus clients
+- Usage:
   ```bash
-  # Dry run to see what would be deleted
+  # Preview what would be deleted
   ./install/utils/purge_ethereum_data.sh --dry-run
   
-  # Create backup and purge with confirmation
-  ./install/utils/purge_ethereum_data.sh --backup
+  # Purge with confirmation
+  ./install/utils/purge_ethereum_data.sh
   
-  # Purge without backup (use with caution)
+  # Purge without confirmation
   ./install/utils/purge_ethereum_data.sh --confirm
-  
-  # Full backup and purge
-  ./install/utils/purge_ethereum_data.sh --backup --confirm
   ```
-- **WARNING**: This script permanently deletes all Ethereum client data including blockchain data, validator keys, and configurations. Always backup important data before running.
+- **WARNING**: Permanently deletes all Ethereum client data. Backup important data first.
 
 ### Useful references
 
