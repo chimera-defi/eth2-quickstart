@@ -336,10 +336,9 @@ CORE_DEPS=("wget" "curl" "git" "build-essential" "jq")
 JAVA_DEPS=("openjdk-17-jdk")
 RUST_DEPS=("cargo" "libclang-dev" "pkg-config")
 NODE_DEPS=("nodejs")
-GO_DEPS=("golang-go")
 
 # Build tool dependencies
-BUILD_DEPS=("cmake" "libssl-dev" "libgmp-dev" "libtinfo5" "libprotoc" "apt-transport-https" "gnupg")
+BUILD_DEPS=("cmake" "libssl-dev" "libgmp-dev" "libtinfo6" "libprotoc-dev" "apt-transport-https" "gnupg")
 
 # Archive handling dependencies
 ARCHIVE_DEPS=("unzip" "tar")
