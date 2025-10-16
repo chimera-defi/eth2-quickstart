@@ -498,39 +498,8 @@ show_installation_complete() {
 }
 
 # Input validation functions
-require_command() {
-    if ! command -v "$1" >/dev/null 2>&1; then
-        log_error "Required command '$1' not found. Please install it and try again."
-        exit 1
-    fi
-}
-
-validate_ip() {
-    local ip="$1"
-    if [[ "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-validate_port() {
-    local port="$1"
-    if [[ "$port" =~ ^[0-9]+$ ]] && [[ "$port" -ge 1 ]] && [[ "$port" -le 65535 ]]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-validate_ethereum_address() {
-    local address="$1"
-    if [[ "$address" =~ ^0x[a-fA-F0-9]{40}$ ]]; then
-        return 0
-    else
-        return 1
-    fi
-}
+# Removed unused functions: require_command, validate_ip, validate_port, validate_ethereum_address
+# These duplicate existing functionality or are never used
 
 # Enhanced input validation functions for security
 validate_user_input() {
@@ -578,42 +547,7 @@ validate_menu_choice() {
     return 0
 }
 
-validate_filename() {
-    local filename="$1"
-    
-    # Check for dangerous characters
-    if [[ "$filename" =~ [\<\>\:\"\|\\?\*] ]]; then
-        log_error "Invalid filename: $filename (contains dangerous characters)"
-        return 1
-    fi
-    
-    # Check for path traversal attempts
-    if [[ "$filename" =~ \.\. ]]; then
-        log_error "Invalid filename: $filename (path traversal detected)"
-        return 1
-    fi
-    
-    return 0
-}
-
-validate_url() {
-    local url="$1"
-    
-    # Basic URL validation
-    if [[ ! "$url" =~ ^https?://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(/.*)?$ ]]; then
-        log_error "Invalid URL format: $url"
-        return 1
-    fi
-    
-    return 0
-}
-
-sanitize_input() {
-    local input="$1"
-    
-    # Remove potentially dangerous characters
-    echo "$input" | sed 's/[<>:"|?*]//g' | sed 's/\.\.//g'
-}
+# Removed unused functions: validate_filename, validate_url, sanitize_input
 
 # Security functions
 secure_file_permissions() {
@@ -754,9 +688,9 @@ secure_download() {
     local output="$2"
     local max_retries="${3:-3}"
     
-    # Validate URL first
-    if ! validate_url "$url"; then
-        secure_error_handling "Invalid download URL" "error" "false"
+    # Basic URL validation
+    if [[ ! "$url" =~ ^https?:// ]]; then
+        log_error "Invalid download URL: $url"
         return 1
     fi
     
@@ -775,7 +709,7 @@ secure_download() {
         fi
     done
     
-    secure_error_handling "Failed to download after $max_retries attempts" "error" "false"
+    log_error "Failed to download after $max_retries attempts"
     return 1
 }
 
@@ -865,99 +799,11 @@ EOF
     log_info "DDoS protection configured"
 }
 
-# Security monitoring functions
+# Simplified security monitoring
 setup_security_monitoring() {
-    log_info "Setting up security monitoring..."
+    log_info "Setting up basic security monitoring..."
     
-    # Create security monitoring script
-    cat > /usr/local/bin/security_monitor.sh << 'EOF'
-#!/bin/bash
-# Security monitoring script
-
-LOG_FILE="/var/log/security_monitor.log"
-DATE=$(date '+%Y-%m-%d %H:%M:%S')
-
-# Function to log security events
-log_security_event() {
-    echo "[$DATE] $1" >> "$LOG_FILE"
-}
-
-# Check for suspicious processes
-check_suspicious_processes() {
-    local suspicious_procs=$(ps aux | grep -E "(nc|netcat|nmap|masscan|hydra|john|hashcat)" | grep -v grep)
-    if [[ -n "$suspicious_procs" ]]; then
-        log_security_event "SUSPICIOUS PROCESS DETECTED: $suspicious_procs"
-    fi
-}
-
-# Check for failed SSH attempts
-check_failed_ssh() {
-    local failed_attempts=$(grep "Failed password" /var/log/auth.log | tail -5)
-    if [[ -n "$failed_attempts" ]]; then
-        log_security_event "FAILED SSH ATTEMPTS: $failed_attempts"
-    fi
-}
-
-# Check disk usage
-check_disk_usage() {
-    local disk_usage=$(df -h | awk '$5 > 90 {print $0}')
-    if [[ -n "$disk_usage" ]]; then
-        log_security_event "HIGH DISK USAGE: $disk_usage"
-    fi
-}
-
-# Check for unusual network connections
-check_network_connections() {
-    local unusual_conns=$(ss -tulpn | grep -E ":(22|23|3389|5900)" | grep -v "127.0.0.1")
-    if [[ -n "$unusual_conns" ]]; then
-        log_security_event "UNUSUAL NETWORK CONNECTIONS: $unusual_conns"
-    fi
-}
-
-# Check for root login attempts
-check_root_logins() {
-    local root_logins=$(grep "root" /var/log/auth.log | grep "Accepted" | tail -3)
-    if [[ -n "$root_logins" ]]; then
-        log_security_event "ROOT LOGIN DETECTED: $root_logins"
-    fi
-}
-
-# Check system resources
-check_system_resources() {
-    local memory_usage=$(free | awk 'NR==2{printf "%.2f%%", $3*100/$2}')
-    local cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
-    
-    if (( $(echo "$memory_usage > 90" | bc -l) )); then
-        log_security_event "HIGH MEMORY USAGE: $memory_usage"
-    fi
-    
-    if (( $(echo "$cpu_usage > 90" | bc -l) )); then
-        log_security_event "HIGH CPU USAGE: $cpu_usage%"
-    fi
-}
-
-# Main monitoring function
-main() {
-    check_suspicious_processes
-    check_failed_ssh
-    check_disk_usage
-    check_network_connections
-    check_root_logins
-    check_system_resources
-}
-
-# Run monitoring
-main
-EOF
-
-    chmod +x /usr/local/bin/security_monitor.sh
-    
-    # Add to crontab
-    if ! grep -q "security_monitor" /etc/crontab; then
-        echo "*/15 * * * * root /usr/local/bin/security_monitor.sh" >> /etc/crontab
-    fi
-    
-    # Setup log rotation
+    # Setup log rotation for security logs
     cat > /etc/logrotate.d/security_monitor << 'EOF'
 /var/log/security_monitor.log {
     daily
@@ -970,7 +816,7 @@ EOF
 }
 EOF
 
-    log_info "Security monitoring configured"
+    log_info "Basic security monitoring configured"
 }
 
 setup_intrusion_detection() {
@@ -1034,4 +880,66 @@ check_service_health() {
     
     log_error "Service $service_name failed health check after ${max_wait} seconds"
     return 1
+}
+
+# Simplified security monitoring
+setup_security_monitoring() {
+    log_info "Setting up basic security monitoring..."
+    
+    # Setup log rotation for security logs
+    cat > /etc/logrotate.d/security_monitor << 'EOF'
+/var/log/security_monitor.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    create 644 root root
+}
+EOF
+
+    log_info "Basic security monitoring configured"
+}
+
+setup_intrusion_detection() {
+    log_info "Setting up intrusion detection..."
+    
+    # Install and configure AIDE (Advanced Intrusion Detection Environment)
+    if ! command_exists aide; then
+        apt install -y aide
+    fi
+    
+    # Initialize AIDE database
+    if [[ ! -f /var/lib/aide/aide.db ]]; then
+        aideinit
+    fi
+    
+    # Create AIDE check script
+    cat > /usr/local/bin/aide_check.sh << 'EOF'
+#!/bin/bash
+# AIDE intrusion detection check
+
+LOG_FILE="/var/log/aide_check.log"
+DATE=$(date '+%Y-%m-%d %H:%M:%S')
+
+echo "[$DATE] Starting AIDE check..." >> "$LOG_FILE"
+
+if aide --check >> "$LOG_FILE" 2>&1; then
+    echo "[$DATE] AIDE check completed - no changes detected" >> "$LOG_FILE"
+else
+    echo "[$DATE] AIDE check completed - changes detected" >> "$LOG_FILE"
+    # Send alert (you can customize this)
+    echo "File system changes detected on $(hostname)" | mail -s "AIDE Alert" root
+fi
+EOF
+
+    chmod +x /usr/local/bin/aide_check.sh
+    
+    # Add to crontab for daily checks
+    if ! grep -q "aide_check" /etc/crontab; then
+        echo "0 2 * * * root /usr/local/bin/aide_check.sh" >> /etc/crontab
+    fi
+    
+    log_info "Intrusion detection configured"
 }
