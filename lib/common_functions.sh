@@ -280,6 +280,28 @@ ensure_jwt_secret() {
     fi
 }
 
+# Merge JSON configurations using jq
+merge_json_config() {
+    local base_config="$1"
+    local custom_config="$2"
+    local output_config="$3"
+    
+    if command -v jq &> /dev/null; then
+        log_info "Merging JSON configurations using jq..."
+        if jq -s '.[0] * .[1]' "$base_config" "$custom_config" > "$output_config"; then
+            log_info "Successfully merged JSON configurations: $output_config"
+            return 0
+        else
+            log_error "Failed to merge JSON configurations with jq"
+            return 1
+        fi
+    else
+        log_warn "jq not available - falling back to simple concatenation"
+        log_warn "This may result in invalid JSON. Consider installing jq for proper merging."
+        return 1
+    fi
+}
+
 # Clone or update git repository
 clone_or_update_repo() {
     local repo_url="$1"

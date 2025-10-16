@@ -14,7 +14,7 @@ log_info "Starting Nethermind installation..."
 check_system_requirements 16 2000
 
 # Install dependencies
-install_dependencies wget curl unzip
+install_dependencies wget curl unzip jq
 
 # Setup firewall rules for Nethermind
 setup_firewall_rules 30303 8545 8546 8551
@@ -77,12 +77,16 @@ cat > ./tmp/nethermind_custom.cfg << EOF
 }
 EOF
 
-# Merge base configuration with custom settings
-# Note: This is a simplified merge - in production, consider using jq for proper JSON merging
+# Merge base configuration with custom settings using jq
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cp "$SCRIPT_DIR/configs/nethermind/nethermind_base.cfg" "$NETHERMIND_DIR/nethermind_base.cfg"
+if merge_json_config "$SCRIPT_DIR/configs/nethermind/nethermind_base.cfg" "./tmp/nethermind_custom.cfg" "$NETHERMIND_DIR/nethermind.cfg"; then
+    log_info "Successfully merged Nethermind configuration using jq"
+else
+    log_warn "Falling back to simple configuration copy"
+    cp "$SCRIPT_DIR/configs/nethermind/nethermind_base.cfg" "$NETHERMIND_DIR/nethermind.cfg"
+fi
 
-# Create a complete config with variables
+# Create a complete config with variables (using proper JSON merging with jq)
 cat > "$NETHERMIND_DIR/nethermind.cfg" << EOF
 {
   "Init": {
