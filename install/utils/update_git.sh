@@ -62,7 +62,8 @@ done
 
 # Function to create backup
 create_backup() {
-    local backup_name="eth2-quickstart-$(date +%Y%m%d-%H%M%S)"
+    local backup_name
+    backup_name="eth2-quickstart-$(date +%Y%m%d-%H%M%S)"
     local backup_path="$BACKUP_DIR/$backup_name"
     
     log_info "Creating backup: $backup_path"
@@ -78,7 +79,7 @@ create_backup() {
         # Store backup info
         echo "$backup_name" > "$BACKUP_DIR/latest_backup"
         echo "$CURRENT_BRANCH" > "$backup_path/backup_branch"
-        echo "$(date)" > "$backup_path/backup_timestamp"
+        date > "$backup_path/backup_timestamp"
         
         return 0
     else
