@@ -104,13 +104,12 @@ create_systemd_service "eth1" "Hyperledger Besu Ethereum Execution Client" "$EXE
 # Add Java options to service file
 sudo sed -i "/\\[Service\\]/a Environment=JAVA_OPTS=\"$JAVA_OPTS\"" /etc/systemd/system/eth1.service
 
-# Enable the service
-enable_systemd_service "eth1"
+# Enable and start the service
+enable_and_start_systemd_service "eth1"
 
 log_info "Besu installation completed!"
 log_info "Configuration file: $BESU_DIR/besu.toml"
 log_info "Data directory: $BESU_DATA_DIR"
-log_info "To start Besu: sudo systemctl start eth1"
 log_info "To check status: sudo systemctl status eth1"
 log_info "To view logs: journalctl -fu eth1"
 

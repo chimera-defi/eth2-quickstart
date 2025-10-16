@@ -112,6 +112,35 @@ enable_systemd_service() {
     log_info "Enabled systemd service: $service_name"
 }
 
+# Start systemd service
+start_systemd_service() {
+    local service_name="$1"
+    
+    if sudo systemctl start "$service_name"; then
+        log_info "Started systemd service: $service_name"
+        return 0
+    else
+        log_error "Failed to start systemd service: $service_name"
+        return 1
+    fi
+}
+
+# Enable and start systemd service (standard pattern for install scripts)
+enable_and_start_systemd_service() {
+    local service_name="$1"
+    
+    sudo systemctl daemon-reload
+    sudo systemctl enable "$service_name"
+    
+    if sudo systemctl start "$service_name"; then
+        log_info "Enabled and started systemd service: $service_name"
+        return 0
+    else
+        log_error "Failed to start systemd service: $service_name"
+        return 1
+    fi
+}
+
 # Check if command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1

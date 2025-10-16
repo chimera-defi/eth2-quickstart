@@ -49,12 +49,8 @@ EXEC_START="RUST_LOG=info $LIGHTHOUSE_DIR/lighthouse bn --checkpoint-sync-url ht
 
 create_systemd_service "cl" "Lighthouse Ethereum Consensus Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
-# Enable the service
-enable_systemd_service "cl"
+# Enable and start the service
+enable_and_start_systemd_service "cl"
 
 # Show completion information
 show_installation_complete "Lighthouse" "cl" "" "$LIGHTHOUSE_DIR"
-
-log_info "Starting Lighthouse service..."
-sudo systemctl start cl
-sudo systemctl status cl

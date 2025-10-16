@@ -128,15 +128,13 @@ BEACON_EXEC_START="$GRANDINE_DIR/target/release/grandine --config $GRANDINE_DIR/
 
 create_systemd_service "cl" "Grandine Ethereum Consensus Client" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
-# Enable service
-enable_systemd_service "cl"
+# Enable and start service
+enable_and_start_systemd_service "cl"
 
 log_info "Grandine installation completed!"
 log_info "Configuration file: $GRANDINE_DIR/grandine.toml"
 log_info "Data directory: $GRANDINE_DATA_DIR"
 log_info "Validator directory: $VALIDATOR_DATA_DIR"
-log_info ""
-log_info "To start Grandine: sudo systemctl start cl"
 log_info "To check status: sudo systemctl status cl"
 log_info "To view logs: journalctl -fu cl"
 
@@ -152,8 +150,7 @@ validator key import procedures.
 
 Next Steps:
 1. Import your validator keys (check Grandine docs for specific procedure)
-2. Start the beacon node: sudo systemctl start cl
-3. Monitor logs to ensure proper sync and operation
+2. Monitor logs to ensure proper sync and operation
 
 Key features:
 - High-performance Rust implementation
