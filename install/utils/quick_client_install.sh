@@ -5,11 +5,7 @@
 
 source ../../lib/common_functions.sh
 
-# Colors for better readability
-BOLD='\033[1m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# Colors are imported from common_functions.sh
 
 show_quick_options() {
     echo -e "${BOLD}${GREEN}Ethereum Client Quick Install${NC}"

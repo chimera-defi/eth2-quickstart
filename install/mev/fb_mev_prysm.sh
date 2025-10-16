@@ -75,8 +75,7 @@ if ! "$PRYSM_DIR/beacon-chain" generate-auth-secret; then
     exit 1
 fi
 
-ensure_directory "$HOME/secrets"
-rm -f "$HOME/secrets/jwt.hex"
+# JWT secret will be created by ensure_jwt_secret function
 mv ./jwt.hex "$HOME/secrets/"
 
 # Create systemd services using common functions

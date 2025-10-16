@@ -43,8 +43,7 @@ export GETH_CMD='/usr/bin/geth --cache='$GETH_CACHE' --syncmode snap
 --metrics --metrics.addr '$LH' --metrics.port $METRICS_PORT'
 
 
-# Ensure JWT secret directory exists
-ensure_directory "$HOME/secrets"
+# JWT secret directory will be created by ensure_jwt_secret function
 
 # Create systemd service using common function
 create_systemd_service "eth1" "Geth Ethereum Execution Client" "$GETH_CMD" "$(whoami)" "on-failure" "600" "5" "300"
