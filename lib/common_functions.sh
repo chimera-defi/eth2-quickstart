@@ -354,7 +354,8 @@ validate_config() {
     local validator_cmd="$2"
     
     if [[ -n "$validator_cmd" ]]; then
-        if eval "$validator_cmd '$config_file'"; then
+        # Use command substitution instead of eval for security
+        if "$validator_cmd" "$config_file"; then
             log_info "Configuration file is valid: $config_file"
             return 0
         else

@@ -99,16 +99,16 @@ ss -tulpn
 sshd -t
 ufw status
 
-# Automatically configure sudo for the eth user
+# Configure sudo for the eth user (requires password)
 log_info "Configuring sudo access for $LOGIN_UNAME user..."
-echo "$LOGIN_UNAME ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/ethereum-setup
+echo "$LOGIN_UNAME ALL=(ALL) ALL" >> /etc/sudoers.d/ethereum-setup
 chmod 440 /etc/sudoers.d/ethereum-setup
+log_warn "Sudo access configured for $LOGIN_UNAME user (password required)"
 
-# Set a default password for the eth user (can be changed later)
+# Set up password for the eth user
 log_info "Setting up password for $LOGIN_UNAME user..."
-echo "$LOGIN_UNAME:ethereum123" | chpasswd
-log_warn "Default password set for $LOGIN_UNAME user: ethereum123"
-log_warn "Please change this password after first login: passwd $LOGIN_UNAME"
+log_warn "You will be prompted to set a password for the $LOGIN_UNAME user"
+passwd "$LOGIN_UNAME"
 
 log_info "Phase 1 setup completed successfully!"
 show_log_location

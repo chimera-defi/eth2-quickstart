@@ -43,8 +43,8 @@ Update these before running `run_2.sh`.
 - Prints network checks: `ss -tulpn`, `sshd -t`, `ufw status`
 - Pauses for manual steps:
   - Review outputs; continue
-  - In a separate shell, run `visudo` to add `LOGIN_UNAME ALL=(ALL) NOPASSWD: ALL`
-  - Set password for `LOGIN_UNAME`
+  - Set password for `LOGIN_UNAME` when prompted
+  - Sudo access is automatically configured (password required)
 - Prompts to reboot. After reboot, SSH as `LOGIN_UNAME` and proceed to stage 2
 
 Usage (run as root):
