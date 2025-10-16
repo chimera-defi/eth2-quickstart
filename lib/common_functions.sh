@@ -304,53 +304,11 @@ merge_json_config() {
     fi
 }
 
-# Helper functions for common systemd service patterns
-create_execution_service() {
-    local client_name="$1"
-    local exec_start="$2"
-    local service_name="${3:-eth1}"
-    create_systemd_service "$service_name" "$client_name Ethereum Execution Client" "$exec_start" "$(whoami)" "on-failure" "600" "5" "300"
-}
-
-create_consensus_service() {
-    local client_name="$1"
-    local exec_start="$2"
-    local service_name="${3:-cl}"
-    create_systemd_service "$service_name" "$client_name Ethereum Consensus Client" "$exec_start" "$(whoami)" "on-failure" "600" "5" "300"
-}
-
-create_validator_service() {
-    local client_name="$1"
-    local exec_start="$2"
-    local service_name="${3:-validator}"
-    local after="${4:-network-online.target cl.service}"
-    local wants="${5:-network-online.target}"
-    create_systemd_service "$service_name" "$client_name Ethereum Validator Client" "$exec_start" "$(whoami)" "on-failure" "600" "5" "300" "$after" "$wants"
-}
 
 # Centralized dependency management
 # Core dependencies used by most scripts
 CORE_DEPS=("wget" "curl" "git" "build-essential" "jq")
 
-# Language-specific dependencies
-JAVA_DEPS=("openjdk-17-jdk")
-RUST_DEPS=("cargo" "libclang-dev" "pkg-config")
-NODE_DEPS=("nodejs")
-
-# Build tool dependencies
-BUILD_DEPS=("cmake" "libssl-dev" "libgmp-dev" "libtinfo6" "libprotoc-dev" "apt-transport-https" "gnupg")
-
-# Archive handling dependencies
-ARCHIVE_DEPS=("unzip" "tar")
-
-# System dependencies
-SYSTEM_DEPS=("software-properties-common" "chrony" "snapd" "ufw" "fail2ban")
-
-# Web server dependencies
-WEB_DEPS=("nginx" "apache2-utils")
-
-# Monitoring dependencies
-MONITORING_DEPS=("bmon" "slurm" "tcptrack")
 
 # Install core dependencies (used by most scripts)
 install_core_dependencies() {
@@ -362,23 +320,23 @@ install_core_dependencies() {
 install_execution_dependencies() {
     log_info "Installing execution client dependencies..."
     install_core_dependencies
-    install_dependencies "${ARCHIVE_DEPS[@]}"
+    install_dependencies unzip tar
 }
 
 install_consensus_dependencies() {
     log_info "Installing consensus client dependencies..."
     install_core_dependencies
-    install_dependencies "${ARCHIVE_DEPS[@]}"
+    install_dependencies unzip tar
 }
 
 install_java_dependencies() {
     log_info "Installing Java dependencies..."
-    install_dependencies "${JAVA_DEPS[@]}"
+    install_dependencies openjdk-17-jdk
 }
 
 install_rust_dependencies() {
     log_info "Installing Rust dependencies..."
-    install_dependencies "${RUST_DEPS[@]}"
+    install_dependencies cargo libclang-dev pkg-config
 }
 
 install_node_dependencies() {
@@ -394,43 +352,31 @@ install_node_dependencies() {
 
 install_build_dependencies() {
     log_info "Installing build dependencies..."
-    install_dependencies "${BUILD_DEPS[@]}"
+    install_dependencies cmake libssl-dev libgmp-dev libtinfo6 libprotoc-dev apt-transport-https gnupg
 }
 
-install_system_dependencies() {
-    log_info "Installing system dependencies..."
-    install_dependencies "${SYSTEM_DEPS[@]}"
-}
 
 install_web_dependencies() {
     log_info "Installing web server dependencies..."
-    install_dependencies "${WEB_DEPS[@]}"
+    install_dependencies nginx apache2-utils
 }
 
 install_monitoring_dependencies() {
     log_info "Installing monitoring dependencies..."
-    install_dependencies "${MONITORING_DEPS[@]}"
+    install_dependencies bmon slurm tcptrack
 }
 
-# Install all dependencies for a complete Ethereum node setup
-install_all_dependencies() {
-    log_info "Installing all Ethereum node dependencies..."
-    install_core_dependencies
-    install_dependencies "${ARCHIVE_DEPS[@]}" "${SYSTEM_DEPS[@]}" "${WEB_DEPS[@]}"
-}
 
 # Show dependency information
 show_dependency_info() {
     echo -e "${BOLD}Ethereum Node Dependency Management${NC}"
     echo -e "${UNDERLINE}Core Dependencies:${NC} ${CORE_DEPS[*]}"
-    echo -e "${UNDERLINE}Java Dependencies:${NC} ${JAVA_DEPS[*]}"
-    echo -e "${UNDERLINE}Rust Dependencies:${NC} ${RUST_DEPS[*]}"
-    echo -e "${UNDERLINE}Node.js Dependencies:${NC} ${NODE_DEPS[*]}"
-    echo -e "${UNDERLINE}Build Dependencies:${NC} ${BUILD_DEPS[*]}"
-    echo -e "${UNDERLINE}Archive Dependencies:${NC} ${ARCHIVE_DEPS[*]}"
-    echo -e "${UNDERLINE}System Dependencies:${NC} ${SYSTEM_DEPS[*]}"
-    echo -e "${UNDERLINE}Web Dependencies:${NC} ${WEB_DEPS[*]}"
-    echo -e "${UNDERLINE}Monitoring Dependencies:${NC} ${MONITORING_DEPS[*]}"
+    echo -e "${UNDERLINE}Java Dependencies:${NC} openjdk-17-jdk"
+    echo -e "${UNDERLINE}Rust Dependencies:${NC} cargo libclang-dev pkg-config"
+    echo -e "${UNDERLINE}Node.js Dependencies:${NC} nodejs"
+    echo -e "${UNDERLINE}Build Dependencies:${NC} cmake libssl-dev libgmp-dev libtinfo6 libprotoc-dev apt-transport-https gnupg"
+    echo -e "${UNDERLINE}Web Dependencies:${NC} nginx apache2-utils"
+    echo -e "${UNDERLINE}Monitoring Dependencies:${NC} bmon slurm tcptrack"
     echo ""
     echo -e "${BOLD}Available Functions:${NC}"
     echo "  install_core_dependencies()      - Core dependencies for most scripts"
@@ -440,10 +386,8 @@ show_dependency_info() {
     echo "  install_rust_dependencies()      - Rust build dependencies"
     echo "  install_node_dependencies()      - Node.js runtime dependencies"
     echo "  install_build_dependencies()     - Build tool dependencies"
-    echo "  install_system_dependencies()    - System service dependencies"
     echo "  install_web_dependencies()       - Web server dependencies"
     echo "  install_monitoring_dependencies() - Monitoring tool dependencies"
-    echo "  install_all_dependencies()       - All dependencies for complete setup"
 }
 
 # Clone or update git repository

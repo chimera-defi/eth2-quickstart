@@ -9,7 +9,6 @@ Choose from various execution and consensus clients for optimal client diversity
 ## Features
 
 - **Automated Setup**: Streamlined installation process with minimal user interaction
-- **Centralized Dependencies**: Smart dependency management with categorized installation functions
 - **Multiple Client Support**: Choose from 5 execution clients and 6 consensus clients
 - **Security Hardening**: Automatic firewall configuration, SSH hardening, and fail2ban setup
 - **Comprehensive Logging**: All operations logged to timestamped files in `~/ethereum-setup-logs/`
