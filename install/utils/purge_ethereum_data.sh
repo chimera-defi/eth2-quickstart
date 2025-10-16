@@ -55,9 +55,6 @@ DATA_DIRS=(
     "$HOME/secrets"                     # JWT secrets, validator keys
 )
 
-# Services to stop
-SERVICES=("eth1" "cl" "validator" "mev" "nginx")
-
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -88,22 +85,22 @@ check_user "$LOGIN_UNAME"
 # Show what will be deleted
 show_deletion_summary() {
     log_info "=== DELETION SUMMARY ==="
-    local found_dirs=()
+    local count=0
     
     for dir in "${DATA_DIRS[@]}"; do
         if [[ -d "$dir" && -n "$(ls -A "$dir" 2>/dev/null)" ]]; then
             local size=$(du -sh "$dir" 2>/dev/null | cut -f1)
             log_info "  $dir ($size)"
-            found_dirs+=("$dir")
+            ((count++))
         fi
     done
     
-    if [[ ${#found_dirs[@]} -eq 0 ]]; then
+    if [[ $count -eq 0 ]]; then
         log_info "No Ethereum data directories found to delete."
         return 1
     fi
     
-    log_warn "Total directories to delete: ${#found_dirs[@]}"
+    log_warn "Total directories to delete: $count"
     return 0
 }
 
@@ -132,7 +129,7 @@ confirm_deletion() {
 stop_services() {
     log_info "Stopping Ethereum services..."
     
-    for service in "${SERVICES[@]}"; do
+    for service in eth1 cl validator mev nginx; do
         if systemctl is-active --quiet "$service" 2>/dev/null; then
             log_info "Stopping $service service..."
             if [[ "$DRY_RUN" == "false" ]]; then
@@ -148,41 +145,25 @@ stop_services() {
 
 # Delete directories
 delete_directories() {
-    local deleted=0
-    local failed=0
-    
     for dir in "${DATA_DIRS[@]}"; do
         if [[ -d "$dir" && -n "$(ls -A "$dir" 2>/dev/null)" ]]; then
             log_info "Deleting: $dir"
             if [[ "$DRY_RUN" == "false" ]]; then
-                if rm -rf "$dir" 2>/dev/null; then
-                    ((deleted++))
-                else
+                if ! rm -rf "$dir" 2>/dev/null; then
                     log_error "Failed to delete $dir"
-                    ((failed++))
                 fi
             else
                 log_info "[DRY RUN] Would delete: $dir"
-                ((deleted++))
             fi
         fi
     done
-    
-    if [[ "$DRY_RUN" == "false" ]]; then
-        log_info "Deletion completed: $deleted directories deleted"
-        if [[ $failed -gt 0 ]]; then
-            log_warn "Failed to delete $failed directories"
-        fi
-    else
-        log_info "Dry run completed: $deleted directories would be deleted"
-    fi
 }
 
 # Disable services
 disable_services() {
     log_info "Disabling Ethereum services..."
     
-    for service in "${SERVICES[@]}"; do
+    for service in eth1 cl validator mev nginx; do
         if systemctl is-enabled "$service" >/dev/null 2>&1; then
             log_info "Disabling $service service..."
             if [[ "$DRY_RUN" == "false" ]]; then
