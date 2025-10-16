@@ -100,28 +100,6 @@ cat "$SCRIPT_DIR/configs/grandine/grandine_base.toml" ./tmp/grandine_custom.toml
 # Clean up temporary files
 rm -rf ./tmp/
 
-# Create validator client configuration (if Grandine supports separate validator client)
-cat > "$GRANDINE_DIR/validator.toml" << EOF
-# Grandine Validator Configuration
-
-# Beacon node connection
-beacon_node_endpoint = "http://$CONSENSUS_HOST:5052"
-
-# Validator settings
-validators_dir = "$VALIDATOR_DATA_DIR"
-suggested_fee_recipient = "$FEE_RECIPIENT"
-graffiti = "$GRAFITTI"
-
-# Metrics
-metrics_enabled = true
-metrics_listen_address = "$CONSENSUS_HOST:8009"
-
-# Safety
-doppelganger_detection = true
-
-# Logging
-log_level = "info"
-EOF
 
 # Create systemd service for beacon node
 BEACON_EXEC_START="$GRANDINE_DIR/target/release/grandine --config $GRANDINE_DIR/grandine.toml"
