@@ -92,7 +92,7 @@ create_systemd_service "validator" "Flashbots MEV Prysm Validator" "$VALIDATOR_E
 
 # Enable and start services
 enable_and_start_systemd_service "cl"
-enable_systemd_service "validator"
+enable_and_start_systemd_service "validator"
 
 # Show completion information
 show_installation_complete "Flashbots MEV Prysm" "cl" "$PRYSM_DIR/prysm_beacon_conf.yaml" "$PRYSM_DIR"
