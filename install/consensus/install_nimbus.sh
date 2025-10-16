@@ -149,7 +149,7 @@ create_systemd_service "validator" "Nimbus Ethereum Validator Client" "$VALIDATO
 
 # Enable and start services
 enable_and_start_systemd_service "cl"
-enable_and_start_systemd_service "validator"
+enable_systemd_service "validator"
 
 log_info "Nimbus installation completed!"
 log_info "Beacon node configuration: $NIMBUS_DIR/nimbus.toml"
@@ -157,7 +157,7 @@ log_info "Validator configuration: $NIMBUS_DIR/validator.toml"
 log_info "Data directory: $NIMBUS_DATA_DIR"
 log_info "Validator directory: $VALIDATOR_DATA_DIR"
 log_info ""
-log_info "Validator will start automatically with the beacon node"
+log_info "To start validator: sudo systemctl start validator"
 log_info "To check status: sudo systemctl status cl && sudo systemctl status validator"
 log_info "To view logs: journalctl -fu cl && journalctl -fu validator"
 
@@ -172,7 +172,7 @@ Nimbus has been installed with the following components:
 Next Steps:
 1. Import your validator keys into: $VALIDATOR_DATA_DIR/
 2. Create keystore password files in: $VALIDATOR_DATA_DIR/secrets/
-3. Wait for beacon node to sync (validator will start automatically)
+3. Wait for beacon node to sync, then start validator: sudo systemctl start validator
 
 Key features:
 - Resource efficient design (low memory and CPU usage)
