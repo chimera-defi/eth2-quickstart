@@ -14,7 +14,8 @@ log_info "Starting Teku installation..."
 check_system_requirements 16 1000
 
 # Install dependencies (Java 11+ required)
-install_dependencies openjdk-17-jdk wget curl unzip
+install_consensus_dependencies
+install_java_dependencies
 
 # Setup firewall rules for Teku
 setup_firewall_rules 9000 5051

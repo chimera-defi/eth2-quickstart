@@ -14,7 +14,7 @@ log_info "Starting Erigon installation..."
 check_system_requirements 16 2000
 
 # Install dependencies
-install_dependencies git build-essential
+install_execution_dependencies
 
 # Setup firewall rules for Erigon
 setup_firewall_rules 30303 30304 42069 4000 4001

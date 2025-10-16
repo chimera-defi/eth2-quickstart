@@ -24,7 +24,8 @@ fi
 source "$HOME/.cargo/env"
 
 # Install dependencies
-install_dependencies libclang-dev pkg-config build-essential cargo
+install_execution_dependencies
+install_rust_dependencies
 
 # Setup firewall rules for Reth
 setup_firewall_rules 30303 30304 42069 4000 4001

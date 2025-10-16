@@ -14,7 +14,7 @@ log_info "Starting Prysm installation..."
 check_system_requirements 16 1000
 
 # Install dependencies
-install_dependencies wget curl git
+install_consensus_dependencies
 
 # Setup firewall rules for Prysm
 setup_firewall_rules 13000 12000 5051
