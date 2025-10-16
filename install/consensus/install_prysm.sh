@@ -44,8 +44,7 @@ fi
 log_info "Generating JWT secret..."
 ./prysm.sh beacon-chain generate-auth-secret
 
-# Ensure secrets directory exists
-ensure_directory "$HOME/secrets"
+# Secrets directory will be created by ensure_jwt_secret function
 mv ./jwt.hex "$HOME/secrets/"
 
 # Create temporary directory for custom configuration

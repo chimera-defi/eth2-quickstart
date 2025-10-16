@@ -7,6 +7,8 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BOLD='\033[1m'
+UNDERLINE='\033[4m'
 NC='\033[0m' # No Color
 
 # Logging configuration
@@ -300,6 +302,30 @@ merge_json_config() {
         log_warn "This may result in invalid JSON. Consider installing jq for proper merging."
         return 1
     fi
+}
+
+# Helper functions for common systemd service patterns
+create_execution_service() {
+    local client_name="$1"
+    local exec_start="$2"
+    local service_name="${3:-eth1}"
+    create_systemd_service "$service_name" "$client_name Ethereum Execution Client" "$exec_start" "$(whoami)" "on-failure" "600" "5" "300"
+}
+
+create_consensus_service() {
+    local client_name="$1"
+    local exec_start="$2"
+    local service_name="${3:-cl}"
+    create_systemd_service "$service_name" "$client_name Ethereum Consensus Client" "$exec_start" "$(whoami)" "on-failure" "600" "5" "300"
+}
+
+create_validator_service() {
+    local client_name="$1"
+    local exec_start="$2"
+    local service_name="${3:-validator}"
+    local after="${4:-network-online.target cl.service}"
+    local wants="${5:-network-online.target}"
+    create_systemd_service "$service_name" "$client_name Ethereum Validator Client" "$exec_start" "$(whoami)" "on-failure" "600" "5" "300" "$after" "$wants"
 }
 
 # Clone or update git repository
