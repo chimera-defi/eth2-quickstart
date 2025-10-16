@@ -61,15 +61,7 @@ setup_firewall_rules 80 443
 
 # Enable and start NGINX
 log_info "Enabling and starting NGINX..."
-sudo systemctl daemon-reload
-if ! sudo systemctl enable nginx; then
-    log_error "Failed to enable NGINX"
-    exit 1
-fi
-if ! sudo systemctl start nginx; then
-    log_error "Failed to start NGINX"
-    exit 1
-fi
+enable_and_start_system_service "nginx"
 
 # Run NGINX hardening
 log_info "Running NGINX hardening..."

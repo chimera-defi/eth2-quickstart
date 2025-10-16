@@ -171,6 +171,26 @@ enable_systemd_service_only() {
     return 0
 }
 
+# Enable and start system service (for system services like nginx, fail2ban)
+enable_and_start_system_service() {
+    local service_name="$1"
+    
+    sudo systemctl daemon-reload
+    
+    if ! sudo systemctl enable "$service_name"; then
+        log_error "Failed to enable system service: $service_name"
+        return 1
+    fi
+    
+    if ! sudo systemctl start "$service_name"; then
+        log_error "Failed to start system service: $service_name"
+        return 1
+    fi
+    
+    log_info "Enabled and started system service: $service_name"
+    return 0
+}
+
 
 # Ensure systemd service is running (for upgrade scenarios)
 ensure_systemd_service_running() {
