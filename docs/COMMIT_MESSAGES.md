@@ -12,7 +12,7 @@ feat: Major refactoring - Add 4 new clients, reduce code duplication, enhance UX
   * Nimbus (consensus) - Lightweight, resource-efficient client
   * Lodestar (consensus) - TypeScript, developer-friendly client  
   * Grandine (consensus) - High-performance Rust client
-- Add interactive client selection assistant (select_clients.sh)
+- Add streamlined client installation (quick_client_install.sh)
 - Refactor install_geth.sh to use common functions
 - Comprehensive README.md update with client comparisons and troubleshooting
 - Improve client diversity support from 3 to 11 total clients (5 execution + 6 consensus)
@@ -55,9 +55,9 @@ feat: Add Teku, Nimbus, Lodestar, and Grandine consensus clients
 
 ### Commit 4: UX Enhancement
 ```
-feat: Add interactive client selection assistant and enhanced docs
+feat: Add streamlined client installation and enhanced docs
 
-- Add select_clients.sh for guided client selection
+- Add quick_client_install.sh for guided client installation
 - Provide personalized recommendations based on use case and hardware
 - Comprehensive README.md update with client comparison tables
 - Add troubleshooting section and system requirements guide
@@ -81,7 +81,7 @@ git commit -m "feat: Major refactoring - Add 4 new clients, reduce code duplicat
   * Nimbus (consensus) - Lightweight, resource-efficient client
   * Lodestar (consensus) - TypeScript, developer-friendly client  
   * Grandine (consensus) - High-performance Rust client
-- Add interactive client selection assistant (select_clients.sh)
+- Add streamlined client installation (quick_client_install.sh)
 - Refactor install_geth.sh to use common functions
 - Comprehensive README.md update with client comparisons and troubleshooting
 - Improve client diversity support from 3 to 11 total clients (5 execution + 6 consensus)

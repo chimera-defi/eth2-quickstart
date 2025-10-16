@@ -99,7 +99,7 @@ if command -v jq &> /dev/null; then
     jq -s '.[0] * .[1]' "$SCRIPT_DIR/configs/lodestar/lodestar_beacon_base.json" ./tmp/lodestar_beacon_custom.json > "$LODESTAR_DIR/beacon.config.json"
     jq -s '.[0] * .[1]' "$SCRIPT_DIR/configs/lodestar/lodestar_validator_base.json" ./tmp/lodestar_validator_custom.json > "$LODESTAR_DIR/validator.config.json"
 else
-    # Fallback: create complete configs with variables (TODO: implement proper JSON merging)
+    # Fallback: create complete configs with variables
     cat > "$LODESTAR_DIR/beacon.config.json" << EOF
 {
   "network": "mainnet",
