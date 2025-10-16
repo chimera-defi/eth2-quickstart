@@ -27,7 +27,7 @@ chown -R "$LOGIN_UNAME":"$LOGIN_UNAME" /home/"$LOGIN_UNAME"/.ssh
 ```
 
 ### 2. Read Command Issues (Fixed)
-**Files affected**: `run_1.sh`, `select_clients.sh`
+**Files affected**: `run_1.sh`
 **Issue**: `read` commands without `-r` flag can mangle backslashes
 **Fixes applied**:
 ```bash
@@ -94,7 +94,6 @@ The following warnings remain but are informational and don't affect script func
 ### Files Modified
 1. `/workspace/run_1.sh` - Fixed variable quoting and read commands
 2. `/workspace/run_2.sh` - Fixed legacy backtick syntax  
-3. `/workspace/select_clients.sh` - Fixed read commands
 4. `/workspace/lib/common_functions.sh` - Fixed cd error handling and variable assignments
 
 ## Conclusion

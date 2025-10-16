@@ -163,11 +163,8 @@ exports.sh → Base Template + Custom Variables → Final Client Config
 ```
 This provides preset configurations and custom selection without questionnaires.
 
-**Information Only (No Installation):**
-```bash
-./install/utils/select_clients.sh
-```
-This shows client information and recommendations but doesn't install anything.
+**Client Information:**
+For detailed client information and recommendations, see the [Client Selection Guide](#client-selection-guide) section below.
 
 **Recommendations by Use Case:**
 
@@ -220,7 +217,7 @@ Use the following command to verify locally:
   - Check validators register properly (Note: Need a 0x prefix on the validator pub key) https://boost.flashbots.net/mev-boost-status-updates/query-validator-registration-status-now
 
 
-5. Further security hardening tips: (TODO)
+5. Further security hardening tips:
   - Disable root login after everything is confirmed to be working by setting `PermitRootLogin no` in `/etc/ssh/sshd_config`  
 
 ## Logging & Monitoring

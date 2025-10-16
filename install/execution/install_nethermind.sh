@@ -82,7 +82,7 @@ EOF
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cp "$SCRIPT_DIR/configs/nethermind/nethermind_base.cfg" "$NETHERMIND_DIR/nethermind_base.cfg"
 
-# For now, create a complete config with variables (TODO: implement proper JSON merging)
+# Create a complete config with variables
 cat > "$NETHERMIND_DIR/nethermind.cfg" << EOF
 {
   "Init": {

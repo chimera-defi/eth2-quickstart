@@ -98,7 +98,7 @@ rm -rf ./tmp/
 #### Nethermind (JSON)
 - **Base Config**: `configs/nethermind/nethermind_base.cfg`
 - **Custom Variables**: Memory, ports, fee recipient, graffiti
-- **Merge Strategy**: JSON concatenation (TODO: implement proper JSON merging with jq)
+- **Merge Strategy**: JSON concatenation
 
 #### Besu (TOML)  
 - **Base Config**: `configs/besu/besu_base.toml`
@@ -216,7 +216,7 @@ rm -rf ./tmp/
 
 ### For New Installations
 1. **Configure `exports.sh`**: Set all required variables before installation
-2. **Choose Clients**: Use `./select_clients.sh` for recommendations
+2. **Choose Clients**: Use `./install/utils/quick_client_install.sh` for guided installation
 3. **Run Install Scripts**: Execute client-specific installation scripts
 4. **Verify Configuration**: Check generated config files match expectations
 
