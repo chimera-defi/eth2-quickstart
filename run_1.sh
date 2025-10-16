@@ -93,27 +93,25 @@ timedatectl set-ntp on
 append_once /etc/fstab $'tmpfs\t/run/shm\ttmpfs\tro,noexec,nosuid\t0 0'
 echo "Disabled shared memory"
 
-echo "Begin network settings output:"
-
+# Display network settings for verification
+log_info "Network settings verification:"
 ss -tulpn
 sshd -t
 ufw status
 
-echo "Manual action required!"
-echo "1. Please check the settings above"
+# Automatically configure sudo for the eth user
+log_info "Configuring sudo access for $LOGIN_UNAME user..."
+echo "$LOGIN_UNAME ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/ethereum-setup
+chmod 440 /etc/sudoers.d/ethereum-setup
 
-read -r -n 1 -p "Press enter to continue when done ^:" || true
+# Set a default password for the eth user (can be changed later)
+log_info "Setting up password for $LOGIN_UNAME user..."
+echo "$LOGIN_UNAME:ethereum123" | chpasswd
+log_warn "Default password set for $LOGIN_UNAME user: ethereum123"
+log_warn "Please change this password after first login: passwd $LOGIN_UNAME"
 
-echo "2. Please run the following cmds now in another shell and add the line to the file that pops up to enable $LOGIN_UNAME no-prompt sudo to help run the second stage"
-echo "ssh root@$(curl -s v4.ident.me) "
-echo "sudo visudo"
-echo "Add this to the end of the file:"
-echo "$LOGIN_UNAME ALL=(ALL) NOPASSWD: ALL "
-
-read -r -n 1 -p "Press enter to continue when done ^:" || true
-
-echo "3. Set a password for your new user when prompted"
-passwd "$LOGIN_UNAME"
+log_info "Phase 1 setup completed successfully!"
+show_log_location
 
 echo "Done. Run 'sudo reboot' for all changes to take effect"
 echo "Re-login via ssh $LOGIN_UNAME@$(curl -s v4.ident.me) after and run './run_2.sh'"

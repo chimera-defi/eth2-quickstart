@@ -39,24 +39,31 @@ chmod +x run_1.sh
 ./run_1.sh
 ``` 
   - will upgrade ubuntu and installed programs,   
-  - guide the user on manual steps
+  - automatically configure security settings
   - setup firewalls, do security hardening,   
   - install needed programs for setting up a node  
+  - create eth user with proper permissions
+  - generate detailed logs in ~/ethereum-setup-logs/
 
   
-4. After it finishes, verify the results and run `sudo reboot`  
+3. After it finishes, run `sudo reboot`  
 Log back in as the new non-root user `eth@ip`
-- configure `exports.sh` 
 
-5. Log back in as the new non-root user `eth@ip`
-- configure `exports.sh` 
-- **Choose your clients:** Run `./select_clients.sh` to get recommendations
-- Run`./run_2.sh` OR manually install your chosen clients:
-   Default setup includes:
-     - prysm (consensus client)
+4. Run the client installation script
+```
+./run_2.sh
+```
+   This will automatically install:
      - geth (execution client) 
+     - prysm (consensus client)
      - mev-boost
      - setup systemctl for eth2 services
+     - generate detailed logs
+
+   For custom client selection, run:
+   ```
+   ./install/utils/quick_client_install.sh
+   ```
 6. Start your services via systemctl to confirm successful installation! eth1, beacon-chain & validator
   
     ```
@@ -150,11 +157,17 @@ exports.sh → Base Template + Custom Variables → Final Client Config
 
 ### Client Selection Guide
 
-Run the interactive client selection assistant:
+**Quick Installation (Recommended):**
 ```bash
-chmod +x select_clients.sh
-./select_clients.sh
+./install/utils/quick_client_install.sh
 ```
+This provides preset configurations and custom selection without questionnaires.
+
+**Information Only (No Installation):**
+```bash
+./install/utils/select_clients.sh
+```
+This shows client information and recommendations but doesn't install anything.
 
 **Recommendations by Use Case:**
 
@@ -210,6 +223,34 @@ Use the following command to verify locally:
 5. Further security hardening tips: (TODO)
   - Disable root login after everything is confirmed to be working by setting `PermitRootLogin no` in `/etc/ssh/sshd_config`  
 
+## Logging & Monitoring
+
+### Installation Logs
+All installation activities are automatically logged to `~/ethereum-setup-logs/`:
+```bash
+# View latest installation log
+./show_logs.sh
+
+# View all log files
+ls -la ~/ethereum-setup-logs/
+
+# Follow logs in real-time
+tail -f ~/ethereum-setup-logs/ethereum-setup-*.log
+```
+
+### Service Logs
+Monitor running services with systemd:
+```bash
+# View service status
+sudo systemctl status eth1 cl validator mev
+
+# Follow service logs
+journalctl -fu eth1    # Execution client
+journalctl -fu cl      # Consensus client  
+journalctl -fu validator # Validator
+journalctl -fu mev     # MEV-Boost
+```
+
 # Troubleshooting & Tips
 
 ## General Troubleshooting
@@ -230,6 +271,10 @@ sudo systemctl status eth1 cl validator mev
 ```
 - **View logs:**
 ```bash
+# View installation logs
+./show_logs.sh
+
+# View service logs
 journalctl -fu eth1    # Execution client logs
 journalctl -fu cl      # Consensus client logs  
 journalctl -fu validator # Validator logs
@@ -278,11 +323,12 @@ Before running client install scripts, modify configurations:
 - **Resource Efficiency**: Options for resource-constrained environments (Nimbus)
 
 ## Ease of Use
-- **Interactive Selection**: `./select_clients.sh` guides client choice
+- **Seamless Installation**: No questionnaires - just run and install
 - **Automated Setup**: Reduced setup time compared to manual configuration
 - **Common Functions**: Refactored codebase eliminates duplication
-- **Comprehensive Logging**: Detailed logs and status monitoring
+- **Comprehensive Logging**: Detailed logs saved to ~/ethereum-setup-logs/
 - **Systemd Integration**: Proper service management and auto-restart
+- **Quick Client Selection**: Preset configurations for different use cases
 
 ## Security & Infrastructure  
 - **Firewall Rules**: Automated security hardening

@@ -9,17 +9,36 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Logging configuration
+LOG_DIR="${HOME}/ethereum-setup-logs"
+LOG_FILE="${LOG_DIR}/ethereum-setup-$(date +%Y%m%d-%H%M%S).log"
+
+# Ensure log directory exists
+mkdir -p "$LOG_DIR"
+
 # Logging functions
 log_info() {
+    local message="[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $1"
     echo -e "${GREEN}[INFO]${NC} $1"
+    echo "$message" >> "$LOG_FILE"
 }
 
 log_warn() {
+    local message="[$(date '+%Y-%m-%d %H:%M:%S')] [WARN] $1"
     echo -e "${YELLOW}[WARN]${NC} $1"
+    echo "$message" >> "$LOG_FILE"
 }
 
 log_error() {
+    local message="[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $1"
     echo -e "${RED}[ERROR]${NC} $1"
+    echo "$message" >> "$LOG_FILE"
+}
+
+# Function to display log file location
+show_log_location() {
+    log_info "Log file location: $LOG_FILE"
+    log_info "Log directory: $LOG_DIR"
 }
 
 # Check if running as correct user
