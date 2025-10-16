@@ -55,6 +55,9 @@ DATA_DIRS=(
     "$HOME/secrets"                     # JWT secrets, validator keys
 )
 
+# Services to manage
+SERVICES=(eth1 cl validator mev nginx)
+
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -110,12 +113,9 @@ confirm_deletion() {
         return 0
     fi
     
-    echo
     log_warn "WARNING: This will permanently delete all Ethereum client data!"
     log_warn "This includes blockchain data, validator keys, and configurations."
-    echo
     read -p "Are you sure you want to continue? (yes/no): " -r
-    echo
     
     if [[ $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
         return 0
@@ -129,18 +129,32 @@ confirm_deletion() {
 stop_services() {
     log_info "Stopping Ethereum services..."
     
-    for service in eth1 cl validator mev nginx; do
+    for service in "${SERVICES[@]}"; do
         if systemctl is-active --quiet "$service" 2>/dev/null; then
             log_info "Stopping $service service..."
             if [[ "$DRY_RUN" == "false" ]]; then
                 sudo systemctl stop "$service" || log_warn "Failed to stop $service"
+            else
+                log_info "[DRY RUN] Would stop: $service"
             fi
         fi
     done
+}
+
+# Disable services
+disable_services() {
+    log_info "Disabling Ethereum services..."
     
-    if [[ "$DRY_RUN" == "false" ]]; then
-        sleep 2
-    fi
+    for service in "${SERVICES[@]}"; do
+        if systemctl is-enabled "$service" >/dev/null 2>&1; then
+            log_info "Disabling $service service..."
+            if [[ "$DRY_RUN" == "false" ]]; then
+                sudo systemctl disable "$service" || log_warn "Failed to disable $service"
+            else
+                log_info "[DRY RUN] Would disable: $service"
+            fi
+        fi
+    done
 }
 
 # Delete directories
@@ -157,26 +171,6 @@ delete_directories() {
             fi
         fi
     done
-}
-
-# Disable services
-disable_services() {
-    log_info "Disabling Ethereum services..."
-    
-    for service in eth1 cl validator mev nginx; do
-        if systemctl is-enabled "$service" >/dev/null 2>&1; then
-            log_info "Disabling $service service..."
-            if [[ "$DRY_RUN" == "false" ]]; then
-                sudo systemctl disable "$service" || log_warn "Failed to disable $service"
-            else
-                log_info "[DRY RUN] Would disable: $service"
-            fi
-        fi
-    done
-    
-    if [[ "$DRY_RUN" == "false" ]]; then
-        sudo systemctl daemon-reload
-    fi
 }
 
 # Main execution
@@ -204,6 +198,10 @@ main() {
     
     # Disable services
     disable_services
+    
+    if [[ "$DRY_RUN" == "false" ]]; then
+        sudo systemctl daemon-reload
+    fi
     
     log_info "Ethereum data purge completed!"
     log_info "You can now install new clients with a clean slate."
