@@ -59,10 +59,15 @@ fi
 log_info "Configuring firewall..."
 setup_firewall_rules 80 443
 
-# Restart NGINX
-log_info "Restarting NGINX..."
-if ! sudo service nginx restart; then
-    log_error "Failed to restart NGINX"
+# Enable and start NGINX
+log_info "Enabling and starting NGINX..."
+sudo systemctl daemon-reload
+if ! sudo systemctl enable nginx; then
+    log_error "Failed to enable NGINX"
+    exit 1
+fi
+if ! sudo systemctl start nginx; then
+    log_error "Failed to start NGINX"
     exit 1
 fi
 

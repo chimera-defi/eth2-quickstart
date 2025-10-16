@@ -68,7 +68,7 @@ setup_firewall_rules 80 443
 
 # Restart NGINX
 log_info "Restarting NGINX with SSL configuration..."
-if ! sudo service nginx restart; then
+if ! sudo systemctl restart nginx; then
     log_error "Failed to restart NGINX"
     exit 1
 fi

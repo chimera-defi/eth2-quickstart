@@ -90,8 +90,8 @@ create_systemd_service "cl" "Flashbots MEV Prysm Beacon Chain" "$BEACON_EXEC_STA
 VALIDATOR_EXEC_START="$PRYSM_DIR/validator --config-file=$PRYSM_DIR/prysm_validator_conf.yaml"
 create_systemd_service "validator" "Flashbots MEV Prysm Validator" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target"
 
-# Enable services
-enable_systemd_service "cl"
+# Enable and start services
+enable_and_start_systemd_service "cl"
 enable_systemd_service "validator"
 
 # Show completion information

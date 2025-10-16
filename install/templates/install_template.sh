@@ -40,14 +40,13 @@ log_info "Creating [CLIENT NAME] configuration..."
 EXEC_START="[COMMAND_TO_START_CLIENT]"
 create_systemd_service "[SERVICE_NAME]" "[SERVICE_DESCRIPTION]" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
-# Enable the service
-enable_systemd_service "[SERVICE_NAME]"
+# Enable and start the service
+enable_and_start_systemd_service "[SERVICE_NAME]"
 
 # Show completion information
 show_installation_complete "[CLIENT NAME]" "[SERVICE_NAME]" "[CONFIG_FILE_PATH]" "$[CLIENT_NAME]_DIR"
 
 log_info "[CLIENT NAME] installation completed!"
-log_info "To start [CLIENT NAME]: sudo systemctl start [SERVICE_NAME]"
 log_info "To check status: sudo systemctl status [SERVICE_NAME]"
 log_info "To view logs: journalctl -fu [SERVICE_NAME]"
 
