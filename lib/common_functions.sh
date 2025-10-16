@@ -40,26 +40,14 @@ ensure_directory() {
     fi
 }
 
-# Download file with retry logic
+# Download file with retry logic and security validation
 download_file() {
     local url="$1"
     local output="$2"
     local max_retries="${3:-3}"
-    local retry_count=0
     
-    while [[ $retry_count -lt $max_retries ]]; do
-        if curl -fsSL "$url" -o "$output"; then
-            log_info "Successfully downloaded: $output"
-            return 0
-        else
-            ((retry_count++))
-            log_warn "Download failed, attempt $retry_count/$max_retries"
-            sleep 2
-        fi
-    done
-    
-    log_error "Failed to download $url after $max_retries attempts"
-    return 1
+    # Use secure download function
+    secure_download "$url" "$output" "$max_retries"
 }
 
 # Create systemd service file
@@ -542,6 +530,489 @@ validate_ethereum_address() {
     else
         return 1
     fi
+}
+
+# Enhanced input validation functions for security
+validate_user_input() {
+    local input="$1"
+    local pattern="$2"
+    local max_length="${3:-255}"
+    
+    # Check if input is empty
+    if [[ -z "$input" ]]; then
+        log_error "Input cannot be empty"
+        return 1
+    fi
+    
+    # Check input length
+    if [[ ${#input} -gt "$max_length" ]]; then
+        log_error "Input too long (max: $max_length characters)"
+        return 1
+    fi
+    
+    # Check pattern if provided
+    if [[ -n "$pattern" && ! "$input" =~ $pattern ]]; then
+        log_error "Invalid input format"
+        return 1
+    fi
+    
+    return 0
+}
+
+validate_menu_choice() {
+    local choice="$1"
+    local max_options="$2"
+    
+    # Check if choice is numeric
+    if [[ ! "$choice" =~ ^[0-9]+$ ]]; then
+        log_error "Invalid choice: $choice (must be a number)"
+        return 1
+    fi
+    
+    # Check if choice is within range
+    if [[ "$choice" -lt 1 || "$choice" -gt "$max_options" ]]; then
+        log_error "Choice out of range: $choice (valid range: 1-$max_options)"
+        return 1
+    fi
+    
+    return 0
+}
+
+validate_filename() {
+    local filename="$1"
+    
+    # Check for dangerous characters
+    if [[ "$filename" =~ [\<\>\:\"\|\\?\*] ]]; then
+        log_error "Invalid filename: $filename (contains dangerous characters)"
+        return 1
+    fi
+    
+    # Check for path traversal attempts
+    if [[ "$filename" =~ \.\. ]]; then
+        log_error "Invalid filename: $filename (path traversal detected)"
+        return 1
+    fi
+    
+    return 0
+}
+
+validate_url() {
+    local url="$1"
+    
+    # Basic URL validation
+    if [[ ! "$url" =~ ^https?://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(/.*)?$ ]]; then
+        log_error "Invalid URL format: $url"
+        return 1
+    fi
+    
+    return 0
+}
+
+sanitize_input() {
+    local input="$1"
+    
+    # Remove potentially dangerous characters
+    echo "$input" | sed 's/[<>:"|?*]//g' | sed 's/\.\.//g'
+}
+
+# Security functions
+secure_file_permissions() {
+    local file="$1"
+    local permissions="${2:-600}"
+    
+    if [[ -f "$file" ]]; then
+        chmod "$permissions" "$file"
+        log_info "Secured file permissions for: $file"
+    else
+        log_warn "File not found for permission setting: $file"
+    fi
+}
+
+secure_directory_permissions() {
+    local directory="$1"
+    local permissions="${2:-700}"
+    
+    if [[ -d "$directory" ]]; then
+        chmod "$permissions" "$directory"
+        log_info "Secured directory permissions for: $directory"
+    else
+        log_warn "Directory not found for permission setting: $directory"
+    fi
+}
+
+secure_config_files() {
+    log_info "Securing configuration files..."
+    
+    # Find and secure all configuration files
+    find . -name "*.yaml" -o -name "*.toml" -o -name "*.cfg" -o -name "*.json" | while read -r file; do
+        secure_file_permissions "$file" 600
+    done
+    
+    # Secure secrets directory
+    if [[ -d "$HOME/secrets" ]]; then
+        secure_directory_permissions "$HOME/secrets" 700
+        find "$HOME/secrets" -type f -exec chmod 600 {} \;
+    fi
+    
+    # Secure SSH directory
+    if [[ -d "$HOME/.ssh" ]]; then
+        secure_directory_permissions "$HOME/.ssh" 700
+        find "$HOME/.ssh" -type f -exec chmod 600 {} \;
+    fi
+}
+
+# Network security functions
+configure_network_restrictions() {
+    local client_type="$1"
+    local config_file="$2"
+    
+    log_info "Configuring network restrictions for $client_type..."
+    
+    case "$client_type" in
+        "prysm")
+            # Prysm already has p2p-allowlist: public which is good
+            log_info "Prysm network restrictions already configured (p2p-allowlist: public)"
+            ;;
+        "teku"|"lighthouse"|"nimbus"|"lodestar"|"grandine")
+            # Add consistent network restrictions for other clients
+            if [[ -f "$config_file" ]]; then
+                # Ensure all clients bind to localhost for API endpoints
+                sed -i 's/0\.0\.0\.0/127.0.0.1/g' "$config_file"
+                log_info "Updated $client_type configuration to use localhost binding"
+            fi
+            ;;
+        "geth"|"besu"|"nethermind"|"erigon"|"reth")
+            # Execution clients should bind to localhost for RPC endpoints
+            if [[ -f "$config_file" ]]; then
+                sed -i 's/0\.0\.0\.0/127.0.0.1/g' "$config_file"
+                log_info "Updated $client_type configuration to use localhost binding"
+            fi
+            ;;
+    esac
+}
+
+apply_network_security() {
+    log_info "Applying network security configurations..."
+    
+    # Apply to all client configuration files
+    find configs/ -name "*.yaml" -o -name "*.toml" -o -name "*.cfg" -o -name "*.json" | while read -r config_file; do
+        local client_type=$(basename "$(dirname "$config_file")")
+        configure_network_restrictions "$client_type" "$config_file"
+    done
+}
+
+# Secure error handling functions
+secure_error_handling() {
+    local error_msg="$1"
+    local log_level="${2:-error}"
+    local show_details="${3:-false}"
+    
+    # Sanitize error message to prevent information disclosure
+    local sanitized_msg=$(echo "$error_msg" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 100)
+    
+    case "$log_level" in
+        "error")
+            if [[ "$show_details" == "true" ]]; then
+                log_error "Operation failed: $sanitized_msg"
+            else
+                log_error "Operation failed. Check logs for details."
+            fi
+            ;;
+        "warn")
+            log_warn "Warning: $sanitized_msg"
+            ;;
+        *)
+            log_info "Info: $sanitized_msg"
+            ;;
+    esac
+}
+
+safe_command_execution() {
+    local command="$1"
+    local error_msg="${2:-Command execution failed}"
+    local show_output="${3:-false}"
+    
+    if [[ "$show_output" == "true" ]]; then
+        if eval "$command" 2>&1; then
+            return 0
+        else
+            secure_error_handling "$error_msg" "error" "true"
+            return 1
+        fi
+    else
+        if eval "$command" >/dev/null 2>&1; then
+            return 0
+        else
+            secure_error_handling "$error_msg" "error" "false"
+            return 1
+        fi
+    fi
+}
+
+secure_download() {
+    local url="$1"
+    local output="$2"
+    local max_retries="${3:-3}"
+    
+    # Validate URL first
+    if ! validate_url "$url"; then
+        secure_error_handling "Invalid download URL" "error" "false"
+        return 1
+    fi
+    
+    # Attempt download with retries
+    local retry_count=0
+    while [[ $retry_count -lt $max_retries ]]; do
+        if curl -fsSL "$url" -o "$output" >/dev/null 2>&1; then
+            log_info "Successfully downloaded: $output"
+            return 0
+        else
+            retry_count=$((retry_count + 1))
+            if [[ $retry_count -lt $max_retries ]]; then
+                log_warn "Download failed, attempt $retry_count/$max_retries"
+                sleep 2
+            fi
+        fi
+    done
+    
+    secure_error_handling "Failed to download after $max_retries attempts" "error" "false"
+    return 1
+}
+
+# Rate limiting functions
+add_rate_limiting() {
+    local config_file="/etc/nginx/sites-available/default"
+    
+    log_info "Adding rate limiting to nginx configuration..."
+    
+    # Check if rate limiting is already configured
+    if grep -q "limit_req_zone" "$config_file" 2>/dev/null; then
+        log_info "Rate limiting already configured"
+        return 0
+    fi
+    
+    # Create backup
+    cp "$config_file" "${config_file}.backup.$(date +%Y%m%d_%H%M%S)"
+    
+    # Add rate limiting configuration
+    cat >> "$config_file" << 'EOF'
+
+# Rate limiting for RPC endpoints
+limit_req_zone $binary_remote_addr zone=rpc_limit:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=ws_limit:10m rate=5r/s;
+limit_req_zone $binary_remote_addr zone=api_limit:10m rate=20r/s;
+
+server {
+    # Apply rate limiting to RPC endpoints
+    location /rpc {
+        limit_req zone=rpc_limit burst=20 nodelay;
+        limit_req_status 429;
+        proxy_pass http://127.0.0.1:8545;
+    }
+    
+    location /ws {
+        limit_req zone=ws_limit burst=10 nodelay;
+        limit_req_status 429;
+        proxy_pass http://127.0.0.1:8546;
+    }
+    
+    location /api {
+        limit_req zone=api_limit burst=30 nodelay;
+        limit_req_status 429;
+        proxy_pass http://127.0.0.1:5051;
+    }
+}
+EOF
+
+    # Test nginx configuration
+    if nginx -t >/dev/null 2>&1; then
+        log_info "Rate limiting configuration added successfully"
+        systemctl reload nginx
+    else
+        log_error "Invalid nginx configuration, restoring backup"
+        mv "${config_file}.backup.$(date +%Y%m%d_%H%M%S)" "$config_file"
+        return 1
+    fi
+}
+
+configure_ddos_protection() {
+    log_info "Configuring DDoS protection..."
+    
+    # Add connection limiting
+    cat > /etc/nginx/conf.d/security.conf << 'EOF'
+# DDoS protection
+limit_conn_zone $binary_remote_addr zone=conn_limit_per_ip:10m;
+limit_conn_zone $server_name zone=conn_limit_per_server:10m;
+
+# Rate limiting
+limit_req_zone $binary_remote_addr zone=req_limit_per_ip:10m rate=10r/s;
+
+# Security headers
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-XSS-Protection "1; mode=block" always;
+add_header Referrer-Policy "no-referrer-when-downgrade" always;
+add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
+
+# Hide nginx version
+server_tokens off;
+
+# Connection limits
+limit_conn conn_limit_per_ip 10;
+limit_conn conn_limit_per_server 1000;
+EOF
+
+    log_info "DDoS protection configured"
+}
+
+# Security monitoring functions
+setup_security_monitoring() {
+    log_info "Setting up security monitoring..."
+    
+    # Create security monitoring script
+    cat > /usr/local/bin/security_monitor.sh << 'EOF'
+#!/bin/bash
+# Security monitoring script
+
+LOG_FILE="/var/log/security_monitor.log"
+DATE=$(date '+%Y-%m-%d %H:%M:%S')
+
+# Function to log security events
+log_security_event() {
+    echo "[$DATE] $1" >> "$LOG_FILE"
+}
+
+# Check for suspicious processes
+check_suspicious_processes() {
+    local suspicious_procs=$(ps aux | grep -E "(nc|netcat|nmap|masscan|hydra|john|hashcat)" | grep -v grep)
+    if [[ -n "$suspicious_procs" ]]; then
+        log_security_event "SUSPICIOUS PROCESS DETECTED: $suspicious_procs"
+    fi
+}
+
+# Check for failed SSH attempts
+check_failed_ssh() {
+    local failed_attempts=$(grep "Failed password" /var/log/auth.log | tail -5)
+    if [[ -n "$failed_attempts" ]]; then
+        log_security_event "FAILED SSH ATTEMPTS: $failed_attempts"
+    fi
+}
+
+# Check disk usage
+check_disk_usage() {
+    local disk_usage=$(df -h | awk '$5 > 90 {print $0}')
+    if [[ -n "$disk_usage" ]]; then
+        log_security_event "HIGH DISK USAGE: $disk_usage"
+    fi
+}
+
+# Check for unusual network connections
+check_network_connections() {
+    local unusual_conns=$(ss -tulpn | grep -E ":(22|23|3389|5900)" | grep -v "127.0.0.1")
+    if [[ -n "$unusual_conns" ]]; then
+        log_security_event "UNUSUAL NETWORK CONNECTIONS: $unusual_conns"
+    fi
+}
+
+# Check for root login attempts
+check_root_logins() {
+    local root_logins=$(grep "root" /var/log/auth.log | grep "Accepted" | tail -3)
+    if [[ -n "$root_logins" ]]; then
+        log_security_event "ROOT LOGIN DETECTED: $root_logins"
+    fi
+}
+
+# Check system resources
+check_system_resources() {
+    local memory_usage=$(free | awk 'NR==2{printf "%.2f%%", $3*100/$2}')
+    local cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
+    
+    if (( $(echo "$memory_usage > 90" | bc -l) )); then
+        log_security_event "HIGH MEMORY USAGE: $memory_usage"
+    fi
+    
+    if (( $(echo "$cpu_usage > 90" | bc -l) )); then
+        log_security_event "HIGH CPU USAGE: $cpu_usage%"
+    fi
+}
+
+# Main monitoring function
+main() {
+    check_suspicious_processes
+    check_failed_ssh
+    check_disk_usage
+    check_network_connections
+    check_root_logins
+    check_system_resources
+}
+
+# Run monitoring
+main
+EOF
+
+    chmod +x /usr/local/bin/security_monitor.sh
+    
+    # Add to crontab
+    if ! grep -q "security_monitor" /etc/crontab; then
+        echo "*/15 * * * * root /usr/local/bin/security_monitor.sh" >> /etc/crontab
+    fi
+    
+    # Setup log rotation
+    cat > /etc/logrotate.d/security_monitor << 'EOF'
+/var/log/security_monitor.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    create 644 root root
+}
+EOF
+
+    log_info "Security monitoring configured"
+}
+
+setup_intrusion_detection() {
+    log_info "Setting up intrusion detection..."
+    
+    # Install and configure AIDE (Advanced Intrusion Detection Environment)
+    if ! command_exists aide; then
+        apt install -y aide
+    fi
+    
+    # Initialize AIDE database
+    if [[ ! -f /var/lib/aide/aide.db ]]; then
+        aideinit
+    fi
+    
+    # Create AIDE check script
+    cat > /usr/local/bin/aide_check.sh << 'EOF'
+#!/bin/bash
+# AIDE intrusion detection check
+
+LOG_FILE="/var/log/aide_check.log"
+DATE=$(date '+%Y-%m-%d %H:%M:%S')
+
+echo "[$DATE] Starting AIDE check..." >> "$LOG_FILE"
+
+if aide --check >> "$LOG_FILE" 2>&1; then
+    echo "[$DATE] AIDE check completed - no changes detected" >> "$LOG_FILE"
+else
+    echo "[$DATE] AIDE check completed - changes detected" >> "$LOG_FILE"
+    # Send alert (you can customize this)
+    echo "File system changes detected on $(hostname)" | mail -s "AIDE Alert" root
+fi
+EOF
+
+    chmod +x /usr/local/bin/aide_check.sh
+    
+    # Add to crontab for daily checks
+    if ! grep -q "aide_check" /etc/crontab; then
+        echo "0 2 * * * root /usr/local/bin/aide_check.sh" >> /etc/crontab
+    fi
+    
+    log_info "Intrusion detection configured"
 }
 
 # Enhanced error handling

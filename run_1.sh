@@ -93,6 +93,22 @@ timedatectl set-ntp on
 append_once /etc/fstab $'tmpfs\t/run/shm\ttmpfs\tro,noexec,nosuid\t0 0'
 echo "Disabled shared memory"
 
+# Secure file permissions
+log_info "Securing file permissions..."
+secure_config_files
+
+# Apply network security
+log_info "Applying network security configurations..."
+apply_network_security
+
+# Setup security monitoring
+log_info "Setting up security monitoring..."
+setup_security_monitoring
+
+# Setup intrusion detection
+log_info "Setting up intrusion detection..."
+setup_intrusion_detection
+
 echo "Begin network settings output:"
 
 ss -tulpn

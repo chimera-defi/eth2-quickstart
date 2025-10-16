@@ -180,6 +180,10 @@ interactive_selection() {
     echo "   c) Advanced - experienced with blockchain infrastructure"
     echo
     read -r -p "Select (a/b/c): " experience
+    if ! validate_user_input "$experience" "^[abc]$" 1; then
+        log_error "Invalid selection. Please choose a, b, or c."
+        return 1
+    fi
     
     # Ask about hardware
     echo
@@ -189,6 +193,10 @@ interactive_selection() {
     echo "   c) Resource-constrained (Raspberry Pi, <16GB RAM)"
     echo
     read -r -p "Select (a/b/c): " hardware
+    if ! validate_user_input "$hardware" "^[abc]$" 1; then
+        log_error "Invalid selection. Please choose a, b, or c."
+        return 1
+    fi
     
     # Ask about priorities
     echo
@@ -199,6 +207,10 @@ interactive_selection() {
     echo "   d) Learning and development"
     echo
     read -r -p "Select (a/b/c/d): " priority
+    if ! validate_user_input "$priority" "^[abcd]$" 1; then
+        log_error "Invalid selection. Please choose a, b, c, or d."
+        return 1
+    fi
     
     # Generate recommendation
     echo
@@ -256,6 +268,10 @@ main_menu() {
         echo "6. Exit"
         echo
         read -r -p "Select an option (1-6): " choice
+        if ! validate_menu_choice "$choice" 6; then
+            log_error "Invalid choice. Please select 1-6."
+            continue
+        fi
         
         case $choice in
             1) clear; show_execution_clients; read -r -p "Press Enter to continue..." ;;
