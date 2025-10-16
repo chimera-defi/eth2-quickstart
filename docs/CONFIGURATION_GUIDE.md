@@ -5,7 +5,32 @@ This repository implements a standardized configuration architecture across all 
 
 ## Configuration Conventions
 
-### 1. Centralized Configuration Variables
+### 1. Centralized Dependency Management
+All dependencies are managed through centralized functions in `lib/common_functions.sh`:
+
+**Core Dependencies**: `wget`, `curl`, `git`, `build-essential`, `jq`
+**Java Dependencies**: `openjdk-17-jdk` (for Besu, Teku)
+**Rust Dependencies**: `cargo`, `libclang-dev`, `pkg-config` (for Reth, Grandine)
+**Node.js Dependencies**: `nodejs` (for Lodestar)
+**Build Dependencies**: `cmake`, `libssl-dev`, `libgmp-dev`, `libtinfo5`, `libprotoc`, `apt-transport-https`, `gnupg`
+**Archive Dependencies**: `unzip`, `tar`
+**System Dependencies**: `software-properties-common`, `chrony`, `snapd`, `ufw`, `fail2ban`
+**Web Dependencies**: `nginx`, `apache2-utils`
+**Monitoring Dependencies**: `bmon`, `slurm`, `tcptrack`
+
+**Usage:**
+```bash
+# Show all available dependencies and functions
+source lib/common_functions.sh
+show_dependency_info
+
+# Install specific dependency sets
+install_core_dependencies
+install_execution_dependencies
+install_consensus_dependencies
+```
+
+### 2. Centralized Configuration Variables
 All client-specific settings are defined in `exports.sh` to provide a single source of truth for configuration management.
 
 **Pattern:**

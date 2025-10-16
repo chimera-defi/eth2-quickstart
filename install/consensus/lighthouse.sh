@@ -14,7 +14,7 @@ log_info "Starting Lighthouse installation..."
 check_system_requirements 16 1000
 
 # Install dependencies
-install_dependencies wget curl
+install_consensus_dependencies
 
 # Setup firewall rules for Lighthouse
 setup_firewall_rules 9000 5052

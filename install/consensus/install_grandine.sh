@@ -23,7 +23,8 @@ else
 fi
 
 # Install dependencies
-install_dependencies wget curl git build-essential pkg-config libssl-dev
+install_consensus_dependencies
+install_rust_dependencies
 
 # Setup firewall rules for Grandine
 setup_firewall_rules 9000 5052

@@ -4,7 +4,17 @@ Setup an Ethereum node quickly with simple shell scripts containing community be
 Supports multiple client combinations for servers, home solo stakers, and pool node operators.
 Choose from various execution and consensus clients for optimal client diversity.
 
-**⚠️ Security Notice:** Don't blindly run scripts near sensitive data. Review scripts before execution.   
+**⚠️ Security Notice:** Don't blindly run scripts near sensitive data. Review scripts before execution.
+
+## Features
+
+- **Automated Setup**: Streamlined installation process with minimal user interaction
+- **Centralized Dependencies**: Smart dependency management with categorized installation functions
+- **Multiple Client Support**: Choose from 5 execution clients and 6 consensus clients
+- **Security Hardening**: Automatic firewall configuration, SSH hardening, and fail2ban setup
+- **Comprehensive Logging**: All operations logged to timestamped files in `~/ethereum-setup-logs/`
+- **Quick Installer**: `quick_client_install.sh` for guided installation with preset configurations
+- **Easy Log Access**: `show_logs.sh` script to quickly find and view installation logs   
 
 # Pre-reqs
 1. Set up cloud vps with a ssh pub key or local server

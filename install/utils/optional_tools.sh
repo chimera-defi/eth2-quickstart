@@ -12,7 +12,7 @@ log_info "Starting optional tools installation..."
 
 # Install network monitoring tools
 log_info "Installing network monitoring tools..."
-install_dependencies bmon slurm tcptrack
+install_monitoring_dependencies
 
 log_info "Optional tools installation completed!"
 log_info "Installed tools:"

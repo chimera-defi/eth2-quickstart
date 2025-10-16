@@ -14,7 +14,7 @@ log_info "Starting Nimbus installation..."
 check_system_requirements 4 500
 
 # Install dependencies
-install_dependencies wget curl tar build-essential git
+install_consensus_dependencies
 
 # Setup firewall rules for Nimbus
 setup_firewall_rules 9000 5052

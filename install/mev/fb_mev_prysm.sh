@@ -15,7 +15,7 @@ check_system_requirements 16 2000
 
 # Install build dependencies
 log_info "Installing build dependencies..."
-install_dependencies cmake libssl-dev libgmp-dev libtinfo5 libprotoc apt-transport-https curl gnupg
+install_build_dependencies
 
 # Install Bazel
 log_info "Installing Bazel..."

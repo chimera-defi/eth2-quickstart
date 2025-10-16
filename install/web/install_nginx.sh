@@ -14,7 +14,7 @@ log_info "Login username: $LOGIN_UNAME"
 
 # Install NGINX and tools
 log_info "Installing NGINX and dependencies..."
-install_dependencies nginx apache2-utils
+install_web_dependencies
 
 # Create NGINX configuration
 log_info "Creating NGINX configuration..."

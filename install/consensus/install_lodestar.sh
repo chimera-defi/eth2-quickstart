@@ -23,7 +23,8 @@ else
 fi
 
 # Install dependencies
-install_dependencies wget curl git build-essential python3 jq
+install_consensus_dependencies
+install_dependencies python3
 
 # Setup firewall rules for Lodestar
 setup_firewall_rules 9000 9596
