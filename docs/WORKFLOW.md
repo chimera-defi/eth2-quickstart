@@ -16,8 +16,8 @@ chmod +x run_1.sh run_2.sh
 ./run_1.sh
 # Follow prompts:
 # - Review outputs
-# - In another shell: visudo → add "LOGIN_UNAME ALL=(ALL) NOPASSWD: ALL"
 # - Set password for LOGIN_UNAME when prompted
+# - Sudo access is automatically configured (password required)
 sudo reboot
 ```
 

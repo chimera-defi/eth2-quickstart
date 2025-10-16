@@ -17,6 +17,7 @@ export REPO_NAME="eth2-quickstart"
 export SERVER_NAME="rpc.sharedtools.org"
 
 # Validator and beacon-chain settings
+# IMPORTANT: Change this to your own Ethereum address to receive validator rewards
 export FEE_RECIPIENT=0xa1feaF41d843d53d0F6bEd86a8cF592cE21C409e
 export GRAFITTI="SharedStake.org!"
 export MAX_PEERS=100 # You may want to reduce this if you have banwidth restrictions
