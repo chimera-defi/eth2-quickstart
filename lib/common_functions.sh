@@ -132,12 +132,74 @@ enable_and_start_systemd_service() {
     sudo systemctl daemon-reload
     sudo systemctl enable "$service_name"
     
-    if sudo systemctl start "$service_name"; then
-        log_info "Enabled and started systemd service: $service_name"
+    # Check if service is already running
+    if systemctl is-active --quiet "$service_name"; then
+        log_info "Service $service_name is already running, restarting to apply changes..."
+        if sudo systemctl restart "$service_name"; then
+            log_info "Restarted systemd service: $service_name"
+            return 0
+        else
+            log_error "Failed to restart systemd service: $service_name"
+            return 1
+        fi
+    else
+        # Service is not running, start it
+        if sudo systemctl start "$service_name"; then
+            log_info "Started systemd service: $service_name"
+            return 0
+        else
+            # Check if service exists
+            if ! systemctl list-unit-files | grep -q "^${service_name}.service"; then
+                log_error "Service $service_name does not exist - cannot start"
+                return 1
+            else
+                log_error "Failed to start systemd service: $service_name"
+                return 1
+            fi
+        fi
+    fi
+}
+
+# Enable systemd service without starting (for update scenarios)
+enable_systemd_service_only() {
+    local service_name="$1"
+    
+    sudo systemctl daemon-reload
+    sudo systemctl enable "$service_name"
+    
+    log_info "Enabled systemd service: $service_name (not started)"
+    return 0
+}
+
+
+# Ensure systemd service is running (for upgrade scenarios)
+ensure_systemd_service_running() {
+    local service_name="$1"
+    
+    sudo systemctl daemon-reload
+    
+    # Check if service exists
+    if ! systemctl list-unit-files | grep -q "^${service_name}.service"; then
+        log_error "Service $service_name does not exist"
+        return 1
+    fi
+    
+    # Enable service
+    sudo systemctl enable "$service_name"
+    
+    # Check if service is already running
+    if systemctl is-active --quiet "$service_name"; then
+        log_info "Service $service_name is already running"
         return 0
     else
-        log_error "Failed to start systemd service: $service_name"
-        return 1
+        # Service is not running, start it
+        if sudo systemctl start "$service_name"; then
+            log_info "Started systemd service: $service_name"
+            return 0
+        else
+            log_error "Failed to start systemd service: $service_name"
+            return 1
+        fi
     fi
 }
 
