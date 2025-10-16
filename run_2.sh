@@ -46,75 +46,32 @@ if ! sudo apt install -y snapd; then
     exit 1
 fi
 
-# Client selection and installation
-log_info "Starting client selection process..."
-log_info "You can choose your clients interactively or use the default setup"
+# Install Ethereum clients (seamless installation)
+log_info "Installing default Ethereum clients (Geth + Prysm + MEV Boost)..."
+log_info "This provides a complete, production-ready Ethereum node setup"
+log_info "For custom client selection, run: ./install/utils/quick_client_install.sh"
 
-# Ask user if they want to use interactive selection
-echo
-echo "Would you like to:"
-echo "1. Use interactive client selection (recommended)"
-echo "2. Use default setup (Geth + Prysm + MEV Boost)"
-echo
-read -r -p "Select option (1/2): " client_choice
+log_info "Installing Geth (Execution Client)..."
+if ! ./install/execution/install_geth.sh; then
+    log_error "Failed to install Geth"
+    exit 1
+fi
 
-case "$client_choice" in
-    1)
-        log_info "Starting interactive client selection..."
-        ./install/utils/select_clients.sh
-        log_info "Please run the recommended install scripts from the client selection tool"
-        log_info "Example: ./install/execution/install_geth.sh && ./install/consensus/install_prysm.sh"
-        ;;
-    2)
-        log_info "Installing default clients (Geth + Prysm + MEV Boost)..."
-        
-        log_info "Installing Geth..."
-        if ! ./install/execution/install_geth.sh; then
-            log_error "Failed to install Geth"
-            exit 1
-        fi
+log_info "Installing Prysm (Consensus Client)..."
+if ! ./install/consensus/install_prysm.sh; then
+    log_error "Failed to install Prysm"
+    exit 1
+fi
 
-        log_info "Installing Prysm..."
-        if ! ./install/consensus/install_prysm.sh; then
-            log_error "Failed to install Prysm"
-            exit 1
-        fi
+log_info "Installing Flashbots MEV Boost..."
+if ! ./install/mev/install_mev_boost.sh; then
+    log_error "Failed to install Flashbots MEV Boost"
+    exit 1
+fi
 
-        log_info "Installing Flashbots MEV Boost..."
-        if ! ./install/mev/install_mev_boost.sh; then
-            log_error "Failed to install Flashbots MEV Boost"
-            exit 1
-        fi
-
-        log_info "All default Ethereum clients installed successfully!"
-        log_info "Installed: Geth, Prysm, Flashbots MEV Boost"
-        ;;
-    *)
-        log_error "Invalid selection. Using default setup..."
-        log_info "Installing default clients (Geth + Prysm + MEV Boost)..."
-        
-        log_info "Installing Geth..."
-        if ! ./install/execution/install_geth.sh; then
-            log_error "Failed to install Geth"
-            exit 1
-        fi
-
-        log_info "Installing Prysm..."
-        if ! ./install/consensus/install_prysm.sh; then
-            log_error "Failed to install Prysm"
-            exit 1
-        fi
-
-        log_info "Installing Flashbots MEV Boost..."
-        if ! ./install/mev/install_mev_boost.sh; then
-            log_error "Failed to install Flashbots MEV Boost"
-            exit 1
-        fi
-
-        log_info "All default Ethereum clients installed successfully!"
-        log_info "Installed: Geth, Prysm, Flashbots MEV Boost"
-        ;;
-esac
+log_info "All Ethereum clients installed successfully!"
+log_info "Installed: Geth, Prysm, Flashbots MEV Boost"
+show_log_location
 
 # Display next steps
 cat << EOF
