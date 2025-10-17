@@ -15,9 +15,10 @@ source "$PROJECT_ROOT/lib/common_functions.sh"
 
 log_info "Starting software stack update..."
 
-# Stop services before update
+# Stop services before update (except validators to avoid downtime)
 log_info "Stopping services for update..."
-sudo systemctl stop eth1 cl validator mev nginx
+sudo systemctl stop eth1 cl mev nginx
+# Note: Validators are not stopped to avoid downtime during upgrades
 
 # regular linux housecleaning
 log_info "Updating system packages..."
@@ -40,9 +41,10 @@ log_info "Updating MEV Boost..."
 rm -rf ./mev-boost # remove any pre-existing copies
 ../mev/install_mev_boost.sh
 
-# Start all services
+# Start all services (validators will restart automatically via enable_and_start_systemd_service)
 log_info "Starting all services..."
-sudo systemctl start eth1 cl validator mev nginx
+sudo systemctl start eth1 cl mev nginx
+# Validators are already running and will be restarted by install scripts if needed
 
 # Try to output a report
 echo 'Upgraded from versions:'
