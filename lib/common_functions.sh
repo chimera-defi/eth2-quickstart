@@ -305,89 +305,143 @@ merge_json_config() {
 }
 
 
-# Centralized dependency management
-# Core dependencies used by most scripts
-CORE_DEPS=("wget" "curl" "git" "build-essential" "jq")
+# Flexible dependency management system
+# Dependency categories - easy to extend and modify
+declare -A DEPENDENCY_CATEGORIES=(
+    ["core"]="wget curl git build-essential jq"
+    ["archive"]="unzip tar"
+    ["java"]="openjdk-17-jdk"
+    ["rust"]="cargo libclang-dev pkg-config"
+    ["nodejs"]="nodejs"
+    ["build"]="cmake libssl-dev libgmp-dev libtinfo6 libprotoc-dev apt-transport-https gnupg"
+    ["web"]="nginx apache2-utils"
+    ["monitoring"]="bmon slurm tcptrack"
+)
 
+# Client-specific dependency mappings - easy to add new clients
+declare -A CLIENT_DEPENDENCIES=(
+    ["execution"]="core archive"
+    ["consensus"]="core archive"
+    ["besu"]="core archive java"
+    ["teku"]="core archive java"
+    ["reth"]="core archive rust"
+    ["grandine"]="core archive rust"
+    ["lodestar"]="core archive nodejs"
+    ["mev-boost"]="core build"
+    ["nginx"]="core web"
+    ["monitoring"]="core monitoring"
+)
 
-# Install core dependencies (used by most scripts)
+# Install dependencies by category
+install_dependencies_by_category() {
+    local category="$1"
+    if [[ -z "${DEPENDENCY_CATEGORIES[$category]}" ]]; then
+        log_error "Unknown dependency category: $category"
+        return 1
+    fi
+    
+    local packages="${DEPENDENCY_CATEGORIES[$category]}"
+    log_info "Installing $category dependencies: $packages"
+    install_dependencies $packages
+}
+
+# Install dependencies for a client type
+install_client_dependencies() {
+    local client_type="$1"
+    if [[ -z "${CLIENT_DEPENDENCIES[$client_type]}" ]]; then
+        log_error "Unknown client type: $client_type"
+        return 1
+    fi
+    
+    local categories="${CLIENT_DEPENDENCIES[$client_type]}"
+    log_info "Installing dependencies for $client_type clients..."
+    
+    for category in $categories; do
+        install_dependencies_by_category "$category"
+    done
+}
+
+# Legacy function wrappers for backward compatibility
 install_core_dependencies() {
-    log_info "Installing core dependencies..."
-    install_dependencies "${CORE_DEPS[@]}"
+    install_dependencies_by_category "core"
 }
 
 # Install dependencies for specific client types
 install_execution_dependencies() {
-    log_info "Installing execution client dependencies..."
-    install_core_dependencies
-    install_dependencies unzip tar
+    install_client_dependencies "execution"
 }
 
 install_consensus_dependencies() {
-    log_info "Installing consensus client dependencies..."
-    install_core_dependencies
-    install_dependencies unzip tar
+    install_client_dependencies "consensus"
 }
 
 install_java_dependencies() {
-    log_info "Installing Java dependencies..."
-    install_dependencies openjdk-17-jdk
+    install_dependencies_by_category "java"
 }
 
 install_rust_dependencies() {
-    log_info "Installing Rust dependencies..."
-    install_dependencies cargo libclang-dev pkg-config
+    install_dependencies_by_category "rust"
 }
 
 install_node_dependencies() {
-    log_info "Installing Node.js dependencies..."
+    # Install Node.js via NodeSource repository for latest LTS version
     if ! command -v node &> /dev/null; then
-        log_info "Installing Node.js..."
-        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-        install_dependencies "${NODE_DEPS[@]}"
-    else
-        log_info "Node.js already installed: $(node --version)"
+        log_info "Installing Node.js from NodeSource repository..."
+        curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
     fi
+    install_dependencies_by_category "nodejs"
 }
 
 install_build_dependencies() {
-    log_info "Installing build dependencies..."
-    install_dependencies cmake libssl-dev libgmp-dev libtinfo6 libprotoc-dev apt-transport-https gnupg
+    install_dependencies_by_category "build"
 }
 
 
 install_web_dependencies() {
-    log_info "Installing web server dependencies..."
-    install_dependencies nginx apache2-utils
+    install_dependencies_by_category "web"
 }
 
 install_monitoring_dependencies() {
-    log_info "Installing monitoring dependencies..."
-    install_dependencies bmon slurm tcptrack
+    install_dependencies_by_category "monitoring"
 }
 
+# Add new dependency category (for easy extension)
+add_dependency_category() {
+    local category="$1"
+    shift
+    local packages="$*"
+    DEPENDENCY_CATEGORIES["$category"]="$packages"
+    log_info "Added dependency category '$category' with packages: $packages"
+}
 
-# Show dependency information
+# Add new client type (for easy extension)
+add_client_type() {
+    local client_type="$1"
+    shift
+    local categories="$*"
+    CLIENT_DEPENDENCIES["$client_type"]="$categories"
+    log_info "Added client type '$client_type' with categories: $categories"
+}
+
+# Show all dependency information
 show_dependency_info() {
     echo -e "${BOLD}Ethereum Node Dependency Management${NC}"
-    echo -e "${UNDERLINE}Core Dependencies:${NC} ${CORE_DEPS[*]}"
-    echo -e "${UNDERLINE}Java Dependencies:${NC} openjdk-17-jdk"
-    echo -e "${UNDERLINE}Rust Dependencies:${NC} cargo libclang-dev pkg-config"
-    echo -e "${UNDERLINE}Node.js Dependencies:${NC} nodejs"
-    echo -e "${UNDERLINE}Build Dependencies:${NC} cmake libssl-dev libgmp-dev libtinfo6 libprotoc-dev apt-transport-https gnupg"
-    echo -e "${UNDERLINE}Web Dependencies:${NC} nginx apache2-utils"
-    echo -e "${UNDERLINE}Monitoring Dependencies:${NC} bmon slurm tcptrack"
     echo ""
-    echo -e "${BOLD}Available Functions:${NC}"
-    echo "  install_core_dependencies()      - Core dependencies for most scripts"
-    echo "  install_execution_dependencies() - Dependencies for execution clients"
-    echo "  install_consensus_dependencies() - Dependencies for consensus clients"
-    echo "  install_java_dependencies()      - Java runtime dependencies"
-    echo "  install_rust_dependencies()      - Rust build dependencies"
-    echo "  install_node_dependencies()      - Node.js runtime dependencies"
-    echo "  install_build_dependencies()     - Build tool dependencies"
-    echo "  install_web_dependencies()       - Web server dependencies"
-    echo "  install_monitoring_dependencies() - Monitoring tool dependencies"
+    echo -e "${UNDERLINE}Available Categories:${NC}"
+    for category in "${!DEPENDENCY_CATEGORIES[@]}"; do
+        echo "  $category: ${DEPENDENCY_CATEGORIES[$category]}"
+    done
+    echo ""
+    echo -e "${UNDERLINE}Client Types:${NC}"
+    for client_type in "${!CLIENT_DEPENDENCIES[@]}"; do
+        echo "  $client_type: ${CLIENT_DEPENDENCIES[$client_type]}"
+    done
+    echo ""
+    echo -e "${BOLD}Usage Examples:${NC}"
+    echo "  install_dependencies_by_category 'core'"
+    echo "  install_client_dependencies 'execution'"
+    echo "  add_dependency_category 'database' 'postgresql postgresql-contrib'"
+    echo "  add_client_type 'custom' 'core database'"
 }
 
 # Clone or update git repository
