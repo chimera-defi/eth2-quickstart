@@ -56,7 +56,7 @@ create_systemd_service "validator" "Lighthouse Ethereum Validator Client" "$VALI
 
 # Enable and start services
 enable_and_start_systemd_service "cl"
-enable_systemd_service "validator"
+enable_and_start_systemd_service "validator"
 
 # Show completion information
 show_installation_complete "Lighthouse" "cl" "" "$LIGHTHOUSE_DIR"
@@ -72,7 +72,7 @@ Lighthouse has been installed with the following components:
 Next Steps:
 1. Import your validator keys into: $LIGHTHOUSE_DIR/
 2. Create keystore password files in: $HOME/secrets/
-3. Wait for beacon node to sync, then start validator: sudo systemctl start validator
+3. Wait for beacon node to sync (validator will start automatically)
 
 Key features:
 - REST API available on port 5052
