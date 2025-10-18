@@ -79,8 +79,8 @@ EXEC_START="$ERIGON_DIR/erigon --config $ERIGON_DIR/config.yaml --externalcl"
 
 create_systemd_service "eth1" "Erigon Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
-# Enable the service
-enable_systemd_service "eth1"
+# Enable and start the service
+enable_and_start_systemd_service "eth1"
 
 # Show completion information
 show_installation_complete "Erigon" "eth1" "$ERIGON_DIR/config.yaml" "$ERIGON_DIR"

@@ -112,50 +112,71 @@ enable_systemd_service() {
     log_info "Enabled systemd service: $service_name"
 }
 
+
+# Enable and start systemd service (standard pattern for install scripts)
+enable_and_start_systemd_service() {
+    local service_name="$1"
+    
+    sudo systemctl daemon-reload
+    sudo systemctl enable "$service_name"
+    
+    # Check if service is already running
+    if systemctl is-active --quiet "$service_name"; then
+        log_info "Service $service_name is already running, restarting to apply changes..."
+        if sudo systemctl restart "$service_name"; then
+            log_info "Restarted systemd service: $service_name"
+            return 0
+        else
+            log_error "Failed to restart systemd service: $service_name"
+            return 1
+        fi
+    else
+        # Service is not running, start it
+        if sudo systemctl start "$service_name"; then
+            log_info "Started systemd service: $service_name"
+            return 0
+        else
+            # Check if service exists
+            if ! systemctl list-unit-files | grep -q "^${service_name}.service"; then
+                log_error "Service $service_name does not exist - cannot start"
+                return 1
+            else
+                log_error "Failed to start systemd service: $service_name"
+                return 1
+            fi
+        fi
+    fi
+}
+
+
+# Enable and start system service (for system services like nginx, fail2ban)
+enable_and_start_system_service() {
+    local service_name="$1"
+    
+    sudo systemctl daemon-reload
+    
+    if ! sudo systemctl enable "$service_name"; then
+        log_error "Failed to enable system service: $service_name"
+        return 1
+    fi
+    
+    if ! sudo systemctl start "$service_name"; then
+        log_error "Failed to start system service: $service_name"
+        return 1
+    fi
+    
+    log_info "Enabled and started system service: $service_name"
+    return 0
+}
+
+
+
 # Check if command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
 # Check system compatibility
-check_system_compatibility() {
-    log_info "Checking system compatibility..."
-    
-    # Check if we're on a supported system
-    if [[ ! -f /etc/os-release ]]; then
-        log_error "Cannot determine operating system"
-        return 1
-    fi
-    
-    source /etc/os-release
-    case "$ID" in
-        ubuntu|debian)
-            log_info "Detected $PRETTY_NAME - supported system"
-            ;;
-        *)
-            log_warn "Detected $PRETTY_NAME - may not be fully supported"
-            log_warn "Scripts are designed for Ubuntu/Debian systems"
-            ;;
-    esac
-    
-    # Check for required commands
-    local required_commands=("sudo" "curl" "wget")
-    local missing_commands=()
-    
-    for cmd in "${required_commands[@]}"; do
-        if ! command_exists "$cmd"; then
-            missing_commands+=("$cmd")
-        fi
-    done
-    
-    if [[ ${#missing_commands[@]} -gt 0 ]]; then
-        log_error "Missing required commands: ${missing_commands[*]}"
-        log_error "Please install missing commands and try again"
-        return 1
-    fi
-    
-    return 0
-}
 
 # Install dependencies with proper error handling
 install_dependencies() {
@@ -220,29 +241,6 @@ setup_firewall_rules() {
     log_info "Firewall configuration completed"
 }
 
-# Add PPA repository with graceful degradation
-add_ppa_repository() {
-    local ppa="$1"
-    
-    # Check if add-apt-repository is available
-    if ! command_exists add-apt-repository; then
-        log_warn "add-apt-repository not found - attempting to install..."
-        if ! install_dependencies software-properties-common; then
-            log_error "Failed to install software-properties-common"
-            log_error "Cannot add PPA repository: $ppa"
-            return 1
-        fi
-    fi
-    
-    log_info "Adding PPA repository: $ppa"
-    if ! sudo add-apt-repository -y "$ppa"; then
-        log_error "Failed to add PPA repository: $ppa"
-        return 1
-    fi
-    
-    log_info "PPA repository added successfully"
-    return 0
-}
 
 # Create JWT secret if it doesn't exist
 ensure_jwt_secret() {
@@ -261,132 +259,7 @@ ensure_jwt_secret() {
     fi
 }
 
-# Clone or update git repository
-clone_or_update_repo() {
-    local repo_url="$1"
-    local target_dir="$2"
-    local branch="${3:-main}"
-    
-    if [[ -d "$target_dir" ]]; then
-        log_info "Updating existing repository: $target_dir"
-        cd "$target_dir" || return
-        git fetch origin
-        git checkout "$branch"
-        git pull origin "$branch"
-    else
-        log_info "Cloning repository: $repo_url"
-        git clone --branch "$branch" "$repo_url" "$target_dir"
-        cd "$target_dir" || return
-    fi
-}
 
-# Check if service is running
-check_service_status() {
-    local service_name="$1"
-    
-    if systemctl is-active --quiet "$service_name"; then
-        log_info "Service $service_name is running"
-        return 0
-    else
-        log_warn "Service $service_name is not running"
-        return 1
-    fi
-}
-
-# Wait for service to be ready
-wait_for_service() {
-    local service_name="$1"
-    local max_wait="${2:-60}"
-    local wait_time=0
-    
-    log_info "Waiting for service $service_name to be ready..."
-    
-    while [[ $wait_time -lt $max_wait ]]; do
-        if check_service_status "$service_name"; then
-            return 0
-        fi
-        sleep 5
-        ((wait_time += 5))
-    done
-    
-    log_error "Service $service_name did not start within ${max_wait} seconds"
-    return 1
-}
-
-# Create configuration file from template
-create_config_from_template() {
-    local template_file="$1"
-    local output_file="$2"
-    local temp_file="$3"
-    
-    if [[ -f "$temp_file" ]]; then
-        cat "$template_file" "$temp_file" > "$output_file"
-        rm -f "$temp_file"
-        log_info "Created configuration file: $output_file"
-    else
-        cp "$template_file" "$output_file"
-        log_info "Copied template to: $output_file"
-    fi
-}
-
-# Validate configuration file
-validate_config() {
-    local config_file="$1"
-    local validator_cmd="$2"
-    
-    if [[ -n "$validator_cmd" ]]; then
-        if eval "$validator_cmd '$config_file'"; then
-            log_info "Configuration file is valid: $config_file"
-            return 0
-        else
-            log_error "Configuration file is invalid: $config_file"
-            return 1
-        fi
-    else
-        if [[ -f "$config_file" ]]; then
-            log_info "Configuration file exists: $config_file"
-            return 0
-        else
-            log_error "Configuration file not found: $config_file"
-            return 1
-        fi
-    fi
-}
-
-# Get latest release version from GitHub
-get_latest_release() {
-    local repo="$1"
-    local version
-    version=$(curl -s "https://api.github.com/repos/$repo/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-    echo "$version"
-}
-
-# Extract archive
-extract_archive() {
-    local archive_file="$1"
-    local target_dir="$2"
-    local strip_components="${3:-1}"
-    
-    ensure_directory "$target_dir"
-    
-    case "$archive_file" in
-        *.tar.gz|*.tgz)
-            tar -xzf "$archive_file" -C "$target_dir" --strip-components="$strip_components"
-            ;;
-        *.tar.bz2|*.tbz2)
-            tar -xjf "$archive_file" -C "$target_dir" --strip-components="$strip_components"
-            ;;
-        *.zip)
-            unzip -q "$archive_file" -d "$target_dir"
-            ;;
-        *)
-            log_error "Unsupported archive format: $archive_file"
-            return 1
-            ;;
-    esac
-    
-    log_info "Extracted archive: $archive_file"
-}
 
 # Check system requirements
 check_system_requirements() {
@@ -412,77 +285,6 @@ check_system_requirements() {
     fi
 }
 
-# Service management functions
-start_all_services() {
-    local services=("eth1" "cl" "validator" "mev" "nginx")
-    log_info "Starting all Ethereum services..."
-    
-    for service in "${services[@]}"; do
-        if systemctl is-active --quiet "$service"; then
-            log_info "Service $service is already running"
-        else
-            log_info "Starting $service..."
-            if sudo systemctl start "$service"; then
-                log_info "Successfully started $service"
-            else
-                log_error "Failed to start $service"
-            fi
-        fi
-    done
-    
-    log_info "Service start process completed"
-}
-
-stop_all_services() {
-    local services=("eth1" "cl" "validator" "mev" "nginx")
-    log_info "Stopping all Ethereum services..."
-    
-    for service in "${services[@]}"; do
-        if systemctl is-active --quiet "$service"; then
-            log_info "Stopping $service..."
-            sudo systemctl stop "$service" || log_warn "Failed to stop $service"
-        else
-            log_info "Service $service is not running"
-        fi
-    done
-    
-    log_info "All services stopped"
-}
-
-restart_all_services() {
-    local services=("eth1" "cl" "validator" "mev" "nginx")
-    log_info "Restarting all Ethereum services..."
-    
-    for service in "${services[@]}"; do
-        if systemctl is-enabled "$service" >/dev/null 2>&1; then
-            log_info "Restarting $service..."
-            if sudo systemctl restart "$service"; then
-                log_info "Successfully restarted $service"
-            else
-                log_error "Failed to restart $service"
-            fi
-        else
-            log_warn "Service $service is not enabled, skipping"
-        fi
-    done
-    
-    log_info "Service restart process completed"
-}
-
-show_service_status() {
-    local services=("eth1" "cl" "validator" "mev" "nginx")
-    log_info "Checking service status..."
-    
-    for service in "${services[@]}"; do
-        if systemctl is-enabled "$service" >/dev/null 2>&1; then
-            echo "=== $service Status ==="
-            systemctl status "$service" --no-pager -l
-            echo
-        else
-            log_warn "Service $service is not enabled"
-        fi
-    done
-}
 
 show_installation_complete() {
     local client_name="$1"
@@ -507,60 +309,4 @@ show_installation_complete() {
     log_info "To start $client_name: sudo systemctl start $service_name"
     log_info "To check status: sudo systemctl status $service_name"
     log_info "To view logs: journalctl -fu $service_name"
-}
-
-# Input validation functions
-require_command() {
-    if ! command -v "$1" >/dev/null 2>&1; then
-        log_error "Required command '$1' not found. Please install it and try again."
-        exit 1
-    fi
-}
-
-validate_ip() {
-    local ip="$1"
-    if [[ "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-validate_port() {
-    local port="$1"
-    if [[ "$port" =~ ^[0-9]+$ ]] && [[ "$port" -ge 1 ]] && [[ "$port" -le 65535 ]]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-validate_ethereum_address() {
-    local address="$1"
-    if [[ "$address" =~ ^0x[a-fA-F0-9]{40}$ ]]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-# Enhanced error handling
-check_service_health() {
-    local service_name="$1"
-    local max_wait="${2:-30}"
-    local wait_time=0
-    
-    log_info "Checking health of service: $service_name"
-    
-    while [[ $wait_time -lt $max_wait ]]; do
-        if systemctl is-active --quiet "$service_name"; then
-            log_info "Service $service_name is healthy"
-            return 0
-        fi
-        sleep 2
-        ((wait_time += 2))
-    done
-    
-    log_error "Service $service_name failed health check after ${max_wait} seconds"
-    return 1
 }
