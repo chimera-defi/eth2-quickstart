@@ -44,17 +44,46 @@ fi
 # Ensure JWT secret exists
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
-# Create systemd service
-EXEC_START="RUST_LOG=info $LIGHTHOUSE_DIR/lighthouse bn --checkpoint-sync-url https://mainnet.checkpoint.sigp.io --execution-endpoint http://localhost:8551 --execution-jwt $HOME/secrets/jwt.hex --disable-deposit-contract-sync"
+# Create systemd service for beacon node
+BEACON_EXEC_START="RUST_LOG=info $LIGHTHOUSE_DIR/lighthouse bn --checkpoint-sync-url https://mainnet.checkpoint.sigp.io --execution-endpoint http://localhost:8551 --execution-jwt $HOME/secrets/jwt.hex --disable-deposit-contract-sync"
 
-create_systemd_service "cl" "Lighthouse Ethereum Consensus Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
+create_systemd_service "cl" "Lighthouse Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
-# Enable the service
-enable_systemd_service "cl"
+# Create systemd service for validator
+VALIDATOR_EXEC_START="RUST_LOG=info $LIGHTHOUSE_DIR/lighthouse vc --beacon-nodes http://localhost:5052"
+
+create_systemd_service "validator" "Lighthouse Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target"
+
+# Enable and start services
+enable_and_start_systemd_service "cl"
+enable_and_start_systemd_service "validator"
 
 # Show completion information
 show_installation_complete "Lighthouse" "cl" "" "$LIGHTHOUSE_DIR"
 
-log_info "Starting Lighthouse service..."
-sudo systemctl start cl
-sudo systemctl status cl
+# Display setup information
+cat << EOF
+
+=== Lighthouse Setup Information ===
+Lighthouse has been installed with the following components:
+1. Beacon Node (cl service) - Connects to execution client and other beacon nodes
+2. Validator Client (validator service) - Manages validator keys and duties
+
+Next Steps:
+1. Import your validator keys into: $LIGHTHOUSE_DIR/
+2. Create keystore password files in: $HOME/secrets/
+3. Wait for beacon node to sync (validator will start automatically)
+
+Key features:
+- REST API available on port 5052
+- P2P networking on ports 9000 (TCP) and 9000 (UDP)
+- Checkpoint sync enabled for faster initial sync
+- MEV-Boost integration ready
+
+Service Management:
+- Check status: sudo systemctl status cl && sudo systemctl status validator
+- View logs: journalctl -fu cl && journalctl -fu validator
+- Restart: sudo systemctl restart cl && sudo systemctl restart validator
+
+For more information, visit: https://lighthouse.sigmaprime.io/
+EOF

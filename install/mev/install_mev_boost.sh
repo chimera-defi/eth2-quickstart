@@ -51,8 +51,8 @@ EXEC_START="$MEV_BOOST_DIR/mev-boost -mainnet -relay-check -min-bid $MIN_BID -re
 
 create_systemd_service "mev" "MEV Boost Service" "$EXEC_START" "$(whoami)" "always" "600" "5" "300"
 
-# Enable the service
-enable_systemd_service "mev"
+# Enable and start the service
+enable_and_start_systemd_service "mev"
 
 # Show completion information
 show_installation_complete "MEV Boost" "mev" "" "$MEV_BOOST_DIR"

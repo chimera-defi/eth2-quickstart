@@ -70,12 +70,8 @@ fi
 
 create_systemd_service "eth1" "Reth Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "6000" "10" "3000"
 
-# Enable the service
-enable_systemd_service "eth1"
+# Enable and start the service
+enable_and_start_systemd_service "eth1"
 
 # Show completion information
 show_installation_complete "Reth" "eth1" "" "$RETH_DIR"
-
-log_info "Starting Reth service..."
-sudo systemctl start eth1
-sudo systemctl status eth1

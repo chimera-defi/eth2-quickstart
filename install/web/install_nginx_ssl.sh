@@ -76,7 +76,7 @@ configure_ddos_protection
 
 # Restart NGINX
 log_info "Restarting NGINX with SSL configuration..."
-if ! sudo service nginx restart; then
+if ! sudo systemctl restart nginx; then
     log_error "Failed to restart NGINX"
     exit 1
 fi
