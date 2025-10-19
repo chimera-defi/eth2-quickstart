@@ -8,7 +8,7 @@
   "rest": {
     "enabled": true,
     "host": "$CONSENSUS_HOST",
-    "cors": "*"
+    "cors": ""
   },
   "metrics": {
     "enabled": true,

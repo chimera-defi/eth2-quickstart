@@ -27,6 +27,22 @@ if ! check_system_compatibility; then
     log_error "System compatibility check failed"
     exit 1
 fi
+
+# Security validation
+log_info "Performing security validation..."
+
+# Validate fee recipient if set
+if [[ -n "$FEE_RECIPIENT" ]]; then
+    if ! validate_fee_recipient "$FEE_RECIPIENT"; then
+        log_error "Invalid fee recipient address. Please set FEE_RECIPIENT environment variable to a valid Ethereum address."
+        log_error "Example: export FEE_RECIPIENT=0xYourAddressHere"
+        exit 1
+    fi
+else
+    log_error "FEE_RECIPIENT not set. This is required for validator operation."
+    log_error "Please set: export FEE_RECIPIENT=0xYourAddressHere"
+    exit 1
+fi
 log_info "This script will install Ethereum clients and services"
 
 # Start syncing prysm and geth

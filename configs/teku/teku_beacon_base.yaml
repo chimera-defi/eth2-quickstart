@@ -16,7 +16,7 @@ ee-endpoint: "http://$LH:$ENGINE_PORT"
 # REST API
 rest-api-enabled: true
 rest-api-host-allowlist: ["$CONSENSUS_HOST", "localhost"]
-rest-api-cors-origins: ["*"]
+rest-api-cors-origins: []
 
 # Logging
 log-destination: "CONSOLE"
