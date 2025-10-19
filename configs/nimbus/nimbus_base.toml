@@ -11,7 +11,7 @@ web3-url = "http://$LH:$ENGINE_PORT"
 # REST API
 rest = true
 rest-address = "$CONSENSUS_HOST"
-rest-allow-origin = "*"
+rest-allow-origin = ""
 
 # Metrics
 metrics = true

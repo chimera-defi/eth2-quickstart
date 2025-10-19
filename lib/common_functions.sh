@@ -100,7 +100,6 @@ enable_systemd_service() {
     log_info "Enabled systemd service: $service_name"
 }
 
-
 # Enable and start systemd service (standard pattern for install scripts)
 enable_and_start_systemd_service() {
     local service_name="$1"
@@ -136,7 +135,6 @@ enable_and_start_systemd_service() {
     fi
 }
 
-
 # Enable and start system service (for system services like nginx, fail2ban)
 enable_and_start_system_service() {
     local service_name="$1"
@@ -157,14 +155,10 @@ enable_and_start_system_service() {
     return 0
 }
 
-
-
 # Check if command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
-
-# Check system compatibility
 
 # Install dependencies with proper error handling
 install_dependencies() {
@@ -229,7 +223,6 @@ setup_firewall_rules() {
     log_info "Firewall configuration completed"
 }
 
-
 # Create JWT secret if it doesn't exist
 ensure_jwt_secret() {
     local jwt_path="$1"
@@ -246,8 +239,6 @@ ensure_jwt_secret() {
         log_info "JWT secret already exists at: $jwt_path"
     fi
 }
-
-
 
 # Check system requirements
 check_system_requirements() {
@@ -272,7 +263,6 @@ check_system_requirements() {
         log_info "Disk space check passed: ${disk_gb}GB available"
     fi
 }
-
 
 show_installation_complete() {
     local client_name="$1"
@@ -299,11 +289,126 @@ show_installation_complete() {
     log_info "To view logs: journalctl -fu $service_name"
 }
 
-# Input validation functions
-# Removed unused functions: require_command, validate_ip, validate_port, validate_ethereum_address
-# These duplicate existing functionality or are never used
-
 # Enhanced input validation functions for security
+validate_ethereum_address() {
+    local address="$1"
+    
+    # Check if address is empty
+    if [[ -z "$address" ]]; then
+        log_error "Ethereum address cannot be empty"
+        return 1
+    fi
+    
+    # Check if address starts with 0x and is 42 characters long
+    if [[ ! "$address" =~ ^0x[a-fA-F0-9]{40}$ ]]; then
+        log_error "Invalid Ethereum address format: $address"
+        return 1
+    fi
+    
+    return 0
+}
+
+validate_fee_recipient() {
+    local address="$1"
+    
+    if ! validate_ethereum_address "$address"; then
+        return 1
+    fi
+    
+    # Check if it's a zero address
+    if [[ "$address" == "0x0000000000000000000000000000000000000000" ]]; then
+        log_error "Fee recipient cannot be zero address"
+        return 1
+    fi
+    
+    log_info "Fee recipient address validated: $address"
+    return 0
+}
+
+validate_ip_address() {
+    local ip="$1"
+    
+    # Check if IP is empty
+    if [[ -z "$ip" ]]; then
+        log_error "IP address cannot be empty"
+        return 1
+    fi
+    
+    # Check if it's a valid IPv4 address
+    if [[ "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+        # Validate each octet
+        IFS='.' read -ra ADDR <<< "$ip"
+        for i in "${ADDR[@]}"; do
+            if [[ $i -gt 255 ]]; then
+                log_error "Invalid IP address: $ip (octet > 255)"
+                return 1
+            fi
+        done
+        return 0
+    fi
+    
+    log_error "Invalid IP address format: $ip"
+    return 1
+}
+
+get_public_ip_safely() {
+    local ip=""
+    
+    # Try multiple methods to get public IP
+    if command_exists curl; then
+        ip=$(curl -s --connect-timeout 5 --max-time 10 v4.ident.me 2>/dev/null)
+    elif command_exists wget; then
+        ip=$(wget -qO- --timeout=10 v4.ident.me 2>/dev/null)
+    fi
+    
+    # Validate the IP before returning
+    if validate_ip_address "$ip"; then
+        log_info "Public IP detected: $ip"
+        echo "$ip"
+    else
+        log_error "Failed to get valid public IP address"
+        return 1
+    fi
+}
+
+validate_network_security() {
+    log_info "Validating network security configuration..."
+    
+    local issues_found=0
+    
+    # Check for dangerous CORS settings
+    if grep -r "corsdomain.*\*" . >/dev/null 2>&1; then
+        log_error "Found dangerous CORS settings (corsdomain *)"
+        issues_found=$((issues_found + 1))
+    fi
+    
+    # Check for dangerous vhosts settings
+    if grep -r "vhosts.*\*" . >/dev/null 2>&1; then
+        log_error "Found dangerous vhosts settings (vhosts *)"
+        issues_found=$((issues_found + 1))
+    fi
+    
+    # Check for dangerous WebSocket origins
+    if grep -r "origins.*\*" . >/dev/null 2>&1; then
+        log_error "Found dangerous WebSocket origins (*)"
+        issues_found=$((issues_found + 1))
+    fi
+    
+    # Check for 0.0.0.0 bindings
+    if grep -r "0\.0\.0\.0" configs/ >/dev/null 2>&1; then
+        log_error "Found 0.0.0.0 bindings in config files"
+        issues_found=$((issues_found + 1))
+    fi
+    
+    if [[ $issues_found -eq 0 ]]; then
+        log_info "✓ Network security validation passed"
+        return 0
+    else
+        log_error "✗ Found $issues_found network security issues"
+        return 1
+    fi
+}
+
 validate_user_input() {
     local input="$1"
     local pattern="$2"
@@ -348,8 +453,6 @@ validate_menu_choice() {
     
     return 0
 }
-
-# Removed unused functions: validate_filename, validate_url, sanitize_input
 
 # Security functions
 secure_file_permissions() {
@@ -601,7 +704,7 @@ EOF
     log_info "DDoS protection configured"
 }
 
-# Simplified security monitoring
+# Security monitoring
 setup_security_monitoring() {
     log_info "Setting up basic security monitoring..."
     
@@ -682,66 +785,4 @@ check_service_health() {
     
     log_error "Service $service_name failed health check after ${max_wait} seconds"
     return 1
-}
-
-# Simplified security monitoring
-setup_security_monitoring() {
-    log_info "Setting up basic security monitoring..."
-    
-    # Setup log rotation for security logs
-    cat > /etc/logrotate.d/security_monitor << 'EOF'
-/var/log/security_monitor.log {
-    daily
-    missingok
-    rotate 30
-    compress
-    delaycompress
-    notifempty
-    create 644 root root
-}
-EOF
-
-    log_info "Basic security monitoring configured"
-}
-
-setup_intrusion_detection() {
-    log_info "Setting up intrusion detection..."
-    
-    # Install and configure AIDE (Advanced Intrusion Detection Environment)
-    if ! command_exists aide; then
-        apt install -y aide
-    fi
-    
-    # Initialize AIDE database
-    if [[ ! -f /var/lib/aide/aide.db ]]; then
-        aideinit
-    fi
-    
-    # Create AIDE check script
-    cat > /usr/local/bin/aide_check.sh << 'EOF'
-#!/bin/bash
-# AIDE intrusion detection check
-
-LOG_FILE="/var/log/aide_check.log"
-DATE=$(date '+%Y-%m-%d %H:%M:%S')
-
-echo "[$DATE] Starting AIDE check..." >> "$LOG_FILE"
-
-if aide --check >> "$LOG_FILE" 2>&1; then
-    echo "[$DATE] AIDE check completed - no changes detected" >> "$LOG_FILE"
-else
-    echo "[$DATE] AIDE check completed - changes detected" >> "$LOG_FILE"
-    # Send alert (you can customize this)
-    echo "File system changes detected on $(hostname)" | mail -s "AIDE Alert" root
-fi
-EOF
-
-    chmod +x /usr/local/bin/aide_check.sh
-    
-    # Add to crontab for daily checks
-    if ! grep -q "aide_check" /etc/crontab; then
-        echo "0 2 * * * root /usr/local/bin/aide_check.sh" >> /etc/crontab
-    fi
-    
-    log_info "Intrusion detection configured"
 }

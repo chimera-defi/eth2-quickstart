@@ -55,7 +55,7 @@ mkdir ./tmp
 cat > ./tmp/prysm_beacon_custom.yaml << EOF
 graffiti: $GRAFITTI
 suggested-fee-recipient: $FEE_RECIPIENT
-p2p-host-ip: $(curl -s v4.ident.me)
+p2p-host-ip: $(get_public_ip_safely)
 p2p-max-peers: $MAX_PEERS
 checkpoint-sync-url: $PRYSM_CPURL
 genesis-beacon-api-url: $PRYSM_CPURL
