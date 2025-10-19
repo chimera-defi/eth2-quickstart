@@ -20,10 +20,10 @@ install_dependencies [DEPENDENCY_LIST]
 setup_firewall_rules [PORT_LIST]
 
 # Create [CLIENT NAME] directory
-[CLIENT_NAME]_DIR="$HOME/[client_name]"
-ensure_directory "$[CLIENT_NAME]_DIR"
+CLIENT_NAME_DIR="$HOME/client_name"
+ensure_directory "$CLIENT_NAME_DIR"
 
-cd "$[CLIENT_NAME]_DIR" || exit
+cd "$CLIENT_NAME_DIR" || exit
 
 # [Download/Build steps specific to client]
 log_info "Downloading/Building [CLIENT NAME]..."

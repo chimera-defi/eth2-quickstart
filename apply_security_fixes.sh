@@ -70,7 +70,7 @@ log_info "✓ Email address validated: $EMAIL"
 # Fix 4: Run network security validation
 log_info "Running network security validation..."
 if command -v grep >/dev/null 2>&1; then
-    local issues_found=0
+    issues_found=0
     
     # Check for dangerous CORS settings
     if grep -r "corsdomain.*\*" . >/dev/null 2>&1; then
@@ -165,7 +165,7 @@ fi
 # Fix 7: Check for duplicate functions
 log_info "Checking for duplicate functions..."
 if command -v grep >/dev/null 2>&1; then
-    local duplicates=$(grep -c "setup_security_monitoring()" lib/common_functions.sh 2>/dev/null || echo "0")
+    duplicates=$(grep -c "setup_security_monitoring()" lib/common_functions.sh 2>/dev/null || echo "0")
     if [[ "$duplicates" -gt 1 ]]; then
         log_warn "Found duplicate functions in common_functions.sh"
         log_warn "This has been fixed in the clean version"

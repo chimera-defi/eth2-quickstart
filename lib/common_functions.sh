@@ -289,8 +289,8 @@ show_installation_complete() {
     log_info "To view logs: journalctl -fu $service_name"
 }
 
-# Enhanced input validation functions for security
-validate_ethereum_address() {
+# Essential validation functions (only those actually used)
+validate_fee_recipient() {
     local address="$1"
     
     # Check if address is empty
@@ -305,16 +305,6 @@ validate_ethereum_address() {
         return 1
     fi
     
-    return 0
-}
-
-validate_fee_recipient() {
-    local address="$1"
-    
-    if ! validate_ethereum_address "$address"; then
-        return 1
-    fi
-    
     # Check if it's a zero address
     if [[ "$address" == "0x0000000000000000000000000000000000000000" ]]; then
         log_error "Fee recipient cannot be zero address"
@@ -322,135 +312,6 @@ validate_fee_recipient() {
     fi
     
     log_info "Fee recipient address validated: $address"
-    return 0
-}
-
-validate_ip_address() {
-    local ip="$1"
-    
-    # Check if IP is empty
-    if [[ -z "$ip" ]]; then
-        log_error "IP address cannot be empty"
-        return 1
-    fi
-    
-    # Check if it's a valid IPv4 address
-    if [[ "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-        # Validate each octet
-        IFS='.' read -ra ADDR <<< "$ip"
-        for i in "${ADDR[@]}"; do
-            if [[ $i -gt 255 ]]; then
-                log_error "Invalid IP address: $ip (octet > 255)"
-                return 1
-            fi
-        done
-        return 0
-    fi
-    
-    log_error "Invalid IP address format: $ip"
-    return 1
-}
-
-get_public_ip_safely() {
-    local ip=""
-    
-    # Try multiple methods to get public IP
-    if command_exists curl; then
-        ip=$(curl -s --connect-timeout 5 --max-time 10 v4.ident.me 2>/dev/null)
-    elif command_exists wget; then
-        ip=$(wget -qO- --timeout=10 v4.ident.me 2>/dev/null)
-    fi
-    
-    # Validate the IP before returning
-    if validate_ip_address "$ip"; then
-        log_info "Public IP detected: $ip"
-        echo "$ip"
-    else
-        log_error "Failed to get valid public IP address"
-        return 1
-    fi
-}
-
-validate_network_security() {
-    log_info "Validating network security configuration..."
-    
-    local issues_found=0
-    
-    # Check for dangerous CORS settings
-    if grep -r "corsdomain.*\*" . >/dev/null 2>&1; then
-        log_error "Found dangerous CORS settings (corsdomain *)"
-        issues_found=$((issues_found + 1))
-    fi
-    
-    # Check for dangerous vhosts settings
-    if grep -r "vhosts.*\*" . >/dev/null 2>&1; then
-        log_error "Found dangerous vhosts settings (vhosts *)"
-        issues_found=$((issues_found + 1))
-    fi
-    
-    # Check for dangerous WebSocket origins
-    if grep -r "origins.*\*" . >/dev/null 2>&1; then
-        log_error "Found dangerous WebSocket origins (*)"
-        issues_found=$((issues_found + 1))
-    fi
-    
-    # Check for 0.0.0.0 bindings
-    if grep -r "0\.0\.0\.0" configs/ >/dev/null 2>&1; then
-        log_error "Found 0.0.0.0 bindings in config files"
-        issues_found=$((issues_found + 1))
-    fi
-    
-    if [[ $issues_found -eq 0 ]]; then
-        log_info "✓ Network security validation passed"
-        return 0
-    else
-        log_error "✗ Found $issues_found network security issues"
-        return 1
-    fi
-}
-
-validate_user_input() {
-    local input="$1"
-    local pattern="$2"
-    local max_length="${3:-255}"
-    
-    # Check if input is empty
-    if [[ -z "$input" ]]; then
-        log_error "Input cannot be empty"
-        return 1
-    fi
-    
-    # Check input length
-    if [[ ${#input} -gt "$max_length" ]]; then
-        log_error "Input too long (max: $max_length characters)"
-        return 1
-    fi
-    
-    # Check pattern if provided
-    if [[ -n "$pattern" && ! "$input" =~ $pattern ]]; then
-        log_error "Invalid input format"
-        return 1
-    fi
-    
-    return 0
-}
-
-validate_menu_choice() {
-    local choice="$1"
-    local max_options="$2"
-    
-    # Check if choice is numeric
-    if [[ ! "$choice" =~ ^[0-9]+$ ]]; then
-        log_error "Invalid choice: $choice (must be a number)"
-        return 1
-    fi
-    
-    # Check if choice is within range
-    if [[ "$choice" -lt 1 || "$choice" -gt "$max_options" ]]; then
-        log_error "Choice out of range: $choice (valid range: 1-$max_options)"
-        return 1
-    fi
-    
     return 0
 }
 
