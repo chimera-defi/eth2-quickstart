@@ -162,12 +162,11 @@ EXEC_START="$NETHERMIND_DIR/Nethermind.Runner --config $NETHERMIND_DIR/nethermin
 
 create_systemd_service "eth1" "Nethermind Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
-# Enable the service
-enable_systemd_service "eth1"
+# Enable and start the service
+enable_and_start_systemd_service "eth1"
 
 log_info "Nethermind installation completed!"
 log_info "Configuration file: $NETHERMIND_DIR/nethermind.cfg"
-log_info "To start Nethermind: sudo systemctl start eth1"
 log_info "To check status: sudo systemctl status eth1"
 log_info "To view logs: journalctl -fu eth1"
 

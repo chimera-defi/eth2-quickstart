@@ -199,6 +199,24 @@ sudo systemctl [start|stop|restart|status] eth1 cl validator mev
   - Lodestar: 8008 (beacon), 8009 (validator)
 - Nginx: 80/443
 
+### Data Management and Client Switching
+
+`purge_ethereum_data.sh`
+- Removes all Ethereum client data directories for clean client switching
+- Supports all execution and consensus clients
+- Usage:
+  ```bash
+  # Preview what would be deleted
+  ./install/utils/purge_ethereum_data.sh --dry-run
+  
+  # Purge with confirmation
+  ./install/utils/purge_ethereum_data.sh
+  
+  # Purge without confirmation
+  ./install/utils/purge_ethereum_data.sh --confirm
+  ```
+- **WARNING**: Permanently deletes all Ethereum client data. Backup important data first.
+
 ### Useful references
 
 - Geth: [geth.ethereum.org/docs](https://geth.ethereum.org/docs)

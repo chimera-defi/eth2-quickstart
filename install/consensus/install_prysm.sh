@@ -87,9 +87,9 @@ VALIDATOR_EXEC_START="$PRYSM_DIR/prysm.sh validator --config-file=$PRYSM_DIR/pry
 
 create_systemd_service "validator" "Prysm Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target"
 
-# Enable services
-enable_systemd_service "cl"
-enable_systemd_service "validator"
+# Enable and start services
+enable_and_start_systemd_service "cl"
+enable_and_start_systemd_service "validator"
 
 # Show completion information
 show_installation_complete "Prysm" "cl" "$PRYSM_DIR/prysm_beacon_conf.yaml" "$PRYSM_DIR"
@@ -105,8 +105,7 @@ Prysm has been installed with the following components:
 Next Steps:
 1. Import your validator keys into: $PRYSM_DIR/
 2. Create keystore password files in: $HOME/secrets/
-3. Start the beacon node: sudo systemctl start cl
-4. Wait for beacon node to sync, then start validator: sudo systemctl start validator
+3. Wait for beacon node to sync (validator will start automatically)
 
 Key features:
 - REST API available on port 5051

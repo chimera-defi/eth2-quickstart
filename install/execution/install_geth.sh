@@ -49,13 +49,12 @@ ensure_directory "$HOME/secrets"
 # Create systemd service using common function
 create_systemd_service "eth1" "Geth Ethereum Execution Client" "$GETH_CMD" "$(whoami)" "on-failure" "600" "5" "300"
 
-# Enable the service
-enable_systemd_service "eth1"
+# Enable and start the service
+enable_and_start_systemd_service "eth1"
 
 # Show completion information
 show_installation_complete "Geth" "eth1" "" "$HOME"
 
 log_info "Geth installation completed!"
-log_info "To start Geth: sudo systemctl start eth1"
 log_info "To check status: sudo systemctl status eth1"
 log_info "To view logs: journalctl -fu eth1"
