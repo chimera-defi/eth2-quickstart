@@ -66,6 +66,14 @@ fi
 log_info "Configuring firewall for SSL..."
 setup_firewall_rules 80 443
 
+# Add rate limiting
+log_info "Adding rate limiting..."
+add_rate_limiting
+
+# Configure DDoS protection
+log_info "Configuring DDoS protection..."
+configure_ddos_protection
+
 # Restart NGINX
 log_info "Restarting NGINX with SSL configuration..."
 if ! sudo systemctl restart nginx; then
