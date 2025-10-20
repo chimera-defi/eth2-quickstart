@@ -85,9 +85,8 @@ chown -R "$LOGIN_UNAME":"$LOGIN_UNAME" /home/"$LOGIN_UNAME"/"$REPO_NAME" || true
 chmod +x ./install/security/firewall.sh
 ./install/security/firewall.sh
 
-# confirm time date sync
-apt install chrony -y
-timedatectl set-ntp on
+# Time synchronization is configured centrally via install_dependencies.sh
+log_info "Time synchronization is already configured"
 
 # Disable shared memory
 append_once /etc/fstab $'tmpfs\t/run/shm\ttmpfs\tro,noexec,nosuid\t0 0'

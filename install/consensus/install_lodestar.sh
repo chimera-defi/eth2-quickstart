@@ -13,17 +13,8 @@ log_info "Starting Lodestar installation..."
 # Check system requirements
 check_system_requirements 16 1000
 
-# Install Node.js and npm if not present
-if ! command -v node &> /dev/null; then
-    log_info "Installing Node.js..."
-    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-    install_dependencies nodejs
-else
-    log_info "Node.js already installed: $(node --version)"
-fi
-
-# Install dependencies
-install_dependencies wget curl git build-essential python3
+# Dependencies are installed centrally via install_dependencies.sh
+# Node.js and build tools are already available
 
 # Setup firewall rules for Lodestar
 setup_firewall_rules 9000 9596
