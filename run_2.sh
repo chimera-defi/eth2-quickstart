@@ -120,6 +120,23 @@ case "$client_choice" in
         ;;
 esac
 
+# Apply security hardening after client installation
+log_info "Applying post-installation security hardening..."
+
+# Secure all configuration files
+secure_config_files
+
+# Apply network security to all installed clients
+apply_network_security
+
+# Setup additional security monitoring for consensus clients
+log_info "Setting up enhanced security monitoring for consensus clients..."
+setup_security_monitoring
+
+# Setup intrusion detection (AIDE)
+log_info "Setting up intrusion detection..."
+setup_intrusion_detection
+
 # Display next steps
 cat << EOF
 
@@ -138,5 +155,14 @@ and confirming it works without SSL, locally, then remotely via your domain name
 Next step is to start syncing via:
 - sudo systemctl start eth1
 - Or try: ./install/utils/start.sh
+
+=== Security Features Enabled ===
+- File integrity monitoring (AIDE) - runs daily at 2 AM
+- Security monitoring - runs every 15 minutes
+- Network security restrictions applied
+- Configuration files secured with proper permissions
+- Firewall rules configured for all client ports
+
+To verify security setup, run: ./test_security_fixes.sh
 
 EOF
