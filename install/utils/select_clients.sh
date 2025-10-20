@@ -1,8 +1,7 @@
 #!/bin/bash
 
-
-# Ethereum Client Selection Script
-# This script helps users choose between different execution and consensus clients
+# Ethereum Client Installation Script
+# This script provides quick installation options for different client combinations
 
 source ../../lib/common_functions.sh
 
@@ -13,274 +12,216 @@ UNDERLINE='\033[4m'
 display_header() {
     echo -e "${BOLD}${GREEN}"
     echo "=============================================="
-    echo "    Ethereum Client Selection Assistant"
+    echo "    Ethereum Client Installation Assistant"
     echo "=============================================="
     echo -e "${NC}"
 }
 
-display_client_info() {
-    local client_type="$1"
-    local client_name="$2"
-    local language="$3"
-    local description="$4"
-    local pros="$5"
-    local cons="$6"
-    local install_script="$7"
-    
-    echo -e "${BOLD}${YELLOW}$client_name${NC} (${language})"
-    echo -e "${description}"
+show_installation_options() {
+    echo -e "${BOLD}${UNDERLINE}INSTALLATION OPTIONS${NC}"
     echo
-    echo -e "${GREEN}Pros:${NC}"
-    echo -e "${pros}"
-    echo
-    echo -e "${RED}Cons:${NC}"
-    echo -e "${cons}"
-    echo
-    echo -e "${BOLD}Install script:${NC} ${install_script}"
-    echo
-    echo "----------------------------------------"
+    echo "1. Default Setup (Geth + Prysm + MEV Boost) - Recommended for beginners"
+    echo "2. Performance Setup (Erigon + Lighthouse + MEV Boost) - Faster sync"
+    echo "3. Lightweight Setup (Geth + Nimbus + MEV Boost) - Low resource usage"
+    echo "4. Enterprise Setup (Nethermind + Teku + MEV Boost) - Advanced features"
+    echo "5. Custom Setup - Choose individual clients"
+    echo "6. View Client Information"
+    echo "7. Exit"
     echo
 }
 
-show_execution_clients() {
-    echo -e "${BOLD}${UNDERLINE}EXECUTION CLIENTS${NC}"
-    echo
+install_default_setup() {
+    log_info "Installing default setup (Geth + Prysm + MEV Boost)..."
     
-    display_client_info "execution" "Geth" "Go" \
-        "The original Go implementation of Ethereum. Most widely used and battle-tested." \
-        "• Most stable and mature\n• Extensive documentation\n• Wide community support\n• Proven track record" \
-        "• Higher resource usage\n• Slower sync compared to newer clients" \
-        "../execution/install_geth.sh"
+    # Stop any existing services
+    sudo systemctl stop eth1 cl validator mev 2>/dev/null || true
     
-    display_client_info "execution" "Erigon" "Go" \
-        "Re-architected Geth focusing on efficiency and performance." \
-        "• Faster sync times\n• Lower disk space usage\n• Better performance\n• Modular architecture" \
-        "• More complex setup\n• Less mature than Geth\n• Higher memory usage during sync" \
-        "../execution/erigon.sh"
-    
-    display_client_info "execution" "Reth" "Rust" \
-        "Modern Rust implementation focusing on performance and modularity." \
-        "• Excellent performance\n• Modern codebase\n• Active development\n• Modular design" \
-        "• Newer and less battle-tested\n• Rust compilation takes time\n• Still in development" \
-        "../execution/reth.sh"
-    
-    display_client_info "execution" "Nethermind" ".NET/C#" \
-        "Enterprise-focused .NET implementation with advanced features." \
-        "• Enterprise features\n• Good performance\n• Active development\n• JSON-RPC compatibility" \
-        "• Requires .NET runtime\n• Less common in home staking\n• Complex configuration" \
-        "../execution/install_nethermind.sh"
-    
-    display_client_info "execution" "Besu" "Java" \
-        "Apache 2.0 licensed Java client suitable for both public and private networks." \
-        "• Permissive license\n• Enterprise support\n• Good for private networks\n• Hyperledger project" \
-        "• Requires Java runtime\n• Higher resource usage\n• Less optimized for home staking" \
-        "../execution/install_besu.sh"
-}
-
-show_consensus_clients() {
-    echo -e "${BOLD}${UNDERLINE}CONSENSUS CLIENTS${NC}"
-    echo
-    
-    display_client_info "consensus" "Prysm" "Go" \
-        "Developed by Prysmatic Labs, known for reliability and documentation." \
-        "• Excellent documentation\n• Stable and reliable\n• Good community support\n• Easy to use" \
-        "• Higher resource usage\n• Less client diversity benefit" \
-        "../consensus/install_prysm.sh"
-    
-    display_client_info "consensus" "Lighthouse" "Rust" \
-        "Rust implementation by Sigma Prime, focusing on security and performance." \
-        "• Excellent performance\n• Security focused\n• Good documentation\n• Active development" \
-        "• Rust compilation required\n• Less beginner-friendly setup" \
-        "../consensus/lighthouse.sh"
-    
-    display_client_info "consensus" "Teku" "Java" \
-        "ConsenSys-developed client designed for institutional staking." \
-        "• Enterprise features\n• Institutional support\n• Good for large operations\n• Comprehensive monitoring" \
-        "• Higher resource usage\n• Requires Java runtime\n• Complex for home stakers" \
-        "../consensus/install_teku.sh"
-    
-    display_client_info "consensus" "Nimbus" "Nim" \
-        "Status-developed client optimized for resource efficiency." \
-        "• Very lightweight\n• Perfect for Raspberry Pi\n• Low bandwidth usage\n• Easy to run" \
-        "• Smaller community\n• Less feature-rich\n• Nim language less common" \
-        "../consensus/install_nimbus.sh"
-    
-    display_client_info "consensus" "Lodestar" "TypeScript" \
-        "ChainSafe-developed client written in TypeScript." \
-        "• Developer-friendly (TypeScript)\n• Good for development\n• Active development\n• Modern architecture" \
-        "• Higher resource usage\n• Less battle-tested\n• Node.js dependency" \
-        "../consensus/install_lodestar.sh"
-    
-    display_client_info "consensus" "Grandine" "Rust" \
-        "High-performance Rust client focused on correctness and efficiency." \
-        "• High performance\n• Modern Rust implementation\n• Performance optimized\n• Advanced features" \
-        "• Very new client\n• Less documentation\n• Advanced users only\n• Still in development" \
-        "../consensus/install_grandine.sh"
-}
-
-show_recommendations() {
-    echo -e "${BOLD}${UNDERLINE}RECOMMENDATIONS${NC}"
-    echo
-    
-    echo -e "${BOLD}For Beginners:${NC}"
-    echo "• Execution: Geth (most stable and documented)"
-    echo "• Consensus: Prysm (excellent documentation and support)"
-    echo
-    
-    echo -e "${BOLD}For Performance:${NC}"
-    echo "• Execution: Erigon or Reth (faster sync, better efficiency)"
-    echo "• Consensus: Lighthouse or Nimbus (efficient resource usage)"
-    echo
-    
-    echo -e "${BOLD}For Resource-Constrained Systems:${NC}"
-    echo "• Execution: Geth (proven to work on various hardware)"
-    echo "• Consensus: Nimbus (designed for low-resource environments)"
-    echo
-    
-    echo -e "${BOLD}For Enterprise/Institutional:${NC}"
-    echo "• Execution: Nethermind or Besu (enterprise features)"
-    echo "• Consensus: Teku (designed for institutional use)"
-    echo
-    
-    echo -e "${BOLD}For Client Diversity:${NC}"
-    echo "Consider using minority clients to improve network resilience:"
-    echo "• Execution: Erigon, Reth, Nethermind, or Besu"
-    echo "• Consensus: Lighthouse, Teku, Nimbus, Lodestar, or Grandine"
-    echo
-}
-
-show_system_requirements() {
-    echo -e "${BOLD}${UNDERLINE}SYSTEM REQUIREMENTS${NC}"
-    echo
-    
-    echo -e "${BOLD}Minimum Requirements:${NC}"
-    echo "• CPU: 4+ cores"
-    echo "• RAM: 16GB+ (32GB+ recommended)"
-    echo "• Storage: 2TB+ SSD (NVMe preferred)"
-    echo "• Network: Stable internet with unlimited data"
-    echo
-    
-    echo -e "${BOLD}Client-Specific Requirements:${NC}"
-    echo "• Nimbus: Can run on 4GB RAM and slower hardware"
-    echo "• Teku/Besu: Require Java, higher RAM usage"
-    echo "• Lodestar: Requires Node.js"
-    echo "• Erigon: Higher RAM during initial sync"
-    echo "• Reth/Grandine: Rust compilation requires build tools"
-    echo
-}
-
-interactive_selection() {
-    echo -e "${BOLD}${UNDERLINE}INTERACTIVE CLIENT SELECTION${NC}"
-    echo
-    
-    # Ask about user experience
-    echo "1. What is your experience level?"
-    echo "   a) Beginner - new to Ethereum staking"
-    echo "   b) Intermediate - some experience with crypto/servers"
-    echo "   c) Advanced - experienced with blockchain infrastructure"
-    echo
-    read -r -p "Select (a/b/c): " experience
-    if ! validate_user_input "$experience" "^[abc]$" 1; then
-        log_error "Invalid selection. Please choose a, b, or c."
+    log_info "Installing Geth execution client..."
+    if ! ./install/execution/install_geth.sh; then
+        log_error "Failed to install Geth"
         return 1
     fi
-    
-    # Ask about hardware
-    echo
-    echo "2. What hardware are you using?"
-    echo "   a) High-end server/desktop (32GB+ RAM, fast SSD)"
-    echo "   b) Mid-range system (16-32GB RAM, SSD)"
-    echo "   c) Resource-constrained (Raspberry Pi, <16GB RAM)"
-    echo
-    read -r -p "Select (a/b/c): " hardware
-    if ! validate_user_input "$hardware" "^[abc]$" 1; then
-        log_error "Invalid selection. Please choose a, b, or c."
+
+    log_info "Installing Prysm consensus client..."
+    if ! ./install/consensus/install_prysm.sh; then
+        log_error "Failed to install Prysm"
         return 1
     fi
-    
-    # Ask about priorities
-    echo
-    echo "3. What is your priority?"
-    echo "   a) Stability and reliability"
-    echo "   b) Performance and efficiency"
-    echo "   c) Client diversity"
-    echo "   d) Learning and development"
-    echo
-    read -r -p "Select (a/b/c/d): " priority
-    if ! validate_user_input "$priority" "^[abcd]$" 1; then
-        log_error "Invalid selection. Please choose a, b, c, or d."
+
+    log_info "Installing MEV Boost..."
+    if ! ./install/mev/install_mev_boost.sh; then
+        log_error "Failed to install MEV Boost"
         return 1
     fi
+
+    log_info "Default setup completed successfully!"
+    return 0
+}
+
+install_performance_setup() {
+    log_info "Installing performance setup (Erigon + Lighthouse + MEV Boost)..."
     
-    # Generate recommendation
-    echo
-    echo -e "${BOLD}${GREEN}RECOMMENDATION BASED ON YOUR ANSWERS:${NC}"
-    echo
+    # Stop any existing services
+    sudo systemctl stop eth1 cl validator mev 2>/dev/null || true
     
-    case "$experience" in
-        "a")
-            case "$hardware" in
-                "a"|"b") echo "• Execution Client: Geth (most stable)"
-                        echo "• Consensus Client: Prysm (best documentation)" ;;
-                "c") echo "• Execution Client: Geth (proven on various hardware)"
-                     echo "• Consensus Client: Nimbus (lightweight)" ;;
-            esac
-            ;;
-        "b")
-            case "$priority" in
-                "a") echo "• Execution Client: Geth"
-                     echo "• Consensus Client: Lighthouse or Prysm" ;;
-                "b") echo "• Execution Client: Erigon"
-                     echo "• Consensus Client: Lighthouse" ;;
-                "c") echo "• Execution Client: Reth or Nethermind"
-                     echo "• Consensus Client: Teku or Nimbus" ;;
-            esac
-            ;;
-        "c")
-            case "$priority" in
-                "a") echo "• Execution Client: Geth or Erigon"
-                     echo "• Consensus Client: Lighthouse or Prysm" ;;
-                "b") echo "• Execution Client: Reth or Erigon"
-                     echo "• Consensus Client: Lighthouse or Grandine" ;;
-                "c") echo "• Execution Client: Nethermind or Besu"
-                     echo "• Consensus Client: Teku or Lodestar" ;;
-                "d") echo "• Execution Client: Reth (modern Rust)"
-                     echo "• Consensus Client: Lodestar (TypeScript)" ;;
-            esac
-            ;;
-    esac
+    log_info "Installing Erigon execution client..."
+    if ! ./install/execution/erigon.sh; then
+        log_error "Failed to install Erigon"
+        return 1
+    fi
+
+    log_info "Installing Lighthouse consensus client..."
+    if ! ./install/consensus/lighthouse.sh; then
+        log_error "Failed to install Lighthouse"
+        return 1
+    fi
+
+    log_info "Installing MEV Boost..."
+    if ! ./install/mev/install_mev_boost.sh; then
+        log_error "Failed to install MEV Boost"
+        return 1
+    fi
+
+    log_info "Performance setup completed successfully!"
+    return 0
+}
+
+install_lightweight_setup() {
+    log_info "Installing lightweight setup (Geth + Nimbus + MEV Boost)..."
     
+    # Stop any existing services
+    sudo systemctl stop eth1 cl validator mev 2>/dev/null || true
+    
+    log_info "Installing Geth execution client..."
+    if ! ./install/execution/install_geth.sh; then
+        log_error "Failed to install Geth"
+        return 1
+    fi
+
+    log_info "Installing Nimbus consensus client..."
+    if ! ./install/consensus/install_nimbus.sh; then
+        log_error "Failed to install Nimbus"
+        return 1
+    fi
+
+    log_info "Installing MEV Boost..."
+    if ! ./install/mev/install_mev_boost.sh; then
+        log_error "Failed to install MEV Boost"
+        return 1
+    fi
+
+    log_info "Lightweight setup completed successfully!"
+    return 0
+}
+
+install_enterprise_setup() {
+    log_info "Installing enterprise setup (Nethermind + Teku + MEV Boost)..."
+    
+    # Stop any existing services
+    sudo systemctl stop eth1 cl validator mev 2>/dev/null || true
+    
+    log_info "Installing Nethermind execution client..."
+    if ! ./install/execution/install_nethermind.sh; then
+        log_error "Failed to install Nethermind"
+        return 1
+    fi
+
+    log_info "Installing Teku consensus client..."
+    if ! ./install/consensus/install_teku.sh; then
+        log_error "Failed to install Teku"
+        return 1
+    fi
+
+    log_info "Installing MEV Boost..."
+    if ! ./install/mev/install_mev_boost.sh; then
+        log_error "Failed to install MEV Boost"
+        return 1
+    fi
+
+    log_info "Enterprise setup completed successfully!"
+    return 0
+}
+
+show_client_info() {
+    echo -e "${BOLD}${UNDERLINE}AVAILABLE CLIENTS${NC}"
     echo
-    echo "Run the corresponding install scripts to set up your chosen clients."
+    echo -e "${BOLD}Execution Clients:${NC}"
+    echo "• Geth (Go) - Most stable, beginner-friendly"
+    echo "• Erigon (Go) - Fast sync, efficient"
+    echo "• Reth (Rust) - Modern, high performance"
+    echo "• Nethermind (.NET) - Enterprise features"
+    echo "• Besu (Java) - Private networks, compliance"
+    echo
+    echo -e "${BOLD}Consensus Clients:${NC}"
+    echo "• Prysm (Go) - Well documented, reliable"
+    echo "• Lighthouse (Rust) - Security focused, fast"
+    echo "• Teku (Java) - Institutional features"
+    echo "• Nimbus (Nim) - Lightweight, resource efficient"
+    echo "• Lodestar (TypeScript) - Developer friendly"
+    echo "• Grandine (Rust) - High performance, cutting edge"
+    echo
+    echo -e "${BOLD}Installation Scripts:${NC}"
+    echo "Execution: ./install/execution/install_[client].sh"
+    echo "Consensus: ./install/consensus/install_[client].sh"
+    echo "MEV Boost: ./install/mev/install_mev_boost.sh"
+    echo
 }
 
 main_menu() {
     while true; do
         display_header
+        show_installation_options
         
-        echo "What would you like to do?"
-        echo
-        echo "1. View Execution Clients"
-        echo "2. View Consensus Clients"
-        echo "3. View Recommendations"
-        echo "4. View System Requirements"
-        echo "5. Interactive Client Selection"
-        echo "6. Exit"
-        echo
-        read -r -p "Select an option (1-6): " choice
-        if ! validate_menu_choice "$choice" 6; then
-            log_error "Invalid choice. Please select 1-6."
+        read -r -p "Select an option (1-7): " choice
+        if ! validate_menu_choice "$choice" 7; then
+            log_error "Invalid choice. Please select 1-7."
             continue
         fi
         
         case $choice in
-            1) clear; show_execution_clients; read -r -p "Press Enter to continue..." ;;
-            2) clear; show_consensus_clients; read -r -p "Press Enter to continue..." ;;
-            3) clear; show_recommendations; read -r -p "Press Enter to continue..." ;;
-            4) clear; show_system_requirements; read -r -p "Press Enter to continue..." ;;
-            5) clear; interactive_selection; read -r -p "Press Enter to continue..." ;;
-            6) log_info "Thank you for using the Ethereum Client Selection Assistant!"; exit 0 ;;
-            *) log_error "Invalid option. Please select 1-6." ;;
+            1) 
+                if install_default_setup; then
+                    log_info "Installation completed! Services are starting..."
+                    echo "Check status with: sudo systemctl status eth1 cl validator mev"
+                fi
+                read -r -p "Press Enter to continue..."
+                ;;
+            2) 
+                if install_performance_setup; then
+                    log_info "Installation completed! Services are starting..."
+                    echo "Check status with: sudo systemctl status eth1 cl validator mev"
+                fi
+                read -r -p "Press Enter to continue..."
+                ;;
+            3) 
+                if install_lightweight_setup; then
+                    log_info "Installation completed! Services are starting..."
+                    echo "Check status with: sudo systemctl status eth1 cl validator mev"
+                fi
+                read -r -p "Press Enter to continue..."
+                ;;
+            4) 
+                if install_enterprise_setup; then
+                    log_info "Installation completed! Services are starting..."
+                    echo "Check status with: sudo systemctl status eth1 cl validator mev"
+                fi
+                read -r -p "Press Enter to continue..."
+                ;;
+            5) 
+                show_client_info
+                read -r -p "Press Enter to continue..."
+                ;;
+            6) 
+                show_client_info
+                read -r -p "Press Enter to continue..."
+                ;;
+            7) 
+                log_info "Thank you for using the Ethereum Client Installation Assistant!"
+                exit 0
+                ;;
+            *) 
+                log_error "Invalid option. Please select 1-7."
+                ;;
         esac
         clear
     done

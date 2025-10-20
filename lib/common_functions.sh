@@ -165,6 +165,143 @@ command_exists() {
 }
 
 # Check system compatibility
+check_system_compatibility() {
+    # Check if running on supported OS
+    if [[ ! -f /etc/os-release ]]; then
+        log_error "Cannot determine operating system"
+        return 1
+    fi
+    
+    # Check for Ubuntu/Debian
+    if ! grep -q "ID=ubuntu\|ID=debian" /etc/os-release; then
+        log_warn "This script is designed for Ubuntu/Debian systems"
+        log_warn "Other distributions may work but are not officially supported"
+    fi
+    
+    # Check for required commands
+    local required_commands=("curl" "wget" "git" "sudo")
+    for cmd in "${required_commands[@]}"; do
+        if ! command_exists "$cmd"; then
+            log_error "Required command not found: $cmd"
+            return 1
+        fi
+    done
+    
+    log_info "System compatibility check passed"
+    return 0
+}
+
+# Add PPA repository
+add_ppa_repository() {
+    local ppa="$1"
+    
+    if [[ -z "$ppa" ]]; then
+        log_error "PPA name cannot be empty"
+        return 1
+    fi
+    
+    log_info "Adding PPA repository: $ppa"
+    
+    # Check if PPA is already added
+    if apt-cache policy | grep -q "$ppa"; then
+        log_info "PPA $ppa is already added"
+        return 0
+    fi
+    
+    # Add PPA
+    if ! sudo add-apt-repository -y "ppa:$ppa"; then
+        log_error "Failed to add PPA: $ppa"
+        return 1
+    fi
+    
+    # Update package lists
+    if ! sudo apt update; then
+        log_error "Failed to update package lists after adding PPA"
+        return 1
+    fi
+    
+    log_info "Successfully added PPA: $ppa"
+    return 0
+}
+
+# Get latest release from GitHub
+get_latest_release() {
+    local repo="$1"
+    
+    if [[ -z "$repo" ]]; then
+        log_error "Repository name cannot be empty"
+        return 1
+    fi
+    
+    # Try to get latest release using GitHub API
+    local latest_release
+    latest_release=$(curl -s "https://api.github.com/repos/$repo/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    
+    if [[ -n "$latest_release" ]]; then
+        echo "$latest_release"
+        return 0
+    else
+        log_warn "Could not fetch latest release for $repo"
+        return 1
+    fi
+}
+
+# Extract archive
+extract_archive() {
+    local archive_file="$1"
+    local extract_dir="$2"
+    local strip_components="${3:-0}"
+    
+    if [[ ! -f "$archive_file" ]]; then
+        log_error "Archive file not found: $archive_file"
+        return 1
+    fi
+    
+    if [[ ! -d "$extract_dir" ]]; then
+        log_error "Extract directory not found: $extract_dir"
+        return 1
+    fi
+    
+    log_info "Extracting $archive_file to $extract_dir"
+    
+    # Determine archive type and extract
+    case "$archive_file" in
+        *.tar.gz|*.tgz)
+            if [[ "$strip_components" -gt 0 ]]; then
+                tar -xzf "$archive_file" -C "$extract_dir" --strip-components="$strip_components"
+            else
+                tar -xzf "$archive_file" -C "$extract_dir"
+            fi
+            ;;
+        *.tar.bz2|*.tbz2)
+            if [[ "$strip_components" -gt 0 ]]; then
+                tar -xjf "$archive_file" -C "$extract_dir" --strip-components="$strip_components"
+            else
+                tar -xjf "$archive_file" -C "$extract_dir"
+            fi
+            ;;
+        *.zip)
+            if [[ "$strip_components" -gt 0 ]]; then
+                unzip -q "$archive_file" -d "$extract_dir"
+                # Note: zip doesn't have strip-components, would need manual handling
+            else
+                unzip -q "$archive_file" -d "$extract_dir"
+            fi
+            ;;
+        *)
+            log_error "Unsupported archive format: $archive_file"
+            return 1
+            ;;
+    esac
+    
+    if [[ $? -eq 0 ]]; then
+        log_info "Successfully extracted $archive_file"
+        return 0
+    else
+        log_error "Failed to extract $archive_file"
+        return 1
+    fi
+}
 
 # Install dependencies with proper error handling
 install_dependencies() {
