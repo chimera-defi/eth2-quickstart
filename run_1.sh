@@ -131,5 +131,7 @@ read -r -n 1 -p "Press enter to continue when done ^:" || true
 echo "3. Set a password for your new user when prompted"
 passwd "$LOGIN_UNAME"
 
+# Security validation will be run at the end of run_2.sh
+
 echo "Done. Run 'sudo reboot' for all changes to take effect"
 echo "Re-login via ssh $LOGIN_UNAME@$(curl -s v4.ident.me) after and run './run_2.sh'"
