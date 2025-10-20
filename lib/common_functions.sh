@@ -289,31 +289,6 @@ show_installation_complete() {
     log_info "To view logs: journalctl -fu $service_name"
 }
 
-# Essential validation functions (only those actually used)
-validate_fee_recipient() {
-    local address="$1"
-    
-    # Check if address is empty
-    if [[ -z "$address" ]]; then
-        log_error "Ethereum address cannot be empty"
-        return 1
-    fi
-    
-    # Check if address starts with 0x and is 42 characters long
-    if [[ ! "$address" =~ ^0x[a-fA-F0-9]{40}$ ]]; then
-        log_error "Invalid Ethereum address format: $address"
-        return 1
-    fi
-    
-    # Check if it's a zero address
-    if [[ "$address" == "0x0000000000000000000000000000000000000000" ]]; then
-        log_error "Fee recipient cannot be zero address"
-        return 1
-    fi
-    
-    log_info "Fee recipient address validated: $address"
-    return 0
-}
 
 # Security functions
 secure_file_permissions() {

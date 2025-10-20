@@ -6,9 +6,7 @@
 set -o allexport
 
 # Feel free to reach out
-# CRITICAL: Set your own email address for SSL certificate registration
-# export EMAIL="your-email@example.com"
-export EMAIL=${EMAIL:-""}
+export EMAIL="chimera_defi@protonmail.com"
 
 export LOGIN_UNAME='eth'
 export YourSSHPortNumber='22'
@@ -19,9 +17,7 @@ export REPO_NAME="eth2-quickstart"
 export SERVER_NAME="rpc.sharedtools.org"
 
 # Validator and beacon-chain settings
-# CRITICAL: Set your own fee recipient address - this will receive all validator rewards
-# export FEE_RECIPIENT=0xYourAddressHere
-export FEE_RECIPIENT=${FEE_RECIPIENT:-""}
+export FEE_RECIPIENT=0xa1feaF41d843d53d0F6bEd86a8cF592cE21C409e
 export GRAFITTI="SharedStake.org!"
 export MAX_PEERS=100 # You may want to reduce this if you have banwidth restrictions
 export PRYSM_CPURL="https://beaconstate.ethstaker.cc"
