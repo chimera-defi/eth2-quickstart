@@ -601,9 +601,48 @@ EOF
     log_info "DDoS protection configured"
 }
 
-# Simplified security monitoring
+# Comprehensive security monitoring
 setup_security_monitoring() {
-    log_info "Setting up basic security monitoring..."
+    log_info "Setting up comprehensive security monitoring..."
+    
+    # Create security monitoring script
+    cat > /usr/local/bin/security_monitor.sh << 'EOF'
+#!/bin/bash
+# Comprehensive security monitoring script
+
+LOG_FILE="/var/log/security_monitor.log"
+DATE=$(date '+%Y-%m-%d %H:%M:%S')
+
+echo "[$DATE] Starting security monitoring check..." >> "$LOG_FILE"
+
+# Check for suspicious processes
+ps aux | grep -E "(nc|netcat|nmap|masscan|hydra|john)" | grep -v grep && echo "[$DATE] Suspicious process detected" >> "$LOG_FILE"
+
+# Check for failed SSH attempts
+grep "Failed password" /var/log/auth.log 2>/dev/null | tail -5 >> "$LOG_FILE"
+
+# Check for root login attempts
+grep "root.*ssh" /var/log/auth.log 2>/dev/null | tail -3 >> "$LOG_FILE"
+
+# Check disk usage
+df -h | awk '$5 > 90 {print "[$DATE] Disk usage warning: " $0}' >> "$LOG_FILE"
+
+# Check memory usage
+free -m | awk 'NR==2{if($3/$2*100 > 90) print "[$DATE] Memory usage warning: " $3/$2*100 "%"}' >> "$LOG_FILE"
+
+# Check for unusual network connections
+ss -tuln | grep -E ":(22|80|443|8545|8546)" >> "$LOG_FILE" 2>/dev/null
+
+# Check system load
+uptime >> "$LOG_FILE"
+
+# Check for failed systemd services
+systemctl --failed --no-pager >> "$LOG_FILE" 2>/dev/null
+
+echo "[$DATE] Security monitoring check completed" >> "$LOG_FILE"
+EOF
+
+    chmod +x /usr/local/bin/security_monitor.sh
     
     # Setup log rotation for security logs
     cat > /etc/logrotate.d/security_monitor << 'EOF'
@@ -618,7 +657,12 @@ setup_security_monitoring() {
 }
 EOF
 
-    log_info "Basic security monitoring configured"
+    # Add to crontab for regular monitoring
+    if ! grep -q "security_monitor" /etc/crontab; then
+        echo "*/15 * * * * root /usr/local/bin/security_monitor.sh" >> /etc/crontab
+    fi
+
+    log_info "Comprehensive security monitoring configured"
 }
 
 setup_intrusion_detection() {
@@ -682,66 +726,4 @@ check_service_health() {
     
     log_error "Service $service_name failed health check after ${max_wait} seconds"
     return 1
-}
-
-# Simplified security monitoring
-setup_security_monitoring() {
-    log_info "Setting up basic security monitoring..."
-    
-    # Setup log rotation for security logs
-    cat > /etc/logrotate.d/security_monitor << 'EOF'
-/var/log/security_monitor.log {
-    daily
-    missingok
-    rotate 30
-    compress
-    delaycompress
-    notifempty
-    create 644 root root
-}
-EOF
-
-    log_info "Basic security monitoring configured"
-}
-
-setup_intrusion_detection() {
-    log_info "Setting up intrusion detection..."
-    
-    # Install and configure AIDE (Advanced Intrusion Detection Environment)
-    if ! command_exists aide; then
-        apt install -y aide
-    fi
-    
-    # Initialize AIDE database
-    if [[ ! -f /var/lib/aide/aide.db ]]; then
-        aideinit
-    fi
-    
-    # Create AIDE check script
-    cat > /usr/local/bin/aide_check.sh << 'EOF'
-#!/bin/bash
-# AIDE intrusion detection check
-
-LOG_FILE="/var/log/aide_check.log"
-DATE=$(date '+%Y-%m-%d %H:%M:%S')
-
-echo "[$DATE] Starting AIDE check..." >> "$LOG_FILE"
-
-if aide --check >> "$LOG_FILE" 2>&1; then
-    echo "[$DATE] AIDE check completed - no changes detected" >> "$LOG_FILE"
-else
-    echo "[$DATE] AIDE check completed - changes detected" >> "$LOG_FILE"
-    # Send alert (you can customize this)
-    echo "File system changes detected on $(hostname)" | mail -s "AIDE Alert" root
-fi
-EOF
-
-    chmod +x /usr/local/bin/aide_check.sh
-    
-    # Add to crontab for daily checks
-    if ! grep -q "aide_check" /etc/crontab; then
-        echo "0 2 * * * root /usr/local/bin/aide_check.sh" >> /etc/crontab
-    fi
-    
-    log_info "Intrusion detection configured"
 }

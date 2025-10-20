@@ -148,6 +148,14 @@ test_security_monitoring() {
         # Check if it's executable
         if [[ -x "/usr/local/bin/security_monitor.sh" ]]; then
             log_info "✓ Security monitoring script is executable"
+            
+            # Test the script execution
+            if /usr/local/bin/security_monitor.sh >/dev/null 2>&1; then
+                log_info "✓ Security monitoring script executes successfully"
+            else
+                log_warn "Security monitoring script execution failed"
+                issues_found=$((issues_found + 1))
+            fi
         else
             log_error "Security monitoring script not executable"
             issues_found=$((issues_found + 1))
@@ -162,6 +170,63 @@ test_security_monitoring() {
         log_info "✓ Security monitoring scheduled in crontab"
     else
         log_warn "Security monitoring not scheduled in crontab"
+        issues_found=$((issues_found + 1))
+    fi
+    
+    # Check if log rotation is configured
+    if [[ -f "/etc/logrotate.d/security_monitor" ]]; then
+        log_info "✓ Security log rotation configured"
+    else
+        log_warn "Security log rotation not configured"
+        issues_found=$((issues_found + 1))
+    fi
+    
+    return $issues_found
+}
+
+# Test 6.5: AIDE Intrusion Detection
+test_aide_intrusion_detection() {
+    log_info "Testing AIDE intrusion detection..."
+    
+    local issues_found=0
+    
+    # Check if AIDE is installed
+    if command -v aide >/dev/null 2>&1; then
+        log_info "✓ AIDE is installed"
+        
+        # Check if AIDE database exists
+        if [[ -f "/var/lib/aide/aide.db" ]]; then
+            log_info "✓ AIDE database exists"
+        else
+            log_warn "AIDE database not found - may need initialization"
+            issues_found=$((issues_found + 1))
+        fi
+        
+        # Check if AIDE check script exists
+        if [[ -f "/usr/local/bin/aide_check.sh" ]]; then
+            log_info "✓ AIDE check script exists"
+            
+            # Check if it's executable
+            if [[ -x "/usr/local/bin/aide_check.sh" ]]; then
+                log_info "✓ AIDE check script is executable"
+            else
+                log_error "AIDE check script not executable"
+                issues_found=$((issues_found + 1))
+            fi
+        else
+            log_error "AIDE check script not found"
+            issues_found=$((issues_found + 1))
+        fi
+        
+        # Check if AIDE is scheduled in crontab
+        if grep -q "aide_check" /etc/crontab 2>/dev/null; then
+            log_info "✓ AIDE check scheduled in crontab"
+        else
+            log_warn "AIDE check not scheduled in crontab"
+            issues_found=$((issues_found + 1))
+        fi
+    else
+        log_error "AIDE not installed"
         issues_found=$((issues_found + 1))
     fi
     
@@ -240,6 +305,10 @@ main() {
     test_security_monitoring
     total_issues=$((total_issues + $?))
     test_results+=("Security Monitoring: $?")
+    
+    test_aide_intrusion_detection
+    total_issues=$((total_issues + $?))
+    test_results+=("AIDE Intrusion Detection: $?")
     
     test_firewall_configuration
     total_issues=$((total_issues + $?))
