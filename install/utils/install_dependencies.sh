@@ -94,7 +94,7 @@ if ! install_dependencies "${ESSENTIAL_PACKAGES[@]}"; then
 fi
 
 # Add Ethereum PPA and install ethereum package
-if ! sudo add-apt-repository ppa:ethereum/ethereum -y; then
+if ! add_ppa_repository "ppa:ethereum/ethereum"; then
     log_error "Failed to add Ethereum PPA repository"
     exit 1
 fi

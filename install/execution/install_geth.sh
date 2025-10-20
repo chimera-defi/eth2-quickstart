@@ -23,7 +23,7 @@ setup_firewall_rules 30303 8545 8546 8551
 
 # Add Ethereum PPA and install
 log_info "Adding Ethereum PPA repository..."
-if ! sudo add-apt-repository ppa:ethereum/ethereum -y; then
+if ! add_ppa_repository "ppa:ethereum/ethereum"; then
     log_error "Failed to add Ethereum PPA repository"
     exit 1
 fi

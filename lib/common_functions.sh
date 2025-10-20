@@ -166,6 +166,25 @@ command_exists() {
 
 # Check system compatibility
 
+# Add PPA repository
+add_ppa_repository() {
+    local ppa="$1"
+    
+    if [[ -z "$ppa" ]]; then
+        log_error "PPA repository not specified"
+        return 1
+    fi
+    
+    log_info "Adding PPA repository: $ppa"
+    if ! sudo add-apt-repository "$ppa" -y; then
+        log_error "Failed to add PPA repository: $ppa"
+        return 1
+    fi
+    
+    log_info "Successfully added PPA repository: $ppa"
+    return 0
+}
+
 # Install dependencies with proper error handling
 install_dependencies() {
     local packages=("$@")
