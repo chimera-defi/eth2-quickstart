@@ -10,7 +10,6 @@ source ./lib/common_functions.sh
 log_info "Starting firewall configuration..."
 
 # UFW is installed centrally via install_dependencies.sh
-log_info "UFW firewall is already installed"
 
 # Set default policies
 log_info "Setting default firewall policies..."
