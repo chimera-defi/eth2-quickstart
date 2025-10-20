@@ -177,6 +177,10 @@ install_dependencies() {
         return 1
     fi
     
+    # Note: For initial setup, consider using the centralized dependency installer:
+    # ./install/utils/install_dependencies.sh
+    # This installs all common dependencies in one place to avoid duplicates
+    
     log_info "Updating package lists..."
     if ! sudo apt update -y; then
         log_error "Failed to update package lists"

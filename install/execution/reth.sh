@@ -13,18 +13,16 @@ log_info "Starting Reth installation..."
 # Check system requirements
 check_system_requirements 16 2000
 
-# Install Rust
-log_info "Installing Rust..."
-if ! curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh; then
-    log_error "Failed to install Rust"
-    exit 1
-fi
-
+# Rust is installed centrally via install_dependencies.sh
 # Source Rust environment
 source "$HOME/.cargo/env"
 
-# Install dependencies
-install_dependencies libclang-dev pkg-config build-essential cargo
+# Install additional dependencies for Reth
+log_info "Installing Reth-specific dependencies..."
+if ! install_dependencies libclang-dev pkg-config; then
+    log_error "Failed to install Reth dependencies"
+    exit 1
+fi
 
 # Setup firewall rules for Reth
 setup_firewall_rules 30303 30304 42069 4000 4001

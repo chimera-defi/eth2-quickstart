@@ -13,16 +13,8 @@ log_info "Starting MEV Boost installation..."
 # Check system requirements
 check_system_requirements 8 500
 
-# Install dependencies
-install_dependencies make gcc
-
-# Install Go
-log_info "Installing Go..."
-if ! sudo snap install --classic go; then
-    log_error "Failed to install Go"
-    exit 1
-fi
-sudo ln -s /snap/bin/go /usr/bin/go
+# Dependencies are installed centrally via install_dependencies.sh
+# Go and build tools are already available
 
 # Create MEV Boost directory
 MEV_BOOST_DIR="$HOME/mev-boost"

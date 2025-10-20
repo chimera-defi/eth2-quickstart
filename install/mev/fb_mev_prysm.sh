@@ -27,10 +27,8 @@ fi
 sudo mv bazel-archive-keyring.gpg /usr/share/keyrings
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
 
-if ! sudo apt update && sudo apt install -y bazel bazel-5.3.0; then
-    log_error "Failed to install Bazel"
-    exit 1
-fi
+# Bazel is installed centrally via install_dependencies.sh
+log_info "Bazel is already installed"
 
 # Create build directory
 PRYSM_SRC_DIR="$HOME/prysm-src"
