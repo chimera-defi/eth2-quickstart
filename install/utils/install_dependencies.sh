@@ -94,7 +94,7 @@ if ! install_dependencies "${ESSENTIAL_PACKAGES[@]}"; then
 fi
 
 # Add Ethereum PPA and install ethereum package
-if ! add_ppa_repository "ppa:ethereum/ethereum"; then
+if ! sudo add-apt-repository ppa:ethereum/ethereum -y; then
     log_error "Failed to add Ethereum PPA repository"
     exit 1
 fi
@@ -136,8 +136,13 @@ fi
 
 # Install Rust (for Reth)
 if ! command -v cargo &> /dev/null; then
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    source "$HOME/.cargo/env"
+    if ! curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y; then
+        log_error "Failed to install Rust"
+        exit 1
+    fi
+    if [[ -f "$HOME/.cargo/env" ]]; then
+        source "$HOME/.cargo/env"
+    fi
 fi
 
 # Install Bazel (for Prysm MEV)
@@ -153,12 +158,17 @@ if ! timedatectl set-ntp on; then
 fi
 
 # Verify essential tools
-ESSENTIAL_TOOLS=("curl" "wget" "git" "jq" "chrony" "ufw")
+ESSENTIAL_TOOLS=("curl" "wget" "git" "jq" "ufw")
 for tool in "${ESSENTIAL_TOOLS[@]}"; do
     if ! command -v "$tool" &> /dev/null; then
         log_error "$tool is not installed or not in PATH"
         exit 1
     fi
 done
+
+# Check chrony service instead of command
+if ! systemctl is-active --quiet chrony; then
+    log_warn "chrony service is not active"
+fi
 
 log_info "Dependency installation completed successfully!"
