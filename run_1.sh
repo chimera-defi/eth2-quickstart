@@ -86,7 +86,6 @@ chmod +x ./install/security/firewall.sh
 ./install/security/firewall.sh
 
 # Time synchronization is configured centrally via install_dependencies.sh
-log_info "Time synchronization is already configured"
 
 # Disable shared memory
 append_once /etc/fstab $'tmpfs\t/run/shm\ttmpfs\tro,noexec,nosuid\t0 0'
