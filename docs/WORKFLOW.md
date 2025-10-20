@@ -64,8 +64,15 @@ curl -X POST http://$(curl -s v4.ident.me)/rpc \
 - Refresh all: `./extra_utils/refresh.sh`
 - Update stack: `./extra_utils/update.sh`
 
-10) Security reminders
+10) Security verification
+- Run security verification: `./docs/verify_security.sh`
+- Test security implementations: `./test_security_fixes.sh`
+- Monitor security logs: `sudo tail -f /var/log/security_monitor.log`
+- Check AIDE logs: `sudo tail -f /var/log/aide_check.log`
+
+11) Security reminders
 - Keep `jwt.hex` private; Engine API must not be exposed publicly
 - UFW denies inbound 8545/8551 by default; expose RPC only via Nginx if needed
 - Consider disabling root SSH login after confirming stability
+- All services bind to localhost only for security
 
