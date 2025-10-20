@@ -109,27 +109,23 @@ setup_security_monitoring
 log_info "Setting up intrusion detection..."
 setup_intrusion_detection
 
-echo "Begin network settings output:"
+# Configure sudo for the new user
+log_info "Configuring sudo access for $LOGIN_UNAME..."
+echo "$LOGIN_UNAME ALL=(ALL) NOPASSWD: ALL" | sudo tee -a /etc/sudoers.d/$LOGIN_UNAME > /dev/null
+sudo chmod 440 /etc/sudoers.d/$LOGIN_UNAME
 
+# Set a default password for the new user (user should change this)
+log_info "Setting up user account..."
+echo "$LOGIN_UNAME:changeme123" | sudo chpasswd
+
+echo "Begin network settings output:"
 ss -tulpn
 sshd -t
 ufw status
 
-echo "Manual action required!"
-echo "1. Please check the settings above"
-
-read -r -n 1 -p "Press enter to continue when done ^:" || true
-
-echo "2. Please run the following cmds now in another shell and add the line to the file that pops up to enable $LOGIN_UNAME no-prompt sudo to help run the second stage"
-echo "ssh root@$(curl -s v4.ident.me) "
-echo "sudo visudo"
-echo "Add this to the end of the file:"
-echo "$LOGIN_UNAME ALL=(ALL) NOPASSWD: ALL "
-
-read -r -n 1 -p "Press enter to continue when done ^:" || true
-
-echo "3. Set a password for your new user when prompted"
-passwd "$LOGIN_UNAME"
+log_info "System setup completed!"
+log_warn "IMPORTANT: Change the password for user $LOGIN_UNAME after login"
+log_warn "Run: passwd $LOGIN_UNAME"
 
 echo "Done. Run 'sudo reboot' for all changes to take effect"
 echo "Re-login via ssh $LOGIN_UNAME@$(curl -s v4.ident.me) after and run './run_2.sh'"
