@@ -800,6 +800,63 @@ EOF
     log_info "Intrusion detection configured"
 }
 
+# Service management functions
+start_all_services() {
+    log_info "Starting all Ethereum services..."
+    
+    local services=("eth1" "cl" "validator" "mev")
+    local failed_services=()
+    
+    for service in "${services[@]}"; do
+        if systemctl is-enabled --quiet "$service" 2>/dev/null; then
+            if sudo systemctl start "$service"; then
+                log_info "Started $service"
+            else
+                log_error "Failed to start $service"
+                failed_services+=("$service")
+            fi
+        else
+            log_warn "Service $service is not enabled, skipping"
+        fi
+    done
+    
+    if [[ ${#failed_services[@]} -gt 0 ]]; then
+        log_error "Failed to start services: ${failed_services[*]}"
+        return 1
+    fi
+    
+    log_info "All services started successfully"
+    return 0
+}
+
+restart_all_services() {
+    log_info "Restarting all Ethereum services..."
+    
+    local services=("eth1" "cl" "validator" "mev")
+    local failed_services=()
+    
+    for service in "${services[@]}"; do
+        if systemctl is-enabled --quiet "$service" 2>/dev/null; then
+            if sudo systemctl restart "$service"; then
+                log_info "Restarted $service"
+            else
+                log_error "Failed to restart $service"
+                failed_services+=("$service")
+            fi
+        else
+            log_warn "Service $service is not enabled, skipping"
+        fi
+    done
+    
+    if [[ ${#failed_services[@]} -gt 0 ]]; then
+        log_error "Failed to restart services: ${failed_services[*]}"
+        return 1
+    fi
+    
+    log_info "All services restarted successfully"
+    return 0
+}
+
 # Enhanced error handling
 check_service_health() {
     local service_name="$1"
