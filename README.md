@@ -207,7 +207,11 @@ Use the following command to verify locally:
   - Check validators register properly (Note: Need a 0x prefix on the validator pub key) https://boost.flashbots.net/mev-boost-status-updates/query-validator-registration-status-now
 
 
-5. Further security hardening tips: (TODO)
+5. Security verification and hardening:
+  - Run security verification: `./docs/verify_security.sh`
+  - Test security implementations: `./test_security_fixes.sh`
+  - Monitor security logs: `sudo tail -f /var/log/security_monitor.log`
+  - Check AIDE intrusion detection: `sudo tail -f /var/log/aide_check.log`
   - Disable root login after everything is confirmed to be working by setting `PermitRootLogin no` in `/etc/ssh/sshd_config`  
 
 # Troubleshooting & Tips
@@ -285,9 +289,22 @@ Before running client install scripts, modify configurations:
 - **Systemd Integration**: Proper service management and auto-restart
 
 ## Security & Infrastructure  
-- **Firewall Rules**: Automated security hardening
+- **Comprehensive Security**: Enterprise-grade security features integrated into installation
+- **Network Security**: All services bind to localhost only, UFW firewall, Fail2ban protection
+- **File Security**: Secure file permissions, automatic permission management
+- **Input Validation**: Comprehensive validation functions, injection prevention
+- **Security Monitoring**: Real-time monitoring, process monitoring, log analysis
+- **Intrusion Detection**: AIDE file integrity monitoring, daily automated checks
+- **Rate Limiting**: RPC/WS rate limiting, DDoS protection, security headers
+- **Security Testing**: Comprehensive test suite and verification tools
 - **JWT Authentication**: Secure execution/consensus client communication
 - **MEV-Boost Integration**: Maximize validator rewards
+
+### Security Documentation
+- **[Security Index](docs/SECURITY_INDEX.md)** - Comprehensive security documentation guide
+- **[Security Status](docs/SECURITY_STATUS_UPDATE.md)** - Current security implementation status
+- **[Security Audit](docs/SECURITY_AUDIT_REPORT.md)** - Detailed security audit findings
+- **[Security Verification](docs/verify_security.sh)** - Production-ready security verification tool
 - **Uncensored RPC**: Run your own censorship-resistant endpoint
 - **Enterprise Features**: Advanced monitoring and management (Teku, Nethermind, Besu)
 

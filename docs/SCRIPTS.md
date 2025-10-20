@@ -148,6 +148,22 @@ sudo systemctl start mev
 
 `optional_tools.sh`: Installs terminal network monitors (`bmon`, `slurm`, `tcptrack`)
 
+### Security utilities
+
+`test_security_fixes.sh`: Comprehensive security testing suite
+- Tests network exposure fixes, input validation, file permissions
+- Tests error handling, rate limiting, security monitoring
+- Tests AIDE intrusion detection, firewall configuration
+- Provides detailed test results and recommendations
+
+`docs/verify_security.sh`: Production-ready security verification
+- Network security verification (UFW, Fail2ban, localhost binding)
+- File security verification (permissions, access controls)
+- Service security verification (systemd services, failed services)
+- System security verification (updates, SSH config, disk/memory usage)
+- SSL/TLS security verification (certificates, expiration)
+- Security score calculation and detailed recommendations
+
 ### Alternative clients and advanced scripts
 
 `erigon.sh`
