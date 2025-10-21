@@ -66,6 +66,24 @@ run_test() {
     fi
 }
 
+# Function to run a custom test function
+run_custom_test() {
+    local test_name="$1"
+    local test_function="$2"
+    
+    total_tests=$((total_tests + 1))
+    
+    if "$test_function"; then
+        log_info "✓ $test_name"
+        passed_tests=$((passed_tests + 1))
+        return 0
+    else
+        log_error "✗ $test_name"
+        failed_tests=$((failed_tests + 1))
+        return 1
+    fi
+}
+
 # Function to run a test with custom logic
 run_custom_test() {
     local test_name="$1"
@@ -157,7 +175,7 @@ log_section "Testing Input Validation Functions"
 
 test_input_validation() {
     # Source the common functions
-    source lib/common_functions.sh
+    source ../lib/common_functions.sh
     
     # Test validate_user_input function
     if declare -f validate_user_input >/dev/null; then
@@ -187,10 +205,11 @@ log_section "Testing File Permission Functions"
 
 test_file_permissions() {
     # Source the common functions
-    source lib/common_functions.sh
+    source ../lib/common_functions.sh
     
     # Create a test file in a safe location
-    local test_file="/tmp/security_test_file_$(date +%s)"
+    local test_file
+    test_file="/tmp/security_test_file_$(date +%s)"
     echo "test content" > "$test_file"
     
     # Test secure_file_permissions function directly
@@ -224,7 +243,7 @@ log_section "Testing Error Handling Functions"
 
 test_error_handling() {
     # Source the common functions
-    source lib/common_functions.sh
+    source ../lib/common_functions.sh
     
     # Test secure_error_handling function
     if declare -f secure_error_handling >/dev/null; then
@@ -369,7 +388,7 @@ log_section "Testing Function Definitions"
 
 test_function_definitions() {
     # Source the common functions
-    source lib/common_functions.sh
+    source ../lib/common_functions.sh
     
     local required_functions=(
         "setup_security_monitoring"

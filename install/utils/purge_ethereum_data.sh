@@ -8,11 +8,11 @@ set -euo pipefail
 
 # Source common functions
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../../lib/common_functions.sh"
+source ../../lib/common_functions.sh
 
 # Source exports for configuration
 if [[ -f "$SCRIPT_DIR/../../exports.sh" ]]; then
-    source "$SCRIPT_DIR/../../exports.sh"
+    source ../../exports.sh
 else
     export LOGIN_UNAME="eth"
 fi
@@ -92,7 +92,8 @@ show_deletion_summary() {
     
     for dir in "${DATA_DIRS[@]}"; do
         if [[ -d "$dir" && -n "$(ls -A "$dir" 2>/dev/null)" ]]; then
-            local size=$(du -sh "$dir" 2>/dev/null | cut -f1)
+            local size
+            size=$(du -sh "$dir" 2>/dev/null | cut -f1)
             log_info "  $dir ($size)"
             ((count++))
         fi

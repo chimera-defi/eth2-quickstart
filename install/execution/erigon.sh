@@ -47,7 +47,7 @@ fi
 # Create Erigon directory
 ERIGON_DIR="$HOME/erigon"
 if [[ -d "$ERIGON_DIR" ]]; then
-    rm -rf "$ERIGON_DIR"/*
+    rm -rf "${ERIGON_DIR:?}"/*
 else
     ensure_directory "$ERIGON_DIR"
 fi

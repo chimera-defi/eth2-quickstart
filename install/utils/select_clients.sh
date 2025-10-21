@@ -19,7 +19,7 @@ display_header() {
 }
 
 display_client_info() {
-    local client_type="$1"
+    # client_type="$1"  # Currently unused but kept for future use
     local client_name="$2"
     local language="$3"
     local description="$4"

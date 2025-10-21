@@ -4,8 +4,8 @@
 # Firewall Configuration Script
 # Sets up UFW firewall with Ethereum client and security rules
 
-source ./exports.sh
-source ./lib/common_functions.sh
+source ../../exports.sh
+source ../../lib/common_functions.sh
 
 log_info "Starting firewall configuration..."
 
