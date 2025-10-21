@@ -646,7 +646,9 @@ setup_intrusion_detection() {
     
     # Install and configure AIDE (Advanced Intrusion Detection Environment)
     if ! command_exists aide; then
-        apt install -y aide
+        log_error "AIDE not found - dependencies should be installed centrally first"
+        log_error "Please run install_dependencies.sh before setting up intrusion detection"
+        return 1
     fi
     
     # Initialize AIDE database
@@ -729,7 +731,9 @@ setup_intrusion_detection() {
     
     # Install and configure AIDE (Advanced Intrusion Detection Environment)
     if ! command_exists aide; then
-        apt install -y aide
+        log_error "AIDE not found - dependencies should be installed centrally first"
+        log_error "Please run install_dependencies.sh before setting up intrusion detection"
+        return 1
     fi
     
     # Initialize AIDE database

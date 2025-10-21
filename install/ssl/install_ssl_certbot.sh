@@ -24,20 +24,11 @@ if ! ./install_nginx.sh; then
     exit 1
 fi
 
-# Install certbot
-log_info "Installing certbot..."
-if ! sudo snap install core; then
-    log_error "Failed to install snap core"
-    exit 1
-fi
-
+# Dependencies are installed centrally via install_dependencies.sh
+# Configure certbot
+log_info "Configuring certbot..."
 if ! sudo snap refresh core; then
     log_error "Failed to refresh snap core"
-    exit 1
-fi
-
-if ! sudo snap install --classic certbot; then
-    log_error "Failed to install certbot"
     exit 1
 fi
 

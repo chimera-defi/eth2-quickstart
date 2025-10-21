@@ -27,9 +27,9 @@ sudo apt upgrade -y
 sudo apt dist-upgrade -y
 sudo apt autoremove -y
 
+# Dependencies are installed centrally via install_dependencies.sh
 # geth - upgrade before already shouldve upgraded it for us but here is cmd in case needed
 log_info "Updating Geth..."
-sudo apt-get install ethereum -y
 sudo apt upgrade geth -y 
 
 # prysm
