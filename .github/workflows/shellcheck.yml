@@ -26,7 +26,8 @@ jobs:
         # Find all shell scripts and run shellcheck
         find . -name "*.sh" -type f | while read -r script; do
           echo "Checking $script..."
-          if ! shellcheck "$script"; then
+          # Use shellcheck with exclusions for common false positives
+          if ! shellcheck -x --exclude=SC2317,SC1091 "$script"; then
             echo "❌ Shellcheck failed for $script"
             exit 1
           else

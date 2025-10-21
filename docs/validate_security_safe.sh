@@ -66,6 +66,24 @@ run_test() {
     fi
 }
 
+# Function to run a custom test function
+run_custom_test() {
+    local test_name="$1"
+    local test_function="$2"
+    
+    total_tests=$((total_tests + 1))
+    
+    if "$test_function"; then
+        log_info "✓ $test_name"
+        passed_tests=$((passed_tests + 1))
+        return 0
+    else
+        log_error "✗ $test_name"
+        failed_tests=$((failed_tests + 1))
+        return 1
+    fi
+}
+
 # Function to run a test with custom logic
 run_custom_test() {
     local test_name="$1"
@@ -190,7 +208,8 @@ test_file_permissions() {
     source lib/common_functions.sh
     
     # Create a test file in a safe location
-    local test_file="/tmp/security_test_file_$(date +%s)"
+    local test_file
+    test_file="/tmp/security_test_file_$(date +%s)"
     echo "test content" > "$test_file"
     
     # Test secure_file_permissions function directly

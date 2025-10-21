@@ -92,7 +92,8 @@ show_deletion_summary() {
     
     for dir in "${DATA_DIRS[@]}"; do
         if [[ -d "$dir" && -n "$(ls -A "$dir" 2>/dev/null)" ]]; then
-            local size=$(du -sh "$dir" 2>/dev/null | cut -f1)
+            local size
+            size=$(du -sh "$dir" 2>/dev/null | cut -f1)
             log_info "  $dir ($size)"
             ((count++))
         fi

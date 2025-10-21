@@ -77,7 +77,8 @@ test_file_permissions() {
     echo "test" > "$test_file"
     secure_file_permissions "$test_file" 600
     
-    local perms=$(stat -c "%a" "$test_file")
+    local perms
+    perms=$(stat -c "%a" "$test_file")
     if [[ "$perms" == "600" ]]; then
         log_info "✓ File permissions set correctly (600)"
     else
