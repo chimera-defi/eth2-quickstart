@@ -600,27 +600,8 @@ secure_error_handling() {
     esac
 }
 
-safe_command_execution() {
-    local command="$1"
-    local error_msg="${2:-Command execution failed}"
-    local show_output="${3:-false}"
-    
-    if [[ "$show_output" == "true" ]]; then
-        if eval "$command" 2>&1; then
-            return 0
-        else
-            secure_error_handling "$error_msg" "error" "true"
-            return 1
-        fi
-    else
-        if eval "$command" >/dev/null 2>&1; then
-            return 0
-        else
-            secure_error_handling "$error_msg" "error" "false"
-            return 1
-        fi
-    fi
-}
+# REMOVED: safe_command_execution function was dangerous due to eval usage
+# This function has been removed for security reasons
 
 secure_download() {
     local url="$1"

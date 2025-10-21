@@ -116,7 +116,9 @@ sudo chmod 440 /etc/sudoers.d/$LOGIN_UNAME
 
 # Set a default password for the new user (user should change this)
 log_info "Setting up user account..."
-echo "$LOGIN_UNAME:changeme123" | sudo chpasswd
+# Generate a random password instead of hardcoded one
+RANDOM_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
+echo "$LOGIN_UNAME:$RANDOM_PASSWORD" | sudo chpasswd
 
 echo "Begin network settings output:"
 ss -tulpn
@@ -126,6 +128,7 @@ ufw status
 log_info "System setup completed!"
 log_warn "IMPORTANT: Change the password for user $LOGIN_UNAME after login"
 log_warn "Run: passwd $LOGIN_UNAME"
+log_info "Temporary password for $LOGIN_UNAME: $RANDOM_PASSWORD"
 
 echo "Done. Run 'sudo reboot' for all changes to take effect"
 echo "Re-login via ssh $LOGIN_UNAME@$(curl -s v4.ident.me) after and run './run_2.sh'"
