@@ -367,3 +367,7 @@ Twitter: https://twitter.com/chimeradefi
 ### Project Management
 - Commit message conventions: docs/COMMIT_MESSAGES.md
 - Development progress: docs/progress.md
+
+### AI Agent Reference
+- **Agent Context**: [docs/AGENT_CONTEXT.md](docs/AGENT_CONTEXT.md) - Complete AI agent reference
+- **Quick Reference**: [AGENT_QUICK_REFERENCE.md](AGENT_QUICK_REFERENCE.md) - Quick access to agent docs
