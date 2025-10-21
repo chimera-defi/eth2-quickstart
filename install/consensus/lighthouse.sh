@@ -9,6 +9,11 @@ source ../../lib/common_functions.sh
 
 log_info "Starting Lighthouse installation..."
 
+# Check system compatibility first
+if ! check_system_compatibility; then
+    log_error "System compatibility check failed"
+    exit 1
+fi
 
 # Check system requirements
 check_system_requirements 16 1000
@@ -25,14 +30,28 @@ ensure_directory "$LIGHTHOUSE_DIR"
 
 cd "$LIGHTHOUSE_DIR" || exit
 
+# Get latest Lighthouse version
+log_info "Getting latest Lighthouse version..."
+if ! LATEST_VERSION=$(get_latest_release "sigp/lighthouse"); then
+    log_error "Failed to get latest Lighthouse version"
+    exit 1
+fi
+
 # Download Lighthouse
-log_info "Downloading Lighthouse..."
-if ! download_file "https://github.com/sigp/lighthouse/releases/download/v4.5.0/lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz" "lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz"; then
+log_info "Downloading Lighthouse ${LATEST_VERSION}..."
+DOWNLOAD_URL="https://github.com/sigp/lighthouse/releases/download/${LATEST_VERSION}/lighthouse-${LATEST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+ARCHIVE_FILE="lighthouse-${LATEST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+
+if ! download_file "$DOWNLOAD_URL" "$ARCHIVE_FILE"; then
     log_error "Failed to download Lighthouse"
     exit 1
 fi
 
-tar -xvf lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz
+# Extract archive
+if ! extract_archive "$ARCHIVE_FILE" "$LIGHTHOUSE_DIR" 1; then
+    log_error "Failed to extract Lighthouse archive"
+    exit 1
+fi
 
 # Generate JWT secret
 log_info "Generating JWT secret..."

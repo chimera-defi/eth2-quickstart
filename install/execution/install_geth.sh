@@ -10,10 +10,14 @@ source ../../lib/common_functions.sh
 
 log_info "Starting Geth installation..."
 
+# Check system compatibility first
+if ! check_system_compatibility; then
+    log_error "System compatibility check failed"
+    exit 1
+fi
 
 # Installs and sets up geth as a systemctl service according to :
 # https://www.coincashew.com/coins/overview-eth/guide-or-how-to-setup-a-validator-on-eth2-mainnet/part-i-installation/installing-execution-client
-
 
 # Check system requirements
 check_system_requirements 16 2000
