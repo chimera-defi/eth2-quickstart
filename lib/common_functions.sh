@@ -923,16 +923,17 @@ setup_secure_user() {
     fi
     
     # Copy repository to user's home
-    if [[ -n "$REPO_NAME" && -d "../$REPO_NAME" ]]; then
+    local repo_name="${REPO_NAME:-eth2-quickstart}"
+    if [[ -d "../$repo_name" ]]; then
         log_info "Copying repository to user's home: $username"
-        if ! cp -r "../$REPO_NAME" "/home/$username/"; then
+        if ! cp -r "../$repo_name" "/home/$username/"; then
             log_error "Failed to copy repository for user: $username"
             return 1
         fi
-        chown -R "$username:$username" "/home/$username/$REPO_NAME"
-        chmod -R +x "/home/$username/$REPO_NAME"
-    elif [[ -n "$REPO_NAME" ]]; then
-        log_warn "Repository directory not found: ../$REPO_NAME"
+        chown -R "$username:$username" "/home/$username/$repo_name"
+        chmod -R +x "/home/$username/$repo_name"
+    else
+        log_warn "Repository directory not found: ../$repo_name"
     fi
     
     log_info "✓ User setup completed: $username"
