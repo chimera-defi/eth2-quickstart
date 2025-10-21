@@ -18,7 +18,7 @@ check_system_requirements 16 1000
 if ! command -v cargo &> /dev/null; then
     log_info "Installing Rust..."
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    # source ~/.cargo/env  # This file is created during Rust installation
+    source ~/.cargo/env
 else
     log_info "Rust already installed: $(rustc --version)"
 fi

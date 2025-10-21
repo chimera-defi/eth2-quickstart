@@ -14,8 +14,8 @@ log_info "Starting Reth installation..."
 check_system_requirements 16 2000
 
 # Rust is installed centrally via install_dependencies.sh
-# Source Rust environment
-source "$HOME/.cargo/env"
+# Source Rust environment if available
+[[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 
 # Dependencies are installed centrally via install_dependencies.sh
 
