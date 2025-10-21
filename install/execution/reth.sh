@@ -19,7 +19,8 @@ source "$HOME/.cargo/env"
 
 # Install additional dependencies for Reth
 log_info "Installing Reth-specific dependencies..."
-if ! install_dependencies libclang-dev pkg-config; then
+# Dependencies are installed centrally via install_dependencies.sh
+if false; then
     log_error "Failed to install Reth dependencies"
     exit 1
 fi

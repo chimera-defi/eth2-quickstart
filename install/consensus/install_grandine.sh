@@ -22,9 +22,6 @@ else
     log_info "Rust already installed: $(rustc --version)"
 fi
 
-# Install Rust-specific dependencies (client-specific)
-install_dependencies pkg-config libssl-dev
-
 # Dependencies are installed centrally via install_dependencies.sh
 
 # Setup firewall rules for Grandine

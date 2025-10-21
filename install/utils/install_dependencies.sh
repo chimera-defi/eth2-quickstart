@@ -28,6 +28,8 @@ sudo apt update -y
 ESSENTIAL_PACKAGES=(
     "curl" "wget" "git" "unzip" "build-essential" "python3" "python3-pip"
     "jq" "chrony" "ufw" "aide" "software-properties-common" "snapd"
+    "cmake" "libssl-dev" "libgmp-dev" "libtinfo5" "libprotoc" "apt-transport-https" "gnupg"
+    "pkg-config" "openjdk-17-jdk" "libclang-dev"
 )
 
 install_dependencies "${ESSENTIAL_PACKAGES[@]}"
