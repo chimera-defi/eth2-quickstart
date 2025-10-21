@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Centralized Dependency Installation Script
-# Usage: ./install_dependencies.sh [--skip-system-update] [--skip-snapd] [--skip-nodejs] [--skip-go]
+# Installs all dependencies needed for Ethereum node setup
 
 set -Eeuo pipefail
 IFS=$'\n\t'
@@ -13,29 +13,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$PROJECT_ROOT/exports.sh"
 source "$PROJECT_ROOT/lib/common_functions.sh"
 
-# Parse command line arguments
-SKIP_SYSTEM_UPDATE=false
-SKIP_SNAPD=false
-SKIP_NODEJS=false
-SKIP_GO=false
-
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --skip-system-update) SKIP_SYSTEM_UPDATE=true ;;
-        --skip-snapd) SKIP_SNAPD=true ;;
-        --skip-nodejs) SKIP_NODEJS=true ;;
-        --skip-go) SKIP_GO=true ;;
-        --help)
-            echo "Usage: $0 [OPTIONS]"
-            echo "Options: --skip-system-update, --skip-snapd, --skip-nodejs, --skip-go, --help"
-            exit 0
-            ;;
-        *) log_error "Unknown option: $1. Use --help for usage information"; exit 1 ;;
-    esac
-    shift
-done
-
-log_info "Installing system dependencies..."
+log_info "Installing all system dependencies..."
 
 # Check if running as root
 if [[ $EUID -eq 0 ]]; then
@@ -43,79 +21,37 @@ if [[ $EUID -eq 0 ]]; then
     exit 1
 fi
 
-# Update system packages (unless skipped)
-[[ "$SKIP_SYSTEM_UPDATE" == "false" ]] && sudo apt update -y
+# Update system packages
+sudo apt update -y
 
-# Install essential packages
+# Install all essential packages
 ESSENTIAL_PACKAGES=(
     "curl" "wget" "git" "unzip" "build-essential" "python3" "python3-pip"
-    "jq" "chrony" "ufw" "aide" "software-properties-common"
+    "jq" "chrony" "ufw" "aide" "software-properties-common" "snapd"
 )
 
-install_dependencies "${ESSENTIAL_PACKAGES[@]}" || {
-    log_error "Failed to install essential packages"
-    exit 1
-}
+install_dependencies "${ESSENTIAL_PACKAGES[@]}"
 
 # Add Ethereum PPA and install ethereum package
-add_ppa_repository "ppa:ethereum/ethereum" || {
-    log_error "Failed to add Ethereum PPA repository"
-    exit 1
-}
-install_dependencies ethereum || {
-    log_error "Failed to install ethereum package"
-    exit 1
-}
+add_ppa_repository "ppa:ethereum/ethereum"
+install_dependencies ethereum
 
-# Install optional packages (unless skipped)
-[[ "$SKIP_SNAPD" == "false" ]] && sudo apt install -y snapd
+# Install Node.js
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+install_dependencies nodejs
 
-# Install Node.js (unless skipped)
-if [[ "$SKIP_NODEJS" == "false" ]] && ! command -v node &> /dev/null; then
-    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-    install_dependencies nodejs || {
-        log_error "Failed to install Node.js"
-        exit 1
-    }
-fi
+# Install Go
+sudo snap install --classic go
+sudo ln -sf /snap/bin/go /usr/bin/go
 
-# Install Go (unless skipped)
-if [[ "$SKIP_GO" == "false" ]] && ! command -v go &> /dev/null; then
-    if ! sudo snap install --classic go; then
-        log_error "Failed to install Go via snap"
-        exit 1
-    fi
-    sudo ln -sf /snap/bin/go /usr/bin/go
-fi
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+[[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 
-# Install Rust (for Reth)
-if ! command -v cargo &> /dev/null; then
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y || {
-        log_error "Failed to install Rust"
-        exit 1
-    }
-    [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
-fi
-
-# Install Bazel (for Prysm MEV) - non-critical
-if ! command -v bazel &> /dev/null; then
-    if ! (sudo apt update && sudo apt install -y bazel bazel-5.3.0); then
-        log_warn "Failed to install Bazel, some MEV features may not work"
-    fi
-fi
+# Install Bazel
+sudo apt install -y bazel bazel-5.3.0
 
 # Configure time synchronization
-timedatectl set-ntp on || log_warn "Failed to enable NTP time synchronization"
+timedatectl set-ntp on
 
-# Verify essential tools
-for tool in curl wget git jq ufw; do
-    command -v "$tool" &> /dev/null || {
-        log_error "$tool is not installed or not in PATH"
-        exit 1
-    }
-done
-
-# Check chrony service
-systemctl is-active --quiet chrony || log_warn "chrony service is not active"
-
-log_info "Dependency installation completed successfully!"
+log_info "All dependencies installed successfully!"
