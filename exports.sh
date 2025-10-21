@@ -9,7 +9,7 @@ set -o allexport
 export EMAIL="chimera_defi@protonmail.com"
 
 export LOGIN_UNAME='eth'
-export YourSSHPortNumber='22'
+export YourSSHPortNumber='2222'
 export maxretry='3'
 export REPO_NAME="eth2-quickstart"
 
