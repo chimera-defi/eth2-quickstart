@@ -1,10 +1,25 @@
 # Ethereum Node Quick Setup
 
+Get an ETH2 compatible RPC node setup in seconds!   
+Save at least 2 days compared to CoinCashew and Somersats guides using the automated scripts and included Prysm checkpoint state here!!   
+With your own uncensored & unmetered RPC node!   
+And get ready for the ETH2 merge!   
+
 Setup an Ethereum node quickly with simple shell scripts containing community best practices. 
 Supports multiple client combinations for servers, home solo stakers, and pool node operators.
 Choose from various execution and consensus clients for optimal client diversity.
 
-**⚠️ Security Notice:** Review scripts before execution.
+**⚠️ Security Notice:** Don't blindly run scripts near sensitive data. Review scripts before execution.
+
+## Mission
+
+We try to setup guidelines to quickly, safely and securely setup ETH2 capable nodes on a cloud VPS or bare metal server.   
+
+The goal is to allow sovereign individuals to set up independent validators, and validating services easily.    
+On their own hardware, in their own location, safe from government overreach and censorship.    
+
+Additionally, by using a VPS, they can more easily offer a censorship resistant RPC node for their fellow etherians.   
+(Do you really want to open up an RPC node on your home wifi for the world to use?)
 
 ## Prerequisites
 
@@ -12,6 +27,7 @@ Choose from various execution and consensus clients for optimal client diversity
    - **Recommended specs**: 2-4+ TB SSD/NVMe, 16-64+ GB RAM, 4-8+ cores, Ubuntu 20+
    - **Bare metal VPS preferred** (cloud instances may not finish syncing)
    - **SSH setup**: Configure SSH keys and server access
+   - **Referral link**: $20 free in cloud credits https://hetzner.cloud/?ref=d4Hoyi2u3pwn
 
 2. **System Configuration**:
    - Set swraid 1 & swraidlevel 0 for full disk access
@@ -32,6 +48,8 @@ Choose from various execution and consensus clients for optimal client diversity
    ```bash
    ./run_1.sh
    ```
+   **Read through scripts first** to make sure you understand what is happening and it's correct. It can bork your server.
+   
    - Upgrades Ubuntu and programs
    - Sets up firewalls and security hardening
    - Creates non-root user for safety
@@ -170,7 +188,7 @@ exports.sh → Base Template + Custom Variables → Final Client Config
 
 ## Nginx RPC Setup
 
-Setup a secure uncensored outward facing Ethereum RPC for you and your friends! It's been faster than Infura/Alchemy etc.
+Setup a secure uncensored outward facing Ethereum RPC for you and your friends! It's been faster than Infura/Alchemy etc for me.
 
 ### Basic Setup
 ```bash
@@ -273,26 +291,31 @@ Before running client install scripts, modify configurations:
 - **Automation**: Streamlined installation and configuration
 - **Monitoring**: Built-in security and performance monitoring
 - **MEV-Boost Integration**: Maximize validator rewards
-- **Uncensored RPC**: Run your own censorship-resistant endpoint
+- **Uncensored RPC**: Run your own censorship-resistant endpoint (faster than Infura/Alchemy!)
 - **Enterprise Features**: Advanced monitoring and management
+- **Infrastructure Friendly**: Firewall rules and settings to prevent alerts from your infra provider
 
 ## Credits
 
-This was made possible by the great guides written by:
+This was made possible by the great guides written by Somersat and coincashew.    
 
-- **Someresat**: https://someresat.medium.com/guide-to-staking-on-ethereum-ubuntu-prysm-581fb1969460
-- **Coincashew**: https://www.coincashew.com/coins/overview-eth/guide-or-how-to-setup-a-validator-on-eth2-mainnet/part-i-installation/installing-execution-client
+Additionally, the beacon checkpoint states have been made available by Sharedstake.org and the servers run for its community.   
 
-Additionally, the beacon checkpoint states have been made available by:
-- **Sharedstake.org**: https://Sharedstake.org
-- **Sharedtools.org**: https://sharedtools.org
+**Someresat**: https://someresat.medium.com/guide-to-staking-on-ethereum-ubuntu-prysm-581fb1969460?utm_source=substack&utm_medium=email
 
-## Contact
+**Coincashew**: https://www.coincashew.com/coins/overview-eth/guide-or-how-to-setup-a-validator-on-eth2-mainnet/part-i-installation/installing-execution-client
 
-- **Email**: Chimera_defi@protonmail.com
-- **Twitter**: https://twitter.com/chimeradefi
-- **Issues**: [GitHub Issues](https://github.com/chimera-defi/eth2-quickstart/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/chimera-defi/eth2-quickstart/discussions)
+**Sharedstake.org**: https://Sharedstake.org  
+**Sharedtools.org**: https://sharedtools.org
+
+## Contact for questions / collaboration
+
+**Chimera_defi@protonmail.com**
+
+**Twitter**: https://twitter.com/chimeradefi
+
+**Issues**: [GitHub Issues](https://github.com/chimera-defi/eth2-quickstart/issues)  
+**Discussions**: [GitHub Discussions](https://github.com/chimera-defi/eth2-quickstart/discussions)
 
 ## Additional Documentation
 
