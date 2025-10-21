@@ -7,8 +7,8 @@ All project documentation is organized in the `docs/` folder. Key files include:
 
 - **Configuration**: `docs/CONFIGURATION_GUIDE.md` - Architecture and conventions
 - **Scripting Standards**: `docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md` - Best practices
-- **Testing**: `docs/COMPREHENSIVE_SCRIPT_TESTING_REPORT.md` - Test results and validation
-- **Refactoring**: `docs/REFACTORING_SUMMARY.md` - Recent changes and improvements
+- **Security**: `docs/SECURITY_GUIDE.md` - Comprehensive security documentation
+- **Testing**: `docs/SHELL_SCRIPT_TEST_RESULTS.md` - Test results and validation
 
 ### Code Architecture
 - **Configuration**: Centralized in `exports.sh`, templates in `configs/`

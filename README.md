@@ -301,9 +301,7 @@ Before running client install scripts, modify configurations:
 - **MEV-Boost Integration**: Maximize validator rewards
 
 ### Security Documentation
-- **[Security Index](docs/SECURITY_INDEX.md)** - Comprehensive security documentation guide
-- **[Security Status](docs/SECURITY_STATUS_UPDATE.md)** - Current security implementation status
-- **[Security Audit](docs/SECURITY_AUDIT_REPORT.md)** - Detailed security audit findings
+- **[Security Guide](docs/SECURITY_GUIDE.md)** - Comprehensive security documentation
 - **[Security Verification](docs/verify_security.sh)** - Production-ready security verification tool
 - **Uncensored RPC**: Run your own censorship-resistant endpoint
 - **Enterprise Features**: Advanced monitoring and management (Teku, Nethermind, Besu)
@@ -357,18 +355,15 @@ Twitter: https://twitter.com/chimeradefi
 - Scripts reference: docs/SCRIPTS.md
 - Setup workflow: docs/WORKFLOW.md
 - Terminology: docs/GLOSSARY.md
+- Security guide: docs/SECURITY_GUIDE.md
 
 ### Configuration & Development
 - Configuration guide: docs/CONFIGURATION_GUIDE.md
 - Shell scripting best practices: docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md
-- Refactoring summary: docs/REFACTORING_SUMMARY.md
 
 ### Testing & Validation
-- Comprehensive testing report: docs/COMPREHENSIVE_SCRIPT_TESTING_REPORT.md
 - Shell script test results: docs/SHELL_SCRIPT_TEST_RESULTS.md
-- Final verification: docs/FINAL_VERIFICATION.md
 
 ### Project Management
-- Consolidated PR details: docs/CONSOLIDATED_PR.md
 - Commit message conventions: docs/COMMIT_MESSAGES.md
 - Development progress: docs/progress.md
