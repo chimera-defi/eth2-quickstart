@@ -18,7 +18,7 @@ log_info "Starting system setup - Phase 1..."
 # Use sane defaults - no need to validate since exports.sh has them
 log_info "Using configuration: user=$LOGIN_UNAME, ssh_port=$YourSSHPortNumber, max_retry=$maxretry"
 
-# Check system compatibility
+# Basic system check (minimal)
 check_system_compatibility
 
 # Update system packages
