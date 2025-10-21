@@ -4,8 +4,8 @@
 # NGINX Hardening Script
 # Configures fail2ban to block IPs trying to use server as proxy
 
-source ./exports.sh
-source ./lib/common_functions.sh
+source ../../exports.sh
+source ../../lib/common_functions.sh
 
 log_info "Starting NGINX hardening..."
 

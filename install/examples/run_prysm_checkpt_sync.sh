@@ -5,8 +5,8 @@
 # This script demonstrates how to run Prysm with checkpoint sync
 # for faster initial synchronization
 
-source ../exports.sh
-source ../lib/common_functions.sh
+source ../../exports.sh
+source ../../lib/common_functions.sh
 
 log_info "Starting Prysm checkpoint sync example..."
 
