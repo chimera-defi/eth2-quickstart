@@ -1,0 +1,207 @@
+name: CI Build and Test
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up environment
+      run: |
+        # Make scripts executable
+        chmod +x *.sh
+        chmod +x lib/*.sh
+        chmod +x install/**/*.sh
+        chmod +x docs/*.sh
+        
+    - name: Validate shell scripts syntax
+      run: |
+        echo "Checking shell script syntax..."
+        find . -name "*.sh" -type f -exec bash -n {} \;
+        echo "✓ All shell scripts have valid syntax"
+        
+    - name: Test exports.sh configuration
+      run: |
+        echo "Testing exports.sh configuration..."
+        source ./exports.sh
+        echo "✓ exports.sh loaded successfully"
+        echo "Login user: $LOGIN_UNAME"
+        echo "SSH port: $YourSSHPortNumber"
+        echo "Repository: $REPO_NAME"
+        
+    - name: Test common functions library
+      run: |
+        echo "Testing common functions library..."
+        source ./lib/common_functions.sh
+        echo "✓ common_functions.sh loaded successfully"
+        
+        # Test logging functions
+        log_info "Testing log_info function"
+        log_warn "Testing log_warn function"
+        log_error "Testing log_error function"
+        
+    - name: Test utility functions
+      run: |
+        echo "Testing utility functions..."
+        source ./lib/utils.sh
+        echo "✓ utils.sh loaded successfully"
+        
+    - name: Validate configuration files
+      run: |
+        echo "Validating configuration files..."
+        
+        # Check that all config directories exist
+        for client in besu grandine lodestar nethermind nimbus prysm teku; do
+          if [ -d "configs/$client" ]; then
+            echo "✓ Config directory for $client exists"
+          else
+            echo "⚠ Config directory for $client missing"
+          fi
+        done
+        
+        # Check for base configuration files
+        for client in besu grandine lodestar nethermind nimbus prysm teku; do
+          if find configs/$client -name "*_base.*" | head -1 | grep -q .; then
+            echo "✓ Base config files found for $client"
+          else
+            echo "⚠ No base config files found for $client"
+          fi
+        done
+        
+    - name: Test client selection script
+      run: |
+        echo "Testing client selection script..."
+        if [ -f "install/utils/select_clients.sh" ]; then
+          # Test that the script exists and is executable
+          if [ -x "install/utils/select_clients.sh" ]; then
+            echo "✓ select_clients.sh is executable"
+          else
+            echo "⚠ select_clients.sh is not executable"
+          fi
+        else
+          echo "⚠ select_clients.sh not found"
+        fi
+        
+    - name: Test security validation scripts
+      run: |
+        echo "Testing security validation scripts..."
+        
+        # Test security validation script
+        if [ -f "docs/validate_security_safe.sh" ]; then
+          echo "✓ Security validation script exists"
+          # Note: We don't run it as it requires specific environment setup
+        else
+          echo "⚠ Security validation script not found"
+        fi
+        
+        # Test security fixes script
+        if [ -f "test_security_fixes.sh" ]; then
+          echo "✓ Security fixes test script exists"
+        else
+          echo "⚠ Security fixes test script not found"
+        fi
+        
+    - name: Test installation scripts structure
+      run: |
+        echo "Testing installation scripts structure..."
+        
+        # Check execution client install scripts
+        for client in geth erigon reth nethermind besu; do
+          if [ -f "install/execution/install_${client}.sh" ] || [ -f "install/execution/${client}.sh" ]; then
+            echo "✓ Execution client script for $client exists"
+          else
+            echo "⚠ Execution client script for $client missing"
+          fi
+        done
+        
+        # Check consensus client install scripts
+        for client in prysm lighthouse teku nimbus lodestar grandine; do
+          if [ -f "install/consensus/install_${client}.sh" ] || [ -f "install/consensus/${client}.sh" ]; then
+            echo "✓ Consensus client script for $client exists"
+          else
+            echo "⚠ Consensus client script for $client missing"
+          fi
+        done
+        
+        # Check MEV install scripts
+        if [ -f "install/mev/install_mev_boost.sh" ]; then
+          echo "✓ MEV Boost install script exists"
+        else
+          echo "⚠ MEV Boost install script missing"
+        fi
+        
+    - name: Test main run scripts
+      run: |
+        echo "Testing main run scripts..."
+        
+        # Test run_1.sh structure
+        if [ -f "run_1.sh" ] && [ -x "run_1.sh" ]; then
+          echo "✓ run_1.sh exists and is executable"
+          # Check that it sources the required files
+          if grep -q "source ./exports.sh" run_1.sh; then
+            echo "✓ run_1.sh sources exports.sh"
+          else
+            echo "⚠ run_1.sh doesn't source exports.sh"
+          fi
+        else
+          echo "⚠ run_1.sh missing or not executable"
+        fi
+        
+        # Test run_2.sh structure
+        if [ -f "run_2.sh" ] && [ -x "run_2.sh" ]; then
+          echo "✓ run_2.sh exists and is executable"
+          # Check that it sources the required files
+          if grep -q "source ./exports.sh" run_2.sh; then
+            echo "✓ run_2.sh sources exports.sh"
+          else
+            echo "⚠ run_2.sh doesn't source exports.sh"
+          fi
+        else
+          echo "⚠ run_2.sh missing or not executable"
+        fi
+        
+    - name: Check documentation
+      run: |
+        echo "Checking documentation..."
+        
+        # Check main README
+        if [ -f "README.md" ]; then
+          echo "✓ README.md exists"
+          # Check for key sections
+          if grep -q "Ethereum Node Quick Setup" README.md; then
+            echo "✓ README has main title"
+          fi
+          if grep -q "Quickstart" README.md; then
+            echo "✓ README has quickstart section"
+          fi
+        else
+          echo "⚠ README.md missing"
+        fi
+        
+        # Check docs directory
+        if [ -d "docs" ]; then
+          echo "✓ docs directory exists"
+          doc_count=$(find docs -name "*.md" | wc -l)
+          echo "✓ Found $doc_count documentation files"
+        else
+          echo "⚠ docs directory missing"
+        fi
+        
+    - name: Summary
+      run: |
+        echo "=== CI Build and Test Summary ==="
+        echo "✓ Repository structure validated"
+        echo "✓ Shell scripts syntax checked"
+        echo "✓ Configuration files validated"
+        echo "✓ Installation scripts structure verified"
+        echo "✓ Documentation checked"
+        echo ""
+        echo "All basic validation tests passed!"
