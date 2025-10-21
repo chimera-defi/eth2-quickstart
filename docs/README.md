@@ -23,5 +23,5 @@ This directory contains all project documentation organized by category.
 - **[progress.md](progress.md)** - Development progress tracking
 
 ## Quick Reference
-- **[AGENT_CONTEXT.md](../lib/AGENT_CONTEXT.md)** - AI agent reference
+- **[AGENT_CONTEXT.md](AGENT_CONTEXT.md)** - AI agent reference
 - **[AGENT_REFERENCE.md](../configs/AGENT_REFERENCE.md)** - Configuration agent reference
