@@ -2,6 +2,7 @@
 
 Setup an Ethereum node quickly with simple shell scripts containing community best practices. 
 Supports multiple client combinations for servers, home solo stakers, and pool node operators.
+Choose from various execution and consensus clients for optimal client diversity.
 
 **⚠️ Security Notice:** Review scripts before execution.
 
@@ -185,6 +186,7 @@ All configuration is managed through `exports.sh`:
 ## Benefits
 
 - **Client Diversity**: Support for multiple client implementations
+- **Interactive Selection**: Guided client selection with recommendations
 - **Security**: Comprehensive security hardening
 - **Flexibility**: Choose optimal client combinations
 - **Automation**: Streamlined installation and configuration
