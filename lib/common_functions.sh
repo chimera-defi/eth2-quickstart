@@ -452,7 +452,8 @@ apply_network_security() {
     
     # Apply to all client configuration files
     find configs/ -name "*.yaml" -o -name "*.toml" -o -name "*.cfg" -o -name "*.json" | while read -r config_file; do
-        local client_type=$(basename "$(dirname "$config_file")")
+        local client_type
+        client_type=$(basename "$(dirname "$config_file")")
         configure_network_restrictions "$client_type" "$config_file"
     done
 }
@@ -464,7 +465,8 @@ secure_error_handling() {
     local show_details="${3:-false}"
     
     # Sanitize error message to prevent information disclosure
-    local sanitized_msg=$(echo "$error_msg" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 100)
+    local sanitized_msg
+    sanitized_msg=$(echo "$error_msg" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 100)
     
     case "$log_level" in
         "error")

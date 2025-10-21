@@ -44,9 +44,10 @@ cp /etc/ssh/sshd_config ./
 log_info "Setting up basic system hardening..."
 
 # Dependencies are installed centrally via install_dependencies.sh
-# Configure fail2ban
-log_info "Configuring fail2ban..."
-echo "
+# Install and configure fail2ban
+log_info "Installing and configuring fail2ban..."
+install_dependencies fail2ban
+cat >> /etc/fail2ban/jail.local << EOF
 ## block hosts trying to abuse our server as a forward proxy
 [nginx-proxy]
 enabled = true
@@ -61,7 +62,8 @@ enabled = true
 port = $YourSSHPortNumber
 filter = sshd
 logpath = /var/log/auth.log
-maxretry = $maxretry" >> /etc/fail2ban/jail.local
+maxretry = $maxretry
+EOF
 systemctl restart fail2ban
 
 ## Add eth user

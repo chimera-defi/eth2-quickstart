@@ -46,7 +46,7 @@ fi
 
 # Create Reth directory
 RETH_DIR="$HOME/reth"
-rm -rf "$RETH_DIR"/*
+rm -rf "${RETH_DIR:?}"/*
 ensure_directory "$RETH_DIR"
 
 # Ensure JWT secret exists
