@@ -293,6 +293,101 @@ check_system_requirements() {
     fi
 }
 
+# Check system compatibility for Ethereum node setup
+check_system_compatibility() {
+    log_info "Checking system compatibility..."
+    
+    local issues_found=0
+    
+    # Check if running on supported OS
+    if [[ ! -f /etc/os-release ]]; then
+        log_error "Cannot determine operating system"
+        return 1
+    fi
+    
+    local os_id
+    os_id=$(grep "^ID=" /etc/os-release | cut -d'=' -f2 | tr -d '"')
+    local os_version
+    os_version=$(grep "^VERSION_ID=" /etc/os-release | cut -d'=' -f2 | tr -d '"')
+    
+    case "$os_id" in
+        "ubuntu")
+            # Check Ubuntu version (20.04+)
+            if [[ "$os_version" < "20.04" ]]; then
+                log_error "Ubuntu $os_version is not supported. Minimum version is 20.04"
+                issues_found=$((issues_found + 1))
+            else
+                log_info "✓ Ubuntu $os_version is supported"
+            fi
+            ;;
+        "debian")
+            # Check Debian version (10+)
+            if [[ "$os_version" < "10" ]]; then
+                log_error "Debian $os_version is not supported. Minimum version is 10"
+                issues_found=$((issues_found + 1))
+            else
+                log_info "✓ Debian $os_version is supported"
+            fi
+            ;;
+        *)
+            log_warn "Unsupported operating system: $os_id $os_version"
+            log_warn "This script is designed for Ubuntu 20.04+ or Debian 10+"
+            issues_found=$((issues_found + 1))
+            ;;
+    esac
+    
+    # Check if running as root
+    if [[ $EUID -ne 0 ]]; then
+        log_error "This script must be run as root"
+        issues_found=$((issues_found + 1))
+    else
+        log_info "✓ Running as root"
+    fi
+    
+    # Check available memory (minimum 4GB)
+    local memory_gb
+    memory_gb=$(free -g | awk '/^Mem:/{print $2}')
+    if [[ "$memory_gb" -lt 4 ]]; then
+        log_error "Insufficient memory: ${memory_gb}GB. Minimum required: 4GB"
+        issues_found=$((issues_found + 1))
+    else
+        log_info "✓ Memory check passed: ${memory_gb}GB available"
+    fi
+    
+    # Check available disk space (minimum 100GB)
+    local disk_gb
+    disk_gb=$(df -BG / | tail -1 | awk '{print $4}' | sed 's/G//')
+    if [[ "$disk_gb" -lt 100 ]]; then
+        log_error "Insufficient disk space: ${disk_gb}GB. Minimum required: 100GB"
+        issues_found=$((issues_found + 1))
+    else
+        log_info "✓ Disk space check passed: ${disk_gb}GB available"
+    fi
+    
+    # Check if system is 64-bit
+    local arch
+    arch=$(uname -m)
+    if [[ "$arch" != "x86_64" ]]; then
+        log_error "Unsupported architecture: $arch. Only x86_64 is supported"
+        issues_found=$((issues_found + 1))
+    else
+        log_info "✓ Architecture check passed: $arch"
+    fi
+    
+    # Check if system is not in a container (warn only)
+    if [[ -f /.dockerenv ]] || grep -q "container" /proc/1/cgroup 2>/dev/null; then
+        log_warn "⚠ Running in a container environment. Some features may not work as expected"
+    fi
+    
+    if [[ $issues_found -eq 0 ]]; then
+        log_info "✓ System compatibility check passed"
+        return 0
+    else
+        log_error "✗ System compatibility check failed with $issues_found issues"
+        return 1
+    fi
+}
+
 
 show_installation_complete() {
     local client_name="$1"
@@ -750,4 +845,149 @@ check_service_health() {
     
     log_error "Service $service_name failed health check after ${max_wait} seconds"
     return 1
+}
+
+# Secure password generation
+generate_secure_password() {
+    local length="${1:-16}"
+    local password
+    
+    # Generate a secure random password with mixed case, numbers, and symbols
+    password=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-"$length")
+    
+    # Ensure password has at least one of each required character type
+    while [[ ! "$password" =~ [A-Z] ]] || [[ ! "$password" =~ [a-z] ]] || [[ ! "$password" =~ [0-9] ]]; do
+        password=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-"$length")
+    done
+    
+    echo "$password"
+}
+
+# Secure user creation and setup
+setup_secure_user() {
+    local username="$1"
+    local password="$2"
+    local ssh_key_file="${3:-}"
+    
+    log_info "Setting up secure user: $username"
+    
+    # Create user if it doesn't exist
+    if ! id -u "$username" >/dev/null 2>&1; then
+        log_info "Creating user: $username"
+        if ! useradd -m -d "/home/$username" -s /bin/bash "$username"; then
+            log_error "Failed to create user: $username"
+            return 1
+        fi
+    else
+        log_info "User $username already exists"
+    fi
+    
+    # Set password
+    if [[ -n "$password" ]]; then
+        log_info "Setting password for user: $username"
+        if ! echo "$username:$password" | chpasswd; then
+            log_error "Failed to set password for user: $username"
+            return 1
+        fi
+    fi
+    
+    # Setup SSH directory
+    local ssh_dir="/home/$username/.ssh"
+    mkdir -p "$ssh_dir"
+    chown "$username:$username" "$ssh_dir"
+    chmod 700 "$ssh_dir"
+    
+    # Copy SSH keys if provided
+    if [[ -n "$ssh_key_file" && -f "$ssh_key_file" ]]; then
+        log_info "Copying SSH keys for user: $username"
+        cp "$ssh_key_file" "$ssh_dir/authorized_keys"
+        chown "$username:$username" "$ssh_dir/authorized_keys"
+        chmod 600 "$ssh_dir/authorized_keys"
+    elif [[ -f ~/.ssh/authorized_keys ]]; then
+        log_info "Copying root's SSH keys for user: $username"
+        cp ~/.ssh/authorized_keys "$ssh_dir/authorized_keys"
+        chown "$username:$username" "$ssh_dir/authorized_keys"
+        chmod 600 "$ssh_dir/authorized_keys"
+    fi
+    
+    # Add to sudo group
+    if ! groups "$username" | grep -q sudo; then
+        log_info "Adding user to sudo group: $username"
+        usermod -aG sudo "$username"
+    fi
+    
+    # Copy repository to user's home
+    if [[ -d "../$REPO_NAME" ]]; then
+        log_info "Copying repository to user's home: $username"
+        cp -r "../$REPO_NAME" "/home/$username/"
+        chown -R "$username:$username" "/home/$username/$REPO_NAME"
+        chmod -R +x "/home/$username/$REPO_NAME"
+    fi
+    
+    log_info "✓ User setup completed: $username"
+    return 0
+}
+
+# Configure sudo for user without password
+configure_sudo_nopasswd() {
+    local username="$1"
+    
+    log_info "Configuring sudo without password for user: $username"
+    
+    # Create sudoers file for the user
+    local sudoers_file="/etc/sudoers.d/$username"
+    
+    if [[ -f "$sudoers_file" ]]; then
+        log_info "Sudoers file already exists for $username"
+        return 0
+    fi
+    
+    # Create sudoers entry
+    echo "$username ALL=(ALL) NOPASSWD: ALL" > "$sudoers_file"
+    chmod 440 "$sudoers_file"
+    
+    # Verify sudoers syntax
+    if ! visudo -c -f "$sudoers_file" >/dev/null 2>&1; then
+        log_error "Invalid sudoers syntax for $username"
+        rm -f "$sudoers_file"
+        return 1
+    fi
+    
+    log_info "✓ Sudo configuration completed for $username"
+    return 0
+}
+
+# Generate and display secure handoff information
+generate_handoff_info() {
+    local username="$1"
+    local password="$2"
+    local server_ip="$3"
+    
+    log_info "Generating secure handoff information..."
+    
+    cat << EOF
+
+=== SECURE HANDOFF INFORMATION ===
+
+User: $username
+Password: $password
+Server IP: $server_ip
+
+SSH Connection:
+ssh $username@$server_ip
+
+IMPORTANT SECURITY NOTES:
+1. Change the password immediately after first login
+2. Consider setting up SSH key authentication
+3. The user has sudo privileges without password prompt
+4. All Ethereum client data will be stored in /home/$username
+
+Next Steps:
+1. SSH to the server: ssh $username@$server_ip
+2. Change password: passwd
+3. Run the second phase: ./run_2.sh
+
+=== END HANDOFF INFORMATION ===
+
+EOF
 }

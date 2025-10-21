@@ -37,3 +37,11 @@ When working with this codebase:
 2. Maintain configuration consistency per `docs/CONFIGURATION_GUIDE.md`
 3. Use common functions from `lib/common_functions.sh` to avoid duplication
 4. Reference appropriate documentation for context and standards
+
+## Code Review Process
+Before finishing work and asking for human review:
+1. Create a comprehensive task list and commit it for tracking
+2. Perform at least 3 passes of thorough line-by-line review of your work
+3. Do honest self-assessment and identify any issues
+4. Do more passes (up to 5) if new issues show up in each pass
+5. Ensure all changes follow security best practices and maintain code quality
