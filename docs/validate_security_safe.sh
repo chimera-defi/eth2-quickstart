@@ -175,7 +175,7 @@ log_section "Testing Input Validation Functions"
 
 test_input_validation() {
     # Source the common functions
-    source ../lib/common_functions.sh
+    source lib/common_functions.sh
     
     # Test validate_user_input function
     if declare -f validate_user_input >/dev/null; then
@@ -205,7 +205,7 @@ log_section "Testing File Permission Functions"
 
 test_file_permissions() {
     # Source the common functions
-    source ../lib/common_functions.sh
+    source lib/common_functions.sh
     
     # Create a test file in a safe location
     local test_file
@@ -243,7 +243,7 @@ log_section "Testing Error Handling Functions"
 
 test_error_handling() {
     # Source the common functions
-    source ../lib/common_functions.sh
+    source lib/common_functions.sh
     
     # Test secure_error_handling function
     if declare -f secure_error_handling >/dev/null; then
@@ -333,11 +333,11 @@ log_section "Testing Security Documentation"
 
 test_security_documentation() {
     local required_docs=(
-        "docs/SECURITY_INDEX.md"
-        "docs/SECURITY_STATUS_UPDATE.md"
-        "docs/SECURITY_AUDIT_REPORT.md"
-        "docs/SECURITY_IMPLEMENTATION_SUMMARY.md"
-        "docs/SECURITY_FIXES.md"
+        "docs/SECURITY_GUIDE.md"
+        "docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md"
+        "docs/validate_security_safe.sh"
+        "docs/verify_security.sh"
+        "docs/server_security_validation.sh"
     )
     
     for doc in "${required_docs[@]}"; do
@@ -388,7 +388,7 @@ log_section "Testing Function Definitions"
 
 test_function_definitions() {
     # Source the common functions
-    source ../lib/common_functions.sh
+    source lib/common_functions.sh
     
     local required_functions=(
         "setup_security_monitoring"

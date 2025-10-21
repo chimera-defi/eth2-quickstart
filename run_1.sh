@@ -5,12 +5,33 @@ IFS=$'\n\t'
 # System Setup Script - Phase 1
 # Initial system hardening and user setup
 
+# Source required files with error checking
+if [[ ! -f ./exports.sh ]]; then
+    echo "[ERROR] exports.sh not found" >&2
+    exit 1
+fi
 source ./exports.sh
+
+if [[ ! -f ./lib/utils.sh ]]; then
+    echo "[ERROR] lib/utils.sh not found" >&2
+    exit 1
+fi
 source ./lib/utils.sh
+
+if [[ ! -f ./lib/common_functions.sh ]]; then
+    echo "[ERROR] lib/common_functions.sh not found" >&2
+    exit 1
+fi
 source ./lib/common_functions.sh
+
+# Check if running as root
 require_root
 
 log_info "Starting system setup - Phase 1..."
+
+# Declare local variables
+local USER_PASSWORD
+local SERVER_IP
 
 # Validate critical configuration variables
 log_info "Validating configuration variables..."
@@ -29,9 +50,14 @@ if [[ -z "$maxretry" ]]; then
     exit 1
 fi
 
-# Validate username format
-if ! validate_user_input "$LOGIN_UNAME" "^[a-zA-Z0-9_-]+$" 32; then
-    log_error "Invalid username format: $LOGIN_UNAME"
+if [[ -z "$REPO_NAME" ]]; then
+    log_error "REPO_NAME is not set in exports.sh"
+    exit 1
+fi
+
+# Validate username format (more restrictive)
+if ! validate_user_input "$LOGIN_UNAME" "^[a-z][a-z0-9_-]*$" 32; then
+    log_error "Invalid username format: $LOGIN_UNAME (must start with letter, contain only lowercase letters, numbers, hyphens, underscores)"
     exit 1
 fi
 
@@ -117,7 +143,8 @@ fi
 
 # Configure fail2ban with proper error handling
 log_info "Configuring fail2ban jails..."
-if ! cat >> /etc/fail2ban/jail.local << EOF
+if ! {
+    cat << EOF
 ## block hosts trying to abuse our server as a forward proxy
 [nginx-proxy]
 enabled = true
@@ -136,7 +163,7 @@ maxretry = $maxretry
 bantime = 3600
 findtime = 600
 EOF
-then
+} >> /etc/fail2ban/jail.local; then
     log_error "Failed to configure fail2ban"
     exit 1
 fi
@@ -191,6 +218,12 @@ log_info "✓ Firewall configuration completed"
 
 # Disable shared memory
 log_info "Disabling shared memory for security..."
+# Ensure fstab exists
+if [[ ! -f /etc/fstab ]]; then
+    log_error "fstab file not found: /etc/fstab"
+    exit 1
+fi
+
 if ! append_once /etc/fstab $'tmpfs\t/run/shm\ttmpfs\tro,noexec,nosuid\t0 0'; then
     log_error "Failed to disable shared memory"
     exit 1
@@ -199,19 +232,31 @@ log_info "✓ Shared memory disabled"
 
 # Secure file permissions
 log_info "Securing file permissions..."
-secure_config_files
+if ! secure_config_files; then
+    log_error "Failed to secure configuration files"
+    exit 1
+fi
 
 # Apply network security
 log_info "Applying network security configurations..."
-apply_network_security
+if ! apply_network_security; then
+    log_error "Failed to apply network security configurations"
+    exit 1
+fi
 
 # Setup security monitoring
 log_info "Setting up security monitoring..."
-setup_security_monitoring
+if ! setup_security_monitoring; then
+    log_error "Failed to setup security monitoring"
+    exit 1
+fi
 
 # Setup intrusion detection
 log_info "Setting up intrusion detection..."
-setup_intrusion_detection
+if ! setup_intrusion_detection; then
+    log_error "Failed to setup intrusion detection"
+    exit 1
+fi
 
 # Display system status
 log_info "Displaying system status..."
@@ -227,10 +272,18 @@ echo
 
 # Get server IP for handoff
 log_info "Determining server IP address..."
-SERVER_IP=$(curl -s v4.ident.me 2>/dev/null || curl -s ifconfig.me 2>/dev/null || echo "YOUR_SERVER_IP")
+if ! SERVER_IP=$(curl -s v4.ident.me 2>/dev/null); then
+    if ! SERVER_IP=$(curl -s ifconfig.me 2>/dev/null); then
+        log_warn "Could not determine external IP address"
+        SERVER_IP="YOUR_SERVER_IP"
+    fi
+fi
 
 # Generate and display handoff information
-generate_handoff_info "$LOGIN_UNAME" "$USER_PASSWORD" "$SERVER_IP"
+if ! generate_handoff_info "$LOGIN_UNAME" "$USER_PASSWORD" "$SERVER_IP"; then
+    log_error "Failed to generate handoff information"
+    exit 1
+fi
 
 # Validate handoff setup
 log_info "Validating handoff setup..."
