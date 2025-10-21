@@ -100,16 +100,16 @@ jobs:
               continue
             fi
             
+            # Skip variable-based paths and home directory paths that don't exist in CI
+            if [[ "$source_file" == \$* ]] || [[ "$source_file" == ~/* ]] || [[ "$source_file" == *cargo/env* ]]; then
+              echo "⚠️  Skipping variable/path-based source: $source_file"
+              continue
+            fi
+            
             # Resolve relative paths from the script's directory
             if [[ "$source_file" == ./* ]] || [[ "$source_file" == ../* ]]; then
               # Resolve relative path from script's directory
               resolved_path=$(cd "$script_dir" && realpath "$source_file" 2>/dev/null || echo "$source_file")
-            elif [[ "$source_file" == ~/* ]]; then
-              # Handle home directory paths
-              resolved_path="${source_file/#\~/$HOME}"
-            elif [[ "$source_file" == \$* ]]; then
-              # Skip variable-based paths (like $PROJECT_ROOT/exports.sh)
-              continue
             else
               # Absolute path or simple filename
               resolved_path="$source_file"

@@ -175,7 +175,7 @@ log_section "Testing Input Validation Functions"
 
 test_input_validation() {
     # Source the common functions
-    source lib/common_functions.sh
+    source ../lib/common_functions.sh
     
     # Test validate_user_input function
     if declare -f validate_user_input >/dev/null; then
@@ -205,7 +205,7 @@ log_section "Testing File Permission Functions"
 
 test_file_permissions() {
     # Source the common functions
-    source lib/common_functions.sh
+    source ../lib/common_functions.sh
     
     # Create a test file in a safe location
     local test_file
@@ -243,7 +243,7 @@ log_section "Testing Error Handling Functions"
 
 test_error_handling() {
     # Source the common functions
-    source lib/common_functions.sh
+    source ../lib/common_functions.sh
     
     # Test secure_error_handling function
     if declare -f secure_error_handling >/dev/null; then
@@ -388,7 +388,7 @@ log_section "Testing Function Definitions"
 
 test_function_definitions() {
     # Source the common functions
-    source lib/common_functions.sh
+    source ../lib/common_functions.sh
     
     local required_functions=(
         "setup_security_monitoring"
