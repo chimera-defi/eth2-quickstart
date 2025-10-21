@@ -12,9 +12,8 @@ log_info "Starting NGINX installation..."
 log_info "Server name: $SERVER_NAME"
 log_info "Login username: $LOGIN_UNAME"
 
-# Install NGINX and tools
-log_info "Installing NGINX and dependencies..."
-install_dependencies nginx apache2-utils
+# Dependencies are installed centrally via install_dependencies.sh
+log_info "Configuring NGINX..."
 
 # Create NGINX configuration
 log_info "Creating NGINX configuration..."

@@ -28,11 +28,7 @@ if ! add_ppa_repository "ppa:ethereum/ethereum"; then
     exit 1
 fi
 
-log_info "Installing Geth..."
-if ! install_dependencies ethereum; then
-    log_error "Failed to install Geth"
-    exit 1
-fi
+# Dependencies are installed centrally via install_dependencies.sh
 
 export GETH_CMD='/usr/bin/geth --cache='$GETH_CACHE' --syncmode snap 
 --http --http.addr '$LH' --http.corsdomain "*" --http.vhosts=* --http.api="admin, eth, net, web3, engine" 
