@@ -13,8 +13,7 @@ log_info "Starting Besu installation..."
 # Check system requirements
 check_system_requirements 8 1000
 
-# Install dependencies (Java 11+ required)
-install_dependencies openjdk-17-jdk wget curl unzip
+# Dependencies are installed centrally via install_dependencies.sh
 
 # Setup firewall rules for Besu
 setup_firewall_rules 30303 8545 8546 8551

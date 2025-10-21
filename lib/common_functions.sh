@@ -166,6 +166,25 @@ command_exists() {
 
 # Check system compatibility
 
+# Add PPA repository
+add_ppa_repository() {
+    local ppa="$1"
+    
+    if [[ -z "$ppa" ]]; then
+        log_error "PPA repository not specified"
+        return 1
+    fi
+    
+    log_info "Adding PPA repository: $ppa"
+    if ! sudo add-apt-repository "$ppa" -y; then
+        log_error "Failed to add PPA repository: $ppa"
+        return 1
+    fi
+    
+    log_info "Successfully added PPA repository: $ppa"
+    return 0
+}
+
 # Install dependencies with proper error handling
 install_dependencies() {
     local packages=("$@")
@@ -176,6 +195,10 @@ install_dependencies() {
         log_error "This script requires Ubuntu/Debian system with apt"
         return 1
     fi
+    
+    # Note: For initial setup, consider using the centralized dependency installer:
+    # ./install/utils/install_dependencies.sh
+    # This installs all common dependencies in one place to avoid duplicates
     
     log_info "Updating package lists..."
     if ! sudo apt update -y; then
@@ -200,12 +223,9 @@ setup_firewall_rules() {
     
     # Check if UFW is available
     if ! command_exists ufw; then
-        log_warn "UFW not found - attempting to install..."
-        if ! install_dependencies ufw; then
-            log_warn "Failed to install UFW - firewall rules will not be configured"
-            log_warn "Please manually configure firewall for ports: ${ports[*]}"
-            return 0
-        fi
+        log_error "UFW not found - dependencies should be installed centrally first"
+        log_error "Please run install_dependencies.sh before setting up firewall rules"
+        return 1
     fi
     
     # Check if UFW is active
@@ -670,7 +690,9 @@ setup_intrusion_detection() {
     
     # Install and configure AIDE (Advanced Intrusion Detection Environment)
     if ! command_exists aide; then
-        apt install -y aide
+        log_error "AIDE not found - dependencies should be installed centrally first"
+        log_error "Please run install_dependencies.sh before setting up intrusion detection"
+        return 1
     fi
     
     # Initialize AIDE database

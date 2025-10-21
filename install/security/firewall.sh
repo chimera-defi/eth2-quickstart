@@ -9,12 +9,7 @@ source ./lib/common_functions.sh
 
 log_info "Starting firewall configuration..."
 
-# Install UFW
-log_info "Installing UFW firewall..."
-if ! apt install -y ufw; then
-    log_error "Failed to install UFW"
-    exit 1
-fi
+# UFW is installed centrally via install_dependencies.sh
 
 # Set default policies
 log_info "Setting default firewall policies..."

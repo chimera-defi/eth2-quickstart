@@ -13,8 +13,7 @@ log_info "Starting Nethermind installation..."
 # Check system requirements
 check_system_requirements 16 2000
 
-# Install dependencies
-install_dependencies wget curl unzip
+# Dependencies are installed centrally via install_dependencies.sh
 
 # Setup firewall rules for Nethermind
 setup_firewall_rules 30303 8545 8546 8551

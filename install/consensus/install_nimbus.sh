@@ -13,8 +13,7 @@ log_info "Starting Nimbus installation..."
 # Check system requirements (Nimbus is lightweight)
 check_system_requirements 4 500
 
-# Install dependencies
-install_dependencies wget curl tar build-essential git
+# Dependencies are installed centrally via install_dependencies.sh
 
 # Setup firewall rules for Nimbus
 setup_firewall_rules 9000 5052
