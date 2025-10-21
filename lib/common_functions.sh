@@ -293,6 +293,42 @@ check_system_requirements() {
     fi
 }
 
+# Check system compatibility for Ethereum node setup
+check_system_compatibility() {
+    log_info "Checking system compatibility..."
+    
+    # Check if running as root (only critical check)
+    if [[ $EUID -ne 0 ]]; then
+        log_error "This script must be run as root"
+        return 1
+    fi
+    
+    # Basic OS check (just warn if not Ubuntu/Debian)
+    if [[ -f /etc/os-release ]]; then
+        local os_id
+        os_id=$(grep "^ID=" /etc/os-release | cut -d'=' -f2 | tr -d '"')
+        case "$os_id" in
+            "ubuntu"|"debian")
+                log_info "✓ Running on $os_id"
+                ;;
+            *)
+                log_warn "⚠ Unsupported OS: $os_id (designed for Ubuntu/Debian)"
+                ;;
+        esac
+    fi
+    
+    # Check if system is 64-bit (critical for Ethereum clients)
+    local arch
+    arch=$(uname -m)
+    if [[ "$arch" != "x86_64" ]]; then
+        log_error "Unsupported architecture: $arch (requires x86_64)"
+        return 1
+    fi
+    
+    log_info "✓ System compatibility check passed"
+    return 0
+}
+
 
 show_installation_complete() {
     local client_name="$1"
@@ -750,4 +786,161 @@ check_service_health() {
     
     log_error "Service $service_name failed health check after ${max_wait} seconds"
     return 1
+}
+
+# Secure password generation
+generate_secure_password() {
+    local length="${1:-16}"
+    local password
+    
+    # Generate a secure random password with mixed case, numbers, and symbols
+    password=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-"$length")
+    
+    # Ensure password has at least one of each required character type
+    while [[ ! "$password" =~ [A-Z] ]] || [[ ! "$password" =~ [a-z] ]] || [[ ! "$password" =~ [0-9] ]]; do
+        password=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-"$length")
+    done
+    
+    echo "$password"
+}
+
+# Secure user creation and setup
+setup_secure_user() {
+    local username="$1"
+    local password="$2"
+    local ssh_key_file="${3:-}"
+    
+    log_info "Setting up secure user: $username"
+    
+    # Create user if it doesn't exist
+    if ! id -u "$username" >/dev/null 2>&1; then
+        log_info "Creating user: $username"
+        if ! useradd -m -d "/home/$username" -s /bin/bash "$username"; then
+            log_error "Failed to create user: $username"
+            return 1
+        fi
+    else
+        log_info "User $username already exists"
+    fi
+    
+    # Set password
+    if [[ -n "$password" ]]; then
+        log_info "Setting password for user: $username"
+        if ! echo "$username:$password" | chpasswd; then
+            log_error "Failed to set password for user: $username"
+            return 1
+        fi
+    fi
+    
+    # Setup SSH directory
+    local ssh_dir="/home/$username/.ssh"
+    mkdir -p "$ssh_dir"
+    chown "$username:$username" "$ssh_dir"
+    chmod 700 "$ssh_dir"
+    
+    # Copy SSH keys if provided
+    if [[ -n "$ssh_key_file" && -f "$ssh_key_file" ]]; then
+        log_info "Copying SSH keys for user: $username"
+        if ! cp "$ssh_key_file" "$ssh_dir/authorized_keys"; then
+            log_error "Failed to copy SSH keys for user: $username"
+            return 1
+        fi
+        chown "$username:$username" "$ssh_dir/authorized_keys"
+        chmod 600 "$ssh_dir/authorized_keys"
+    elif [[ -f /root/.ssh/authorized_keys ]]; then
+        log_info "Copying root's SSH keys for user: $username"
+        if ! cp /root/.ssh/authorized_keys "$ssh_dir/authorized_keys"; then
+            log_error "Failed to copy root's SSH keys for user: $username"
+            return 1
+        fi
+        chown "$username:$username" "$ssh_dir/authorized_keys"
+        chmod 600 "$ssh_dir/authorized_keys"
+    fi
+    
+    # Add to sudo group
+    if ! groups "$username" | grep -q sudo; then
+        log_info "Adding user to sudo group: $username"
+        usermod -aG sudo "$username"
+    fi
+    
+    # Copy repository to user's home
+    local repo_name="${REPO_NAME:-eth2-quickstart}"
+    if [[ -d "../$repo_name" ]]; then
+        log_info "Copying repository to user's home: $username"
+        if ! cp -r "../$repo_name" "/home/$username/"; then
+            log_error "Failed to copy repository for user: $username"
+            return 1
+        fi
+        chown -R "$username:$username" "/home/$username/$repo_name"
+        chmod -R +x "/home/$username/$repo_name"
+    else
+        log_warn "Repository directory not found: ../$repo_name"
+    fi
+    
+    log_info "✓ User setup completed: $username"
+    return 0
+}
+
+# Configure sudo for user without password
+configure_sudo_nopasswd() {
+    local username="$1"
+    
+    log_info "Configuring sudo without password for user: $username"
+    
+    # Create sudoers file for the user
+    local sudoers_file="/etc/sudoers.d/$username"
+    
+    if [[ -f "$sudoers_file" ]]; then
+        log_info "Sudoers file already exists for $username"
+        return 0
+    fi
+    
+    # Create sudoers entry
+    echo "$username ALL=(ALL) NOPASSWD: ALL" > "$sudoers_file"
+    chmod 440 "$sudoers_file"
+    
+    # Verify sudoers syntax
+    if ! visudo -c -f "$sudoers_file" >/dev/null 2>&1; then
+        log_error "Invalid sudoers syntax for $username"
+        rm -f "$sudoers_file"
+        return 1
+    fi
+    
+    log_info "✓ Sudo configuration completed for $username"
+    return 0
+}
+
+# Generate and display secure handoff information
+generate_handoff_info() {
+    local username="$1"
+    local password="$2"
+    local server_ip="$3"
+    
+    log_info "Generating secure handoff information..."
+    
+    cat << EOF
+
+=== SECURE HANDOFF INFORMATION ===
+
+User: $username
+Password: $password
+Server IP: $server_ip
+
+SSH Connection:
+ssh $username@$server_ip
+
+IMPORTANT SECURITY NOTES:
+1. Change the password immediately after first login
+2. Consider setting up SSH key authentication
+3. The user has sudo privileges without password prompt
+4. All Ethereum client data will be stored in /home/$username
+
+Next Steps:
+1. SSH to the server: ssh $username@$server_ip
+2. Change password: passwd
+3. Run the second phase: ./run_2.sh
+
+=== END HANDOFF INFORMATION ===
+
+EOF
 }
