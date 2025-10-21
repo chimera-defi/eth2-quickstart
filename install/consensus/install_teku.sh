@@ -13,9 +13,6 @@ log_info "Starting Teku installation..."
 # Check system requirements
 check_system_requirements 16 1000
 
-# Install Java 17 (client-specific dependency)
-install_dependencies openjdk-17-jdk
-
 # Dependencies are installed centrally via install_dependencies.sh
 
 # Setup firewall rules for Teku
