@@ -13,15 +13,6 @@ log_info "Starting Grandine installation..."
 # Check system requirements
 check_system_requirements 16 1000
 
-# Install Rust and dependencies
-if ! command -v cargo &> /dev/null; then
-    log_info "Installing Rust..."
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    source ~/.cargo/env
-else
-    log_info "Rust already installed: $(rustc --version)"
-fi
-
 # Dependencies are installed centrally via install_dependencies.sh
 
 # Setup firewall rules for Grandine

@@ -17,13 +17,7 @@ check_system_requirements 16 2000
 # Source Rust environment
 source "$HOME/.cargo/env"
 
-# Install additional dependencies for Reth
-log_info "Installing Reth-specific dependencies..."
 # Dependencies are installed centrally via install_dependencies.sh
-if false; then
-    log_error "Failed to install Reth dependencies"
-    exit 1
-fi
 
 # Setup firewall rules for Reth
 setup_firewall_rules 30303 30304 42069 4000 4001

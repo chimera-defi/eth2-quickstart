@@ -13,13 +13,7 @@ log_info "Starting Besu installation..."
 # Check system requirements
 check_system_requirements 8 1000
 
-# Install Java 17 (required for Besu)
-log_info "Installing Java 17..."
 # Dependencies are installed centrally via install_dependencies.sh
-if false; then
-    log_error "Failed to install Java 17"
-    exit 1
-fi
 
 # Setup firewall rules for Besu
 setup_firewall_rules 30303 8545 8546 8551
