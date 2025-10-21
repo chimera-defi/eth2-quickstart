@@ -1,9 +1,13 @@
 # Ethereum Node Quick Setup
 
+[![CI Build and Test](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/ci.yml/badge.svg)](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/ci.yml)
+[![Shell Script Linting](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/shellcheck.yml)
+[![Security Validation](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/security.yml/badge.svg)](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/security.yml)
+
 Get an ETH2 compatible RPC node setup in seconds!   
 Save at least 2 days compared to CoinCashew and Somersats guides using the automated scripts and included Prysm checkpoint state here!!   
 With your own uncensored & unmetered RPC node!   
-And get ready for the ETH2 merge!   
+And get ready for the ETH2 merge!
 
 Setup an Ethereum node quickly with simple shell scripts containing community best practices. 
 Supports multiple client combinations for servers, home solo stakers, and pool node operators.
