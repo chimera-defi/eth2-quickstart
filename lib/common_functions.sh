@@ -297,95 +297,36 @@ check_system_requirements() {
 check_system_compatibility() {
     log_info "Checking system compatibility..."
     
-    local issues_found=0
-    
-    # Check if running on supported OS
-    if [[ ! -f /etc/os-release ]]; then
-        log_error "Cannot determine operating system"
+    # Check if running as root (only critical check)
+    if [[ $EUID -ne 0 ]]; then
+        log_error "This script must be run as root"
         return 1
     fi
     
-    local os_id
-    os_id=$(grep "^ID=" /etc/os-release | cut -d'=' -f2 | tr -d '"')
-    local os_version
-    os_version=$(grep "^VERSION_ID=" /etc/os-release | cut -d'=' -f2 | tr -d '"')
-    
-    case "$os_id" in
-        "ubuntu")
-            # Check Ubuntu version (20.04+)
-            if [[ "$os_version" < "20.04" ]]; then
-                log_error "Ubuntu $os_version is not supported. Minimum version is 20.04"
-                issues_found=$((issues_found + 1))
-            else
-                log_info "✓ Ubuntu $os_version is supported"
-            fi
-            ;;
-        "debian")
-            # Check Debian version (10+)
-            if [[ "$os_version" < "10" ]]; then
-                log_error "Debian $os_version is not supported. Minimum version is 10"
-                issues_found=$((issues_found + 1))
-            else
-                log_info "✓ Debian $os_version is supported"
-            fi
-            ;;
-        *)
-            log_warn "Unsupported operating system: $os_id $os_version"
-            log_warn "This script is designed for Ubuntu 20.04+ or Debian 10+"
-            issues_found=$((issues_found + 1))
-            ;;
-    esac
-    
-    # Check if running as root
-    if [[ $EUID -ne 0 ]]; then
-        log_error "This script must be run as root"
-        issues_found=$((issues_found + 1))
-    else
-        log_info "✓ Running as root"
+    # Basic OS check (just warn if not Ubuntu/Debian)
+    if [[ -f /etc/os-release ]]; then
+        local os_id
+        os_id=$(grep "^ID=" /etc/os-release | cut -d'=' -f2 | tr -d '"')
+        case "$os_id" in
+            "ubuntu"|"debian")
+                log_info "✓ Running on $os_id"
+                ;;
+            *)
+                log_warn "⚠ Unsupported OS: $os_id (designed for Ubuntu/Debian)"
+                ;;
+        esac
     fi
     
-    # Check available memory (minimum 4GB)
-    local memory_gb
-    memory_gb=$(free -g | awk '/^Mem:/{print $2}')
-    if [[ "$memory_gb" -lt 4 ]]; then
-        log_error "Insufficient memory: ${memory_gb}GB. Minimum required: 4GB"
-        issues_found=$((issues_found + 1))
-    else
-        log_info "✓ Memory check passed: ${memory_gb}GB available"
-    fi
-    
-    # Check available disk space (minimum 100GB)
-    local disk_gb
-    disk_gb=$(df -BG / | tail -1 | awk '{print $4}' | sed 's/G//')
-    if [[ "$disk_gb" -lt 100 ]]; then
-        log_error "Insufficient disk space: ${disk_gb}GB. Minimum required: 100GB"
-        issues_found=$((issues_found + 1))
-    else
-        log_info "✓ Disk space check passed: ${disk_gb}GB available"
-    fi
-    
-    # Check if system is 64-bit
+    # Check if system is 64-bit (critical for Ethereum clients)
     local arch
     arch=$(uname -m)
     if [[ "$arch" != "x86_64" ]]; then
-        log_error "Unsupported architecture: $arch. Only x86_64 is supported"
-        issues_found=$((issues_found + 1))
-    else
-        log_info "✓ Architecture check passed: $arch"
-    fi
-    
-    # Check if system is not in a container (warn only)
-    if [[ -f /.dockerenv ]] || grep -q "container" /proc/1/cgroup 2>/dev/null; then
-        log_warn "⚠ Running in a container environment. Some features may not work as expected"
-    fi
-    
-    if [[ $issues_found -eq 0 ]]; then
-        log_info "✓ System compatibility check passed"
-        return 0
-    else
-        log_error "✗ System compatibility check failed with $issues_found issues"
+        log_error "Unsupported architecture: $arch (requires x86_64)"
         return 1
     fi
+    
+    log_info "✓ System compatibility check passed"
+    return 0
 }
 
 
