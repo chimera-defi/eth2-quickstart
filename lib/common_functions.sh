@@ -223,12 +223,9 @@ setup_firewall_rules() {
     
     # Check if UFW is available
     if ! command_exists ufw; then
-        log_warn "UFW not found - attempting to install..."
-        if ! install_dependencies ufw; then
-            log_warn "Failed to install UFW - firewall rules will not be configured"
-            log_warn "Please manually configure firewall for ports: ${ports[*]}"
-            return 0
-        fi
+        log_error "UFW not found - dependencies should be installed centrally first"
+        log_error "Please run install_dependencies.sh before setting up firewall rules"
+        return 1
     fi
     
     # Check if UFW is active
