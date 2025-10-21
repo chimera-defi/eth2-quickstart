@@ -120,6 +120,10 @@ case "$client_choice" in
         ;;
 esac
 
+# Note: Security hardening was already applied in run_1.sh
+# This includes: secure_config_files, apply_network_security, 
+# setup_security_monitoring, and setup_intrusion_detection
+
 # Display next steps
 cat << EOF
 
@@ -138,5 +142,40 @@ and confirming it works without SSL, locally, then remotely via your domain name
 Next step is to start syncing via:
 - sudo systemctl start eth1
 - Or try: ./install/utils/start.sh
+
+=== Security Features Enabled ===
+- File integrity monitoring (AIDE) - runs daily at 2 AM
+- Security monitoring - runs every 15 minutes
+- Network security restrictions applied
+- Configuration files secured with proper permissions
+- Firewall rules configured for all client ports
+
+To verify security setup, run: ./test_security_fixes.sh
+
+=== Running Security Validation ===
+log_info "Running security validation..."
+if [[ -f "docs/validate_security_safe.sh" && -x "docs/validate_security_safe.sh" ]]; then
+    log_info "Running code quality validation..."
+    if ./docs/validate_security_safe.sh; then
+        log_info "✓ Security code validation passed"
+    else
+        log_warn "⚠ Security code validation had issues - check output above"
+    fi
+else
+    log_warn "Security validation script not found"
+fi
+
+if [[ -f "docs/server_security_validation.sh" && -x "docs/server_security_validation.sh" ]]; then
+    log_info "Running server security validation..."
+    if ./docs/server_security_validation.sh; then
+        log_info "✓ Server security validation passed"
+    else
+        log_warn "⚠ Server security validation had issues - check output above"
+    fi
+else
+    log_warn "Server security validation script not found"
+fi
+
+log_info "Security validation completed. Check the output above for any issues."
 
 EOF
