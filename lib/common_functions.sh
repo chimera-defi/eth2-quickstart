@@ -900,12 +900,18 @@ setup_secure_user() {
     # Copy SSH keys if provided
     if [[ -n "$ssh_key_file" && -f "$ssh_key_file" ]]; then
         log_info "Copying SSH keys for user: $username"
-        cp "$ssh_key_file" "$ssh_dir/authorized_keys"
+        if ! cp "$ssh_key_file" "$ssh_dir/authorized_keys"; then
+            log_error "Failed to copy SSH keys for user: $username"
+            return 1
+        fi
         chown "$username:$username" "$ssh_dir/authorized_keys"
         chmod 600 "$ssh_dir/authorized_keys"
-    elif [[ -f ~/.ssh/authorized_keys ]]; then
+    elif [[ -f /root/.ssh/authorized_keys ]]; then
         log_info "Copying root's SSH keys for user: $username"
-        cp ~/.ssh/authorized_keys "$ssh_dir/authorized_keys"
+        if ! cp /root/.ssh/authorized_keys "$ssh_dir/authorized_keys"; then
+            log_error "Failed to copy root's SSH keys for user: $username"
+            return 1
+        fi
         chown "$username:$username" "$ssh_dir/authorized_keys"
         chmod 600 "$ssh_dir/authorized_keys"
     fi
@@ -917,11 +923,16 @@ setup_secure_user() {
     fi
     
     # Copy repository to user's home
-    if [[ -d "../$REPO_NAME" ]]; then
+    if [[ -n "$REPO_NAME" && -d "../$REPO_NAME" ]]; then
         log_info "Copying repository to user's home: $username"
-        cp -r "../$REPO_NAME" "/home/$username/"
+        if ! cp -r "../$REPO_NAME" "/home/$username/"; then
+            log_error "Failed to copy repository for user: $username"
+            return 1
+        fi
         chown -R "$username:$username" "/home/$username/$REPO_NAME"
         chmod -R +x "/home/$username/$REPO_NAME"
+    elif [[ -n "$REPO_NAME" ]]; then
+        log_warn "Repository directory not found: ../$REPO_NAME"
     fi
     
     log_info "✓ User setup completed: $username"
