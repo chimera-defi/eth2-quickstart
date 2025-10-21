@@ -8,11 +8,11 @@ set -euo pipefail
 
 # Source common functions
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../../lib/common_functions.sh"
+source ../../lib/common_functions.sh
 
 # Source exports for configuration
 if [[ -f "$SCRIPT_DIR/../../exports.sh" ]]; then
-    source "$SCRIPT_DIR/../../exports.sh"
+    source ../../exports.sh
 else
     export LOGIN_UNAME="eth"
 fi
