@@ -32,8 +32,7 @@ if ! ./install_nginx.sh; then
 fi
 
 # Install dependencies
-log_info "Installing dependencies..."
-install_dependencies git
+# Dependencies are installed centrally via install_dependencies.sh
 
 # Clone and install acme.sh
 log_info "Cloning acme.sh repository..."

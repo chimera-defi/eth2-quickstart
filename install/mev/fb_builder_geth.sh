@@ -13,9 +13,7 @@ log_info "Starting Flashbots Builder Geth installation..."
 # Check system requirements
 check_system_requirements 16 2000
 
-# Install dependencies
-log_info "Installing build dependencies..."
-install_dependencies git build-essential
+# Dependencies are installed centrally via install_dependencies.sh
 
 # Clone Flashbots builder repository
 log_info "Cloning Flashbots builder repository..."
