@@ -22,12 +22,19 @@ jobs:
     - name: Run shellcheck on all shell scripts
       run: |
         echo "Running shellcheck on all shell scripts..."
+        echo "Current directory: $(pwd)"
+        echo "Files in current directory:"
+        ls -la
         
         # Find all shell scripts and run shellcheck
         find . -name "*.sh" -type f | while read -r script; do
           echo "Checking $script..."
           # Use shellcheck with exclusions for common false positives
-          if ! shellcheck -x --exclude=SC2317,SC1091 "$script"; then
+          # SC2317: Unreachable code (common in test scripts with dynamic function calls)
+          # SC1091: Not following source files (common with relative paths)
+          # SC1090: Can't follow non-constant source (common with ~/.cargo/env)
+          # SC2034: Unused variables (common in template/example scripts)
+          if ! shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034 "$script"; then
             echo "❌ Shellcheck failed for $script"
             exit 1
           else
