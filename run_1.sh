@@ -43,9 +43,9 @@ cp /etc/ssh/sshd_config ./
 # Basic hardening
 log_info "Setting up basic system hardening..."
 
-# Install and configure fail2ban
-log_info "Installing and configuring fail2ban..."
-install_dependencies fail2ban
+# Dependencies are installed centrally via install_dependencies.sh
+# Configure fail2ban
+log_info "Configuring fail2ban..."
 echo "
 ## block hosts trying to abuse our server as a forward proxy
 [nginx-proxy]

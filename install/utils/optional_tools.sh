@@ -10,9 +10,8 @@ source ../../lib/common_functions.sh
 
 log_info "Starting optional tools installation..."
 
-# Install network monitoring tools
-log_info "Installing network monitoring tools..."
-install_dependencies bmon slurm tcptrack
+# Dependencies are installed centrally via install_dependencies.sh
+log_info "Network monitoring tools are available..."
 
 log_info "Optional tools installation completed!"
 log_info "Installed tools:"

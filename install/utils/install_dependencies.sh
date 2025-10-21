@@ -29,7 +29,8 @@ ESSENTIAL_PACKAGES=(
     "curl" "wget" "git" "unzip" "build-essential" "python3" "python3-pip"
     "jq" "chrony" "ufw" "aide" "software-properties-common" "snapd"
     "cmake" "libssl-dev" "libgmp-dev" "libtinfo5" "libprotoc" "apt-transport-https" "gnupg"
-    "pkg-config" "openjdk-17-jdk" "libclang-dev"
+    "pkg-config" "openjdk-17-jdk" "libclang-dev" "fail2ban" "nginx" "apache2-utils"
+    "bmon" "slurm" "tcptrack"
 )
 
 install_dependencies "${ESSENTIAL_PACKAGES[@]}"
