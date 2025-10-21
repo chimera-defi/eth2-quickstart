@@ -1,138 +1,140 @@
 # Ethereum Node Quick Setup
 
+Get an ETH2 compatible RPC node setup in seconds!   
+Save at least 2 days compared to CoinCashew and Somersats guides using the automated scripts and included Prysm checkpoint state here!!   
+With your own uncensored & unmetered RPC node!   
+And get ready for the ETH2 merge!   
+
 Setup an Ethereum node quickly with simple shell scripts containing community best practices. 
 Supports multiple client combinations for servers, home solo stakers, and pool node operators.
 Choose from various execution and consensus clients for optimal client diversity.
 
-**⚠️ Security Notice:** Don't blindly run scripts near sensitive data. Review scripts before execution.   
+**⚠️ Security Notice:** Don't blindly run scripts near sensitive data. Review scripts before execution.
 
-# Pre-reqs
-1. Set up cloud vps with a ssh pub key or local server
-    a. Prefer a bare metal vps as it wont finish syncing on cloud
-    b. Recommended specs based on Geth and Prysm
-      - 2 - 4+ TB SSD or NVMe
-      - 16-64+GB of RAM
-      - 4-8+ cores
-      - ubuntu 20+
-  d. SSH in, set up your server.
-      - set swraid 1 & swraidlevel 0 for full disk access and better performance
-      - Note: Fingerprint will change, you will need to rm it from known-hosts after setup every time -> `nano ~/.ssh/known_hosts` and remove the last line corresponding to your new server or run: `sed -i '' -e '$ d' ~/.ssh/known_hosts`
-  e. (Optional) Configure VSCode to work with your server https://code.visualstudio.com/docs/remote/ssh
-    - `cmd shift p` -> add new remote host -> `ssh root@my.ip.`  -> connect
+## Mission
 
+We try to setup guidelines to quickly, safely and securely setup ETH2 capable nodes on a cloud VPS or bare metal server.   
 
-# Quickstart 
+The goal is to allow sovereign individuals to set up independent validators, and validating services easily.    
+On their own hardware, in their own location, safe from government overreach and censorship.    
 
-## Installation
+Additionally, by using a VPS, they can more easily offer a censorship resistant RPC node for their fellow etherians.   
+(Do you really want to open up an RPC node on your home wifi for the world to use?)
 
-1. Download these scripts, initially as root via running this from the terminal; we will automatically create a eth user for safety.     
+## Prerequisites
 
-```
-git clone https://github.com/chimera-defi/eth2-quickstart
-cd eth2-quickstart
-chmod +x run_1.sh
-```
+1. **Server Setup**: Cloud VPS with SSH key or local server
+   - **Recommended specs**: 2-4+ TB SSD/NVMe, 16-64+ GB RAM, 4-8+ cores, Ubuntu 20+
+   - **Bare metal VPS preferred** (cloud instances may not finish syncing)
+   - **SSH setup**: Configure SSH keys and server access
+   - **Referral link**: $20 free in cloud credits https://hetzner.cloud/?ref=d4Hoyi2u3pwn
 
-  
-2. Run server setup script 
-```
-./run_1.sh
-``` 
-  - will upgrade ubuntu and installed programs,   
-  - guide the user on manual steps
-  - setup firewalls, do security hardening,   
-  - install needed programs for setting up a node  
+2. **System Configuration**:
+   - Set swraid 1 & swraidlevel 0 for full disk access
+   - Note: SSH fingerprint changes after setup - remove from known_hosts
 
-  
-4. After it finishes, verify the results and run `sudo reboot`  
-Log back in as the new non-root user `eth@ip`
-- configure `exports.sh` 
+## Quickstart
 
-5. Log back in as the new non-root user `eth@ip`
-- configure `exports.sh` 
-- **Choose your clients:** Run `./select_clients.sh` to get recommendations
-- Run`./run_2.sh` OR manually install your chosen clients:
-   Default setup includes:
-     - prysm (consensus client)
-     - geth (execution client) 
-     - mev-boost
-     - setup systemctl for eth2 services
-6. Start your services via systemctl to confirm successful installation! eth1, beacon-chain & validator
-  
-    ```
-    sudo systemctl start eth1
-    sudo systemctl start cl
-    sudo systemctl start validator
-    sudo systemctl start mev
-    ```
-    Verify they work normally
-    ```
-    sudo systemctl status eth1
-    sudo systemctl status cl
-    sudo systemctl status validator
-    sudo systemctl status mev
-    ```
+### Installation
 
-## Sync and configure 
-**Note: You may be able to skip this step now with checkpoint urls added**
-1. Sync prysm instantly / faster thanks to provided checkpoint files in this repo
+1. **Download and prepare**:
+   ```bash
+   git clone https://github.com/chimera-defi/eth2-quickstart
+   cd eth2-quickstart
+   chmod +x run_1.sh
+   ```
 
-    ```
-    sudo systemctl stop cl
-    sudo systemctl stop validator
-    $(echo $HOME)/prysm/prysm.sh cl --checkpoint-block=$PWD/prysm/block_mainnet_altair_4620512-0xef9957e6a709223202ab00f4ee2435e1d42042ad35e160563015340df677feb0.ssz --checkpoint-state=$PWD/prysm/state_mainnet_altair_4620512-0xc1397f57149c99b3a2166d422a2ee50602e2a2c7da2e31d7ea740216b8fd99ab.ssz --genesis-state=$PWD/prysm/genesis.ssz --config-file=$PWD/prysm/prysm_beacon_conf.yaml --p2p-host-ip=$(curl -s v4.ident.me)
-    ```
-    
-    Remember to restart the beacon-chain and validator afterwards.   
-    ```
-    sudo systemctl restart cl
-    sudo systemctl restart validator
-    ```
-2. Continue using prysm docs to set up the validator using new or old imported keys : https://docs.prylabs.network/docs/install/install-with-script#step-5-run-a-validator-using-prysm
-    - Create a `pass.txt` file in `~/prysm` with your wallets password to enable using the validator service
-3. To speed up geth sync you can try to restart it with other flags in its config, but most likely it will just take a little time running in the background.  Benchmark is 1-3 days.   
+2. **Run server setup** (as root):
+   ```bash
+   ./run_1.sh
+   ```
+   **Read through scripts first** to make sure you understand what is happening and it's correct. It can bork your server.
+   
+   - Upgrades Ubuntu and programs
+   - Sets up firewalls and security hardening
+   - Creates non-root user for safety
+   - Installs required programs
+
+3. **Reboot and configure**:
+   ```bash
+   sudo reboot
+   # Login as new user (default: eth@ip)
+   ```
+
+4. **Configure and install clients**:
+   - Edit `exports.sh` with your settings
+   - Run `./select_clients.sh` for recommendations
+   - Run `./run_2.sh` or install clients manually
+
+5. **Start services**:
+   ```bash
+   sudo systemctl start eth1 cl validator mev
+   sudo systemctl status eth1 cl validator mev
+   ```
+
+## Sync and Configure
+
+**Note: You may be able to skip this step now with checkpoint URLs added**
+
+1. **Sync Prysm instantly** using provided checkpoint files:
+   ```bash
+   sudo systemctl stop cl
+   sudo systemctl stop validator
+   $(echo $HOME)/prysm/prysm.sh cl --checkpoint-block=$PWD/prysm/block_mainnet_altair_4620512-0xef9957e6a709223202ab00f4ee2435e1d42042ad35e160563015340df677feb0.ssz --checkpoint-state=$PWD/prysm/state_mainnet_altair_4620512-0xc1397f57149c99b3a2166d422a2ee50602e2a2c7da2e31d7ea740216b8fd99ab.ssz --genesis-state=$PWD/prysm/genesis.ssz --config-file=$PWD/prysm/prysm_beacon_conf.yaml --p2p-host-ip=$(curl -s v4.ident.me)
+   ```
+   
+   **Restart services after sync:**
+   ```bash
+   sudo systemctl restart cl
+   sudo systemctl restart validator
+   ```
+
+2. **Set up validator** using Prysm documentation:
+   - Create a `pass.txt` file in `~/prysm` with your wallet password
+   - Follow: https://docs.prylabs.network/docs/install/install-with-script#step-5-run-a-validator-using-prysm
+
+3. **Geth sync timing**: Benchmark is 1-3 days running in the background
+
+4. **MEV-Boost testing**: Confirm MEV-Boost is configured and working correctly
+   - Testing guide: https://github.com/flashbots/mev-boost/wiki/Testing
+   - Check validator registration: https://boost.flashbots.net/mev-boost-status-updates/query-validator-registration-status-now
+   - Note: Need 0x prefix on validator pub key
 
 ## Available Ethereum Clients
 
-This repository supports multiple Ethereum client implementations to promote client diversity and provide options for different use cases.
-
 ### Execution Clients (ETH1)
-
 | Client | Language | Description | Best For | Install Script |
 |--------|----------|-------------|----------|----------------|
-| **Geth** | Go | Original Go implementation, most stable | Beginners, stability | `./install_geth.sh` |
-| **Erigon** | Go | Re-architected for efficiency | Performance, fast sync | `./erigon.sh` |
-| **Reth** | Rust | Modern Rust implementation | Performance, modularity | `./reth.sh` |
-| **Nethermind** | C# | Enterprise-focused .NET client | Enterprise, advanced features | `./install_nethermind.sh` |
-| **Besu** | Java | Apache 2.0 licensed, enterprise-ready | Private networks, compliance | `./install_besu.sh` |
+| **Geth** | Go | Original Go implementation, most stable | Beginners, stability | `install_geth.sh` |
+| **Erigon** | Go | Re-architected for efficiency | Performance, fast sync | `install_erigon.sh` |
+| **Reth** | Rust | Modern Rust implementation | Performance, modularity | `install_reth.sh` |
+| **Nethermind** | C# | Enterprise-focused .NET client | Enterprise, advanced features | `install_nethermind.sh` |
+| **Besu** | Java | Apache 2.0 licensed, enterprise-ready | Private networks, compliance | `install_besu.sh` |
 
 ### Consensus Clients (ETH2)
-
 | Client | Language | Description | Best For | Install Script |
 |--------|----------|-------------|----------|----------------|
-| **Prysm** | Go | Well-documented, reliable | Beginners, documentation | `./install_prysm.sh` |
-| **Lighthouse** | Rust | Security-focused, high performance | Performance, security | `./lighthouse.sh` |
-| **Teku** | Java | ConsenSys-developed, enterprise features | Institutional, monitoring | `./install_teku.sh` |
-| **Nimbus** | Nim | Lightweight, resource efficient | Raspberry Pi, low resources | `./install_nimbus.sh` |
-| **Lodestar** | TypeScript | Developer-friendly, modern | Development, TypeScript devs | `./install_lodestar.sh` |
-| **Grandine** | Rust | High-performance, cutting-edge | Advanced users, performance | `./install_grandine.sh` |
+| **Prysm** | Go | Well-documented, reliable | Beginners, documentation | `install_prysm.sh` |
+| **Lighthouse** | Rust | Security-focused, high performance | Performance, security | `install_lighthouse.sh` |
+| **Teku** | Java | ConsenSys-developed, enterprise features | Institutional, monitoring | `install_teku.sh` |
+| **Nimbus** | Nim | Lightweight, resource efficient | Raspberry Pi, low resources | `install_nimbus.sh` |
+| **Lodestar** | TypeScript | Developer-friendly, modern | Development, TypeScript devs | `install_lodestar.sh` |
+| **Grandine** | Rust | High-performance, cutting-edge | Advanced users, performance | `install_grandine.sh` |
 
-### Configuration Architecture
+## Configuration Architecture
 
-This repository follows a consistent configuration pattern across all clients:
-
-#### **Configuration Conventions**
+### Configuration Conventions
 1. **Centralized Variables**: All client-specific settings are defined in `exports.sh`
 2. **Template + Custom Pattern**: Each client has base template configs and custom variable overlays
 3. **Directory Structure**: Each client has its own config directory (e.g., `teku/`, `nimbus/`)
 4. **Merge Strategy**: Install scripts combine base templates with user-specific variables
 
-#### **Configuration Flow**
+### Configuration Flow
 ```
 exports.sh → Base Template + Custom Variables → Final Client Config
 ```
 
-**Example Structure:**
+### Example Structure
 ```
 ├── exports.sh                    # All configuration variables
 ├── configs/
@@ -142,27 +144,31 @@ exports.sh → Base Template + Custom Variables → Final Client Config
 └── install_teku.sh               # Merges base + custom configs
 ```
 
-#### **Key Variables in exports.sh**
-- `NETHERMIND_CACHE`, `BESU_CACHE`, `TEKU_CACHE` - Client-specific memory settings
-- `TEKU_REST_PORT`, `NIMBUS_REST_PORT` - Client-specific API ports  
-- `TEKU_CHECKPOINT_URL`, `LIGHTHOUSE_CHECKPOINT_URL` - Client-specific checkpoint URLs
-- `FEE_RECIPIENT`, `GRAFITTI` - Universal validator settings
+### Key Variables in exports.sh
+- **User settings**: Email, domain, fee recipient, graffiti
+- **Network settings**: Peers, ports, relay URLs
+- **Client settings**: Cache sizes, sync modes, features
+- **Client-specific**: `NETHERMIND_CACHE`, `BESU_CACHE`, `TEKU_CACHE`, etc.
 
-### Client Selection Guide
+## Client Selection Guide
 
-Run the interactive client selection assistant:
-```bash
-chmod +x select_clients.sh
-./select_clients.sh
-```
+### For Beginners
+- **Execution**: Geth (stable, well-documented)
+- **Consensus**: Prysm (user-friendly, good documentation)
 
-**Recommendations by Use Case:**
+### For Performance
+- **Execution**: Reth or Erigon (fast sync, low resource usage)
+- **Consensus**: Lighthouse (fast, efficient)
 
-- **Beginners**: Geth + Prysm (most documentation and support)
-- **Performance**: Erigon/Reth + Lighthouse (optimized for speed)
-- **Resource-Constrained**: Geth + Nimbus (proven on various hardware)
-- **Enterprise**: Nethermind/Besu + Teku (enterprise features)
-- **Client Diversity**: Any minority client combination
+### For Enterprise
+- **Execution**: Besu or Nethermind (enterprise features)
+- **Consensus**: Teku (monitoring, enterprise support)
+
+### For Resource-Constrained
+- **Execution**: Erigon (low memory usage)
+- **Consensus**: Nimbus (lightweight)
+
+## System Requirements
 
 ### System Requirements by Client
 
@@ -173,89 +179,94 @@ chmod +x select_clients.sh
 | **Storage** | 2TB SSD | 4TB NVMe | Fast storage crucial |
 | **Network** | Stable broadband | Unlimited data | Avoid metered connections |
 
-## Setup public RPC endpoint using Nginx
-Setup a secure uncensored outward facing Ethereum RPC for you and your friends!  It's been faster than Infura/alchemy etc for me.
+### Client-Specific Requirements
+- **Geth**: 16 GB RAM, 2 TB SSD
+- **Erigon**: 8 GB RAM, 1 TB SSD  
+- **Reth**: 16 GB RAM, 2 TB SSD
+- **Prysm**: 8 GB RAM, 1 TB SSD
+- **Lighthouse**: 4 GB RAM, 1 TB SSD
 
-1. [Optional RPC] Once geth & prysm are synced, install nginx   
-`./install_nginx.sh`  
-and verify it is working and configured correctly if you want to use the RPC.  
-Use the following command to verify locally:
-    ```
-    curl -X POST http://<ip>/rpc --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":32}' -H 'Content-Type: application/json'
-    ```
-    Replace `<ip>` w/ `$(curl v4.ident.me)` for local.  
-    Replace `<ip>` with your domain name to see if it works for real from a different host.   
-    Use https to check SSL.  
+## Nginx RPC Setup
 
-2. Setup a domain (Optional, helps w/ public RPC)  
-   a. Get a website - e.g. via namecheap  
-  b. Setup DNS records from it to point to your servers public IP  
-  c. Setup Nginx on your server to handle requests and provide a rpc   
+Setup a secure uncensored outward facing Ethereum RPC for you and your friends! It's been faster than Infura/Alchemy etc for me.
 
-3. Setup SSL for your domain. You will need to use `sudo su` to switch back to super user to properly install NGINX an SSL with the provide scripts. 
-  - There are 2 options to configure SSL and NGINX:
-  - `./install_acme_ssl.sh` will use sensible defaults, letencrypt, acme.sh and nginx to setup certificates.  
-  - You can otherwise use `./install_ssl_certbot.sh` to use certbot.
-  - See here for troubleshooting: https://www.nginx.com/blog/using-free-ssltls-certificates-from-lets-encrypt-with-nginx/ 
-
-     a. A lot of the work will be done for you by the script   
-    b. Follow the tutorials here after they finish:   https://certbot.eff.org/  
-    c. Verify it works using `curl -X POST http://$(curl -s v4.ident.me)/rpc --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":32}' -H 'Content-Type: application/json'`
-
-4. Confirm mev boost is configured and working correctly 
-  - https://github.com/flashbots/mev-boost/wiki/Testing
-  - Check validators register properly (Note: Need a 0x prefix on the validator pub key) https://boost.flashbots.net/mev-boost-status-updates/query-validator-registration-status-now
-
-
-5. Security verification and hardening:
-  - Run security verification: `./docs/verify_security.sh`
-  - Test security implementations: `./test_security_fixes.sh`
-  - Monitor security logs: `sudo tail -f /var/log/security_monitor.log`
-  - Check AIDE intrusion detection: `sudo tail -f /var/log/aide_check.log`
-  - Disable root login after everything is confirmed to be working by setting `PermitRootLogin no` in `/etc/ssh/sshd_config`  
-
-# Troubleshooting & Tips
-
-## General Troubleshooting
-
-- **Need to update?** Run `./update.sh`   
-- **Make files executable:** 
+### Basic Setup
 ```bash
-chmod +x *.sh
-chmod +x lib/common_functions.sh
-```
-- **Check disk space:** 
-```bash
-df -hT
-```
-- **Check service status:**
-```bash
-sudo systemctl status eth1 cl validator mev
-```
-- **View logs:**
-```bash
-journalctl -fu eth1    # Execution client logs
-journalctl -fu cl      # Consensus client logs  
-journalctl -fu validator # Validator logs
-journalctl -fu mev     # MEV-Boost logs
+./install_nginx.sh
+./install_ssl.sh
 ```
 
-## Client-Specific Issues
+### Verify RPC Endpoint
+```bash
+# Test locally
+curl -X POST http://$(curl -s v4.ident.me)/rpc --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":32}' -H 'Content-Type: application/json'
 
-### Execution Clients
+# Test with domain (replace with your domain)
+curl -X POST https://yourdomain.com/rpc --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":32}' -H 'Content-Type: application/json'
+```
+
+### Domain Setup (Optional)
+1. **Get a domain**: e.g., via Namecheap
+2. **Setup DNS**: Point A record to your server's public IP
+3. **Configure Nginx**: Handle requests and provide RPC
+
+### SSL Options
+- **ACME.sh**: `./install_acme_ssl.sh` (recommended)
+- **Certbot**: `./install_ssl_certbot.sh`
+
+### Features
+- **RPC/WS endpoints**: Secure access to Ethereum node
+- **SSL/TLS**: Automatic certificate management
+- **Rate limiting**: Protection against abuse
+- **Authentication**: JWT-based access control
+
+## Security Features
+
+### Network Security
+- **Firewall**: UFW with comprehensive rules
+- **Fail2ban**: Protection against brute force attacks
+- **Localhost binding**: Services only accessible locally
+
+### File Security
+- **Secure permissions**: Configuration files (600), directories (700)
+- **Input validation**: Comprehensive validation functions
+- **Error handling**: Sanitized error messages
+
+### Monitoring
+- **Security monitoring**: Real-time threat detection
+- **Process monitoring**: Suspicious activity detection
+- **Log management**: Automated log rotation and analysis
+
+## Troubleshooting
+
+### Common Issues
+1. **Services not starting**: Check logs with `journalctl -u service_name`
+2. **Sync issues**: Verify network connectivity and client status
+3. **Permission errors**: Ensure proper file ownership and permissions
+4. **Port conflicts**: Check for conflicting services
+
+### Client-Specific Issues
+
+#### Execution Clients
 - **Geth**: Most stable, check for port conflicts on 8545, 8546, 30303
 - **Erigon**: Requires more RAM during sync, check `config.yaml` settings
 - **Reth**: Compilation issues? Ensure Rust toolchain is updated
-- **Nethermind**: .NET runtime issues? Check Java installation
+- **Nethermind**: .NET runtime issues? Check .NET installation
 - **Besu**: Java heap size issues? Adjust memory settings in config
 
-### Consensus Clients  
+#### Consensus Clients
 - **Prysm**: Checkpoint sync failing? Update `PRYSM_CPURL` in `exports.sh`
 - **Lighthouse**: Rust compilation issues? Update Rust toolchain
 - **Teku**: Java out of memory? Increase heap size in service file
 - **Nimbus**: Resource constraints? It's designed for low-resource systems
 - **Lodestar**: Node.js issues? Ensure Node.js 16+ is installed
 - **Grandine**: Very new client, check official docs for latest updates
+
+### Getting Help
+1. Check service logs: `journalctl -u service_name -f`
+2. Verify configuration: `./docs/verify_security.sh`
+3. Review documentation: `docs/` directory
+4. Check system requirements
 
 ## Network-Specific Setup
 
@@ -271,104 +282,60 @@ Before running client install scripts, modify configurations:
 - Set appropriate cache sizes based on available RAM
 - Use fast NVMe storage for better performance
 
+## Benefits
 
-# Benefits
-
-## Performance & Reliability
-- **Multiple Client Options**: Choose from 5 execution and 6 consensus clients
-- **Client Diversity**: Improve network resilience by using minority clients
-- **Optimized Configurations**: Pre-tuned settings for each client type
-- **Fast Sync**: Checkpoint sync enabled for rapid initial synchronization
-- **Resource Efficiency**: Options for resource-constrained environments (Nimbus)
-
-## Ease of Use
-- **Interactive Selection**: `./select_clients.sh` guides client choice
-- **Automated Setup**: Reduced setup time compared to manual configuration
-- **Common Functions**: Refactored codebase eliminates duplication
-- **Comprehensive Logging**: Detailed logs and status monitoring
-- **Systemd Integration**: Proper service management and auto-restart
-
-## Security & Infrastructure  
-- **Comprehensive Security**: Enterprise-grade security features integrated into installation
-- **Network Security**: All services bind to localhost only, UFW firewall, Fail2ban protection
-- **File Security**: Secure file permissions, automatic permission management
-- **Input Validation**: Comprehensive validation functions, injection prevention
-- **Security Monitoring**: Real-time monitoring, process monitoring, log analysis
-- **Intrusion Detection**: AIDE file integrity monitoring, daily automated checks
-- **Rate Limiting**: RPC/WS rate limiting, DDoS protection, security headers
-- **Security Testing**: Comprehensive test suite and verification tools
-- **JWT Authentication**: Secure execution/consensus client communication
+- **Client Diversity**: Support for multiple client implementations
+- **Interactive Selection**: Guided client selection with recommendations
+- **Security**: Comprehensive security hardening
+- **Flexibility**: Choose optimal client combinations
+- **Automation**: Streamlined installation and configuration
+- **Monitoring**: Built-in security and performance monitoring
 - **MEV-Boost Integration**: Maximize validator rewards
+- **Uncensored RPC**: Run your own censorship-resistant endpoint (faster than Infura/Alchemy!)
+- **Enterprise Features**: Advanced monitoring and management
+- **Infrastructure Friendly**: Firewall rules and settings to prevent alerts from your infra provider
 
-### Security Documentation
-- **[Security Index](docs/SECURITY_INDEX.md)** - Comprehensive security documentation guide
-- **[Security Status](docs/SECURITY_STATUS_UPDATE.md)** - Current security implementation status
-- **[Security Audit](docs/SECURITY_AUDIT_REPORT.md)** - Detailed security audit findings
-- **[Security Verification](docs/verify_security.sh)** - Production-ready security verification tool
-- **Uncensored RPC**: Run your own censorship-resistant endpoint
-- **Enterprise Features**: Advanced monitoring and management (Teku, Nethermind, Besu)
+## Credits
 
-## Client-Specific Advantages
-- **Geth**: Battle-tested stability, extensive documentation
-- **Erigon**: Faster sync, lower disk usage, better performance  
-- **Reth**: Modern Rust implementation, modular architecture
-- **Nethermind**: Enterprise features, .NET ecosystem integration
-- **Besu**: Permissive licensing, private network support
-- **Lighthouse**: Security-focused, excellent performance
-- **Teku**: Institutional-grade monitoring and management
-- **Nimbus**: Ultra-lightweight, perfect for ARM devices
-- **Lodestar**: Developer-friendly TypeScript implementation
-- **Grandine**: Cutting-edge performance optimizations
+This was made possible by the great guides written by Somersat and coincashew.    
 
-We try to setup guideline to quickly, safely and secury setup ETH2 capable nodes on a cloud vps or bare metal server.  
-Addditionally, there's firewall rules and settings for the clients to not cause alerts from your infra provider.    
+Additionally, the beacon checkpoint states have been made available by Sharedstake.org and the servers run for its community.   
 
-The goal is to allow soverign individuals to set up independent validators, and validating services easily.    
-On their own hardware, in their own location, safe from government overreach and censorship.    
+**Someresat**: https://someresat.medium.com/guide-to-staking-on-ethereum-ubuntu-prysm-581fb1969460?utm_source=substack&utm_medium=email
 
-Additionally, by using a vps, they can more easily offer a censorship resistant rpc node for their fellow etherians.   
+**Coincashew**: https://www.coincashew.com/coins/overview-eth/guide-or-how-to-setup-a-validator-on-eth2-mainnet/part-i-installation/installing-execution-client
 
-# Credits
-This was made possible by the great guides written by:
+**Sharedstake.org**: https://Sharedstake.org  
+**Sharedtools.org**: https://sharedtools.org
 
-- Someresat    
-https://someresat.medium.com/guide-to-staking-on-ethereum-ubuntu-prysm-581fb1969460?utm_source=substack&utm_medium=email
+## Contact for questions / collaboration
 
-and   
+**Chimera_defi@protonmail.com**
 
-- coincashew   
-https://www.coincashew.com/coins/overview-eth/guide-or-how-to-setup-a-validator-on-eth2-mainnet/part-i-installation/installing-execution-client
+**Twitter**: https://twitter.com/chimeradefi
 
+**Issues**: [GitHub Issues](https://github.com/chimera-defi/eth2-quickstart/issues)  
+**Discussions**: [GitHub Discussions](https://github.com/chimera-defi/eth2-quickstart/discussions)
 
-Additionally the beacon checkpoint states have been made available by the servers run for the community of:      
-https://Sharedstake.org
-And 
-https://sharedtools.org
-
-# Contact for qs / collab: 
-
-Chimera_defi@protonmail.com
-
-Twitter: https://twitter.com/chimeradefi
-
-## Additional documentation
+## Additional Documentation
 
 ### Core Documentation
 - Scripts reference: docs/SCRIPTS.md
 - Setup workflow: docs/WORKFLOW.md
 - Terminology: docs/GLOSSARY.md
+- Security guide: docs/SECURITY_GUIDE.md
 
 ### Configuration & Development
 - Configuration guide: docs/CONFIGURATION_GUIDE.md
 - Shell scripting best practices: docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md
-- Refactoring summary: docs/REFACTORING_SUMMARY.md
 
 ### Testing & Validation
-- Comprehensive testing report: docs/COMPREHENSIVE_SCRIPT_TESTING_REPORT.md
 - Shell script test results: docs/SHELL_SCRIPT_TEST_RESULTS.md
-- Final verification: docs/FINAL_VERIFICATION.md
 
 ### Project Management
-- Consolidated PR details: docs/CONSOLIDATED_PR.md
 - Commit message conventions: docs/COMMIT_MESSAGES.md
 - Development progress: docs/progress.md
+
+### AI Agent Reference
+- **Agent Context**: [docs/AGENT_CONTEXT.md](docs/AGENT_CONTEXT.md) - Complete AI agent reference
+- **Quick Reference**: [AGENT_QUICK_REFERENCE.md](AGENT_QUICK_REFERENCE.md) - Quick access to agent docs
