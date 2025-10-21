@@ -77,6 +77,11 @@ Choose from various execution and consensus clients for optimal client diversity
 
 3. **Geth sync timing**: Benchmark is 1-3 days running in the background
 
+4. **MEV-Boost testing**: Confirm MEV-Boost is configured and working correctly
+   - Testing guide: https://github.com/flashbots/mev-boost/wiki/Testing
+   - Check validator registration: https://boost.flashbots.net/mev-boost-status-updates/query-validator-registration-status-now
+   - Note: Need 0x prefix on validator pub key
+
 ## Available Ethereum Clients
 
 ### Execution Clients (ETH1)
@@ -100,16 +105,32 @@ Choose from various execution and consensus clients for optimal client diversity
 
 ## Configuration Architecture
 
-### Centralized Configuration
-All configuration is managed through `exports.sh`:
+### Configuration Conventions
+1. **Centralized Variables**: All client-specific settings are defined in `exports.sh`
+2. **Template + Custom Pattern**: Each client has base template configs and custom variable overlays
+3. **Directory Structure**: Each client has its own config directory (e.g., `teku/`, `nimbus/`)
+4. **Merge Strategy**: Install scripts combine base templates with user-specific variables
+
+### Configuration Flow
+```
+exports.sh → Base Template + Custom Variables → Final Client Config
+```
+
+### Example Structure
+```
+├── exports.sh                    # All configuration variables
+├── configs/
+│   └── teku/
+│       ├── teku_beacon_base.yaml     # Base beacon config template
+│       └── teku_validator_base.yaml  # Base validator config template
+└── install_teku.sh               # Merges base + custom configs
+```
+
+### Key Variables in exports.sh
 - **User settings**: Email, domain, fee recipient, graffiti
 - **Network settings**: Peers, ports, relay URLs
 - **Client settings**: Cache sizes, sync modes, features
-
-### Template System
-- **Base configs**: Located in `configs/` directory
-- **User customization**: Variables from `exports.sh` merged into templates
-- **Client-specific**: Each client has optimized configuration templates
+- **Client-specific**: `NETHERMIND_CACHE`, `BESU_CACHE`, `TEKU_CACHE`, etc.
 
 ## Client Selection Guide
 
@@ -257,12 +278,19 @@ Before running client install scripts, modify configurations:
 
 ## Credits
 
-- **Ethereum Foundation**: For the Ethereum protocol
-- **Client Teams**: For their excellent implementations
-- **Community**: For feedback and contributions
+This was made possible by the great guides written by:
+
+- **Someresat**: https://someresat.medium.com/guide-to-staking-on-ethereum-ubuntu-prysm-581fb1969460
+- **Coincashew**: https://www.coincashew.com/coins/overview-eth/guide-or-how-to-setup-a-validator-on-eth2-mainnet/part-i-installation/installing-execution-client
+
+Additionally, the beacon checkpoint states have been made available by:
+- **Sharedstake.org**: https://Sharedstake.org
+- **Sharedtools.org**: https://sharedtools.org
 
 ## Contact
 
+- **Email**: Chimera_defi@protonmail.com
+- **Twitter**: https://twitter.com/chimeradefi
 - **Issues**: [GitHub Issues](https://github.com/chimera-defi/eth2-quickstart/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/chimera-defi/eth2-quickstart/discussions)
 
