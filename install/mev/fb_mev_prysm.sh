@@ -13,9 +13,11 @@ log_info "Starting Flashbots MEV Prysm installation..."
 # Check system requirements
 check_system_requirements 16 2000
 
-# Install build dependencies
-log_info "Installing build dependencies..."
-install_dependencies cmake libssl-dev libgmp-dev libtinfo5 libprotoc apt-transport-https curl gnupg
+# Install MEV-specific build dependencies
+log_info "Installing MEV-specific build dependencies..."
+install_dependencies cmake libssl-dev libgmp-dev libtinfo5 libprotoc apt-transport-https gnupg
+
+# Dependencies are installed centrally via install_dependencies.sh
 
 # Install Bazel
 log_info "Installing Bazel..."
