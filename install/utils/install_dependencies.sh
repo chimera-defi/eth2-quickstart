@@ -54,6 +54,11 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 # Install Bazel
 sudo apt install -y bazel bazel-5.3.0
 
+# Install certbot
+sudo snap install core
+sudo snap install --classic certbot
+sudo ln -s /snap/bin/certbot /usr/bin/certbot
+
 # Configure time synchronization
 timedatectl set-ntp on
 
