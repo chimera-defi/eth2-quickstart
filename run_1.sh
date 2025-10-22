@@ -30,27 +30,8 @@ apt autoremove -y || log_warn "Some packages could not be removed"
 
 log_info "✓ System packages updated"
 
-# Setup SSH with safe defaults
-log_info "Configuring SSH..."
-[[ -f /etc/ssh/sshd_config ]] && mv /etc/ssh/sshd_config /etc/ssh/sshd_config.bkup
-cp ./configs/sshd_config /etc/ssh/sshd_config
-cp ./configs/ssh_banner /etc/ssh/ssh_banner
-
-# Update SSH port in configuration
-sed -i "s/^Port 22/Port $YourSSHPortNumber/" /etc/ssh/sshd_config
-
-cp /etc/ssh/sshd_config ./configs/ || log_warn "Could not copy SSH config back"
-
-# Quick SSH config validation
-if sshd -t; then
-    log_info "SSH configuration is valid"
-else
-    log_error "SSH configuration is invalid, restoring backup"
-    mv /etc/ssh/sshd_config.bkup /etc/ssh/sshd_config
-    exit 1
-fi
-
-log_info "✓ SSH configured"
+# Setup SSH with security hardening
+configure_ssh
 
 # Install and configure fail2ban
 log_info "Setting up fail2ban..."
