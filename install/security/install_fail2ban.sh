@@ -1,11 +1,8 @@
 #!/bin/bash
-set -Eeuo pipefail
-IFS=$'\n\t'
 
 # Fail2ban Installation and Configuration Script
 # Part of Ethereum Node Setup - Security Section
 
-# Source required files
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
