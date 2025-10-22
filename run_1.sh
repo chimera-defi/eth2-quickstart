@@ -33,32 +33,8 @@ log_info "✓ System packages updated"
 # Setup SSH with security hardening
 configure_ssh "$YourSSHPortNumber"
 
-# Install and configure fail2ban
-log_info "Setting up fail2ban..."
-install_dependencies fail2ban
-
-# Configure fail2ban with sane defaults
-cat >> /etc/fail2ban/jail.local << EOF
-[nginx-proxy]
-enabled = true
-port = 80,443
-filter = nginx-proxy
-logpath = /var/log/nginx/access.log
-maxretry = 2
-bantime = 86400
-
-[sshd]
-enabled = true
-port = $YourSSHPortNumber
-filter = sshd
-logpath = /var/log/auth.log
-maxretry = $maxretry
-bantime = 3600
-findtime = 600
-EOF
-
-systemctl restart fail2ban
-log_info "✓ Fail2ban configured"
+# Setup fail2ban
+setup_fail2ban
 
 # Generate secure password and setup user
 log_info "Setting up user: $LOGIN_UNAME"
