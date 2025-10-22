@@ -947,6 +947,20 @@ configure_ssh() {
     log_info "✓ SSH configured"
 }
 
+# Setup fail2ban with security configurations
+setup_fail2ban() {
+    log_info "Setting up fail2ban..."
+    
+    # Make the script executable and run it
+    chmod +x ./install/security/install_fail2ban.sh
+    if ! ./install/security/install_fail2ban.sh; then
+        log_error "Failed to setup fail2ban"
+        return 1
+    fi
+    
+    log_info "✓ Fail2ban setup complete"
+}
+
 # Generate and display secure handoff information
 generate_handoff_info() {
     local username="$1"
