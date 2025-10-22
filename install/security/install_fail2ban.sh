@@ -3,9 +3,8 @@
 # Fail2ban Installation and Configuration Script
 # Part of Ethereum Node Setup - Security Section
 
-# shellcheck disable=SC1091
+# Source configuration files
 source ../../exports.sh
-# shellcheck disable=SC1091
 source ../../lib/common_functions.sh
 
 # Check if running as root
@@ -19,7 +18,10 @@ install_dependencies fail2ban
 # Configure fail2ban with sane defaults
 log_info "Configuring fail2ban jails..."
 
-# shellcheck disable=SC2154
+# Define variables with fallback defaults
+SSH_PORT="${YourSSHPortNumber:-22}"
+MAX_RETRY="${maxretry:-3}"
+
 cat >> /etc/fail2ban/jail.local << EOF
 [nginx-proxy]
 enabled = true
@@ -31,12 +33,10 @@ bantime = 86400
 
 [sshd]
 enabled = true
-# shellcheck disable=SC2154
-port = $YourSSHPortNumber
+port = $SSH_PORT
 filter = sshd
 logpath = /var/log/auth.log
-# shellcheck disable=SC2154
-maxretry = $maxretry
+maxretry = $MAX_RETRY
 bantime = 3600
 findtime = 600
 EOF
