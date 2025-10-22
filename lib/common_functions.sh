@@ -910,6 +910,40 @@ configure_sudo_nopasswd() {
     return 0
 }
 
+# Setup fail2ban with comprehensive configuration
+setup_fail2ban() {
+    local ssh_port="${1:-22}"
+    local max_retry="${2:-3}"
+    
+    log_info "Setting up fail2ban..."
+    
+    # Install fail2ban
+    install_dependencies fail2ban
+    
+    # Configure fail2ban with comprehensive rules
+    cat >> /etc/fail2ban/jail.local << EOF
+[nginx-proxy]
+enabled = true
+port = 80,443
+filter = nginx-proxy
+logpath = /var/log/nginx/access.log
+maxretry = 2
+bantime = 86400
+
+[sshd]
+enabled = true
+port = $ssh_port
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = $max_retry
+bantime = 3600
+findtime = 600
+EOF
+    
+    systemctl restart fail2ban
+    log_info "✓ Fail2ban configured and started"
+}
+
 # Generate and display secure handoff information
 generate_handoff_info() {
     local username="$1"
