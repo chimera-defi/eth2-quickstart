@@ -37,19 +37,16 @@ cp ./configs/sshd_config /etc/ssh/sshd_config
 cp ./configs/ssh_banner /etc/ssh/ssh_banner
 cp /etc/ssh/sshd_config ./configs/ || log_warn "Could not copy SSH config back"
 
-# Validate SSH configuration
+# Validate SSH configuration (don't restart yet)
 if sshd -t; then
     log_info "SSH configuration is valid"
-    systemctl reload sshd || systemctl restart sshd
-    log_info "SSH service reloaded/restarted"
 else
     log_error "SSH configuration is invalid, restoring backup"
     mv /etc/ssh/sshd_config.bkup /etc/ssh/sshd_config
-    systemctl restart sshd
     exit 1
 fi
 
-log_info "✓ SSH configured"
+log_info "✓ SSH configured (restart required after script completion)"
 
 # Install and configure fail2ban
 log_info "Setting up fail2ban..."
@@ -133,6 +130,14 @@ Generated: $(date)
 EOF
 
 chmod 600 "/root/handoff_info.txt"
+
+# Restart SSH service to apply new configuration
+log_info "Restarting SSH service to apply new configuration..."
+if systemctl restart sshd; then
+    log_info "✓ SSH service restarted successfully"
+else
+    log_warn "SSH service restart failed, but configuration is valid"
+fi
 
 log_info "=== SETUP COMPLETE ==="
 log_info "Reboot required: sudo reboot"
