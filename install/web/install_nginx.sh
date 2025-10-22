@@ -6,6 +6,7 @@
 
 source ../../exports.sh
 source ../../lib/common_functions.sh
+source ../../lib/nginx_functions.sh
 
 log_info "Starting NGINX installation..."
 
