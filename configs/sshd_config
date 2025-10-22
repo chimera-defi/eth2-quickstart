@@ -10,25 +10,34 @@
 
 Include /etc/ssh/sshd_config.d/*.conf
 
-#Port 22
-#AddressFamily any
-#ListenAddress 0.0.0.0
-#ListenAddress ::
+# Security: Use non-default port (configured via exports.sh)
+Port 22
+AddressFamily inet
+ListenAddress 0.0.0.0
 
-#HostKey /etc/ssh/ssh_host_rsa_key
-#HostKey /etc/ssh/ssh_host_ecdsa_key
-#HostKey /etc/ssh/ssh_host_ed25519_key
+# Security: Explicitly specify host key algorithms (prefer Ed25519)
+HostKey /etc/ssh/ssh_host_ed25519_key
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
 
-# Ciphers and keying
-#RekeyLimit default none
+# Security: Explicitly specify key exchange algorithms
+KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group14-sha256
 
-# Logging
-#SyslogFacility AUTH
-#LogLevel INFO
+# Security: Explicitly specify cipher suites
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
 
-# Authentication:
+# Security: Explicitly specify MAC algorithms
+MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha2-256,hmac-sha2-512
 
-#LoginGraceTime 2m
+# Security: Set rekey limits (1GB data or 1 hour)
+RekeyLimit 1G 1h
+
+# Security: Enhanced logging
+SyslogFacility AUTH
+LogLevel VERBOSE
+
+# Security: Reduce login grace time
+LoginGraceTime 30s
 
 # Expect .ssh/authorized_keys2 to be disregarded by default in future.
 #AuthorizedKeysFile	.ssh/authorized_keys .ssh/authorized_keys2
@@ -107,11 +116,46 @@ PrintMotd no
 # no default banner path
 #Banner none
 
-# Allow client to pass locale environment variables
+# Security: Restrict environment variables
 AcceptEnv LANG LC_*
 
-# override default of no subsystems
-Subsystem sftp	/usr/lib/openssh/sftp-server
+# Security: Disable SFTP if not needed (comment out if SFTP is required)
+# Subsystem sftp	/usr/lib/openssh/sftp-server
+
+# Security: Additional hardening
+# Disable unused authentication methods
+GSSAPIAuthentication no
+KerberosAuthentication no
+HostbasedAuthentication no
+
+# Security: Restrict authentication methods
+AuthenticationMethods publickey
+
+# Security: Connection limits and timeouts
+MaxStartups 10:30:60
+ClientAliveInterval 300
+ClientAliveCountMax 2
+
+# Security: Disable unnecessary features
+AllowTcpForwarding no
+GatewayPorts no
+PermitTunnel no
+AllowAgentForwarding no
+
+# Security: Disable X11 forwarding for server environments
+X11Forwarding no
+
+# Security: Disable compression (can be used for timing attacks)
+Compression no
+
+# Security: Disable user environment processing
+PermitUserEnvironment no
+
+# Security: Disable DNS lookups (prevents delays and potential leaks)
+UseDNS no
+
+# Security: Add security banner
+Banner /etc/ssh/ssh_banner
 
 # Example of overriding settings on a per-user basis
 #Match User anoncvs

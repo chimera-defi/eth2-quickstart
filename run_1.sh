@@ -34,7 +34,20 @@ log_info "✓ System packages updated"
 log_info "Configuring SSH..."
 [[ -f /etc/ssh/sshd_config ]] && mv /etc/ssh/sshd_config /etc/ssh/sshd_config.bkup
 cp ./configs/sshd_config /etc/ssh/sshd_config
+cp ./configs/ssh_banner /etc/ssh/ssh_banner
 cp /etc/ssh/sshd_config ./configs/ || log_warn "Could not copy SSH config back"
+
+# Validate SSH configuration
+if sshd -t; then
+    log_info "SSH configuration is valid"
+    systemctl reload sshd || systemctl restart sshd
+    log_info "SSH service reloaded/restarted"
+else
+    log_error "SSH configuration is invalid, restoring backup"
+    mv /etc/ssh/sshd_config.bkup /etc/ssh/sshd_config
+    systemctl restart sshd
+    exit 1
+fi
 
 log_info "✓ SSH configured"
 
