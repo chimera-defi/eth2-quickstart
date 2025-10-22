@@ -912,6 +912,14 @@ configure_sudo_nopasswd() {
 
 # Configure SSH with security hardening
 configure_ssh() {
+    local ssh_port="$1"
+    
+    # Validate parameter
+    if [[ -z "$ssh_port" ]]; then
+        log_error "SSH port parameter is required"
+        return 1
+    fi
+    
     log_info "Configuring SSH with security hardening..."
     
     # Backup existing SSH config
@@ -922,7 +930,7 @@ configure_ssh() {
     cp ./configs/ssh_banner /etc/ssh/ssh_banner
     
     # Update SSH port in configuration
-    sed -i "s/^Port 22/Port $YourSSHPortNumber/" /etc/ssh/sshd_config
+    sed -i "s/^Port 22/Port $ssh_port/" /etc/ssh/sshd_config
     
     # Copy back for version control
     cp /etc/ssh/sshd_config ./configs/ || log_warn "Could not copy SSH config back"
