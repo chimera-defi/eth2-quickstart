@@ -38,11 +38,13 @@ cp ./configs/ssh_banner /etc/ssh/ssh_banner
 cp /etc/ssh/sshd_config ./configs/ || log_warn "Could not copy SSH config back"
 
 # Quick SSH config validation
-sshd -t && log_info "SSH configuration is valid" || {
+if sshd -t; then
+    log_info "SSH configuration is valid"
+else
     log_error "SSH configuration is invalid, restoring backup"
     mv /etc/ssh/sshd_config.bkup /etc/ssh/sshd_config
     exit 1
-}
+fi
 
 log_info "✓ SSH configured"
 
