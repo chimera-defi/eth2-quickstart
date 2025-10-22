@@ -7,7 +7,6 @@ IFS=$'\n\t'
 
 # Source required files
 source ./exports.sh
-source ./lib/utils.sh
 source ./lib/common_functions.sh
 
 # Check if running as root
