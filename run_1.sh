@@ -22,31 +22,10 @@ apt upgrade -y
 apt full-upgrade -y
 apt autoremove -y || log_warn "Some packages could not be removed"
 
-# SSH and fail2ban setup
+# SSH setup
 [[ -f /etc/ssh/sshd_config ]] && mv /etc/ssh/sshd_config /etc/ssh/sshd_config.bkup
 cp ./sshd_config /etc/ssh/sshd_config
 cp /etc/ssh/sshd_config ./ || log_warn "Could not copy SSH config back"
-
-install_dependencies fail2ban
-cat >> /etc/fail2ban/jail.local << EOF
-[nginx-proxy]
-enabled = true
-port = 80,443
-filter = nginx-proxy
-logpath = /var/log/nginx/access.log
-maxretry = 2
-bantime = 86400
-
-[sshd]
-enabled = true
-port = $YourSSHPortNumber
-filter = sshd
-logpath = /var/log/auth.log
-maxretry = $maxretry
-bantime = 3600
-findtime = 600
-EOF
-systemctl restart fail2ban
 
 # User setup and security hardening
 USER_PASSWORD=$(generate_secure_password 16)
@@ -59,6 +38,7 @@ chmod +x ./install/security/firewall.sh
 append_once /etc/fstab $'tmpfs\t/run/shm\ttmpfs\tro,noexec,nosuid\t0 0'
 
 # Apply comprehensive security configurations
+setup_fail2ban "$YourSSHPortNumber" "$maxretry"
 secure_config_files
 apply_network_security
 setup_security_monitoring
