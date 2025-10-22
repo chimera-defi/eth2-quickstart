@@ -31,7 +31,7 @@ apt autoremove -y || log_warn "Some packages could not be removed"
 log_info "✓ System packages updated"
 
 # Setup SSH with security hardening
-configure_ssh
+configure_ssh "$YourSSHPortNumber"
 
 # Install and configure fail2ban
 log_info "Setting up fail2ban..."
