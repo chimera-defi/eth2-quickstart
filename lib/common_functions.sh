@@ -910,6 +910,43 @@ configure_sudo_nopasswd() {
     return 0
 }
 
+# Configure SSH with security hardening
+configure_ssh() {
+    local ssh_port="$1"
+    
+    # Validate parameter
+    if [[ -z "$ssh_port" ]]; then
+        log_error "SSH port parameter is required"
+        return 1
+    fi
+    
+    log_info "Configuring SSH with security hardening..."
+    
+    # Backup existing SSH config
+    [[ -f /etc/ssh/sshd_config ]] && mv /etc/ssh/sshd_config /etc/ssh/sshd_config.bkup
+    
+    # Copy new SSH config and banner
+    cp ./configs/sshd_config /etc/ssh/sshd_config
+    cp ./configs/ssh_banner /etc/ssh/ssh_banner
+    
+    # Update SSH port in configuration
+    sed -i "s/^Port 22/Port $ssh_port/" /etc/ssh/sshd_config
+    
+    # Copy back for version control
+    cp /etc/ssh/sshd_config ./configs/ || log_warn "Could not copy SSH config back"
+    
+    # Quick SSH config validation
+    if sshd -t; then
+        log_info "SSH configuration is valid"
+    else
+        log_error "SSH configuration is invalid, restoring backup"
+        mv /etc/ssh/sshd_config.bkup /etc/ssh/sshd_config
+        exit 1
+    fi
+    
+    log_info "✓ SSH configured"
+}
+
 # Generate and display secure handoff information
 generate_handoff_info() {
     local username="$1"

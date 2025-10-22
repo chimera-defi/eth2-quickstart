@@ -30,13 +30,8 @@ apt autoremove -y || log_warn "Some packages could not be removed"
 
 log_info "✓ System packages updated"
 
-# Setup SSH with safe defaults
-log_info "Configuring SSH..."
-[[ -f /etc/ssh/sshd_config ]] && mv /etc/ssh/sshd_config /etc/ssh/sshd_config.bkup
-cp ./sshd_config /etc/ssh/sshd_config
-cp /etc/ssh/sshd_config ./ || log_warn "Could not copy SSH config back"
-
-log_info "✓ SSH configured"
+# Setup SSH with security hardening
+configure_ssh "$YourSSHPortNumber"
 
 # Install and configure fail2ban
 log_info "Setting up fail2ban..."
