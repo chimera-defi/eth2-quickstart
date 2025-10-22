@@ -16,6 +16,7 @@ Include /etc/ssh/sshd_config.d/*.conf
 
 # Port: Use non-default port for security through obscurity
 # Note: Port should be configured via exports.sh (YourSSHPortNumber)
+# This will be replaced by the script with the actual port from exports.sh
 Port 22
 
 # AddressFamily: Only use IPv4 to reduce attack surface
@@ -46,7 +47,7 @@ KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,
 
 # Ciphers: Encryption algorithms (prefer AEAD ciphers with built-in authentication)
 # Security: ChaCha20-Poly1305 and AES-GCM provide authenticated encryption
-Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com
 
 # MACs: Message authentication codes (only used with non-AEAD ciphers)
 # Security: ETM (Encrypt-then-MAC) prevents timing attacks
@@ -136,13 +137,13 @@ ClientAliveCountMax 2
 # Security: Prevents X11-based attacks and reduces attack surface
 X11Forwarding no
 
-# AllowTcpForwarding: Disable TCP port forwarding
-# Security: Prevents unauthorized port forwarding attacks
-AllowTcpForwarding no
+# AllowTcpForwarding: Allow local port forwarding only
+# Security: Allows legitimate port forwarding while preventing remote forwarding
+AllowTcpForwarding local
 
-# AllowAgentForwarding: Disable SSH agent forwarding
-# Security: Prevents credential theft through agent forwarding
-AllowAgentForwarding no
+# AllowAgentForwarding: Allow SSH agent forwarding
+# Security: Allows legitimate key forwarding for multi-server access
+AllowAgentForwarding yes
 
 # PermitTunnel: Disable SSH tunneling
 # Security: Prevents unauthorized VPN-like functionality
@@ -174,17 +175,17 @@ GSSAPIAuthentication no
 KerberosAuthentication no
 HostbasedAuthentication no
 
-# AuthenticationMethods: Restrict to public key only
-# Security: Forces key-based authentication, most secure method
-AuthenticationMethods publickey
+# AuthenticationMethods: Allow public key authentication
+# Security: Prefers key-based authentication but allows fallback
+# Note: Removed publickey-only restriction to prevent lockouts
 
 # =============================================================================
 # FILE TRANSFER AND SUBSYSTEMS
 # =============================================================================
 
-# Subsystem sftp: Disable SFTP if not needed
-# Security: Reduces attack surface (uncomment if SFTP is required)
-# Subsystem sftp	/usr/lib/openssh/sftp-server
+# Subsystem sftp: Enable SFTP for file operations
+# Security: Allows secure file transfers needed for node management
+Subsystem sftp	/usr/lib/openssh/sftp-server
 
 # =============================================================================
 # ENVIRONMENT AND BANNER
