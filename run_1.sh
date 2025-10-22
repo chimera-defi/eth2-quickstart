@@ -33,8 +33,8 @@ log_info "✓ System packages updated"
 # Setup SSH with safe defaults
 log_info "Configuring SSH..."
 [[ -f /etc/ssh/sshd_config ]] && mv /etc/ssh/sshd_config /etc/ssh/sshd_config.bkup
-cp ./sshd_config /etc/ssh/sshd_config
-cp /etc/ssh/sshd_config ./ || log_warn "Could not copy SSH config back"
+cp ./configs/sshd_config /etc/ssh/sshd_config
+cp /etc/ssh/sshd_config ./configs/ || log_warn "Could not copy SSH config back"
 
 log_info "✓ SSH configured"
 
