@@ -15,102 +15,78 @@ Include /etc/ssh/sshd_config.d/*.conf
 # =============================================================================
 
 # Port: Use non-default port for security through obscurity
-# Note: Port should be configured via exports.sh (YourSSHPortNumber)
-# This will be replaced by the script with the actual port from exports.sh
+# Note: Port will be replaced by script with YourSSHPortNumber from exports.sh
 Port 22
 
 # AddressFamily: Only use IPv4 to reduce attack surface
-# Security: Prevents IPv6-based attacks and simplifies firewall rules
 AddressFamily inet
 
-# ListenAddress: Listen on all interfaces (0.0.0.0)
-# Security: Controlled by firewall rules, not SSH binding
+# ListenAddress: Listen on all interfaces (controlled by firewall)
 ListenAddress 0.0.0.0
-
-# =============================================================================
-# HOST KEY CONFIGURATION
-# =============================================================================
-
-# HostKey: Specify host key algorithms in order of preference
-# Security: Ed25519 is fastest and most secure, RSA provides compatibility
-HostKey /etc/ssh/ssh_host_ed25519_key
-HostKey /etc/ssh/ssh_host_rsa_key
-HostKey /etc/ssh/ssh_host_ecdsa_key
 
 # =============================================================================
 # CRYPTOGRAPHIC CONFIGURATION
 # =============================================================================
 
+# HostKey: Specify host key algorithms (Ed25519 preferred)
+HostKey /etc/ssh/ssh_host_ed25519_key
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+
 # KexAlgorithms: Key exchange algorithms (prefer modern curves)
-# Security: Curve25519 is fastest, ECDH provides compatibility, DH groups for legacy
 KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group14-sha256
 
-# Ciphers: Encryption algorithms (prefer AEAD ciphers with built-in authentication)
-# Security: ChaCha20-Poly1305 and AES-GCM provide authenticated encryption
+# Ciphers: Encryption algorithms (AEAD ciphers with built-in authentication)
 Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com
 
 # MACs: Message authentication codes (only used with non-AEAD ciphers)
-# Security: ETM (Encrypt-then-MAC) prevents timing attacks
 MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha2-256,hmac-sha2-512
 
 # RekeyLimit: Force rekeying after data limit or time limit
-# Security: Prevents long-lived keys from being compromised
 RekeyLimit 1G 1h
 
 # =============================================================================
 # LOGGING CONFIGURATION
 # =============================================================================
 
-# SyslogFacility: Send logs to AUTH facility
-# Security: Centralized logging for security monitoring
+# SyslogFacility: Send logs to AUTH facility for security monitoring
 SyslogFacility AUTH
 
 # LogLevel: Enhanced logging for security analysis
-# Security: VERBOSE level provides detailed connection information
 LogLevel VERBOSE
 
 # =============================================================================
 # AUTHENTICATION CONFIGURATION
 # =============================================================================
 
-# LoginGraceTime: Time allowed for authentication
-# Security: Reduces window for brute force attacks
+# LoginGraceTime: Time allowed for authentication (reduces brute force window)
 LoginGraceTime 30s
 
 # PasswordAuthentication: Disable password-based authentication
-# Security: Prevents brute force attacks and credential theft
 PasswordAuthentication no
 
 # PermitEmptyPasswords: Disable empty passwords
-# Security: Prevents accounts with no password from logging in
 PermitEmptyPasswords no
 
 # PermitRootLogin: Allow root login only with keys
-# Security: Prevents direct root password attacks
 PermitRootLogin prohibit-password
 
 # StrictModes: Check file permissions strictly
-# Security: Prevents unauthorized access to key files
 StrictModes yes
 
 # MaxAuthTries: Maximum authentication attempts per connection
-# Security: Limits brute force attempts
 MaxAuthTries 6
 
 # MaxSessions: Maximum concurrent sessions per connection
-# Security: Prevents resource exhaustion attacks
 MaxSessions 10
 
 # PubkeyAuthentication: Enable public key authentication
-# Security: More secure than passwords, resistant to brute force
 PubkeyAuthentication yes
 
 # KbdInteractiveAuthentication: Disable keyboard-interactive auth
-# Security: Prevents PAM-based password authentication
 KbdInteractiveAuthentication no
 
 # UsePAM: Enable PAM for account/session management
-# Security: Allows system-level account policies
 UsePAM yes
 
 # =============================================================================
@@ -118,51 +94,40 @@ UsePAM yes
 # =============================================================================
 
 # MaxStartups: Connection limits (max:drop_rate:max_connections)
-# Security: Prevents connection flooding attacks
 MaxStartups 10:30:60
 
-# ClientAliveInterval: Send keepalive messages every N seconds
-# Security: Detects dead connections and prevents resource leaks
+# ClientAliveInterval: Send keepalive messages every 300 seconds
 ClientAliveInterval 300
 
 # ClientAliveCountMax: Maximum keepalive messages before disconnect
-# Security: Closes idle connections after 10 minutes (300*2)
 ClientAliveCountMax 2
 
 # =============================================================================
 # FEATURE RESTRICTIONS
 # =============================================================================
 
-# X11Forwarding: Disable X11 forwarding
-# Security: Prevents X11-based attacks and reduces attack surface
+# X11Forwarding: Disable X11 forwarding (not needed for server)
 X11Forwarding no
 
 # AllowTcpForwarding: Allow local port forwarding only
-# Security: Allows legitimate port forwarding while preventing remote forwarding
 AllowTcpForwarding local
 
-# AllowAgentForwarding: Allow SSH agent forwarding
-# Security: Allows legitimate key forwarding for multi-server access
+# AllowAgentForwarding: Allow SSH agent forwarding for multi-server access
 AllowAgentForwarding yes
 
 # PermitTunnel: Disable SSH tunneling
-# Security: Prevents unauthorized VPN-like functionality
 PermitTunnel no
 
 # GatewayPorts: Disable gateway ports
-# Security: Prevents binding to privileged ports
 GatewayPorts no
 
-# Compression: Disable compression
-# Security: Prevents timing attacks through compression analysis
+# Compression: Disable compression (prevents timing attacks)
 Compression no
 
 # PermitUserEnvironment: Disable user environment processing
-# Security: Prevents environment variable-based attacks
 PermitUserEnvironment no
 
-# UseDNS: Disable DNS lookups
-# Security: Prevents information leakage and connection delays
+# UseDNS: Disable DNS lookups (prevents delays and leaks)
 UseDNS no
 
 # =============================================================================
@@ -170,21 +135,15 @@ UseDNS no
 # =============================================================================
 
 # Disable unused authentication methods
-# Security: Reduces attack surface by disabling unnecessary auth methods
 GSSAPIAuthentication no
 KerberosAuthentication no
 HostbasedAuthentication no
-
-# AuthenticationMethods: Allow public key authentication
-# Security: Prefers key-based authentication but allows fallback
-# Note: Removed publickey-only restriction to prevent lockouts
 
 # =============================================================================
 # FILE TRANSFER AND SUBSYSTEMS
 # =============================================================================
 
 # Subsystem sftp: Enable SFTP for file operations
-# Security: Allows secure file transfers needed for node management
 Subsystem sftp	/usr/lib/openssh/sftp-server
 
 # =============================================================================
@@ -192,11 +151,9 @@ Subsystem sftp	/usr/lib/openssh/sftp-server
 # =============================================================================
 
 # AcceptEnv: Allow only essential environment variables
-# Security: Prevents environment variable-based attacks
 AcceptEnv LANG LC_*
 
 # Banner: Display security warning
-# Security: Legal protection and deterrent for unauthorized access
 Banner /etc/ssh/ssh_banner
 
 # =============================================================================
@@ -204,16 +161,10 @@ Banner /etc/ssh/ssh_banner
 # =============================================================================
 
 # PrintMotd: Disable message of the day
-# Security: Reduces information disclosure
 PrintMotd no
 
 # ChallengeResponseAuthentication: Disable challenge-response
-# Security: Prevents PAM-based password authentication
 ChallengeResponseAuthentication no
-
-# =============================================================================
-# EXAMPLE USER-SPECIFIC OVERRIDES
-# =============================================================================
 
 # Example of overriding settings on a per-user basis
 #Match User anoncvs
