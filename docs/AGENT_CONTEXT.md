@@ -21,12 +21,21 @@ All project documentation is organized in the `docs/` folder. Key files include:
 2. **Common Functions**: Reusable utilities to avoid code duplication
 3. **Strict Shell Mode**: All scripts use `set -Eeuo pipefail`
 4. **Standardized Logging**: Colored output with consistent messaging
+5. **Concise Scripting**: Prefer consolidated operations and minimal logging for better readability
 
 ### When Modifying Scripts
 1. Follow shell scripting best practices from `SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md`
 2. Use functions from `lib/common_functions.sh` when possible
 3. Maintain configuration consistency per `CONFIGURATION_GUIDE.md`
 4. Test changes and update documentation as needed
+
+### Refactoring Guidelines
+When refactoring scripts for conciseness:
+1. **Consolidate logging**: Combine related operations and reduce verbose status messages
+2. **Merge similar operations**: Batch related commands using `&&` operators where appropriate
+3. **Preserve functionality**: Ensure all security features and user interactions are maintained
+4. **Maintain readability**: Keep code clear and well-commented despite reduced line count
+5. **Test thoroughly**: Verify syntax and functionality after refactoring
 
 ### Client Installation Flow
 1. Check system requirements
