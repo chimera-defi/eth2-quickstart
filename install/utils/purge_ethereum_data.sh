@@ -4,8 +4,6 @@
 # Removes all Ethereum client data directories for clean client switching
 # Usage: ./purge_ethereum_data.sh [--confirm] [--dry-run]
 
-set -euo pipefail
-
 # Source common functions
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source ../../lib/common_functions.sh
