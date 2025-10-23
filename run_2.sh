@@ -1,6 +1,4 @@
 #!/bin/bash
-set -Eeuo pipefail
-IFS=$'\n\t'
 
 # System Setup Script - Phase 2
 # This script should be run as the non-root user

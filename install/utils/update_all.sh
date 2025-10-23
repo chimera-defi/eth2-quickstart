@@ -11,8 +11,6 @@
 #   --force         Force update even if there are local changes (git only)
 #   --rollback      Rollback to previous version if available (git only)
 
-set -euo pipefail
-
 # Source common functions and configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"

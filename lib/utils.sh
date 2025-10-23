@@ -1,8 +1,6 @@
 #!/bin/bash
 
 # Strict mode and safe defaults for sourced scripts
-set -Eeuo pipefail
-IFS=$'\n\t'
 
 log_info()  { printf "[INFO] %s\n" "$*"; }
 log_warn()  { printf "[WARN] %s\n" "$*"; }
