@@ -7,13 +7,15 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting Nimbus installation..."
+# Get script directories
+get_script_directories
+
+log_installation_start "Nimbus"
 
 
 # Check system requirements (Nimbus is lightweight)
 check_system_requirements 4 500
 
-# Dependencies are installed centrally via install_dependencies.sh
 
 # Setup firewall rules for Nimbus
 setup_firewall_rules 9000 5052
@@ -104,8 +106,7 @@ graffiti = "$GRAFITTI"
 EOF
 
 # Merge base configuration with custom settings
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cat "$SCRIPT_DIR/configs/nimbus/nimbus_base.toml" ./tmp/nimbus_custom.toml > "$NIMBUS_DIR/nimbus.toml"
+merge_client_config "Nimbus" "main" "$SCRIPT_DIR/configs/nimbus/nimbus_base.toml" "./tmp/nimbus_custom.toml" "$NIMBUS_DIR/nimbus.toml"
 
 # Clean up temporary files
 rm -rf ./tmp/

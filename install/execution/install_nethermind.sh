@@ -13,7 +13,6 @@ log_info "Starting Nethermind installation..."
 # Check system requirements
 check_system_requirements 16 2000
 
-# Dependencies are installed centrally via install_dependencies.sh
 
 # Setup firewall rules for Nethermind
 setup_firewall_rules 30303 8545 8546 8551
@@ -78,8 +77,7 @@ EOF
 
 # Merge base configuration with custom settings
 # Note: This is a simplified merge - in production, consider using jq for proper JSON merging
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cp "$SCRIPT_DIR/configs/nethermind/nethermind_base.cfg" "$NETHERMIND_DIR/nethermind_base.cfg"
+merge_client_config "Nethermind" "main" "$SCRIPT_DIR/configs/nethermind/nethermind_base.cfg" "" "$NETHERMIND_DIR/nethermind_base.cfg"
 
 # For now, create a complete config with variables (TODO: implement proper JSON merging)
 cat > "$NETHERMIND_DIR/nethermind.cfg" << EOF

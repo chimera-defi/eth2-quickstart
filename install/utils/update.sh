@@ -6,9 +6,9 @@
 # Note: Stops services before updating, restarts after completion
 
 # Source common functions and configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source ../../exports.sh
+source ../../lib/common_functions.sh
+get_script_directories
 source ../../lib/common_functions.sh
 
 log_info "Starting software stack update..."

@@ -13,7 +13,6 @@ log_info "Starting Grandine installation..."
 # Check system requirements
 check_system_requirements 16 1000
 
-# Dependencies are installed centrally via install_dependencies.sh
 # Install Rust and dependencies
 if ! command -v cargo &> /dev/null; then
     log_info "Installing Rust..."
@@ -95,8 +94,7 @@ graffiti = "$GRAFITTI"
 EOF
 
 # Merge base configuration with custom settings
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cat "$SCRIPT_DIR/configs/grandine/grandine_base.toml" ./tmp/grandine_custom.toml > "$GRANDINE_DIR/grandine.toml"
+merge_client_config "Grandine" "main" "$SCRIPT_DIR/configs/grandine/grandine_base.toml" "./tmp/grandine_custom.toml" "$GRANDINE_DIR/grandine.toml"
 
 # Clean up temporary files
 rm -rf ./tmp/

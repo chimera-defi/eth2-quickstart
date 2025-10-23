@@ -5,8 +5,8 @@
 # Usage: ./purge_ethereum_data.sh [--confirm] [--dry-run]
 
 # Source common functions
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source ../../lib/common_functions.sh
+get_script_directories
 
 # Source exports for configuration
 if [[ -f "$SCRIPT_DIR/../../exports.sh" ]]; then

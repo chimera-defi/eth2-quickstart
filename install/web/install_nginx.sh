@@ -7,12 +7,14 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting NGINX installation..."
+# Get script directories
+get_script_directories
+
+log_installation_start "NGINX"
 
 log_info "Server name: $SERVER_NAME"
 log_info "Login username: $LOGIN_UNAME"
 
-# Dependencies are installed centrally via install_dependencies.sh
 log_info "Configuring NGINX..."
 
 # Create NGINX configuration
@@ -79,7 +81,7 @@ if ! ./nginx_harden.sh; then
     log_warn "NGINX hardening script failed, but continuing..."
 fi
 
-log_info "NGINX installation completed!"
+log_installation_complete "NGINX" "nginx" "/etc/nginx/sites-available/default" "/etc/nginx"
 log_info "Server name: $SERVER_NAME"
 log_info "WebSocket endpoint: http://$SERVER_NAME/ws"
 log_info "RPC endpoint: http://$SERVER_NAME/rpc"

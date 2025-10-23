@@ -18,6 +18,9 @@
 source ./exports.sh
 source ./lib/common_functions.sh
 
+# Check if running as correct user (non-root)
+check_user "$LOGIN_UNAME"
+
 log_info "Starting system setup - Phase 2..."
 
 # Check system compatibility first

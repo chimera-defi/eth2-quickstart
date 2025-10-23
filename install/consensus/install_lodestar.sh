@@ -13,7 +13,6 @@ log_info "Starting Lodestar installation..."
 # Check system requirements
 check_system_requirements 16 1000
 
-# Dependencies are installed centrally via install_dependencies.sh
 # Node.js and build tools are already available
 
 # Setup firewall rules for Lodestar
@@ -85,7 +84,6 @@ cat > ./tmp/lodestar_validator_custom.json << EOF
 EOF
 
 # Merge base configurations with custom settings using jq (if available) or simple concatenation
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if command -v jq &> /dev/null; then
     jq -s '.[0] * .[1]' "$SCRIPT_DIR/configs/lodestar/lodestar_beacon_base.json" ./tmp/lodestar_beacon_custom.json > "$LODESTAR_DIR/beacon.config.json"
     jq -s '.[0] * .[1]' "$SCRIPT_DIR/configs/lodestar/lodestar_validator_base.json" ./tmp/lodestar_validator_custom.json > "$LODESTAR_DIR/validator.config.json"
