@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Shell safety settings - applied to all scripts that source this file
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 # Add all shared env conf for shell scripts here 
 # You only need to change the values here for all the scripts
 
