@@ -995,3 +995,244 @@ Next Steps:
 
 EOF
 }
+
+# Service management functions
+start_all_services() {
+    log_info "Starting all Ethereum client services..."
+    
+    local services=("eth1" "cl" "validator" "mev")
+    local failed_services=()
+    local started_services=()
+    
+    for service in "${services[@]}"; do
+        if systemctl list-unit-files | grep -q "^${service}.service"; then
+            log_info "Starting service: $service"
+            if sudo systemctl start "$service"; then
+                started_services+=("$service")
+                log_info "✓ Started $service"
+            else
+                failed_services+=("$service")
+                log_error "✗ Failed to start $service"
+            fi
+        else
+            log_warn "Service $service not found (may not be installed)"
+        fi
+    done
+    
+    # Summary
+    if [[ ${#started_services[@]} -gt 0 ]]; then
+        log_info "Successfully started services: ${started_services[*]}"
+    fi
+    
+    if [[ ${#failed_services[@]} -gt 0 ]]; then
+        log_error "Failed to start services: ${failed_services[*]}"
+        return 1
+    fi
+    
+    return 0
+}
+
+stop_all_services() {
+    log_info "Stopping all Ethereum client services..."
+    
+    local services=("eth1" "cl" "validator" "mev")
+    local failed_services=()
+    local stopped_services=()
+    
+    for service in "${services[@]}"; do
+        if systemctl is-active --quiet "$service"; then
+            log_info "Stopping service: $service"
+            if sudo systemctl stop "$service"; then
+                stopped_services+=("$service")
+                log_info "✓ Stopped $service"
+            else
+                failed_services+=("$service")
+                log_error "✗ Failed to stop $service"
+            fi
+        else
+            log_info "Service $service is not running"
+        fi
+    done
+    
+    # Summary
+    if [[ ${#stopped_services[@]} -gt 0 ]]; then
+        log_info "Successfully stopped services: ${stopped_services[*]}"
+    fi
+    
+    if [[ ${#failed_services[@]} -gt 0 ]]; then
+        log_error "Failed to stop services: ${failed_services[*]}"
+        return 1
+    fi
+    
+    return 0
+}
+
+restart_all_services() {
+    log_info "Restarting all Ethereum client services..."
+    
+    if stop_all_services; then
+        sleep 2
+        start_all_services
+    else
+        log_error "Failed to stop services before restart"
+        return 1
+    fi
+}
+
+check_all_services_status() {
+    log_info "Checking status of all Ethereum client services..."
+    
+    local services=("eth1" "cl" "validator" "mev")
+    local active_services=()
+    local inactive_services=()
+    local failed_services=()
+    
+    for service in "${services[@]}"; do
+        if systemctl list-unit-files | grep -q "^${service}.service"; then
+            if systemctl is-active --quiet "$service"; then
+                active_services+=("$service")
+                log_info "✓ $service is active"
+            elif systemctl is-failed --quiet "$service"; then
+                failed_services+=("$service")
+                log_error "✗ $service has failed"
+            else
+                inactive_services+=("$service")
+                log_warn "⚠ $service is inactive"
+            fi
+        else
+            log_warn "Service $service not found"
+        fi
+    done
+    
+    # Summary
+    echo
+    log_info "=== SERVICE STATUS SUMMARY ==="
+    if [[ ${#active_services[@]} -gt 0 ]]; then
+        log_info "Active services: ${active_services[*]}"
+    fi
+    if [[ ${#inactive_services[@]} -gt 0 ]]; then
+        log_warn "Inactive services: ${inactive_services[*]}"
+    fi
+    if [[ ${#failed_services[@]} -gt 0 ]]; then
+        log_error "Failed services: ${failed_services[*]}"
+    fi
+    
+    # Return appropriate exit code
+    if [[ ${#failed_services[@]} -gt 0 ]]; then
+        return 1
+    elif [[ ${#inactive_services[@]} -gt 0 ]]; then
+        return 2
+    else
+        return 0
+    fi
+}
+
+wait_for_services_healthy() {
+    local max_wait="${1:-300}"  # Default 5 minutes
+    local wait_time=0
+    local check_interval=10
+    
+    log_info "Waiting for services to become healthy (max ${max_wait}s)..."
+    
+    while [[ $wait_time -lt $max_wait ]]; do
+        if check_all_services_status >/dev/null 2>&1; then
+            log_info "✓ All services are healthy"
+            return 0
+        fi
+        
+        sleep $check_interval
+        wait_time=$((wait_time + check_interval))
+        
+        if [[ $((wait_time % 60)) -eq 0 ]]; then
+            log_info "Still waiting for services... (${wait_time}s elapsed)"
+        fi
+    done
+    
+    log_error "Services did not become healthy within ${max_wait} seconds"
+    return 1
+}
+
+# Health check functions
+check_execution_client_health() {
+    local client_type="${1:-geth}"
+    local rpc_port="${2:-8545}"
+    
+    log_info "Checking $client_type health..."
+    
+    # Check if RPC endpoint is responding
+    if curl -s -X POST \
+        -H "Content-Type: application/json" \
+        -d '{"jsonrpc":"2.0","method":"eth_syncing","params":[],"id":1}' \
+        "http://127.0.0.1:$rpc_port" >/dev/null 2>&1; then
+        log_info "✓ $client_type RPC endpoint is responding"
+        return 0
+    else
+        log_error "✗ $client_type RPC endpoint is not responding"
+        return 1
+    fi
+}
+
+check_consensus_client_health() {
+    local client_type="${1:-prysm}"
+    local rest_port="${2:-5051}"
+    
+    log_info "Checking $client_type health..."
+    
+    # Check if REST API is responding
+    if curl -s "http://127.0.0.1:$rest_port/eth/v1/node/health" >/dev/null 2>&1; then
+        log_info "✓ $client_type REST API is responding"
+        return 0
+    else
+        log_error "✗ $client_type REST API is not responding"
+        return 1
+    fi
+}
+
+check_mev_boost_health() {
+    local mev_port="${1:-18550}"
+    
+    log_info "Checking MEV-Boost health..."
+    
+    # Check if MEV-Boost is responding
+    if curl -s "http://127.0.0.1:$mev_port/health" >/dev/null 2>&1; then
+        log_info "✓ MEV-Boost is responding"
+        return 0
+    else
+        log_error "✗ MEV-Boost is not responding"
+        return 1
+    fi
+}
+
+run_comprehensive_health_check() {
+    log_info "Running comprehensive health check..."
+    
+    local health_issues=0
+    
+    # Check execution client
+    if ! check_execution_client_health; then
+        health_issues=$((health_issues + 1))
+    fi
+    
+    # Check consensus client
+    if ! check_consensus_client_health; then
+        health_issues=$((health_issues + 1))
+    fi
+    
+    # Check MEV-Boost
+    if ! check_mev_boost_health; then
+        health_issues=$((health_issues + 1))
+    fi
+    
+    # Check service status
+    if ! check_all_services_status >/dev/null 2>&1; then
+        health_issues=$((health_issues + 1))
+    fi
+    
+    if [[ $health_issues -eq 0 ]]; then
+        log_info "✓ All health checks passed"
+        return 0
+    else
+        log_error "✗ $health_issues health check(s) failed"
+        return 1
+    fi
+}
