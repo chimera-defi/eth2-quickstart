@@ -7,13 +7,15 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting Besu installation..."
+# Get script directories
+get_script_directories
+
+log_installation_start "Besu"
 
 
 # Check system requirements
 check_system_requirements 8 1000
 
-# Dependencies are installed centrally via install_dependencies.sh
 
 # Setup firewall rules for Besu
 setup_firewall_rules 30303 8545 8546 8551
@@ -88,8 +90,7 @@ miner-extra-data="$GRAFITTI"
 EOF
 
 # Merge base configuration with custom settings
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cat "$SCRIPT_DIR/configs/besu/besu_base.toml" ./tmp/besu_custom.toml > "$BESU_DIR/besu.toml"
+merge_client_config "Besu" "main" "$SCRIPT_DIR/configs/besu/besu_base.toml" "./tmp/besu_custom.toml" "$BESU_DIR/besu.toml"
 
 # Clean up temporary files
 rm -rf ./tmp/

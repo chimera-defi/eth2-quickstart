@@ -7,14 +7,15 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting Prysm installation..."
+# Get script directories
+get_script_directories
+
+log_installation_start "Prysm"
 
 
 # Check system requirements
 check_system_requirements 16 1000
 
-# Dependencies are installed centrally via install_dependencies.sh
-# No additional dependencies needed for Prysm
 
 # Setup firewall rules for Prysm
 setup_firewall_rules 13000 12000 5051
@@ -49,7 +50,7 @@ ensure_directory "$HOME/secrets"
 mv ./jwt.hex "$HOME/secrets/"
 
 # Create temporary directory for custom configuration
-mkdir ./tmp
+create_temp_config_dir
 
 # Create custom beacon node configuration variables
 cat > ./tmp/prysm_beacon_custom.yaml << EOF
@@ -70,9 +71,8 @@ wallet-password-file: $HOME/secrets/pass.txt
 EOF
 
 # Merge base configurations with custom settings
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cat "$SCRIPT_DIR/configs/prysm/prysm_beacon_conf.yaml" ./tmp/prysm_beacon_custom.yaml > "$PRYSM_DIR/prysm_beacon_conf.yaml"
-cat "$SCRIPT_DIR/configs/prysm/prysm_validator_conf.yaml" ./tmp/prysm_validator_custom.yaml > "$PRYSM_DIR/prysm_validator_conf.yaml"
+merge_client_config "Prysm" "beacon" "$SCRIPT_DIR/configs/prysm/prysm_beacon_conf.yaml" "./tmp/prysm_beacon_custom.yaml" "$PRYSM_DIR/prysm_beacon_conf.yaml"
+merge_client_config "Prysm" "validator" "$SCRIPT_DIR/configs/prysm/prysm_validator_conf.yaml" "./tmp/prysm_validator_custom.yaml" "$PRYSM_DIR/prysm_validator_conf.yaml"
 
 # Clean up temporary files
 rm -rf ./tmp/
@@ -92,30 +92,9 @@ enable_and_start_systemd_service "cl"
 enable_and_start_systemd_service "validator"
 
 # Show completion information
-show_installation_complete "Prysm" "cl" "$PRYSM_DIR/prysm_beacon_conf.yaml" "$PRYSM_DIR"
+log_installation_complete "Prysm" "cl" "$PRYSM_DIR/prysm_beacon_conf.yaml" "$PRYSM_DIR"
 
 # Display setup information
-cat << EOF
-
-=== Prysm Setup Information ===
-Prysm has been installed with the following components:
-1. Beacon Node (cl service) - Connects to execution client and other beacon nodes
-2. Validator Client (validator service) - Manages validator keys and duties
-
-Next Steps:
-1. Import your validator keys into: $PRYSM_DIR/
-2. Create keystore password files in: $HOME/secrets/
-3. Wait for beacon node to sync (validator will start automatically)
-
-Key features:
-- REST API available on port 5051
-- P2P networking on ports 13000 (TCP) and 12000 (UDP)
-- Checkpoint sync enabled for faster initial sync
-- MEV-Boost integration ready
-- Comprehensive logging and monitoring
-
-Useful commands:
+display_client_setup_info "Prysm" "cl" "$PRYSM_DIR/prysm_beacon_conf.yaml" "$PRYSM_DIR" "5051" "13000 (TCP) and 12000 (UDP)" "Useful commands:
 - Check Prysm version: $PRYSM_DIR/prysm.sh beacon-chain --version
-- Import validator keys: $PRYSM_DIR/prysm.sh validator accounts import --keys-dir=/path/to/keys
-
-EOF
+- Import validator keys: $PRYSM_DIR/prysm.sh validator accounts import --keys-dir=/path/to/keys"

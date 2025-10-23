@@ -7,14 +7,15 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting MEV Boost installation..."
+# Get script directories
+get_script_directories
+
+log_installation_start "MEV Boost"
 
 
 # Check system requirements
 check_system_requirements 8 500
 
-# Dependencies are installed centrally via install_dependencies.sh
-# Go and build tools are already available
 
 # Create MEV Boost directory
 MEV_BOOST_DIR="$HOME/mev-boost"
@@ -47,4 +48,4 @@ create_systemd_service "mev" "MEV Boost Service" "$EXEC_START" "$(whoami)" "alwa
 enable_and_start_systemd_service "mev"
 
 # Show completion information
-show_installation_complete "MEV Boost" "mev" "" "$MEV_BOOST_DIR"
+log_installation_complete "MEV Boost" "mev" "" "$MEV_BOOST_DIR"

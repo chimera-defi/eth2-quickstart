@@ -8,7 +8,10 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting Geth installation..."
+# Get script directories
+get_script_directories
+
+log_installation_start "Geth"
 
 
 # Installs and sets up geth as a systemctl service according to :
@@ -28,7 +31,6 @@ if ! add_ppa_repository "ppa:ethereum/ethereum"; then
     exit 1
 fi
 
-# Dependencies are installed centrally via install_dependencies.sh
 
 export GETH_CMD="/usr/bin/geth --cache=$GETH_CACHE --syncmode snap \
 --http --http.addr $LH --http.corsdomain \"*\" --http.vhosts=* --http.api=\"admin, eth, net, web3, engine\" \
@@ -49,8 +51,4 @@ create_systemd_service "eth1" "Geth Ethereum Execution Client" "$GETH_CMD" "$(wh
 enable_and_start_systemd_service "eth1"
 
 # Show completion information
-show_installation_complete "Geth" "eth1" "" "$HOME"
-
-log_info "Geth installation completed!"
-log_info "To check status: sudo systemctl status eth1"
-log_info "To view logs: journalctl -fu eth1"
+log_installation_complete "Geth" "eth1" "" "$HOME"

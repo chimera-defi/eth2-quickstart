@@ -7,13 +7,15 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting Teku installation..."
+# Get script directories
+get_script_directories
+
+log_installation_start "Teku"
 
 
 # Check system requirements
 check_system_requirements 16 1000
 
-# Dependencies are installed centrally via install_dependencies.sh
 
 # Setup firewall rules for Teku
 setup_firewall_rules 9000 5051
@@ -67,7 +69,7 @@ VALIDATOR_DATA_DIR="$HOME/.local/share/teku/validator"
 ensure_directory "$VALIDATOR_DATA_DIR"
 
 # Create temporary directory for custom configuration
-mkdir ./tmp
+create_temp_config_dir
 
 # Create custom beacon node configuration variables
 cat > ./tmp/teku_beacon_custom.yaml << EOF
@@ -118,9 +120,8 @@ metrics-port: 8009
 EOF
 
 # Merge base configurations with custom settings
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cat "$SCRIPT_DIR/configs/teku/teku_beacon_base.yaml" ./tmp/teku_beacon_custom.yaml > "$TEKU_DIR/beacon.yaml"
-cat "$SCRIPT_DIR/configs/teku/teku_validator_base.yaml" ./tmp/teku_validator_custom.yaml > "$TEKU_DIR/validator.yaml"
+merge_client_config "Teku" "beacon" "$SCRIPT_DIR/configs/teku/teku_beacon_base.yaml" "./tmp/teku_beacon_custom.yaml" "$TEKU_DIR/beacon.yaml"
+merge_client_config "Teku" "validator" "$SCRIPT_DIR/configs/teku/teku_validator_base.yaml" "./tmp/teku_validator_custom.yaml" "$TEKU_DIR/validator.yaml"
 
 # Clean up temporary files
 rm -rf ./tmp/
@@ -146,36 +147,9 @@ sudo sed -i "/\\[Service\\]/a Environment=JAVA_OPTS=\"$JAVA_OPTS\"" /etc/systemd
 enable_and_start_systemd_service "cl"
 enable_and_start_systemd_service "validator"
 
-log_info "Teku installation completed!"
-log_info "Beacon node configuration: $TEKU_DIR/beacon.yaml"
-log_info "Validator configuration: $TEKU_DIR/validator.yaml"
-log_info "Data directory: $TEKU_DATA_DIR"
-log_info "Validator data directory: $VALIDATOR_DATA_DIR"
-log_info ""
-log_info "Validator will start automatically with the beacon node"
-log_info "To check status: sudo systemctl status cl && sudo systemctl status validator"
-log_info "To view logs: journalctl -fu cl && journalctl -fu validator"
+# Show completion information
+log_installation_complete "Teku" "cl" "$TEKU_DIR/beacon.yaml" "$TEKU_DATA_DIR"
 
 # Display setup information
-cat << EOF
-
-=== Teku Setup Information ===
-Teku has been installed with the following components:
-1. Beacon Node (cl service) - Connects to execution client and other beacon nodes
-2. Validator Client (validator service) - Manages validator keys and duties
-
-Next Steps:
-1. Import your validator keys into: $VALIDATOR_DATA_DIR/keys/
-2. Create password files in: $VALIDATOR_DATA_DIR/passwords/
-3. Wait for beacon node to sync (validator will start automatically)
-
-Key features:
-- REST API available on port 5051
-- P2P networking on port 9000
-- Metrics available on ports 8008 (beacon) and 8009 (validator)
-- Checkpoint sync enabled for faster initial sync
-- MEV-Boost integration ready
-
-Java version: $(java -version 2>&1 | head -n1)
-
-EOF
+display_client_setup_info "Teku" "cl" "$TEKU_DIR/beacon.yaml" "$VALIDATOR_DATA_DIR" "5051" "9000" "Metrics available on ports 8008 (beacon) and 8009 (validator)
+Java version: $(java -version 2>&1 | head -n1)"

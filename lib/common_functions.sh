@@ -788,6 +788,217 @@ check_service_health() {
     return 1
 }
 
+# Script directory management functions
+get_script_directories() {
+    # Get the directory of the calling script
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)"
+    
+    # Get the project root (two levels up from install scripts)
+    local project_root
+    project_root="$(cd "$script_dir/../.." && pwd)"
+    
+    # Export both for use in calling scripts
+    export SCRIPT_DIR="$script_dir"
+    export PROJECT_ROOT="$project_root"
+    
+    log_info "Script directory: $script_dir"
+    log_info "Project root: $project_root"
+}
+
+# Installation logging functions
+log_installation_start() {
+    local client_name="$1"
+    log_info "Starting $client_name installation..."
+}
+
+log_installation_complete() {
+    local client_name="$1"
+    local service_name="$2"
+    local config_file="${3:-}"
+    local data_dir="${4:-}"
+    
+    log_info "$client_name installation completed!"
+    
+    if [[ -n "$config_file" && -f "$config_file" ]]; then
+        log_info "Configuration file: $config_file"
+    elif [[ -n "$config_file" ]]; then
+        log_warn "Configuration file specified but not found: $config_file"
+    fi
+    
+    if [[ -n "$data_dir" && -d "$data_dir" ]]; then
+        log_info "Data directory: $data_dir"
+    elif [[ -n "$data_dir" ]]; then
+        log_warn "Data directory specified but not found: $data_dir"
+    fi
+    
+    log_info "To start $client_name: sudo systemctl start $service_name"
+    log_info "To check status: sudo systemctl status $service_name"
+    log_info "To view logs: journalctl -fu $service_name"
+}
+
+# Client setup information display
+display_client_setup_info() {
+    local client_name="$1"
+    local service_name="$2"
+    local config_file="$3"
+    local data_dir="$4"
+    local rest_port="$5"
+    local p2p_ports="$6"
+    local features="$7"
+    
+    cat << EOF
+
+=== $client_name Setup Information ===
+$client_name has been installed with the following components:
+1. Beacon Node ($service_name service) - Connects to execution client and other beacon nodes
+2. Validator Client (validator service) - Manages validator keys and duties
+
+Next Steps:
+1. Import your validator keys into: $data_dir/
+2. Create keystore password files in: $HOME/secrets/
+3. Wait for beacon node to sync (validator will start automatically)
+
+Key features:
+- REST API available on port $rest_port
+- P2P networking on ports $p2p_ports
+- Checkpoint sync enabled for faster initial sync
+- MEV-Boost integration ready
+- Comprehensive logging and monitoring
+$features
+
+Useful commands:
+- Check $client_name version: $data_dir/*.sh --version
+- Import validator keys: $data_dir/*.sh validator accounts import --keys-dir=/path/to/keys
+
+EOF
+}
+
+# Configuration management functions
+create_temp_config_dir() {
+    local temp_dir="./tmp"
+    
+    if [[ -d "$temp_dir" ]]; then
+        log_info "Temporary directory already exists: $temp_dir"
+    else
+        log_info "Creating temporary directory: $temp_dir"
+        mkdir -p "$temp_dir"
+    fi
+    
+    export TEMP_CONFIG_DIR="$temp_dir"
+}
+
+merge_client_config() {
+    local client_name="$1"
+    local config_type="$2"  # beacon, validator, etc.
+    local base_config="$3"
+    local custom_config="$4"
+    local output_config="$5"
+    
+    log_info "Merging $client_name $config_type configuration..."
+    
+    # Validate inputs
+    if [[ ! -f "$base_config" ]]; then
+        log_error "Base configuration file not found: $base_config"
+        return 1
+    fi
+    
+    if [[ ! -f "$custom_config" ]]; then
+        log_error "Custom configuration file not found: $custom_config"
+        return 1
+    fi
+    
+    # Merge configurations
+    if cat "$base_config" "$custom_config" > "$output_config"; then
+        log_info "Successfully merged $client_name $config_type configuration: $output_config"
+        return 0
+    else
+        log_error "Failed to merge $client_name $config_type configuration"
+        return 1
+    fi
+}
+
+# Root check standardization
+require_root() {
+    if [[ $EUID -ne 0 ]]; then
+        log_error "This script must be run as root"
+        exit 1
+    fi
+}
+
+# GitHub release management functions
+get_latest_release() {
+    local repo="$1"
+    local max_retries="${2:-3}"
+    local retry_count=0
+    
+    while [[ $retry_count -lt $max_retries ]]; do
+        local latest_version
+        latest_version=$(curl -s "https://api.github.com/repos/$repo/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        
+        if [[ -n "$latest_version" ]]; then
+            echo "$latest_version"
+            return 0
+        fi
+        
+        retry_count=$((retry_count + 1))
+        if [[ $retry_count -lt $max_retries ]]; then
+            log_warn "Failed to fetch latest release, attempt $retry_count/$max_retries"
+            sleep 2
+        fi
+    done
+    
+    log_error "Failed to fetch latest release after $max_retries attempts"
+    return 1
+}
+
+# Archive extraction function
+extract_archive() {
+    local archive_file="$1"
+    local extract_dir="$2"
+    local strip_level="${3:-0}"
+    
+    if [[ ! -f "$archive_file" ]]; then
+        log_error "Archive file not found: $archive_file"
+        return 1
+    fi
+    
+    log_info "Extracting $archive_file to $extract_dir..."
+    
+    # Determine archive type and extract
+    case "$archive_file" in
+        *.tar.gz|*.tgz)
+            if [[ $strip_level -gt 0 ]]; then
+                tar -xzf "$archive_file" -C "$extract_dir" --strip-components="$strip_level"
+            else
+                tar -xzf "$archive_file" -C "$extract_dir"
+            fi
+            ;;
+        *.tar.bz2|*.tbz2)
+            if [[ $strip_level -gt 0 ]]; then
+                tar -xjf "$archive_file" -C "$extract_dir" --strip-components="$strip_level"
+            else
+                tar -xjf "$archive_file" -C "$extract_dir"
+            fi
+            ;;
+        *.zip)
+            unzip -q "$archive_file" -d "$extract_dir"
+            ;;
+        *)
+            log_error "Unsupported archive format: $archive_file"
+            return 1
+            ;;
+    esac
+    
+    if [[ $? -eq 0 ]]; then
+        log_info "Successfully extracted $archive_file"
+        return 0
+    else
+        log_error "Failed to extract $archive_file"
+        return 1
+    fi
+}
+
 # Secure password generation
 generate_secure_password() {
     local length="${1:-16}"
