@@ -3,6 +3,10 @@
 # System Setup Script - Phase 1
 # Initial system hardening and user setup with sane defaults
 
+# Shell safety settings
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 # Source required files
 source ./exports.sh
 source ./lib/utils.sh

@@ -969,34 +969,56 @@ extract_archive() {
     case "$archive_file" in
         *.tar.gz|*.tgz)
             if [[ $strip_level -gt 0 ]]; then
-                tar -xzf "$archive_file" -C "$extract_dir" --strip-components="$strip_level"
+                if tar -xzf "$archive_file" -C "$extract_dir" --strip-components="$strip_level"; then
+                    log_info "Successfully extracted $archive_file"
+                    return 0
+                else
+                    log_error "Failed to extract $archive_file"
+                    return 1
+                fi
             else
-                tar -xzf "$archive_file" -C "$extract_dir"
+                if tar -xzf "$archive_file" -C "$extract_dir"; then
+                    log_info "Successfully extracted $archive_file"
+                    return 0
+                else
+                    log_error "Failed to extract $archive_file"
+                    return 1
+                fi
             fi
             ;;
         *.tar.bz2|*.tbz2)
             if [[ $strip_level -gt 0 ]]; then
-                tar -xjf "$archive_file" -C "$extract_dir" --strip-components="$strip_level"
+                if tar -xjf "$archive_file" -C "$extract_dir" --strip-components="$strip_level"; then
+                    log_info "Successfully extracted $archive_file"
+                    return 0
+                else
+                    log_error "Failed to extract $archive_file"
+                    return 1
+                fi
             else
-                tar -xjf "$archive_file" -C "$extract_dir"
+                if tar -xjf "$archive_file" -C "$extract_dir"; then
+                    log_info "Successfully extracted $archive_file"
+                    return 0
+                else
+                    log_error "Failed to extract $archive_file"
+                    return 1
+                fi
             fi
             ;;
         *.zip)
-            unzip -q "$archive_file" -d "$extract_dir"
+            if unzip -q "$archive_file" -d "$extract_dir"; then
+                log_info "Successfully extracted $archive_file"
+                return 0
+            else
+                log_error "Failed to extract $archive_file"
+                return 1
+            fi
             ;;
         *)
             log_error "Unsupported archive format: $archive_file"
             return 1
             ;;
     esac
-    
-    if [[ $? -eq 0 ]]; then
-        log_info "Successfully extracted $archive_file"
-        return 0
-    else
-        log_error "Failed to extract $archive_file"
-        return 1
-    fi
 }
 
 # Secure password generation
