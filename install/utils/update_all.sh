@@ -15,7 +15,6 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 get_script_directories
-source ../../lib/common_functions.sh
 
 # Configuration
 GIT_UPDATE_SCRIPT="$SCRIPT_DIR/update_git.sh"

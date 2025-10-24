@@ -9,7 +9,6 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 get_script_directories
-source ../../lib/common_functions.sh
 
 log_info "Starting software stack update..."
 
