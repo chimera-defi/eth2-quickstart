@@ -75,12 +75,8 @@ cat > ./tmp/nethermind_custom.cfg << EOF
 }
 EOF
 
-# Merge base configuration with custom settings
-# Note: This is a simplified merge - in production, consider using jq for proper JSON merging
-merge_client_config "Nethermind" "main" "$SCRIPT_DIR/configs/nethermind/nethermind_base.cfg" "" "$NETHERMIND_DIR/nethermind_base.cfg"
-
-# For now, create a complete config with variables (TODO: implement proper JSON merging)
-cat > "$NETHERMIND_DIR/nethermind.cfg" << EOF
+# Create custom configuration with variables
+cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
 {
   "Init": {
     "WebSocketsEnabled": true,
@@ -150,6 +146,9 @@ cat > "$NETHERMIND_DIR/nethermind.cfg" << EOF
   }
 }
 EOF
+
+# Merge base configuration with custom settings
+merge_client_config "Nethermind" "main" "$SCRIPT_DIR/configs/nethermind/nethermind_base.cfg" "$NETHERMIND_DIR/nethermind_custom.cfg" "$NETHERMIND_DIR/nethermind.cfg"
 
 # Clean up temporary files
 rm -rf ./tmp/

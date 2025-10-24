@@ -145,7 +145,7 @@ enable_and_start_systemd_service() {
     enable_systemd_service "$service_name"
     sudo systemctl start "$service_name"
     
-    if systemctl is-active --quiet "$service_name"; then
+    if sudo systemctl is-active --quiet "$service_name"; then
         log_info "Started systemd service: $service_name"
     else
         log_error "Failed to start systemd service: $service_name"
@@ -167,12 +167,12 @@ add_ppa_repository() {
     local ppa="$1"
     
     if ! command_exists add-apt-repository; then
-        apt-get update
-        apt-get install -y software-properties-common
+        sudo apt-get update
+        sudo apt-get install -y software-properties-common
     fi
     
-    add-apt-repository -y "$ppa"
-    apt-get update
+    sudo add-apt-repository -y "$ppa"
+    sudo apt-get update
     log_info "Added PPA repository: $ppa"
 }
 
@@ -182,8 +182,8 @@ install_dependencies() {
     
     log_info "Installing dependencies: ${packages[*]}"
     
-    apt-get update
-    if apt-get install -y "${packages[@]}"; then
+    sudo apt-get update
+    if sudo apt-get install -y "${packages[@]}"; then
         log_info "Dependencies installed successfully"
     else
         log_error "Failed to install some dependencies"
@@ -199,18 +199,18 @@ setup_firewall_rules() {
     
     # Install UFW if not present
     if ! command_exists ufw; then
-        apt-get update
-        apt-get install -y ufw
+        sudo apt-get update
+        sudo apt-get install -y ufw
     fi
     
     # Enable UFW if not already enabled
-    if ! ufw status | grep -q "Status: active"; then
-        ufw --force enable
+    if ! sudo ufw status | grep -q "Status: active"; then
+        sudo ufw --force enable
     fi
     
     # Add rules for each port
     for port in "${ports[@]}"; do
-        ufw allow "$port"
+        sudo ufw allow "$port"
         log_info "Added firewall rule for port $port"
     done
 }
@@ -222,7 +222,7 @@ ensure_jwt_secret() {
     if [[ ! -f "$jwt_path" ]]; then
         log_info "Generating JWT secret at $jwt_path"
         openssl rand -hex 32 > "$jwt_path"
-        chmod 600 "$jwt_path"
+        sudo chmod 600 "$jwt_path"
         log_info "JWT secret generated and secured"
     else
         log_info "JWT secret already exists at $jwt_path"
@@ -334,7 +334,7 @@ setup_secure_user() {
     # Create user if it doesn't exist
     if ! id -u "$username" >/dev/null 2>&1; then
         log_info "Creating user: $username"
-        if ! useradd -m -d "/home/$username" -s /bin/bash "$username"; then
+        if ! sudo useradd -m -d "/home/$username" -s /bin/bash "$username"; then
             log_error "Failed to create user: $username"
             return 1
         fi
@@ -353,15 +353,15 @@ setup_secure_user() {
     
     # Setup SSH directory
     local ssh_dir="/home/$username/.ssh"
-    mkdir -p "$ssh_dir"
-    chown "$username:$username" "$ssh_dir"
-    chmod 700 "$ssh_dir"
+    sudo mkdir -p "$ssh_dir"
+    sudo chown "$username:$username" "$ssh_dir"
+    sudo chmod 700 "$ssh_dir"
     
     # Copy SSH keys if provided
     if [[ -n "$ssh_key_file" && -f "$ssh_key_file" ]]; then
-        cp "$ssh_key_file" "$ssh_dir/authorized_keys"
-        chown "$username:$username" "$ssh_dir/authorized_keys"
-        chmod 600 "$ssh_dir/authorized_keys"
+        sudo cp "$ssh_key_file" "$ssh_dir/authorized_keys"
+        sudo chown "$username:$username" "$ssh_dir/authorized_keys"
+        sudo chmod 600 "$ssh_dir/authorized_keys"
         log_info "SSH key copied for user: $username"
     fi
     
@@ -375,7 +375,7 @@ configure_ssh() {
     log_info "Configuring SSH security hardening..."
     
     # Backup original SSH config
-    cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
+    sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
     
     # Create secure SSH configuration
     cat > /etc/ssh/sshd_config << EOF
@@ -428,8 +428,8 @@ EOF
 EOF
 
     # Restart SSH service
-    systemctl restart sshd
-    if systemctl is-active --quiet sshd; then
+    sudo systemctl restart sshd
+    if sudo systemctl is-active --quiet sshd; then
         log_info "✓ SSH configured and restarted successfully"
     else
         log_error "Failed to restart SSH service"
@@ -444,14 +444,14 @@ configure_sudo_nopasswd() {
     log_info "Configuring sudo without password for user: $username"
     
     # Add user to sudo group
-    usermod -aG sudo "$username"
+    sudo usermod -aG sudo "$username"
     
     # Create sudoers file for the user
     cat > "/etc/sudoers.d/$username" << EOF
 $username ALL=(ALL) NOPASSWD:ALL
 EOF
 
-    chmod 440 "/etc/sudoers.d/$username"
+    sudo chmod 440 "/etc/sudoers.d/$username"
     log_info "✓ Sudo configured for user: $username"
 }
 
@@ -460,7 +460,7 @@ setup_fail2ban() {
     log_info "Setting up fail2ban..."
     
     # Make the script executable and run it
-    chmod +x ./install/security/install_fail2ban.sh
+    sudo chmod +x ./install/security/install_fail2ban.sh
     if ! ./install/security/install_fail2ban.sh; then
         log_error "Failed to setup fail2ban"
         return 1
