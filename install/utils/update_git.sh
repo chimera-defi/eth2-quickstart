@@ -13,7 +13,6 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 get_script_directories
-source ../../lib/common_functions.sh
 
 # Configuration
 BACKUP_DIR="$HOME/eth2-quickstart-backups"

@@ -4,11 +4,9 @@
 # Installs all dependencies needed for Ethereum node setup
 
 # Source common functions and get directories
-source ../../lib/common_functions.sh
-get_script_directories
-
 source ../../exports.sh
 source ../../lib/common_functions.sh
+get_script_directories
 
 log_info "Installing all system dependencies..."
 
