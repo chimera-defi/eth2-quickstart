@@ -9,6 +9,10 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# =============================================================================
+# CORE UTILITY FUNCTIONS
+# =============================================================================
+
 # Logging functions
 log_info() {
     echo -e "${GREEN}[INFO]${NC} $1"
@@ -39,6 +43,15 @@ ensure_directory() {
         mkdir -p "$dir"
     fi
 }
+
+# Check if command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# =============================================================================
+# DOWNLOAD FUNCTIONS
+# =============================================================================
 
 # Download file with retry logic and security validation
 download_file() {
@@ -73,6 +86,10 @@ secure_download() {
     log_error "Failed to download $url after $max_retries attempts"
     return 1
 }
+
+# =============================================================================
+# SYSTEMD SERVICE FUNCTIONS
+# =============================================================================
 
 # Create systemd service
 create_systemd_service() {
@@ -136,15 +153,9 @@ enable_and_start_systemd_service() {
     fi
 }
 
-# Enable and start system service (alias for compatibility)
-enable_and_start_system_service() {
-    enable_and_start_systemd_service "$1"
-}
-
-# Check if command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
+# =============================================================================
+# SYSTEM MANAGEMENT FUNCTIONS
+# =============================================================================
 
 # Add PPA repository
 add_ppa_repository() {
@@ -167,8 +178,6 @@ install_dependencies() {
     log_info "Installing dependencies: ${packages[*]}"
     
     apt-get update
-    apt-get install -y "${packages[@]}"
-    
     if apt-get install -y "${packages[@]}"; then
         log_info "Dependencies installed successfully"
     else
@@ -214,6 +223,10 @@ ensure_jwt_secret() {
         log_info "JWT secret already exists at $jwt_path"
     fi
 }
+
+# =============================================================================
+# SYSTEM VALIDATION FUNCTIONS
+# =============================================================================
 
 # Check system requirements
 check_system_requirements() {
