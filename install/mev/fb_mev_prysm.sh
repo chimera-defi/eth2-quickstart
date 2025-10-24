@@ -7,8 +7,7 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-# Check if running as root
-require_root
+# Note: This script uses sudo internally for privileged operations
 
 # Get script directories
 get_script_directories

@@ -92,65 +92,10 @@ if command -v jq &> /dev/null; then
     jq -s '.[0] * .[1]' "$SCRIPT_DIR/configs/lodestar/lodestar_beacon_base.json" ./tmp/lodestar_beacon_custom.json > "$LODESTAR_DIR/beacon.config.json"
     jq -s '.[0] * .[1]' "$SCRIPT_DIR/configs/lodestar/lodestar_validator_base.json" ./tmp/lodestar_validator_custom.json > "$LODESTAR_DIR/validator.config.json"
 else
-    # Fallback: create complete configs with variables (TODO: implement proper JSON merging)
-    cat > "$LODESTAR_DIR/beacon.config.json" << EOF
-{
-  "network": "mainnet",
-  "dataDir": "$LODESTAR_DATA_DIR/beacon",
-  "port": 9000,
-  "discoveryPort": 9000,
-  "targetPeers": $MAX_PEERS,
-  "execution": {
-    "urls": ["http://$LH:$ENGINE_PORT"],
-    "jwtSecretFile": "$HOME/secrets/jwt.hex"
-  },
-  "rest": {
-    "enabled": true,
-    "host": "$CONSENSUS_HOST",
-    "port": ${LODESTAR_REST_PORT},
-    "cors": "*"
-  },
-  "metrics": {
-    "enabled": true,
-    "host": "$CONSENSUS_HOST",
-    "port": 8008
-  },
-  "checkpointSyncUrl": "$LODESTAR_CHECKPOINT_URL",
-  "suggestedFeeRecipient": "$FEE_RECIPIENT",
-  "graffiti": "$GRAFITTI",
-  "builder": {
-    "enabled": true,
-    "urls": ["http://$MEV_HOST:$MEV_PORT"]
-  },
-  "logLevel": "info",
-  "logFile": "$LODESTAR_DATA_DIR/beacon.log"
-}
-EOF
-
-    cat > "$LODESTAR_DIR/validator.config.json" << EOF
-{
-  "network": "mainnet",
-  "dataDir": "$LODESTAR_DATA_DIR/validator",
-  "keystoresDir": "$VALIDATOR_DATA_DIR/keystores",
-  "secretsDir": "$VALIDATOR_DATA_DIR/secrets",
-  "beaconNodes": ["http://$CONSENSUS_HOST:${LODESTAR_REST_PORT}"],
-  "suggestedFeeRecipient": "$FEE_RECIPIENT",
-  "graffiti": "$GRAFITTI",
-  "metrics": {
-    "enabled": true,
-    "host": "$CONSENSUS_HOST",
-    "port": 8009
-  },
-  "builder": {
-    "enabled": true
-  },
-  "doppelgangerProtection": {
-    "enabled": true
-  },
-  "logLevel": "info",
-  "logFile": "$LODESTAR_DATA_DIR/validator.log"
-}
-EOF
+    # Fallback: use merge_client_config for proper JSON merging
+    log_warning "jq not found, using fallback JSON merging"
+    merge_client_config "Lodestar" "beacon" "$SCRIPT_DIR/configs/lodestar/lodestar_beacon_base.json" "./tmp/lodestar_beacon_custom.json" "$LODESTAR_DIR/beacon.config.json"
+    merge_client_config "Lodestar" "validator" "$SCRIPT_DIR/configs/lodestar/lodestar_validator_base.json" "./tmp/lodestar_validator_custom.json" "$LODESTAR_DIR/validator.config.json"
 fi
 
 # Clean up temporary files
