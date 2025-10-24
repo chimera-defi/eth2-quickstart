@@ -15,10 +15,6 @@
 #       `./install_certbot_ssl.sh` 
 #       to get SSL certs and configure NGINX properly
 
-# Shell safety settings
-set -Eeuo pipefail
-IFS=$'\n\t'
-
 source ./exports.sh
 source ./lib/common_functions.sh
 
