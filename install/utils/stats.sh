@@ -5,6 +5,8 @@
 # Usage: ./stats.sh
 # Shows: Error logs, client versions, service status
 
+# Source required files
+source ../../exports.sh
 source ../../lib/common_functions.sh
 
 echo "=== Error Scan ==="
