@@ -22,13 +22,7 @@ source ./lib/common_functions.sh
 
 log_info "Starting system setup - Phase 2..."
 
-# Check system compatibility first
-if ! check_system_compatibility; then
-    log_error "System compatibility check failed"
-    exit 1
-fi
-
-# Check if running as correct user
+# Check if running as correct user (non-root)
 if [[ $EUID -eq 0 ]]; then
     log_error "This script should not be run as root"
     log_info "Please run as the non-root user (usually 'eth')"
@@ -36,6 +30,18 @@ if [[ $EUID -eq 0 ]]; then
     log_info "1. Reboot the system: sudo reboot"
     log_info "2. Login as the non-root user"
     log_info "3. Run this script again"
+    exit 1
+fi
+
+# Basic system compatibility check for non-root user
+log_info "Checking system compatibility..."
+if ! command_exists systemctl; then
+    log_error "systemctl not found - this script requires systemd"
+    exit 1
+fi
+
+if ! command_exists curl; then
+    log_error "curl not found - required for health checks"
     exit 1
 fi
 
@@ -145,6 +151,14 @@ echo
 
 # Start all Ethereum client services automatically
 log_info "Starting Ethereum client services..."
+
+# Check if we can manage services
+if ! command_exists systemctl; then
+    log_error "systemctl not found - cannot manage services"
+    log_info "Please install systemd or run services manually"
+    exit 1
+fi
+
 if start_all_services; then
     log_info "✓ All services started successfully"
     
@@ -167,8 +181,11 @@ if start_all_services; then
     fi
 else
     log_error "✗ Failed to start some services"
-    log_info "You can try starting them manually with: sudo systemctl start eth1 cl validator mev"
-    log_info "Check service logs for details: journalctl -fu [service_name]"
+    log_info "Troubleshooting steps:"
+    log_info "1. Check service logs: journalctl -fu [service_name]"
+    log_info "2. Check system resources: free -h && df -h"
+    log_info "3. Try manual start: sudo systemctl start eth1 cl validator mev"
+    log_info "4. Check configuration files exist and have correct permissions"
 fi
 
 # Run security validation

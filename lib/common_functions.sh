@@ -1000,22 +1000,43 @@ EOF
 start_all_services() {
     log_info "Starting all Ethereum client services..."
     
+    # Check if systemctl is available
+    if ! command_exists systemctl; then
+        log_error "systemctl command not found - cannot manage services"
+        return 1
+    fi
+    
     local services=("eth1" "cl" "validator" "mev")
     local failed_services=()
     local started_services=()
     
     for service in "${services[@]}"; do
-        if systemctl list-unit-files | grep -q "^${service}.service"; then
-            log_info "Starting service: $service"
-            if sudo systemctl start "$service"; then
-                started_services+=("$service")
-                log_info "✓ Started $service"
-            else
-                failed_services+=("$service")
-                log_error "✗ Failed to start $service"
-            fi
-        else
+        # Check if service unit file exists
+        if ! systemctl list-unit-files | grep -q "^${service}.service"; then
             log_warn "Service $service not found (may not be installed)"
+            continue
+        fi
+        
+        log_info "Starting service: $service"
+        
+        # Check if service is already running
+        if systemctl is-active --quiet "$service"; then
+            log_info "✓ Service $service is already running"
+            started_services+=("$service")
+            continue
+        fi
+        
+        # Start the service with proper error handling
+        if sudo systemctl start "$service" 2>/dev/null; then
+            started_services+=("$service")
+            log_info "✓ Started $service"
+        else
+            failed_services+=("$service")
+            log_error "✗ Failed to start $service"
+            # Get more details about the failure
+            local error_msg
+            error_msg=$(sudo systemctl status "$service" --no-pager -l 2>&1 | head -5)
+            log_error "Service error details: $error_msg"
         fi
     done
     
@@ -1035,22 +1056,42 @@ start_all_services() {
 stop_all_services() {
     log_info "Stopping all Ethereum client services..."
     
+    # Check if systemctl is available
+    if ! command_exists systemctl; then
+        log_error "systemctl command not found - cannot manage services"
+        return 1
+    fi
+    
     local services=("eth1" "cl" "validator" "mev")
     local failed_services=()
     local stopped_services=()
     
     for service in "${services[@]}"; do
-        if systemctl is-active --quiet "$service"; then
-            log_info "Stopping service: $service"
-            if sudo systemctl stop "$service"; then
-                stopped_services+=("$service")
-                log_info "✓ Stopped $service"
-            else
-                failed_services+=("$service")
-                log_error "✗ Failed to stop $service"
-            fi
-        else
+        # Check if service unit file exists
+        if ! systemctl list-unit-files | grep -q "^${service}.service"; then
+            log_warn "Service $service not found (may not be installed)"
+            continue
+        fi
+        
+        # Check if service is running
+        if ! systemctl is-active --quiet "$service"; then
             log_info "Service $service is not running"
+            continue
+        fi
+        
+        log_info "Stopping service: $service"
+        
+        # Stop the service with proper error handling
+        if sudo systemctl stop "$service" 2>/dev/null; then
+            stopped_services+=("$service")
+            log_info "✓ Stopped $service"
+        else
+            failed_services+=("$service")
+            log_error "✗ Failed to stop $service"
+            # Get more details about the failure
+            local error_msg
+            error_msg=$(sudo systemctl status "$service" --no-pager -l 2>&1 | head -5)
+            log_error "Service error details: $error_msg"
         fi
     done
     
@@ -1159,15 +1200,39 @@ check_execution_client_health() {
     
     log_info "Checking $client_type health..."
     
+    # Check if curl is available
+    if ! command_exists curl; then
+        log_error "curl command not found - cannot check RPC health"
+        return 1
+    fi
+    
+    # Validate port number
+    if ! [[ "$rpc_port" =~ ^[0-9]+$ ]] || [[ "$rpc_port" -lt 1 ]] || [[ "$rpc_port" -gt 65535 ]]; then
+        log_error "Invalid RPC port: $rpc_port"
+        return 1
+    fi
+    
     # Check if RPC endpoint is responding
-    if curl -s -X POST \
+    local curl_output
+    local curl_exit_code
+    
+    if curl_output=$(curl -s -w "%{http_code}" --connect-timeout 5 --max-time 10 -X POST \
         -H "Content-Type: application/json" \
         -d '{"jsonrpc":"2.0","method":"eth_syncing","params":[],"id":1}' \
-        "http://127.0.0.1:$rpc_port" >/dev/null 2>&1; then
-        log_info "✓ $client_type RPC endpoint is responding"
-        return 0
+        "http://127.0.0.1:$rpc_port" 2>/dev/null); then
+        curl_exit_code=$?
+        local http_code="${curl_output: -3}"
+        
+        if [[ "$http_code" == "200" ]]; then
+            log_info "✓ $client_type RPC endpoint is responding (HTTP $http_code)"
+            return 0
+        else
+            log_error "✗ $client_type RPC endpoint returned HTTP $http_code"
+            return 1
+        fi
     else
-        log_error "✗ $client_type RPC endpoint is not responding"
+        curl_exit_code=$?
+        log_error "✗ $client_type RPC endpoint is not responding (curl exit code: $curl_exit_code)"
         return 1
     fi
 }
@@ -1178,12 +1243,36 @@ check_consensus_client_health() {
     
     log_info "Checking $client_type health..."
     
+    # Check if curl is available
+    if ! command_exists curl; then
+        log_error "curl command not found - cannot check REST API health"
+        return 1
+    fi
+    
+    # Validate port number
+    if ! [[ "$rest_port" =~ ^[0-9]+$ ]] || [[ "$rest_port" -lt 1 ]] || [[ "$rest_port" -gt 65535 ]]; then
+        log_error "Invalid REST port: $rest_port"
+        return 1
+    fi
+    
     # Check if REST API is responding
-    if curl -s "http://127.0.0.1:$rest_port/eth/v1/node/health" >/dev/null 2>&1; then
-        log_info "✓ $client_type REST API is responding"
-        return 0
+    local curl_output
+    local curl_exit_code
+    
+    if curl_output=$(curl -s -w "%{http_code}" --connect-timeout 5 --max-time 10 "http://127.0.0.1:$rest_port/eth/v1/node/health" 2>/dev/null); then
+        curl_exit_code=$?
+        local http_code="${curl_output: -3}"
+        
+        if [[ "$http_code" == "200" ]]; then
+            log_info "✓ $client_type REST API is responding (HTTP $http_code)"
+            return 0
+        else
+            log_error "✗ $client_type REST API returned HTTP $http_code"
+            return 1
+        fi
     else
-        log_error "✗ $client_type REST API is not responding"
+        curl_exit_code=$?
+        log_error "✗ $client_type REST API is not responding (curl exit code: $curl_exit_code)"
         return 1
     fi
 }
@@ -1193,12 +1282,36 @@ check_mev_boost_health() {
     
     log_info "Checking MEV-Boost health..."
     
+    # Check if curl is available
+    if ! command_exists curl; then
+        log_error "curl command not found - cannot check MEV-Boost health"
+        return 1
+    fi
+    
+    # Validate port number
+    if ! [[ "$mev_port" =~ ^[0-9]+$ ]] || [[ "$mev_port" -lt 1 ]] || [[ "$mev_port" -gt 65535 ]]; then
+        log_error "Invalid MEV port: $mev_port"
+        return 1
+    fi
+    
     # Check if MEV-Boost is responding
-    if curl -s "http://127.0.0.1:$mev_port/health" >/dev/null 2>&1; then
-        log_info "✓ MEV-Boost is responding"
-        return 0
+    local curl_output
+    local curl_exit_code
+    
+    if curl_output=$(curl -s -w "%{http_code}" --connect-timeout 5 --max-time 10 "http://127.0.0.1:$mev_port/health" 2>/dev/null); then
+        curl_exit_code=$?
+        local http_code="${curl_output: -3}"
+        
+        if [[ "$http_code" == "200" ]]; then
+            log_info "✓ MEV-Boost is responding (HTTP $http_code)"
+            return 0
+        else
+            log_error "✗ MEV-Boost returned HTTP $http_code"
+            return 1
+        fi
     else
-        log_error "✗ MEV-Boost is not responding"
+        curl_exit_code=$?
+        log_error "✗ MEV-Boost is not responding (curl exit code: $curl_exit_code)"
         return 1
     fi
 }
