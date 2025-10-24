@@ -7,13 +7,19 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting Lighthouse installation..."
+# Check if running as root
+require_root
+
+# Get script directories
+get_script_directories
+
+# Start installation
+log_installation_start "Lighthouse"
 
 
 # Check system requirements
 check_system_requirements 16 1000
 
-# Dependencies are installed centrally via install_dependencies.sh
 
 # Setup firewall rules for Lighthouse
 setup_firewall_rules 9000 5052

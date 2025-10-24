@@ -7,7 +7,14 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting NGINX SSL configuration..."
+# Check if running as root
+require_root
+
+# Get script directories
+get_script_directories
+
+# Start installation
+log_installation_start "NGINX SSL"
 log_info "Server name: $SERVER_NAME"
 
 # Create SSL-enabled NGINX configuration

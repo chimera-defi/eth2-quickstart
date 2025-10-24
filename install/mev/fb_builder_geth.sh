@@ -7,13 +7,19 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting Flashbots Builder Geth installation..."
+# Check if running as root
+require_root
+
+# Get script directories
+get_script_directories
+
+# Start installation
+log_installation_start "Flashbots Builder Geth"
 
 
 # Check system requirements
 check_system_requirements 16 2000
 
-# Dependencies are installed centrally via install_dependencies.sh
 
 # Clone Flashbots builder repository
 log_info "Cloning Flashbots builder repository..."
@@ -38,6 +44,6 @@ if ! sudo cp ./build/bin/geth /usr/bin/; then
     exit 1
 fi
 
-log_info "Flashbots Builder Geth installation completed!"
+log_installation_complete "Flashbots Builder Geth" "mev-geth"
 log_info "Geth binary installed to: /usr/bin/geth"
 log_info "This is a custom Geth build with Flashbots builder support"

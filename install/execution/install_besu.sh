@@ -65,7 +65,7 @@ BESU_DATA_DIR="$HOME/.local/share/besu"
 ensure_directory "$BESU_DATA_DIR"
 
 # Create temporary directory for custom configuration
-mkdir ./tmp
+create_temp_config_dir
 
 # Create custom configuration variables file
 cat > ./tmp/besu_custom.toml << EOF
@@ -107,7 +107,7 @@ sudo sed -i "/\\[Service\\]/a Environment=JAVA_OPTS=\"$JAVA_OPTS\"" /etc/systemd
 # Enable and start the service
 enable_and_start_systemd_service "eth1"
 
-log_info "Besu installation completed!"
+log_installation_complete "Besu" "besu"
 log_info "Configuration file: $BESU_DIR/besu.toml"
 log_info "Data directory: $BESU_DATA_DIR"
 log_info "To check status: sudo systemctl status eth1"

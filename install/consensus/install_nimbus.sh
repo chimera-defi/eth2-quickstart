@@ -73,7 +73,7 @@ VALIDATOR_DATA_DIR="$NIMBUS_DATA_DIR/validators"
 ensure_directory "$VALIDATOR_DATA_DIR"
 
 # Create temporary directory for custom configuration
-mkdir ./tmp
+create_temp_config_dir
 
 # Create custom configuration variables file
 cat > ./tmp/nimbus_custom.toml << EOF
@@ -151,7 +151,7 @@ create_systemd_service "validator" "Nimbus Ethereum Validator Client" "$VALIDATO
 enable_and_start_systemd_service "cl"
 enable_and_start_systemd_service "validator"
 
-log_info "Nimbus installation completed!"
+log_installation_complete "Nimbus" "nimbus"
 log_info "Beacon node configuration: $NIMBUS_DIR/nimbus.toml"
 log_info "Validator configuration: $NIMBUS_DIR/validator.toml"
 log_info "Data directory: $NIMBUS_DATA_DIR"
