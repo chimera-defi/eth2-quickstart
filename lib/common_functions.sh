@@ -169,7 +169,7 @@ install_dependencies() {
     apt-get update
     apt-get install -y "${packages[@]}"
     
-    if [[ $? -eq 0 ]]; then
+    if apt-get install -y "${packages[@]}"; then
         log_info "Dependencies installed successfully"
     else
         log_error "Failed to install some dependencies"
@@ -223,14 +223,16 @@ check_system_requirements() {
     log_info "Checking system requirements..."
     
     # Check memory
-    local total_memory_gb=$(free -g | awk 'NR==2{print $2}')
+    local total_memory_gb
+    total_memory_gb=$(free -g | awk 'NR==2{print $2}')
     if [[ $total_memory_gb -lt $min_memory_gb ]]; then
         log_error "Insufficient memory: ${total_memory_gb}GB available, ${min_memory_gb}GB required"
         return 1
     fi
     
     # Check disk space
-    local available_disk_gb=$(df -BG / | awk 'NR==2{print $4}' | sed 's/G//')
+    local available_disk_gb
+    available_disk_gb=$(df -BG / | awk 'NR==2{print $4}' | sed 's/G//')
     if [[ $available_disk_gb -lt $min_disk_gb ]]; then
         log_error "Insufficient disk space: ${available_disk_gb}GB available, ${min_disk_gb}GB required"
         return 1
@@ -251,7 +253,8 @@ check_system_compatibility() {
     
     # Check OS
     if [[ -f /etc/os-release ]]; then
-        local os_id=$(grep "^ID=" /etc/os-release | cut -d'=' -f2 | tr -d '"')
+        local os_id
+        os_id=$(grep "^ID=" /etc/os-release | cut -d'=' -f2 | tr -d '"')
         case "$os_id" in
             "ubuntu"|"debian")
                 log_info "✓ Running on $os_id"
@@ -263,7 +266,8 @@ check_system_compatibility() {
     fi
     
     # Check architecture
-    local arch=$(uname -m)
+    local arch
+    arch=$(uname -m)
     if [[ "$arch" != "x86_64" ]]; then
         log_error "Unsupported architecture: $arch (requires x86_64)"
         return 1
@@ -288,8 +292,10 @@ require_root() {
 # 1. SCRIPT_DIR Pattern Duplication - get_script_directories()
 get_script_directories() {
     # Get the directory of the calling script
-    local script_dir="$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)"
-    local project_root="$(cd "$script_dir/../.." && pwd)"
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)"
+    local project_root
+    project_root="$(cd "$script_dir/../.." && pwd)"
     
     # Export variables for use in calling script
     export SCRIPT_DIR="$script_dir"
