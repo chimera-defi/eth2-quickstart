@@ -68,7 +68,7 @@ VALIDATOR_DATA_DIR="$GRANDINE_DATA_DIR/validators"
 ensure_directory "$VALIDATOR_DATA_DIR"
 
 # Create temporary directory for custom configuration
-mkdir ./tmp
+create_temp_config_dir
 
 # Create custom configuration variables file
 cat > ./tmp/grandine_custom.toml << EOF
@@ -112,11 +112,7 @@ create_systemd_service "cl" "Grandine Ethereum Consensus Client" "$BEACON_EXEC_S
 # Enable and start service
 enable_and_start_systemd_service "cl"
 
-log_info "Grandine installation completed!"
-log_info "Configuration file: $GRANDINE_DIR/grandine.toml"
-log_info "Data directory: $GRANDINE_DATA_DIR"
-log_info "Validator directory: $VALIDATOR_DATA_DIR"
-log_info "To check status: sudo systemctl status cl"
+log_installation_complete "Grandine" "cl"
 log_info "To view logs: journalctl -fu cl"
 
 # Display setup information
