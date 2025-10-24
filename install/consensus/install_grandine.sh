@@ -7,7 +7,11 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting Grandine installation..."
+# Get script directories
+get_script_directories
+
+# Start installation
+log_installation_start "Grandine"
 
 
 # Check system requirements
