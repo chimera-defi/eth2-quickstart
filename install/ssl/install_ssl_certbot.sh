@@ -7,7 +7,7 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting Certbot SSL certificate installation..."
+log_installation_start "Certbot SSL"
 
 log_info "Server name: $SERVER_NAME"
 
@@ -24,7 +24,6 @@ if ! ./install_nginx.sh; then
     exit 1
 fi
 
-# Dependencies are installed centrally via install_dependencies.sh
 # Configure certbot
 log_info "Configuring certbot..."
 if ! sudo snap refresh core; then

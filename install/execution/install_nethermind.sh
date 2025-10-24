@@ -7,7 +7,7 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting Nethermind installation..."
+log_installation_start "Nethermind"
 
 
 # Check system requirements
@@ -51,7 +51,7 @@ chmod +x "$NETHERMIND_DIR/Nethermind.Runner"
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create temporary directory for custom configuration
-mkdir ./tmp
+create_temp_config_dir
 
 # Create custom configuration variables file
 cat > ./tmp/nethermind_custom.cfg << EOF
@@ -162,7 +162,7 @@ create_systemd_service "eth1" "Nethermind Ethereum Execution Client" "$EXEC_STAR
 # Enable and start the service
 enable_and_start_systemd_service "eth1"
 
-log_info "Nethermind installation completed!"
+log_installation_complete "Nethermind" "nethermind"
 log_info "Configuration file: $NETHERMIND_DIR/nethermind.cfg"
 log_info "To check status: sudo systemctl status eth1"
 log_info "To view logs: journalctl -fu eth1"

@@ -7,13 +7,19 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting Erigon installation..."
+# Check if running as root
+require_root
+
+# Get script directories
+get_script_directories
+
+# Start installation
+log_installation_start "Erigon"
 
 
 # Check system requirements
 check_system_requirements 16 2000
 
-# Dependencies are installed centrally via install_dependencies.sh
 
 # Setup firewall rules for Erigon
 setup_firewall_rules 30303 30304 42069 4000 4001

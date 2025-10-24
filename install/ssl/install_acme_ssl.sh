@@ -8,7 +8,7 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting ACME.sh SSL certificate installation..."
+log_installation_start "ACME.sh SSL"
 
 log_info "Server name: $SERVER_NAME"
 log_info "Email: $EMAIL"
@@ -32,7 +32,6 @@ if ! ./install_nginx.sh; then
 fi
 
 # Install dependencies
-# Dependencies are installed centrally via install_dependencies.sh
 
 # Clone and install acme.sh
 log_info "Cloning acme.sh repository..."

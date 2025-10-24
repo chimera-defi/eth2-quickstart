@@ -8,12 +8,11 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting optional tools installation..."
+log_installation_start "Optional Tools"
 
-# Dependencies are installed centrally via install_dependencies.sh
 log_info "Network monitoring tools are available..."
 
-log_info "Optional tools installation completed!"
+log_installation_complete "Optional Tools" "optional-tools"
 log_info "Installed tools:"
 log_info "- bmon: Bandwidth monitoring"
 log_info "- slurm: Network traffic monitor"
