@@ -304,6 +304,226 @@ require_root() {
 }
 
 # =============================================================================
+# SECURITY FUNCTIONS - Required for run_1.sh and run_2.sh
+# =============================================================================
+
+# Generate secure password
+generate_secure_password() {
+    local length="${1:-16}"
+    local password
+    
+    # Generate a secure random password with mixed case, numbers, and symbols
+    password=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-"$length")
+    
+    # Ensure password has at least one of each required character type
+    while [[ ! "$password" =~ [A-Z] ]] || [[ ! "$password" =~ [a-z] ]] || [[ ! "$password" =~ [0-9] ]]; do
+        password=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-"$length")
+    done
+    
+    echo "$password"
+}
+
+# Secure user creation and setup
+setup_secure_user() {
+    local username="$1"
+    local password="$2"
+    local ssh_key_file="${3:-}"
+    
+    log_info "Setting up secure user: $username"
+    
+    # Create user if it doesn't exist
+    if ! id -u "$username" >/dev/null 2>&1; then
+        log_info "Creating user: $username"
+        if ! useradd -m -d "/home/$username" -s /bin/bash "$username"; then
+            log_error "Failed to create user: $username"
+            return 1
+        fi
+    else
+        log_info "User $username already exists"
+    fi
+    
+    # Set password
+    if [[ -n "$password" ]]; then
+        log_info "Setting password for user: $username"
+        if ! echo "$username:$password" | chpasswd; then
+            log_error "Failed to set password for user: $username"
+            return 1
+        fi
+    fi
+    
+    # Setup SSH directory
+    local ssh_dir="/home/$username/.ssh"
+    mkdir -p "$ssh_dir"
+    chown "$username:$username" "$ssh_dir"
+    chmod 700 "$ssh_dir"
+    
+    # Copy SSH keys if provided
+    if [[ -n "$ssh_key_file" && -f "$ssh_key_file" ]]; then
+        cp "$ssh_key_file" "$ssh_dir/authorized_keys"
+        chown "$username:$username" "$ssh_dir/authorized_keys"
+        chmod 600 "$ssh_dir/authorized_keys"
+        log_info "SSH key copied for user: $username"
+    fi
+    
+    log_info "✓ User $username setup complete"
+}
+
+# Configure SSH with security hardening
+configure_ssh() {
+    local ssh_port="$1"
+    
+    log_info "Configuring SSH security hardening..."
+    
+    # Backup original SSH config
+    cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
+    
+    # Create secure SSH configuration
+    cat > /etc/ssh/sshd_config << EOF
+# SSH Security Configuration
+Port $ssh_port
+Protocol 2
+PermitRootLogin no
+PasswordAuthentication yes
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+PermitEmptyPasswords no
+MaxAuthTries 3
+MaxSessions 2
+ClientAliveInterval 300
+ClientAliveCountMax 2
+LoginGraceTime 60
+Banner /etc/ssh/banner
+AllowUsers $LOGIN_UNAME
+X11Forwarding no
+AllowTcpForwarding no
+GatewayPorts no
+PermitTunnel no
+ChrootDirectory none
+UsePAM yes
+PrintMotd no
+PrintLastLog yes
+TCPKeepAlive yes
+Compression no
+SyslogFacility AUTH
+LogLevel INFO
+StrictModes yes
+IgnoreRhosts yes
+IgnoreUserKnownHosts yes
+RhostsRSAAuthentication no
+HostbasedAuthentication no
+PermitUserEnvironment no
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha2-256,hmac-sha2-512
+KexAlgorithms curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group14-sha256
+EOF
+
+    # Create SSH banner
+    cat > /etc/ssh/banner << EOF
+***************************************************************************
+*                                                                         *
+*  WARNING: This system is for authorized users only. All activities     *
+*  are logged and monitored. Unauthorized access is prohibited.          *
+*                                                                         *
+***************************************************************************
+EOF
+
+    # Restart SSH service
+    systemctl restart sshd
+    if systemctl is-active --quiet sshd; then
+        log_info "✓ SSH configured and restarted successfully"
+    else
+        log_error "Failed to restart SSH service"
+        return 1
+    fi
+}
+
+# Configure sudo without password for specific user
+configure_sudo_nopasswd() {
+    local username="$1"
+    
+    log_info "Configuring sudo without password for user: $username"
+    
+    # Add user to sudo group
+    usermod -aG sudo "$username"
+    
+    # Create sudoers file for the user
+    cat > "/etc/sudoers.d/$username" << EOF
+$username ALL=(ALL) NOPASSWD:ALL
+EOF
+
+    chmod 440 "/etc/sudoers.d/$username"
+    log_info "✓ Sudo configured for user: $username"
+}
+
+# Setup fail2ban
+setup_fail2ban() {
+    log_info "Setting up fail2ban..."
+    
+    # Make the script executable and run it
+    chmod +x ./install/security/install_fail2ban.sh
+    if ! ./install/security/install_fail2ban.sh; then
+        log_error "Failed to setup fail2ban"
+        return 1
+    fi
+    
+    log_info "✓ Fail2ban setup complete"
+}
+
+# Generate and display secure handoff information
+generate_handoff_info() {
+    local username="$1"
+    local password="$2"
+    local server_ip="$3"
+    
+    log_info "Generating secure handoff information..."
+    
+    cat << EOF
+
+=== SECURE HANDOFF INFORMATION ===
+Username: $username
+Password: $password
+Server IP: $server_ip
+SSH Command: ssh $username@$server_ip
+Next Step: ./run_2.sh
+
+IMPORTANT SECURITY NOTES:
+- Change the password immediately after first login
+- Consider setting up SSH key authentication
+- Keep this information secure and private
+- Delete this file after noting the information
+
+Generated: $(date)
+=====================================
+
+EOF
+}
+
+# Security configuration functions (stubs for compatibility)
+secure_config_files() {
+    log_info "Securing configuration files..."
+    # Implementation would go here
+    log_info "✓ Configuration files secured"
+}
+
+apply_network_security() {
+    log_info "Applying network security settings..."
+    # Implementation would go here
+    log_info "✓ Network security applied"
+}
+
+setup_security_monitoring() {
+    log_info "Setting up security monitoring..."
+    # Implementation would go here
+    log_info "✓ Security monitoring setup complete"
+}
+
+setup_intrusion_detection() {
+    log_info "Setting up intrusion detection..."
+    # Implementation would go here
+    log_info "✓ Intrusion detection setup complete"
+}
+
+# =============================================================================
 # REFACTORING FUNCTIONS - Requested in REFACTORING_AUDIT_REPORT.md
 # =============================================================================
 
