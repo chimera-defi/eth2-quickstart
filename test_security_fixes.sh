@@ -2,9 +2,8 @@
 # Security Testing Script
 # Tests all implemented security fixes
 
-set -euo pipefail
-
-# Source common functions
+# Source required files
+source ./exports.sh
 source ./lib/common_functions.sh
 
 log_info "Starting security testing..."
