@@ -116,36 +116,4 @@ log_installation_complete "Grandine" "cl"
 log_info "To view logs: journalctl -fu cl"
 
 # Display setup information
-cat << EOF
-
-=== Grandine Setup Information ===
-Grandine has been installed as a high-performance Rust consensus client.
-
-Note: Grandine is a newer client and may have different validator management
-compared to other clients. Please check the latest documentation for
-validator key import procedures.
-
-Next Steps:
-1. Import your validator keys (check Grandine docs for specific procedure)
-2. Monitor logs to ensure proper sync and operation
-
-Key features:
-- High-performance Rust implementation
-- HTTP API available on port 5052
-- P2P networking on port 9000
-- Metrics available on port 8008
-- Checkpoint sync enabled for faster initial sync
-- MEV-Boost integration ready
-- Optimized for performance and correctness
-
-Rust version: $(rustc --version)
-Cargo version: $(cargo --version)
-
-Important Notes:
-- Grandine is under active development
-- Always check the official documentation for the latest features
-- Consider this an advanced option for experienced operators
-
-Repository: https://github.com/grandinetech/grandine
-
-EOF
+display_client_setup_info "Grandine" "cl" "" "Beacon Node" ""
