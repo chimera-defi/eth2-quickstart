@@ -190,6 +190,20 @@ fi
 
 # Run security validation
 log_info "Running security validation..."
+
+# Run comprehensive security test suite
+if [[ -f "test_security_fixes.sh" && -x "test_security_fixes.sh" ]]; then
+    log_info "Running comprehensive security test suite..."
+    if ./test_security_fixes.sh; then
+        log_info "✓ Security test suite passed"
+    else
+        log_warn "⚠ Security test suite had issues - check output above"
+    fi
+else
+    log_warn "Security test suite not found"
+fi
+
+# Run code quality validation
 if [[ -f "docs/validate_security_safe.sh" && -x "docs/validate_security_safe.sh" ]]; then
     log_info "Running code quality validation..."
     if ./docs/validate_security_safe.sh; then
@@ -201,6 +215,7 @@ else
     log_warn "Security validation script not found"
 fi
 
+# Run server security validation
 if [[ -f "docs/server_security_validation.sh" && -x "docs/server_security_validation.sh" ]]; then
     log_info "Running server security validation..."
     if ./docs/server_security_validation.sh; then
