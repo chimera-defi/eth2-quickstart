@@ -9,6 +9,8 @@ source ../../lib/common_functions.sh
 
 log_installation_start "Nethermind"
 
+# Get script directories
+get_script_directories
 
 # Check system requirements
 check_system_requirements 16 2000

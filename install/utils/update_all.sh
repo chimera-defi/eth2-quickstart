@@ -14,6 +14,9 @@
 # Source common functions and configuration
 source ../../lib/common_functions.sh
 
+# Get script directories
+get_script_directories
+
 # Configuration
 GIT_UPDATE_SCRIPT="$SCRIPT_DIR/update_git.sh"
 SOFTWARE_UPDATE_SCRIPT="$SCRIPT_DIR/update.sh"
