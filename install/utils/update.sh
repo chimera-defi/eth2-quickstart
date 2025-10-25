@@ -6,7 +6,6 @@
 # Note: Stops services before updating, restarts after completion
 
 # Source common functions and configuration
-source ../../exports.sh
 source ../../lib/common_functions.sh
 get_script_directories
 

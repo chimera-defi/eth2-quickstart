@@ -12,9 +12,7 @@
 #   --rollback      Rollback to previous version if available (git only)
 
 # Source common functions and configuration
-source ../../exports.sh
 source ../../lib/common_functions.sh
-get_script_directories
 
 # Configuration
 GIT_UPDATE_SCRIPT="$SCRIPT_DIR/update_git.sh"

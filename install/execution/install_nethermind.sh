@@ -50,8 +50,7 @@ chmod +x "$NETHERMIND_DIR/Nethermind.Runner"
 # Ensure JWT secret exists
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
-# Create temporary directory for custom configuration
-create_temp_config_dir
+# Create custom configuration with variables
 
 # Create custom configuration variables file
 cat > ./tmp/nethermind_custom.cfg << EOF
