@@ -36,9 +36,8 @@ This guide provides comprehensive security information for the Ethereum node set
 ## Security Scripts
 
 ### Testing Scripts
-- **`test_security_fixes.sh`** - Tests security implementations
+- **`install/security/validate_security.sh`** - Unified security validation script
 - **`docs/verify_security.sh`** - Production security verification
-- **`docs/validate_security_safe.sh`** - Safe validation without root
 
 ### Usage
 ```bash
@@ -66,7 +65,7 @@ This guide provides comprehensive security information for the Ethereum node set
    - Security validation
 
 ### Verification
-1. **Test Security**: Run `./test_security_fixes.sh`
+1. **Test Security**: Run `./install/security/validate_security.sh`
 2. **Verify Security**: Run `./docs/verify_security.sh`
 3. **Monitor Logs**: Check `/var/log/security_monitor.log`
 

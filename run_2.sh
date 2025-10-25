@@ -188,43 +188,18 @@ else
     log_info "4. Check configuration files exist and have correct permissions"
 fi
 
-# Run security validation
-log_info "Running security validation..."
+# Run unified security validation
+log_info "Running unified security validation..."
 
-# Run comprehensive security test suite
-if [[ -f "test_security_fixes.sh" && -x "test_security_fixes.sh" ]]; then
-    log_info "Running comprehensive security test suite..."
-    if ./test_security_fixes.sh; then
-        log_info "✓ Security test suite passed"
+if [[ -f "install/security/validate_security.sh" && -x "install/security/validate_security.sh" ]]; then
+    log_info "Running comprehensive security validation..."
+    if ./install/security/validate_security.sh; then
+        log_info "✓ Security validation passed"
     else
-        log_warn "⚠ Security test suite had issues - check output above"
-    fi
-else
-    log_warn "Security test suite not found"
-fi
-
-# Run code quality validation
-if [[ -f "docs/validate_security_safe.sh" && -x "docs/validate_security_safe.sh" ]]; then
-    log_info "Running code quality validation..."
-    if ./docs/validate_security_safe.sh; then
-        log_info "✓ Security code validation passed"
-    else
-        log_warn "⚠ Security code validation had issues - check output above"
+        log_warn "⚠ Security validation had issues - check output above"
     fi
 else
     log_warn "Security validation script not found"
-fi
-
-# Run server security validation
-if [[ -f "docs/server_security_validation.sh" && -x "docs/server_security_validation.sh" ]]; then
-    log_info "Running server security validation..."
-    if ./docs/server_security_validation.sh; then
-        log_info "✓ Server security validation passed"
-    else
-        log_warn "⚠ Server security validation had issues - check output above"
-    fi
-else
-    log_warn "Server security validation script not found"
 fi
 
 # Display comprehensive status and next steps
@@ -276,7 +251,7 @@ cat << EOF
 - Stop all services: sudo systemctl stop eth1 cl validator mev
 - Restart all services: sudo systemctl restart eth1 cl validator mev
 - View logs: journalctl -fu [service_name]
-- Check security: ./test_security_fixes.sh
+- Check security: ./install/security/validate_security.sh
 
 === SYNC TIME ESTIMATES ===
 - Geth: 1-2 days (depending on hardware and internet)

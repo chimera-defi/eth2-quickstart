@@ -166,7 +166,7 @@ sudo systemctl start eth1 cl validator mev
 
 ## Security Utilities
 
-### test_security_fixes.sh
+### install/security/validate_security.sh
 - Tests all implemented security fixes
 - Validates network exposure, input validation, file permissions
 - Provides security score and recommendations
@@ -176,7 +176,6 @@ sudo systemctl start eth1 cl validator mev
 - Checks all security implementations
 - Provides detailed security report
 
-### docs/validate_security_safe.sh
 - Safe validation without root privileges
 - Validates security implementations
 - Provides security score

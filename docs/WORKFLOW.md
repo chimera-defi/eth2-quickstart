@@ -66,7 +66,7 @@ curl -X POST http://$(curl -s v4.ident.me)/rpc \
 
 10) Security verification
 - Run security verification: `./docs/verify_security.sh`
-- Test security implementations: `./test_security_fixes.sh`
+- Test security implementations: `./install/security/validate_security.sh`
 - Monitor security logs: `sudo tail -f /var/log/security_monitor.log`
 - Check AIDE logs: `sudo tail -f /var/log/aide_check.log`
 
