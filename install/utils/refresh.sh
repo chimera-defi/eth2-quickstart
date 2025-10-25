@@ -6,7 +6,6 @@
 # Note: Restarts services without stopping them first
 
 # Source required files
-source ../../exports.sh
 source ../../lib/common_functions.sh
 
 log_info "Refreshing all Ethereum services..."

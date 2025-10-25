@@ -6,7 +6,6 @@
 # Note: Requires services to be installed and configured
 
 # Source required files
-source ../../exports.sh
 source ../../lib/common_functions.sh
 
 start_all_services

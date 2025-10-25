@@ -4,7 +4,6 @@
 # This script helps users choose between different execution and consensus clients
 
 # Source required files
-source ../../exports.sh
 source ../../lib/common_functions.sh
 
 # Colors for better readability
