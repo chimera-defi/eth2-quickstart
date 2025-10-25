@@ -4,8 +4,24 @@
 # Grandine Consensus Client Installation Script
 # Grandine is a Rust-based Ethereum consensus client focused on performance
 
-source ../../exports.sh
-source ../../lib/common_functions.sh
+# Source common functions with smart path detection
+if [[ -f "../../exports.sh" ]]; then
+    source ../../exports.sh
+elif [[ -f "exports.sh" ]]; then
+    source exports.sh
+else
+    echo "Error: exports.sh not found"
+    exit 1
+fi
+
+if [[ -f "../../lib/common_functions.sh" ]]; then
+    source ../../lib/common_functions.sh
+elif [[ -f "lib/common_functions.sh" ]]; then
+    source lib/common_functions.sh
+else
+    echo "Error: common_functions.sh not found"
+    exit 1
+fi
 
 log_info "Starting Grandine installation..."
 
