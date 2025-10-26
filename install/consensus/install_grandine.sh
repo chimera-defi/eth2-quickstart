@@ -82,14 +82,10 @@ VALIDATOR_DATA_DIR="$GRANDINE_DATA_DIR/validators"
 ensure_directory "$VALIDATOR_DATA_DIR"
 
 # Create temporary directory for custom configuration
-TEMP_DIR="./tmp"
-if ! mkdir -p "$TEMP_DIR"; then
-    log_error "Failed to create temporary directory: $TEMP_DIR"
-    exit 1
-fi
+mkdir ./tmp
 
 # Create custom configuration variables file
-cat > "$TEMP_DIR/grandine_custom.toml" << EOF
+cat > ./tmp/grandine_custom.toml << EOF
 # Grandine Custom Configuration Variables
 
 # Network settings
@@ -127,13 +123,13 @@ if [[ ! -f "$BASE_CONFIG" ]]; then
     log_error "Base configuration file not found: $BASE_CONFIG"
     exit 1
 fi
-if ! cat "$BASE_CONFIG" "$TEMP_DIR/grandine_custom.toml" > "$GRANDINE_DIR/grandine.toml"; then
+if ! cat "$BASE_CONFIG" ./tmp/grandine_custom.toml > "$GRANDINE_DIR/grandine.toml"; then
     log_error "Failed to create Grandine configuration file"
     exit 1
 fi
 
 # Clean up temporary files
-rm -rf "$TEMP_DIR"
+rm -rf ./tmp/
 
 
 # Create systemd service for beacon node
