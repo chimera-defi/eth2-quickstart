@@ -654,9 +654,11 @@ merge_client_config() {
             # Manual YAML merge: copy base config and append custom config
             cp "$base_config" "$output_config"
             if [[ -f "$custom_config" ]]; then
-                echo "" >> "$output_config"
-                echo "# Custom configuration overrides" >> "$output_config"
-                cat "$custom_config" >> "$output_config"
+                {
+                    echo ""
+                    echo "# Custom configuration overrides"
+                    cat "$custom_config"
+                } >> "$output_config"
             fi
             ;;
         *.toml)
