@@ -651,11 +651,12 @@ merge_client_config() {
             fi
             ;;
         *.yaml|*.yml)
-            if command_exists yq; then
-                yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' "$base_config" "$custom_config" > "$output_config"
-            else
-                log_error "yq not found, cannot merge YAML configs"
-                return 1
+            # Manual YAML merge: copy base config and append custom config
+            cp "$base_config" "$output_config"
+            if [[ -f "$custom_config" ]]; then
+                echo "" >> "$output_config"
+                echo "# Custom configuration overrides" >> "$output_config"
+                cat "$custom_config" >> "$output_config"
             fi
             ;;
         *.toml)
