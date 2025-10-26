@@ -652,13 +652,7 @@ merge_client_config() {
             ;;
         *.yaml|*.yml)
             if command_exists yq; then
-                # Simple fallback: copy custom over base (custom takes precedence)
-                cp "$base_config" "$output_config"
-                if [[ -f "$custom_config" ]]; then
-                    # Append custom config to base config
-                    echo "" >> "$output_config"
-                    cat "$custom_config" >> "$output_config"
-                fi
+                yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' "$base_config" "$custom_config" > "$output_config"
             else
                 log_error "yq not found, cannot merge YAML configs"
                 return 1
