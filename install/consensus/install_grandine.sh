@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 # Grandine Consensus Client Installation Script
 # Grandine is a Rust-based Ethereum consensus client focused on performance
 
@@ -25,7 +24,6 @@ fi
 
 log_info "Starting Grandine installation..."
 
-
 # Check system requirements
 check_system_requirements 16 1000
 
@@ -49,7 +47,10 @@ setup_firewall_rules 9000 5052
 GRANDINE_DIR="$HOME/grandine"
 ensure_directory "$GRANDINE_DIR"
 
-cd "$GRANDINE_DIR" || exit
+if ! cd "$GRANDINE_DIR"; then
+    log_error "Failed to change to Grandine directory: $GRANDINE_DIR"
+    exit 1
+fi
 
 # Clone Grandine repository (as it may not have regular releases yet)
 log_info "Cloning Grandine repository..."
@@ -81,10 +82,14 @@ VALIDATOR_DATA_DIR="$GRANDINE_DATA_DIR/validators"
 ensure_directory "$VALIDATOR_DATA_DIR"
 
 # Create temporary directory for custom configuration
-mkdir ./tmp
+TEMP_DIR="./tmp"
+if ! mkdir -p "$TEMP_DIR"; then
+    log_error "Failed to create temporary directory: $TEMP_DIR"
+    exit 1
+fi
 
 # Create custom configuration variables file
-cat > ./tmp/grandine_custom.toml << EOF
+cat > "$TEMP_DIR/grandine_custom.toml" << EOF
 # Grandine Custom Configuration Variables
 
 # Network settings
@@ -110,18 +115,34 @@ suggested_fee_recipient = "$FEE_RECIPIENT"
 graffiti = "$GRAFITTI"
 EOF
 
+if [[ $? -ne 0 ]]; then
+    log_error "Failed to create Grandine custom configuration file"
+    exit 1
+fi
+
 # Merge base configuration with custom settings
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cat "$SCRIPT_DIR/configs/grandine/grandine_base.toml" ./tmp/grandine_custom.toml > "$GRANDINE_DIR/grandine.toml"
+BASE_CONFIG="$SCRIPT_DIR/../../configs/grandine/grandine_base.toml"
+if [[ ! -f "$BASE_CONFIG" ]]; then
+    log_error "Base configuration file not found: $BASE_CONFIG"
+    exit 1
+fi
+if ! cat "$BASE_CONFIG" "$TEMP_DIR/grandine_custom.toml" > "$GRANDINE_DIR/grandine.toml"; then
+    log_error "Failed to create Grandine configuration file"
+    exit 1
+fi
 
 # Clean up temporary files
-rm -rf ./tmp/
+rm -rf "$TEMP_DIR"
 
 
 # Create systemd service for beacon node
 BEACON_EXEC_START="$GRANDINE_DIR/target/release/grandine --config $GRANDINE_DIR/grandine.toml"
 
-create_systemd_service "cl" "Grandine Ethereum Consensus Client" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
+if ! create_systemd_service "cl" "Grandine Ethereum Consensus Client" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"; then
+    log_error "Failed to create systemd service for Grandine"
+    exit 1
+fi
 
 # Enable and start service
 enable_and_start_systemd_service "cl"
