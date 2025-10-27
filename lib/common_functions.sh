@@ -500,29 +500,211 @@ Generated: $(date)
 EOF
 }
 
-# Security configuration functions (stubs for compatibility)
+# Security configuration functions
 secure_config_files() {
     log_info "Securing configuration files..."
-    # Implementation would go here
+    
+    # Set secure permissions on configuration files
+    find /etc -name "*.conf" -type f -exec sudo chmod 644 {} \; 2>/dev/null || true
+    find /etc -name "*.cfg" -type f -exec sudo chmod 644 {} \; 2>/dev/null || true
+    find /etc -name "*.yaml" -type f -exec sudo chmod 644 {} \; 2>/dev/null || true
+    find /etc -name "*.yml" -type f -exec sudo chmod 644 {} \; 2>/dev/null || true
+    find /etc -name "*.json" -type f -exec sudo chmod 644 {} \; 2>/dev/null || true
+    find /etc -name "*.toml" -type f -exec sudo chmod 644 {} \; 2>/dev/null || true
+    
+    # Secure sensitive files
+    if [[ -f "/etc/ssh/sshd_config" ]]; then
+        sudo chmod 600 /etc/ssh/sshd_config
+    fi
+    
+    if [[ -f "/etc/sudoers" ]]; then
+        sudo chmod 440 /etc/sudoers
+    fi
+    
     log_info "✓ Configuration files secured"
 }
 
 apply_network_security() {
     log_info "Applying network security settings..."
-    # Implementation would go here
+    
+    # Disable unnecessary network services
+    sudo systemctl disable bluetooth 2>/dev/null || true
+    sudo systemctl disable cups 2>/dev/null || true
+    sudo systemctl disable avahi-daemon 2>/dev/null || true
+    
+    # Configure kernel parameters for security
+    cat >> /etc/sysctl.conf << EOF
+
+# Network security settings
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.default.send_redirects = 0
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv4.conf.all.secure_redirects = 0
+net.ipv4.conf.default.secure_redirects = 0
+net.ipv4.conf.all.log_martians = 1
+net.ipv4.conf.default.log_martians = 1
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+net.ipv4.icmp_ignore_bogus_error_responses = 1
+net.ipv4.tcp_syncookies = 1
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 1
+net.ipv6.conf.all.accept_redirects = 0
+net.ipv6.conf.default.accept_redirects = 0
+EOF
+    
+    # Apply sysctl settings
+    sudo sysctl -p >/dev/null 2>&1 || true
+    
     log_info "✓ Network security applied"
 }
 
 setup_security_monitoring() {
     log_info "Setting up security monitoring..."
-    # Implementation would go here
+    
+    # Create security monitoring script
+    sudo tee /usr/local/bin/security_monitor.sh > /dev/null << 'EOF'
+#!/bin/bash
+# Security monitoring script
+
+LOG_FILE="/var/log/security_monitor.log"
+DATE=$(date '+%Y-%m-%d %H:%M:%S')
+
+echo "[$DATE] Security monitoring check" >> "$LOG_FILE"
+
+# Check for failed login attempts
+if command -v lastb >/dev/null 2>&1; then
+    failed_logins=$(lastb | wc -l)
+    if [[ $failed_logins -gt 0 ]]; then
+        echo "[$DATE] WARNING: $failed_logins failed login attempts detected" >> "$LOG_FILE"
+    fi
+fi
+
+# Check for suspicious processes
+if pgrep -f "nc -l" >/dev/null 2>&1; then
+    echo "[$DATE] WARNING: Suspicious netcat listener detected" >> "$LOG_FILE"
+fi
+
+# Check disk usage
+disk_usage=$(df / | awk 'NR==2{print $5}' | sed 's/%//')
+if [[ $disk_usage -gt 90 ]]; then
+    echo "[$DATE] WARNING: Disk usage at ${disk_usage}%" >> "$LOG_FILE"
+fi
+
+echo "[$DATE] Security monitoring check complete" >> "$LOG_FILE"
+EOF
+    
+    sudo chmod +x /usr/local/bin/security_monitor.sh
+    
+    # Add to crontab for regular monitoring
+    (crontab -l 2>/dev/null; echo "*/15 * * * * /usr/local/bin/security_monitor.sh") | crontab - 2>/dev/null || true
+    
     log_info "✓ Security monitoring setup complete"
 }
 
 setup_intrusion_detection() {
     log_info "Setting up intrusion detection..."
-    # Implementation would go here
+    
+    # Install AIDE if not present
+    if ! command_exists aide; then
+        sudo apt-get update
+        sudo apt-get install -y aide
+    fi
+    
+    # Initialize AIDE database if it doesn't exist
+    if [[ ! -f "/var/lib/aide/aide.db" ]]; then
+        sudo aideinit
+        sudo mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+    fi
+    
+    # Create AIDE check script
+    sudo tee /usr/local/bin/aide_check.sh > /dev/null << 'EOF'
+#!/bin/bash
+# AIDE intrusion detection check
+
+LOG_FILE="/var/log/aide_check.log"
+DATE=$(date '+%Y-%m-%d %H:%M:%S')
+
+echo "[$DATE] Running AIDE check..." >> "$LOG_FILE"
+
+if sudo aide --check >> "$LOG_FILE" 2>&1; then
+    echo "[$DATE] AIDE check passed - no changes detected" >> "$LOG_FILE"
+else
+    echo "[$DATE] WARNING: AIDE detected changes in system files" >> "$LOG_FILE"
+fi
+
+echo "[$DATE] AIDE check complete" >> "$LOG_FILE"
+EOF
+    
+    sudo chmod +x /usr/local/bin/aide_check.sh
+    
+    # Add to crontab for daily checks
+    (crontab -l 2>/dev/null; echo "0 2 * * * /usr/local/bin/aide_check.sh") | crontab - 2>/dev/null || true
+    
     log_info "✓ Intrusion detection setup complete"
+}
+
+# Additional security functions required by validation
+validate_user_input() {
+    local input="$1"
+    local max_length="${2:-50}"
+    local min_length="${3:-1}"
+    
+    # Handle empty parameters
+    if [[ -z "$max_length" ]]; then
+        max_length=50
+    fi
+    if [[ -z "$min_length" ]]; then
+        min_length=1
+    fi
+    
+    # Check length
+    if [[ ${#input} -lt $min_length ]] || [[ ${#input} -gt $max_length ]]; then
+        return 1
+    fi
+    
+    # Check for dangerous characters using grep
+    if echo "$input" | grep -q '[<>"'\'';&|`$]'; then
+        return 1
+    fi
+    
+    return 0
+}
+
+secure_error_handling() {
+    # Set up secure error handling
+    set -Eeuo pipefail
+    trap 'log_error "Error in line $LINENO: $BASH_COMMAND"' ERR
+}
+
+safe_command_execution() {
+    local command="$1"
+    
+    # Validate command before execution using grep
+    if echo "$command" | grep -q '[;&|`$]'; then
+        log_error "Unsafe command detected: $command"
+        return 1
+    fi
+    
+    # Execute command safely
+    if eval "$command" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+secure_file_permissions() {
+    local file="$1"
+    local permissions="${2:-600}"
+    
+    if [[ -f "$file" ]]; then
+        sudo chmod "$permissions" "$file"
+        log_info "Set permissions $permissions on $file"
+    else
+        log_error "File not found: $file"
+        return 1
+    fi
 }
 
 # =============================================================================
