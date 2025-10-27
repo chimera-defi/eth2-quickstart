@@ -22,18 +22,31 @@ log_info "Starting consolidated security setup..."
 setup_firewall() {
     log_info "Setting up UFW firewall with comprehensive rules..."
     
-    # Set default policies
-    ufw default deny incoming
-    ufw default allow outgoing
+    # Set default policies with error handling
+    log_info "Setting default firewall policies..."
+    if ! ufw default deny incoming; then
+        log_error "Failed to set default deny incoming"
+        exit 1
+    fi
+    
+    if ! ufw default allow outgoing; then
+        log_error "Failed to set default allow outgoing"
+        exit 1
+    fi
     
     # Open essential ports
-    ufw allow 22/tcp comment "SSH"
-    ufw allow 443/tcp comment "HTTPS"
-    ufw allow 30303 comment "Ethereum P2P"
-    ufw allow 12000/udp comment "Prysm P2P"
-    ufw allow 13000/tcp comment "Prysm API"
+    log_info "Opening ports for Ethereum clients..."
+    ufw allow 30303 || log_warn "Failed to allow port 30303"
+    ufw allow 13000/tcp || log_warn "Failed to allow port 13000/tcp"
+    ufw allow 12000/udp || log_warn "Failed to allow port 12000/udp"
+    ufw allow in ssh || log_warn "Failed to allow SSH"
+    ufw allow 22/tcp || log_warn "Failed to allow port 22/tcp"
+    ufw allow 443/tcp || log_warn "Failed to allow port 443/tcp"
     
     # Block private networks to prevent netscan abuse
+    log_info "Blocking outbound connections to private networks..."
+    log_info "This prevents netscan abuse warnings (updated Feb '23 from Erigon docs)"
+    
     local private_networks=(
         "0.0.0.0/8" "10.0.0.0/8" "100.64.0.0/10" "127.0.0.0/8"
         "169.254.0.0/16" "172.16.0.0/12" "192.0.0.0/24" "192.0.2.0/24"
@@ -42,19 +55,27 @@ setup_firewall() {
     )
     
     for network in "${private_networks[@]}"; do
-        ufw deny out on any to "$network" comment "Block private network $network"
+        ufw deny out on any to "$network" || log_warn "Failed to block outbound to $network"
     done
     
-    # Block dangerous ports
-    ufw deny in 4000/tcp comment "Block port 4000"
-    ufw deny in 3500/tcp comment "Block port 3500"
-    ufw deny in 8551/tcp comment "Block port 8551"
-    ufw deny in 8545/tcp comment "Block port 8545"
+    # Block specific ports (updates from Prysm docs Feb '23)
+    log_info "Blocking specific ports for security..."
+    ufw deny in 4000/tcp || log_warn "Failed to deny port 4000/tcp"
+    ufw deny in 3500/tcp || log_warn "Failed to deny port 3500/tcp"
+    ufw deny in 8551/tcp || log_warn "Failed to deny port 8551/tcp"
+    ufw deny in 8545/tcp || log_warn "Failed to deny port 8545/tcp"
     
-    # Enable firewall
-    ufw --force enable
+    # Enable firewall with error handling
+    log_info "Enabling UFW firewall..."
+    if ! ufw enable; then
+        log_error "Failed to enable UFW firewall"
+        exit 1
+    fi
     
-    log_info "✓ Firewall configured with comprehensive rules"
+    log_info "✓ Firewall configuration completed!"
+    log_info "UFW firewall is now enabled with Ethereum client and security rules"
+    log_info "Allowed ports: 22 (SSH), 443 (HTTPS), 30303 (Ethereum P2P), 12000/13000 (Prysm)"
+    log_info "Blocked: Private networks, specific ports (4000, 3500, 8551, 8545)"
 }
 
 # =============================================================================
@@ -67,22 +88,13 @@ setup_fail2ban() {
     # Install fail2ban
     install_dependencies fail2ban
     
-    # Configure fail2ban jails
-    cat > /etc/fail2ban/jail.local << EOF
-[DEFAULT]
-bantime = 3600
-findtime = 600
-maxretry = 3
-
-[sshd]
-enabled = true
-port = $YourSSHPortNumber
-filter = sshd
-logpath = /var/log/auth.log
-maxretry = $maxretry
-bantime = 3600
-findtime = 600
-
+    # Define variables with fallback defaults (from original script)
+    local SSH_PORT="${YourSSHPortNumber:-22}"
+    local MAX_RETRY="${maxretry:-3}"
+    
+    # Configure fail2ban jails (append mode to preserve existing configs)
+    log_info "Configuring fail2ban jails..."
+    cat >> /etc/fail2ban/jail.local << EOF
 [nginx-proxy]
 enabled = true
 port = 80,443
@@ -90,11 +102,25 @@ filter = nginx-proxy
 logpath = /var/log/nginx/access.log
 maxretry = 2
 bantime = 86400
+
+[sshd]
+enabled = true
+port = $SSH_PORT
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = $MAX_RETRY
+bantime = 3600
 findtime = 600
 EOF
 
     # Create nginx-proxy filter
+    log_info "Creating fail2ban filter for nginx proxy abuse..."
     cat > /etc/fail2ban/filter.d/nginx-proxy.conf << EOF
+# Block IPs trying to use server as proxy.
+#
+# Matches e.g.
+# 192.168.1.1 - - "GET http://www.something.com/
+
 [Definition]
 failregex = ^<HOST> -.*GET http.*
 ignoreregex =
@@ -103,7 +129,47 @@ EOF
     # Enable and start fail2ban
     enable_and_start_systemd_service fail2ban
     
-    log_info "✓ Fail2ban configured with SSH and nginx protection"
+    log_info "✓ Fail2ban installation and configuration complete"
+}
+
+# =============================================================================
+# NGINX HARDENING
+# =============================================================================
+
+setup_nginx_hardening() {
+    log_info "Setting up nginx hardening..."
+    
+    # Create fail2ban jail configuration for nginx proxy abuse
+    log_info "Creating fail2ban jail configuration..."
+    cat > /etc/fail2ban/jail.local << EOF
+## block hosts trying to abuse our server as a forward proxy
+[nginx-proxy]
+enabled = true
+port    = 80,443
+filter = nginx-proxy
+logpath = /var/log/nginx/access.log
+maxretry = 2
+bantime  = 86400
+EOF
+
+    # Restart services
+    log_info "Restarting fail2ban..."
+    if ! systemctl restart fail2ban; then
+        log_error "Failed to restart fail2ban"
+        exit 1
+    fi
+
+    log_info "Restarting nginx..."
+    if ! systemctl restart nginx; then
+        log_error "Failed to restart nginx"
+        exit 1
+    fi
+
+    log_info "✓ NGINX hardening completed!"
+    log_info "fail2ban is now configured to block proxy abuse attempts"
+    log_info "Filter: nginx-proxy"
+    log_info "Ban time: 86400 seconds (24 hours)"
+    log_info "Max retries: 2"
 }
 
 # =============================================================================
@@ -296,6 +362,7 @@ main() {
     # Run all security setup functions
     setup_firewall
     setup_fail2ban
+    setup_nginx_hardening
     setup_aide
     setup_security_monitoring
     setup_network_security
