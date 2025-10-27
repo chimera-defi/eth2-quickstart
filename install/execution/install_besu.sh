@@ -42,7 +42,7 @@ DOWNLOAD_URL="https://github.com/hyperledger/besu/releases/download/${LATEST_VER
 ARCHIVE_FILE="besu-${LATEST_VERSION}.tar.gz"
 
 log_info "Downloading Besu ${LATEST_VERSION}..."
-if download_file "$DOWNLOAD_URL" "$ARCHIVE_FILE"; then
+if secure_download "$DOWNLOAD_URL" "$ARCHIVE_FILE"; then
     extract_archive "$ARCHIVE_FILE" "$BESU_DIR" 1
     rm -f "$ARCHIVE_FILE"
 else

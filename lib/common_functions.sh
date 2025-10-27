@@ -851,6 +851,25 @@ merge_client_config() {
 # ADDITIONAL MISSING FUNCTIONS - Found during audit
 # =============================================================================
 
+# Validate user input with regex pattern
+validate_user_input() {
+    local input="$1"
+    local pattern="$2"
+    local min_length="${3:-1}"
+    
+    # Check length
+    if [[ ${#input} -lt $min_length ]]; then
+        return 1
+    fi
+    
+    # Check pattern match
+    if ! echo "$input" | grep -qE "$pattern"; then
+        return 1
+    fi
+    
+    return 0
+}
+
 # Show installation complete information (legacy function for compatibility)
 show_installation_complete() {
     local client_name="$1"

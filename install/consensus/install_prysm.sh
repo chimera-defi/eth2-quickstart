@@ -31,7 +31,7 @@ cd "$PRYSM_DIR" || exit
 
 # Download Prysm
 log_info "Downloading Prysm..."
-if ! download_file "https://raw.githubusercontent.com/prysmaticlabs/prysm/master/prysm.sh" "prysm.sh"; then
+if ! secure_download "https://raw.githubusercontent.com/prysmaticlabs/prysm/master/prysm.sh" "prysm.sh"; then
     log_error "Failed to download Prysm"
     exit 1
 fi

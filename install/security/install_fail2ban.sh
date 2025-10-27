@@ -42,6 +42,6 @@ findtime = 600
 EOF
 
 # Enable and start fail2ban service
-enable_and_start_system_service fail2ban
+enable_and_start_systemd_service fail2ban
 
 log_info "✓ Fail2ban installation and configuration complete"

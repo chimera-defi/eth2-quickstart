@@ -81,7 +81,10 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Check if running as correct user
-check_user "$LOGIN_UNAME"
+if [[ $(whoami) != "$LOGIN_UNAME" ]]; then
+    log_error "This script should be run as user: $LOGIN_UNAME"
+    exit 1
+fi
 
 # Show what will be deleted
 show_deletion_summary() {
