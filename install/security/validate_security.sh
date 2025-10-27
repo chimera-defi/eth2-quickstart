@@ -199,7 +199,7 @@ test_security_implementations() {
             log_warn "No localhost bindings found in config files"
         fi
         
-        return $issues_found
+        return "$issues_found"
     }
     run_custom_test "Network exposure is secure" test_network_exposure
     
@@ -223,7 +223,7 @@ test_security_implementations() {
             issues_found=$((issues_found + 1))
         fi
         
-        return $issues_found
+        return "$issues_found"
     }
     run_custom_test "Input validation functions work correctly" test_input_validation
     

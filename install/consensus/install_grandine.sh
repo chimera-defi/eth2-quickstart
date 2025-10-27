@@ -111,7 +111,23 @@ suggested_fee_recipient = "$FEE_RECIPIENT"
 graffiti = "$GRAFITTI"
 EOF
 
-if [[ $? -ne 0 ]]; then
+if ! cat > "$TEMP_DIR/grandine_custom.toml" << EOF
+# Grandine Custom Configuration Variables
+
+# Network settings
+target_peers = $MAX_PEERS
+
+# Data directory
+data_dir = "$GRANDINE_DATA_DIR"
+
+# Execution layer
+jwt_secret_path = "$HOME/secrets/jwt.hex"
+
+# Validator settings
+suggested_fee_recipient = "$FEE_RECIPIENT"
+graffiti = "$GRAFITTI"
+EOF
+then
     log_error "Failed to create Grandine custom configuration file"
     exit 1
 fi
