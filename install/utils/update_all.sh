@@ -12,10 +12,10 @@
 #   --rollback      Rollback to previous version if available (git only)
 
 # Source common functions and configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-source ../../exports.sh
 source ../../lib/common_functions.sh
+
+# Get script directories
+get_script_directories
 
 # Configuration
 GIT_UPDATE_SCRIPT="$SCRIPT_DIR/update_git.sh"

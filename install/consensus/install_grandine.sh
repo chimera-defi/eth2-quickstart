@@ -7,13 +7,16 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting Grandine installation..."
+# Get script directories
+get_script_directories
+
+# Start installation
+log_installation_start "Grandine"
 
 
 # Check system requirements
 check_system_requirements 16 1000
 
-# Dependencies are installed centrally via install_dependencies.sh
 # Install Rust and dependencies
 if ! command -v cargo &> /dev/null; then
     log_info "Installing Rust..."
@@ -65,7 +68,7 @@ VALIDATOR_DATA_DIR="$GRANDINE_DATA_DIR/validators"
 ensure_directory "$VALIDATOR_DATA_DIR"
 
 # Create temporary directory for custom configuration
-mkdir ./tmp
+create_temp_config_dir
 
 # Create custom configuration variables file
 cat > ./tmp/grandine_custom.toml << EOF
@@ -95,8 +98,7 @@ graffiti = "$GRAFITTI"
 EOF
 
 # Merge base configuration with custom settings
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cat "$SCRIPT_DIR/configs/grandine/grandine_base.toml" ./tmp/grandine_custom.toml > "$GRANDINE_DIR/grandine.toml"
+merge_client_config "Grandine" "main" "$SCRIPT_DIR/configs/grandine/grandine_base.toml" "./tmp/grandine_custom.toml" "$GRANDINE_DIR/grandine.toml"
 
 # Clean up temporary files
 rm -rf ./tmp/
@@ -110,44 +112,8 @@ create_systemd_service "cl" "Grandine Ethereum Consensus Client" "$BEACON_EXEC_S
 # Enable and start service
 enable_and_start_systemd_service "cl"
 
-log_info "Grandine installation completed!"
-log_info "Configuration file: $GRANDINE_DIR/grandine.toml"
-log_info "Data directory: $GRANDINE_DATA_DIR"
-log_info "Validator directory: $VALIDATOR_DATA_DIR"
-log_info "To check status: sudo systemctl status cl"
+log_installation_complete "Grandine" "cl"
 log_info "To view logs: journalctl -fu cl"
 
 # Display setup information
-cat << EOF
-
-=== Grandine Setup Information ===
-Grandine has been installed as a high-performance Rust consensus client.
-
-Note: Grandine is a newer client and may have different validator management
-compared to other clients. Please check the latest documentation for
-validator key import procedures.
-
-Next Steps:
-1. Import your validator keys (check Grandine docs for specific procedure)
-2. Monitor logs to ensure proper sync and operation
-
-Key features:
-- High-performance Rust implementation
-- HTTP API available on port 5052
-- P2P networking on port 9000
-- Metrics available on port 8008
-- Checkpoint sync enabled for faster initial sync
-- MEV-Boost integration ready
-- Optimized for performance and correctness
-
-Rust version: $(rustc --version)
-Cargo version: $(cargo --version)
-
-Important Notes:
-- Grandine is under active development
-- Always check the official documentation for the latest features
-- Consider this an advanced option for experienced operators
-
-Repository: https://github.com/grandinetech/grandine
-
-EOF
+display_client_setup_info "Grandine" "cl" "" "Beacon Node" ""

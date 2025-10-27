@@ -1,10 +1,11 @@
 #!/bin/bash
 
-
 # Service Refresh Script
 # Restarts all Ethereum client services
 # Usage: ./refresh.sh
 # Note: Restarts services without stopping them first
+
+# Source required files
 source ../../lib/common_functions.sh
 
 log_info "Refreshing all Ethereum services..."

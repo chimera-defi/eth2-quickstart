@@ -6,10 +6,8 @@
 # Note: Stops services before updating, restarts after completion
 
 # Source common functions and configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-source ../../exports.sh
 source ../../lib/common_functions.sh
+get_script_directories
 
 log_info "Starting software stack update..."
 
@@ -25,7 +23,6 @@ sudo apt upgrade -y
 sudo apt dist-upgrade -y
 sudo apt autoremove -y
 
-# Dependencies are installed centrally via install_dependencies.sh
 # geth - upgrade before already shouldve upgraded it for us but here is cmd in case needed
 log_info "Updating Geth..."
 sudo apt upgrade geth -y 

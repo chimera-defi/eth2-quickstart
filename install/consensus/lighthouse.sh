@@ -7,13 +7,17 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting Lighthouse installation..."
+# Note: This script uses sudo internally for privileged operations
+
+# Note: This script uses sudo internally for privileged operations
+
+# Start installation
+log_installation_start "Lighthouse"
 
 
 # Check system requirements
 check_system_requirements 16 1000
 
-# Dependencies are installed centrally via install_dependencies.sh
 
 # Setup firewall rules for Lighthouse
 setup_firewall_rules 9000 5052

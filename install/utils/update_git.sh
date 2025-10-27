@@ -10,10 +10,8 @@
 #   --rollback  Rollback to previous version if available
 
 # Source common functions and configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-source ../../exports.sh
 source ../../lib/common_functions.sh
+get_script_directories
 
 # Configuration
 BACKUP_DIR="$HOME/eth2-quickstart-backups"

@@ -7,7 +7,12 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting Reth installation..."
+# Note: This script uses sudo internally for privileged operations
+
+# Note: This script uses sudo internally for privileged operations
+
+# Start installation
+log_installation_start "Reth"
 
 
 # Check system requirements
@@ -17,7 +22,6 @@ check_system_requirements 16 2000
 # Source Rust environment if available
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 
-# Dependencies are installed centrally via install_dependencies.sh
 
 # Setup firewall rules for Reth
 setup_firewall_rules 30303 30304 42069 4000 4001

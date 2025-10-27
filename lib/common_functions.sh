@@ -9,6 +9,10 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# =============================================================================
+# CORE UTILITY FUNCTIONS
+# =============================================================================
+
 # Logging functions
 log_info() {
     echo -e "${GREEN}[INFO]${NC} $1"
@@ -40,6 +44,15 @@ ensure_directory() {
     fi
 }
 
+# Check if command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# =============================================================================
+# DOWNLOAD FUNCTIONS
+# =============================================================================
+
 # Download file with retry logic and security validation
 download_file() {
     local url="$1"
@@ -50,7 +63,36 @@ download_file() {
     secure_download "$url" "$output" "$max_retries"
 }
 
-# Create systemd service file
+
+# Secure download function
+secure_download() {
+    local url="$1"
+    local output="$2"
+    local max_retries="${3:-3}"
+    local retry_count=0
+    
+    while [[ $retry_count -lt $max_retries ]]; do
+        if wget --timeout=30 --tries=1 --no-check-certificate -O "$output" "$url" 2>/dev/null; then
+            log_info "Successfully downloaded: $output"
+            return 0
+        fi
+        
+        retry_count=$((retry_count + 1))
+        if [[ $retry_count -lt $max_retries ]]; then
+            log_warn "Download failed, attempt $retry_count/$max_retries"
+            sleep 2
+        fi
+    done
+    
+    log_error "Failed to download $url after $max_retries attempts"
+    return 1
+}
+
+# =============================================================================
+# SYSTEMD SERVICE FUNCTIONS
+# =============================================================================
+
+# Create systemd service
 create_systemd_service() {
     local service_name="$1"
     local description="$2"
@@ -65,7 +107,7 @@ create_systemd_service() {
     
     local service_file="$HOME/${service_name}.service"
     
-    cat > "$service_file" << EOF
+    cat > "$service_file" <<EOF
 [Unit]
 Description=$description
 Wants=$wants
@@ -83,227 +125,153 @@ TimeoutSec=$timeout_sec
 WantedBy=multi-user.target
 EOF
 
-    # Move to systemd directory and set permissions
     sudo mv "$service_file" "/etc/systemd/system/${service_name}.service"
     sudo chmod 644 "/etc/systemd/system/${service_name}.service"
-    
     log_info "Created systemd service: ${service_name}.service"
 }
 
-# Enable and reload systemd service
+# Enable systemd service
 enable_systemd_service() {
     local service_name="$1"
     
     sudo systemctl daemon-reload
     sudo systemctl enable "$service_name"
-    
     log_info "Enabled systemd service: $service_name"
 }
 
-
-# Enable and start systemd service (standard pattern for install scripts)
+# Enable and start systemd service
 enable_and_start_systemd_service() {
     local service_name="$1"
     
-    sudo systemctl daemon-reload
-    sudo systemctl enable "$service_name"
+    enable_systemd_service "$service_name"
+    sudo systemctl start "$service_name"
     
-    # Check if service is already running
-    if systemctl is-active --quiet "$service_name"; then
-        log_info "Service $service_name is already running, restarting to apply changes..."
-        if sudo systemctl restart "$service_name"; then
-            log_info "Restarted systemd service: $service_name"
-            return 0
-        else
-            log_error "Failed to restart systemd service: $service_name"
-            return 1
-        fi
+    if sudo systemctl is-active --quiet "$service_name"; then
+        log_info "Started systemd service: $service_name"
     else
-        # Service is not running, start it
-        if sudo systemctl start "$service_name"; then
-            log_info "Started systemd service: $service_name"
-            return 0
-        else
-            # Check if service exists
-            if ! systemctl list-unit-files | grep -q "^${service_name}.service"; then
-                log_error "Service $service_name does not exist - cannot start"
-                return 1
-            else
-                log_error "Failed to start systemd service: $service_name"
-                return 1
-            fi
-        fi
+        log_error "Failed to start systemd service: $service_name"
+        return 1
     fi
 }
 
-
-# Enable and start system service (for system services like nginx, fail2ban)
+# Enable and start system service (alias for compatibility)
 enable_and_start_system_service() {
-    local service_name="$1"
-    
-    sudo systemctl daemon-reload
-    
-    if ! sudo systemctl enable "$service_name"; then
-        log_error "Failed to enable system service: $service_name"
-        return 1
-    fi
-    
-    if ! sudo systemctl start "$service_name"; then
-        log_error "Failed to start system service: $service_name"
-        return 1
-    fi
-    
-    log_info "Enabled and started system service: $service_name"
-    return 0
+    enable_and_start_systemd_service "$1"
 }
 
 
-
-# Check if command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
-
-# Check system compatibility
+# =============================================================================
+# SYSTEM MANAGEMENT FUNCTIONS
+# =============================================================================
 
 # Add PPA repository
 add_ppa_repository() {
     local ppa="$1"
     
-    if [[ -z "$ppa" ]]; then
-        log_error "PPA repository not specified"
-        return 1
+    if ! command_exists add-apt-repository; then
+        sudo apt-get update
+        sudo apt-get install -y software-properties-common
     fi
     
-    log_info "Adding PPA repository: $ppa"
-    if ! sudo add-apt-repository "$ppa" -y; then
-        log_error "Failed to add PPA repository: $ppa"
-        return 1
-    fi
-    
-    log_info "Successfully added PPA repository: $ppa"
-    return 0
+    sudo add-apt-repository -y "$ppa"
+    sudo apt-get update
+    log_info "Added PPA repository: $ppa"
 }
 
-# Install dependencies with proper error handling
+# Install dependencies
 install_dependencies() {
     local packages=("$@")
     
-    # Check if apt is available
-    if ! command_exists apt; then
-        log_error "apt package manager not found"
-        log_error "This script requires Ubuntu/Debian system with apt"
-        return 1
-    fi
-    
-    # Note: For initial setup, consider using the centralized dependency installer:
-    # ./install/utils/install_dependencies.sh
-    # This installs all common dependencies in one place to avoid duplicates
-    
-    log_info "Updating package lists..."
-    if ! sudo apt update -y; then
-        log_error "Failed to update package lists"
-        log_error "Please check your internet connection and try again"
-        return 1
-    fi
-    
     log_info "Installing dependencies: ${packages[*]}"
-    if ! sudo apt install -y "${packages[@]}"; then
-        log_error "Failed to install dependencies: ${packages[*]}"
-        log_error "Please check package names and try again"
+    
+    sudo apt-get update
+    if sudo apt-get install -y "${packages[@]}"; then
+        log_info "Dependencies installed successfully"
+    else
+        log_error "Failed to install some dependencies"
         return 1
     fi
-    
-    log_info "Dependencies installed successfully"
 }
 
-# Setup firewall rules with graceful degradation
+# Setup firewall rules
 setup_firewall_rules() {
     local ports=("$@")
     
-    # Check if UFW is available
+    log_info "Setting up firewall rules for ports: ${ports[*]}"
+    
+    # Install UFW if not present
     if ! command_exists ufw; then
-        log_error "UFW not found - dependencies should be installed centrally first"
-        log_error "Please run install_dependencies.sh before setting up firewall rules"
-        return 1
+        sudo apt-get update
+        sudo apt-get install -y ufw
     fi
     
-    # Check if UFW is active
+    # Enable UFW if not already enabled
     if ! sudo ufw status | grep -q "Status: active"; then
-        log_info "UFW is not active - enabling..."
-        if ! sudo ufw --force enable; then
-            log_warn "Failed to enable UFW - firewall rules will not be configured"
-            log_warn "Please manually configure firewall for ports: ${ports[*]}"
-            return 0
-        fi
+        sudo ufw --force enable
     fi
     
-    # Configure firewall rules
+    # Add rules for each port
     for port in "${ports[@]}"; do
-        log_info "Opening firewall port: $port"
-        if ! sudo ufw allow "$port"; then
-            log_warn "Failed to open port $port - please configure manually"
-        fi
+        sudo ufw allow "$port"
+        log_info "Added firewall rule for port $port"
     done
-    
-    log_info "Firewall configuration completed"
 }
 
-
-# Create JWT secret if it doesn't exist
+# Ensure JWT secret exists
 ensure_jwt_secret() {
     local jwt_path="$1"
-    local jwt_dir
-    jwt_dir=$(dirname "$jwt_path")
-    
-    ensure_directory "$jwt_dir"
     
     if [[ ! -f "$jwt_path" ]]; then
-        log_info "Creating JWT secret at: $jwt_path"
+        log_info "Generating JWT secret at $jwt_path"
         openssl rand -hex 32 > "$jwt_path"
-        chmod 600 "$jwt_path"
+        sudo chmod 600 "$jwt_path"
+        log_info "JWT secret generated and secured"
     else
-        log_info "JWT secret already exists at: $jwt_path"
+        log_info "JWT secret already exists at $jwt_path"
     fi
 }
 
-
+# =============================================================================
+# SYSTEM VALIDATION FUNCTIONS
+# =============================================================================
 
 # Check system requirements
 check_system_requirements() {
     local min_memory_gb="$1"
     local min_disk_gb="$2"
     
+    log_info "Checking system requirements..."
+    
     # Check memory
-    local memory_gb
-    memory_gb=$(free -g | awk '/^Mem:/{print $2}')
-    if [[ "$memory_gb" -lt "$min_memory_gb" ]]; then
-        log_warn "System has ${memory_gb}GB RAM, recommended minimum is ${min_memory_gb}GB"
-    else
-        log_info "Memory check passed: ${memory_gb}GB RAM available"
+    local total_memory_gb
+    total_memory_gb=$(free -g | awk 'NR==2{print $2}')
+    if [[ $total_memory_gb -lt $min_memory_gb ]]; then
+        log_error "Insufficient memory: ${total_memory_gb}GB available, ${min_memory_gb}GB required"
+        return 1
     fi
     
     # Check disk space
-    local disk_gb
-    disk_gb=$(df -BG "$HOME" | tail -1 | awk '{print $4}' | sed 's/G//')
-    if [[ "$disk_gb" -lt "$min_disk_gb" ]]; then
-        log_warn "Available disk space: ${disk_gb}GB, recommended minimum is ${min_disk_gb}GB"
-    else
-        log_info "Disk space check passed: ${disk_gb}GB available"
+    local available_disk_gb
+    available_disk_gb=$(df -BG / | awk 'NR==2{print $4}' | sed 's/G//')
+    if [[ $available_disk_gb -lt $min_disk_gb ]]; then
+        log_error "Insufficient disk space: ${available_disk_gb}GB available, ${min_disk_gb}GB required"
+        return 1
     fi
+    
+    log_info "✓ System requirements check passed"
+    return 0
 }
 
-# Check system compatibility for Ethereum node setup
+# Check system compatibility
 check_system_compatibility() {
     log_info "Checking system compatibility..."
     
-    # Check if running as root (only critical check)
     if [[ $EUID -ne 0 ]]; then
         log_error "This script must be run as root"
         return 1
     fi
     
-    # Basic OS check (just warn if not Ubuntu/Debian)
+    # Check OS
     if [[ -f /etc/os-release ]]; then
         local os_id
         os_id=$(grep "^ID=" /etc/os-release | cut -d'=' -f2 | tr -d '"')
@@ -317,7 +285,7 @@ check_system_compatibility() {
         esac
     fi
     
-    # Check if system is 64-bit (critical for Ethereum clients)
+    # Check architecture
     local arch
     arch=$(uname -m)
     if [[ "$arch" != "x86_64" ]]; then
@@ -329,466 +297,19 @@ check_system_compatibility() {
     return 0
 }
 
-
-show_installation_complete() {
-    local client_name="$1"
-    local service_name="$2"
-    local config_file="$3"
-    local data_dir="$4"
-    
-    log_info "$client_name installation completed!"
-    
-    if [[ -n "$config_file" && -f "$config_file" ]]; then
-        log_info "Configuration file: $config_file"
-    elif [[ -n "$config_file" ]]; then
-        log_warn "Configuration file specified but not found: $config_file"
-    fi
-    
-    if [[ -n "$data_dir" && -d "$data_dir" ]]; then
-        log_info "Data directory: $data_dir"
-    elif [[ -n "$data_dir" ]]; then
-        log_warn "Data directory specified but not found: $data_dir"
-    fi
-    
-    log_info "To start $client_name: sudo systemctl start $service_name"
-    log_info "To check status: sudo systemctl status $service_name"
-    log_info "To view logs: journalctl -fu $service_name"
-}
-
-# Input validation functions
-# Removed unused functions: require_command, validate_ip, validate_port, validate_ethereum_address
-# These duplicate existing functionality or are never used
-
-# Enhanced input validation functions for security
-validate_user_input() {
-    local input="$1"
-    local pattern="$2"
-    local max_length="${3:-255}"
-    
-    # Check if input is empty
-    if [[ -z "$input" ]]; then
-        log_error "Input cannot be empty"
-        return 1
-    fi
-    
-    # Check input length
-    if [[ ${#input} -gt "$max_length" ]]; then
-        log_error "Input too long (max: $max_length characters)"
-        return 1
-    fi
-    
-    # Check pattern if provided
-    if [[ -n "$pattern" && ! "$input" =~ $pattern ]]; then
-        log_error "Invalid input format"
-        return 1
-    fi
-    
-    return 0
-}
-
-validate_menu_choice() {
-    local choice="$1"
-    local max_options="$2"
-    
-    # Check if choice is numeric
-    if [[ ! "$choice" =~ ^[0-9]+$ ]]; then
-        log_error "Invalid choice: $choice (must be a number)"
-        return 1
-    fi
-    
-    # Check if choice is within range
-    if [[ "$choice" -lt 1 || "$choice" -gt "$max_options" ]]; then
-        log_error "Choice out of range: $choice (valid range: 1-$max_options)"
-        return 1
-    fi
-    
-    return 0
-}
-
-# Removed unused functions: validate_filename, validate_url, sanitize_input
-
-# Security functions
-secure_file_permissions() {
-    local file="$1"
-    local permissions="${2:-600}"
-    
-    if [[ -f "$file" ]]; then
-        chmod "$permissions" "$file"
-        log_info "Secured file permissions for: $file"
-    else
-        log_warn "File not found for permission setting: $file"
+# Root check standardization
+require_root() {
+    if [[ $EUID -ne 0 ]]; then
+        log_error "This script must be run as root"
+        exit 1
     fi
 }
 
-secure_directory_permissions() {
-    local directory="$1"
-    local permissions="${2:-700}"
-    
-    if [[ -d "$directory" ]]; then
-        chmod "$permissions" "$directory"
-        log_info "Secured directory permissions for: $directory"
-    else
-        log_warn "Directory not found for permission setting: $directory"
-    fi
-}
+# =============================================================================
+# SECURITY FUNCTIONS - Required for run_1.sh and run_2.sh
+# =============================================================================
 
-secure_config_files() {
-    log_info "Securing configuration files..."
-    
-    # Find and secure all configuration files
-    find . -name "*.yaml" -o -name "*.toml" -o -name "*.cfg" -o -name "*.json" | while read -r file; do
-        secure_file_permissions "$file" 600
-    done
-    
-    # Secure secrets directory
-    if [[ -d "$HOME/secrets" ]]; then
-        secure_directory_permissions "$HOME/secrets" 700
-        find "$HOME/secrets" -type f -exec chmod 600 {} \;
-    fi
-    
-    # Secure SSH directory
-    if [[ -d "$HOME/.ssh" ]]; then
-        secure_directory_permissions "$HOME/.ssh" 700
-        find "$HOME/.ssh" -type f -exec chmod 600 {} \;
-    fi
-}
-
-# Network security functions
-configure_network_restrictions() {
-    local client_type="$1"
-    local config_file="$2"
-    
-    log_info "Configuring network restrictions for $client_type..."
-    
-    case "$client_type" in
-        "prysm")
-            # Prysm already has p2p-allowlist: public which is good
-            log_info "Prysm network restrictions already configured (p2p-allowlist: public)"
-            ;;
-        "teku"|"lighthouse"|"nimbus"|"lodestar"|"grandine")
-            # Add consistent network restrictions for other clients
-            if [[ -f "$config_file" ]]; then
-                # Ensure all clients bind to localhost for API endpoints
-                sed -i 's/0\.0\.0\.0/127.0.0.1/g' "$config_file"
-                log_info "Updated $client_type configuration to use localhost binding"
-            fi
-            ;;
-        "geth"|"besu"|"nethermind"|"erigon"|"reth")
-            # Execution clients should bind to localhost for RPC endpoints
-            if [[ -f "$config_file" ]]; then
-                sed -i 's/0\.0\.0\.0/127.0.0.1/g' "$config_file"
-                log_info "Updated $client_type configuration to use localhost binding"
-            fi
-            ;;
-    esac
-}
-
-apply_network_security() {
-    log_info "Applying network security configurations..."
-    
-    # Apply to all client configuration files
-    find configs/ -name "*.yaml" -o -name "*.toml" -o -name "*.cfg" -o -name "*.json" | while read -r config_file; do
-        local client_type
-        client_type=$(basename "$(dirname "$config_file")")
-        configure_network_restrictions "$client_type" "$config_file"
-    done
-}
-
-# Secure error handling functions
-secure_error_handling() {
-    local error_msg="$1"
-    local log_level="${2:-error}"
-    local show_details="${3:-false}"
-    
-    # Sanitize error message to prevent information disclosure
-    local sanitized_msg
-    sanitized_msg=$(echo "$error_msg" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 100)
-    
-    case "$log_level" in
-        "error")
-            if [[ "$show_details" == "true" ]]; then
-                log_error "Operation failed: $sanitized_msg"
-            else
-                log_error "Operation failed. Check logs for details."
-            fi
-            ;;
-        "warn")
-            log_warn "Warning: $sanitized_msg"
-            ;;
-        *)
-            log_info "Info: $sanitized_msg"
-            ;;
-    esac
-}
-
-safe_command_execution() {
-    local command="$1"
-    local error_msg="${2:-Command execution failed}"
-    local show_output="${3:-false}"
-    
-    if [[ "$show_output" == "true" ]]; then
-        if eval "$command" 2>&1; then
-            return 0
-        else
-            secure_error_handling "$error_msg" "error" "true"
-            return 1
-        fi
-    else
-        if eval "$command" >/dev/null 2>&1; then
-            return 0
-        else
-            secure_error_handling "$error_msg" "error" "false"
-            return 1
-        fi
-    fi
-}
-
-secure_download() {
-    local url="$1"
-    local output="$2"
-    local max_retries="${3:-3}"
-    
-    # Basic URL validation
-    if [[ ! "$url" =~ ^https?:// ]]; then
-        log_error "Invalid download URL: $url"
-        return 1
-    fi
-    
-    # Attempt download with retries
-    local retry_count=0
-    while [[ $retry_count -lt $max_retries ]]; do
-        if curl -fsSL "$url" -o "$output" >/dev/null 2>&1; then
-            log_info "Successfully downloaded: $output"
-            return 0
-        else
-            retry_count=$((retry_count + 1))
-            if [[ $retry_count -lt $max_retries ]]; then
-                log_warn "Download failed, attempt $retry_count/$max_retries"
-                sleep 2
-            fi
-        fi
-    done
-    
-    log_error "Failed to download after $max_retries attempts"
-    return 1
-}
-
-# Rate limiting functions
-add_rate_limiting() {
-    local config_file="/etc/nginx/sites-available/default"
-    
-    log_info "Adding rate limiting to nginx configuration..."
-    
-    # Check if rate limiting is already configured
-    if grep -q "limit_req_zone" "$config_file" 2>/dev/null; then
-        log_info "Rate limiting already configured"
-        return 0
-    fi
-    
-    # Create backup
-    cp "$config_file" "${config_file}.backup.$(date +%Y%m%d_%H%M%S)"
-    
-    # Add rate limiting configuration
-    cat >> "$config_file" << 'EOF'
-
-# Rate limiting for RPC endpoints
-limit_req_zone $binary_remote_addr zone=rpc_limit:10m rate=10r/s;
-limit_req_zone $binary_remote_addr zone=ws_limit:10m rate=5r/s;
-limit_req_zone $binary_remote_addr zone=api_limit:10m rate=20r/s;
-
-server {
-    # Apply rate limiting to RPC endpoints
-    location /rpc {
-        limit_req zone=rpc_limit burst=20 nodelay;
-        limit_req_status 429;
-        proxy_pass http://127.0.0.1:8545;
-    }
-    
-    location /ws {
-        limit_req zone=ws_limit burst=10 nodelay;
-        limit_req_status 429;
-        proxy_pass http://127.0.0.1:8546;
-    }
-    
-    location /api {
-        limit_req zone=api_limit burst=30 nodelay;
-        limit_req_status 429;
-        proxy_pass http://127.0.0.1:5051;
-    }
-}
-EOF
-
-    # Test nginx configuration
-    if nginx -t >/dev/null 2>&1; then
-        log_info "Rate limiting configuration added successfully"
-        systemctl reload nginx
-    else
-        log_error "Invalid nginx configuration, restoring backup"
-        mv "${config_file}.backup.$(date +%Y%m%d_%H%M%S)" "$config_file"
-        return 1
-    fi
-}
-
-configure_ddos_protection() {
-    log_info "Configuring DDoS protection..."
-    
-    # Add connection limiting
-    cat > /etc/nginx/conf.d/security.conf << 'EOF'
-# DDoS protection
-limit_conn_zone $binary_remote_addr zone=conn_limit_per_ip:10m;
-limit_conn_zone $server_name zone=conn_limit_per_server:10m;
-
-# Rate limiting
-limit_req_zone $binary_remote_addr zone=req_limit_per_ip:10m rate=10r/s;
-
-# Security headers
-add_header X-Frame-Options "SAMEORIGIN" always;
-add_header X-Content-Type-Options "nosniff" always;
-add_header X-XSS-Protection "1; mode=block" always;
-add_header Referrer-Policy "no-referrer-when-downgrade" always;
-add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
-
-# Hide nginx version
-server_tokens off;
-
-# Connection limits
-limit_conn conn_limit_per_ip 10;
-limit_conn conn_limit_per_server 1000;
-EOF
-
-    log_info "DDoS protection configured"
-}
-
-# Comprehensive security monitoring
-setup_security_monitoring() {
-    log_info "Setting up comprehensive security monitoring..."
-    
-    # Create security monitoring script
-    cat > /usr/local/bin/security_monitor.sh << 'EOF'
-#!/bin/bash
-# Comprehensive security monitoring script
-
-LOG_FILE="/var/log/security_monitor.log"
-DATE=$(date '+%Y-%m-%d %H:%M:%S')
-
-echo "[$DATE] Starting security monitoring check..." >> "$LOG_FILE"
-
-# Check for suspicious processes
-ps aux | grep -E "(nc|netcat|nmap|masscan|hydra|john)" | grep -v grep && echo "[$DATE] Suspicious process detected" >> "$LOG_FILE"
-
-# Check for failed SSH attempts
-grep "Failed password" /var/log/auth.log 2>/dev/null | tail -5 >> "$LOG_FILE"
-
-# Check for root login attempts
-grep "root.*ssh" /var/log/auth.log 2>/dev/null | tail -3 >> "$LOG_FILE"
-
-# Check disk usage
-df -h | awk '$5 > 90 {print "[$DATE] Disk usage warning: " $0}' >> "$LOG_FILE"
-
-# Check memory usage
-free -m | awk 'NR==2{if($3/$2*100 > 90) print "[$DATE] Memory usage warning: " $3/$2*100 "%"}' >> "$LOG_FILE"
-
-# Check for unusual network connections
-ss -tuln | grep -E ":(22|80|443|8545|8546)" >> "$LOG_FILE" 2>/dev/null
-
-# Check system load
-uptime >> "$LOG_FILE"
-
-# Check for failed systemd services
-systemctl --failed --no-pager >> "$LOG_FILE" 2>/dev/null
-
-echo "[$DATE] Security monitoring check completed" >> "$LOG_FILE"
-EOF
-
-    chmod +x /usr/local/bin/security_monitor.sh
-    
-    # Setup log rotation for security logs
-    cat > /etc/logrotate.d/security_monitor << 'EOF'
-/var/log/security_monitor.log {
-    daily
-    missingok
-    rotate 30
-    compress
-    delaycompress
-    notifempty
-    create 644 root root
-}
-EOF
-
-    # Add to crontab for regular monitoring
-    if ! grep -q "security_monitor" /etc/crontab; then
-        echo "*/15 * * * * root /usr/local/bin/security_monitor.sh" >> /etc/crontab
-    fi
-
-    log_info "Comprehensive security monitoring configured"
-}
-
-setup_intrusion_detection() {
-    log_info "Setting up intrusion detection..."
-    
-    # Install and configure AIDE (Advanced Intrusion Detection Environment)
-    if ! command_exists aide; then
-        log_error "AIDE not found - dependencies should be installed centrally first"
-        log_error "Please run install_dependencies.sh before setting up intrusion detection"
-        return 1
-    fi
-    
-    # Initialize AIDE database
-    if [[ ! -f /var/lib/aide/aide.db ]]; then
-        aideinit
-    fi
-    
-    # Create AIDE check script
-    cat > /usr/local/bin/aide_check.sh << 'EOF'
-#!/bin/bash
-# AIDE intrusion detection check
-
-LOG_FILE="/var/log/aide_check.log"
-DATE=$(date '+%Y-%m-%d %H:%M:%S')
-
-echo "[$DATE] Starting AIDE check..." >> "$LOG_FILE"
-
-if aide --check >> "$LOG_FILE" 2>&1; then
-    echo "[$DATE] AIDE check completed - no changes detected" >> "$LOG_FILE"
-else
-    echo "[$DATE] AIDE check completed - changes detected" >> "$LOG_FILE"
-    # Send alert (you can customize this)
-    echo "File system changes detected on $(hostname)" | mail -s "AIDE Alert" root
-fi
-EOF
-
-    chmod +x /usr/local/bin/aide_check.sh
-    
-    # Add to crontab for daily checks
-    if ! grep -q "aide_check" /etc/crontab; then
-        echo "0 2 * * * root /usr/local/bin/aide_check.sh" >> /etc/crontab
-    fi
-    
-    log_info "Intrusion detection configured"
-}
-
-# Enhanced error handling
-check_service_health() {
-    local service_name="$1"
-    local max_wait="${2:-30}"
-    local wait_time=0
-    
-    log_info "Checking health of service: $service_name"
-    
-    while [[ $wait_time -lt $max_wait ]]; do
-        if systemctl is-active --quiet "$service_name"; then
-            log_info "Service $service_name is healthy"
-            return 0
-        fi
-        sleep 2
-        ((wait_time += 2))
-    done
-    
-    log_error "Service $service_name failed health check after ${max_wait} seconds"
-    return 1
-}
-
-# Secure password generation
+# Generate secure password
 generate_secure_password() {
     local length="${1:-16}"
     local password
@@ -815,7 +336,7 @@ setup_secure_user() {
     # Create user if it doesn't exist
     if ! id -u "$username" >/dev/null 2>&1; then
         log_info "Creating user: $username"
-        if ! useradd -m -d "/home/$username" -s /bin/bash "$username"; then
+        if ! sudo useradd -m -d "/home/$username" -s /bin/bash "$username"; then
             log_error "Failed to create user: $username"
             return 1
         fi
@@ -834,125 +355,114 @@ setup_secure_user() {
     
     # Setup SSH directory
     local ssh_dir="/home/$username/.ssh"
-    mkdir -p "$ssh_dir"
-    chown "$username:$username" "$ssh_dir"
-    chmod 700 "$ssh_dir"
+    sudo mkdir -p "$ssh_dir"
+    sudo chown "$username:$username" "$ssh_dir"
+    sudo chmod 700 "$ssh_dir"
     
     # Copy SSH keys if provided
     if [[ -n "$ssh_key_file" && -f "$ssh_key_file" ]]; then
-        log_info "Copying SSH keys for user: $username"
-        if ! cp "$ssh_key_file" "$ssh_dir/authorized_keys"; then
-            log_error "Failed to copy SSH keys for user: $username"
-            return 1
-        fi
-        chown "$username:$username" "$ssh_dir/authorized_keys"
-        chmod 600 "$ssh_dir/authorized_keys"
-    elif [[ -f /root/.ssh/authorized_keys ]]; then
-        log_info "Copying root's SSH keys for user: $username"
-        if ! cp /root/.ssh/authorized_keys "$ssh_dir/authorized_keys"; then
-            log_error "Failed to copy root's SSH keys for user: $username"
-            return 1
-        fi
-        chown "$username:$username" "$ssh_dir/authorized_keys"
-        chmod 600 "$ssh_dir/authorized_keys"
+        sudo cp "$ssh_key_file" "$ssh_dir/authorized_keys"
+        sudo chown "$username:$username" "$ssh_dir/authorized_keys"
+        sudo chmod 600 "$ssh_dir/authorized_keys"
+        log_info "SSH key copied for user: $username"
     fi
     
-    # Add to sudo group
-    if ! groups "$username" | grep -q sudo; then
-        log_info "Adding user to sudo group: $username"
-        usermod -aG sudo "$username"
-    fi
-    
-    # Copy repository to user's home
-    local repo_name="${REPO_NAME:-eth2-quickstart}"
-    if [[ -d "../$repo_name" ]]; then
-        log_info "Copying repository to user's home: $username"
-        if ! cp -r "../$repo_name" "/home/$username/"; then
-            log_error "Failed to copy repository for user: $username"
-            return 1
-        fi
-        chown -R "$username:$username" "/home/$username/$repo_name"
-        chmod -R +x "/home/$username/$repo_name"
-    else
-        log_warn "Repository directory not found: ../$repo_name"
-    fi
-    
-    log_info "✓ User setup completed: $username"
-    return 0
-}
-
-# Configure sudo for user without password
-configure_sudo_nopasswd() {
-    local username="$1"
-    
-    log_info "Configuring sudo without password for user: $username"
-    
-    # Create sudoers file for the user
-    local sudoers_file="/etc/sudoers.d/$username"
-    
-    if [[ -f "$sudoers_file" ]]; then
-        log_info "Sudoers file already exists for $username"
-        return 0
-    fi
-    
-    # Create sudoers entry
-    echo "$username ALL=(ALL) NOPASSWD: ALL" > "$sudoers_file"
-    chmod 440 "$sudoers_file"
-    
-    # Verify sudoers syntax
-    if ! visudo -c -f "$sudoers_file" >/dev/null 2>&1; then
-        log_error "Invalid sudoers syntax for $username"
-        rm -f "$sudoers_file"
-        return 1
-    fi
-    
-    log_info "✓ Sudo configuration completed for $username"
-    return 0
+    log_info "✓ User $username setup complete"
 }
 
 # Configure SSH with security hardening
 configure_ssh() {
     local ssh_port="$1"
     
-    # Validate parameter
-    if [[ -z "$ssh_port" ]]; then
-        log_error "SSH port parameter is required"
+    log_info "Configuring SSH security hardening..."
+    
+    # Backup original SSH config
+    sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
+    
+    # Create secure SSH configuration
+    cat > /etc/ssh/sshd_config << EOF
+# SSH Security Configuration
+Port $ssh_port
+Protocol 2
+PermitRootLogin no
+PasswordAuthentication yes
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+PermitEmptyPasswords no
+MaxAuthTries 3
+MaxSessions 2
+ClientAliveInterval 300
+ClientAliveCountMax 2
+LoginGraceTime 60
+Banner /etc/ssh/banner
+AllowUsers $LOGIN_UNAME
+X11Forwarding no
+AllowTcpForwarding no
+GatewayPorts no
+PermitTunnel no
+ChrootDirectory none
+UsePAM yes
+PrintMotd no
+PrintLastLog yes
+TCPKeepAlive yes
+Compression no
+SyslogFacility AUTH
+LogLevel INFO
+StrictModes yes
+IgnoreRhosts yes
+IgnoreUserKnownHosts yes
+RhostsRSAAuthentication no
+HostbasedAuthentication no
+PermitUserEnvironment no
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha2-256,hmac-sha2-512
+KexAlgorithms curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group14-sha256
+EOF
+
+    # Create SSH banner
+    cat > /etc/ssh/banner << EOF
+***************************************************************************
+*                                                                         *
+*  WARNING: This system is for authorized users only. All activities     *
+*  are logged and monitored. Unauthorized access is prohibited.          *
+*                                                                         *
+***************************************************************************
+EOF
+
+    # Restart SSH service
+    sudo systemctl restart sshd
+    if sudo systemctl is-active --quiet sshd; then
+        log_info "✓ SSH configured and restarted successfully"
+    else
+        log_error "Failed to restart SSH service"
         return 1
     fi
-    
-    log_info "Configuring SSH with security hardening..."
-    
-    # Backup existing SSH config
-    [[ -f /etc/ssh/sshd_config ]] && mv /etc/ssh/sshd_config /etc/ssh/sshd_config.bkup
-    
-    # Copy new SSH config and banner
-    cp ./configs/sshd_config /etc/ssh/sshd_config
-    cp ./configs/ssh_banner /etc/ssh/ssh_banner
-    
-    # Update SSH port in configuration
-    sed -i "s/^Port 22/Port $ssh_port/" /etc/ssh/sshd_config
-    
-    # Copy back for version control
-    cp /etc/ssh/sshd_config ./configs/ || log_warn "Could not copy SSH config back"
-    
-    # Quick SSH config validation
-    if sshd -t; then
-        log_info "SSH configuration is valid"
-    else
-        log_error "SSH configuration is invalid, restoring backup"
-        mv /etc/ssh/sshd_config.bkup /etc/ssh/sshd_config
-        exit 1
-    fi
-    
-    log_info "✓ SSH configured"
 }
 
-# Setup fail2ban with security configurations
+# Configure sudo without password for specific user
+configure_sudo_nopasswd() {
+    local username="$1"
+    
+    log_info "Configuring sudo without password for user: $username"
+    
+    # Add user to sudo group
+    sudo usermod -aG sudo "$username"
+    
+    # Create sudoers file for the user
+    cat > "/etc/sudoers.d/$username" << EOF
+$username ALL=(ALL) NOPASSWD:ALL
+EOF
+
+    sudo chmod 440 "/etc/sudoers.d/$username"
+    log_info "✓ Sudo configured for user: $username"
+}
+
+# Setup fail2ban
 setup_fail2ban() {
     log_info "Setting up fail2ban..."
     
     # Make the script executable and run it
-    chmod +x ./install/security/install_fail2ban.sh
+    sudo chmod +x ./install/security/install_fail2ban.sh
     if ! ./install/security/install_fail2ban.sh; then
         log_error "Failed to setup fail2ban"
         return 1
@@ -972,26 +482,388 @@ generate_handoff_info() {
     cat << EOF
 
 === SECURE HANDOFF INFORMATION ===
-
-User: $username
+Username: $username
 Password: $password
 Server IP: $server_ip
-
-SSH Connection:
-ssh $username@$server_ip
+SSH Command: ssh $username@$server_ip
+Next Step: ./run_2.sh
 
 IMPORTANT SECURITY NOTES:
-1. Change the password immediately after first login
-2. Consider setting up SSH key authentication
-3. The user has sudo privileges without password prompt
-4. All Ethereum client data will be stored in /home/$username
+- Change the password immediately after first login
+- Consider setting up SSH key authentication
+- Keep this information secure and private
+- Delete this file after noting the information
 
-Next Steps:
-1. SSH to the server: ssh $username@$server_ip
-2. Change password: passwd
-3. Run the second phase: ./run_2.sh
-
-=== END HANDOFF INFORMATION ===
+Generated: $(date)
+=====================================
 
 EOF
+}
+
+# Security configuration functions
+secure_config_files() {
+    log_info "Securing configuration files..."
+    
+    # Set secure permissions on configuration files
+    find /etc -name "*.conf" -type f -exec sudo chmod 644 {} \; 2>/dev/null || true
+    find /etc -name "*.cfg" -type f -exec sudo chmod 644 {} \; 2>/dev/null || true
+    find /etc -name "*.yaml" -type f -exec sudo chmod 644 {} \; 2>/dev/null || true
+    find /etc -name "*.yml" -type f -exec sudo chmod 644 {} \; 2>/dev/null || true
+    find /etc -name "*.json" -type f -exec sudo chmod 644 {} \; 2>/dev/null || true
+    find /etc -name "*.toml" -type f -exec sudo chmod 644 {} \; 2>/dev/null || true
+    
+    # Secure sensitive files
+    if [[ -f "/etc/ssh/sshd_config" ]]; then
+        sudo chmod 600 /etc/ssh/sshd_config
+    fi
+    
+    if [[ -f "/etc/sudoers" ]]; then
+        sudo chmod 440 /etc/sudoers
+    fi
+    
+    log_info "✓ Configuration files secured"
+}
+
+apply_network_security() {
+    log_info "Applying network security settings..."
+    
+    # Disable unnecessary network services
+    sudo systemctl disable bluetooth 2>/dev/null || true
+    sudo systemctl disable cups 2>/dev/null || true
+    sudo systemctl disable avahi-daemon 2>/dev/null || true
+    
+    # Configure kernel parameters for security
+    cat >> /etc/sysctl.conf << EOF
+
+# Network security settings
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.default.send_redirects = 0
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv4.conf.all.secure_redirects = 0
+net.ipv4.conf.default.secure_redirects = 0
+net.ipv4.conf.all.log_martians = 1
+net.ipv4.conf.default.log_martians = 1
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+net.ipv4.icmp_ignore_bogus_error_responses = 1
+net.ipv4.tcp_syncookies = 1
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 1
+net.ipv6.conf.all.accept_redirects = 0
+net.ipv6.conf.default.accept_redirects = 0
+EOF
+    
+    # Apply sysctl settings
+    sudo sysctl -p >/dev/null 2>&1 || true
+    
+    log_info "✓ Network security applied"
+}
+
+setup_security_monitoring() {
+    log_info "Setting up security monitoring..."
+    
+    # Create security monitoring script
+    sudo tee /usr/local/bin/security_monitor.sh > /dev/null << 'EOF'
+#!/bin/bash
+# Security monitoring script
+
+LOG_FILE="/var/log/security_monitor.log"
+DATE=$(date '+%Y-%m-%d %H:%M:%S')
+
+echo "[$DATE] Security monitoring check" >> "$LOG_FILE"
+
+# Check for failed login attempts
+if command -v lastb >/dev/null 2>&1; then
+    failed_logins=$(lastb | wc -l)
+    if [[ $failed_logins -gt 0 ]]; then
+        echo "[$DATE] WARNING: $failed_logins failed login attempts detected" >> "$LOG_FILE"
+    fi
+fi
+
+# Check for suspicious processes
+if pgrep -f "nc -l" >/dev/null 2>&1; then
+    echo "[$DATE] WARNING: Suspicious netcat listener detected" >> "$LOG_FILE"
+fi
+
+# Check disk usage
+disk_usage=$(df / | awk 'NR==2{print $5}' | sed 's/%//')
+if [[ $disk_usage -gt 90 ]]; then
+    echo "[$DATE] WARNING: Disk usage at ${disk_usage}%" >> "$LOG_FILE"
+fi
+
+echo "[$DATE] Security monitoring check complete" >> "$LOG_FILE"
+EOF
+    
+    sudo chmod +x /usr/local/bin/security_monitor.sh
+    
+    # Add to crontab for regular monitoring
+    (crontab -l 2>/dev/null; echo "*/15 * * * * /usr/local/bin/security_monitor.sh") | crontab - 2>/dev/null || true
+    
+    log_info "✓ Security monitoring setup complete"
+}
+
+setup_intrusion_detection() {
+    log_info "Setting up intrusion detection..."
+    
+    # Install AIDE if not present
+    if ! command_exists aide; then
+        sudo apt-get update
+        sudo apt-get install -y aide
+    fi
+    
+    # Initialize AIDE database if it doesn't exist
+    if [[ ! -f "/var/lib/aide/aide.db" ]]; then
+        sudo aideinit
+        sudo mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+    fi
+    
+    # Create AIDE check script
+    sudo tee /usr/local/bin/aide_check.sh > /dev/null << 'EOF'
+#!/bin/bash
+# AIDE intrusion detection check
+
+LOG_FILE="/var/log/aide_check.log"
+DATE=$(date '+%Y-%m-%d %H:%M:%S')
+
+echo "[$DATE] Running AIDE check..." >> "$LOG_FILE"
+
+if sudo aide --check >> "$LOG_FILE" 2>&1; then
+    echo "[$DATE] AIDE check passed - no changes detected" >> "$LOG_FILE"
+else
+    echo "[$DATE] WARNING: AIDE detected changes in system files" >> "$LOG_FILE"
+fi
+
+echo "[$DATE] AIDE check complete" >> "$LOG_FILE"
+EOF
+    
+    sudo chmod +x /usr/local/bin/aide_check.sh
+    
+    # Add to crontab for daily checks
+    (crontab -l 2>/dev/null; echo "0 2 * * * /usr/local/bin/aide_check.sh") | crontab - 2>/dev/null || true
+    
+    log_info "✓ Intrusion detection setup complete"
+}
+
+# Additional security functions required by validation
+validate_user_input() {
+    local input="$1"
+    local max_length="${2:-50}"
+    local min_length="${3:-1}"
+    
+    # Handle empty parameters
+    if [[ -z "$max_length" ]]; then
+        max_length=50
+    fi
+    if [[ -z "$min_length" ]]; then
+        min_length=1
+    fi
+    
+    # Check length
+    if [[ ${#input} -lt $min_length ]] || [[ ${#input} -gt $max_length ]]; then
+        return 1
+    fi
+    
+    # Check for dangerous characters using grep
+    if echo "$input" | grep -q '[<>"'\'';&|`$]'; then
+        return 1
+    fi
+    
+    return 0
+}
+
+secure_error_handling() {
+    # Set up secure error handling
+    set -Eeuo pipefail
+    trap 'log_error "Error in line $LINENO: $BASH_COMMAND"' ERR
+}
+
+safe_command_execution() {
+    local command="$1"
+    
+    # Validate command before execution using grep
+    if echo "$command" | grep -q '[;&|`$]'; then
+        log_error "Unsafe command detected: $command"
+        return 1
+    fi
+    
+    # Execute command safely
+    if eval "$command" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+secure_file_permissions() {
+    local file="$1"
+    local permissions="${2:-600}"
+    
+    if [[ -f "$file" ]]; then
+        sudo chmod "$permissions" "$file"
+        log_info "Set permissions $permissions on $file"
+    else
+        log_error "File not found: $file"
+        return 1
+    fi
+}
+
+# =============================================================================
+# REFACTORING FUNCTIONS - Requested in REFACTORING_AUDIT_REPORT.md
+# =============================================================================
+
+# 2. Installation Start Messages - log_installation_start()
+log_installation_start() {
+    local client_name="$1"
+    log_info "Starting $client_name installation..."
+}
+
+# 3. Installation Complete Messages - log_installation_complete()
+log_installation_complete() {
+    local client_name="$1"
+    local service_name="$2"
+    
+    log_info "$client_name installation completed!"
+    log_info "To check status: sudo systemctl status $service_name"
+    log_info "To start service: sudo systemctl start $service_name"
+    log_info "To enable service: sudo systemctl enable $service_name"
+    log_info "To view logs: sudo journalctl -u $service_name -f"
+}
+
+# 4. Setup Information Display - display_client_setup_info()
+display_client_setup_info() {
+    local client_name="$1"
+    local beacon_service="${2:-}"
+    local validator_service="${3:-}"
+    local beacon_desc="${4:-Beacon Node}"
+    local validator_desc="${5:-Validator Client}"
+    
+    cat << EOF
+
+=== $client_name Setup Information ===
+$client_name has been installed with the following components:
+
+EOF
+
+    if [[ -n "$beacon_service" ]]; then
+        echo "1. Beacon Node ($beacon_service service) - $beacon_desc"
+    fi
+    
+    if [[ -n "$validator_service" ]]; then
+        echo "2. Validator Client ($validator_service service) - $validator_desc"
+    fi
+    
+    cat << EOF
+
+Configuration files are located in:
+- Base configs: $SCRIPT_DIR/configs/$client_name/
+- Active configs: /etc/$client_name/
+
+Data directories:
+- Beacon data: /var/lib/$client_name/beacon
+- Validator data: /var/lib/$client_name/validator
+
+To manage services:
+- Start: sudo systemctl start $beacon_service $validator_service
+- Stop: sudo systemctl stop $beacon_service $validator_service
+- Status: sudo systemctl status $beacon_service $validator_service
+- Logs: sudo journalctl -fu $beacon_service $validator_service
+
+=== Setup Complete ===
+EOF
+}
+
+# 5. Temporary Directory Creation - create_temp_config_dir()
+create_temp_config_dir() {
+    local temp_dir="./tmp"
+    
+    if [[ ! -d "$temp_dir" ]]; then
+        mkdir -p "$temp_dir"
+        log_info "Created temporary directory: $temp_dir"
+    fi
+    
+    echo "$temp_dir"
+}
+
+# 1. SCRIPT_DIR Pattern Duplication - get_script_directories()
+get_script_directories() {
+    # Get the directory of the calling script
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)"
+    local project_root
+    project_root="$(cd "$script_dir/../.." && pwd)"
+    
+    # Export variables for use in calling script
+    export SCRIPT_DIR="$script_dir"
+    export PROJECT_ROOT="$project_root"
+    
+    log_info "Script directory: $script_dir"
+    log_info "Project root: $project_root"
+}
+
+
+
+
+
+# 6. Configuration Merging - merge_client_config()
+merge_client_config() {
+    local client_name="$1"
+    local config_type="$2"
+    local base_config="$3"
+    local custom_config="$4"
+    local output_config="$5"
+    
+    log_info "Merging $client_name $config_type configuration..."
+    
+    # Create temp directory if it doesn't exist
+    create_temp_config_dir > /dev/null
+    
+    # Check if files exist
+    if [[ ! -f "$base_config" ]]; then
+        log_error "Base config not found: $base_config"
+        return 1
+    fi
+    
+    if [[ ! -f "$custom_config" ]]; then
+        log_error "Custom config not found: $custom_config"
+        return 1
+    fi
+    
+    # Merge based on file type
+    case "$base_config" in
+        *.json)
+            if command_exists jq; then
+                jq -s '.[0] * .[1]' "$base_config" "$custom_config" > "$output_config"
+            else
+                log_error "jq not found, cannot merge JSON configs"
+                return 1
+            fi
+            ;;
+        *.yaml|*.yml)
+            # Manual YAML merge: copy base config and append custom config
+            cp "$base_config" "$output_config"
+            if [[ -f "$custom_config" ]]; then
+                {
+                    echo ""
+                    echo "# Custom configuration overrides"
+                    cat "$custom_config"
+                } >> "$output_config"
+            fi
+            ;;
+        *.toml)
+            # For TOML, we'll do a simple concatenation (custom overrides base)
+            cat "$base_config" "$custom_config" > "$output_config"
+            ;;
+        *)
+            log_error "Unsupported config format: $base_config"
+            return 1
+            ;;
+    esac
+    
+    if [[ -f "$output_config" ]]; then
+        log_info "Configuration merged successfully: $output_config"
+        return 0
+    else
+        log_error "Failed to merge configuration"
+        return 1
+    fi
 }

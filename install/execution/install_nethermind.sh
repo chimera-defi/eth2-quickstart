@@ -7,13 +7,14 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting Nethermind installation..."
+log_installation_start "Nethermind"
 
+# Get script directories
+get_script_directories
 
 # Check system requirements
 check_system_requirements 16 2000
 
-# Dependencies are installed centrally via install_dependencies.sh
 
 # Setup firewall rules for Nethermind
 setup_firewall_rules 30303 8545 8546 8551
@@ -51,8 +52,7 @@ chmod +x "$NETHERMIND_DIR/Nethermind.Runner"
 # Ensure JWT secret exists
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
-# Create temporary directory for custom configuration
-mkdir ./tmp
+# Create custom configuration with variables
 
 # Create custom configuration variables file
 cat > ./tmp/nethermind_custom.cfg << EOF
@@ -76,13 +76,8 @@ cat > ./tmp/nethermind_custom.cfg << EOF
 }
 EOF
 
-# Merge base configuration with custom settings
-# Note: This is a simplified merge - in production, consider using jq for proper JSON merging
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cp "$SCRIPT_DIR/configs/nethermind/nethermind_base.cfg" "$NETHERMIND_DIR/nethermind_base.cfg"
-
-# For now, create a complete config with variables (TODO: implement proper JSON merging)
-cat > "$NETHERMIND_DIR/nethermind.cfg" << EOF
+# Create custom configuration with variables
+cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
 {
   "Init": {
     "WebSocketsEnabled": true,
@@ -153,6 +148,9 @@ cat > "$NETHERMIND_DIR/nethermind.cfg" << EOF
 }
 EOF
 
+# Merge base configuration with custom settings
+merge_client_config "Nethermind" "main" "$SCRIPT_DIR/configs/nethermind/nethermind_base.cfg" "$NETHERMIND_DIR/nethermind_custom.cfg" "$NETHERMIND_DIR/nethermind.cfg"
+
 # Clean up temporary files
 rm -rf ./tmp/
 
@@ -164,7 +162,7 @@ create_systemd_service "eth1" "Nethermind Ethereum Execution Client" "$EXEC_STAR
 # Enable and start the service
 enable_and_start_systemd_service "eth1"
 
-log_info "Nethermind installation completed!"
+log_installation_complete "Nethermind" "nethermind"
 log_info "Configuration file: $NETHERMIND_DIR/nethermind.cfg"
 log_info "To check status: sudo systemctl status eth1"
 log_info "To view logs: journalctl -fu eth1"

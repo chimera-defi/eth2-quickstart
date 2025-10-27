@@ -8,7 +8,7 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting [CLIENT NAME] installation..."
+log_installation_start "[CLIENT NAME]"
 
 # Check system requirements
 check_system_requirements [RAM] [STORAGE]
@@ -46,7 +46,7 @@ enable_and_start_systemd_service "[SERVICE_NAME]"
 # Show completion information
 # show_installation_complete "CLIENT_NAME" "SERVICE_NAME" "CONFIG_FILE_PATH" "$CLIENT_NAME_DIR"
 
-log_info "[CLIENT NAME] installation completed!"
+log_installation_complete "[CLIENT NAME]" "[SERVICE NAME]"
 log_info "To check status: sudo systemctl status [SERVICE_NAME]"
 log_info "To view logs: journalctl -fu [SERVICE_NAME]"
 

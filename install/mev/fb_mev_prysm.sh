@@ -7,13 +7,17 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting Flashbots MEV Prysm installation..."
+# Note: This script uses sudo internally for privileged operations
+
+# Note: This script uses sudo internally for privileged operations
+
+# Start installation
+log_installation_start "Flashbots MEV Prysm"
 
 
 # Check system requirements
 check_system_requirements 16 2000
 
-# Dependencies are installed centrally via install_dependencies.sh
 
 # Install Bazel
 log_info "Installing Bazel..."
@@ -92,7 +96,7 @@ enable_and_start_systemd_service "validator"
 # Show completion information
 show_installation_complete "Flashbots MEV Prysm" "cl" "$PRYSM_DIR/prysm_beacon_conf.yaml" "$PRYSM_DIR"
 
-log_info "Flashbots MEV Prysm installation completed!"
+log_installation_complete "Flashbots MEV Prysm" "mev-prysm"
 log_info "Beacon chain binary: $PRYSM_DIR/beacon-chain"
 log_info "Validator binary: $PRYSM_DIR/validator"
 log_info "Configuration files: $PRYSM_DIR/prysm_*_conf.yaml"

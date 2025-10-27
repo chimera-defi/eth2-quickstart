@@ -7,13 +7,15 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_info "Starting Nimbus installation..."
+# Get script directories
+get_script_directories
+
+log_installation_start "Nimbus"
 
 
 # Check system requirements (Nimbus is lightweight)
 check_system_requirements 4 500
 
-# Dependencies are installed centrally via install_dependencies.sh
 
 # Setup firewall rules for Nimbus
 setup_firewall_rules 9000 5052
@@ -71,7 +73,7 @@ VALIDATOR_DATA_DIR="$NIMBUS_DATA_DIR/validators"
 ensure_directory "$VALIDATOR_DATA_DIR"
 
 # Create temporary directory for custom configuration
-mkdir ./tmp
+create_temp_config_dir
 
 # Create custom configuration variables file
 cat > ./tmp/nimbus_custom.toml << EOF
@@ -104,8 +106,7 @@ graffiti = "$GRAFITTI"
 EOF
 
 # Merge base configuration with custom settings
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cat "$SCRIPT_DIR/configs/nimbus/nimbus_base.toml" ./tmp/nimbus_custom.toml > "$NIMBUS_DIR/nimbus.toml"
+merge_client_config "Nimbus" "main" "$SCRIPT_DIR/configs/nimbus/nimbus_base.toml" "./tmp/nimbus_custom.toml" "$NIMBUS_DIR/nimbus.toml"
 
 # Clean up temporary files
 rm -rf ./tmp/
@@ -150,7 +151,7 @@ create_systemd_service "validator" "Nimbus Ethereum Validator Client" "$VALIDATO
 enable_and_start_systemd_service "cl"
 enable_and_start_systemd_service "validator"
 
-log_info "Nimbus installation completed!"
+log_installation_complete "Nimbus" "nimbus"
 log_info "Beacon node configuration: $NIMBUS_DIR/nimbus.toml"
 log_info "Validator configuration: $NIMBUS_DIR/validator.toml"
 log_info "Data directory: $NIMBUS_DATA_DIR"
