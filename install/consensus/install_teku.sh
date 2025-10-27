@@ -10,9 +10,6 @@ source ../../lib/common_functions.sh
 # Get script directories
 get_script_directories
 
-# Check if running as root
-require_root
-
 log_installation_start "Teku"
 
 
