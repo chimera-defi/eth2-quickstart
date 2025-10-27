@@ -30,7 +30,7 @@ cd "$LIGHTHOUSE_DIR" || exit
 
 # Download Lighthouse
 log_info "Downloading Lighthouse..."
-if ! download_file "https://github.com/sigp/lighthouse/releases/download/v4.5.0/lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz" "lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz"; then
+if ! secure_download "https://github.com/sigp/lighthouse/releases/download/v4.5.0/lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz" "lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz"; then
     log_error "Failed to download Lighthouse"
     exit 1
 fi

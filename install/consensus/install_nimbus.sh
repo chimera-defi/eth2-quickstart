@@ -42,7 +42,7 @@ DOWNLOAD_URL="https://github.com/status-im/nimbus-eth2/releases/download/${LATES
 ARCHIVE_FILE="nimbus-eth2_Linux_amd64_${LATEST_VERSION}.tar.gz"
 
 log_info "Downloading Nimbus ${LATEST_VERSION}..."
-if download_file "$DOWNLOAD_URL" "$ARCHIVE_FILE"; then
+if secure_download "$DOWNLOAD_URL" "$ARCHIVE_FILE"; then
     if ! extract_archive "$ARCHIVE_FILE" "$NIMBUS_DIR" 1; then
         log_error "Failed to extract Nimbus archive"
         exit 1

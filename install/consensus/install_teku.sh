@@ -42,7 +42,7 @@ DOWNLOAD_URL="https://github.com/ConsenSys/teku/releases/download/${LATEST_VERSI
 ARCHIVE_FILE="teku-${LATEST_VERSION}.tar.gz"
 
 log_info "Downloading Teku ${LATEST_VERSION}..."
-if download_file "$DOWNLOAD_URL" "$ARCHIVE_FILE"; then
+if secure_download "$DOWNLOAD_URL" "$ARCHIVE_FILE"; then
     extract_archive "$ARCHIVE_FILE" "$TEKU_DIR" 1
     rm -f "$ARCHIVE_FILE"
 else

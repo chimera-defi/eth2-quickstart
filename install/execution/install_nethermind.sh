@@ -41,7 +41,7 @@ DOWNLOAD_URL="https://github.com/NethermindEth/nethermind/releases/download/${LA
 ARCHIVE_FILE="nethermind-${LATEST_VERSION}-linux-x64.zip"
 
 log_info "Downloading Nethermind ${LATEST_VERSION}..."
-if download_file "$DOWNLOAD_URL" "$ARCHIVE_FILE"; then
+if secure_download "$DOWNLOAD_URL" "$ARCHIVE_FILE"; then
     extract_archive "$ARCHIVE_FILE" "$NETHERMIND_DIR" 0
     rm -f "$ARCHIVE_FILE"
 else
