@@ -53,6 +53,16 @@ command_exists() {
 # DOWNLOAD FUNCTIONS
 # =============================================================================
 
+# Download file with retry logic and security validation
+download_file() {
+    local url="$1"
+    local output="$2"
+    local max_retries="${3:-3}"
+    
+    # Use secure download function
+    secure_download "$url" "$output" "$max_retries"
+}
+
 
 # Secure download function
 secure_download() {
@@ -142,6 +152,11 @@ enable_and_start_systemd_service() {
         log_error "Failed to start systemd service: $service_name"
         return 1
     fi
+}
+
+# Enable and start system service (alias for compatibility)
+enable_and_start_system_service() {
+    enable_and_start_systemd_service "$1"
 }
 
 
@@ -514,6 +529,79 @@ setup_intrusion_detection() {
 # REFACTORING FUNCTIONS - Requested in REFACTORING_AUDIT_REPORT.md
 # =============================================================================
 
+# 2. Installation Start Messages - log_installation_start()
+log_installation_start() {
+    local client_name="$1"
+    log_info "Starting $client_name installation..."
+}
+
+# 3. Installation Complete Messages - log_installation_complete()
+log_installation_complete() {
+    local client_name="$1"
+    local service_name="$2"
+    
+    log_info "$client_name installation completed!"
+    log_info "To check status: sudo systemctl status $service_name"
+    log_info "To start service: sudo systemctl start $service_name"
+    log_info "To enable service: sudo systemctl enable $service_name"
+    log_info "To view logs: sudo journalctl -u $service_name -f"
+}
+
+# 4. Setup Information Display - display_client_setup_info()
+display_client_setup_info() {
+    local client_name="$1"
+    local beacon_service="${2:-}"
+    local validator_service="${3:-}"
+    local beacon_desc="${4:-Beacon Node}"
+    local validator_desc="${5:-Validator Client}"
+    
+    cat << EOF
+
+=== $client_name Setup Information ===
+$client_name has been installed with the following components:
+
+EOF
+
+    if [[ -n "$beacon_service" ]]; then
+        echo "1. Beacon Node ($beacon_service service) - $beacon_desc"
+    fi
+    
+    if [[ -n "$validator_service" ]]; then
+        echo "2. Validator Client ($validator_service service) - $validator_desc"
+    fi
+    
+    cat << EOF
+
+Configuration files are located in:
+- Base configs: $SCRIPT_DIR/configs/$client_name/
+- Active configs: /etc/$client_name/
+
+Data directories:
+- Beacon data: /var/lib/$client_name/beacon
+- Validator data: /var/lib/$client_name/validator
+
+To manage services:
+- Start: sudo systemctl start $beacon_service $validator_service
+- Stop: sudo systemctl stop $beacon_service $validator_service
+- Status: sudo systemctl status $beacon_service $validator_service
+- Logs: sudo journalctl -fu $beacon_service $validator_service
+
+=== Setup Complete ===
+EOF
+}
+
+# 5. Temporary Directory Creation - create_temp_config_dir()
+create_temp_config_dir() {
+    local temp_dir="./tmp"
+    
+    if [[ ! -d "$temp_dir" ]]; then
+        mkdir -p "$temp_dir"
+        log_info "Created temporary directory: $temp_dir"
+    fi
+    
+    echo "$temp_dir"
+}
+
 # 1. SCRIPT_DIR Pattern Duplication - get_script_directories()
 get_script_directories() {
     # Get the directory of the calling script
@@ -545,9 +633,7 @@ merge_client_config() {
     log_info "Merging $client_name $config_type configuration..."
     
     # Create temp directory if it doesn't exist
-    if [[ ! -d "./tmp" ]]; then
-        mkdir -p "./tmp"
-    fi
+    create_temp_config_dir > /dev/null
     
     # Check if files exist
     if [[ ! -f "$base_config" ]]; then
