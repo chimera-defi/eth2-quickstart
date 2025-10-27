@@ -71,6 +71,58 @@ secure_download() {
     return 1
 }
 
+# Extract archive function
+extract_archive() {
+    local archive_file="$1"
+    local extract_dir="$2"
+    local strip_components="${3:-0}"
+    
+    log_info "Extracting $archive_file to $extract_dir..."
+    
+    # Create extract directory if it doesn't exist
+    ensure_directory "$extract_dir"
+    
+    # Extract based on file type
+    case "$archive_file" in
+        *.tar.gz|*.tgz)
+            if [[ $strip_components -gt 0 ]]; then
+                tar -xzf "$archive_file" -C "$extract_dir" --strip-components="$strip_components"
+            else
+                tar -xzf "$archive_file" -C "$extract_dir"
+            fi
+            ;;
+        *.tar.bz2|*.tbz2)
+            if [[ $strip_components -gt 0 ]]; then
+                tar -xjf "$archive_file" -C "$extract_dir" --strip-components="$strip_components"
+            else
+                tar -xjf "$archive_file" -C "$extract_dir"
+            fi
+            ;;
+        *.zip)
+            unzip -q "$archive_file" -d "$extract_dir"
+            if [[ $strip_components -gt 0 ]]; then
+                # For zip files, we need to move files up the directory structure
+                local temp_dir=$(mktemp -d)
+                mv "$extract_dir"/* "$temp_dir/" 2>/dev/null || true
+                find "$temp_dir" -mindepth "$strip_components" -maxdepth "$strip_components" -exec mv {} "$extract_dir/" \; 2>/dev/null || true
+                rm -rf "$temp_dir"
+            fi
+            ;;
+        *)
+            log_error "Unsupported archive format: $archive_file"
+            return 1
+            ;;
+    esac
+    
+    if [[ $? -eq 0 ]]; then
+        log_info "Successfully extracted $archive_file"
+        return 0
+    else
+        log_error "Failed to extract $archive_file"
+        return 1
+    fi
+}
+
 # =============================================================================
 # SYSTEMD SERVICE FUNCTIONS
 # =============================================================================
@@ -650,41 +702,6 @@ validate_user_input() {
     return 0
 }
 
-secure_error_handling() {
-    # Set up secure error handling
-    set -Eeuo pipefail
-    trap 'log_error "Error in line $LINENO: $BASH_COMMAND"' ERR
-}
-
-safe_command_execution() {
-    local command="$1"
-    
-    # Validate command before execution using grep
-    if echo "$command" | grep -q '[;&|`$]'; then
-        log_error "Unsafe command detected: $command"
-        return 1
-    fi
-    
-    # Execute command safely
-    if eval "$command" 2>/dev/null; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-secure_file_permissions() {
-    local file="$1"
-    local permissions="${2:-600}"
-    
-    if [[ -f "$file" ]]; then
-        sudo chmod "$permissions" "$file"
-        log_info "Set permissions $permissions on $file"
-    else
-        log_error "File not found: $file"
-        return 1
-    fi
-}
 
 # =============================================================================
 # REFACTORING FUNCTIONS - Requested in REFACTORING_AUDIT_REPORT.md
