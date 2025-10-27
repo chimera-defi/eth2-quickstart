@@ -19,7 +19,10 @@ source ./exports.sh
 source ./lib/common_functions.sh
 
 # Check if running as correct user (non-root)
-check_user "$LOGIN_UNAME"
+if [[ $(whoami) != "$LOGIN_UNAME" ]]; then
+    log_error "This script should be run as user: $LOGIN_UNAME"
+    exit 1
+fi
 
 log_info "Starting system setup - Phase 2..."
 

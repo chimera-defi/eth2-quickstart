@@ -49,6 +49,22 @@ chmod +x ./install/security/firewall.sh
 
 log_info "✓ Firewall configured"
 
+# Apply network security settings
+log_info "Applying network security settings..."
+apply_network_security
+
+# Secure configuration files
+log_info "Securing configuration files..."
+secure_config_files
+
+# Setup security monitoring
+log_info "Setting up security monitoring..."
+setup_security_monitoring
+
+# Setup intrusion detection
+log_info "Setting up intrusion detection..."
+setup_intrusion_detection
+
 # Disable shared memory for security
 log_info "Disabling shared memory..."
 append_once /etc/fstab $'tmpfs\t/run/shm\ttmpfs\tro,noexec,nosuid\t0 0'

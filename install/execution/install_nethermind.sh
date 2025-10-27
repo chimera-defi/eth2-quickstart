@@ -7,10 +7,13 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_installation_start "Nethermind"
-
 # Get script directories
 get_script_directories
+
+# Check if running as root
+require_root
+
+log_installation_start "Nethermind"
 
 # Check system requirements
 check_system_requirements 16 2000
