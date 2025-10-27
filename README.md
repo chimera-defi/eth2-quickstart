@@ -343,3 +343,17 @@ Additionally, the beacon checkpoint states have been made available by Sharedsta
 ### AI Agent Reference
 - **Agent Context**: [docs/AGENT_CONTEXT.md](docs/AGENT_CONTEXT.md) - Complete AI agent reference
 - **Quick Reference**: [AGENT_QUICK_REFERENCE.md](AGENT_QUICK_REFERENCE.md) - Quick access to agent docs
+## 📚 **Common Functions Library**
+
+The project includes a comprehensive common functions library (`lib/common_functions.sh`) with 35 centralized functions for:
+- **Logging**: Consistent message formatting across all scripts
+- **Installation**: Standardized installation start/complete messages
+- **Configuration**: JSON, YAML, and TOML configuration merging
+- **Security**: User setup, SSH configuration, fail2ban setup
+- **System Services**: Systemd service creation and management
+- **File Operations**: Secure file downloading with retry logic
+- **System Checks**: Requirements and compatibility validation
+
+**📖 Full Reference:** See `docs/COMMON_FUNCTIONS_REFERENCE.md` for complete function documentation and usage examples.
+
+**✅ Status:** All functions implemented, tested, and ready for production use.
