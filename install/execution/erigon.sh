@@ -7,9 +7,11 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-# Note: This script uses sudo internally for privileged operations
+# Get script directories
+get_script_directories
 
-# Note: This script uses sudo internally for privileged operations
+# Check if running as root
+require_root
 
 # Start installation
 log_installation_start "Erigon"
