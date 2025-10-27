@@ -42,27 +42,12 @@ configure_sudo_nopasswd "$LOGIN_UNAME"
 
 log_info "✓ User setup complete"
 
-# Configure firewall
-log_info "Configuring firewall..."
-chmod +x ./install/security/firewall.sh
-./install/security/firewall.sh
+# Run consolidated security setup
+log_info "Running consolidated security setup..."
+chmod +x ./install/security/consolidated_security.sh
+./install/security/consolidated_security.sh
 
-log_info "✓ Firewall configured"
-
-# Disable shared memory for security
-log_info "Disabling shared memory..."
-append_once /etc/fstab $'tmpfs\t/run/shm\ttmpfs\tro,noexec,nosuid\t0 0'
-
-log_info "✓ Shared memory disabled"
-
-# Apply security configurations
-log_info "Applying security configurations..."
-secure_config_files
-apply_network_security
-setup_security_monitoring
-setup_intrusion_detection
-
-log_info "✓ Security configurations applied"
+log_info "✓ Consolidated security setup complete"
 
 # Get server IP
 log_info "Determining server IP..."

@@ -146,10 +146,10 @@ run_custom_test "All required security functions exist" test_security_functions_
 
 # Test 3: Verify run_1.sh calls security functions
 test_run1_security_calls() {
-    if grep -q "setup_security_monitoring" run_1.sh && grep -q "setup_intrusion_detection" run_1.sh; then
+    if grep -q "consolidated_security.sh" run_1.sh; then
         return 0
     else
-        log_error "run_1.sh missing security function calls"
+        log_error "run_1.sh missing consolidated security script call"
         return 1
     fi
 }
@@ -179,10 +179,10 @@ test_input_validation() {
     
     # Test validate_user_input function
     if declare -f validate_user_input >/dev/null; then
-        # Test valid input (no pattern, just length check)
-        if validate_user_input "test123" "" 10; then
+        # Test valid input (length check)
+        if validate_user_input "test123" 10 1; then
             # Test invalid input (too long)
-            if ! validate_user_input "thisinputistoolong" "" 10; then
+            if ! validate_user_input "thisinputistoolong" 10 1; then
                 return 0
             else
                 log_error "Input validation failed to reject long input"
