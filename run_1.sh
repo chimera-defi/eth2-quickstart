@@ -49,6 +49,21 @@ chmod +x ./install/security/consolidated_security.sh
 
 log_info "✓ Consolidated security setup complete"
 
+# Disable shared memory for security
+log_info "Disabling shared memory..."
+append_once /etc/fstab $'tmpfs\t/run/shm\ttmpfs\tro,noexec,nosuid\t0 0'
+
+log_info "✓ Shared memory disabled"
+
+# Apply security configurations
+log_info "Applying security configurations..."
+secure_config_files
+apply_network_security
+setup_security_monitoring
+setup_intrusion_detection
+
+log_info "✓ Security configurations applied"
+
 # Get server IP
 log_info "Determining server IP..."
 SERVER_IP=$(curl -s v4.ident.me 2>/dev/null || curl -s ifconfig.me 2>/dev/null || echo "YOUR_SERVER_IP")

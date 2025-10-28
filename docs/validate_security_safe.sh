@@ -146,12 +146,23 @@ run_custom_test "All required security functions exist" test_security_functions_
 
 # Test 3: Verify run_1.sh calls security functions
 test_run1_security_calls() {
-    if grep -q "consolidated_security.sh" run_1.sh; then
-        return 0
-    else
+    # Check for consolidated security script call
+    if ! grep -q "consolidated_security.sh" run_1.sh; then
         log_error "run_1.sh missing consolidated security script call"
         return 1
     fi
+    
+    if ! grep -q "secure_config_files" run_1.sh; then
+        log_error "run_1.sh missing secure_config_files call"
+        return 1
+    fi
+    
+    if ! grep -q "apply_network_security" run_1.sh; then
+        log_error "run_1.sh missing apply_network_security call"
+        return 1
+    fi
+    
+    return 0
 }
 
 run_custom_test "run_1.sh calls security functions" test_run1_security_calls
