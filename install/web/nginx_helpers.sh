@@ -67,10 +67,11 @@ add_rate_limiting() {
     local rate_limit_file="/etc/nginx/conf.d/rate-limit.conf"
     
     sudo tee "$rate_limit_file" > /dev/null << 'EOF'
-# Rate limiting configuration
+# Enhanced Rate limiting configuration (from PR #40)
 limit_req_zone $binary_remote_addr zone=api:10m rate=50r/m;
 limit_req_zone $binary_remote_addr zone=ws:10m rate=20r/m;
 limit_req_zone $binary_remote_addr zone=general:10m rate=100r/m;
+limit_req_status 429;
 EOF
 
     if [[ -f "$rate_limit_file" ]]; then

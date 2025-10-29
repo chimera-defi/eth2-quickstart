@@ -2,6 +2,8 @@
 
 # Common Web Server Helper Functions
 # Shared utilities for both Caddy and Nginx installation scripts
+# Note: This file expects log_error to be available from the calling context
+# (via lib/common_functions.sh which is sourced before helpers)
 
 # Common security headers (returns header config based on server type)
 get_security_headers() {
