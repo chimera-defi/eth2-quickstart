@@ -31,14 +31,12 @@ setup_firewall() {
         exit 1
     fi
 
-    # Open essential ports
+    # Open essential ports using common function
     log_info "Opening ports for Ethereum clients..."
-    ufw allow 30303 || log_warn "Failed to allow port 30303"
-    ufw allow 13000/tcp || log_warn "Failed to allow port 13000/tcp"
-    ufw allow 12000/udp || log_warn "Failed to allow port 12000/udp"
+    setup_firewall_rules 30303 13000/tcp 12000/udp 22/tcp 443/tcp
+    
+    # Allow SSH (special rule)
     ufw allow in ssh || log_warn "Failed to allow SSH"
-    ufw allow 22/tcp || log_warn "Failed to allow port 22/tcp"
-    ufw allow 443/tcp || log_warn "Failed to allow port 443/tcp"
 
     # Block outbound connections to private/reserved networks to prevent netscan abuse
     log_info "Blocking outbound connections to private networks..."
@@ -74,13 +72,6 @@ setup_firewall() {
     ufw deny in 3500/tcp || log_warn "Failed to deny port 3500/tcp"
     ufw deny in 8551/tcp || log_warn "Failed to deny port 8551/tcp"
     ufw deny in 8545/tcp || log_warn "Failed to deny port 8545/tcp"
-
-    # Enable firewall
-    log_info "Enabling UFW firewall..."
-    if ! ufw enable; then
-        log_error "Failed to enable UFW firewall"
-        exit 1
-    fi
 
     log_info "✓ Firewall configuration completed!"
     log_info "UFW firewall is now enabled with Ethereum client and security rules"

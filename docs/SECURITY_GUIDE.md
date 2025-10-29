@@ -35,15 +35,20 @@ This guide provides comprehensive security information for the Ethereum node set
 
 ## Security Scripts
 
+### Core Security Scripts
+- **`install/security/consolidated_security.sh`** - Main security setup (firewall, fail2ban, AIDE)
+- **`install/security/nginx_harden.sh`** - Nginx proxy abuse protection
+- **`install/security/test_security_fixes.sh`** - Security testing suite
+
 ### Testing Scripts
-- **`test_security_fixes.sh`** - Tests security implementations
 - **`docs/verify_security.sh`** - Production security verification
 - **`docs/validate_security_safe.sh`** - Safe validation without root
 
 ### Usage
 ```bash
+# Security setup is called automatically from run_1.sh
 # Test security implementations
-./test_security_fixes.sh
+./install/security/test_security_fixes.sh
 
 # Comprehensive security verification
 ./docs/verify_security.sh
