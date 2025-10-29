@@ -3,6 +3,9 @@
 # Caddy Helper Functions
 # Local helper functions for Caddy installation scripts
 
+# Source common web helpers
+source "$(dirname "$0")/web_helpers_common.sh"
+
 # Install Caddy web server
 install_caddy() {
     log_info "Installing Caddy web server..."
@@ -71,10 +74,12 @@ create_caddy_config_auto_https() {
     
     cat > "$caddyfile_path" << EOF
 {
-    # Global options
+    # Global options (Caddy v2)
     auto_https off
     servers {
         protocols h1 h2 h3
+        # Connection limits note: Caddy v2 doesn't have built-in connection limiting like Nginx's limit_conn
+        # Consider using fail2ban or external firewall rules for connection-based DDoS protection
     }
 }
 
@@ -92,8 +97,9 @@ https://$server_name {
         }
     }
     
-    # WebSocket proxy for Ethereum WebSocket API
+    # WebSocket proxy with rate limiting
     handle /ws* {
+        rate_limit zone ws
         reverse_proxy $LH:$NETHERMIND_WS_PORT {
             header_up Host {host}
             header_up X-Real-IP {remote}
@@ -102,29 +108,10 @@ https://$server_name {
         }
     }
     
-    # HTTP proxy for Ethereum RPC API
+    # HTTP proxy with rate limiting
     handle /rpc* {
+        rate_limit zone api
         reverse_proxy $LH:$NETHERMIND_HTTP_PORT {
-            header_up Host {host}
-            header_up X-Real-IP {remote}
-            header_up X-Forwarded-For {remote}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-    
-    # Prysm checkpoint sync endpoint
-    handle /prysm/checkpt_sync* {
-        reverse_proxy $LH:3500 {
-            header_up Host {host}
-            header_up X-Real-IP {remote}
-            header_up X-Forwarded-For {remote}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-    
-    # Prysm web interface
-    handle /prysm/web* {
-        reverse_proxy $LH:7500 {
             header_up Host {host}
             header_up X-Real-IP {remote}
             header_up X-Forwarded-For {remote}
@@ -151,16 +138,49 @@ https://$server_name {
         
         # Content Security Policy
         Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' wss: https:; font-src 'self' data:; object-src 'none'; media-src 'self'; frame-src 'none';"
+        
+        # Permissions Policy (added to match Nginx)
+        Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), speaker=(), vibrate=(), fullscreen=(self), sync-xhr=()"
     }
     
-    # Rate limiting
+    # Enhanced rate limiting (from PR #40, consistent with Nginx)
+    # Note: Caddy v2 rate limiting doesn't support burst like Nginx
+    # The events count limits requests per window (similar to Nginx's rate)
     rate_limit {
-        zone static {
+        zone api {
+            key {remote_host}
+            events 50
+            window 1m
+        }
+        zone ws {
+            key {remote_host}
+            events 20
+            window 1m
+        }
+        zone general {
             key {remote_host}
             events 100
             window 1m
         }
     }
+    
+    # Enhanced DDoS protection (from PR #40, consistent with Nginx)
+    # Request size limits (equivalent to Nginx's client_max_body_size)
+    request_body {
+        max_size 10MB
+    }
+    
+    # Timeout configurations (consistent with Nginx)
+    # Caddy v2 timeouts align with Nginx's timeout settings
+    timeouts {
+        read_timeout 30s           # Equivalent to Nginx client_body_timeout
+        read_header_timeout 30s    # Equivalent to Nginx client_header_timeout (matched to 30s)
+        write_timeout 30s          # Equivalent to Nginx send_timeout
+        idle_timeout 60s           # Equivalent to Nginx keepalive_timeout
+    }
+    
+    # Note: Connection limiting (limit_conn) not available in Caddy v2
+    # Use system-level tools (fail2ban, UFW) or Caddy plugins if needed
     
     # Logging
     log {
@@ -189,10 +209,12 @@ create_caddy_config_manual_ssl() {
     
     cat > "$caddyfile_path" << EOF
 {
-    # Global options
+    # Global options (Caddy v2)
     auto_https off
     servers {
         protocols h1 h2 h3
+        # Connection limits note: Caddy v2 doesn't have built-in connection limiting like Nginx's limit_conn
+        # Consider using fail2ban or external firewall rules for connection-based DDoS protection
     }
 }
 
@@ -206,8 +228,9 @@ https://$server_name {
     # Manual SSL certificate configuration
     tls $cert_path $key_path
     
-    # WebSocket proxy for Ethereum WebSocket API
+    # WebSocket proxy with rate limiting
     handle /ws* {
+        rate_limit zone ws
         reverse_proxy $LH:$NETHERMIND_WS_PORT {
             header_up Host {host}
             header_up X-Real-IP {remote}
@@ -216,29 +239,10 @@ https://$server_name {
         }
     }
     
-    # HTTP proxy for Ethereum RPC API
+    # HTTP proxy with rate limiting
     handle /rpc* {
+        rate_limit zone api
         reverse_proxy $LH:$NETHERMIND_HTTP_PORT {
-            header_up Host {host}
-            header_up X-Real-IP {remote}
-            header_up X-Forwarded-For {remote}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-    
-    # Prysm checkpoint sync endpoint
-    handle /prysm/checkpt_sync* {
-        reverse_proxy $LH:3500 {
-            header_up Host {host}
-            header_up X-Real-IP {remote}
-            header_up X-Forwarded-For {remote}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-    
-    # Prysm web interface
-    handle /prysm/web* {
-        reverse_proxy $LH:7500 {
             header_up Host {host}
             header_up X-Real-IP {remote}
             header_up X-Forwarded-For {remote}
@@ -265,16 +269,49 @@ https://$server_name {
         
         # Content Security Policy
         Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' wss: https:; font-src 'self' data:; object-src 'none'; media-src 'self'; frame-src 'none';"
+        
+        # Permissions Policy (added to match Nginx)
+        Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), speaker=(), vibrate=(), fullscreen=(self), sync-xhr=()"
     }
     
-    # Rate limiting
+    # Enhanced rate limiting (from PR #40, consistent with Nginx)
+    # Note: Caddy v2 rate limiting doesn't support burst like Nginx
+    # The events count limits requests per window (similar to Nginx's rate)
     rate_limit {
-        zone static {
+        zone api {
+            key {remote_host}
+            events 50
+            window 1m
+        }
+        zone ws {
+            key {remote_host}
+            events 20
+            window 1m
+        }
+        zone general {
             key {remote_host}
             events 100
             window 1m
         }
     }
+    
+    # Enhanced DDoS protection (from PR #40, consistent with Nginx)
+    # Request size limits (equivalent to Nginx's client_max_body_size)
+    request_body {
+        max_size 10MB
+    }
+    
+    # Timeout configurations (consistent with Nginx)
+    # Caddy v2 timeouts align with Nginx's timeout settings
+    timeouts {
+        read_timeout 30s           # Equivalent to Nginx client_body_timeout
+        read_header_timeout 30s    # Equivalent to Nginx client_header_timeout (matched to 30s)
+        write_timeout 30s          # Equivalent to Nginx send_timeout
+        idle_timeout 60s           # Equivalent to Nginx keepalive_timeout
+    }
+    
+    # Note: Connection limiting (limit_conn) not available in Caddy v2
+    # Use system-level tools (fail2ban, UFW) or Caddy plugins if needed
     
     # Logging
     log {

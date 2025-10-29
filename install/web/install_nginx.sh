@@ -6,6 +6,7 @@
 
 source ../../exports.sh
 source ../../lib/common_functions.sh
+source ./nginx_helpers.sh
 
 # Get script directories
 get_script_directories
@@ -15,50 +16,15 @@ log_installation_start "NGINX"
 log_info "Server name: $SERVER_NAME"
 log_info "Login username: $LOGIN_UNAME"
 
-log_info "Configuring NGINX..."
+# Install Nginx
+install_nginx
 
-# Create NGINX configuration
-log_info "Creating NGINX configuration..."
-cat > "$HOME/nginx_conf_temp" << EOF
-server {
-  listen 80;
-  listen [::]:80;
-  server_name $SERVER_NAME;
+# Setup Nginx service and directories
+setup_nginx_service
 
-  location ^~ /ws {
-      proxy_http_version 1.1;
-      proxy_set_header Upgrade \$http_upgrade;
-      proxy_set_header Connection "upgrade";
-      proxy_set_header X-Real-IP \$remote_addr;
-      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-      proxy_set_header Host \$http_host;
-      proxy_set_header X-NginX-Proxy true;
-      proxy_pass   http://$LH:$NETHERMIND_WS_PORT/;
-  }
-
-  location ^~ /rpc {
-      proxy_http_version 1.1;
-      proxy_set_header Upgrade \$http_upgrade;
-      proxy_set_header Connection "upgrade";
-      proxy_set_header X-Real-IP \$remote_addr;
-      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-      proxy_set_header Host \$http_host;
-      proxy_set_header X-NginX-Proxy true;
-      proxy_pass    http://$LH:$NETHERMIND_HTTP_PORT/;
-  }
-}
-EOF
-
-# Install NGINX configuration
-log_info "Installing NGINX configuration..."
-if ! sudo mv "$HOME/nginx_conf_temp" /etc/nginx/sites-enabled/default; then
-    log_error "Failed to install NGINX configuration"
-    exit 1
-fi
-
-# Setup firewall rules
-log_info "Configuring firewall..."
-setup_firewall_rules 80 443
+# Create Nginx configuration
+log_info "Creating Nginx configuration..."
+create_nginx_config "$SERVER_NAME" "$HOME/nginx_conf_temp" "false"
 
 # Add rate limiting
 log_info "Adding rate limiting..."
@@ -68,20 +34,49 @@ add_rate_limiting
 log_info "Configuring DDoS protection..."
 configure_ddos_protection
 
-# Restart NGINX
-log_info "Restarting NGINX..."
-if ! sudo service nginx restart; then
-    log_error "Failed to restart NGINX"
+# Install Nginx configuration
+log_info "Installing Nginx configuration..."
+if ! sudo mv "$HOME/nginx_conf_temp" /etc/nginx/sites-enabled/default; then
+    log_error "Failed to install Nginx configuration"
     exit 1
 fi
 
-# Run NGINX hardening
-log_info "Running NGINX hardening..."
-if ! ./install/security/nginx_harden.sh; then
-    log_warn "NGINX hardening script failed, but continuing..."
+# Set proper permissions
+sudo chown root:root /etc/nginx/sites-enabled/default
+sudo chmod 644 /etc/nginx/sites-enabled/default
+
+# Setup firewall rules
+log_info "Configuring firewall..."
+setup_firewall_rules 80 443
+
+# Validate Nginx configuration
+validate_nginx_config
+
+# Run Nginx hardening
+log_info "Running Nginx security hardening..."
+if ! ../security/nginx_harden.sh; then
+    log_warn "Nginx hardening script failed, but continuing..."
 fi
 
-log_installation_complete "NGINX" "nginx" "/etc/nginx/sites-available/default" "/etc/nginx"
+# Verify Nginx is running
+log_info "Verifying Nginx installation..."
+if sudo systemctl is-active --quiet nginx; then
+    log_info "✓ Nginx is running successfully"
+else
+    log_error "Nginx failed to start"
+    exit 1
+fi
+
+log_installation_complete "NGINX" "nginx"
 log_info "Server name: $SERVER_NAME"
-log_info "WebSocket endpoint: http://$SERVER_NAME/ws"
-log_info "RPC endpoint: http://$SERVER_NAME/rpc"
+log_info "HTTP WebSocket endpoint: http://$SERVER_NAME/ws"
+log_info "HTTP RPC endpoint: http://$SERVER_NAME/rpc"
+
+log_info ""
+log_info "=== Nginx Setup Complete ==="
+log_info "Nginx has been installed and configured"
+log_info "Configuration file: /etc/nginx/sites-enabled/default"
+log_info "Logs: /var/log/nginx/access.log"
+log_info "Service: sudo systemctl status nginx"
+log_info ""
+log_info "Note: For SSL setup, see install_nginx_ssl.sh"

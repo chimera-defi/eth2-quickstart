@@ -104,28 +104,6 @@ https://$SERVER_NAME {
         }
     }
     
-    # Prysm checkpoint sync with rate limiting
-    handle /prysm/checkpt_sync* {
-        rate_limit zone api
-        reverse_proxy $LH:3500 {
-            header_up Host {host}
-            header_up X-Real-IP {remote}
-            header_up X-Forwarded-For {remote}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-    
-    # Prysm web interface with rate limiting
-    handle /prysm/web* {
-        rate_limit zone api
-        reverse_proxy $LH:7500 {
-            header_up Host {host}
-            header_up X-Real-IP {remote}
-            header_up X-Forwarded-For {remote}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-    
     # Block common attack patterns
     handle /admin* {
         respond "Access Denied" 403
@@ -143,7 +121,7 @@ https://$SERVER_NAME {
         respond "Access Denied" 403
     }
     
-    # Comprehensive security headers
+    # Comprehensive security headers (consistent with Nginx)
     header {
         # HSTS with preload
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
@@ -163,7 +141,7 @@ https://$SERVER_NAME {
         # Content Security Policy (strict)
         Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' wss: https:; font-src 'self' data:; object-src 'none'; media-src 'self'; frame-src 'none'; base-uri 'self'; form-action 'self';"
         
-        # Permissions Policy
+        # Permissions Policy (consistent with Nginx)
         Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), speaker=(), vibrate=(), fullscreen=(self), sync-xhr=()"
         
         # Remove server information
@@ -194,12 +172,12 @@ https://$SERVER_NAME {
         max_size 10MB
     }
     
-    # Timeout configurations
+    # Timeout configurations (consistent with Nginx)
     timeouts {
-        read_timeout 30s
-        read_header_timeout 10s
-        write_timeout 30s
-        idle_timeout 60s
+        read_timeout 30s           # Equivalent to Nginx client_body_timeout
+        read_header_timeout 30s    # Equivalent to Nginx client_header_timeout (matched to 30s)
+        write_timeout 30s          # Equivalent to Nginx send_timeout
+        idle_timeout 60s           # Equivalent to Nginx keepalive_timeout
     }
 }
 

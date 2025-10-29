@@ -45,7 +45,7 @@ validate_caddy_config "/etc/caddy/Caddyfile"
 
 # Run Caddy hardening
 log_info "Running Caddy security hardening..."
-if ! ./caddy_harden.sh; then
+if ! ../security/caddy_harden.sh; then
     log_warn "Caddy hardening script failed, but continuing..."
 fi
 
@@ -58,12 +58,10 @@ else
     exit 1
 fi
 
-log_installation_complete "Caddy" "caddy" "/etc/caddy/Caddyfile" "/etc/caddy"
+log_installation_complete "Caddy" "caddy"
 log_info "Server name: $SERVER_NAME"
 log_info "HTTPS WebSocket endpoint: https://$SERVER_NAME/ws"
 log_info "HTTPS RPC endpoint: https://$SERVER_NAME/rpc"
-log_info "Prysm checkpoint sync: https://$SERVER_NAME/prysm/checkpt_sync"
-log_info "Prysm web interface: https://$SERVER_NAME/prysm/web"
 
 log_info ""
 log_info "=== Caddy Setup Complete ==="

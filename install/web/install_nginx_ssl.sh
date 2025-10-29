@@ -1,14 +1,11 @@
 #!/bin/bash
 
-
 # NGINX SSL Configuration Script
 # Configures NGINX to use SSL certificates
 
 source ../../exports.sh
 source ../../lib/common_functions.sh
-
-# Check if running as root
-require_root
+source ./nginx_helpers.sh
 
 # Get script directories
 get_script_directories
@@ -17,42 +14,11 @@ get_script_directories
 log_installation_start "NGINX SSL"
 log_info "Server name: $SERVER_NAME"
 
-# Create SSL-enabled NGINX configuration
-log_info "Creating SSL-enabled NGINX configuration..."
-cat > "$HOME/nginx_conf_temp" << EOF
-server {
-  listen 80;
-  listen [::]:80;
-  server_name $SERVER_NAME;
-
-  listen [::]:443 ssl ipv6only=on;
-  listen 443 ssl;
-  ssl_certificate /etc/letsencrypt/live/$SERVER_NAME/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/$SERVER_NAME/privkey.pem;
-
-  location ^~ /ws {
-      proxy_http_version 1.1;
-      proxy_set_header Upgrade \$http_upgrade;
-      proxy_set_header Connection "upgrade";
-      proxy_set_header X-Real-IP \$remote_addr;
-      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-      proxy_set_header Host \$http_host;
-      proxy_set_header X-NginX-Proxy true;
-      proxy_pass   http://$LH:$NETHERMIND_WS_PORT/;
-  }
-
-  location ^~ /rpc {
-      proxy_http_version 1.1;
-      proxy_set_header Upgrade \$http_upgrade;
-      proxy_set_header Connection "upgrade";
-      proxy_set_header X-Real-IP \$remote_addr;
-      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-      proxy_set_header Host \$http_host;
-      proxy_set_header X-NginX-Proxy true;
-      proxy_pass    http://127.0.0.1:8545/;
-  }
-}
-EOF
+# Check if Nginx is installed
+if ! command_exists nginx; then
+    log_error "Nginx is not installed. Please run install_nginx.sh first"
+    exit 1
+fi
 
 # Verify SSL certificates exist
 log_info "Verifying SSL certificates..."
@@ -62,16 +28,9 @@ if [[ ! -f "/etc/letsencrypt/live/$SERVER_NAME/fullchain.pem" ]]; then
     exit 1
 fi
 
-# Install SSL-enabled NGINX configuration
-log_info "Installing SSL-enabled NGINX configuration..."
-if ! sudo mv "$HOME/nginx_conf_temp" /etc/nginx/sites-enabled/default; then
-    log_error "Failed to install SSL NGINX configuration"
-    exit 1
-fi
-
-# Setup firewall rules
-log_info "Configuring firewall for SSL..."
-setup_firewall_rules 80 443
+# Create SSL-enabled Nginx configuration
+log_info "Creating SSL-enabled Nginx configuration..."
+create_nginx_config "$SERVER_NAME" "$HOME/nginx_conf_temp" "true" "/etc/letsencrypt/live/$SERVER_NAME/fullchain.pem" "/etc/letsencrypt/live/$SERVER_NAME/privkey.pem"
 
 # Add rate limiting
 log_info "Adding rate limiting..."
@@ -81,20 +40,47 @@ add_rate_limiting
 log_info "Configuring DDoS protection..."
 configure_ddos_protection
 
-# Restart NGINX
-log_info "Restarting NGINX with SSL configuration..."
-if ! sudo systemctl restart nginx; then
-    log_error "Failed to restart NGINX"
+# Install SSL-enabled Nginx configuration
+log_info "Installing SSL-enabled Nginx configuration..."
+if ! sudo mv "$HOME/nginx_conf_temp" /etc/nginx/sites-enabled/default; then
+    log_error "Failed to install SSL Nginx configuration"
     exit 1
 fi
 
-# Run NGINX hardening
-log_info "Running NGINX hardening..."
-if ! ./install/security/nginx_harden.sh; then
-    log_warn "NGINX hardening script failed, but continuing..."
+# Set proper permissions
+sudo chown root:root /etc/nginx/sites-enabled/default
+sudo chmod 644 /etc/nginx/sites-enabled/default
+
+# Setup firewall rules
+log_info "Configuring firewall for SSL..."
+setup_firewall_rules 80 443
+
+# Validate Nginx configuration
+validate_nginx_config
+
+# Restart Nginx with SSL configuration
+log_info "Restarting Nginx with SSL configuration..."
+if ! sudo systemctl restart nginx; then
+    log_error "Failed to restart Nginx"
+    exit 1
 fi
 
-log_info "NGINX SSL configuration completed!"
+# Run Nginx hardening
+log_info "Running Nginx security hardening..."
+if ! ../security/nginx_harden.sh; then
+    log_warn "Nginx hardening script failed, but continuing..."
+fi
+
+# Verify Nginx is running
+log_info "Verifying Nginx SSL configuration..."
+if sudo systemctl is-active --quiet nginx; then
+    log_info "✓ Nginx is running with SSL successfully"
+else
+    log_error "Nginx failed to start with SSL configuration"
+    exit 1
+fi
+
+log_info "Nginx SSL configuration completed!"
 log_info "Server name: $SERVER_NAME"
 log_info "HTTPS WebSocket endpoint: https://$SERVER_NAME/ws"
 log_info "HTTPS RPC endpoint: https://$SERVER_NAME/rpc"
