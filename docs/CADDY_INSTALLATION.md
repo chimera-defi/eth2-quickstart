@@ -183,7 +183,7 @@ sudo caddy run --config /etc/caddy/Caddyfile --dry-run
 Run the comprehensive test script:
 
 ```bash
-./test_caddy_installation.sh
+./tests/test_caddy_installation.sh
 ```
 
 **Test Coverage:**
