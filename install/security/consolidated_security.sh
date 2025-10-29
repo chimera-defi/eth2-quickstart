@@ -156,8 +156,13 @@ setup_aide() {
 #!/bin/bash
 # AIDE File Integrity Check Script
 
-# Source common functions
-source ../../lib/common_functions.sh
+log_info() {
+    echo "[INFO] $1"
+}
+
+log_warn() {
+    echo "[WARN] $1"
+}
 
 log_info "Running AIDE file integrity check..."
 
