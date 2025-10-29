@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Consolidated Security Setup Script
-# Combines firewall, fail2ban, and nginx hardening into one efficient script
+# Combines firewall, fail2ban, and AIDE into one efficient script
 
 # Source configuration files
 source ../../exports.sh
@@ -180,58 +180,7 @@ EOF
     log_info "AIDE check scheduled daily at 2 AM"
 }
 
-# Function 4: Setup Nginx Hardening
-setup_nginx_hardening() {
-    log_info "Setting up nginx hardening..."
-
-    # Create fail2ban filter for nginx proxy abuse
-    log_info "Creating fail2ban filter for nginx proxy abuse..."
-    cat > /etc/fail2ban/filter.d/nginx-proxy.conf << EOF
-# Block IPs trying to use server as proxy.
-#
-# Matches e.g.
-# 192.168.1.1 - - "GET http://www.something.com/
-
-[Definition]
-failregex = ^<HOST> -.*GET http.*
-ignoreregex =
-EOF
-
-    # Add nginx-proxy jail to existing fail2ban configuration
-    log_info "Adding nginx-proxy jail to fail2ban configuration..."
-    cat >> /etc/fail2ban/jail.local << EOF
-
-## block hosts trying to abuse our server as a forward proxy
-[nginx-proxy]
-enabled = true
-port    = 80,443
-filter = nginx-proxy
-logpath = /var/log/nginx/access.log
-maxretry = 2
-bantime  = 86400
-EOF
-
-    # Restart services
-    log_info "Restarting fail2ban..."
-    if ! systemctl restart fail2ban; then
-        log_error "Failed to restart fail2ban"
-        exit 1
-    fi
-
-    log_info "Restarting nginx..."
-    if ! systemctl restart nginx; then
-        log_error "Failed to restart nginx"
-        exit 1
-    fi
-
-    log_info "✓ NGINX hardening completed!"
-    log_info "fail2ban is now configured to block proxy abuse attempts"
-    log_info "Filter: nginx-proxy"
-    log_info "Ban time: 86400 seconds (24 hours)"
-    log_info "Max retries: 2"
-}
-
-# Function 5: Security Verification
+# Function 4: Security Verification
 verify_security_setup() {
     log_info "Verifying security setup..."
     
@@ -261,14 +210,6 @@ verify_security_setup() {
         issues=$((issues + 1))
     fi
     
-    # Check nginx hardening
-    if [[ -f /etc/fail2ban/filter.d/nginx-proxy.conf ]]; then
-        log_info "✓ Nginx hardening filter installed"
-    else
-        log_error "✗ Nginx hardening filter missing"
-        issues=$((issues + 1))
-    fi
-    
     if [[ $issues -eq 0 ]]; then
         log_info "✓ All security features verified successfully"
     else
@@ -282,7 +223,6 @@ main() {
     setup_firewall
     setup_fail2ban
     setup_aide
-    setup_nginx_hardening
     
     # Verify security setup
     verify_security_setup
@@ -291,7 +231,6 @@ main() {
     log_info "✓ Firewall configured with comprehensive rules"
     log_info "✓ Fail2ban intrusion prevention active"
     log_info "✓ AIDE file integrity monitoring scheduled"
-    log_info "✓ NGINX hardening applied"
     log_info "✓ All security features are now active and protecting your system"
     
     log_installation_complete "Consolidated Security Suite" "security-suite"
