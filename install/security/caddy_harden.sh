@@ -15,7 +15,7 @@ log_info "Starting Caddy security hardening..."
 # Backup original Caddyfile
 log_info "Creating backup of original Caddyfile..."
 if [[ -f /etc/caddy/Caddyfile ]]; then
-    sudo cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.backup.$(date +%Y%m%d_%H%M%S)
+    sudo cp /etc/caddy/Caddyfile "/etc/caddy/Caddyfile.backup.$(date +%Y%m%d_%H%M%S)"
     log_info "Backup created: /etc/caddy/Caddyfile.backup.$(date +%Y%m%d_%H%M%S)"
 else
     log_error "Caddyfile not found at /etc/caddy/Caddyfile"
