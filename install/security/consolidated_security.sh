@@ -3,6 +3,10 @@
 # Consolidated Security Setup Script
 # Combines firewall, fail2ban, and nginx hardening into one efficient script
 
+# Enable strict mode for better error handling
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 # Source configuration files
 source ../../exports.sh
 source ../../lib/common_functions.sh
