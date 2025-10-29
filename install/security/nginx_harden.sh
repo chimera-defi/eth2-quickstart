@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 # NGINX Hardening Script
 # Configures fail2ban to block IPs trying to use server as proxy
 

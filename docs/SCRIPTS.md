@@ -35,7 +35,7 @@ ssh LOGIN_UNAME@<server-ip>
 - SSH hardening: replaces `/etc/ssh/sshd_config`
 - Fail2ban: configures jails for `nginx-proxy` and `sshd`
 - User creation: creates non-root user `LOGIN_UNAME`
-- Firewall: runs `./firewall.sh`
+- Security: runs consolidated security script
 - NTP: installs `chrony` and enables NTP
 - Security: mounts `/run/shm` as `tmpfs` with `ro,noexec,nosuid`
 

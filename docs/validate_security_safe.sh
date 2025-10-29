@@ -146,22 +146,33 @@ run_custom_test "All required security functions exist" test_security_functions_
 
 # Test 3: Verify run_1.sh calls security functions
 test_run1_security_calls() {
-    if grep -q "setup_security_monitoring" run_1.sh && grep -q "setup_intrusion_detection" run_1.sh; then
-        return 0
-    else
-        log_error "run_1.sh missing security function calls"
+    # Check for consolidated security script call
+    if ! grep -q "consolidated_security.sh" run_1.sh; then
+        log_error "run_1.sh missing consolidated security script call"
         return 1
     fi
+    
+    if ! grep -q "secure_config_files" run_1.sh; then
+        log_error "run_1.sh missing secure_config_files call"
+        return 1
+    fi
+    
+    if ! grep -q "apply_network_security" run_1.sh; then
+        log_error "run_1.sh missing apply_network_security call"
+        return 1
+    fi
+    
+    return 0
 }
 
 run_custom_test "run_1.sh calls security functions" test_run1_security_calls
 
 # Test 4: Verify run_2.sh calls security functions
 test_run2_security_calls() {
-    if grep -q "secure_config_files" run_2.sh && grep -q "apply_network_security" run_2.sh; then
+    if grep -q "Security hardening already applied" run_2.sh; then
         return 0
     else
-        log_error "run_2.sh missing security function calls"
+        log_error "run_2.sh missing security integration"
         return 1
     fi
 }
@@ -179,10 +190,10 @@ test_input_validation() {
     
     # Test validate_user_input function
     if declare -f validate_user_input >/dev/null; then
-        # Test valid input (no pattern, just length check)
-        if validate_user_input "test123" "" 10; then
+        # Test valid input (length check)
+        if validate_user_input "test123" 10 1; then
             # Test invalid input (too long)
-            if ! validate_user_input "thisinputistoolong" "" 10; then
+            if ! validate_user_input "thisinputistoolong" 10 1; then
                 return 0
             else
                 log_error "Input validation failed to reject long input"

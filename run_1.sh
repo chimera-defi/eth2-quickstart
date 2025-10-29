@@ -42,12 +42,12 @@ configure_sudo_nopasswd "$LOGIN_UNAME"
 
 log_info "✓ User setup complete"
 
-# Configure firewall
-log_info "Configuring firewall..."
-chmod +x ./install/security/firewall.sh
-./install/security/firewall.sh
+# Run consolidated security setup
+log_info "Running consolidated security setup..."
+chmod +x ./install/security/consolidated_security.sh
+./install/security/consolidated_security.sh
 
-log_info "✓ Firewall configured"
+log_info "✓ Consolidated security setup complete"
 
 # Disable shared memory for security
 log_info "Disabling shared memory..."

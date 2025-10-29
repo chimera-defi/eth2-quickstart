@@ -77,7 +77,7 @@ fi
 
 # Run NGINX hardening
 log_info "Running NGINX hardening..."
-if ! ./nginx_harden.sh; then
+if ! ./install/security/nginx_harden.sh; then
     log_warn "NGINX hardening script failed, but continuing..."
 fi
 

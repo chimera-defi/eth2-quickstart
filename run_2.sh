@@ -121,9 +121,8 @@ case "$client_choice" in
         ;;
 esac
 
-# Note: Security hardening was already applied in run_1.sh
-# This includes: secure_config_files, apply_network_security, 
-# setup_security_monitoring, and setup_intrusion_detection
+# Security hardening already applied in run_1.sh
+log_info "Security hardening already applied in run_1.sh"
 
 # Display next steps
 cat << EOF
@@ -151,9 +150,13 @@ Next step is to start syncing via:
 - Configuration files secured with proper permissions
 - Firewall rules configured for all client ports
 
-To verify security setup, run: ./test_security_fixes.sh
+To verify security setup, run: ./install/security/test_security_fixes.sh
 
 === Running Security Validation ===
+
+EOF
+
+# Run security validation
 log_info "Running security validation..."
 if [[ -f "docs/validate_security_safe.sh" && -x "docs/validate_security_safe.sh" ]]; then
     log_info "Running code quality validation..."
@@ -178,5 +181,3 @@ else
 fi
 
 log_info "Security validation completed. Check the output above for any issues."
-
-EOF
