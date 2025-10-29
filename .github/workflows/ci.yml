@@ -205,3 +205,5 @@ jobs:
         echo "✓ Documentation checked"
         echo ""
         echo "All basic validation tests passed!"
+
+    # Caddy tests removed per project direction

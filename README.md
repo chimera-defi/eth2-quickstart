@@ -241,8 +241,9 @@ sudo ./install_caddy_ssl.sh
 - **Security Hardening**: `./caddy_harden.sh` for enhanced security
 
 ### Test Caddy Installation
+Testing helpers were removed. Use:
 ```bash
-./test_caddy_installation.sh
+sudo caddy validate --config /etc/caddy/Caddyfile
 ```
 
 ### Caddy vs Nginx

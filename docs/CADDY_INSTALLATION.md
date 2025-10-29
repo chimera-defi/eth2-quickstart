@@ -179,23 +179,12 @@ sudo caddy run --config /etc/caddy/Caddyfile --dry-run
 
 ## Testing
 
-### Installation Test
-Run the comprehensive test script:
+Testing via CI-integrated scripts has been removed. Validate your deployment using Caddy's built-in commands:
 
 ```bash
-./test_caddy_installation.sh
+sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl status caddy
 ```
-
-**Test Coverage:**
-- Caddy installation verification
-- Service status checking
-- Configuration validation
-- Directory structure verification
-- Log file checking
-- Firewall rule verification
-- Security hardening verification
-- Port listening verification
-- Error log analysis
 
 ## Troubleshooting
 
