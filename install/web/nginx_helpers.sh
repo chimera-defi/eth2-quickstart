@@ -3,6 +3,9 @@
 # Nginx Helper Functions
 # Local helper functions for Nginx installation scripts
 
+# Source common web helpers
+source "$(dirname "$0")/web_helpers_common.sh"
+
 # Install Nginx web server
 install_nginx() {
     log_info "Installing Nginx web server..."
@@ -79,32 +82,43 @@ EOF
     fi
 }
 
-# Configure DDoS protection
+# Configure DDoS protection (enhanced from PR #40)
 configure_ddos_protection() {
-    log_info "Configuring DDoS protection..."
+    log_info "Configuring enhanced DDoS protection..."
     
     # Create DDoS protection configuration
     local ddos_protection_file="/etc/nginx/conf.d/ddos-protection.conf"
     
     sudo tee "$ddos_protection_file" > /dev/null << 'EOF'
-# DDoS Protection Configuration
+# Enhanced DDoS Protection Configuration (from PR #40)
 client_body_buffer_size 128k;
 client_max_body_size 10m;
 client_body_timeout 30s;
 client_header_timeout 30s;
 keepalive_timeout 60s;
-send_timeout 30s
+send_timeout 30s;
 
-# Limit connections per IP
+# Limit connections per IP (enhanced)
 limit_conn_zone $binary_remote_addr zone=conn_limit_per_ip:10m;
+limit_conn_zone $binary_remote_addr zone=conn_limit_total:10m;
 limit_conn conn_limit_per_ip 50;
+limit_conn_status 429;
 
 # Hide Nginx version
 server_tokens off;
+
+# Additional DDoS mitigations
+client_body_temp_path /var/cache/nginx/client_temp 1 2;
+client_body_in_file_only clean;
+client_body_in_single_buffer on;
 EOF
 
+    # Ensure temp directory exists
+    sudo mkdir -p /var/cache/nginx/client_temp
+    sudo chown www-data:www-data /var/cache/nginx/client_temp
+    
     if [[ -f "$ddos_protection_file" ]]; then
-        log_info "✓ DDoS protection configuration added"
+        log_info "✓ Enhanced DDoS protection configuration added"
         return 0
     else
         log_error "Failed to add DDoS protection configuration"

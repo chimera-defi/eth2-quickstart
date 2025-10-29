@@ -3,6 +3,9 @@
 # Caddy Helper Functions
 # Local helper functions for Caddy installation scripts
 
+# Source common web helpers
+source "$(dirname "$0")/web_helpers_common.sh"
+
 # Install Caddy web server
 install_caddy() {
     log_info "Installing Caddy web server..."
@@ -92,8 +95,9 @@ https://$server_name {
         }
     }
     
-    # WebSocket proxy for Ethereum WebSocket API
+    # WebSocket proxy with rate limiting
     handle /ws* {
+        rate_limit zone ws
         reverse_proxy $LH:$NETHERMIND_WS_PORT {
             header_up Host {host}
             header_up X-Real-IP {remote}
@@ -102,8 +106,9 @@ https://$server_name {
         }
     }
     
-    # HTTP proxy for Ethereum RPC API
+    # HTTP proxy with rate limiting
     handle /rpc* {
+        rate_limit zone api
         reverse_proxy $LH:$NETHERMIND_HTTP_PORT {
             header_up Host {host}
             header_up X-Real-IP {remote}
@@ -133,13 +138,37 @@ https://$server_name {
         Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' wss: https:; font-src 'self' data:; object-src 'none'; media-src 'self'; frame-src 'none';"
     }
     
-    # Rate limiting
+    # Enhanced rate limiting (from PR #40)
     rate_limit {
-        zone static {
+        zone api {
+            key {remote_host}
+            events 50
+            window 1m
+        }
+        zone ws {
+            key {remote_host}
+            events 20
+            window 1m
+        }
+        zone general {
             key {remote_host}
             events 100
             window 1m
         }
+    }
+    
+    # Enhanced DDoS protection (from PR #40)
+    # Request size limits
+    request_body {
+        max_size 10MB
+    }
+    
+    # Timeout configurations
+    timeouts {
+        read_timeout 30s
+        read_header_timeout 10s
+        write_timeout 30s
+        idle_timeout 60s
     }
     
     # Logging
@@ -186,8 +215,9 @@ https://$server_name {
     # Manual SSL certificate configuration
     tls $cert_path $key_path
     
-    # WebSocket proxy for Ethereum WebSocket API
+    # WebSocket proxy with rate limiting
     handle /ws* {
+        rate_limit zone ws
         reverse_proxy $LH:$NETHERMIND_WS_PORT {
             header_up Host {host}
             header_up X-Real-IP {remote}
@@ -196,8 +226,9 @@ https://$server_name {
         }
     }
     
-    # HTTP proxy for Ethereum RPC API
+    # HTTP proxy with rate limiting
     handle /rpc* {
+        rate_limit zone api
         reverse_proxy $LH:$NETHERMIND_HTTP_PORT {
             header_up Host {host}
             header_up X-Real-IP {remote}
@@ -227,13 +258,37 @@ https://$server_name {
         Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' wss: https:; font-src 'self' data:; object-src 'none'; media-src 'self'; frame-src 'none';"
     }
     
-    # Rate limiting
+    # Enhanced rate limiting (from PR #40)
     rate_limit {
-        zone static {
+        zone api {
+            key {remote_host}
+            events 50
+            window 1m
+        }
+        zone ws {
+            key {remote_host}
+            events 20
+            window 1m
+        }
+        zone general {
             key {remote_host}
             events 100
             window 1m
         }
+    }
+    
+    # Enhanced DDoS protection (from PR #40)
+    # Request size limits
+    request_body {
+        max_size 10MB
+    }
+    
+    # Timeout configurations
+    timeouts {
+        read_timeout 30s
+        read_header_timeout 10s
+        write_timeout 30s
+        idle_timeout 60s
     }
     
     # Logging
