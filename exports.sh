@@ -17,7 +17,7 @@ export YourSSHPortNumber='22'
 export maxretry='3'
 export REPO_NAME="eth2-quickstart"
 
-# Server name used for nginx & ssl setup
+# Server name used for nginx, caddy & ssl setup
 export SERVER_NAME="rpc.sharedtools.org"
 
 # Validator and beacon-chain settings
