@@ -7,9 +7,11 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-# Note: This script uses sudo internally for privileged operations
+# Resolve script and project directories
+get_script_directories
 
-# Note: This script uses sudo internally for privileged operations
+# Require root for installation tasks
+require_root
 
 # Start installation
 log_installation_start "Lighthouse"
@@ -35,14 +37,8 @@ if ! download_file "https://github.com/sigp/lighthouse/releases/download/v4.5.0/
     exit 1
 fi
 
-tar -xvf lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz
-
-# Generate JWT secret
-log_info "Generating JWT secret..."
-if ! openssl rand -hex 32 > "$HOME/secrets/jwt.hex"; then
-    log_error "Failed to generate JWT secret"
-    exit 1
-fi
+# Extract archive
+extract_archive "lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz" "$LIGHTHOUSE_DIR" 0
 
 # Ensure JWT secret exists
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
@@ -62,7 +58,7 @@ enable_and_start_systemd_service "cl"
 enable_and_start_systemd_service "validator"
 
 # Show completion information
-show_installation_complete "Lighthouse" "cl" "" "$LIGHTHOUSE_DIR"
+log_installation_complete "Lighthouse" "cl"
 
 # Display setup information
 cat << EOF

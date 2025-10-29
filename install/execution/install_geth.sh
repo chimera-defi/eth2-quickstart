@@ -11,6 +11,9 @@ source ../../lib/common_functions.sh
 # Get script directories
 get_script_directories
 
+# Require root for installation tasks
+require_root
+
 log_installation_start "Geth"
 
 
@@ -41,8 +44,8 @@ export GETH_CMD="/usr/bin/geth --cache=$GETH_CACHE --syncmode snap \
 --metrics --metrics.addr $LH --metrics.port $METRICS_PORT"
 
 
-# Ensure JWT secret directory exists
-ensure_directory "$HOME/secrets"
+# Ensure JWT secret exists
+ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create systemd service using common function
 create_systemd_service "eth1" "Geth Ethereum Execution Client" "$GETH_CMD" "$(whoami)" "on-failure" "600" "5" "300"

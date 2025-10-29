@@ -88,6 +88,65 @@ secure_download() {
     return 1
 }
 
+# Extract common archive formats into destination directory
+extract_archive() {
+    local archive_file="$1"
+    local destination_dir="$2"
+    local strip_components="${3:-0}"
+
+    ensure_directory "$destination_dir"
+
+    if [[ "$archive_file" == *.tar.gz || "$archive_file" == *.tgz ]]; then
+        if [[ "$strip_components" -gt 0 ]]; then
+            tar -xzf "$archive_file" -C "$destination_dir" --strip-components "$strip_components"
+        else
+            tar -xzf "$archive_file" -C "$destination_dir"
+        fi
+    elif [[ "$archive_file" == *.tar.xz ]]; then
+        if [[ "$strip_components" -gt 0 ]]; then
+            tar -xJf "$archive_file" -C "$destination_dir" --strip-components "$strip_components"
+        else
+            tar -xJf "$archive_file" -C "$destination_dir"
+        fi
+    elif [[ "$archive_file" == *.tar.bz2 ]]; then
+        if [[ "$strip_components" -gt 0 ]]; then
+            tar -xjf "$archive_file" -C "$destination_dir" --strip-components "$strip_components"
+        else
+            tar -xjf "$archive_file" -C "$destination_dir"
+        fi
+    elif [[ "$archive_file" == *.zip ]]; then
+        if command_exists unzip; then
+            unzip -q "$archive_file" -d "$destination_dir"
+        else
+            log_error "unzip not found, cannot extract zip archive"
+            return 1
+        fi
+    else
+        log_error "Unsupported archive format: $archive_file"
+        return 1
+    fi
+
+    log_info "Extracted archive: $archive_file -> $destination_dir"
+}
+
+# Retrieve the latest release tag from GitHub for a repository
+get_latest_release() {
+    local repository_slug="$1"
+    local api_url="https://api.github.com/repos/$repository_slug/releases/latest"
+    local json_response=""
+
+    if command_exists curl; then
+        json_response=$(curl -fsSL "$api_url" 2>/dev/null || true)
+    else
+        json_response=$(wget -qO- "$api_url" 2>/dev/null || true)
+    fi
+
+    # Parse tag_name without requiring jq
+    local tag
+    tag=$(echo "$json_response" | grep -m1 '"tag_name"' | sed -E 's/.*"tag_name"\s*:\s*"([^"]+)".*/\1/')
+    echo "$tag"
+}
+
 # =============================================================================
 # SYSTEMD SERVICE FUNCTIONS
 # =============================================================================

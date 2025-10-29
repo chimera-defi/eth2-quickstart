@@ -13,6 +13,9 @@ get_script_directories
 # Start installation
 log_installation_start "Grandine"
 
+# Require root for installation tasks
+require_root
+
 
 # Check system requirements
 check_system_requirements 16 1000

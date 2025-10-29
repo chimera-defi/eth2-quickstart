@@ -7,6 +7,9 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
+# Require root for installation tasks
+require_root
+
 log_installation_start "Nethermind"
 
 # Get script directories
@@ -53,6 +56,9 @@ chmod +x "$NETHERMIND_DIR/Nethermind.Runner"
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create custom configuration with variables
+
+# Create temporary directory for custom configuration
+create_temp_config_dir
 
 # Create custom configuration variables file
 cat > ./tmp/nethermind_custom.cfg << EOF

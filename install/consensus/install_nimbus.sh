@@ -10,6 +10,9 @@ source ../../lib/common_functions.sh
 # Get script directories
 get_script_directories
 
+# Require root for installation tasks
+require_root
+
 log_installation_start "Nimbus"
 
 
