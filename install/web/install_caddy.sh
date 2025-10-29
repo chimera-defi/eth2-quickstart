@@ -3,9 +3,6 @@
 # Caddy Installation Script
 # Installs and configures Caddy web server with automatic HTTPS
 
-set -Eeuo pipefail
-IFS=$'\n\t'
-
 source ../../exports.sh
 source ../../lib/common_functions.sh
 source ./caddy_helpers.sh
@@ -17,9 +14,6 @@ log_installation_start "Caddy"
 
 log_info "Server name: $SERVER_NAME"
 log_info "Login username: $LOGIN_UNAME"
-
-# Check if running as root
-require_root
 
 # Install Caddy
 install_caddy

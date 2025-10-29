@@ -3,9 +3,6 @@
 # Caddy Security Hardening Script
 # Applies security best practices to Caddy configuration
 
-set -Eeuo pipefail
-IFS=$'\n\t'
-
 source ../../exports.sh
 source ../../lib/common_functions.sh
 source ../web/caddy_helpers.sh

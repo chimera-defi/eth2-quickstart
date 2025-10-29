@@ -3,15 +3,9 @@
 # Caddy SSL Configuration Script
 # Configures Caddy to use manual SSL certificates (Let's Encrypt or custom)
 
-set -Eeuo pipefail
-IFS=$'\n\t'
-
 source ../../exports.sh
 source ../../lib/common_functions.sh
 source ./caddy_helpers.sh
-
-# Check if running as root
-require_root
 
 # Get script directories
 get_script_directories
