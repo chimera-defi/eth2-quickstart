@@ -16,6 +16,17 @@ Caddy is a modern web server with automatic HTTPS, built-in security features, a
 - **Reverse Proxy**: Excellent reverse proxy capabilities
 - **Logging**: Structured JSON logging
 
+## Project Architecture Compliance
+
+The Caddy implementation follows the project's established patterns:
+
+- **Local Helper Functions**: Uses `caddy_helpers.sh` instead of cluttering common functions
+- **Self-Contained Scripts**: Each installation script is independent
+- **Strict Mode**: All scripts use `set -Eeuo pipefail` and `IFS=$'\n\t'`
+- **Consistent Logging**: Uses project's logging functions
+- **Error Handling**: Follows project's error handling patterns
+- **Configuration Management**: Uses centralized variables from `exports.sh`
+
 ## Installation Scripts
 
 ### 1. Basic Installation (`install_caddy.sh`)
@@ -34,6 +45,7 @@ sudo ./install_caddy.sh
 - Applies security hardening
 - Configures firewall rules
 - Sets up logging
+- Uses local helper functions (`caddy_helpers.sh`)
 
 ### 2. SSL Installation (`install_caddy_ssl.sh`)
 
@@ -51,6 +63,7 @@ sudo ./install_caddy_ssl.sh
 - Uses existing SSL certificates
 - Same reverse proxy configuration
 - Manual SSL certificate management
+- Uses local helper functions (`caddy_helpers.sh`)
 
 ### 3. Security Hardening (`caddy_harden.sh`)
 

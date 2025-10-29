@@ -3,8 +3,12 @@
 # Caddy SSL Configuration Script
 # Configures Caddy to use manual SSL certificates (Let's Encrypt or custom)
 
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 source ../../exports.sh
 source ../../lib/common_functions.sh
+source ./caddy_helpers.sh
 
 # Check if running as root
 require_root
@@ -24,7 +28,7 @@ fi
 
 # Create SSL-enabled Caddy configuration
 log_info "Creating SSL-enabled Caddy configuration..."
-configure_caddy_manual_ssl "$SERVER_NAME" "$HOME/caddy_ssl_conf_temp" "/etc/letsencrypt/live/$SERVER_NAME/fullchain.pem" "/etc/letsencrypt/live/$SERVER_NAME/privkey.pem"
+create_caddy_config_manual_ssl "$SERVER_NAME" "$HOME/caddy_ssl_conf_temp" "/etc/letsencrypt/live/$SERVER_NAME/fullchain.pem" "/etc/letsencrypt/live/$SERVER_NAME/privkey.pem"
 
 # Verify SSL certificates exist
 log_info "Verifying SSL certificates..."

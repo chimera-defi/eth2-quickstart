@@ -3,6 +3,9 @@
 # Caddy Installation Test Script
 # Tests the Caddy installation and configuration
 
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 source exports.sh
 source lib/common_functions.sh
 
