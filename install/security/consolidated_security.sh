@@ -7,10 +7,13 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
+# Get script directories
+get_script_directories
+
 # Check if running as root
 require_root
 
-log_info "=== CONSOLIDATED SECURITY SETUP ==="
+log_installation_start "Consolidated Security Suite"
 
 # Function 1: Setup Firewall
 setup_firewall() {
@@ -150,7 +153,7 @@ setup_aide() {
 # AIDE File Integrity Check Script
 
 # Source common functions
-source /workspace/lib/common_functions.sh
+source ../../lib/common_functions.sh
 
 log_info "Running AIDE file integrity check..."
 
@@ -285,6 +288,8 @@ main() {
     log_info "✓ AIDE file integrity monitoring scheduled"
     log_info "✓ NGINX hardening applied"
     log_info "✓ All security features are now active and protecting your system"
+    
+    log_installation_complete "Consolidated Security Suite" "security-suite"
 }
 
 # Execute main function
