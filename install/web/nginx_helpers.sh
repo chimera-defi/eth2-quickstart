@@ -93,7 +93,7 @@ client_max_body_size 10m;
 client_body_timeout 30s;
 client_header_timeout 30s;
 keepalive_timeout 60s;
-send_timeout 30s-armor timeouts
+send_timeout 30s
 
 # Limit connections per IP
 limit_conn_zone $binary_remote_addr zone=conn_limit_per_ip:10m;
