@@ -3,8 +3,12 @@
 # Caddy Installation Script
 # Installs and configures Caddy web server with automatic HTTPS
 
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 source ../../exports.sh
 source ../../lib/common_functions.sh
+source ./caddy_helpers.sh
 
 # Get script directories
 get_script_directories
@@ -25,7 +29,7 @@ setup_caddy_service
 
 # Create Caddy configuration
 log_info "Creating Caddy configuration..."
-configure_caddy_auto_https "$SERVER_NAME" "$HOME/caddy_conf_temp"
+create_caddy_config_auto_https "$SERVER_NAME" "$HOME/caddy_conf_temp"
 
 # Install Caddy configuration
 log_info "Installing Caddy configuration..."

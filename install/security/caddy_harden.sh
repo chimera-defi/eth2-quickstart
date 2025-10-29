@@ -3,8 +3,12 @@
 # Caddy Security Hardening Script
 # Applies security best practices to Caddy configuration
 
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 source ../../exports.sh
 source ../../lib/common_functions.sh
+source ../web/caddy_helpers.sh
 
 # Check if running as root
 require_root
@@ -227,8 +231,7 @@ sudo chown caddy:caddy /etc/caddy/Caddyfile
 sudo chmod 644 /etc/caddy/Caddyfile
 
 # Validate configuration
-log_info "Validating hardened Caddyfile..."
-if ! sudo caddy validate --config /etc/caddy/Caddyfile; then
+if ! validate_caddy_config "/etc/caddy/Caddyfile"; then
     log_error "Hardened Caddyfile validation failed"
     log_info "Restoring backup..."
     sudo cp /etc/caddy/Caddyfile.backup.* /etc/caddy/Caddyfile
