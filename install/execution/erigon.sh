@@ -7,6 +7,12 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
+# Resolve script and project directories
+get_script_directories
+
+# Require root for installation tasks
+require_root
+
 # Note: This script uses sudo internally for privileged operations
 
 # Note: This script uses sudo internally for privileged operations
@@ -15,16 +21,18 @@ source ../../lib/common_functions.sh
 log_installation_start "Erigon"
 
 
-# Check system requirements
-check_system_requirements 16 2000
+# Check system requirements (Erigon recommends >=32GB RAM)
+check_system_requirements 32 2000
 
 
-# Setup firewall rules for Erigon
-setup_firewall_rules 30303 30304 42069 4000 4001
+# Setup firewall rules for Erigon (align with README)
+# Public: 30303/30304 TCP+UDP (peering), 42069 TCP+UDP (snap), Caplin 4000/udp, 4001/tcp
+# Private (NOT opened here): 8551, 8545, 9090, 9091, 6060, 6061
+setup_firewall_rules 30303/tcp 30303/udp 30304/tcp 30304/udp 42069/tcp 42069/udp 4000/udp 4001/tcp
 
 # Clone and build Erigon
 log_info "Cloning Erigon repository..."
-if ! git clone --recurse-submodules https://github.com/ledgerwatch/erigon.git; then
+if ! git clone --recurse-submodules https://github.com/erigontech/erigon.git; then
     log_error "Failed to clone Erigon repository"
     exit 1
 fi
@@ -86,7 +94,7 @@ create_systemd_service "eth1" "Erigon Ethereum Execution Client" "$EXEC_START" "
 enable_and_start_systemd_service "eth1"
 
 # Show completion information
-show_installation_complete "Erigon" "eth1" "$ERIGON_DIR/config.yaml" "$ERIGON_DIR"
+log_installation_complete "Erigon" "eth1"
 
 # Print integration stages
 log_info "Erigon integration stages:"
