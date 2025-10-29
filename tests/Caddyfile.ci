@@ -1,0 +1,37 @@
+:8080 {
+    respond /health 200 {
+        body "ok"
+        close
+    }
+
+    handle /ws* {
+        reverse_proxy 127.0.0.1:8546
+    }
+
+    handle /rpc* {
+        reverse_proxy 127.0.0.1:8545
+    }
+
+    handle /prysm/checkpt_sync* {
+        reverse_proxy 127.0.0.1:3500
+    }
+
+    handle /prysm/web* {
+        reverse_proxy 127.0.0.1:7500
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Frame-Options "DENY"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Content-Security-Policy "default-src 'self'"
+    }
+
+    log {
+        output stdout
+        format json
+        level INFO
+    }
+}
