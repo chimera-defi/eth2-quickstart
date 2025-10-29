@@ -216,3 +216,10 @@ jobs:
         else
           echo "⚠ tests/test_caddy_installation.sh not found"
         fi
+
+    - name: Validate minimal Caddyfile in Docker
+      run: |
+        echo "Validating a minimal Caddyfile using official caddy image..."
+        minimal_cfg=':8080 { respond /health 200 }'
+        echo "$minimal_cfg" | docker run --rm -i caddy:2 caddy validate --config -
+        echo "✓ Minimal Caddyfile validated"
