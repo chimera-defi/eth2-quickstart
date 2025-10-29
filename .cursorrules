@@ -56,9 +56,40 @@ The `lib/common_functions.sh` contains 35 centralized functions for:
 - ✅ **Architecture**: Centralized configuration and function patterns maintained
 
 ## Code Review Process
-Before finishing work and asking for human review:
-1. Create a comprehensive task list and commit it for tracking
-2. Perform at least 3 passes of thorough line-by-line review of your work
-3. Do honest self-assessment and identify any issues
-4. Do more passes (up to 5) if new issues show up in each pass
-5. Ensure all changes follow security best practices and maintain code quality
+
+### Required Review Passes (Minimum 3, Maximum 5)
+
+**Pass 1: Functionality Verification**
+- Verify all function calls work correctly
+- Check for missing functions that are being called
+- Ensure no broken function references
+- Test that all added functions are properly defined
+
+**Pass 2: Architecture Compliance** 
+- Verify scripts run with correct user privileges (root vs non-root)
+- Check that changes align with codebase architecture
+- Ensure security functions are properly integrated
+- Validate that client install scripts run as non-root users
+
+**Pass 3: Code Quality**
+- Remove duplicate functions
+- Verify function signatures match usage
+- Check for unused functions that can be removed
+- Ensure consistent error handling patterns
+
+**Pass 4: Edge Cases (if issues found in Pass 3)**
+- Test critical paths and error conditions
+- Verify all function parameters are handled correctly
+- Check for any remaining hardcoded patterns
+
+**Pass 5: Final Validation (if issues found in Pass 4)**
+- Comprehensive end-to-end validation
+- Final cleanup and documentation
+- Verify all changes follow security best practices
+
+### Review Completion Criteria
+- All function calls work without errors
+- No missing or broken function references
+- Architecture compliance maintained (root vs non-root execution)
+- Code quality standards met
+- No functionality removed or broken
