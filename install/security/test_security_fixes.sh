@@ -2,9 +2,13 @@
 # Security Testing Script
 # Tests all implemented security fixes
 
-# Source required files
-source ./exports.sh
-source ./lib/common_functions.sh
+# Get script directory and source required files from project root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Source required files from project root
+source "$PROJECT_ROOT/exports.sh"
+source "$PROJECT_ROOT/lib/common_functions.sh"
 
 log_info "Starting security testing..."
 
@@ -15,7 +19,7 @@ test_network_exposure() {
     local issues_found=0
     
     # Check for 0.0.0.0 bindings in config files
-    if grep -r "0\.0\.0\.0" configs/ >/dev/null 2>&1; then
+    if grep -r "0\.0\.0\.0" "$PROJECT_ROOT/configs/" >/dev/null 2>&1; then
         log_error "Found 0.0.0.0 bindings in config files"
         issues_found=$((issues_found + 1))
     else
@@ -23,7 +27,7 @@ test_network_exposure() {
     fi
     
     # Check for localhost bindings
-    if grep -r "127\.0\.0\.1" configs/ >/dev/null 2>&1; then
+    if grep -r "127\.0\.0\.1" "$PROJECT_ROOT/configs/" >/dev/null 2>&1; then
         log_info "✓ Localhost bindings found in config files"
     else
         log_warn "No localhost bindings found in config files"
