@@ -218,6 +218,44 @@ curl -X POST https://yourdomain.com/rpc --data '{"jsonrpc":"2.0","method":"eth_c
 - **ACME.sh**: `./install_acme_ssl.sh` (recommended)
 - **Certbot**: `./install_ssl_certbot.sh`
 
+## Caddy Web Server (Alternative to Nginx)
+
+Caddy is a modern web server with automatic HTTPS, built-in security features, and easier configuration than Nginx.
+
+### Basic Setup
+```bash
+# Install Caddy with automatic HTTPS
+cd install/web
+sudo ./install_caddy.sh
+
+# Or install with manual SSL certificates
+sudo ./install_caddy_ssl.sh
+```
+
+### Caddy Features
+- **Automatic HTTPS**: Built-in Let's Encrypt integration
+- **HTTP/2 and HTTP/3**: Modern protocol support
+- **Security Headers**: Comprehensive security by default
+- **Rate Limiting**: Built-in rate limiting capabilities
+- **Easy Configuration**: Simple Caddyfile syntax
+- **Security Hardening**: `./caddy_harden.sh` for enhanced security
+
+### Test Caddy Installation
+```bash
+./test_caddy_installation.sh
+```
+
+### Caddy vs Nginx
+| Feature | Caddy | Nginx |
+|---------|-------|-------|
+| Configuration | Simple Caddyfile | Complex nginx.conf |
+| HTTPS | Automatic | Manual setup |
+| Security | Built-in headers | Manual configuration |
+| Rate Limiting | Built-in | Requires modules |
+| HTTP/3 | Native support | Requires modules |
+
+For detailed Caddy setup instructions, see [Caddy Installation Guide](docs/CADDY_INSTALLATION.md).
+
 ### Features
 - **RPC/WS endpoints**: Secure access to Ethereum node
 - **SSL/TLS**: Automatic certificate management
