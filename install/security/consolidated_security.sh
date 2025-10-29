@@ -123,7 +123,56 @@ EOF
     log_info "✓ Fail2ban installation and configuration complete"
 }
 
-# Function 3: Setup Nginx Hardening
+# Function 3: Setup AIDE
+setup_aide() {
+    log_info "Setting up AIDE file integrity monitoring..."
+    
+    # Install AIDE
+    install_dependencies aide
+    
+    # Initialize AIDE database
+    log_info "Initializing AIDE database..."
+    if ! aide --init; then
+        log_error "Failed to initialize AIDE database"
+        exit 1
+    fi
+    
+    # Move database to production location
+    if [[ -f /var/lib/aide/aide.db.new ]]; then
+        mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+        log_info "AIDE database initialized successfully"
+    fi
+    
+    # Create AIDE check script
+    log_info "Creating AIDE check script..."
+    cat > /usr/local/bin/aide_check.sh << 'EOF'
+#!/bin/bash
+# AIDE File Integrity Check Script
+
+# Source common functions
+source /workspace/lib/common_functions.sh
+
+log_info "Running AIDE file integrity check..."
+
+# Run AIDE check
+if aide --check > /var/log/aide_check.log 2>&1; then
+    log_info "✓ AIDE check passed - no changes detected"
+else
+    log_warn "⚠ AIDE check found changes - check /var/log/aide_check.log"
+fi
+EOF
+
+    chmod +x /usr/local/bin/aide_check.sh
+    
+    # Schedule AIDE check in crontab
+    log_info "Scheduling AIDE check in crontab..."
+    (crontab -l 2>/dev/null; echo "0 2 * * * /usr/local/bin/aide_check.sh") | crontab -
+    
+    log_info "✓ AIDE file integrity monitoring setup complete"
+    log_info "AIDE check scheduled daily at 2 AM"
+}
+
+# Function 4: Setup Nginx Hardening
 setup_nginx_hardening() {
     log_info "Setting up nginx hardening..."
 
@@ -174,16 +223,66 @@ EOF
     log_info "Max retries: 2"
 }
 
+# Function 5: Security Verification
+verify_security_setup() {
+    log_info "Verifying security setup..."
+    
+    local issues=0
+    
+    # Check firewall
+    if ufw status | grep -q "Status: active"; then
+        log_info "✓ UFW firewall is active"
+    else
+        log_error "✗ UFW firewall is not active"
+        issues=$((issues + 1))
+    fi
+    
+    # Check fail2ban
+    if systemctl is-active --quiet fail2ban; then
+        log_info "✓ Fail2ban is running"
+    else
+        log_error "✗ Fail2ban is not running"
+        issues=$((issues + 1))
+    fi
+    
+    # Check AIDE
+    if command -v aide >/dev/null 2>&1; then
+        log_info "✓ AIDE is installed"
+    else
+        log_error "✗ AIDE is not installed"
+        issues=$((issues + 1))
+    fi
+    
+    # Check nginx hardening
+    if [[ -f /etc/fail2ban/filter.d/nginx-proxy.conf ]]; then
+        log_info "✓ Nginx hardening filter installed"
+    else
+        log_error "✗ Nginx hardening filter missing"
+        issues=$((issues + 1))
+    fi
+    
+    if [[ $issues -eq 0 ]]; then
+        log_info "✓ All security features verified successfully"
+    else
+        log_warn "⚠ $issues security issues found - check logs above"
+    fi
+}
+
 # Main execution
 main() {
     # Run all security setup functions
     setup_firewall
     setup_fail2ban
+    setup_aide
     setup_nginx_hardening
+    
+    # Verify security setup
+    verify_security_setup
 
     log_info "=== SECURITY SETUP COMPLETE ==="
     log_info "✓ Firewall configured with comprehensive rules"
     log_info "✓ Fail2ban intrusion prevention active"
+    log_info "✓ AIDE file integrity monitoring scheduled"
     log_info "✓ NGINX hardening applied"
     log_info "✓ All security features are now active and protecting your system"
 }

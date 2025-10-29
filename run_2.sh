@@ -121,10 +121,8 @@ case "$client_choice" in
         ;;
 esac
 
-# Apply additional security hardening for client installations
-log_info "Applying additional security hardening..."
-secure_config_files
-apply_network_security
+# Security hardening already applied in run_1.sh
+log_info "Security hardening already applied in run_1.sh"
 
 # Display next steps
 cat << EOF
