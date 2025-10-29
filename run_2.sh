@@ -150,7 +150,7 @@ Next step is to start syncing via:
 - Configuration files secured with proper permissions
 - Firewall rules configured for all client ports
 
-To verify security setup, run: ./test_security_fixes.sh
+To verify security setup, run: ./install/security/test_security_fixes.sh
 
 === Running Security Validation ===
 
