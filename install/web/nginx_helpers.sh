@@ -200,30 +200,6 @@ server {
         proxy_send_timeout 30s;
     }
     
-    # Prysm checkpoint sync endpoint with rate limiting
-    location ^~ /prysm/checkpt_sync {
-        limit_req zone=api burst=10 nodelay;
-        proxy_http_version 1.1;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header Host \$http_host;
-        proxy_set_header X-NginX-Proxy true;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_pass    http://$LH:3500/;
-    }
-    
-    # Prysm web interface with rate limiting
-    location ^~ /prysm/web {
-        limit_req zone=api burst=10 nodelay;
-        proxy_http_version 1.1;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header Host \$http_host;
-        proxy_set_header X-NginX-Proxy true;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_pass    http://$LH:7500/;
-    }
-    
     # Block common attack patterns
     location ~ ^/(admin|wp-admin|\.env|config) {
         deny all;
@@ -277,28 +253,6 @@ server {
         proxy_read_timeout 30s;
         proxy_connect_timeout 30s;
         proxy_send_timeout 30s;
-    }
-    
-    # Prysm checkpoint sync endpoint with rate limiting
-    location ^~ /prysm/checkpt_sync {
-        limit_req zone=api burst=10 nodelay;
-        proxy_http_version 1.1;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header Host \$http_host;
-        proxy_set_header X-NginX-Proxy true;
-        proxy_pass    http://$LH:3500/;
-    }
-    
-    # Prysm web interface with rate limiting
-    location ^~ /prysm/web {
-        limit_req zone=api burst=10 nodelay;
-        proxy_http_version 1.1;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header Host \$http_host;
-        proxy_set_header X-NginX-Proxy true;
-        proxy_pass    http://$LH:7500/;
     }
     
     # Block common attack patterns

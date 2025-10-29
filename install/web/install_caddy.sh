@@ -62,8 +62,6 @@ log_installation_complete "Caddy" "caddy"
 log_info "Server name: $SERVER_NAME"
 log_info "HTTPS WebSocket endpoint: https://$SERVER_NAME/ws"
 log_info "HTTPS RPC endpoint: https://$SERVER_NAME/rpc"
-log_info "Prysm checkpoint sync: https://$SERVER_NAME/prysm/checkpt_sync"
-log_info "Prysm web interface: https://$SERVER_NAME/prysm/web"
 
 log_info ""
 log_info "=== Caddy Setup Complete ==="

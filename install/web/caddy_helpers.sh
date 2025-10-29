@@ -112,26 +112,6 @@ https://$server_name {
         }
     }
     
-    # Prysm checkpoint sync endpoint
-    handle /prysm/checkpt_sync* {
-        reverse_proxy $LH:3500 {
-            header_up Host {host}
-            header_up X-Real-IP {remote}
-            header_up X-Forwarded-For {remote}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-    
-    # Prysm web interface
-    handle /prysm/web* {
-        reverse_proxy $LH:7500 {
-            header_up Host {host}
-            header_up X-Real-IP {remote}
-            header_up X-Forwarded-For {remote}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-    
     # Security headers
     header {
         # Enable HSTS
@@ -219,26 +199,6 @@ https://$server_name {
     # HTTP proxy for Ethereum RPC API
     handle /rpc* {
         reverse_proxy $LH:$NETHERMIND_HTTP_PORT {
-            header_up Host {host}
-            header_up X-Real-IP {remote}
-            header_up X-Forwarded-For {remote}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-    
-    # Prysm checkpoint sync endpoint
-    handle /prysm/checkpt_sync* {
-        reverse_proxy $LH:3500 {
-            header_up Host {host}
-            header_up X-Real-IP {remote}
-            header_up X-Forwarded-For {remote}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-    
-    # Prysm web interface
-    handle /prysm/web* {
-        reverse_proxy $LH:7500 {
             header_up Host {host}
             header_up X-Real-IP {remote}
             header_up X-Forwarded-For {remote}

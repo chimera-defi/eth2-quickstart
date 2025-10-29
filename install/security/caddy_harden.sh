@@ -104,28 +104,6 @@ https://$SERVER_NAME {
         }
     }
     
-    # Prysm checkpoint sync with rate limiting
-    handle /prysm/checkpt_sync* {
-        rate_limit zone api
-        reverse_proxy $LH:3500 {
-            header_up Host {host}
-            header_up X-Real-IP {remote}
-            header_up X-Forwarded-For {remote}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-    
-    # Prysm web interface with rate limiting
-    handle /prysm/web* {
-        rate_limit zone api
-        reverse_proxy $LH:7500 {
-            header_up Host {host}
-            header_up X-Real-IP {remote}
-            header_up X-Forwarded-For {remote}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-    
     # Block common attack patterns
     handle /admin* {
         respond "Access Denied" 403

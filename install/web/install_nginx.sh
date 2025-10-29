@@ -71,8 +71,6 @@ log_installation_complete "NGINX" "nginx"
 log_info "Server name: $SERVER_NAME"
 log_info "HTTP WebSocket endpoint: http://$SERVER_NAME/ws"
 log_info "HTTP RPC endpoint: http://$SERVER_NAME/rpc"
-log_info "Prysm checkpoint sync: http://$SERVER_NAME/prysm/checkpt_sync"
-log_info "Prysm web interface: http://$SERVER_NAME/prysm/web"
 
 log_info ""
 log_info "=== Nginx Setup Complete ==="
