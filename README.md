@@ -242,7 +242,7 @@ sudo ./install_caddy_ssl.sh
 
 ### Test Caddy Installation
 ```bash
-./test_caddy_installation.sh
+./tests/test_caddy_installation.sh
 ```
 
 ### Caddy vs Nginx
