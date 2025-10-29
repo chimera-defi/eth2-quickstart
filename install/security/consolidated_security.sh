@@ -43,23 +43,25 @@ setup_firewall() {
     log_info "This prevents netscan abuse warnings (updated Feb '23 from Erigon docs)"
 
     # Define private network ranges to block
+    # Hetzner expected strict outbound blocks (from Erigon README)
     private_networks=(
-        "0.0.0.0/8"
-        "10.0.0.0/8"
-        "100.64.0.0/10"
-        "127.0.0.0/8"
-        "169.254.0.0/16"
-        "172.16.0.0/12"
-        "192.0.0.0/24"
-        "192.0.2.0/24"
-        "192.88.99.0/24"
-        "192.168.0.0/16"
-        "198.18.0.0/15"
-        "198.51.100.0/24"
-        "203.0.113.0/24"
-        "224.0.0.0/4"
-        "240.0.0.0/4"
-        "255.255.255.255/32"
+        "0.0.0.0/8"            # "This" Network
+        "10.0.0.0/8"           # Private-Use Networks
+        "100.64.0.0/10"        # Carrier-Grade NAT (CGN)
+        "127.16.0.0/12"        # Private-Use Networks (as listed)
+        "127.0.0.0/8"          # Loopback (superset; retained for safety)
+        "169.254.0.0/16"       # Link Local
+        "172.16.0.0/12"        # Private-Use Networks
+        "192.0.0.0/24"         # IETF Protocol Assignments
+        "192.0.2.0/24"         # TEST-NET-1
+        "192.88.99.0/24"       # 6to4 Relay Anycast
+        "192.168.0.0/16"       # Private-Use Networks
+        "198.18.0.0/15"        # Device Benchmark Testing
+        "198.51.100.0/24"      # TEST-NET-2
+        "203.0.113.0/24"       # TEST-NET-3
+        "224.0.0.0/4"          # Multicast
+        "240.0.0.0/4"          # Reserved for Future Use
+        "255.255.255.255/32"   # Limited Broadcast
     )
 
     for network in "${private_networks[@]}"; do
