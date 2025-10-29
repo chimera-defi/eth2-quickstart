@@ -206,42 +206,4 @@ jobs:
         echo ""
         echo "All basic validation tests passed!"
 
-    - name: Run Caddy test (CI mode)
-      run: |
-        echo "Running Caddy installation test in CI mode..."
-        if [ -f "tests/test_caddy_installation.sh" ]; then
-          chmod +x tests/test_caddy_installation.sh
-          ./tests/test_caddy_installation.sh --ci
-          echo "✓ Caddy test executed in CI mode"
-        else
-          echo "⚠ tests/test_caddy_installation.sh not found"
-        fi
-
-    - name: Validate minimal Caddyfile in Docker
-      run: |
-        echo "Validating a minimal Caddyfile using official caddy image..."
-        minimal_cfg=':8080 { respond /health 200 }'
-        echo "$minimal_cfg" | docker run --rm -i caddy:2 caddy validate --config -
-        echo "✓ Minimal Caddyfile validated"
-
-    - name: Validate and run tests/Caddyfile.ci in Docker
-      run: |
-        echo "Validating tests/Caddyfile.ci..."
-        docker run --rm -i -v "$PWD/tests/Caddyfile.ci:/etc/caddy/Caddyfile:ro" caddy:2 caddy validate --config /etc/caddy/Caddyfile
-        echo "✓ tests/Caddyfile.ci validated"
-
-        echo "Starting Caddy container and probing /health..."
-        CID=$(docker run -d -p 8080:8080 -v "$PWD/tests/Caddyfile.ci:/etc/caddy/Caddyfile:ro" caddy:2)
-        # Wait briefly for caddy to start
-        for i in $(seq 1 20); do
-          if curl -fsS http://127.0.0.1:8080/health >/dev/null; then
-            echo "✓ Caddy responded to /health"
-            break
-          fi
-          sleep 0.5
-        done
-        # Final check
-        curl -fsS http://127.0.0.1:8080/health | grep -q "ok"
-        echo "Container logs:" && docker logs "$CID" --tail 50 || true
-        docker rm -f "$CID" >/dev/null
-        echo "✓ Caddy container test completed"
+    # Caddy tests removed per project direction
