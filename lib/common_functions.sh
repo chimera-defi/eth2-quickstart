@@ -457,19 +457,6 @@ EOF
     log_info "✓ Sudo configured for user: $username"
 }
 
-# Setup fail2ban
-setup_fail2ban() {
-    log_info "Setting up fail2ban..."
-    
-    # Make the script executable and run it
-    sudo chmod +x ./install/security/install_fail2ban.sh
-    if ! ./install/security/install_fail2ban.sh; then
-        log_error "Failed to setup fail2ban"
-        return 1
-    fi
-    
-    log_info "✓ Fail2ban setup complete"
-}
 
 # Generate and display secure handoff information
 generate_handoff_info() {

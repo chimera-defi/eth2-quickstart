@@ -16,20 +16,14 @@ This document provides a complete inventory of all security-related files in the
 - Network security hardening
 - File security hardening
 
-### 2. `install/security/firewall.sh` ❌ **DEPRECATED**
-**Purpose**: Individual firewall configuration
-**Status**: ⚠️ Replaced by consolidated script
-**Action**: Can be removed after consolidation is verified
-
-### 3. `install/security/install_fail2ban.sh` ❌ **DEPRECATED**
-**Purpose**: Individual fail2ban installation
-**Status**: ⚠️ Replaced by consolidated script
-**Action**: Can be removed after consolidation is verified
-
-### 4. `install/security/nginx_harden.sh` ❌ **DEPRECATED**
-**Purpose**: Individual nginx hardening
-**Status**: ⚠️ Replaced by consolidated script
-**Action**: Can be removed after consolidation is verified
+### 2. Individual Security Scripts ❌ **REMOVED**
+**Purpose**: Individual security configuration scripts
+**Status**: ✅ Removed - Functionality consolidated
+**Removed Files**:
+- `install/security/firewall.sh` (80 lines)
+- `install/security/install_fail2ban.sh` (46 lines)
+- `install/security/nginx_harden.sh` (62 lines)
+**Total Removed**: 188 lines across 3 files
 
 ## Security Validation Scripts
 
