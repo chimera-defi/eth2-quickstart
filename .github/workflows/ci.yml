@@ -205,3 +205,14 @@ jobs:
         echo "✓ Documentation checked"
         echo ""
         echo "All basic validation tests passed!"
+
+    - name: Run Caddy test (CI mode)
+      run: |
+        echo "Running Caddy installation test in CI mode..."
+        if [ -f "tests/test_caddy_installation.sh" ]; then
+          chmod +x tests/test_caddy_installation.sh
+          ./tests/test_caddy_installation.sh --ci
+          echo "✓ Caddy test executed in CI mode"
+        else
+          echo "⚠ tests/test_caddy_installation.sh not found"
+        fi
