@@ -56,9 +56,147 @@ The `lib/common_functions.sh` contains 35 centralized functions for:
 - ✅ **Architecture**: Centralized configuration and function patterns maintained
 
 ## Code Review Process
-Before finishing work and asking for human review:
-1. Create a comprehensive task list and commit it for tracking
-2. Perform at least 3 passes of thorough line-by-line review of your work
-3. Do honest self-assessment and identify any issues
-4. Do more passes (up to 5) if new issues show up in each pass
-5. Ensure all changes follow security best practices and maintain code quality
+
+### Required Review Passes (Minimum 3, Maximum 5)
+
+**Pass 1: Functionality Verification**
+- Verify all function calls work correctly
+- Check for missing functions that are being called
+- Ensure no broken function references
+- Test that all added functions are properly defined
+
+**Pass 2: Architecture Compliance** 
+- Verify scripts run with correct user privileges (root vs non-root)
+- Check that changes align with codebase architecture
+- Ensure security functions are properly integrated
+- Validate that client install scripts run as non-root users
+
+**Pass 3: Code Quality**
+- Remove duplicate functions
+- Verify function signatures match usage
+- Check for unused functions that can be removed
+- Ensure consistent error handling patterns
+
+**Pass 4: Edge Cases (if issues found in Pass 3)**
+- Test critical paths and error conditions
+- Verify all function parameters are handled correctly
+- Check for any remaining hardcoded patterns
+
+**Pass 5: Final Validation (if issues found in Pass 4)**
+- Comprehensive end-to-end validation
+- Final cleanup and documentation
+- Verify all changes follow security best practices
+
+### Review Completion Criteria
+- All function calls work without errors
+- No missing or broken function references
+- Architecture compliance maintained (root vs non-root execution)
+- Code quality standards met
+- No functionality removed or broken
+
+## Rule Enforcement Mechanisms
+
+### Mandatory Compliance Checks
+Before any code changes are considered complete, the following must be verified:
+
+1. **Function Reference Validation**
+   - All function calls must reference existing functions in `lib/common_functions.sh`
+   - Use `grep` to verify function definitions exist before calling them
+   - Replace any hardcoded patterns with centralized function calls
+
+2. **Architecture Pattern Compliance**
+   - Install scripts MUST call `require_root()` for privileged operations
+   - Non-install scripts MUST NOT call `require_root()`
+   - All scripts MUST call `get_script_directories()` for path management
+   - Use `log_installation_start()` and `log_installation_complete()` for install scripts
+
+3. **Security Function Integration**
+   - Security functions MUST be called in `run_1.sh` for comprehensive setup
+   - All configuration files MUST use `secure_config_files()` for proper permissions
+   - Network security functions MUST be applied via `apply_network_security()`
+
+4. **Code Quality Enforcement**
+   - Run `shellcheck` on all modified scripts before committing
+   - Remove any duplicate or unused functions
+   - Ensure consistent error handling using `log_error()` and proper exit codes
+   - Verify all function signatures match their usage patterns
+
+### Validation Requirements
+
+**Pre-Commit Validation Checklist:**
+- [ ] All function calls verified to exist in `lib/common_functions.sh`
+- [ ] Script execution privileges correctly implemented (root vs non-root)
+- [ ] Security functions properly integrated where required
+- [ ] Shellcheck compliance achieved (0 warnings/errors)
+- [ ] No duplicate or unused functions remain
+- [ ] Error handling patterns consistent across all modified files
+- [ ] Documentation updated to reflect any new functions or changes
+
+**Automated Validation Commands:**
+```bash
+# Verify function references
+grep -r "function_name" install/ | grep -v "lib/common_functions.sh"
+
+# Check shellcheck compliance
+find install/ -name "*.sh" -exec shellcheck {} \;
+
+# Verify root privilege usage
+grep -r "require_root" install/ | wc -l  # Should match expected count
+```
+
+### Rule Violation Prevention
+
+**Common Violations to Avoid:**
+1. **Missing Function Calls** - Always verify functions exist before calling
+2. **Incorrect Privilege Usage** - Install scripts need root, others don't
+3. **Hardcoded Patterns** - Use centralized functions instead of duplicating code
+4. **Inconsistent Error Handling** - Always use `log_error()` and proper exit codes
+5. **Security Function Neglect** - Ensure security functions are properly integrated
+
+**Enforcement Actions:**
+- If any rule violation is detected, the code change MUST be rejected
+- All violations MUST be fixed before proceeding to the next review pass
+- Additional review passes MUST be performed until all rules are satisfied
+
+## Consistency Maintenance Guidelines
+
+### Code Pattern Standards
+1. **Script Structure** - All scripts MUST follow the established pattern:
+   ```bash
+   #!/bin/bash
+   source ../../exports.sh
+   source ../../lib/common_functions.sh
+   get_script_directories
+   # [require_root for install scripts only]
+   log_installation_start "ComponentName"
+   # [script logic using common functions]
+   log_installation_complete "ComponentName" "service_name"
+   ```
+
+2. **Function Usage** - Always prefer common functions over custom implementations:
+   - Use `log_info()`, `log_warn()`, `log_error()` for all logging
+   - Use `secure_download()` instead of `wget` or `curl` directly
+   - Use `ensure_directory()` for directory creation
+   - Use `create_systemd_service()` for service management
+
+3. **Error Handling** - Consistent error handling pattern:
+   ```bash
+   if ! function_call; then
+       log_error "Descriptive error message"
+       exit 1
+   fi
+   ```
+
+### Documentation Requirements
+- All new functions MUST be documented in the appropriate section of this file
+- Function usage examples MUST be provided in comments
+- Architecture changes MUST be reflected in the relevant documentation files
+- Security implications MUST be documented and validated
+
+### Quality Assurance Process
+1. **Before Making Changes** - Read and understand existing patterns
+2. **During Development** - Follow established patterns and use common functions
+3. **After Changes** - Run all validation checks and review passes
+4. **Before Committing** - Ensure all rules are satisfied and documentation is updated
+
+This comprehensive rule set ensures consistent, maintainable, and secure code across the entire Ethereum node setup project.
