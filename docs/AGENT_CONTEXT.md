@@ -36,3 +36,38 @@ All project documentation is organized in the `docs/` folder. Key files include:
 5. Start and verify services
 
 For detailed information, refer to the appropriate documentation files in this `docs/` folder.
+
+### Quick Links
+- Main README: `README.md`
+- Documentation Index: `docs/README.md`
+- Configuration Guide: `docs/CONFIGURATION_GUIDE.md`
+- Security Guide: `docs/SECURITY_GUIDE.md`
+
+## Agent Rules and Standards
+
+### Core Patterns and Architecture
+- Centralized configuration in `exports.sh`; templates live under `configs/`
+- Shared utilities in `lib/common_functions.sh` (logging, installs, config merge, security, systemd)
+- Strict shell mode across scripts: `set -Eeuo pipefail`
+- Standardized logging via `log_info`, `log_warn`, `log_error`
+
+### Script Structure and Privileges
+- Install scripts must call `require_root()`; non-install scripts must not
+- All scripts should source `exports.sh` and `lib/common_functions.sh` and call `get_script_directories()`
+- Use `log_installation_start "Component"` and `log_installation_complete "Component" "service_name"` in install scripts
+
+### Function Usage and Quality
+- Prefer common functions over ad-hoc code: `secure_download`, `ensure_directory`, `create_systemd_service`, etc.
+- Consistent error handling pattern with explicit exits on failure
+- Maintain ShellCheck compliance and avoid code duplication
+
+### Security Integration
+- Apply SSH hardening, fail2ban, and file permission hardening via provided security functions
+- Use configuration permission helpers (e.g., secure config files) for configs under `configs/`
+
+### Pre-Commit Validation Checklist
+- Verify all referenced functions exist in `lib/common_functions.sh`
+- Ensure correct root vs non-root usage
+- Confirm security functions are integrated where required
+- Achieve 0 ShellCheck errors on modified scripts
+- Keep error handling consistent and remove unused/duplicate code
