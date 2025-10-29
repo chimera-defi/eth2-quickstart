@@ -106,10 +106,6 @@ This document provides a comprehensive reference for all functions available in 
 - `disable_root_login` - Disable root login (true/false)
 **Usage:** `configure_ssh 2222 true true`
 
-#### `setup_fail2ban(ssh_port)`
-**Purpose:** Install and configure fail2ban for SSH protection  
-**Parameters:** `ssh_port` - SSH port number  
-**Usage:** `setup_fail2ban 2222`
 
 #### `generate_secure_password(length)`
 **Purpose:** Generate secure random password  
