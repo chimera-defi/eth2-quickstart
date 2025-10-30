@@ -211,11 +211,6 @@ enable_and_start_systemd_service() {
     fi
 }
 
-# Enable and start system service (alias for compatibility)
-enable_and_start_system_service() {
-    enable_and_start_systemd_service "$1"
-}
-
 
 # =============================================================================
 # SYSTEM MANAGEMENT FUNCTIONS
