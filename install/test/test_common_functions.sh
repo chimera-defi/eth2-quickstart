@@ -48,11 +48,8 @@ test_get_latest_release_valid() {
 
 # Test 2: get_latest_release with invalid repo
 test_get_latest_release_invalid() {
-    local version
-    version=$(get_latest_release "nonexistent/repo123456789")
-    
     # Should return 1 (failure) but not crash
-    if [[ $? -ne 0 ]]; then
+    if ! get_latest_release "nonexistent/repo123456789" >/dev/null 2>&1; then
         echo "  Correctly handled invalid repo"
         return 0
     else

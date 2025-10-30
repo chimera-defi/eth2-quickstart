@@ -93,19 +93,38 @@ fi
 
 ---
 
-### Issue 3: Shellcheck SC2181 Error
+### Issue 3: Shellcheck Errors (3 total)
 **Impact:** CI failing
 
-**Fixed:**
+**Error 1 - SC2181:** Don't check $? after case statement
 ```bash
 # BEFORE
-tar -xzf "$file"
-if [[ $? -eq 0 ]]; then  # ❌ Shellcheck error
+case "$file" in *.tar.gz) tar -xzf "$file" ;; esac
+if [[ $? -eq 0 ]]; then  # ❌ Bad
 
 # AFTER
-tar -xzf "$file"
-extract_result=$?
-if [[ $extract_result -eq 0 ]]; then  # ✅ Correct
+extract_result=0
+case "$file" in *.tar.gz) tar -xzf "$file"; extract_result=$? ;; esac
+if [[ $extract_result -eq 0 ]]; then  # ✅ Capture immediately
+```
+
+**Error 2 - SC2016:** Variables don't expand in single quotes
+```bash
+# BEFORE
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> .bashrc  # ❌ Won't expand
+
+# AFTER
+echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> .bashrc  # ✅ Correct
+```
+
+**Error 3 - SC2181:** Check exit code directly
+```bash
+# BEFORE
+version=$(get_latest_release "repo")
+if [[ $? -ne 0 ]]; then  # ❌ Wrong context
+
+# AFTER
+if ! get_latest_release "repo" >/dev/null 2>&1; then  # ✅ Direct check
 ```
 
 ---
