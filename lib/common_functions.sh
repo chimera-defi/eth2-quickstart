@@ -53,6 +53,77 @@ command_exists() {
 # DOWNLOAD FUNCTIONS
 # =============================================================================
 
+# Get latest release version from GitHub
+get_latest_release() {
+    local repo="$1"
+    local release_url="https://api.github.com/repos/${repo}/releases/latest"
+    local version
+    
+    # Check if curl is available
+    if ! command_exists curl; then
+        log_error "curl is not installed"
+        return 1
+    fi
+    
+    # Try to fetch latest release tag from GitHub API with error handling
+    if ! version=$(curl -sf "$release_url" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'); then
+        log_warn "Could not fetch latest release for $repo (API request failed)"
+        return 1
+    fi
+    
+    if [[ -n "$version" ]]; then
+        echo "$version"
+        return 0
+    else
+        log_warn "Could not parse version from GitHub API response for $repo"
+        return 1
+    fi
+}
+
+# Extract archive (tar.gz, tgz, zip)
+extract_archive() {
+    local archive_file="$1"
+    local dest_dir="$2"
+    local strip_components="${3:-0}"
+    
+    if [[ ! -f "$archive_file" ]]; then
+        log_error "Archive file not found: $archive_file"
+        return 1
+    fi
+    
+    log_info "Extracting archive: $archive_file"
+    
+    local extract_result=0
+    
+    case "$archive_file" in
+        *.tar.gz|*.tgz)
+            if [[ $strip_components -gt 0 ]]; then
+                tar -xzf "$archive_file" -C "$dest_dir" --strip-components="$strip_components"
+                extract_result=$?
+            else
+                tar -xzf "$archive_file" -C "$dest_dir"
+                extract_result=$?
+            fi
+            ;;
+        *.zip)
+            unzip -q "$archive_file" -d "$dest_dir"
+            extract_result=$?
+            ;;
+        *)
+            log_error "Unsupported archive format: $archive_file"
+            return 1
+            ;;
+    esac
+    
+    if [[ $extract_result -eq 0 ]]; then
+        log_info "Archive extracted successfully"
+        return 0
+    else
+        log_error "Failed to extract archive"
+        return 1
+    fi
+}
+
 # Download file with retry logic and security validation
 download_file() {
     local url="$1"
@@ -154,15 +225,26 @@ enable_and_start_systemd_service() {
     fi
 }
 
-# Enable and start system service (alias for compatibility)
-enable_and_start_system_service() {
-    enable_and_start_systemd_service "$1"
-}
-
 
 # =============================================================================
 # SYSTEM MANAGEMENT FUNCTIONS
 # =============================================================================
+
+# Stop all Ethereum services
+stop_all_services() {
+    log_info "Stopping all Ethereum services..."
+    
+    local services=("eth1" "cl" "validator" "mev-boost" "nginx" "caddy")
+    
+    for service in "${services[@]}"; do
+        if systemctl is-active --quiet "$service" 2>/dev/null; then
+            log_info "Stopping $service..."
+            sudo systemctl stop "$service" || log_warn "Failed to stop $service"
+        fi
+    done
+    
+    log_info "All services stopped"
+}
 
 # Add PPA repository
 add_ppa_repository() {
@@ -232,6 +314,28 @@ ensure_jwt_secret() {
 }
 
 # =============================================================================
+# INPUT VALIDATION FUNCTIONS
+# =============================================================================
+
+# Validate menu choice
+validate_menu_choice() {
+    local choice="$1"
+    local max="${2:-10}"
+    
+    # Check if choice is a number
+    if ! [[ "$choice" =~ ^[0-9]+$ ]]; then
+        return 1
+    fi
+    
+    # Check if choice is within valid range
+    if [[ $choice -lt 1 ]] || [[ $choice -gt $max ]]; then
+        return 1
+    fi
+    
+    return 0
+}
+
+# =============================================================================
 # SYSTEM VALIDATION FUNCTIONS
 # =============================================================================
 
@@ -265,11 +369,6 @@ check_system_requirements() {
 # Check system compatibility
 check_system_compatibility() {
     log_info "Checking system compatibility..."
-    
-    if [[ $EUID -ne 0 ]]; then
-        log_error "This script must be run as root"
-        return 1
-    fi
     
     # Check OS
     if [[ -f /etc/os-release ]]; then

@@ -7,11 +7,10 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-# Check if running as root
-require_root
-
 # Get script directories
 get_script_directories
+
+# Note: This script uses sudo internally for privileged operations
 
 # Start installation
 log_installation_start "Flashbots Builder Geth"
@@ -37,13 +36,27 @@ if ! make geth; then
     exit 1
 fi
 
-# Install Geth binary
-log_info "Installing Geth binary..."
-if ! sudo cp ./build/bin/geth /usr/bin/; then
+# Create local bin directory if it doesn't exist
+ensure_directory "$HOME/.local/bin"
+
+# Install Geth binary to user's local bin
+log_info "Installing Geth binary to user's local bin..."
+if ! cp ./build/bin/geth "$HOME/.local/bin/"; then
     log_error "Failed to install Geth binary"
     exit 1
 fi
 
+# Make executable
+chmod +x "$HOME/.local/bin/geth"
+
+# Add to PATH if not already there
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    log_info "Adding $HOME/.local/bin to PATH"
+    echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> "$HOME/.bashrc"
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
 log_installation_complete "Flashbots Builder Geth" "mev-geth"
-log_info "Geth binary installed to: /usr/bin/geth"
+log_info "Geth binary installed to: $HOME/.local/bin/geth"
 log_info "This is a custom Geth build with Flashbots builder support"
+log_info "NOTE: You may need to restart your shell or run: source ~/.bashrc"

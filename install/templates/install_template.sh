@@ -8,6 +8,9 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
+# Get script directories
+get_script_directories
+
 log_installation_start "[CLIENT NAME]"
 
 # Check system requirements
@@ -44,8 +47,6 @@ create_systemd_service "[SERVICE_NAME]" "[SERVICE_DESCRIPTION]" "$EXEC_START" "$
 enable_and_start_systemd_service "[SERVICE_NAME]"
 
 # Show completion information
-# show_installation_complete "CLIENT_NAME" "SERVICE_NAME" "CONFIG_FILE_PATH" "$CLIENT_NAME_DIR"
-
 log_installation_complete "[CLIENT NAME]" "[SERVICE NAME]"
 log_info "To check status: sudo systemctl status [SERVICE_NAME]"
 log_info "To view logs: journalctl -fu [SERVICE_NAME]"
