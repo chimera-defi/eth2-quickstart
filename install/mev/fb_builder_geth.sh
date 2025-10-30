@@ -52,7 +52,7 @@ chmod +x "$HOME/.local/bin/geth"
 # Add to PATH if not already there
 if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     log_info "Adding $HOME/.local/bin to PATH"
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+    echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> "$HOME/.bashrc"
     export PATH="$HOME/.local/bin:$PATH"
 fi
 
