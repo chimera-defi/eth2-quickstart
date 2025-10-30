@@ -93,16 +93,21 @@ extract_archive() {
     
     log_info "Extracting archive: $archive_file"
     
+    local extract_result=0
+    
     case "$archive_file" in
         *.tar.gz|*.tgz)
             if [[ $strip_components -gt 0 ]]; then
                 tar -xzf "$archive_file" -C "$dest_dir" --strip-components="$strip_components"
+                extract_result=$?
             else
                 tar -xzf "$archive_file" -C "$dest_dir"
+                extract_result=$?
             fi
             ;;
         *.zip)
             unzip -q "$archive_file" -d "$dest_dir"
+            extract_result=$?
             ;;
         *)
             log_error "Unsupported archive format: $archive_file"
@@ -110,7 +115,7 @@ extract_archive() {
             ;;
     esac
     
-    if [[ $? -eq 0 ]]; then
+    if [[ $extract_result -eq 0 ]]; then
         log_info "Archive extracted successfully"
         return 0
     else
