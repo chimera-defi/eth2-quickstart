@@ -7,7 +7,8 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-# Note: This script uses sudo internally for privileged operations
+# Get script directories
+get_script_directories
 
 # Note: This script uses sudo internally for privileged operations
 

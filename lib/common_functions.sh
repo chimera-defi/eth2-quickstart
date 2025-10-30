@@ -53,6 +53,63 @@ command_exists() {
 # DOWNLOAD FUNCTIONS
 # =============================================================================
 
+# Get latest release version from GitHub
+get_latest_release() {
+    local repo="$1"
+    local release_url="https://api.github.com/repos/${repo}/releases/latest"
+    local version
+    
+    # Try to fetch latest release tag from GitHub API
+    version=$(curl -s "$release_url" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    
+    if [[ -n "$version" ]]; then
+        echo "$version"
+        return 0
+    else
+        log_warn "Could not fetch latest release for $repo"
+        return 1
+    fi
+}
+
+# Extract archive (tar.gz, tgz, zip)
+extract_archive() {
+    local archive_file="$1"
+    local dest_dir="$2"
+    local strip_components="${3:-0}"
+    
+    if [[ ! -f "$archive_file" ]]; then
+        log_error "Archive file not found: $archive_file"
+        return 1
+    fi
+    
+    log_info "Extracting archive: $archive_file"
+    
+    case "$archive_file" in
+        *.tar.gz|*.tgz)
+            if [[ $strip_components -gt 0 ]]; then
+                tar -xzf "$archive_file" -C "$dest_dir" --strip-components="$strip_components"
+            else
+                tar -xzf "$archive_file" -C "$dest_dir"
+            fi
+            ;;
+        *.zip)
+            unzip -q "$archive_file" -d "$dest_dir"
+            ;;
+        *)
+            log_error "Unsupported archive format: $archive_file"
+            return 1
+            ;;
+    esac
+    
+    if [[ $? -eq 0 ]]; then
+        log_info "Archive extracted successfully"
+        return 0
+    else
+        log_error "Failed to extract archive"
+        return 1
+    fi
+}
+
 # Download file with retry logic and security validation
 download_file() {
     local url="$1"
@@ -164,6 +221,22 @@ enable_and_start_system_service() {
 # SYSTEM MANAGEMENT FUNCTIONS
 # =============================================================================
 
+# Stop all Ethereum services
+stop_all_services() {
+    log_info "Stopping all Ethereum services..."
+    
+    local services=("eth1" "cl" "validator" "mev-boost" "nginx" "caddy")
+    
+    for service in "${services[@]}"; do
+        if systemctl is-active --quiet "$service" 2>/dev/null; then
+            log_info "Stopping $service..."
+            sudo systemctl stop "$service" || log_warn "Failed to stop $service"
+        fi
+    done
+    
+    log_info "All services stopped"
+}
+
 # Add PPA repository
 add_ppa_repository() {
     local ppa="$1"
@@ -229,6 +302,28 @@ ensure_jwt_secret() {
     else
         log_info "JWT secret already exists at $jwt_path"
     fi
+}
+
+# =============================================================================
+# INPUT VALIDATION FUNCTIONS
+# =============================================================================
+
+# Validate menu choice
+validate_menu_choice() {
+    local choice="$1"
+    local max="${2:-10}"
+    
+    # Check if choice is a number
+    if ! [[ "$choice" =~ ^[0-9]+$ ]]; then
+        return 1
+    fi
+    
+    # Check if choice is within valid range
+    if [[ $choice -lt 1 ]] || [[ $choice -gt $max ]]; then
+        return 1
+    fi
+    
+    return 0
 }
 
 # =============================================================================

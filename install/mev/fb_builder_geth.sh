@@ -7,11 +7,11 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-# Check if running as root
-require_root
-
 # Get script directories
 get_script_directories
+
+# Check if running as root
+require_root
 
 # Start installation
 log_installation_start "Flashbots Builder Geth"

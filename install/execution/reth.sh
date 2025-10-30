@@ -7,7 +7,8 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-# Note: This script uses sudo internally for privileged operations
+# Get script directories
+get_script_directories
 
 # Note: This script uses sudo internally for privileged operations
 
@@ -71,4 +72,4 @@ create_systemd_service "eth1" "Reth Ethereum Execution Client" "$EXEC_START" "$(
 enable_and_start_systemd_service "eth1"
 
 # Show completion information
-show_installation_complete "Reth" "eth1" "" "$RETH_DIR"
+log_installation_complete "Reth" "eth1"
