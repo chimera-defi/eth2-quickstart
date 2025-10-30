@@ -93,7 +93,7 @@ if command -v jq &> /dev/null; then
     jq -s '.[0] * .[1]' "$SCRIPT_DIR/configs/lodestar/lodestar_validator_base.json" ./tmp/lodestar_validator_custom.json > "$LODESTAR_DIR/validator.config.json"
 else
     # Fallback: use merge_client_config for proper JSON merging
-    log_warning "jq not found, using fallback JSON merging"
+    log_warn "jq not found, using fallback JSON merging"
     merge_client_config "Lodestar" "beacon" "$SCRIPT_DIR/configs/lodestar/lodestar_beacon_base.json" "./tmp/lodestar_beacon_custom.json" "$LODESTAR_DIR/beacon.config.json"
     merge_client_config "Lodestar" "validator" "$SCRIPT_DIR/configs/lodestar/lodestar_validator_base.json" "./tmp/lodestar_validator_custom.json" "$LODESTAR_DIR/validator.config.json"
 fi

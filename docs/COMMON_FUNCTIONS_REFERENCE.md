@@ -2,7 +2,7 @@
 
 **File:** `lib/common_functions.sh`  
 **Purpose:** Centralized library of reusable shell functions  
-**Status:** ✅ **COMPLETE** - All 35 functions implemented and tested
+**Status:** ✅ **COMPLETE** - All 39 functions implemented and tested
 
 ## Overview
 
@@ -75,6 +75,59 @@ This document provides a comprehensive reference for all functions available in 
 **Parameters:** None  
 **Usage:** `create_temp_config_dir`  
 **Returns:** Path to temporary directory
+
+### 📥 **Download and Archive Functions**
+
+#### `get_latest_release(repo)`
+**Purpose:** Get the latest release tag from a GitHub repository  
+**Parameters:** `repo` - GitHub repository in format "owner/repo"  
+**Usage:** `LATEST_VERSION=$(get_latest_release "hyperledger/besu")`  
+**Returns:** Latest release tag (e.g., "v23.10.3")  
+**Note:** Uses GitHub API to fetch latest release information
+
+#### `extract_archive(archive_file, dest_dir, strip_components)`
+**Purpose:** Extract tar.gz, tgz, or zip archives  
+**Parameters:**
+- `archive_file` - Path to archive file
+- `dest_dir` - Destination directory for extraction
+- `strip_components` - Number of leading path components to strip (optional, default: 0)
+**Usage:** `extract_archive "besu-23.10.3.tar.gz" "/opt/besu" 1`  
+**Supports:** .tar.gz, .tgz, and .zip formats
+
+#### `download_file(url, output, max_retries)`
+**Purpose:** Download file with retry logic  
+**Parameters:**
+- `url` - URL to download from
+- `output` - Output file path
+- `max_retries` - Maximum number of retry attempts (optional, default: 3)
+**Usage:** `download_file "https://example.com/file.tar.gz" "file.tar.gz" 5`
+
+#### `secure_download(url, output, max_retries)`
+**Purpose:** Securely download file with retry logic and validation  
+**Parameters:**
+- `url` - URL to download from
+- `output` - Output file path
+- `max_retries` - Maximum number of retry attempts (optional, default: 3)
+**Usage:** `secure_download "https://example.com/file.tar.gz" "file.tar.gz"`
+
+### ✅ **Input Validation Functions**
+
+#### `validate_menu_choice(choice, max)`
+**Purpose:** Validate user menu selection  
+**Parameters:**
+- `choice` - User's menu choice
+- `max` - Maximum valid choice number (optional, default: 10)
+**Usage:** `validate_menu_choice "3" 5`  
+**Returns:** 0 if valid, 1 if invalid
+
+#### `validate_user_input(input, max_length, min_length)`
+**Purpose:** Validate user input for security  
+**Parameters:**
+- `input` - User input to validate
+- `max_length` - Maximum allowed length (optional, default: 50)
+- `min_length` - Minimum allowed length (optional, default: 1)
+**Usage:** `validate_user_input "$username" 32 3`  
+**Returns:** 0 if valid, 1 if invalid or contains dangerous characters
 
 ### ⚙️ **Configuration Functions**
 

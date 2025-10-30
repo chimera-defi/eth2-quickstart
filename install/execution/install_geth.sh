@@ -51,4 +51,4 @@ create_systemd_service "eth1" "Geth Ethereum Execution Client" "$GETH_CMD" "$(wh
 enable_and_start_systemd_service "eth1"
 
 # Show completion information
-log_installation_complete "Geth" "eth1" "" "$HOME"
+log_installation_complete "Geth" "eth1"

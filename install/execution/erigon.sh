@@ -10,11 +10,6 @@ source ../../lib/common_functions.sh
 # Resolve script and project directories
 get_script_directories
 
-# Require root for installation tasks
-require_root
-
-# Note: This script uses sudo internally for privileged operations
-
 # Note: This script uses sudo internally for privileged operations
 
 # Start installation

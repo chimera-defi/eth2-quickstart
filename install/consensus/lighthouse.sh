@@ -7,7 +7,8 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-# Note: This script uses sudo internally for privileged operations
+# Get script directories
+get_script_directories
 
 # Note: This script uses sudo internally for privileged operations
 
@@ -62,7 +63,7 @@ enable_and_start_systemd_service "cl"
 enable_and_start_systemd_service "validator"
 
 # Show completion information
-show_installation_complete "Lighthouse" "cl" "" "$LIGHTHOUSE_DIR"
+log_installation_complete "Lighthouse" "cl"
 
 # Display setup information
 cat << EOF

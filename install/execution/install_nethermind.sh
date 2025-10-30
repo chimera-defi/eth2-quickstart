@@ -7,10 +7,10 @@
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
-log_installation_start "Nethermind"
-
 # Get script directories
 get_script_directories
+
+log_installation_start "Nethermind"
 
 # Check system requirements
 check_system_requirements 16 2000
@@ -52,29 +52,8 @@ chmod +x "$NETHERMIND_DIR/Nethermind.Runner"
 # Ensure JWT secret exists
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
-# Create custom configuration with variables
-
-# Create custom configuration variables file
-cat > ./tmp/nethermind_custom.cfg << EOF
-{
-  "Init": {
-    "MemoryHint": ${NETHERMIND_CACHE}000000
-  },
-  "JsonRpc": {
-    "Port": ${NETHERMIND_HTTP_PORT},
-    "WebSocketsPort": ${NETHERMIND_WS_PORT},
-    "JwtSecretFile": "$HOME/secrets/jwt.hex",
-    "EngineHost": "'$LH'",
-    "EnginePort": ${NETHERMIND_ENGINE_PORT},
-    "EnabledModules": ["Admin", "Eth", "Net", "Web3", "Engine"]
-  },
-  "Mining": {
-    "Enabled": false,
-    "Coinbase": "${FEE_RECIPIENT}",
-    "ExtraData": "${GRAFITTI}"
-  }
-}
-EOF
+# Create temporary directory for custom configuration
+create_temp_config_dir
 
 # Create custom configuration with variables
 cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
