@@ -37,9 +37,9 @@ if ! make geth; then
     exit 1
 fi
 
-# Install Geth binary
+# Install Geth binary (already running as root, no sudo needed)
 log_info "Installing Geth binary..."
-if ! sudo cp ./build/bin/geth /usr/bin/; then
+if ! cp ./build/bin/geth /usr/bin/; then
     log_error "Failed to install Geth binary"
     exit 1
 fi
