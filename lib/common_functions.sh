@@ -356,11 +356,6 @@ check_system_requirements() {
 check_system_compatibility() {
     log_info "Checking system compatibility..."
     
-    if [[ $EUID -ne 0 ]]; then
-        log_error "This script must be run as root"
-        return 1
-    fi
-    
     # Check OS
     if [[ -f /etc/os-release ]]; then
         local os_id
