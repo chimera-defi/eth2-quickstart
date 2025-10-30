@@ -42,8 +42,8 @@ test_input_validation() {
     
     local issues_found=0
     
-    # Test validate_user_input function
-    if validate_user_input "test123" "^[a-zA-Z0-9]+$" 10; then
+    # Test validate_user_input function (max_length, min_length)
+    if validate_user_input "test123" 10 3; then
         log_info "✓ validate_user_input works correctly"
     else
         log_error "validate_user_input failed"
@@ -58,8 +58,8 @@ test_input_validation() {
         issues_found=$((issues_found + 1))
     fi
     
-    # Test invalid input rejection
-    if ! validate_user_input "test<script>" "^[a-zA-Z0-9]+$" 10; then
+    # Test invalid input rejection (dangerous characters)
+    if ! validate_user_input "test<script>" 50 3; then
         log_info "✓ Invalid input correctly rejected"
     else
         log_error "Invalid input not rejected"
@@ -99,16 +99,16 @@ test_error_handling() {
     
     local issues_found=0
     
-    # Test secure_error_handling function
-    if secure_error_handling "test error message" "error" "false" >/dev/null 2>&1; then
+    # Test secure_error_handling function (no parameters, sets up trap)
+    if secure_error_handling >/dev/null 2>&1; then
         log_info "✓ secure_error_handling works correctly"
     else
         log_error "secure_error_handling failed"
         issues_found=$((issues_found + 1))
     fi
     
-    # Test safe_command_execution function
-    if safe_command_execution "echo test" "Test command failed" "false" >/dev/null 2>&1; then
+    # Test safe_command_execution function (takes command string)
+    if safe_command_execution "echo test" >/dev/null 2>&1; then
         log_info "✓ safe_command_execution works correctly"
     else
         log_error "safe_command_execution failed"
