@@ -59,14 +59,23 @@ get_latest_release() {
     local release_url="https://api.github.com/repos/${repo}/releases/latest"
     local version
     
-    # Try to fetch latest release tag from GitHub API
-    version=$(curl -s "$release_url" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    # Check if curl is available
+    if ! command_exists curl; then
+        log_error "curl is not installed"
+        return 1
+    fi
+    
+    # Try to fetch latest release tag from GitHub API with error handling
+    if ! version=$(curl -sf "$release_url" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'); then
+        log_warn "Could not fetch latest release for $repo (API request failed)"
+        return 1
+    fi
     
     if [[ -n "$version" ]]; then
         echo "$version"
         return 0
     else
-        log_warn "Could not fetch latest release for $repo"
+        log_warn "Could not parse version from GitHub API response for $repo"
         return 1
     fi
 }

@@ -161,6 +161,24 @@ jobs:
         
         echo "✅ Script structure check completed"
         
+    - name: Run function tests
+      run: |
+        echo "Running function tests..."
+        
+        # Run common functions test
+        if [ -f "install/test/test_common_functions.sh" ]; then
+          echo "Running common_functions.sh tests..."
+          bash install/test/test_common_functions.sh
+          if [ $? -eq 0 ]; then
+            echo "✅ Common functions tests passed"
+          else
+            echo "❌ Common functions tests failed"
+            exit 1
+          fi
+        else
+          echo "⚠️  Common functions test not found"
+        fi
+        
     - name: Summary
       run: |
         echo "=== Shell Script Linting Summary ==="
@@ -168,5 +186,6 @@ jobs:
         echo "✅ Common issues check completed"
         echo "✅ Script dependencies validated"
         echo "✅ Script structure checked"
+        echo "✅ Function tests passed"
         echo ""
         echo "All shell script linting checks passed!"
