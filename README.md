@@ -114,6 +114,7 @@ Additionally, by using a VPS, they can more easily offer a censorship resistant 
 | **Reth** | Rust | Modern Rust implementation | Performance, modularity | `install_reth.sh` |
 | **Nethermind** | C# | Enterprise-focused .NET client | Enterprise, advanced features | `install_nethermind.sh` |
 | **Besu** | Java | Apache 2.0 licensed, enterprise-ready | Private networks, compliance | `install_besu.sh` |
+| **Nimbus-eth1** | Nim | Lightweight, resource efficient | Raspberry Pi, low resources | `install_nimbus_eth1.sh` |
 
 ### Consensus Clients (ETH2)
 | Client | Language | Description | Best For | Install Script |
@@ -165,7 +166,7 @@ exports.sh → Base Template + Custom Variables → Final Client Config
 - **Consensus**: Lighthouse (fast, efficient)
 
 ### For Enterprise
-- **Execution**: Besu or Nethermind (enterprise features)
+- **Execution**: Besu, Nethermind, or Nimbus-eth1 (enterprise features or lightweight)
 - **Consensus**: Teku (monitoring, enterprise support)
 
 ### For Resource-Constrained
@@ -187,6 +188,7 @@ exports.sh → Base Template + Custom Variables → Final Client Config
 - **Geth**: 16 GB RAM, 2 TB SSD
 - **Erigon**: 8 GB RAM, 1 TB SSD  
 - **Reth**: 16 GB RAM, 2 TB SSD
+- **Nimbus-eth1**: 4 GB RAM, 500 GB SSD (lightweight)
 - **Prysm**: 8 GB RAM, 1 TB SSD
 - **Lighthouse**: 4 GB RAM, 1 TB SSD
 
@@ -296,6 +298,7 @@ For detailed Caddy setup instructions, see [Caddy Installation Guide](docs/CADDY
 - **Reth**: Compilation issues? Ensure Rust toolchain is updated
 - **Nethermind**: .NET runtime issues? Check .NET installation
 - **Besu**: Java heap size issues? Adjust memory settings in config
+- **Nimbus-eth1**: Uses nightly builds, check for latest release updates
 
 #### Consensus Clients
 - **Prysm**: Checkpoint sync failing? Update `PRYSM_CPURL` in `exports.sh`
