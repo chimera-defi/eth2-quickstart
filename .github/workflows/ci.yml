@@ -114,7 +114,7 @@ jobs:
         echo "Testing installation scripts structure..."
         
         # Check execution client install scripts
-        for client in geth erigon reth nethermind besu; do
+        for client in geth erigon reth nethermind besu nimbus_eth1; do
           if [ -f "install/execution/install_${client}.sh" ] || [ -f "install/execution/${client}.sh" ]; then
             echo "✓ Execution client script for $client exists"
           else

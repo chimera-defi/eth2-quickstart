@@ -95,6 +95,12 @@ sudo systemctl start eth1 cl validator mev
 - Configures with typical flags
 - Creates systemd unit `eth1.service`
 
+#### install_nimbus_eth1.sh
+- Downloads and installs Nimbus-eth1 (nightly builds)
+- Lightweight Nim-based execution client
+- Configures with TOML configuration file
+- Creates systemd unit `eth1.service`
+
 ### Consensus Clients
 
 #### install_prysm.sh

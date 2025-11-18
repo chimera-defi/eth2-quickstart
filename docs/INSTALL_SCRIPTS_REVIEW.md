@@ -235,7 +235,7 @@ log_installation_complete "ClientName" "service"
 - `install/security/caddy_harden.sh`
 
 ### Non-Root (14 scripts - correct)
-- All execution clients (5)
+- All execution clients (6)
 - All consensus clients (6)
 - All MEV scripts (3)
 
