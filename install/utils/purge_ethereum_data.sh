@@ -27,6 +27,7 @@ DATA_DIRS=(
     "$HOME/.local/share/besu"           # Besu
     "$HOME/.local/share/erigon"         # Erigon
     "$HOME/.local/share/reth"           # Reth
+    "$HOME/.local/share/nimbus-eth1"   # Nimbus execution client
     
     # Consensus clients
     "$HOME/.local/share/prysm"          # Prysm data
@@ -47,6 +48,7 @@ DATA_DIRS=(
     "$HOME/besu"                        # Besu
     "$HOME/erigon"                      # Erigon
     "$HOME/reth"                        # Reth
+    "$HOME/nimbus-eth1"                # Nimbus execution client
     "$HOME/mev-boost"                   # MEV-Boost
     
     # Common directories

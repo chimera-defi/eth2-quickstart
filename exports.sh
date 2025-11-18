@@ -43,6 +43,7 @@ export NETHERMIND_CACHE=8192
 export BESU_CACHE=8192
 export ERIGON_CACHE=8192
 export RETH_CACHE=8192
+export NIMBUS_ETH1_CACHE=4096  # Lighter client
 
 # Consensus clients  
 export TEKU_CACHE=8192
@@ -57,6 +58,9 @@ export NETHERMIND_ENGINE_PORT=8551
 export BESU_HTTP_PORT=8545
 export BESU_WS_PORT=8546
 export BESU_ENGINE_PORT=8551
+export NIMBUS_ETH1_HTTP_PORT=8545
+export NIMBUS_ETH1_WS_PORT=8546
+export NIMBUS_ETH1_ENGINE_PORT=8551
 
 # Common ports
 export ENGINE_PORT=8551  # JWT-secured Engine API port

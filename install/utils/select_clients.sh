@@ -75,6 +75,12 @@ show_execution_clients() {
         "• Permissive license\n• Enterprise support\n• Good for private networks\n• Hyperledger project" \
         "• Requires Java runtime\n• Higher resource usage\n• Less optimized for home staking" \
         "../execution/install_besu.sh"
+    
+    display_client_info "execution" "Nimbus-eth1" "Nim" \
+        "Status-developed execution client optimized for resource efficiency." \
+        "• Very lightweight\n• Perfect for Raspberry Pi\n• Low bandwidth usage\n• Low memory footprint" \
+        "• Uses nightly builds\n• Smaller community\n• Less battle-tested\n• Nim language less common" \
+        "../execution/install_nimbus_eth1.sh"
 }
 
 show_consensus_clients() {
@@ -133,7 +139,7 @@ show_recommendations() {
     echo
     
     echo -e "${BOLD}For Resource-Constrained Systems:${NC}"
-    echo "• Execution: Geth (proven to work on various hardware)"
+    echo "• Execution: Nimbus-eth1 or Geth (lightweight and proven)"
     echo "• Consensus: Nimbus (designed for low-resource environments)"
     echo
     
@@ -144,7 +150,7 @@ show_recommendations() {
     
     echo -e "${BOLD}For Client Diversity:${NC}"
     echo "Consider using minority clients to improve network resilience:"
-    echo "• Execution: Erigon, Reth, Nethermind, or Besu"
+    echo "• Execution: Erigon, Reth, Nethermind, Besu, or Nimbus-eth1"
     echo "• Consensus: Lighthouse, Teku, Nimbus, Lodestar, or Grandine"
     echo
 }
@@ -161,7 +167,8 @@ show_system_requirements() {
     echo
     
     echo -e "${BOLD}Client-Specific Requirements:${NC}"
-    echo "• Nimbus: Can run on 4GB RAM and slower hardware"
+    echo "• Nimbus (consensus): Can run on 4GB RAM and slower hardware"
+    echo "• Nimbus-eth1 (execution): Lightweight, suitable for low-resource systems"
     echo "• Teku/Besu: Require Java, higher RAM usage"
     echo "• Lodestar: Requires Node.js"
     echo "• Erigon: Higher RAM during initial sync"
@@ -222,7 +229,7 @@ interactive_selection() {
             case "$hardware" in
                 "a"|"b") echo "• Execution Client: Geth (most stable)"
                         echo "• Consensus Client: Prysm (best documentation)" ;;
-                "c") echo "• Execution Client: Geth (proven on various hardware)"
+                "c") echo "• Execution Client: Nimbus-eth1 or Geth (lightweight and proven)"
                      echo "• Consensus Client: Nimbus (lightweight)" ;;
             esac
             ;;
