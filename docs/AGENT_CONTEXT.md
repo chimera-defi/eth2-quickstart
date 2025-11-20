@@ -13,7 +13,7 @@ All project documentation is organized in the `docs/` folder. Key files include:
 ### Code Architecture
 - **Configuration**: Centralized in `exports.sh`, templates in `configs/`
 - **Common Functions**: Shared utilities in `lib/common_functions.sh`
-- **Client Support**: 5 execution clients + 6 consensus clients
+- **Client Support**: 6 execution clients + 6 consensus clients
 - **Installation Scripts**: Individual scripts for each client
 
 ### Key Patterns

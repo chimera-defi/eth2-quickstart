@@ -65,8 +65,8 @@ Refactor Ethereum node installation scripts to:
 
 ## 📊 **Current Status: COMPLETED**
 
-### **Total Client Combinations: 11**
-- **Execution Clients**: 5 (Geth, Erigon, Reth, Nethermind, Besu)
+### **Total Client Combinations: 12**
+- **Execution Clients**: 6 (Geth, Erigon, Reth, Nethermind, Besu, Nimbus-eth1)
 - **Consensus Clients**: 6 (Prysm, Lighthouse, Teku, Nimbus, Lodestar, Grandine)
 
 ### **Bug Fixes Applied**
