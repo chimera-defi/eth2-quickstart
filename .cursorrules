@@ -202,25 +202,24 @@ grep -r "require_root" install/ | wc -l  # Should match expected count
 ## MEV Implementation Guidelines
 
 ### Overview
-This project supports multiple MEV (Maximal Extractable Value) solutions:
-- **MEV-Boost**: Industry-standard relay-based solution (default)
-- **Commit-Boost**: Modular sidecar with MEV-Boost compatibility + additional protocols
-- **ETHGas**: Preconfirmation protocol (requires Commit-Boost)
+This project supports TWO mutually exclusive MEV (Maximal Extractable Value) solutions:
+- **MEV-Boost**: Industry-standard relay-based solution (RECOMMENDED)
+- **Commit-Boost**: Modular sidecar that REPLACES MEV-Boost (experimental)
 
 ### MEV Implementation Architecture
 
 **Key Principles:**
-1. **Modularity**: Each MEV solution is independently installable
-2. **Compatibility**: All solutions work with existing consensus clients
-3. **Configuration Centralization**: All MEV variables in `exports.sh`
-4. **User Choice**: `run_2.sh` provides interactive MEV selection
+1. **Mutual Exclusivity**: Choose ONE - either MEV-Boost OR Commit-Boost, never both
+2. **Binary Installation**: All MEV solutions installed as binaries (NO Docker)
+3. **Consistency**: Follow same pattern as other client installations (git clone → build → systemd)
+4. **Configuration Centralization**: All MEV variables in `exports.sh`
+5. **Clear Guidance**: `run_2.sh` provides interactive MEV selection with recommendations
 
 ### MEV Configuration Standards
 
 **Port Allocation:**
 - MEV-Boost: Port 18550
 - Commit-Boost: Port 18551 (PBS), 18552 (Signer), 18553 (Metrics)
-- ETHGas: Port 18552 (PBS), 18553 (Signer), 18554 (Commit), 18555 (Metrics)
 
 **Configuration Variables (exports.sh):**
 ```bash
@@ -231,41 +230,36 @@ MEVGETHEADERT=950             # Timeout: getHeader (ms)
 MEVGETPAYLOADT=4000           # Timeout: getPayload (ms)
 MEVREGVALT=6000               # Timeout: registerValidator (ms)
 
-# Commit-Boost specific
+# Commit-Boost specific (alternative to MEV-Boost)
 COMMIT_BOOST_PORT=18551
 COMMIT_BOOST_HOST='127.0.0.1'
-
-# ETHGas specific
-ETHGAS_PORT=18552
-ETHGAS_HOST='127.0.0.1'
-ETHGAS_NETWORK='mainnet'
-ETHGAS_API_ENDPOINT='https://api.ethgas.com'
-ETHGAS_REGISTRATION_MODE='standard'
-ETHGAS_COLLATERAL_CONTRACT='0x...'
 ```
 
 ### MEV Installation Script Patterns
 
 **Required Elements:**
-1. Docker/Docker Compose checks and installation (for Commit-Boost/ETHGas)
-2. Firewall rules setup via `setup_firewall_rules()`
-3. JWT secret verification via `ensure_jwt_secret()`
-4. Configuration file generation with proper variable substitution
-5. Systemd service creation via `create_systemd_service()`
-6. Comprehensive status/verification output
+1. Download pre-built binaries OR build from source (NO Docker)
+2. Extract binaries to installation directory
+3. Firewall rules setup via `setup_firewall_rules()`
+4. JWT secret verification via `ensure_jwt_secret()`
+5. Configuration file generation with proper variable substitution
+6. Systemd service creation via `create_systemd_service()`
+7. Comprehensive status/verification output
+8. Clear warning that solution replaces other MEV solutions (mutually exclusive)
 
-**Commit-Boost Specific:**
-- Docker-based deployment
+**MEV-Boost Pattern:**
+- Clone GitHub repository
+- Build with `make build`
+- Single binary execution
+- Direct systemd service
+
+**Commit-Boost Pattern:**
+- Download pre-built binaries from GitHub releases
+- Multiple binaries (pbs, signer)
 - TOML configuration format
-- Support for multiple modules (PBS, signer, custom)
+- Separate systemd services for each component
 - MEV-Boost relay compatibility
-
-**ETHGas Specific:**
-- Docker Compose multi-container deployment
-- Requires Commit-Boost dependency check
-- Three main components: cb_pbs, cb_signer, cb_ethgas_commit
-- Collateral contract configuration
-- Support for standard/SSV/Obol validator modes
+- Support for additional protocols (preconfirmations, inclusion lists)
 
 ### MEV Testing Requirements
 
@@ -309,15 +303,16 @@ All consensus client base configs include MEV builder endpoint variables:
 
 **Interactive Selection:**
 ```bash
-# Present MEV options
-1. MEV-Boost (default, stable)
-2. Commit-Boost (modular, advanced)
-3. ETHGas (preconfirmations)
-4. Skip (install later)
+# Present MEV options with clear guidance
+1. MEV-Boost (RECOMMENDED - stable, production-proven)
+2. Commit-Boost (EXPERIMENTAL - for early adopters)
+3. Skip (install later)
 
+# IMPORTANT: Clearly state these are MUTUALLY EXCLUSIVE
+# Provide descriptions of what each does
+# Recommend MEV-Boost for most users
 # Create install_mev_solution() function
-# Handle dependencies (e.g., ETHGas requires Commit-Boost)
-# Provide clear user feedback
+# Provide clear user feedback and warnings
 ```
 
 ### MEV Documentation Standards
@@ -346,10 +341,12 @@ All consensus client base configs include MEV builder endpoint variables:
 ### MEV Implementation Checklist
 
 When implementing new MEV solutions:
-- [ ] Create installation script in `install/mev/`
+- [ ] Create installation script in `install/mev/` following binary pattern
+- [ ] Download pre-built binaries OR build from source (NO Docker)
 - [ ] Add configuration variables to `exports.sh`
 - [ ] Update `run_2.sh` with new MEV option
-- [ ] Create comprehensive test script
+- [ ] Add clear warning that solutions are mutually exclusive
+- [ ] Update test script to include new solution
 - [ ] Update consensus client configurations (if needed)
 - [ ] Add firewall rules via `setup_firewall_rules()`
 - [ ] Ensure JWT secret handling via `ensure_jwt_secret()`
@@ -357,22 +354,24 @@ When implementing new MEV solutions:
 - [ ] Document in MEV guides (`docs/MEV_*.md`)
 - [ ] Perform 3-pass review (functionality, architecture, quality)
 - [ ] Test integration with all consensus clients
-- [ ] Verify Docker/Docker Compose requirements
-- [ ] Add dependency checks (e.g., Commit-Boost for ETHGas)
+- [ ] Verify NO Docker dependencies (maintain consistency)
 - [ ] Include comprehensive status output and verification steps
+- [ ] Provide recommendation guidance for users
 
 ### Lessons Learned from MEV Implementation
 
 **Key Insights:**
-1. **Docker Integration**: Install Docker/Compose on-demand, don't assume presence
-2. **Dependency Chaining**: Check dependencies before installation (ETHGas → Commit-Boost)
-3. **Configuration Complexity**: Use TOML for Rust-based solutions, maintain variable substitution
-4. **Port Management**: Reserve sequential ports for multi-component solutions
-5. **Service Dependencies**: Use systemd Requires/After for service dependencies
-6. **Testing Granularity**: Test at multiple levels (file, service, container, API, integration)
-7. **User Guidance**: Provide clear next steps and verification commands
-8. **Collateral Contracts**: For protocols like ETHGas, include both mainnet and testnet addresses
-9. **Multi-Container Orchestration**: Use Docker Compose for complex deployments
-10. **Backward Compatibility**: Ensure new MEV options don't break existing MEV-Boost setups
+1. **Consistency First**: NEVER introduce Docker if the project doesn't use it elsewhere
+2. **Binary Installation**: Always check for pre-built binaries before considering Docker
+3. **Mutual Exclusivity**: Make it crystal clear when solutions are mutually exclusive
+4. **Recommendation Guidance**: Always recommend the stable, proven option (MEV-Boost)
+5. **Port Management**: Reserve sequential ports for multi-component solutions
+6. **Service Dependencies**: Use systemd Requires/After for service dependencies
+7. **Testing Granularity**: Test at multiple levels (file, service, binary, API, integration)
+8. **User Guidance**: Provide clear next steps, warnings, and verification commands
+9. **Pattern Matching**: Follow existing installation patterns (git clone → build OR download → extract)
+10. **Simplicity**: Remove experimental/niche features that break project consistency
+11. **Configuration Clarity**: Use TOML for Rust, YAML for Java, maintain variable substitution
+12. **Backward Compatibility**: Ensure new MEV options don't break existing MEV-Boost setups
 
 This comprehensive rule set ensures consistent, maintainable, and secure code across the entire Ethereum node setup project.

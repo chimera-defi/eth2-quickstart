@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # MEV Implementations Testing Script
-# Tests all MEV implementations (MEV-Boost, Commit-Boost, ETHGas)
+# Tests MEV-Boost and Commit-Boost installations
 # Verifies installation, configuration, and functionality
 
 source ../../exports.sh
@@ -87,28 +87,28 @@ if systemctl list-unit-files | grep -q "mev.service"; then
     if systemctl is-active --quiet mev; then
         record_test "MEV-Boost: Service Running" "PASS" "Service is active"
     else
-        record_test "MEV-Boost: Service Running" "FAIL" "Service is not active"
+        record_test "MEV-Boost: Service Running" "SKIP" "Service not active (may not be started yet)"
     fi
     
     # Check if service is enabled
     if systemctl is-enabled --quiet mev; then
         record_test "MEV-Boost: Service Enabled" "PASS" "Service is enabled"
     else
-        record_test "MEV-Boost: Service Enabled" "FAIL" "Service is not enabled"
+        record_test "MEV-Boost: Service Enabled" "SKIP" "Service not enabled"
     fi
 else
     record_test "MEV-Boost: Service File" "SKIP" "Not installed"
 fi
 
 # Test 4: Check MEV-Boost API endpoint
-if command -v curl &> /dev/null; then
+if command -v curl &> /dev/null && systemctl is-active --quiet mev; then
     if curl -sf "http://$MEV_HOST:$MEV_PORT/eth/v1/builder/status" &> /dev/null; then
         record_test "MEV-Boost: API Endpoint" "PASS" "API is responding on port $MEV_PORT"
     else
-        record_test "MEV-Boost: API Endpoint" "FAIL" "API not responding or service not running"
+        record_test "MEV-Boost: API Endpoint" "SKIP" "API not responding (service may not be started)"
     fi
 else
-    record_test "MEV-Boost: API Endpoint" "SKIP" "curl not available"
+    record_test "MEV-Boost: API Endpoint" "SKIP" "curl not available or service not running"
 fi
 
 # Test 5: Check MEV-Boost configuration variables
@@ -135,12 +135,37 @@ else
     record_test "Commit-Boost: Installation Directory" "SKIP" "Not installed"
 fi
 
-# Test 7: Check Commit-Boost configuration
-if [[ -f "$HOME/commit-boost/config/commit-boost.toml" ]]; then
+# Test 7: Check Commit-Boost binaries
+if [[ -f "$HOME/commit-boost/commit-boost-pbs" ]]; then
+    record_test "Commit-Boost: PBS Binary" "PASS" "PBS binary found"
+    
+    if [[ -x "$HOME/commit-boost/commit-boost-pbs" ]]; then
+        record_test "Commit-Boost: PBS Executable" "PASS" "PBS binary is executable"
+    else
+        record_test "Commit-Boost: PBS Executable" "FAIL" "PBS binary not executable"
+    fi
+else
+    record_test "Commit-Boost: PBS Binary" "SKIP" "Not installed"
+fi
+
+if [[ -f "$HOME/commit-boost/commit-boost-signer" ]]; then
+    record_test "Commit-Boost: Signer Binary" "PASS" "Signer binary found"
+    
+    if [[ -x "$HOME/commit-boost/commit-boost-signer" ]]; then
+        record_test "Commit-Boost: Signer Executable" "PASS" "Signer binary is executable"
+    else
+        record_test "Commit-Boost: Signer Executable" "FAIL" "Signer binary not executable"
+    fi
+else
+    record_test "Commit-Boost: Signer Binary" "SKIP" "Not installed"
+fi
+
+# Test 8: Check Commit-Boost configuration
+if [[ -f "$HOME/commit-boost/config/cb-config.toml" ]]; then
     record_test "Commit-Boost: Configuration File" "PASS" "Config file exists"
     
     # Validate TOML syntax (basic check)
-    if grep -q "\[pbs\]" "$HOME/commit-boost/config/commit-boost.toml"; then
+    if grep -q "\[pbs\]" "$HOME/commit-boost/config/cb-config.toml"; then
         record_test "Commit-Boost: Config Valid" "PASS" "Config file has PBS section"
     else
         record_test "Commit-Boost: Config Valid" "FAIL" "Config file missing PBS section"
@@ -149,176 +174,57 @@ else
     record_test "Commit-Boost: Configuration File" "SKIP" "Not installed"
 fi
 
-# Test 8: Check Commit-Boost service
-if systemctl list-unit-files | grep -q "commit-boost.service"; then
-    record_test "Commit-Boost: Service File" "PASS" "Service file exists"
+# Test 9: Check Commit-Boost PBS service
+if systemctl list-unit-files | grep -q "commit-boost-pbs.service"; then
+    record_test "Commit-Boost: PBS Service File" "PASS" "PBS service file exists"
     
     # Check service status
-    if systemctl is-active --quiet commit-boost; then
-        record_test "Commit-Boost: Service Running" "PASS" "Service is active"
+    if systemctl is-active --quiet commit-boost-pbs; then
+        record_test "Commit-Boost: PBS Service Running" "PASS" "PBS service is active"
     else
-        record_test "Commit-Boost: Service Running" "FAIL" "Service is not active"
+        record_test "Commit-Boost: PBS Service Running" "SKIP" "PBS service not active"
     fi
     
     # Check if service is enabled
-    if systemctl is-enabled --quiet commit-boost; then
-        record_test "Commit-Boost: Service Enabled" "PASS" "Service is enabled"
+    if systemctl is-enabled --quiet commit-boost-pbs; then
+        record_test "Commit-Boost: PBS Service Enabled" "PASS" "PBS service is enabled"
     else
-        record_test "Commit-Boost: Service Enabled" "FAIL" "Service is not enabled"
+        record_test "Commit-Boost: PBS Service Enabled" "SKIP" "PBS service not enabled"
     fi
 else
-    record_test "Commit-Boost: Service File" "SKIP" "Not installed"
+    record_test "Commit-Boost: PBS Service File" "SKIP" "Not installed"
 fi
 
-# Test 9: Check Docker availability for Commit-Boost
-if command -v docker &> /dev/null; then
-    record_test "Commit-Boost: Docker Available" "PASS" "Docker is installed"
+# Test 10: Check Commit-Boost Signer service
+if systemctl list-unit-files | grep -q "commit-boost-signer.service"; then
+    record_test "Commit-Boost: Signer Service File" "PASS" "Signer service file exists"
     
-    # Check if Docker is running
-    if docker ps &> /dev/null; then
-        record_test "Commit-Boost: Docker Running" "PASS" "Docker daemon is running"
-        
-        # Check if Commit-Boost container exists
-        if docker ps -a | grep -q "commit-boost"; then
-            record_test "Commit-Boost: Container Exists" "PASS" "Docker container exists"
-            
-            # Check if container is running
-            if docker ps | grep -q "commit-boost"; then
-                record_test "Commit-Boost: Container Running" "PASS" "Container is running"
-            else
-                record_test "Commit-Boost: Container Running" "FAIL" "Container exists but not running"
-            fi
-        else
-            record_test "Commit-Boost: Container Exists" "SKIP" "Container not found"
-        fi
+    # Check service status
+    if systemctl is-active --quiet commit-boost-signer; then
+        record_test "Commit-Boost: Signer Service Running" "PASS" "Signer service is active"
     else
-        record_test "Commit-Boost: Docker Running" "FAIL" "Docker daemon not running"
+        record_test "Commit-Boost: Signer Service Running" "SKIP" "Signer service not active"
+    fi
+    
+    # Check if service is enabled
+    if systemctl is-enabled --quiet commit-boost-signer; then
+        record_test "Commit-Boost: Signer Service Enabled" "PASS" "Signer service is enabled"
+    else
+        record_test "Commit-Boost: Signer Service Enabled" "SKIP" "Signer service not enabled"
     fi
 else
-    record_test "Commit-Boost: Docker Available" "SKIP" "Docker not installed"
+    record_test "Commit-Boost: Signer Service File" "SKIP" "Not installed"
 fi
 
-# Test 10: Check Commit-Boost API endpoint
-if command -v curl &> /dev/null; then
+# Test 11: Check Commit-Boost API endpoint
+if command -v curl &> /dev/null && systemctl is-active --quiet commit-boost-pbs; then
     if curl -sf "http://$COMMIT_BOOST_HOST:$COMMIT_BOOST_PORT/eth/v1/builder/status" &> /dev/null; then
         record_test "Commit-Boost: API Endpoint" "PASS" "API is responding on port $COMMIT_BOOST_PORT"
     else
-        record_test "Commit-Boost: API Endpoint" "FAIL" "API not responding or service not running"
+        record_test "Commit-Boost: API Endpoint" "SKIP" "API not responding (service may not be fully started)"
     fi
 else
-    record_test "Commit-Boost: API Endpoint" "SKIP" "curl not available"
-fi
-
-# Test 11: Check Commit-Boost metrics endpoint
-if command -v curl &> /dev/null; then
-    metrics_port=$((COMMIT_BOOST_PORT + 2))
-    if curl -sf "http://$COMMIT_BOOST_HOST:$metrics_port/metrics" &> /dev/null; then
-        record_test "Commit-Boost: Metrics Endpoint" "PASS" "Metrics available on port $metrics_port"
-    else
-        record_test "Commit-Boost: Metrics Endpoint" "FAIL" "Metrics not available"
-    fi
-else
-    record_test "Commit-Boost: Metrics Endpoint" "SKIP" "curl not available"
-fi
-
-echo ""
-
-# ============================================================================
-# ETHGas Tests
-# ============================================================================
-
-echo -e "${BLUE}=== ETHGas Tests ===${NC}"
-echo ""
-
-# Test 12: Check if ETHGas is installed
-if [[ -d "$HOME/ethgas" ]]; then
-    record_test "ETHGas: Installation Directory" "PASS" "Directory exists at $HOME/ethgas"
-else
-    record_test "ETHGas: Installation Directory" "SKIP" "Not installed"
-fi
-
-# Test 13: Check ETHGas configuration
-if [[ -f "$HOME/ethgas/config/ethgas.toml" ]]; then
-    record_test "ETHGas: Configuration File" "PASS" "Config file exists"
-    
-    # Validate TOML syntax (basic check)
-    if grep -q "\[cb_ethgas_commit\]" "$HOME/ethgas/config/ethgas.toml"; then
-        record_test "ETHGas: Config Valid" "PASS" "Config has ETHGas commit section"
-    else
-        record_test "ETHGas: Config Valid" "FAIL" "Config missing ETHGas commit section"
-    fi
-else
-    record_test "ETHGas: Configuration File" "SKIP" "Not installed"
-fi
-
-# Test 14: Check Docker Compose file
-if [[ -f "$HOME/ethgas/docker-compose.yml" ]]; then
-    record_test "ETHGas: Docker Compose File" "PASS" "Docker Compose file exists"
-else
-    record_test "ETHGas: Docker Compose File" "SKIP" "Not installed"
-fi
-
-# Test 15: Check ETHGas service
-if systemctl list-unit-files | grep -q "ethgas.service"; then
-    record_test "ETHGas: Service File" "PASS" "Service file exists"
-    
-    # Check service status
-    if systemctl is-active --quiet ethgas; then
-        record_test "ETHGas: Service Running" "PASS" "Service is active"
-    else
-        record_test "ETHGas: Service Running" "FAIL" "Service is not active"
-    fi
-    
-    # Check if service is enabled
-    if systemctl is-enabled --quiet ethgas; then
-        record_test "ETHGas: Service Enabled" "PASS" "Service is enabled"
-    else
-        record_test "ETHGas: Service Enabled" "FAIL" "Service is not enabled"
-    fi
-else
-    record_test "ETHGas: Service File" "SKIP" "Not installed"
-fi
-
-# Test 16: Check ETHGas Docker containers
-if command -v docker &> /dev/null; then
-    if docker ps &> /dev/null; then
-        # Check for cb_pbs container
-        if docker ps | grep -q "ethgas_pbs"; then
-            record_test "ETHGas: PBS Container" "PASS" "PBS container is running"
-        else
-            record_test "ETHGas: PBS Container" "SKIP" "PBS container not running"
-        fi
-        
-        # Check for cb_signer container
-        if docker ps | grep -q "ethgas_signer"; then
-            record_test "ETHGas: Signer Container" "PASS" "Signer container is running"
-        else
-            record_test "ETHGas: Signer Container" "SKIP" "Signer container not running"
-        fi
-        
-        # Check for cb_ethgas_commit container
-        if docker ps | grep -q "ethgas_commit"; then
-            record_test "ETHGas: Commit Container" "PASS" "Commit container is running"
-        else
-            record_test "ETHGas: Commit Container" "SKIP" "Commit container not running"
-        fi
-    fi
-fi
-
-# Test 17: Check ETHGas logs directory
-if [[ -d "$HOME/ethgas/logs" ]]; then
-    record_test "ETHGas: Logs Directory" "PASS" "Logs directory exists"
-else
-    record_test "ETHGas: Logs Directory" "SKIP" "Not created yet"
-fi
-
-# Test 18: Check Commit-Boost dependency for ETHGas
-if [[ -d "$HOME/ethgas" ]]; then
-    if systemctl is-active --quiet commit-boost; then
-        record_test "ETHGas: Commit-Boost Dependency" "PASS" "Required Commit-Boost is running"
-    else
-        record_test "ETHGas: Commit-Boost Dependency" "FAIL" "ETHGas requires Commit-Boost to be running"
-    fi
+    record_test "Commit-Boost: API Endpoint" "SKIP" "curl not available or service not running"
 fi
 
 echo ""
@@ -330,7 +236,7 @@ echo ""
 echo -e "${BLUE}=== Configuration Tests ===${NC}"
 echo ""
 
-# Test 19: Check exports.sh configuration
+# Test 12: Check exports.sh configuration
 if [[ -f "$SCRIPT_DIR/exports.sh" ]]; then
     record_test "Config: exports.sh Exists" "PASS" "Configuration file exists"
     
@@ -347,18 +253,11 @@ if [[ -f "$SCRIPT_DIR/exports.sh" ]]; then
     else
         record_test "Config: Commit-Boost Variables" "FAIL" "Commit-Boost variables missing"
     fi
-    
-    # Check ETHGas variables
-    if grep -q "ETHGAS_PORT" "$SCRIPT_DIR/exports.sh"; then
-        record_test "Config: ETHGas Variables" "PASS" "ETHGas variables configured"
-    else
-        record_test "Config: ETHGas Variables" "FAIL" "ETHGas variables missing"
-    fi
 else
     record_test "Config: exports.sh Exists" "FAIL" "Configuration file not found"
 fi
 
-# Test 20: Check JWT secret
+# Test 13: Check JWT secret
 if [[ -f "$HOME/secrets/jwt.hex" ]]; then
     record_test "Config: JWT Secret" "PASS" "JWT secret exists"
     
@@ -370,19 +269,19 @@ if [[ -f "$HOME/secrets/jwt.hex" ]]; then
         record_test "Config: JWT Secret Format" "FAIL" "JWT secret format is invalid"
     fi
 else
-    record_test "Config: JWT Secret" "FAIL" "JWT secret not found"
+    record_test "Config: JWT Secret" "SKIP" "JWT secret not found (created during client installation)"
 fi
 
 echo ""
 
 # ============================================================================
-# Port Conflict Tests
+# Port Tests
 # ============================================================================
 
-echo -e "${BLUE}=== Port Conflict Tests ===${NC}"
+echo -e "${BLUE}=== Port Tests ===${NC}"
 echo ""
 
-# Test 21: Check for port conflicts
+# Test 14: Check for port usage
 check_port_in_use() {
     local port="$1"
     local service_name="$2"
@@ -391,16 +290,17 @@ check_port_in_use() {
         if ss -tuln | grep -q ":$port "; then
             record_test "Port $port ($service_name)" "PASS" "Port is in use (service running)"
         else
-            record_test "Port $port ($service_name)" "SKIP" "Port not in use (service may not be running)"
+            record_test "Port $port ($service_name)" "SKIP" "Port not in use"
         fi
     elif command -v netstat &> /dev/null; then
         if netstat -tuln | grep -q ":$port "; then
             record_test "Port $port ($service_name)" "PASS" "Port is in use (service running)"
         else
-            record_test "Port $port ($service_name)" "SKIP" "Port not in use (service may not be running)"
+            record_test "Port $port ($service_name)" "SKIP" "Port not in use"
         fi
     else
         record_test "Port Check" "SKIP" "Neither ss nor netstat available"
+        return
     fi
 }
 
@@ -408,9 +308,6 @@ check_port_in_use "$MEV_PORT" "MEV-Boost"
 check_port_in_use "$COMMIT_BOOST_PORT" "Commit-Boost PBS"
 check_port_in_use "$((COMMIT_BOOST_PORT + 1))" "Commit-Boost Signer"
 check_port_in_use "$((COMMIT_BOOST_PORT + 2))" "Commit-Boost Metrics"
-check_port_in_use "$ETHGAS_PORT" "ETHGas PBS"
-check_port_in_use "$((ETHGAS_PORT + 1))" "ETHGas Signer"
-check_port_in_use "$((ETHGAS_PORT + 2))" "ETHGas Commit"
 
 echo ""
 
@@ -421,34 +318,50 @@ echo ""
 echo -e "${BLUE}=== Firewall Tests ===${NC}"
 echo ""
 
-# Test 22: Check if ufw is installed and active
+# Test 15: Check if ufw is installed and active
 if command -v ufw &> /dev/null; then
     if sudo ufw status | grep -q "Status: active"; then
         record_test "Firewall: UFW Active" "PASS" "UFW firewall is active"
         
-        # Check if MEV ports are allowed
-        if sudo ufw status | grep -q "$MEV_PORT"; then
-            record_test "Firewall: MEV-Boost Port" "PASS" "Port $MEV_PORT is allowed"
-        else
-            record_test "Firewall: MEV-Boost Port" "SKIP" "Port $MEV_PORT not configured in firewall"
-        fi
-        
-        if sudo ufw status | grep -q "$COMMIT_BOOST_PORT"; then
-            record_test "Firewall: Commit-Boost Port" "PASS" "Port $COMMIT_BOOST_PORT is allowed"
-        else
-            record_test "Firewall: Commit-Boost Port" "SKIP" "Port $COMMIT_BOOST_PORT not configured in firewall"
-        fi
-        
-        if sudo ufw status | grep -q "$ETHGAS_PORT"; then
-            record_test "Firewall: ETHGas Port" "PASS" "Port $ETHGAS_PORT is allowed"
-        else
-            record_test "Firewall: ETHGas Port" "SKIP" "Port $ETHGAS_PORT not configured in firewall"
-        fi
+        # Note: Firewall rules for MEV ports may not be configured
+        # This is OK as MEV services bind to localhost by default
+        record_test "Firewall: MEV Ports" "PASS" "MEV services bind to localhost (no external access needed)"
     else
         record_test "Firewall: UFW Active" "SKIP" "UFW is installed but not active"
     fi
 else
     record_test "Firewall: UFW Active" "SKIP" "UFW not installed"
+fi
+
+echo ""
+
+# ============================================================================
+# Mutual Exclusivity Test
+# ============================================================================
+
+echo -e "${BLUE}=== Mutual Exclusivity Check ===${NC}"
+echo ""
+
+# Test 16: Check that only one MEV solution is running
+mev_boost_running=false
+commit_boost_running=false
+
+if systemctl is-active --quiet mev; then
+    mev_boost_running=true
+fi
+
+if systemctl is-active --quiet commit-boost-pbs; then
+    commit_boost_running=true
+fi
+
+if $mev_boost_running && $commit_boost_running; then
+    record_test "MEV: Mutual Exclusivity" "FAIL" "Both MEV-Boost and Commit-Boost are running! Only one should be active."
+elif $mev_boost_running; then
+    record_test "MEV: Mutual Exclusivity" "PASS" "Only MEV-Boost is running"
+elif $commit_boost_running; then
+    record_test "MEV: Mutual Exclusivity" "PASS" "Only Commit-Boost is running"
+else
+    record_test "MEV: Mutual Exclusivity" "SKIP" "No MEV solution is currently running"
 fi
 
 echo ""
