@@ -50,7 +50,7 @@ fi
 # MEV Solution Selection
 log_info "=== MEV Solution Selection ==="
 echo
-echo "⚠️  IMPORTANT: These are MUTUALLY EXCLUSIVE - pick ONE:"
+echo "⚠️  IMPORTANT: Options 1-2 are MUTUALLY EXCLUSIVE (pick ONE):"
 echo ""
 echo "1. MEV-Boost (RECOMMENDED - stable, production-proven)"
 echo "   → Standard MEV extraction via relays"
@@ -63,10 +63,16 @@ echo "   → MEV-Boost compatible + additional protocols"
 echo "   → Support for preconfirmations, inclusion lists"
 echo "   → Use if you need bleeding-edge MEV features"
 echo ""
-echo "3. Skip MEV installation (install later manually)"
+echo "3. ETHGas (ADVANCED - requires Commit-Boost + collateral)"
+echo "   → Preconfirmation protocol for real-time transactions"
+echo "   → Sells precons for additional revenue"
+echo "   → Requires Commit-Boost (option 2) to be installed first"
+echo "   → Requires collateral deposit and Rust build"
 echo ""
-read -r -p "Select MEV option (1-3): " mev_choice
-if ! validate_menu_choice "$mev_choice" 3; then
+echo "4. Skip MEV installation (install later manually)"
+echo ""
+read -r -p "Select MEV option (1-4): " mev_choice
+if ! validate_menu_choice "$mev_choice" 4; then
     log_warn "Invalid choice. Defaulting to MEV-Boost"
     mev_choice=1
 fi
@@ -84,6 +90,11 @@ case "$mev_choice" in
         log_warn "This will REPLACE MEV-Boost, not add to it"
         ;;
     3)
+        MEV_SELECTED="ethgas"
+        log_warn "Selected: ETHGas (advanced)"
+        log_warn "This requires Commit-Boost and will install it first"
+        ;;
+    4)
         MEV_SELECTED="none"
         log_info "MEV installation will be skipped"
         ;;
@@ -127,6 +138,24 @@ install_mev_solution() {
             log_info "✓ Commit-Boost installed successfully"
             log_warn "Note: Commit-Boost replaces MEV-Boost"
             log_warn "Update your consensus client config to use port $COMMIT_BOOST_PORT"
+            ;;
+        "ethgas")
+            log_info "Installing Commit-Boost (required for ETHGas)..."
+            if ! ./install/mev/install_commit_boost.sh; then
+                log_error "Failed to install Commit-Boost"
+                return 1
+            fi
+            log_info "✓ Commit-Boost installed successfully"
+            
+            log_info "Installing ETHGas..."
+            log_warn "This will build from Rust source (2-5 minutes)"
+            if ! ./install/mev/install_ethgas.sh; then
+                log_error "Failed to install ETHGas"
+                return 1
+            fi
+            log_info "✓ ETHGas installed successfully"
+            log_warn "IMPORTANT: You must deposit collateral to participate"
+            log_warn "Visit: https://app.ethgas.com/my-portfolio/accounts"
             ;;
         "none")
             log_info "Skipping MEV installation as requested"
