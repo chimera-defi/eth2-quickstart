@@ -140,12 +140,42 @@ sudo systemctl start eth1 cl validator mev
 - Configures with typical flags
 - Creates systemd units `cl.service` and `validator.service`
 
-### MEV-Boost
+### MEV Solutions
 
-#### install_mev_boost.sh
-- Downloads and installs MEV-Boost
+⚠️ **IMPORTANT**: MEV-Boost and Commit-Boost are mutually exclusive - choose ONE!
+
+#### install_mev_boost.sh (RECOMMENDED)
+- Clones and builds MEV-Boost from Flashbots repository
 - Configures with relay URLs from `MEV_RELAYS`
 - Creates systemd unit `mev.service`
+- Port: 18550
+
+#### install_commit_boost.sh
+- Downloads pre-built Commit-Boost binaries (PBS + Signer)
+- Modular sidecar with MEV-Boost relay compatibility
+- Supports preconfirmations and inclusion lists
+- Creates systemd units: `commit-boost-pbs.service`, `commit-boost-signer.service`
+- Ports: PBS (18551), Signer (18552), Metrics (18553)
+
+#### install_ethgas.sh
+- Clones and builds ETHGas preconfirmation module
+- **Requires Commit-Boost** to be installed first
+- Enables validators to sell preconfirmations
+- Creates systemd unit `ethgas.service`
+- Ports: Main (18552), Metrics (18553)
+
+#### test_mev_implementations.sh
+- Comprehensive test suite for all MEV implementations
+- Tests installation, configuration, services, ports, and dependencies
+- Verifies mutual exclusivity between MEV-Boost and Commit-Boost
+
+#### fb_builder_geth.sh (Advanced)
+- Builds Geth from Flashbots builder repository
+- For advanced users running block builders
+
+#### fb_mev_prysm.sh (Advanced)
+- Builds Prysm from Flashbots repository with MEV support
+- For advanced users with custom MEV setups
 
 ## Nginx and SSL Scripts
 
@@ -205,8 +235,26 @@ sudo systemctl start eth1 cl validator mev
 - Restart on failure
 
 ### mev.service
-- MEV-Boost service
-- Depends on cl.service
+- MEV-Boost service (standard)
+- Port 18550
+- Restart on failure
+
+### commit-boost-pbs.service
+- Commit-Boost PBS module
+- MEV-Boost compatible relay interface
+- Port 18551
+- Restart on failure
+
+### commit-boost-signer.service
+- Commit-Boost Signer module
+- BLS key signing for commitments
+- Port 18552
+- Restart on failure
+
+### ethgas.service
+- ETHGas preconfirmation service
+- Requires Commit-Boost services
+- Port 18552 (metrics 18553)
 - Restart on failure
 
 ## Networking and Ports

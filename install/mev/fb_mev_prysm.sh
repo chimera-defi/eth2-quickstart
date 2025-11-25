@@ -95,9 +95,7 @@ enable_and_start_systemd_service "cl"
 enable_and_start_systemd_service "validator"
 
 # Show completion information
-show_installation_complete "Flashbots MEV Prysm" "cl" "$PRYSM_DIR/prysm_beacon_conf.yaml" "$PRYSM_DIR"
-
-log_installation_complete "Flashbots MEV Prysm" "mev-prysm"
+log_installation_complete "Flashbots MEV Prysm" "cl" "$PRYSM_DIR/prysm_beacon_conf.yaml" "$PRYSM_DIR"
 log_info "Beacon chain binary: $PRYSM_DIR/beacon-chain"
 log_info "Validator binary: $PRYSM_DIR/validator"
 log_info "Configuration files: $PRYSM_DIR/prysm_*_conf.yaml"
