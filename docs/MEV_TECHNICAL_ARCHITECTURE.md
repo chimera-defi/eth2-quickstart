@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides detailed technical architecture analysis for MEV Boost, Commit Boost, Eat Gas, and Profit technologies, focusing on implementation details, protocol specifications, and integration requirements.
+This document provides detailed technical architecture analysis for MEV Boost, Commit Boost, ETHGas, and Profit technologies, focusing on implementation details, protocol specifications, and integration requirements.
 
 ---
 
@@ -356,7 +356,7 @@ type CommitConfig struct {
 
 ---
 
-## Eat Gas Architecture (Expected)
+## ETHGas Architecture (Expected)
 
 ### System Architecture
 
@@ -368,7 +368,7 @@ type CommitConfig struct {
          │ Optimized API
          │
 ┌────────▼────────┐
-│    Eat Gas      │
+│    ETHGas      │
 │   Optimizer     │
 └────────┬────────┘
          │
@@ -382,7 +382,7 @@ type CommitConfig struct {
 
 ### Component Details (Expected)
 
-#### Eat Gas Service
+#### ETHGas Service
 
 **Technology Stack** (Expected):
 - Language: Go/Rust
@@ -442,19 +442,19 @@ type EatGasConfig struct {
 ### Protocol Flow (Expected)
 
 ```
-1. Eat Gas: Monitor mempool
+1. ETHGas: Monitor mempool
 
-2. Eat Gas: Analyze transactions for gas efficiency
+2. ETHGas: Analyze transactions for gas efficiency
 
-3. Eat Gas: Optimize transaction ordering
+3. ETHGas: Optimize transaction ordering
 
-4. Eat Gas: Calculate optimal gas prices
+4. ETHGas: Calculate optimal gas prices
 
-5. Eat Gas: Construct optimized block
+5. ETHGas: Construct optimized block
 
-6. Validator → Eat Gas: Request optimized block
+6. Validator → ETHGas: Request optimized block
 
-7. Eat Gas → Validator: Gas-optimized block proposal
+7. ETHGas → Validator: Gas-optimized block proposal
 
 8. Validator: Sign and propose block
 ```
@@ -587,7 +587,7 @@ type ProfitConfig struct {
          ├──────────┬──────────┬──────────┬──────────┐
          │          │          │          │          │
 ┌────────▼──┐ ┌─────▼─────┐ ┌──▼─────┐ ┌──▼─────┐ ┌─▼──────┐
-│MEV Boost  │ │Commit Boost│ │Eat Gas│ │ Profit │ │ ...   │
+│MEV Boost  │ │Commit Boost│ │ETHGas│ │ Profit │ │ ...   │
 └───────────┘ └───────────┘ └────────┘ └────────┘ └────────┘
 ```
 
@@ -608,7 +608,7 @@ type ProfitConfig struct {
 - Use different technologies for different scenarios
 - MEV Boost for standard blocks
 - Commit Boost for high-value blocks
-- Eat Gas for gas optimization
+- ETHGas for gas optimization
 - Profit for profit sharing
 
 ---
@@ -621,7 +621,7 @@ type ProfitConfig struct {
 |------------|--------------|----------------|----------------|---------------|
 | MEV Boost | ~100ms | ~200-500ms | ~100-300ms | ~400-900ms |
 | Commit Boost | ~150ms | ~300-600ms | ~200-400ms | ~650-1150ms |
-| Eat Gas | ~100ms | ~150-400ms | ~50-200ms | ~300-700ms |
+| ETHGas | ~100ms | ~150-400ms | ~50-200ms | ~300-700ms |
 | Profit | ~100ms | ~200-500ms | ~100-300ms | ~400-900ms |
 
 ### Resource Usage
@@ -630,7 +630,7 @@ type ProfitConfig struct {
 |------------|-----|--------|---------|---------|
 | MEV Boost | Low (<5%) | 50-100 MB | Low | Minimal |
 | Commit Boost | Medium (5-10%) | 100-200 MB | Medium | Minimal |
-| Eat Gas | Medium (5-15%) | 100-150 MB | Low | Minimal |
+| ETHGas | Medium (5-15%) | 100-150 MB | Low | Minimal |
 | Profit | Medium (5-10%) | 100-200 MB | Low-Medium | Analytics DB |
 
 ---
@@ -660,7 +660,7 @@ type ProfitConfig struct {
 - Reveal timing protection
 - Network security
 
-**Eat Gas** (Expected):
+**ETHGas** (Expected):
 - Optimization validation
 - Transaction validation
 - Block construction security
@@ -676,7 +676,7 @@ type ProfitConfig struct {
 
 ## Conclusion
 
-This technical architecture document provides detailed insights into the implementation and integration of MEV technologies. While MEV Boost has a proven architecture, Commit Boost, Eat Gas, and Profit represent innovative approaches to MEV extraction with unique architectural considerations.
+This technical architecture document provides detailed insights into the implementation and integration of MEV technologies. While MEV Boost has a proven architecture, Commit Boost, ETHGas, and Profit represent innovative approaches to MEV extraction with unique architectural considerations.
 
 **Next Steps**:
 1. Monitor protocol specifications as they mature

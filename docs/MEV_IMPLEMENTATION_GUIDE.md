@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide provides practical implementation instructions for integrating MEV Boost, Commit Boost, Eat Gas, and Profit technologies into the Ethereum node setup project.
+This guide provides practical implementation instructions for integrating MEV Boost, Commit Boost, ETHGas, and Profit technologies into the Ethereum node setup project.
 
 ---
 
@@ -10,7 +10,7 @@ This guide provides practical implementation instructions for integrating MEV Bo
 
 1. [MEV Boost Implementation](#mev-boost-implementation)
 2. [Commit Boost Implementation (Planned)](#commit-boost-implementation-planned)
-3. [Eat Gas Implementation (Planned)](#eat-gas-implementation-planned)
+3. [ETHGas Implementation (Planned)](#ethgas-implementation-planned)
 4. [Profit Implementation (Planned)](#profit-implementation-planned)
 5. [Integration Patterns](#integration-patterns)
 6. [Testing and Validation](#testing-and-validation)
@@ -262,7 +262,7 @@ commit-reveal-enabled: true
 
 ---
 
-## Eat Gas Implementation (Planned)
+## ETHGas Implementation (Planned)
 
 ### Status
 
@@ -277,58 +277,58 @@ commit-reveal-enabled: true
 ```bash
 #!/bin/bash
 
-# Eat Gas Installation Script
-# Eat Gas optimizes gas usage for MEV extraction
+# ETHGas Installation Script
+# ETHGas optimizes gas usage for MEV extraction
 
 source ../../exports.sh
 source ../../lib/common_functions.sh
 
 get_script_directories
 
-log_installation_start "Eat Gas"
+log_installation_start "ETHGas"
 
 # Check system requirements
 check_system_requirements 8 500
 
-# Create Eat Gas directory
-EAT_GAS_DIR="$HOME/eat-gas"
-rm -rf "$EAT_GAS_DIR"
-ensure_directory "$EAT_GAS_DIR"
+# Create ETHGas directory
+ETHGAS_DIR="$HOME/ethgas"
+rm -rf "$ETHGAS_DIR"
+ensure_directory "$ETHGAS_DIR"
 
-cd "$EAT_GAS_DIR" || exit
+cd "$ETHGAS_DIR" || exit
 
 # Clone repository (URL TBD)
-log_info "Cloning Eat Gas repository..."
-# git clone https://github.com/.../eat-gas .
+log_info "Cloning ETHGas repository..."
+# git clone https://github.com/.../ethgas .
 
 # Build (method TBD)
-log_info "Building Eat Gas..."
+log_info "Building ETHGas..."
 # make build
 
 # Create systemd service
-EXEC_START="$EAT_GAS_DIR/eat-gas \
+EXEC_START="$ETHGAS_DIR/ethgas \
   -mainnet \
   -optimization-mode $GAS_OPTIMIZATION_MODE \
   -gas-analysis-enabled $GAS_ANALYSIS_ENABLED \
   -fee-optimization $FEE_OPTIMIZATION \
   -block-space-target $BLOCK_SPACE_TARGET \
-  -addr $EAT_GAS_HOST:$EAT_GAS_PORT \
+  -addr $ETHGAS_HOST:$ETHGAS_PORT \
   -loglevel info"
 
-create_systemd_service "eat-gas" "Eat Gas Service" "$EXEC_START" "$(whoami)" "always" "600" "5" "300"
+create_systemd_service "ethgas" "ETHGas Service" "$EXEC_START" "$(whoami)" "always" "600" "5" "300"
 
-enable_and_start_systemd_service "eat-gas"
+enable_and_start_systemd_service "ethgas"
 
-log_installation_complete "Eat Gas" "eat-gas" "" "$EAT_GAS_DIR"
+log_installation_complete "ETHGas" "ethgas" "" "$ETHGAS_DIR"
 ```
 
 #### Configuration Variables (Planned)
 
 **Add to `exports.sh`**:
 ```bash
-# Eat Gas configuration
-export EAT_GAS_HOST='127.0.0.1'
-export EAT_GAS_PORT=18552
+# ETHGas configuration
+export ETHGAS_HOST='127.0.0.1'
+export ETHGAS_PORT=18552
 export GAS_OPTIMIZATION_MODE='balanced'  # 'aggressive', 'balanced', 'conservative'
 export GAS_ANALYSIS_ENABLED=true
 export FEE_OPTIMIZATION=true
@@ -337,7 +337,7 @@ export BLOCK_SPACE_TARGET=0.95  # Target 95% block space utilization
 
 #### Client Integration (Planned)
 
-Eat Gas may integrate differently, potentially as middleware:
+ETHGas may integrate differently, potentially as middleware:
 
 **Option 1: Direct Integration**
 ```yaml
@@ -469,7 +469,7 @@ Use one MEV technology at a time:
 ```bash
 # Use MEV Boost only
 sudo systemctl start mev
-sudo systemctl stop commit-boost eat-gas profit
+sudo systemctl stop commit-boost ethgas profit
 ```
 
 ### Pattern 2: Sequential Fallback
@@ -491,11 +491,11 @@ Query all technologies, select best:
 # Query all technologies simultaneously
 mev-boost-bid=$(query-mev-boost)
 commit-boost-bid=$(query-commit-boost)
-eat-gas-bid=$(query-eat-gas)
+ethgas-bid=$(query-ethgas)
 profit-bid=$(query-profit)
 
 # Select highest bid
-best-bid=$(max $mev-boost-bid $commit-boost-bid $eat-gas-bid $profit-bid)
+best-bid=$(max $mev-boost-bid $commit-boost-bid $ethgas-bid $profit-bid)
 ```
 
 ### Pattern 4: Hybrid Approach
@@ -506,9 +506,9 @@ Use different technologies for different scenarios:
 # High-value blocks: Commit Boost
 if block-value > threshold; then
     use-commit-boost
-# Gas optimization: Eat Gas
+# Gas optimization: ETHGas
 elif gas-optimization-needed; then
-    use-eat-gas
+    use-ethgas
 # Standard blocks: MEV Boost
 else
     use-mev-boost
@@ -579,12 +579,12 @@ curl -X POST http://127.0.0.1:18551/reveal \
 curl http://127.0.0.1:18551/verify/0x...
 ```
 
-### Eat Gas Testing (Planned)
+### ETHGas Testing (Planned)
 
 **1. Service Status**:
 ```bash
-sudo systemctl status eat-gas
-journalctl -u eat-gas -n 50
+sudo systemctl status ethgas
+journalctl -u ethgas -n 50
 ```
 
 **2. Gas Analysis Test**:
@@ -685,7 +685,7 @@ journalctl -u mev -f | grep -i bid
 - Check nonce generation
 - Validate commitment verification
 
-### Eat Gas Issues (Planned)
+### ETHGas Issues (Planned)
 
 **Problem**: Optimization not working
 - Check gas analysis enabled
@@ -741,7 +741,7 @@ journalctl -u mev -f | grep -i bid
 
 ## Conclusion
 
-This implementation guide provides practical steps for integrating MEV technologies. MEV Boost is production-ready, while Commit Boost, Eat Gas, and Profit require further research and development before implementation.
+This implementation guide provides practical steps for integrating MEV technologies. MEV Boost is production-ready, while Commit Boost, ETHGas, and Profit require further research and development before implementation.
 
 **Next Steps**:
 1. Monitor development progress

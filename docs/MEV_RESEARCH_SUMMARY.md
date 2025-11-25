@@ -2,14 +2,14 @@
 
 ## Overview
 
-This document provides a concise summary of research conducted on MEV Boost, Commit Boost, Eat Gas, and Profit technologies for the Ethereum node setup project.
+This document provides a concise summary of research conducted on MEV Boost, Commit Boost, ETHGas, and Profit technologies for the Ethereum node setup project.
 
 ---
 
 ## Research Objectives
 
 1. **Understand Current State**: Analyze MEV Boost implementation and usage
-2. **Research New Technologies**: Investigate Commit Boost, Eat Gas, and Profit
+2. **Research New Technologies**: Investigate Commit Boost, ETHGas, and Profit
 3. **Compare Technologies**: Create comprehensive comparison documents
 4. **Plan Integration**: Develop implementation strategies
 5. **Create Artifacts**: Produce documentation for future implementation
@@ -63,7 +63,7 @@ This document provides a concise summary of research conducted on MEV Boost, Com
 - Identify commit network providers
 - Review related EIPs and research papers
 
-### Eat Gas
+### ETHGas
 
 **Status**: 🔬 **Research Phase - Limited Information Available**
 
@@ -153,7 +153,7 @@ This document provides a concise summary of research conducted on MEV Boost, Com
 **Contents**:
 - MEV Boost implementation (current)
 - Commit Boost implementation (planned)
-- Eat Gas implementation (planned)
+- ETHGas implementation (planned)
 - Profit implementation (planned)
 - Integration patterns
 - Testing and validation
@@ -204,7 +204,7 @@ This document provides a concise summary of research conducted on MEV Boost, Com
    - ❌ Commit network providers unknown
    - ❌ Implementation details unclear
 
-2. **Eat Gas**:
+2. **ETHGas**:
    - ❌ Official documentation not found
    - ❌ Optimization algorithms unknown
    - ❌ Implementation details unclear
@@ -257,7 +257,7 @@ This document provides a concise summary of research conducted on MEV Boost, Com
    - Create integration guide
    - Test implementation
 
-2. **When Eat Gas Becomes Available**:
+2. **When ETHGas Becomes Available**:
    - Review official documentation
    - Analyze optimization algorithms
    - Develop installation script
@@ -291,7 +291,7 @@ This document provides a concise summary of research conducted on MEV Boost, Com
 
 **Strategy**:
 1. **Commit Boost**: High priority for privacy benefits
-2. **Eat Gas**: Medium priority for cost optimization
+2. **ETHGas**: Medium priority for cost optimization
 3. **Profit**: Medium priority for profit maximization
 
 **Approach**:
@@ -320,7 +320,7 @@ This document provides a concise summary of research conducted on MEV Boost, Com
 1. **MEV Boost** is the current industry standard
 2. **New technologies** are emerging to address specific needs
 3. **Privacy** is a key focus (Commit Boost)
-4. **Optimization** is important (Eat Gas)
+4. **Optimization** is important (ETHGas)
 5. **Profit distribution** is evolving (Profit)
 
 ### Integration Strategy
@@ -343,7 +343,7 @@ This document provides a concise summary of research conducted on MEV Boost, Com
 
 ## Conclusion
 
-This research has created comprehensive documentation comparing MEV Boost, Commit Boost, Eat Gas, and Profit technologies. While MEV Boost is production-ready, the other technologies represent promising directions for enhanced MEV extraction.
+This research has created comprehensive documentation comparing MEV Boost, Commit Boost, ETHGas, and Profit technologies. While MEV Boost is production-ready, the other technologies represent promising directions for enhanced MEV extraction.
 
 **Key Achievements**:
 - ✅ Comprehensive comparison documentation
@@ -355,7 +355,7 @@ This research has created comprehensive documentation comparing MEV Boost, Commi
 **Current Status**:
 - ✅ MEV Boost: Production-ready and integrated
 - 🔬 Commit Boost: Research phase - monitoring
-- 🔬 Eat Gas: Research phase - monitoring
+- 🔬 ETHGas: Research phase - monitoring
 - 🔬 Profit: Research phase - monitoring
 
 **Next Phase**:

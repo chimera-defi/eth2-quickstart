@@ -6,7 +6,7 @@
 |------------|--------|-----------------|--------------|
 | **MEV Boost** | ✅ Active | ✅ Yes | ✅ Comprehensive |
 | **Commit Boost** | 🔬 Research | ❌ No | ❓ Unknown |
-| **Eat Gas** | 🔬 Research | ❌ No | ❓ Unknown |
+| **ETHGas** | 🔬 Research | ❌ No | ❓ Unknown |
 | **Profit** | 🔬 Research | ❌ No | ❓ Unknown |
 
 ---
@@ -20,7 +20,7 @@
 → **Monitor Commit Boost** (when available)
 
 ### Need Gas Optimization?
-→ **Monitor Eat Gas** (when available)
+→ **Monitor ETHGas** (when available)
 
 ### Need Profit Sharing?
 → **Monitor Profit** (when available)
@@ -76,7 +76,7 @@ curl http://127.0.0.1:18550/eth/v1/builder/status
 
 ### Core Capabilities
 
-| Feature | MEV Boost | Commit Boost | Eat Gas | Profit |
+| Feature | MEV Boost | Commit Boost | ETHGas | Profit |
 |---------|-----------|--------------|---------|--------|
 | Block Proposals | ✅ | ✅ | ✅ | ✅ |
 | Multiple Relays | ✅ | ❓ | ❓ | ❓ |
@@ -92,7 +92,7 @@ curl http://127.0.0.1:18550/eth/v1/builder/status
 |------------|--------------|--------------|
 | MEV Boost | 18550 | `mev` |
 | Commit Boost | 18551 | `commit-boost` |
-| Eat Gas | 18552 | `eat-gas` |
+| ETHGas | 18552 | `ethgas` |
 | Profit | 18553 | `profit` |
 
 ---
@@ -119,10 +119,10 @@ COMMIT_TIMEOUT=2000
 REVEAL_TIMEOUT=3000
 ```
 
-### Eat Gas (Planned)
+### ETHGas (Planned)
 ```bash
-EAT_GAS_HOST='127.0.0.1'
-EAT_GAS_PORT=18552
+ETHGAS_HOST='127.0.0.1'
+ETHGAS_PORT=18552
 GAS_OPTIMIZATION_MODE='balanced'
 GAS_ANALYSIS_ENABLED=true
 FEE_OPTIMIZATION=true

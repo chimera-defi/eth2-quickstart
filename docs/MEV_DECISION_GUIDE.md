@@ -6,7 +6,7 @@
 |------------|--------|----------|-------------------|-----------------|
 | **MEV Boost** | ✅ Active | Production validators | Low | ✅ Yes |
 | **Commit Boost** | 🔬 Research | Privacy-focused MEV | Medium-High | ❌ No |
-| **Eat Gas** | 🔬 Research | Gas optimization | Medium | ❌ No |
+| **ETHGas** | 🔬 Research | Gas optimization | Medium | ❌ No |
 | **Profit** | 🔬 Research | Profit maximization | Medium | ❌ No |
 
 ---
@@ -25,7 +25,7 @@
 
 ❌ **Don't use MEV Boost if**:
 - You need enhanced privacy features (consider Commit Boost)
-- You need advanced gas optimization (consider Eat Gas)
+- You need advanced gas optimization (consider ETHGas)
 - You need custom profit-sharing (consider Profit)
 
 ### When to Use Commit Boost
@@ -43,16 +43,16 @@
 - You don't need privacy features
 - Documentation is not yet available
 
-### When to Use Eat Gas
+### When to Use ETHGas
 
-✅ **Use Eat Gas if** (when available):
+✅ **Use ETHGas if** (when available):
 - You want to optimize gas usage
 - You need to maximize fee extraction per gas unit
 - You want to reduce validator operational costs
 - You need EIP-1559 optimization
 - You're focused on block space efficiency
 
-❌ **Don't use Eat Gas if**:
+❌ **Don't use ETHGas if**:
 - You need immediate production deployment
 - You don't need gas optimization
 - You want standard MEV extraction
@@ -79,7 +79,7 @@
 
 ### Core Features
 
-| Feature | MEV Boost | Commit Boost | Eat Gas | Profit |
+| Feature | MEV Boost | Commit Boost | ETHGas | Profit |
 |---------|-----------|--------------|---------|--------|
 | **Block Proposal** | ✅ | ✅ | ✅ | ✅ |
 | **Relay Support** | ✅ Multiple | ❓ Unknown | ❓ Unknown | ❓ Unknown |
@@ -90,7 +90,7 @@
 
 ### Advanced Features
 
-| Feature | MEV Boost | Commit Boost | Eat Gas | Profit |
+| Feature | MEV Boost | Commit Boost | ETHGas | Profit |
 |---------|-----------|--------------|---------|--------|
 | **Commit-Reveal** | ❌ | ✅ | ❌ | ❌ |
 | **Privacy Enhancement** | ⚠️ Basic | ✅ Enhanced | ⚠️ Basic | ⚠️ Basic |
@@ -104,7 +104,7 @@
 
 ### Technical Features
 
-| Feature | MEV Boost | Commit Boost | Eat Gas | Profit |
+| Feature | MEV Boost | Commit Boost | ETHGas | Profit |
 |---------|-----------|--------------|---------|--------|
 | **Open Source** | ✅ Yes | ❓ Unknown | ❓ Unknown | ❓ Unknown |
 | **Documentation** | ✅ Comprehensive | ❓ Unknown | ❓ Unknown | ❓ Unknown |
@@ -115,7 +115,7 @@
 
 ### Performance Features
 
-| Feature | MEV Boost | Commit Boost | Eat Gas | Profit |
+| Feature | MEV Boost | Commit Boost | ETHGas | Profit |
 |---------|-----------|--------------|---------|--------|
 | **Low Latency** | ✅ ~400-900ms | ⚠️ ~650-1150ms | ✅ ~300-700ms | ✅ ~400-900ms |
 | **Low Resource Usage** | ✅ Yes | ⚠️ Medium | ⚠️ Medium | ⚠️ Medium |
@@ -124,7 +124,7 @@
 
 ### Security Features
 
-| Feature | MEV Boost | Commit Boost | Eat Gas | Profit |
+| Feature | MEV Boost | Commit Boost | ETHGas | Profit |
 |---------|-----------|--------------|---------|--------|
 | **Multiple Relays** | ✅ Yes | ❓ Unknown | ❓ Unknown | ❓ Unknown |
 | **Censorship Resistance** | ✅ High | ✅ High | ✅ High | ⚠️ Medium-High |
@@ -175,7 +175,7 @@
 - Cost reduction
 - Fee maximization
 
-**Recommendation**: **Eat Gas** (when available)
+**Recommendation**: **ETHGas** (when available)
 
 **Rationale**:
 - ✅ Gas optimization
@@ -210,7 +210,7 @@
 **Rationale**:
 - Use MEV Boost as baseline
 - Experiment with Commit Boost for privacy
-- Test Eat Gas for optimization
+- Test ETHGas for optimization
 - Evaluate Profit for distribution
 
 ---
@@ -241,7 +241,7 @@
 
 **Time Estimate**: 4-8 hours (when available)
 
-### Eat Gas
+### ETHGas
 
 **Complexity**: ⭐⭐ Medium
 
@@ -299,7 +299,7 @@
 - Monitor development
 - Security audits
 
-### Eat Gas
+### ETHGas
 
 **Risk Level**: 🟡 Medium
 
@@ -365,7 +365,7 @@
 
 **ROI**: ⚠️ Medium (when available)
 
-### Eat Gas
+### ETHGas
 
 **Costs**:
 - Medium integration effort
@@ -411,11 +411,11 @@
 
 **Timeline**: 2-4 weeks (when available)
 
-### From MEV Boost to Eat Gas
+### From MEV Boost to ETHGas
 
 **Steps**:
-1. Research Eat Gas specifications
-2. Set up Eat Gas in parallel
+1. Research ETHGas specifications
+2. Set up ETHGas in parallel
 3. Test gas optimization
 4. Compare results with MEV Boost
 5. Gradually migrate if beneficial
@@ -440,7 +440,7 @@
 **Steps**:
 1. Keep MEV Boost as baseline
 2. Add Commit Boost for privacy
-3. Add Eat Gas for optimization
+3. Add ETHGas for optimization
 4. Add Profit for distribution
 5. Use best technology per scenario
 6. Monitor and optimize
@@ -465,7 +465,7 @@
 
 **Priority Order**:
 1. **Commit Boost** - Privacy benefits
-2. **Eat Gas** - Cost optimization
+2. **ETHGas** - Cost optimization
 3. **Profit** - Profit maximization
 
 **When to Evaluate**:
@@ -489,12 +489,12 @@
 
 ## Conclusion
 
-This decision guide provides a framework for choosing the right MEV technology for your use case. MEV Boost is the current production standard, while Commit Boost, Eat Gas, and Profit represent promising future directions.
+This decision guide provides a framework for choosing the right MEV technology for your use case. MEV Boost is the current production standard, while Commit Boost, ETHGas, and Profit represent promising future directions.
 
 **Key Takeaways**:
 1. **MEV Boost** is the safe choice for production
 2. **Commit Boost** offers privacy benefits (when available)
-3. **Eat Gas** provides cost optimization (when available)
+3. **ETHGas** provides cost optimization (when available)
 4. **Profit** enables profit sharing (when available)
 5. **Hybrid approaches** may offer the best of all worlds
 
