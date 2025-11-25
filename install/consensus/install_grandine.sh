@@ -17,17 +17,17 @@ log_installation_start "Grandine"
 # Check system requirements
 check_system_requirements 16 1000
 
-# Install Rust and dependencies
+# Source Rust environment (installed centrally via install_dependencies.sh)
+[[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+
+# Verify Rust is available
 if ! command -v cargo &> /dev/null; then
-    log_info "Installing Rust..."
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    source ~/.cargo/env
-else
-    log_info "Rust already installed: $(rustc --version)"
+    log_error "Rust/Cargo not found. Please run install_dependencies.sh first."
+    log_error "Or run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
+    exit 1
 fi
 
-# Install dependencies
-install_dependencies wget curl git build-essential pkg-config libssl-dev
+log_info "Using Rust: $(rustc --version)"
 
 # Setup firewall rules for Grandine
 setup_firewall_rules 9000 5052

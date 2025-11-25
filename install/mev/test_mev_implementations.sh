@@ -230,13 +230,95 @@ fi
 echo ""
 
 # ============================================================================
+# ETHGas Tests
+# ============================================================================
+
+echo -e "${BLUE}=== ETHGas Tests ===${NC}"
+echo ""
+
+# Test 12: Check if ETHGas is installed
+if [[ -d "$HOME/ethgas" ]]; then
+    record_test "ETHGas: Installation Directory" "PASS" "Directory exists at $HOME/ethgas"
+else
+    record_test "ETHGas: Installation Directory" "SKIP" "Not installed"
+fi
+
+# Test 13: Check ETHGas binary
+if [[ -f "$HOME/ethgas/target/release/ethgas_commit" ]]; then
+    record_test "ETHGas: Binary Exists" "PASS" "Binary found"
+    
+    if [[ -x "$HOME/ethgas/target/release/ethgas_commit" ]]; then
+        record_test "ETHGas: Binary Executable" "PASS" "Binary is executable"
+    else
+        record_test "ETHGas: Binary Executable" "FAIL" "Binary not executable"
+    fi
+else
+    record_test "ETHGas: Binary Exists" "SKIP" "Not installed"
+fi
+
+# Test 14: Check ETHGas configuration
+if [[ -f "$HOME/ethgas/config/ethgas.toml" ]]; then
+    record_test "ETHGas: Configuration File" "PASS" "Config file exists"
+    
+    # Validate TOML syntax (basic check)
+    if grep -q "\[ethgas\]" "$HOME/ethgas/config/ethgas.toml"; then
+        record_test "ETHGas: Config Valid" "PASS" "Config has ETHGas section"
+    else
+        record_test "ETHGas: Config Valid" "FAIL" "Config missing ETHGas section"
+    fi
+else
+    record_test "ETHGas: Configuration File" "SKIP" "Not installed"
+fi
+
+# Test 15: Check ETHGas service
+if systemctl list-unit-files | grep -q "ethgas.service"; then
+    record_test "ETHGas: Service File" "PASS" "Service file exists"
+    
+    # Check service status
+    if systemctl is-active --quiet ethgas; then
+        record_test "ETHGas: Service Running" "PASS" "Service is active"
+    else
+        record_test "ETHGas: Service Running" "SKIP" "Service not active"
+    fi
+    
+    # Check if service is enabled
+    if systemctl is-enabled --quiet ethgas; then
+        record_test "ETHGas: Service Enabled" "PASS" "Service is enabled"
+    else
+        record_test "ETHGas: Service Enabled" "SKIP" "Service not enabled"
+    fi
+else
+    record_test "ETHGas: Service File" "SKIP" "Not installed"
+fi
+
+# Test 16: Check ETHGas dependency on Commit-Boost
+if [[ -d "$HOME/ethgas" ]]; then
+    if systemctl is-active --quiet commit-boost-pbs && systemctl is-active --quiet commit-boost-signer; then
+        record_test "ETHGas: Commit-Boost Dependency" "PASS" "Required Commit-Boost services are running"
+    else
+        record_test "ETHGas: Commit-Boost Dependency" "FAIL" "ETHGas requires both Commit-Boost services to be running"
+    fi
+fi
+
+# Test 17: Check Rust availability (needed for ETHGas build)
+if [[ -d "$HOME/ethgas" ]]; then
+    if command -v cargo &> /dev/null; then
+        record_test "ETHGas: Rust Available" "PASS" "Rust/Cargo is available"
+    else
+        record_test "ETHGas: Rust Available" "FAIL" "Rust/Cargo not found (required for building)"
+    fi
+fi
+
+echo ""
+
+# ============================================================================
 # Configuration Tests
 # ============================================================================
 
 echo -e "${BLUE}=== Configuration Tests ===${NC}"
 echo ""
 
-# Test 12: Check exports.sh configuration
+# Test 18: Check exports.sh configuration
 if [[ -f "$SCRIPT_DIR/exports.sh" ]]; then
     record_test "Config: exports.sh Exists" "PASS" "Configuration file exists"
     
@@ -253,11 +335,18 @@ if [[ -f "$SCRIPT_DIR/exports.sh" ]]; then
     else
         record_test "Config: Commit-Boost Variables" "FAIL" "Commit-Boost variables missing"
     fi
+    
+    # Check ETHGas variables
+    if grep -q "ETHGAS_PORT" "$SCRIPT_DIR/exports.sh"; then
+        record_test "Config: ETHGas Variables" "PASS" "ETHGas variables configured"
+    else
+        record_test "Config: ETHGas Variables" "FAIL" "ETHGas variables missing"
+    fi
 else
     record_test "Config: exports.sh Exists" "FAIL" "Configuration file not found"
 fi
 
-# Test 13: Check JWT secret
+# Test 19: Check JWT secret
 if [[ -f "$HOME/secrets/jwt.hex" ]]; then
     record_test "Config: JWT Secret" "PASS" "JWT secret exists"
     
@@ -308,6 +397,8 @@ check_port_in_use "$MEV_PORT" "MEV-Boost"
 check_port_in_use "$COMMIT_BOOST_PORT" "Commit-Boost PBS"
 check_port_in_use "$((COMMIT_BOOST_PORT + 1))" "Commit-Boost Signer"
 check_port_in_use "$((COMMIT_BOOST_PORT + 2))" "Commit-Boost Metrics"
+check_port_in_use "$ETHGAS_PORT" "ETHGas"
+check_port_in_use "$ETHGAS_METRICS_PORT" "ETHGas Metrics"
 
 echo ""
 
@@ -342,9 +433,10 @@ echo ""
 echo -e "${BLUE}=== Mutual Exclusivity Check ===${NC}"
 echo ""
 
-# Test 16: Check that only one MEV solution is running
+# Test 20: Check that only one base MEV solution is running
 mev_boost_running=false
 commit_boost_running=false
+ethgas_running=false
 
 if systemctl is-active --quiet mev; then
     mev_boost_running=true
@@ -354,14 +446,29 @@ if systemctl is-active --quiet commit-boost-pbs; then
     commit_boost_running=true
 fi
 
+if systemctl is-active --quiet ethgas; then
+    ethgas_running=true
+fi
+
 if $mev_boost_running && $commit_boost_running; then
     record_test "MEV: Mutual Exclusivity" "FAIL" "Both MEV-Boost and Commit-Boost are running! Only one should be active."
 elif $mev_boost_running; then
     record_test "MEV: Mutual Exclusivity" "PASS" "Only MEV-Boost is running"
 elif $commit_boost_running; then
-    record_test "MEV: Mutual Exclusivity" "PASS" "Only Commit-Boost is running"
+    if $ethgas_running; then
+        record_test "MEV: Mutual Exclusivity" "PASS" "Commit-Boost + ETHGas running (correct configuration)"
+    else
+        record_test "MEV: Mutual Exclusivity" "PASS" "Only Commit-Boost is running"
+    fi
 else
     record_test "MEV: Mutual Exclusivity" "SKIP" "No MEV solution is currently running"
+fi
+
+# Test 21: If ETHGas is running, verify Commit-Boost is also running
+if $ethgas_running && ! $commit_boost_running; then
+    record_test "MEV: ETHGas Dependency" "FAIL" "ETHGas is running but Commit-Boost is not (dependency violation)"
+elif $ethgas_running && $commit_boost_running; then
+    record_test "MEV: ETHGas Dependency" "PASS" "ETHGas running with required Commit-Boost dependency"
 fi
 
 echo ""
