@@ -99,10 +99,47 @@ Additionally, by using a VPS, they can more easily offer a censorship resistant 
 
 3. **Geth sync timing**: Benchmark is 1-3 days running in the background
 
-4. **MEV-Boost testing**: Confirm MEV-Boost is configured and working correctly
-   - Testing guide: https://github.com/flashbots/mev-boost/wiki/Testing
-   - Check validator registration: https://boost.flashbots.net/mev-boost-status-updates/query-validator-registration-status-now
-   - Note: Need 0x prefix on validator pub key
+4. **MEV Setup**: Configure MEV solution for validator rewards (see [MEV Solutions](#mev-solutions) below)
+
+## MEV Solutions
+
+This project supports three MEV (Maximal Extractable Value) solutions. **Choose ONE base solution** (MEV-Boost OR Commit-Boost):
+
+| Solution | Type | Best For | Install Script |
+|----------|------|----------|----------------|
+| **MEV-Boost** | Standard | Most users (stable, proven) | `install_mev_boost.sh` |
+| **Commit-Boost** | Advanced | Preconfirmations, modular features | `install_commit_boost.sh` |
+| **ETHGas** | Add-on | Preconfirmation revenue (requires Commit-Boost) | `install_ethgas.sh` |
+
+⚠️ **IMPORTANT**: MEV-Boost and Commit-Boost are **mutually exclusive** - choose ONE, not both!
+
+### Quick MEV Setup
+
+**Option A - Standard (RECOMMENDED):**
+```bash
+cd install/mev
+./install_mev_boost.sh
+sudo systemctl start mev
+```
+
+**Option B - Advanced (with preconfirmations):**
+```bash
+cd install/mev
+./install_commit_boost.sh
+./install_ethgas.sh  # Optional
+sudo systemctl start commit-boost-pbs commit-boost-signer
+sudo systemctl start ethgas  # If installed
+```
+
+### MEV Port Reference
+| Service | Port |
+|---------|------|
+| MEV-Boost | 18550 |
+| Commit-Boost PBS | 18551 |
+| Commit-Boost Signer | 18552 |
+| ETHGas | 18552 |
+
+For detailed MEV setup, see [docs/MEV_GUIDE.md](docs/MEV_GUIDE.md).
 
 ## Available Ethereum Clients
 
@@ -366,25 +403,25 @@ Additionally, the beacon checkpoint states have been made available by Sharedsta
 ## Additional Documentation
 
 ### Core Documentation
-- Scripts reference: docs/SCRIPTS.md
-- Setup workflow: docs/WORKFLOW.md
-- Terminology: docs/GLOSSARY.md
-- Security guide: docs/SECURITY_GUIDE.md
+- Scripts reference: [docs/SCRIPTS.md](docs/SCRIPTS.md)
+- Setup workflow: [docs/WORKFLOW.md](docs/WORKFLOW.md)
+- Terminology: [docs/GLOSSARY.md](docs/GLOSSARY.md)
+- Security guide: [docs/SECURITY_GUIDE.md](docs/SECURITY_GUIDE.md)
+
+### MEV Documentation
+- **MEV Guide**: [docs/MEV_GUIDE.md](docs/MEV_GUIDE.md) - Complete MEV setup and configuration
+- **MEV Quick Reference**: [docs/MEV_QUICK_REFERENCE.md](docs/MEV_QUICK_REFERENCE.md) - Quick commands and ports
 
 ### Configuration & Development
-- Configuration guide: docs/CONFIGURATION_GUIDE.md
-- Shell scripting best practices: docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md
+- Configuration guide: [docs/CONFIGURATION_GUIDE.md](docs/CONFIGURATION_GUIDE.md)
+- Shell scripting best practices: [docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md](docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md)
 
 ### Testing & Validation
-- Shell script test results: docs/SHELL_SCRIPT_TEST_RESULTS.md
+- Shell script test results: [docs/SHELL_SCRIPT_TEST_RESULTS.md](docs/SHELL_SCRIPT_TEST_RESULTS.md)
 
 ### Project Management
-- Commit message conventions: docs/COMMIT_MESSAGES.md
-- Development progress: docs/progress.md
-
-### AI Agent Reference
-- **Agent Context**: [docs/AGENT_CONTEXT.md](docs/AGENT_CONTEXT.md) - Complete AI agent reference
-- **Quick Reference**: [AGENT_QUICK_REFERENCE.md](AGENT_QUICK_REFERENCE.md) - Quick access to agent docs
+- Commit message conventions: [docs/COMMIT_MESSAGES.md](docs/COMMIT_MESSAGES.md)
+- Development progress: [docs/progress.md](docs/progress.md)
 ## 📚 **Common Functions Library**
 
 The project includes a comprehensive common functions library (`lib/common_functions.sh`) with 35 centralized functions for:

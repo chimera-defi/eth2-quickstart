@@ -4,46 +4,100 @@
 
 | Technology | Status | Production Ready | Implementation |
 |------------|--------|-----------------|----------------|
-| **MEV Boost** | ✅ Active | ✅ Yes | ✅ Implemented |
-| **Commit Boost** | ✅ Available | ✅ Yes | ❌ Not implemented |
-| **ETHGas** | ✅ Available | ✅ Yes | ❌ Not implemented |
-| **Profit** | 🔬 Research | ❌ No | ❌ Not found |
+| **MEV-Boost** | ✅ Active | ✅ Yes | ✅ **Implemented** |
+| **Commit-Boost** | ✅ Active | ✅ Yes | ✅ **Implemented** |
+| **ETHGas** | ✅ Active | ✅ Yes | ✅ **Implemented** |
+
+⚠️ **IMPORTANT**: MEV-Boost and Commit-Boost are **mutually exclusive** - choose ONE!
 
 ---
 
 ## Quick Decision Guide
 
-**Need Production Solution Now?** → **Use MEV Boost** ✅
+**Most Users (Stable, Production-Proven)** → **MEV-Boost** ✅
 
-**Want Preconfirmations/Advanced Features?** → **Plan Commit Boost + ETHGas** 🔄
-
-**Need Gas Optimization?** → **ETHGas** (requires Commit-Boost)
+**Want Preconfirmations/Advanced Features** → **Commit-Boost** + optional **ETHGas**
 
 ---
 
-## MEV Boost Quick Start
+## Installation
 
-### Installation
+### Option A: MEV-Boost (RECOMMENDED)
 ```bash
-./install/mev/install_mev_boost.sh
+cd install/mev
+./install_mev_boost.sh
 ```
 
-### Configuration (`exports.sh`)
+### Option B: Commit-Boost + ETHGas
 ```bash
-MEV_HOST='127.0.0.1'
-MEV_PORT=18550
-MEV_RELAYS='https://...@boost-relay.flashbots.net,...'
-MIN_BID=0.002
+cd install/mev
+./install_commit_boost.sh
+./install_ethgas.sh  # Optional: requires Commit-Boost
 ```
 
-### Service Management
+---
+
+## Port Reference
+
+| Service | Port | Status |
+|---------|------|--------|
+| MEV-Boost | 18550 | ✅ Active |
+| Commit-Boost PBS | 18551 | ✅ Active |
+| Commit-Boost Signer | 18552 | ✅ Active |
+| Commit-Boost Metrics | 18553 | ✅ Active |
+| ETHGas | 18552 | ✅ Active |
+| ETHGas Metrics | 18553 | ✅ Active |
+
+---
+
+## Service Management
+
+### MEV-Boost
 ```bash
 sudo systemctl start mev
 sudo systemctl status mev
 journalctl -u mev -f
 ```
 
-### Client Integration
+### Commit-Boost
+```bash
+sudo systemctl start commit-boost-pbs commit-boost-signer
+sudo systemctl status commit-boost-pbs commit-boost-signer
+journalctl -u commit-boost-pbs -f
+```
+
+### ETHGas
+```bash
+sudo systemctl start ethgas
+sudo systemctl status ethgas
+journalctl -u ethgas -f
+```
+
+---
+
+## Verification Commands
+
+### MEV-Boost
+```bash
+curl http://127.0.0.1:18550/eth/v1/builder/status
+```
+
+### Commit-Boost
+```bash
+curl http://127.0.0.1:18551/eth/v1/builder/status
+curl http://127.0.0.1:18553/metrics
+```
+
+### ETHGas
+```bash
+curl http://127.0.0.1:18553/metrics
+```
+
+---
+
+## Client Integration
+
+### MEV-Boost (Port 18550)
 - **Prysm**: `http-mev-relay: http://127.0.0.1:18550`
 - **Teku**: `builder-endpoint: "http://127.0.0.1:18550"`
 - **Lighthouse**: `--builder http://127.0.0.1:18550`
@@ -51,34 +105,19 @@ journalctl -u mev -f
 - **Nimbus**: `payload-builder-url = "http://127.0.0.1:18550"`
 - **Grandine**: `builder_endpoint = "http://127.0.0.1:18550"`
 
-### Verification
-```bash
-# Check service
-sudo systemctl status mev
-
-# Check API
-curl http://127.0.0.1:18550/eth/v1/builder/status
-
-# Check validator registration
-# Visit: https://boost.flashbots.net/mev-boost-status-updates/query-validator-registration-status-now
-```
+### Commit-Boost (Port 18551)
+- **Prysm**: `http-mev-relay: http://127.0.0.1:18551`
+- **Teku**: `builder-endpoint: "http://127.0.0.1:18551"`
+- **Lighthouse**: `--builder http://127.0.0.1:18551`
+- **Lodestar**: `builder.urls: ["http://127.0.0.1:18551"]`
+- **Nimbus**: `payload-builder-url = "http://127.0.0.1:18551"`
+- **Grandine**: `builder_endpoint = "http://127.0.0.1:18551"`
 
 ---
 
-## Port Reference
+## Configuration Variables (exports.sh)
 
-| Technology | Default Port | Service Name | Status |
-|------------|--------------|--------------|--------|
-| MEV Boost | 18550 | `mev` | ✅ Active |
-| Commit Boost | 18551 | `commit-boost` | 🔄 Planned |
-| ETHGas | 18552 | `ethgas` | 🔄 Planned |
-| Profit | 18553 | `profit` | ❌ Research |
-
----
-
-## Configuration Variables
-
-### MEV Boost (Current)
+### MEV-Boost
 ```bash
 MEV_HOST='127.0.0.1'
 MEV_PORT=18550
@@ -89,88 +128,63 @@ MEVGETPAYLOADT=4000
 MEVREGVALT=6000
 ```
 
-### Commit Boost (Planned)
+### Commit-Boost
 ```bash
 COMMIT_BOOST_HOST='127.0.0.1'
 COMMIT_BOOST_PORT=18551
-# Additional config TBD
 ```
 
-### ETHGas (Planned)
+### ETHGas
 ```bash
 ETHGAS_HOST='127.0.0.1'
 ETHGAS_PORT=18552
-# Docker Compose deployment
-# Requires Commit-Boost
+ETHGAS_METRICS_PORT=18553
+ETHGAS_NETWORK='mainnet'
+ETHGAS_REGISTRATION_MODE='standard'
+```
+
+---
+
+## Testing
+
+```bash
+cd install/mev
+./test_mev_implementations.sh
 ```
 
 ---
 
 ## Troubleshooting
 
-### MEV Boost Not Starting
+### Service Not Starting
 ```bash
-journalctl -u mev -n 100
-grep MEV exports.sh
-curl https://boost-relay.flashbots.net
+journalctl -u <service_name> -n 100
 ```
 
-### No MEV Blocks
+### Check Ports
 ```bash
-grep MIN_BID exports.sh  # Check if too high
-journalctl -u mev -f | grep -i bid
-curl https://boost-relay.flashbots.net/eth/v1/builder/status
+ss -tuln | grep -E "18550|18551|18552|18553"
 ```
 
-### Validator Not Registered
+### Both Running (Should Not Happen)
 ```bash
-sudo systemctl restart validator
-# Check: https://boost.flashbots.net/mev-boost-status-updates/query-validator-registration-status-now
-```
+# Stop MEV-Boost if using Commit-Boost
+sudo systemctl stop mev && sudo systemctl disable mev
 
----
-
-## Common Commands
-
-### Service Management
-```bash
-# Start
-sudo systemctl start mev
-
-# Stop
-sudo systemctl stop mev
-
-# Restart
-sudo systemctl restart mev
-
-# Status
-sudo systemctl status mev
-
-# Logs
-journalctl -u mev -f
-```
-
-### Testing
-```bash
-# Test registration
-curl -X POST http://127.0.0.1:18550/eth/v1/builder/validators \
-  -H "Content-Type: application/json" \
-  -d @validator-registration.json
-
-# Test header request
-curl http://127.0.0.1:18550/eth/v1/builder/header/{slot}/{parent_hash}/{pubkey}
+# OR stop Commit-Boost if using MEV-Boost
+sudo systemctl stop commit-boost-pbs commit-boost-signer
 ```
 
 ---
 
 ## Useful Links
 
-### MEV Boost
+### MEV-Boost
 - Repository: https://github.com/flashbots/mev-boost
 - Documentation: https://docs.flashbots.net/
 - Validator Check: https://boost.flashbots.net/mev-boost-status-updates/query-validator-registration-status-now
 
-### Commit Boost
+### Commit-Boost
 - Repository: https://github.com/Commit-Boost/commit-boost-client
 - Documentation: https://commit-boost.github.io/commit-boost-client/
 
@@ -178,24 +192,20 @@ curl http://127.0.0.1:18550/eth/v1/builder/header/{slot}/{parent_hash}/{pubkey}
 - Repository: https://github.com/ethgas-developer/ethgas-preconf-commit-boost-module
 - Documentation: https://docs.ethgas.com/
 
-### Related
-- Builder API: Ethereum Builder API specifications
-- PBS: Proposer-Builder Separation
-
 ---
 
 ## Feature Comparison
 
-| Feature | MEV Boost | Commit Boost | ETHGas |
+| Feature | MEV-Boost | Commit-Boost | ETHGas |
 |---------|-----------|--------------|--------|
 | Block Proposals | ✅ | ✅ | ✅ |
-| MEV-Boost Compatible | N/A | ✅ | ✅ (via Commit-Boost) |
+| MEV-Boost Compatible | N/A | ✅ | ✅ |
 | Preconfirmations | ❌ | ✅ | ✅ |
 | Multiple Relays | ✅ | ✅ | ✅ |
 | Production Ready | ✅ | ✅ | ✅ |
-| Implemented Here | ✅ | ❌ | ❌ |
+| **Implemented** | ✅ | ✅ | ✅ |
 
 ---
 
-*Last Updated: [Current Date]*  
-*Version: 2.0*
+*Last Updated: November 2025*  
+*Version: 3.0*
