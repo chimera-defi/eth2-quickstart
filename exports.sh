@@ -112,34 +112,12 @@ export MEVGETPAYLOADT=4000          # Timeout for getPayload (milliseconds)
 export MEVREGVALT=6000              # Timeout for registerValidator (milliseconds)
 
 # ----------------------------------------------------------------------------
-# MEV-Boost Configuration (Default MEV solution)
+# Commit-Boost Configuration (Alternative to MEV-Boost)
 # ----------------------------------------------------------------------------
-# MEV-Boost is the industry-standard middleware connecting validators to block builders
-
-# Commit-Boost Configuration
-# Modular sidecar supporting MEV-Boost relays + additional protocols
+# Commit-Boost is a modular sidecar that replaces MEV-Boost
+# It supports MEV-Boost relays PLUS additional protocols (preconfirmations, inclusion lists)
+# Choose ONE: Either MEV-Boost OR Commit-Boost, not both
 export COMMIT_BOOST_PORT=18551
 export COMMIT_BOOST_HOST='127.0.0.1'
-
-# ETHGas Configuration  
-# Preconfirmation protocol for real-time transaction guarantees
-# REQUIRES: Commit-Boost must be installed and running
-export ETHGAS_PORT=18552
-export ETHGAS_HOST='127.0.0.1'
-export ETHGAS_NETWORK='mainnet'                    # or 'holesky' for testnet
-export ETHGAS_API_ENDPOINT='https://api.ethgas.com'  # ETHGas Exchange API
-export ETHGAS_REGISTRATION_MODE='standard'         # Options: 'standard', 'ssv', 'obol', 'skip'
-export ETHGAS_MIN_PRECONF_VALUE='1000000000000000' # 0.001 ETH in wei
-
-# ETHGas collateral contract addresses
-export ETHGAS_COLLATERAL_CONTRACT_MAINNET='0x3314Fb492a5d205A601f2A0521fAFbD039502Fc3'
-export ETHGAS_COLLATERAL_CONTRACT_HOLESKY='0x104Ef4192a97E0A93aBe8893c8A2d2484DFCBAF1'
-
-# Set active collateral contract based on network
-if [[ "$ETHGAS_NETWORK" == "holesky" ]]; then
-    export ETHGAS_COLLATERAL_CONTRACT="$ETHGAS_COLLATERAL_CONTRACT_HOLESKY"
-else
-    export ETHGAS_COLLATERAL_CONTRACT="$ETHGAS_COLLATERAL_CONTRACT_MAINNET"
-fi
 
 set +o allexport

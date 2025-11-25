@@ -50,14 +50,23 @@ fi
 # MEV Solution Selection
 log_info "=== MEV Solution Selection ==="
 echo
-echo "Choose your MEV solution:"
-echo "1. MEV-Boost (default, stable, widely adopted)"
-echo "2. Commit-Boost (modular, supports MEV-Boost + additional protocols)"
-echo "3. ETHGas (preconfirmations, requires Commit-Boost)"
-echo "4. Skip MEV installation (install later)"
-echo
-read -r -p "Select MEV option (1-4): " mev_choice
-if ! validate_menu_choice "$mev_choice" 4; then
+echo "⚠️  IMPORTANT: These are MUTUALLY EXCLUSIVE - pick ONE:"
+echo ""
+echo "1. MEV-Boost (RECOMMENDED - stable, production-proven)"
+echo "   → Standard MEV extraction via relays"
+echo "   → Battle-tested by thousands of validators"
+echo "   → Simple, reliable architecture"
+echo ""
+echo "2. Commit-Boost (EXPERIMENTAL - for early adopters)"
+echo "   → Replaces MEV-Boost with modular architecture"
+echo "   → MEV-Boost compatible + additional protocols"
+echo "   → Support for preconfirmations, inclusion lists"
+echo "   → Use if you need bleeding-edge MEV features"
+echo ""
+echo "3. Skip MEV installation (install later manually)"
+echo ""
+read -r -p "Select MEV option (1-3): " mev_choice
+if ! validate_menu_choice "$mev_choice" 3; then
     log_warn "Invalid choice. Defaulting to MEV-Boost"
     mev_choice=1
 fi
@@ -67,17 +76,14 @@ MEV_SELECTED="none"
 case "$mev_choice" in
     1)
         MEV_SELECTED="mev-boost"
-        log_info "Selected: MEV-Boost"
+        log_info "Selected: MEV-Boost (recommended)"
         ;;
     2)
         MEV_SELECTED="commit-boost"
-        log_info "Selected: Commit-Boost"
+        log_warn "Selected: Commit-Boost (experimental)"
+        log_warn "This will REPLACE MEV-Boost, not add to it"
         ;;
     3)
-        MEV_SELECTED="ethgas"
-        log_info "Selected: ETHGas (will also install Commit-Boost)"
-        ;;
-    4)
         MEV_SELECTED="none"
         log_info "MEV installation will be skipped"
         ;;
@@ -119,21 +125,8 @@ install_mev_solution() {
                 return 1
             fi
             log_info "✓ Commit-Boost installed successfully"
-            ;;
-        "ethgas")
-            log_info "Installing Commit-Boost (required for ETHGas)..."
-            if ! ./install/mev/install_commit_boost.sh; then
-                log_error "Failed to install Commit-Boost"
-                return 1
-            fi
-            log_info "✓ Commit-Boost installed successfully"
-            
-            log_info "Installing ETHGas..."
-            if ! ./install/mev/install_ethgas.sh; then
-                log_error "Failed to install ETHGas"
-                return 1
-            fi
-            log_info "✓ ETHGas installed successfully"
+            log_warn "Note: Commit-Boost replaces MEV-Boost"
+            log_warn "Update your consensus client config to use port $COMMIT_BOOST_PORT"
             ;;
         "none")
             log_info "Skipping MEV installation as requested"
