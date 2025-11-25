@@ -199,4 +199,179 @@ grep -r "require_root" install/ | wc -l  # Should match expected count
 3. **After Changes** - Run all validation checks and review passes
 4. **Before Committing** - Ensure all rules are satisfied and documentation is updated
 
+## MEV Implementation Guidelines
+
+### Overview
+This project supports TWO mutually exclusive MEV (Maximal Extractable Value) solutions:
+- **MEV-Boost**: Industry-standard relay-based solution (RECOMMENDED)
+- **Commit-Boost**: Modular sidecar that REPLACES MEV-Boost (experimental)
+
+### MEV Implementation Architecture
+
+**Key Principles:**
+1. **Mutual Exclusivity**: Choose ONE - either MEV-Boost OR Commit-Boost, never both
+2. **Binary Installation**: All MEV solutions installed as binaries (NO Docker)
+3. **Consistency**: Follow same pattern as other client installations (git clone → build → systemd)
+4. **Configuration Centralization**: All MEV variables in `exports.sh`
+5. **Clear Guidance**: `run_2.sh` provides interactive MEV selection with recommendations
+
+### MEV Configuration Standards
+
+**Port Allocation:**
+- MEV-Boost: Port 18550
+- Commit-Boost: Port 18551 (PBS), 18552 (Signer), 18553 (Metrics)
+
+**Configuration Variables (exports.sh):**
+```bash
+# Shared MEV settings
+MEV_RELAYS='...'              # Comma-separated relay endpoints
+MIN_BID=0.002                 # Minimum bid for block proposals
+MEVGETHEADERT=950             # Timeout: getHeader (ms)
+MEVGETPAYLOADT=4000           # Timeout: getPayload (ms)
+MEVREGVALT=6000               # Timeout: registerValidator (ms)
+
+# Commit-Boost specific (alternative to MEV-Boost)
+COMMIT_BOOST_PORT=18551
+COMMIT_BOOST_HOST='127.0.0.1'
+```
+
+### MEV Installation Script Patterns
+
+**Required Elements:**
+1. Download pre-built binaries OR build from source (NO Docker)
+2. Extract binaries to installation directory
+3. Firewall rules setup via `setup_firewall_rules()`
+4. JWT secret verification via `ensure_jwt_secret()`
+5. Configuration file generation with proper variable substitution
+6. Systemd service creation via `create_systemd_service()`
+7. Comprehensive status/verification output
+8. Clear warning that solution replaces other MEV solutions (mutually exclusive)
+
+**MEV-Boost Pattern:**
+- Clone GitHub repository
+- Build with `make build`
+- Single binary execution
+- Direct systemd service
+
+**Commit-Boost Pattern:**
+- Download pre-built binaries from GitHub releases
+- Multiple binaries (pbs, signer)
+- TOML configuration format
+- Separate systemd services for each component
+- MEV-Boost relay compatibility
+- Support for additional protocols (preconfirmations, inclusion lists)
+
+### MEV Testing Requirements
+
+**Test Coverage:**
+1. **Installation Tests**: Verify directories, binaries, services
+2. **Configuration Tests**: Validate TOML/YAML/JSON syntax and content
+3. **Service Tests**: Check systemd service status and enablement
+4. **Docker Tests**: Verify container existence and health (for Commit-Boost/ETHGas)
+5. **API Tests**: Test endpoint availability and responses
+6. **Port Tests**: Verify no conflicts and proper bindings
+7. **Firewall Tests**: Ensure UFW rules configured
+8. **Dependency Tests**: Verify JWT secrets, Commit-Boost for ETHGas
+
+**Testing Script Pattern:**
+```bash
+record_test() {
+    local test_name="$1"
+    local result="$2"  # PASS, FAIL, SKIP
+    local details="$3"
+    # Track results and display formatted output
+}
+```
+
+### MEV Integration with Consensus Clients
+
+**Configuration Updates:**
+All consensus client base configs include MEV builder endpoint variables:
+- Prysm: `http-mev-relay: http://$MEV_HOST:$MEV_PORT`
+- Teku: `builder-endpoint: "http://$MEV_HOST:$MEV_PORT"`
+- Lighthouse: CLI flag `--builder http://$MEV_HOST:$MEV_PORT`
+- Lodestar: `builder.urls: ["http://$MEV_HOST:$MEV_PORT"]`
+- Nimbus: `payload-builder-url = "http://$MEV_HOST:$MEV_PORT"`
+- Grandine: `builder_endpoint = "http://$MEV_HOST:$MEV_PORT"`
+
+**Builder Enablement:**
+- Default: Builder disabled (`enable-builder: false` or equivalent)
+- Users must manually enable after MEV solution is running
+- Requires validator registration with fee recipient
+
+### MEV Selection Pattern (run_2.sh)
+
+**Interactive Selection:**
+```bash
+# Present MEV options with clear guidance
+1. MEV-Boost (RECOMMENDED - stable, production-proven)
+2. Commit-Boost (EXPERIMENTAL - for early adopters)
+3. Skip (install later)
+
+# IMPORTANT: Clearly state these are MUTUALLY EXCLUSIVE
+# Provide descriptions of what each does
+# Recommend MEV-Boost for most users
+# Create install_mev_solution() function
+# Provide clear user feedback and warnings
+```
+
+### MEV Documentation Standards
+
+**Required Documentation Elements:**
+1. **Overview**: What the MEV solution does and key features
+2. **Installation**: Step-by-step installation process
+3. **Configuration**: All configuration options and variables
+4. **Service Management**: Start, stop, status, logs commands
+5. **Verification**: How to verify the solution is working
+6. **Integration**: How to integrate with consensus clients
+7. **Troubleshooting**: Common issues and solutions
+8. **Resources**: Links to official docs, repos, community
+
+### MEV Security Considerations
+
+**Security Best Practices:**
+1. **JWT Authentication**: Always use JWT secrets for authenticated connections
+2. **Firewall Rules**: Configure UFW for all MEV ports
+3. **Local Binding**: Bind to 127.0.0.1 by default (not 0.0.0.0)
+4. **Service Isolation**: Run services as non-root user
+5. **Docker Security**: Use proper volume mounts and network isolation
+6. **Credential Management**: Store sensitive data in `$HOME/secrets/`
+7. **Collateral Monitoring**: For ETHGas, monitor collateral contract balances
+
+### MEV Implementation Checklist
+
+When implementing new MEV solutions:
+- [ ] Create installation script in `install/mev/` following binary pattern
+- [ ] Download pre-built binaries OR build from source (NO Docker)
+- [ ] Add configuration variables to `exports.sh`
+- [ ] Update `run_2.sh` with new MEV option
+- [ ] Add clear warning that solutions are mutually exclusive
+- [ ] Update test script to include new solution
+- [ ] Update consensus client configurations (if needed)
+- [ ] Add firewall rules via `setup_firewall_rules()`
+- [ ] Ensure JWT secret handling via `ensure_jwt_secret()`
+- [ ] Create systemd service via `create_systemd_service()`
+- [ ] Document in MEV guides (`docs/MEV_*.md`)
+- [ ] Perform 3-pass review (functionality, architecture, quality)
+- [ ] Test integration with all consensus clients
+- [ ] Verify NO Docker dependencies (maintain consistency)
+- [ ] Include comprehensive status output and verification steps
+- [ ] Provide recommendation guidance for users
+
+### Lessons Learned from MEV Implementation
+
+**Key Insights:**
+1. **Consistency First**: NEVER introduce Docker if the project doesn't use it elsewhere
+2. **Binary Installation**: Always check for pre-built binaries before considering Docker
+3. **Mutual Exclusivity**: Make it crystal clear when solutions are mutually exclusive
+4. **Recommendation Guidance**: Always recommend the stable, proven option (MEV-Boost)
+5. **Port Management**: Reserve sequential ports for multi-component solutions
+6. **Service Dependencies**: Use systemd Requires/After for service dependencies
+7. **Testing Granularity**: Test at multiple levels (file, service, binary, API, integration)
+8. **User Guidance**: Provide clear next steps, warnings, and verification commands
+9. **Pattern Matching**: Follow existing installation patterns (git clone → build OR download → extract)
+10. **Simplicity**: Remove experimental/niche features that break project consistency
+11. **Configuration Clarity**: Use TOML for Rust, YAML for Java, maintain variable substitution
+12. **Backward Compatibility**: Ensure new MEV options don't break existing MEV-Boost setups
+
 This comprehensive rule set ensures consistent, maintainable, and secure code across the entire Ethereum node setup project.

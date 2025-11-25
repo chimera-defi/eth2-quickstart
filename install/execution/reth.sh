@@ -19,10 +19,17 @@ log_installation_start "Reth"
 # Check system requirements
 check_system_requirements 16 2000
 
-# Rust is installed centrally via install_dependencies.sh
-# Source Rust environment if available
+# Source Rust environment (installed centrally via install_dependencies.sh)
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 
+# Verify Rust is available
+if ! command -v cargo &> /dev/null; then
+    log_error "Rust/Cargo not found. Please run install_dependencies.sh first."
+    log_error "Or run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
+    exit 1
+fi
+
+log_info "Using Rust: $(rustc --version)"
 
 # Setup firewall rules for Reth
 setup_firewall_rules 30303 30304 42069 4000 4001

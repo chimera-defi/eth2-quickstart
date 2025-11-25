@@ -47,6 +47,70 @@ if ! ./install/utils/install_dependencies.sh; then
     exit 1
 fi
 
+# MEV Solution Selection (Step 1: Base MEV)
+log_info "=== MEV Solution Selection ==="
+echo
+echo "⚠️  IMPORTANT: Choose ONE MEV solution (mutually exclusive):"
+echo ""
+echo "1. MEV-Boost (RECOMMENDED - stable, production-proven)"
+echo "   → Standard MEV extraction via relays"
+echo "   → Battle-tested by thousands of validators"
+echo "   → Simple, reliable architecture"
+echo ""
+echo "2. Commit-Boost (EXPERIMENTAL - for advanced users)"
+echo "   → Replaces MEV-Boost with modular architecture"
+echo "   → MEV-Boost compatible + additional protocols"
+echo "   → Support for preconfirmations, inclusion lists"
+echo "   → Option to add ETHGas preconfirmation protocol"
+echo ""
+echo "3. Skip MEV installation (install later manually)"
+echo ""
+read -r -p "Select MEV option (1-3): " mev_choice
+if ! validate_menu_choice "$mev_choice" 3; then
+    log_warn "Invalid choice. Defaulting to MEV-Boost"
+    mev_choice=1
+fi
+
+# Store base MEV choice
+MEV_SELECTED="none"
+ETHGAS_SELECTED=false
+
+case "$mev_choice" in
+    1)
+        MEV_SELECTED="mev-boost"
+        log_info "Selected: MEV-Boost (recommended)"
+        ;;
+    2)
+        MEV_SELECTED="commit-boost"
+        log_info "Selected: Commit-Boost (experimental)"
+        
+        # Step 2: ETHGas Add-on (only if Commit-Boost selected)
+        echo ""
+        log_info "=== ETHGas Add-on (Optional) ==="
+        echo ""
+        echo "ETHGas is a preconfirmation protocol that runs on Commit-Boost."
+        echo "It enables validators to sell preconfirmations for additional revenue."
+        echo ""
+        echo "Requirements:"
+        echo "  • Collateral deposit to ETHGas contract"
+        echo "  • Rust build environment (5-10 minutes compile time)"
+        echo "  • Additional configuration"
+        echo ""
+        read -r -p "Install ETHGas with Commit-Boost? (y/n): " ethgas_choice
+        
+        if [[ "$ethgas_choice" =~ ^[Yy]$ ]]; then
+            ETHGAS_SELECTED=true
+            log_info "ETHGas will be installed with Commit-Boost"
+        else
+            log_info "ETHGas will not be installed (can add later)"
+        fi
+        ;;
+    3)
+        MEV_SELECTED="none"
+        log_info "MEV installation will be skipped"
+        ;;
+esac
+
 # Client selection and installation
 log_info "Starting client selection process..."
 log_info "You can choose your clients interactively or use the default setup"
@@ -55,7 +119,7 @@ log_info "You can choose your clients interactively or use the default setup"
 echo
 echo "Would you like to:"
 echo "1. Use interactive client selection (recommended)"
-echo "2. Use default setup (Geth + Prysm + MEV Boost)"
+echo "2. Use default setup (Geth + Prysm + Selected MEV)"
 echo
 read -r -p "Select option (1/2): " client_choice
 if ! validate_menu_choice "$client_choice" 2; then
@@ -63,61 +127,123 @@ if ! validate_menu_choice "$client_choice" 2; then
     exit 1
 fi
 
+# Function to install default clients (reduces code duplication)
+install_default_clients() {
+    log_info "Installing default clients (Geth + Prysm + Selected MEV)..."
+    
+    log_info "Installing Geth..."
+    if ! ./install/execution/install_geth.sh; then
+        log_error "Failed to install Geth"
+        return 1
+    fi
+
+    log_info "Installing Prysm..."
+    if ! ./install/consensus/install_prysm.sh; then
+        log_error "Failed to install Prysm"
+        return 1
+    fi
+
+    # Install selected MEV solution
+    if ! install_mev_solution "$MEV_SELECTED" "$ETHGAS_SELECTED"; then
+        log_error "Failed to install MEV solution"
+        return 1
+    fi
+
+    log_info "All default Ethereum clients installed successfully!"
+    if [[ "$ETHGAS_SELECTED" == "true" ]]; then
+        log_info "Installed: Geth, Prysm, Commit-Boost, ETHGas"
+    else
+        log_info "Installed: Geth, Prysm, $MEV_SELECTED"
+    fi
+    
+    return 0
+}
+
+# Function to install selected MEV solution
+install_mev_solution() {
+    local mev_type="$1"
+    local install_ethgas="$2"
+    
+    case "$mev_type" in
+        "mev-boost")
+            log_info "Installing MEV-Boost..."
+            if ! ./install/mev/install_mev_boost.sh; then
+                log_error "Failed to install MEV-Boost"
+                return 1
+            fi
+            log_info "✓ MEV-Boost installed successfully"
+            ;;
+            
+        "commit-boost")
+            log_info "Installing Commit-Boost..."
+            if ! ./install/mev/install_commit_boost.sh; then
+                log_error "Failed to install Commit-Boost"
+                return 1
+            fi
+            log_info "✓ Commit-Boost installed successfully"
+            
+            # Install ETHGas if selected
+            if [[ "$install_ethgas" == "true" ]]; then
+                echo ""
+                log_info "Installing ETHGas add-on..."
+                log_warn "Building from Rust source (5-10 minutes)..."
+                
+                if ! ./install/mev/install_ethgas.sh; then
+                    log_error "Failed to install ETHGas"
+                    log_warn "Commit-Boost is still installed and functional"
+                    return 1
+                fi
+                
+                log_info "✓ ETHGas installed successfully"
+                echo ""
+                log_warn "⚠️  IMPORTANT: ETHGas Configuration Required"
+                log_warn "1. Deposit collateral to ETHGas contract:"
+                log_warn "   → Visit: https://app.ethgas.com/my-portfolio/accounts"
+                log_warn "2. Configure your validator keys in Commit-Boost"
+                log_warn "3. Review ETHGas config: ~/ethgas/config/ethgas.toml"
+            fi
+            ;;
+            
+        "none")
+            log_info "Skipping MEV installation as requested"
+            ;;
+            
+        *)
+            log_error "Unknown MEV type: $mev_type"
+            return 1
+            ;;
+    esac
+    
+    return 0
+}
+
 case "$client_choice" in
     1)
         log_info "Starting interactive client selection..."
         ./install/utils/select_clients.sh
+        
+        # Install selected MEV solution
+        if [[ "$MEV_SELECTED" != "none" ]]; then
+            echo
+            log_info "=== Installing Selected MEV Solution ==="
+            install_mev_solution "$MEV_SELECTED" "$ETHGAS_SELECTED"
+        fi
+        
         log_info "Please run the recommended install scripts from the client selection tool"
         log_info "Example: ./install/execution/install_geth.sh && ./install/consensus/install_prysm.sh"
         ;;
     2)
-        log_info "Installing default clients (Geth + Prysm + MEV Boost)..."
-        
-        log_info "Installing Geth..."
-        if ! ./install/execution/install_geth.sh; then
-            log_error "Failed to install Geth"
+        if ! install_default_clients; then
+            log_error "Failed to install default clients"
             exit 1
         fi
-
-        log_info "Installing Prysm..."
-        if ! ./install/consensus/install_prysm.sh; then
-            log_error "Failed to install Prysm"
-            exit 1
-        fi
-
-        log_info "Installing Flashbots MEV Boost..."
-        if ! ./install/mev/install_mev_boost.sh; then
-            log_error "Failed to install Flashbots MEV Boost"
-            exit 1
-        fi
-
-        log_info "All default Ethereum clients installed successfully!"
-        log_info "Installed: Geth, Prysm, Flashbots MEV Boost"
         ;;
     *)
         log_error "Invalid selection. Using default setup..."
-        log_info "Installing default clients (Geth + Prysm + MEV Boost)..."
-        
-        log_info "Installing Geth..."
-        if ! ./install/execution/install_geth.sh; then
-            log_error "Failed to install Geth"
+        if ! install_default_clients; then
+            log_error "Failed to install default clients"
             exit 1
         fi
-
-        log_info "Installing Prysm..."
-        if ! ./install/consensus/install_prysm.sh; then
-            log_error "Failed to install Prysm"
-            exit 1
-        fi
-
-        log_info "Installing Flashbots MEV Boost..."
-        if ! ./install/mev/install_mev_boost.sh; then
-            log_error "Failed to install Flashbots MEV Boost"
-            exit 1
-        fi
-
-        log_info "All default Ethereum clients installed successfully!"
-        log_info "Installed: Geth, Prysm, Flashbots MEV Boost"
         ;;
 esac
 
