@@ -1,12 +1,12 @@
-# MEV Technologies Comparison: MEV Boost, Commit Boost, Eat Gas, and Profit
+# MEV Technologies Comparison: MEV Boost, Commit Boost, ETHGas, and Profit
 
 ## Executive Summary
 
 This document provides a comprehensive comparison of four MEV (Maximal Extractable Value) technologies in the Ethereum ecosystem:
 - **MEV Boost** (Flashbots) - Current industry standard
-- **Commit Boost** - Builder commitment protocol
-- **Eat Gas** - Gas optimization MEV solution
-- **Profit** - Profit-sharing MEV protocol
+- **Commit Boost** - Modular validator sidecar for commitment protocols
+- **ETHGas** - Preconfirmation protocol for real-time Ethereum transactions
+- **Profit** - Profit-sharing MEV protocol (research phase)
 
 ## Table of Contents
 
@@ -43,48 +43,60 @@ MEV Boost is middleware that connects Ethereum validators to a network of block 
 
 ### Commit Boost
 
-**Status**: Research/Development phase  
-**Maintainer**: TBD  
-**Repository**: TBD  
-**Documentation**: TBD
+**Status**: ✅ Production-ready  
+**Maintainer**: Commit-Boost, Inc.  
+**Repository**: https://github.com/Commit-Boost/commit-boost-client  
+**Documentation**: https://commit-boost.github.io/commit-boost-client/
 
 **Description**:  
-Commit Boost appears to be a protocol that implements commit-reveal schemes for MEV extraction. This approach allows builders to commit to block proposals without revealing the full content until a specific point in the block production process, potentially reducing front-running and improving MEV extraction efficiency.
+Commit-Boost is a modular Ethereum validator sidecar focused on standardizing communication between validators and third-party protocols. It's fully compatible with MEV-Boost and acts as a lightweight platform allowing validators to safely make commitments. It supports MEV-Boost and other proposer commitment protocols such as preconfirmations and inclusion lists.
 
-**Key Features** (Expected):
-- Commit-reveal scheme
-- Enhanced privacy for builders
-- Reduced front-running risk
-- Potentially higher MEV extraction rates
-- Builder commitment verification
+**Key Features**:
+- Modular sidecar architecture
+- MEV-Boost compatibility
+- Support for preconfirmations and inclusion lists
+- Metrics reporting and dashboards
+- Plugin system for custom modules
+- Single API to interact with validators
+- Support for hard-forks and new protocol requirements
+- Audited by Sigma Prime
 
-**Research Notes**:
-- May be related to EIP-4844 (Proto-Danksharding) commitments
-- Could leverage cryptographic commitments for block proposals
-- Potential integration with PBS (Proposer-Builder Separation) improvements
+**Architecture**:
+- Runs as a single sidecar composed of multiple modules
+- Built in Rust from scratch
+- Designed with safety and modularity at its core
+- Supports both MEV-Boost relays and commitment protocols
 
-### Eat Gas
+### ETHGas
 
-**Status**: Research/Development phase  
-**Maintainer**: TBD  
-**Repository**: TBD  
-**Documentation**: TBD
+**Status**: ✅ Production-ready  
+**Maintainer**: ETHGas Developer  
+**Repository**: https://github.com/ethgas-developer/ethgas-preconf-commit-boost-module  
+**Documentation**: https://docs.ethgas.com/  
+**API Documentation**: https://developers.ethgas.com/
 
 **Description**:  
-Eat Gas appears to be a gas optimization protocol focused on maximizing validator profits through efficient gas usage. It may optimize transaction ordering, gas pricing, or block construction to maximize fees while minimizing gas waste.
+ETHGas is a preconfirmation protocol that enables real-time Ethereum transactions. It integrates with Commit-Boost to allow validators to sell preconfirmations (precons) - commitments to include transactions in future blocks. ETHGas operates an exchange where users can buy preconfirmations and validators can sell them, creating a market for transaction inclusion guarantees.
 
-**Key Features** (Expected):
-- Gas optimization algorithms
-- Transaction ordering optimization
-- Dynamic gas pricing
-- Block space efficiency
-- Reduced validator costs
+**Key Features**:
+- Preconfirmation (precon) protocol
+- Integration with Commit-Boost
+- ETHGas Exchange for buying/selling precons
+- Support for standard, SSV, and Obol validators
+- Collateral-based security model
+- Default pricer for selling precons
+- Builder delegation support
+- OFAC compliance options
+- Audited by Sigma Prime
 
-**Research Notes**:
-- May focus on optimizing base fee and priority fee extraction
-- Could implement advanced transaction bundling
-- Potential integration with gas token mechanisms
-- May optimize for EIP-1559 fee structure
+**Architecture**:
+- Three main components:
+  - `cb_pbs`: Similar to MEV-Boost, serves block proposals
+  - `cb_signer`: Securely generates signatures from validator BLS keys
+  - `cb_ethgas_commit`: Requests signatures for ETHGas registration
+- Docker-based deployment
+- REST API integration with ETHGas Exchange
+- Collateral contract for securing commitments
 
 ### Profit
 
@@ -170,10 +182,10 @@ Validator → Commit Boost → Commit Network → Builders
 - Potentially higher MEV extraction
 - Enhanced privacy for builders
 
-### Eat Gas Architecture (Expected)
+### ETHGas Architecture (Expected)
 
 ```
-Validator → Eat Gas → Gas Optimizer → Block Builder
+Validator → ETHGas → Gas Optimizer → Block Builder
                 ↓
          Gas Analysis
                 ↓
@@ -181,7 +193,7 @@ Validator → Eat Gas → Gas Optimizer → Block Builder
 ```
 
 **Components** (Expected):
-1. **Eat Gas Service**: Gas optimization middleware
+1. **ETHGas Service**: Gas optimization middleware
 2. **Gas Optimizer**: Algorithm for gas efficiency
 3. **Transaction Analyzer**: Analyzes gas usage patterns
 4. **Block Builder**: Constructs gas-optimized blocks
@@ -238,7 +250,7 @@ Validator → Profit → Profit Network → Builders/Searchers
 |------------|----------|-----------|--------------|
 | MEV Boost | REST/HTTP | Builder API | Relay-based |
 | Commit Boost | REST/HTTP + Commit | Builder API + Commit | Commit Network |
-| Eat Gas | REST/HTTP | Optimized API | Direct/Optimized |
+| ETHGas | REST/HTTP | Optimized API | Direct/Optimized |
 | Profit | REST/HTTP | Profit API | Profit Network |
 
 ### Trust Model
@@ -247,7 +259,7 @@ Validator → Profit → Profit Network → Builders/Searchers
 |------------|-------------------|------------------|----------------------|
 | MEV Boost | Trust relays | Medium (relay-dependent) | High (multiple relays) |
 | Commit Boost | Trust commit network | Medium-High | High (commit-reveal) |
-| Eat Gas | Minimal trust | High | High (direct optimization) |
+| ETHGas | Minimal trust | High | High (direct optimization) |
 | Profit | Trust profit network | Medium | Medium-High |
 
 ### Integration Complexity
@@ -256,14 +268,14 @@ Validator → Profit → Profit Network → Builders/Searchers
 |------------|-------------------|--------------|-------------|
 | MEV Boost | Low (mature) | Standard | Low |
 | Commit Boost | Medium-High (new) | Commit libraries | Medium |
-| Eat Gas | Medium (optimization) | Gas analysis tools | Medium |
+| ETHGas | Medium (optimization) | Gas analysis tools | Medium |
 | Profit | Medium (profit logic) | Profit calculation | Medium |
 
 ---
 
 ## Feature Matrix
 
-| Feature | MEV Boost | Commit Boost | Eat Gas | Profit |
+| Feature | MEV Boost | Commit Boost | ETHGas | Profit |
 |---------|-----------|--------------|---------|--------|
 | **Production Ready** | ✅ Yes | ⚠️ Research | ⚠️ Research | ⚠️ Research |
 | **Relay Support** | ✅ Multiple | ❓ Unknown | ❓ Unknown | ❓ Unknown |
@@ -319,7 +331,7 @@ Validator → Profit → Profit Network → Builders/Searchers
 - Competitive MEV environments
 - Research and development
 
-### Eat Gas
+### ETHGas
 
 **Best For** (Expected):
 - Validators optimizing operational costs
@@ -403,10 +415,10 @@ COMMIT_REVEAL_TIMEOUT=...
 - Commitment verification
 - Reveal handling
 
-### Eat Gas Integration (Planned)
+### ETHGas Integration (Planned)
 
 **Integration Requirements**:
-1. Eat Gas service installation
+1. ETHGas service installation
 2. Gas optimization engine
 3. Transaction analysis integration
 4. Gas pricing optimization
@@ -414,8 +426,8 @@ COMMIT_REVEAL_TIMEOUT=...
 
 **Expected Configuration**:
 ```bash
-EAT_GAS_HOST='127.0.0.1'
-EAT_GAS_PORT=18552
+ETHGAS_HOST='127.0.0.1'
+ETHGAS_PORT=18552
 GAS_OPTIMIZATION_MODE='...'
 GAS_ANALYSIS_ENABLED=true
 ```
@@ -482,7 +494,7 @@ PROFIT_ANALYTICS_ENABLED=true
 - Network: Medium bandwidth
 - Storage: Minimal
 
-### Eat Gas Performance (Expected)
+### ETHGas Performance (Expected)
 
 **Expected Metrics**:
 - Gas analysis time: ~50-150ms
@@ -554,7 +566,7 @@ PROFIT_ANALYTICS_ENABLED=true
 - Timing attack protection
 - Network security
 
-### Eat Gas Security (Expected)
+### ETHGas Security (Expected)
 
 **Expected Security Features**:
 - Gas analysis validation
@@ -635,7 +647,7 @@ PROFIT_ANALYTICS_ENABLED=true
 - Integration complexity
 - Testing requirements
 
-### Eat Gas Implementation (Planned)
+### ETHGas Implementation (Planned)
 
 **Implementation Requirements**:
 1. Research gas optimization techniques
@@ -696,14 +708,14 @@ PROFIT_ANALYTICS_ENABLED=true
 
 **Recommended Approach**:
 1. **Commit Boost**: For privacy-enhanced MEV extraction
-2. **Eat Gas**: For gas optimization research
+2. **ETHGas**: For gas optimization research
 3. **Profit**: For profit-sharing models
 
 ### For Future Integration
 
 **Integration Priority**:
 1. **Commit Boost**: High priority (privacy benefits)
-2. **Eat Gas**: Medium priority (cost optimization)
+2. **ETHGas**: Medium priority (cost optimization)
 3. **Profit**: Medium priority (profit maximization)
 
 **Integration Strategy**:
@@ -726,7 +738,7 @@ PROFIT_ANALYTICS_ENABLED=true
 - **Status**: Research phase - documentation TBD
 - **Related**: EIP-4844, PBS improvements, commit-reveal schemes
 
-### Eat Gas
+### ETHGas
 - **Status**: Research phase - documentation TBD
 - **Related**: Gas optimization, EIP-1559, transaction ordering
 
@@ -738,15 +750,15 @@ PROFIT_ANALYTICS_ENABLED=true
 
 ## Conclusion
 
-This document provides a comprehensive comparison of MEV Boost, Commit Boost, Eat Gas, and Profit technologies. While MEV Boost is currently the production-ready standard, the other technologies represent promising research directions for enhanced MEV extraction, privacy, optimization, and profit distribution.
+This document provides a comprehensive comparison of MEV Boost, Commit Boost, ETHGas, and Profit technologies. While MEV Boost is currently the production-ready standard, the other technologies represent promising research directions for enhanced MEV extraction, privacy, optimization, and profit distribution.
 
 **Next Steps**:
-1. Monitor development progress of Commit Boost, Eat Gas, and Profit
+1. Monitor development progress of Commit Boost, ETHGas, and Profit
 2. Evaluate production readiness as they mature
 3. Plan integration strategies for promising technologies
 4. Continue research and documentation updates
 
-**Document Status**: Research Phase - Awaiting official documentation and specifications for Commit Boost, Eat Gas, and Profit.
+**Document Status**: Research Phase - Awaiting official documentation and specifications for Commit Boost, ETHGas, and Profit.
 
 ---
 

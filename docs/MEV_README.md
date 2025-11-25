@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains comprehensive documentation comparing MEV Boost, Commit Boost, Eat Gas, and Profit technologies for Ethereum validators.
+This directory contains comprehensive documentation comparing MEV Boost, Commit Boost, ETHGas, and Profit technologies for Ethereum validators.
 
 ---
 
@@ -58,7 +58,7 @@ This directory contains comprehensive documentation comparing MEV Boost, Commit 
 |------------|--------|-----------------|------------------------|
 | **MEV Boost** | ✅ Active | ✅ Yes | ✅ Comprehensive |
 | **Commit Boost** | 🔬 Research | ❌ No | ⚠️ Limited |
-| **Eat Gas** | 🔬 Research | ❌ No | ⚠️ Limited |
+| **ETHGas** | 🔬 Research | ❌ No | ⚠️ Limited |
 | **Profit** | 🔬 Research | ❌ No | ⚠️ Limited |
 
 ---
@@ -89,7 +89,7 @@ Start with: [MEV_DECISION_GUIDE.md](MEV_DECISION_GUIDE.md)
 - **Configuration**: `exports.sh`
 - **Client Integration**: All consensus clients configured
 
-### 🔬 Commit Boost, Eat Gas, Profit
+### 🔬 Commit Boost, ETHGas, Profit
 
 - **Status**: Research phase - documentation prepared
 - **Implementation**: Planned for future when specifications available
@@ -136,7 +136,7 @@ Start with: [MEV_DECISION_GUIDE.md](MEV_DECISION_GUIDE.md)
 - 🔬 Front-running protection
 - ⚠️ Awaiting official specifications
 
-### Eat Gas
+### ETHGas
 
 - 🔬 Research phase - gas optimization
 - 🔬 Potential cost reduction
@@ -164,7 +164,7 @@ Start with: [MEV_DECISION_GUIDE.md](MEV_DECISION_GUIDE.md)
 
 ### Future Planning
 
-**Monitor** Commit Boost, Eat Gas, and Profit:
+**Monitor** Commit Boost, ETHGas, and Profit:
 - Track development progress
 - Evaluate production readiness
 - Plan integration strategies
@@ -208,7 +208,7 @@ Start with: [MEV_DECISION_GUIDE.md](MEV_DECISION_GUIDE.md)
 ### Update Schedule
 
 - **MEV Boost**: Update as new versions released
-- **Commit Boost, Eat Gas, Profit**: Update as information becomes available
+- **Commit Boost, ETHGas, Profit**: Update as information becomes available
 - **All Documents**: Review quarterly for accuracy
 
 ### Contributing
