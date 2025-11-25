@@ -18,6 +18,11 @@ This directory contains all project documentation organized by category.
 ## Security
 - **[SECURITY_GUIDE.md](SECURITY_GUIDE.md)** - Comprehensive security documentation (consolidated)
 
+## MEV Technologies
+- **[MEV_GUIDE.md](MEV_GUIDE.md)** - Comprehensive MEV technologies guide (MEV Boost, Commit Boost, ETHGas)
+- **[MEV_QUICK_REFERENCE.md](MEV_QUICK_REFERENCE.md)** - Quick reference for MEV commands and configuration
+- **[MEV_NEXT_STEPS.md](MEV_NEXT_STEPS.md)** - Implementation plan for Commit Boost and ETHGas
+
 ## Project Management
 - **[COMMIT_MESSAGES.md](COMMIT_MESSAGES.md)** - Commit message conventions
 - **[progress.md](progress.md)** - Development progress tracking
