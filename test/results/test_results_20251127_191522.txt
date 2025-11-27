@@ -1,0 +1,245 @@
+# Ethereum Node Setup Script Test Results
+# Generated: Thu Nov 27 07:15:22 PM UTC 2025
+# Test Mode: all
+# Use Mocks: true
+
+[PASS] shellcheck: exports.sh: 
+[PASS] shellcheck: lib/common_functions.sh: 
+[PASS] shellcheck: lib/utils.sh: 
+[PASS] shellcheck: run_1.sh: 
+[PASS] shellcheck: run_2.sh: 
+[PASS] shellcheck: docs/validate_security_safe.sh: 
+[PASS] shellcheck: docs/server_security_validation.sh: 
+[PASS] shellcheck: docs/verify_security.sh: 
+[PASS] shellcheck: install/web/install_caddy.sh: 
+[PASS] shellcheck: install/web/nginx_helpers.sh: 
+[PASS] shellcheck: install/web/install_nginx_ssl.sh: 
+[PASS] shellcheck: install/web/install_nginx.sh: 
+[PASS] shellcheck: install/web/install_caddy_ssl.sh: 
+[PASS] shellcheck: install/web/web_helpers_common.sh: 
+[PASS] shellcheck: install/web/caddy_helpers.sh: 
+[PASS] shellcheck: install/consensus/install_teku.sh: 
+[PASS] shellcheck: install/consensus/install_nimbus.sh: 
+[PASS] shellcheck: install/consensus/install_grandine.sh: 
+[PASS] shellcheck: install/consensus/install_lodestar.sh: 
+[PASS] shellcheck: install/consensus/install_prysm.sh: 
+[PASS] shellcheck: install/consensus/lighthouse.sh: 
+[PASS] shellcheck: install/templates/install_template.sh: 
+[PASS] shellcheck: install/execution/install_nethermind.sh: 
+[PASS] shellcheck: install/execution/erigon.sh: 
+[PASS] shellcheck: install/execution/install_besu.sh: 
+[PASS] shellcheck: install/execution/reth.sh: 
+[PASS] shellcheck: install/execution/install_geth.sh: 
+[PASS] shellcheck: install/execution/install_nimbus_eth1.sh: 
+[PASS] shellcheck: install/mev/install_commit_boost.sh: 
+[PASS] shellcheck: install/mev/fb_builder_geth.sh: 
+[PASS] shellcheck: install/mev/test_mev_implementations.sh: 
+[PASS] shellcheck: install/mev/install_mev_boost.sh: 
+[PASS] shellcheck: install/mev/install_ethgas.sh: 
+[PASS] shellcheck: install/mev/fb_mev_prysm.sh: 
+[PASS] shellcheck: install/examples/run_prysm_checkpt_sync.sh: 
+[PASS] shellcheck: install/ssl/install_ssl_certbot.sh: 
+[PASS] shellcheck: install/ssl/install_acme_ssl.sh: 
+[PASS] shellcheck: install/security/caddy_harden.sh: 
+[PASS] shellcheck: install/security/nginx_harden.sh: 
+[PASS] shellcheck: install/security/test_security_fixes.sh: 
+[PASS] shellcheck: install/security/consolidated_security.sh: 
+[PASS] shellcheck: install/utils/start.sh: 
+[PASS] shellcheck: install/utils/update.sh: 
+[PASS] shellcheck: install/utils/stats.sh: 
+[PASS] shellcheck: install/utils/select_clients.sh: 
+[PASS] shellcheck: install/utils/install_dependencies.sh: 
+[PASS] shellcheck: install/utils/refresh.sh: 
+[PASS] shellcheck: install/utils/update_git.sh: 
+[PASS] shellcheck: install/utils/update_all.sh: 
+[PASS] shellcheck: install/utils/purge_ethereum_data.sh: 
+[PASS] shellcheck: install/utils/optional_tools.sh: 
+[PASS] syntax: exports.sh: 
+[PASS] syntax: lib/common_functions.sh: 
+[PASS] syntax: lib/utils.sh: 
+[PASS] syntax: run_1.sh: 
+[PASS] syntax: run_2.sh: 
+[PASS] syntax: docs/validate_security_safe.sh: 
+[PASS] syntax: docs/server_security_validation.sh: 
+[PASS] syntax: docs/verify_security.sh: 
+[PASS] syntax: install/web/install_caddy.sh: 
+[PASS] syntax: install/web/nginx_helpers.sh: 
+[PASS] syntax: install/web/install_nginx_ssl.sh: 
+[PASS] syntax: install/web/install_nginx.sh: 
+[PASS] syntax: install/web/install_caddy_ssl.sh: 
+[PASS] syntax: install/web/web_helpers_common.sh: 
+[PASS] syntax: install/web/caddy_helpers.sh: 
+[PASS] syntax: install/consensus/install_teku.sh: 
+[PASS] syntax: install/consensus/install_nimbus.sh: 
+[PASS] syntax: install/consensus/install_grandine.sh: 
+[PASS] syntax: install/consensus/install_lodestar.sh: 
+[PASS] syntax: install/consensus/install_prysm.sh: 
+[PASS] syntax: install/consensus/lighthouse.sh: 
+[PASS] syntax: install/templates/install_template.sh: 
+[PASS] syntax: install/execution/install_nethermind.sh: 
+[PASS] syntax: install/execution/erigon.sh: 
+[PASS] syntax: install/execution/install_besu.sh: 
+[PASS] syntax: install/execution/reth.sh: 
+[PASS] syntax: install/execution/install_geth.sh: 
+[PASS] syntax: install/execution/install_nimbus_eth1.sh: 
+[PASS] syntax: install/mev/install_commit_boost.sh: 
+[PASS] syntax: install/mev/fb_builder_geth.sh: 
+[PASS] syntax: install/mev/test_mev_implementations.sh: 
+[PASS] syntax: install/mev/install_mev_boost.sh: 
+[PASS] syntax: install/mev/install_ethgas.sh: 
+[PASS] syntax: install/mev/fb_mev_prysm.sh: 
+[PASS] syntax: install/examples/run_prysm_checkpt_sync.sh: 
+[PASS] syntax: install/ssl/install_ssl_certbot.sh: 
+[PASS] syntax: install/ssl/install_acme_ssl.sh: 
+[PASS] syntax: install/security/caddy_harden.sh: 
+[PASS] syntax: install/security/nginx_harden.sh: 
+[PASS] syntax: install/security/test_security_fixes.sh: 
+[PASS] syntax: install/security/consolidated_security.sh: 
+[PASS] syntax: install/utils/start.sh: 
+[PASS] syntax: install/utils/update.sh: 
+[PASS] syntax: install/utils/stats.sh: 
+[PASS] syntax: install/utils/select_clients.sh: 
+[PASS] syntax: install/utils/install_dependencies.sh: 
+[PASS] syntax: install/utils/refresh.sh: 
+[PASS] syntax: install/utils/update_git.sh: 
+[PASS] syntax: install/utils/update_all.sh: 
+[PASS] syntax: install/utils/purge_ethereum_data.sh: 
+[PASS] syntax: install/utils/optional_tools.sh: 
+[PASS] shebang: exports.sh: 
+[PASS] shebang: lib/common_functions.sh: 
+[PASS] shebang: lib/utils.sh: 
+[PASS] shebang: run_1.sh: 
+[PASS] shebang: run_2.sh: 
+[PASS] shebang: docs/validate_security_safe.sh: 
+[PASS] shebang: docs/server_security_validation.sh: 
+[PASS] shebang: docs/verify_security.sh: 
+[PASS] shebang: install/web/install_caddy.sh: 
+[PASS] shebang: install/web/nginx_helpers.sh: 
+[PASS] shebang: install/web/install_nginx_ssl.sh: 
+[PASS] shebang: install/web/install_nginx.sh: 
+[PASS] shebang: install/web/install_caddy_ssl.sh: 
+[PASS] shebang: install/web/web_helpers_common.sh: 
+[PASS] shebang: install/web/caddy_helpers.sh: 
+[PASS] shebang: install/consensus/install_teku.sh: 
+[PASS] shebang: install/consensus/install_nimbus.sh: 
+[PASS] shebang: install/consensus/install_grandine.sh: 
+[PASS] shebang: install/consensus/install_lodestar.sh: 
+[PASS] shebang: install/consensus/install_prysm.sh: 
+[PASS] shebang: install/consensus/lighthouse.sh: 
+[PASS] shebang: install/templates/install_template.sh: 
+[PASS] shebang: install/execution/install_nethermind.sh: 
+[PASS] shebang: install/execution/erigon.sh: 
+[PASS] shebang: install/execution/install_besu.sh: 
+[PASS] shebang: install/execution/reth.sh: 
+[PASS] shebang: install/execution/install_geth.sh: 
+[PASS] shebang: install/execution/install_nimbus_eth1.sh: 
+[PASS] shebang: install/mev/install_commit_boost.sh: 
+[PASS] shebang: install/mev/fb_builder_geth.sh: 
+[PASS] shebang: install/mev/test_mev_implementations.sh: 
+[PASS] shebang: install/mev/install_mev_boost.sh: 
+[PASS] shebang: install/mev/install_ethgas.sh: 
+[PASS] shebang: install/mev/fb_mev_prysm.sh: 
+[PASS] shebang: install/examples/run_prysm_checkpt_sync.sh: 
+[PASS] shebang: install/ssl/install_ssl_certbot.sh: 
+[PASS] shebang: install/ssl/install_acme_ssl.sh: 
+[PASS] shebang: install/security/caddy_harden.sh: 
+[PASS] shebang: install/security/nginx_harden.sh: 
+[PASS] shebang: install/security/test_security_fixes.sh: 
+[PASS] shebang: install/security/consolidated_security.sh: 
+[PASS] shebang: install/utils/start.sh: 
+[PASS] shebang: install/utils/update.sh: 
+[PASS] shebang: install/utils/stats.sh: 
+[PASS] shebang: install/utils/select_clients.sh: 
+[PASS] shebang: install/utils/install_dependencies.sh: 
+[PASS] shebang: install/utils/refresh.sh: 
+[PASS] shebang: install/utils/update_git.sh: 
+[PASS] shebang: install/utils/update_all.sh: 
+[PASS] shebang: install/utils/purge_ethereum_data.sh: 
+[PASS] shebang: install/utils/optional_tools.sh: 
+[PASS] exports.sh: loads successfully: 
+[PASS] exports.sh: LOGIN_UNAME is set: 
+[PASS] exports.sh: YourSSHPortNumber is set: 
+[PASS] exports.sh: SERVER_NAME is set: 
+[PASS] exports.sh: FEE_RECIPIENT is set: 
+[PASS] exports.sh: MEV_RELAYS is set: 
+[PASS] exports.sh: MEV_PORT is set: 
+[PASS] exports.sh: COMMIT_BOOST_PORT is set: 
+[PASS] exports.sh: ENGINE_PORT is set: 
+[PASS] exports.sh: GETH_CACHE is set: 
+[PASS] common_functions.sh: loads successfully: 
+[PASS] function exists: log_info: 
+[PASS] function exists: log_warn: 
+[PASS] function exists: log_error: 
+[PASS] function exists: check_user: 
+[PASS] function exists: ensure_directory: 
+[PASS] function exists: command_exists: 
+[PASS] function exists: get_latest_release: 
+[PASS] function exists: extract_archive: 
+[PASS] function exists: download_file: 
+[PASS] function exists: secure_download: 
+[PASS] function exists: create_systemd_service: 
+[PASS] function exists: enable_systemd_service: 
+[PASS] function exists: enable_and_start_systemd_service: 
+[PASS] function exists: stop_all_services: 
+[PASS] function exists: add_ppa_repository: 
+[PASS] function exists: install_dependencies: 
+[PASS] function exists: setup_firewall_rules: 
+[PASS] function exists: ensure_jwt_secret: 
+[PASS] function exists: validate_menu_choice: 
+[PASS] function exists: check_system_requirements: 
+[PASS] function exists: check_system_compatibility: 
+[PASS] function exists: require_root: 
+[PASS] function exists: generate_secure_password: 
+[PASS] function exists: setup_secure_user: 
+[PASS] function exists: configure_ssh: 
+[PASS] function exists: configure_sudo_nopasswd: 
+[PASS] function exists: generate_handoff_info: 
+[PASS] function exists: secure_config_files: 
+[PASS] function exists: apply_network_security: 
+[PASS] function exists: setup_security_monitoring: 
+[PASS] function exists: setup_intrusion_detection: 
+[PASS] function exists: log_installation_start: 
+[PASS] function exists: log_installation_complete: 
+[PASS] function exists: display_client_setup_info: 
+[PASS] function exists: create_temp_config_dir: 
+[PASS] function exists: get_script_directories: 
+[PASS] function exists: merge_client_config: 
+[PASS] utils.sh: loads successfully: 
+[PASS] utils function exists: require_root: 
+[PASS] utils function exists: require_non_root: 
+[PASS] utils function exists: ensure_cmd: 
+[PASS] utils function exists: append_once: 
+[PASS] install/utils/start.sh: source ../../lib/common_functions.sh resolves: 
+[PASS] install/utils/update.sh: source ../../lib/common_functions.sh resolves: 
+[PASS] install/utils/stats.sh: source ../../lib/common_functions.sh resolves: 
+[PASS] install/utils/select_clients.sh: source ../../lib/common_functions.sh resolves: 
+[PASS] install/utils/install_dependencies.sh: source ../../lib/common_functions.sh resolves: 
+[PASS] install/utils/refresh.sh: source ../../lib/common_functions.sh resolves: 
+[PASS] install/utils/update_git.sh: source ../../lib/common_functions.sh resolves: 
+[PASS] install/utils/update_all.sh: source ../../lib/common_functions.sh resolves: 
+[PASS] install/utils/purge_ethereum_data.sh: source ../../lib/common_functions.sh resolves: 
+[PASS] install/utils/optional_tools.sh: source ../../lib/common_functions.sh resolves: 
+[PASS] config exists: configs/besu/besu_base.toml: 
+[PASS] config exists: configs/grandine/grandine_base.toml: 
+[PASS] config exists: configs/lodestar/lodestar_beacon_base.json: 
+[PASS] config valid JSON: configs/lodestar/lodestar_beacon_base.json: 
+[PASS] config exists: configs/lodestar/lodestar_validator_base.json: 
+[PASS] config valid JSON: configs/lodestar/lodestar_validator_base.json: 
+[PASS] config exists: configs/nethermind/nethermind_base.cfg: 
+[PASS] config exists: configs/nimbus/nimbus_base.toml: 
+[PASS] config exists: configs/nimbus/nimbus_eth1_base.toml: 
+[PASS] config exists: configs/prysm/prysm_beacon_conf.yaml: 
+[WARN] config may have YAML issues: configs/prysm/prysm_beacon_conf.yaml: 
+[PASS] config exists: configs/prysm/prysm_validator_conf.yaml: 
+[PASS] config basic YAML check: configs/prysm/prysm_validator_conf.yaml: 
+[PASS] config exists: configs/teku/teku_beacon_base.yaml: 
+[WARN] config may have YAML issues: configs/teku/teku_beacon_base.yaml: 
+[PASS] config exists: configs/teku/teku_validator_base.yaml: 
+[WARN] config may have YAML issues: configs/teku/teku_validator_base.yaml: 
+[PASS] test_common_functions.sh: all tests passed: 
+[PASS] validate_menu_choice(3, 5) returns true: 
+[PASS] validate_menu_choice(10, 5) returns false: 
+[PASS] validate_menu_choice(abc, 5) returns false: 
+[PASS] ensure_directory creates directory: 
+[PASS] command_exists(bash) returns true: 
+[PASS] command_exists(nonexistent) returns false: 
