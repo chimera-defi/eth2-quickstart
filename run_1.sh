@@ -31,8 +31,7 @@ log_info "✓ System packages updated"
 # Setup SSH with security hardening
 configure_ssh "$YourSSHPortNumber"
 
-# Setup fail2ban
-setup_fail2ban
+# Note: fail2ban is configured by consolidated_security.sh below
 
 # Generate secure password and setup user
 log_info "Setting up user: $LOGIN_UNAME"
