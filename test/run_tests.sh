@@ -290,13 +290,13 @@ run_source_verification() {
         log_test "FAIL" "utils.sh: load failed"
     fi
     
-    # Check utils.sh functions
+    # Check utils.sh functions (backward-compat shim)
+    # Note: utils.sh is deprecated - functions are now in common_functions.sh
     source "$PROJECT_ROOT/lib/utils.sh" 2>/dev/null || true
     
+    # Only check for functions that should exist for backward compatibility
     local utils_functions=(
         "require_root"
-        "require_non_root"
-        "ensure_cmd"
         "append_once"
     )
     
