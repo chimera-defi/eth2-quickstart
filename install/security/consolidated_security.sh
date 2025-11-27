@@ -48,8 +48,8 @@ setup_firewall() {
         "0.0.0.0/8"            # "This" Network
         "10.0.0.0/8"           # Private-Use Networks
         "100.64.0.0/10"        # Carrier-Grade NAT (CGN)
-        "127.16.0.0/12"        # Private-Use Networks (subset of loopback, retained for safety)
-        "127.0.0.0/8"          # Loopback
+        "127.16.0.0/12"        # Private-Use Networks (as listed)
+        "127.0.0.0/8"          # Loopback (superset; retained for safety)
         "169.254.0.0/16"       # Link Local
         "172.16.0.0/12"        # Private-Use Networks
         "192.0.0.0/24"         # IETF Protocol Assignments
