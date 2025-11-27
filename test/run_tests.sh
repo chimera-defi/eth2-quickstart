@@ -144,7 +144,7 @@ run_lint_tests() {
     # Find all shell scripts
     while IFS= read -r script; do
         scripts_checked=$((scripts_checked + 1))
-        local script_name="${script#$PROJECT_ROOT/}"
+        local script_name="${script#"$PROJECT_ROOT"/}"
         
         # Run shellcheck with common exclusions
         if shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034 "$script" 2>/dev/null; then
@@ -161,7 +161,7 @@ run_lint_tests() {
     log_subheader "Checking script syntax (bash -n)"
     
     while IFS= read -r script; do
-        local script_name="${script#$PROJECT_ROOT/}"
+        local script_name="${script#"$PROJECT_ROOT"/}"
         
         if bash -n "$script" 2>/dev/null; then
             log_test "PASS" "syntax: $script_name"
@@ -173,7 +173,7 @@ run_lint_tests() {
     log_subheader "Checking for shebangs"
     
     while IFS= read -r script; do
-        local script_name="${script#$PROJECT_ROOT/}"
+        local script_name="${script#"$PROJECT_ROOT"/}"
         
         if head -1 "$script" | grep -q "^#!/"; then
             log_test "PASS" "shebang: $script_name"
@@ -335,8 +335,9 @@ run_source_path_tests() {
         
         while IFS= read -r script; do
             [[ -f "$script" ]] || continue
-            local script_name="${script#$PROJECT_ROOT/}"
-            local script_dir="$(dirname "$script")"
+            local script_name="${script#"$PROJECT_ROOT"/}"
+            local script_dir
+            script_dir="$(dirname "$script")"
             
             # Check each expected source
             for source_file in ${expected_sources[$dir]}; do
