@@ -49,12 +49,12 @@ fi
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create systemd service for beacon node
-BEACON_EXEC_START="RUST_LOG=info $LIGHTHOUSE_DIR/lighthouse bn --checkpoint-sync-url https://mainnet.checkpoint.sigp.io --execution-endpoint http://localhost:8551 --execution-jwt $HOME/secrets/jwt.hex --disable-deposit-contract-sync"
+BEACON_EXEC_START="RUST_LOG=info $LIGHTHOUSE_DIR/lighthouse bn --checkpoint-sync-url $LIGHTHOUSE_CHECKPOINT_URL --execution-endpoint http://$LH:$ENGINE_PORT --execution-jwt $HOME/secrets/jwt.hex --disable-deposit-contract-sync"
 
 create_systemd_service "cl" "Lighthouse Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
 # Create systemd service for validator
-VALIDATOR_EXEC_START="RUST_LOG=info $LIGHTHOUSE_DIR/lighthouse vc --beacon-nodes http://localhost:5052"
+VALIDATOR_EXEC_START="RUST_LOG=info $LIGHTHOUSE_DIR/lighthouse vc --beacon-nodes http://$CONSENSUS_HOST:5052"
 
 create_systemd_service "validator" "Lighthouse Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target"
 
