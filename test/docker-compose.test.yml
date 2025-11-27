@@ -1,0 +1,83 @@
+# Docker Compose for Ethereum Node Setup Script Testing
+# Provides multiple test environment configurations
+
+version: '3.8'
+
+services:
+  # Lightweight linting and static analysis only
+  lint:
+    build:
+      context: ..
+      dockerfile: test/Dockerfile.test
+    command: /workspace/test/run_tests.sh --lint-only
+    volumes:
+      - ../:/workspace:ro
+      - test-results:/workspace/test/results
+    environment:
+      - TEST_MODE=lint
+      - CI=true
+
+  # Unit tests with mock functions (no system changes)
+  unit:
+    build:
+      context: ..
+      dockerfile: test/Dockerfile.test
+    command: /workspace/test/run_tests.sh --unit
+    volumes:
+      - ../:/workspace:ro
+      - test-results:/workspace/test/results
+    environment:
+      - TEST_MODE=unit
+      - USE_MOCKS=true
+      - CI=true
+
+  # Integration tests (full flow with mocks)
+  integration:
+    build:
+      context: ..
+      dockerfile: test/Dockerfile.test
+    command: /workspace/test/run_tests.sh --integration
+    volumes:
+      - ../:/workspace
+      - test-results:/workspace/test/results
+    environment:
+      - TEST_MODE=integration
+      - USE_MOCKS=true
+      - CI=true
+    # Run as root for testing root-required scripts
+    user: root
+
+  # Full system test (isolated container, real operations)
+  full:
+    build:
+      context: ..
+      dockerfile: test/Dockerfile.test
+    command: /workspace/test/run_tests.sh --full
+    volumes:
+      - test-results:/workspace/test/results
+    environment:
+      - TEST_MODE=full
+      - USE_MOCKS=false
+      - CI=true
+    # Full privileges for systemd simulation
+    privileged: true
+    user: root
+
+  # Interactive shell for debugging
+  debug:
+    build:
+      context: ..
+      dockerfile: test/Dockerfile.test
+    command: /bin/bash
+    stdin_open: true
+    tty: true
+    volumes:
+      - ../:/workspace
+      - test-results:/workspace/test/results
+    environment:
+      - TEST_MODE=debug
+      - USE_MOCKS=true
+    user: root
+
+volumes:
+  test-results:
