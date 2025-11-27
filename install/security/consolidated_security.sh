@@ -48,8 +48,7 @@ setup_firewall() {
         "0.0.0.0/8"            # "This" Network
         "10.0.0.0/8"           # Private-Use Networks
         "100.64.0.0/10"        # Carrier-Grade NAT (CGN)
-        "127.16.0.0/12"        # Private-Use Networks (as listed)
-        "127.0.0.0/8"          # Loopback (superset; retained for safety)
+        "127.0.0.0/8"          # Loopback
         "169.254.0.0/16"       # Link Local
         "172.16.0.0/12"        # Private-Use Networks
         "192.0.0.0/24"         # IETF Protocol Assignments
@@ -63,9 +62,22 @@ setup_firewall() {
         "240.0.0.0/4"          # Reserved for Future Use
         "255.255.255.255/32"   # Limited Broadcast
     )
+    
+    # Known problematic subnets that trigger Hetzner abuse reports
+    # These are public IP ranges where aggressive P2P discovery causes issues
+    # Add subnets here as needed based on abuse reports
+    problematic_subnets=(
+        "212.192.16.0/22"      # Vultr Frankfurt - triggers Hetzner netscan detection (Nov 2025)
+    )
 
     for network in "${private_networks[@]}"; do
         ufw deny out on any to "$network" || log_warn "Failed to block outbound to $network"
+    done
+    
+    # Block problematic subnets (public IPs that cause abuse reports)
+    log_info "Blocking problematic subnets that trigger abuse reports..."
+    for subnet in "${problematic_subnets[@]}"; do
+        ufw deny out on any to "$subnet" proto udp || log_warn "Failed to block outbound UDP to $subnet"
     done
 
     # Block specific ports (updates from Prysm docs Feb '23)
@@ -78,7 +90,7 @@ setup_firewall() {
     log_info "✓ Firewall configuration completed!"
     log_info "UFW firewall is now enabled with Ethereum client and security rules"
     log_info "Allowed ports: 22 (SSH), 443 (HTTPS), 30303 (Ethereum P2P), 12000/13000 (Prysm)"
-    log_info "Blocked: Private networks, specific ports (4000, 3500, 8551, 8545)"
+    log_info "Blocked: Private networks, problematic subnets (UDP), specific ports (4000, 3500, 8551, 8545)"
 }
 
 # Function 2: Setup Fail2ban
