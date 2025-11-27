@@ -955,25 +955,8 @@ merge_client_config() {
 }
 
 # =============================================================================
-# UTILITY FUNCTIONS (migrated from utils.sh)
+# UTILITY FUNCTIONS
 # =============================================================================
-
-# Check if NOT running as root (opposite of require_root)
-require_non_root() {
-    if [[ ${EUID:-$(id -u)} -eq 0 ]]; then
-        log_error "Do not run this script as root. Use the non-root user (e.g., 'eth')."
-        exit 1
-    fi
-}
-
-# Ensure a command exists
-ensure_cmd() {
-    local cmd="$1"
-    if ! command -v "$cmd" >/dev/null 2>&1; then
-        log_error "Required command not found: $cmd"
-        exit 1
-    fi
-}
 
 # Append text to file only if not already present
 append_once() {
