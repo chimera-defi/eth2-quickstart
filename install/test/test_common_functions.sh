@@ -1,12 +1,33 @@
 #!/bin/bash
 # Test suite for common_functions.sh
 # Tests the 4 new functions added to prevent runtime issues
+#
+# Safety: This test uses mock functions to prevent actual system modifications.
+# Run with USE_MOCKS=true (default) for safe testing.
+
+set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
+# Source exports and common functions
 source "$PROJECT_ROOT/exports.sh"
 source "$PROJECT_ROOT/lib/common_functions.sh"
+
+# Apply mocks for safe testing (prevents actual systemctl, apt, etc. calls)
+USE_MOCKS="${USE_MOCKS:-true}"
+MOCK_FILE="$PROJECT_ROOT/test/lib/mock_functions.sh"
+
+if [[ "$USE_MOCKS" == "true" ]] && [[ -f "$MOCK_FILE" ]]; then
+    echo "[INFO] Applying mock functions for safe testing..."
+    # shellcheck source=../../test/lib/mock_functions.sh
+    source "$MOCK_FILE"
+    apply_mocks
+    echo "[INFO] Mock functions applied - no system changes will be made"
+else
+    echo "[WARN] Running WITHOUT mocks - system changes may occur!"
+    echo "[WARN] Set USE_MOCKS=true and ensure test/lib/mock_functions.sh exists for safe testing"
+fi
 
 test_count=0
 pass_count=0
@@ -48,6 +69,12 @@ test_get_latest_release_valid() {
 
 # Test 2: get_latest_release with invalid repo
 test_get_latest_release_invalid() {
+    # Skip this test when mocks are enabled (mocks always succeed)
+    if [[ "$USE_MOCKS" == "true" ]]; then
+        echo "  Skipped (mocks always succeed - test requires real network)"
+        return 0
+    fi
+    
     # Should return 1 (failure) but not crash
     if ! get_latest_release "nonexistent/repo123456789" >/dev/null 2>&1; then
         echo "  Correctly handled invalid repo"
@@ -165,9 +192,9 @@ test_stop_all_services() {
 
 # Test 9: download_file calls secure_download
 test_download_file_calls_secure() {
-    # Check that download_file is properly calling secure_download
-    if type download_file | grep -q "secure_download"; then
-        echo "  download_file correctly calls secure_download"
+    # Check the source file (not the function type, which may be mocked)
+    if grep -A10 "^download_file()" "$PROJECT_ROOT/lib/common_functions.sh" | grep -q "secure_download"; then
+        echo "  download_file correctly calls secure_download in source"
         return 0
     else
         echo "  ERROR: download_file doesn't call secure_download"
