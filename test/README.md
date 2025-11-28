@@ -107,13 +107,21 @@ docker run --rm --privileged eth-node-test /workspace/test/ci_test_run_2.sh
 
 ### Full End-to-End Testing
 
-For complete E2E testing including actual client downloads (takes 30+ minutes):
+The CI runs full E2E testing which takes ~5-7 minutes total:
+- Dependencies: ~1-2 min
+- Geth (apt install): ~30s  
+- Prysm (download): ~1-2 min
+- MEV-Boost (build): ~2-3 min
+
+To run the full E2E test locally:
 
 ```bash
-# Not run in CI due to time constraints
-# Run manually for release validation
+# Build and run full E2E test
+docker build -t eth-node-test -f test/Dockerfile .
+
+# Test run_1.sh (system setup) + run_2.sh (client installation)
 docker run --rm --privileged --user root eth-node-test bash -c "
-  /workspace/run_1.sh && \
-  su - testuser -c 'cd /workspace && echo -e \"1\n2\" | ./run_2.sh'
+  /workspace/test/ci_test_run_1.sh && \
+  /workspace/test/ci_test_run_2.sh
 "
 ```

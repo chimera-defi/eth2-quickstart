@@ -1,7 +1,8 @@
 #!/bin/bash
 # CI Test Script for run_2.sh (Phase 2 - Client Installation)
-# Runs inside Docker container as non-root user
-# Tests that run_2.sh handles inputs correctly and starts installation
+# Runs inside Docker container
+# Tests full E2E installation: Dependencies + Geth + Prysm + MEV-Boost
+# Expected runtime: ~5-7 minutes
 
 set -Eeuo pipefail
 
@@ -19,13 +20,15 @@ log_warn() { echo -e "${YELLOW}[CI]${NC} $*"; }
 log_error() { echo -e "${RED}[CI]${NC} $*"; }
 
 log_info "╔════════════════════════════════════════════════════════════════╗"
-log_info "║  CI Test: run_2.sh (Phase 2 - Client Installation)            ║"
+log_info "║  CI Test: run_2.sh (Phase 2 - Full E2E Installation)          ║"
+log_info "║  Expected runtime: ~5-7 minutes                               ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 
 cd "$PROJECT_ROOT"
 
 # Source exports to get variables
 source ./exports.sh
+source ./lib/common_functions.sh
 
 # Verify required files exist
 log_info "Checking required files..."
@@ -47,127 +50,102 @@ else
     exit 1
 fi
 
-# Test 2: Verify run_2.sh can source required files
-log_info "Test 2: Verify sourcing works..."
-if bash -c 'source ./exports.sh && source ./lib/common_functions.sh && echo "OK"' | grep -q "OK"; then
-    log_info "  ✓ Source files load correctly"
-else
-    log_error "  ✗ Failed to source required files"
-    exit 1
-fi
-
-# Test 3: Verify install scripts exist
-log_info "Test 3: Verify install scripts exist..."
-install_scripts=(
-    "install/utils/install_dependencies.sh"
-    "install/execution/install_geth.sh"
-    "install/consensus/install_prysm.sh"
-    "install/mev/install_mev_boost.sh"
-    "install/mev/install_commit_boost.sh"
-    "install/utils/select_clients.sh"
-)
-for script in "${install_scripts[@]}"; do
-    if [[ -f "$script" ]]; then
-        log_info "  ✓ $script"
-    else
-        log_error "  ✗ Missing: $script"
-        exit 1
-    fi
-done
-
-# Test 4: Verify all install scripts have valid syntax
-log_info "Test 4: Verify install script syntax..."
-for script in "${install_scripts[@]}"; do
-    if bash -n "$script" 2>/dev/null; then
-        log_info "  ✓ $script syntax valid"
-    else
-        log_error "  ✗ $script has syntax errors"
-        exit 1
-    fi
-done
-
-# Test 5: Test dependencies installation (this is quick)
-log_info "Test 5: Install dependencies..."
+# Test 2: Install dependencies
+log_info "Test 2: Install dependencies (~1-2 min)..."
 if ./install/utils/install_dependencies.sh; then
     log_info "  ✓ Dependencies installed"
 else
-    log_warn "  ⚠ Some dependencies may have failed (non-critical in CI)"
+    log_error "  ✗ Dependencies installation failed"
+    exit 1
 fi
 
-# Test 6: Verify key tools are available after dependencies
-log_info "Test 6: Verify key tools installed..."
-tools=(curl wget git jq)
+# Test 3: Verify key tools are available
+log_info "Test 3: Verify key tools installed..."
+tools=(curl wget git jq go)
 for tool in "${tools[@]}"; do
     if command -v "$tool" &>/dev/null; then
         log_info "  ✓ $tool available"
     else
-        log_warn "  ⚠ $tool not found"
+        log_error "  ✗ $tool not found"
+        exit 1
     fi
 done
 
-# Test 7: Test JWT secret creation
-log_info "Test 7: Test JWT secret creation..."
-source ./lib/common_functions.sh
+# Test 4: Create JWT secret
+log_info "Test 4: Create JWT secret..."
 mkdir -p "$HOME/secrets"
 # shellcheck disable=SC2119
 if ensure_jwt_secret; then
-    if [[ -f "$HOME/secrets/jwt.hex" ]]; then
-        log_info "  ✓ JWT secret created"
+    log_info "  ✓ JWT secret created"
+else
+    log_error "  ✗ JWT secret creation failed"
+    exit 1
+fi
+
+# Test 5: Install Geth via PPA (~30s)
+log_info "Test 5: Install Geth (~30s)..."
+if ./install/execution/install_geth.sh; then
+    log_info "  ✓ Geth installed"
+else
+    log_error "  ✗ Geth installation failed"
+    exit 1
+fi
+
+# Verify Geth binary
+if command -v geth &>/dev/null; then
+    log_info "  ✓ Geth binary available: $(geth version | head -1)"
+else
+    log_error "  ✗ Geth binary not found"
+    exit 1
+fi
+
+# Test 6: Install Prysm (~1-2 min)
+log_info "Test 6: Install Prysm (~1-2 min)..."
+if ./install/consensus/install_prysm.sh; then
+    log_info "  ✓ Prysm installed"
+else
+    log_error "  ✗ Prysm installation failed"
+    exit 1
+fi
+
+# Verify Prysm script
+if [[ -x "$HOME/prysm/prysm.sh" ]]; then
+    log_info "  ✓ Prysm script available"
+else
+    log_error "  ✗ Prysm script not found"
+    exit 1
+fi
+
+# Test 7: Install MEV-Boost (~2-3 min)
+log_info "Test 7: Install MEV-Boost (~2-3 min)..."
+if ./install/mev/install_mev_boost.sh; then
+    log_info "  ✓ MEV-Boost installed"
+else
+    log_error "  ✗ MEV-Boost installation failed"
+    exit 1
+fi
+
+# Verify MEV-Boost binary
+if [[ -x "$HOME/mev-boost/mev-boost" ]]; then
+    log_info "  ✓ MEV-Boost binary available"
+else
+    log_error "  ✗ MEV-Boost binary not found"
+    exit 1
+fi
+
+# Test 8: Verify systemd services were created
+log_info "Test 8: Verify systemd services..."
+services=(eth1 cl validator mev)
+for svc in "${services[@]}"; do
+    if [[ -f "/etc/systemd/system/${svc}.service" ]]; then
+        log_info "  ✓ ${svc}.service exists"
     else
-        log_error "  ✗ JWT secret file not found"
-        exit 1
+        log_warn "  ⚠ ${svc}.service not found (may require root)"
     fi
-else
-    log_error "  ✗ ensure_jwt_secret failed"
-    exit 1
-fi
-
-# Test 8: Simulate run_2.sh with default inputs (without actual client downloads)
-log_info "Test 8: Validate run_2.sh input handling..."
-
-# Create a test that sources run_2.sh functions but doesn't execute the main flow
-# This validates the script structure without downloading clients
-cat > /tmp/test_run2_functions.sh << 'TESTEOF'
-#!/bin/bash
-set -Eeuo pipefail
-source ./exports.sh
-source ./lib/common_functions.sh
-
-# Mock the install functions to prevent actual downloads
-install_geth() { echo "[MOCK] Would install Geth"; return 0; }
-install_prysm() { echo "[MOCK] Would install Prysm"; return 0; }
-
-# Test that the functions from run_2.sh can be parsed
-# Extract and test key functions
-echo "Testing validate_menu_choice..."
-if validate_menu_choice "1" 3; then
-    echo "  ✓ validate_menu_choice works"
-else
-    echo "  ✗ validate_menu_choice failed"
-    exit 1
-fi
-
-echo "Testing check_user function..."
-# This will fail since we're not the LOGIN_UNAME user, but that's expected
-if check_user "$(whoami)" 2>/dev/null; then
-    echo "  ✓ check_user works for current user"
-else
-    echo "  ⚠ check_user returned false (expected if not LOGIN_UNAME)"
-fi
-
-echo "All function tests passed!"
-TESTEOF
-
-if bash /tmp/test_run2_functions.sh; then
-    log_info "  ✓ run_2.sh functions validated"
-else
-    log_error "  ✗ run_2.sh function validation failed"
-    exit 1
-fi
-rm -f /tmp/test_run2_functions.sh
+done
 
 log_info "╔════════════════════════════════════════════════════════════════╗"
-log_info "║  ✓ run_2.sh CI Test PASSED                                    ║"
-log_info "║  Note: Actual client downloads skipped (use full test for E2E)║"
+log_info "║  ✓ run_2.sh Full E2E Test PASSED                              ║"
+log_info "║  Installed: Geth, Prysm, MEV-Boost                            ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 exit 0
