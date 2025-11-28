@@ -374,4 +374,78 @@ When implementing new MEV solutions:
 11. **Configuration Clarity**: Use TOML for Rust, YAML for Java, maintain variable substitution
 12. **Backward Compatibility**: Ensure new MEV options don't break existing MEV-Boost setups
 
+## Testing Framework Guidelines
+
+### Testing Approaches (In Order of Preference)
+
+1. **Docker-Based Testing (RECOMMENDED for integration tests)**
+   - Run tests inside isolated containers with REAL system calls
+   - No risk to host system
+   - Tests actual installation behavior
+   - Use `docker-compose up --build test` from `test/` directory
+
+2. **Local Testing with Mocks (for quick checks)**
+   - Use mock functions to intercept system calls
+   - Safe for local development
+   - Run with `USE_MOCKS=true ./test/run_tests.sh`
+
+3. **Lint-Only Testing (for CI)**
+   - Shellcheck and syntax validation
+   - No system calls needed
+   - Run with `./test/run_tests.sh --lint-only`
+
+### Testing File Structure
+```
+test/
+├── Dockerfile           # Ubuntu container for isolated testing
+├── docker-compose.yml   # Container orchestration
+├── docker_test.sh       # Real system calls inside Docker
+├── run_tests.sh         # Local test runner (supports mocks)
+├── lib/
+│   └── mock_functions.sh  # Mock implementations
+└── results/             # Test output (gitignored)
+```
+
+### Critical Testing Rules
+
+1. **Always use `|| true` for grep in pipelines** when using `set -Eeuo pipefail`
+   - `grep` returns exit code 1 when no matches found
+   - With `pipefail`, this causes script to exit
+   - Fix: `grep pattern file | process || true`
+
+2. **Mock functions must be sourced BEFORE the code under test**
+   - Mocks override functions by redefining them
+   - Order matters: source common_functions.sh, THEN mock_functions.sh
+
+3. **Separate bash processes don't inherit mocks**
+   - Running `bash script.sh` creates new process without mocks
+   - Scripts that need mocks must source them internally
+   - Use `USE_MOCKS` environment variable for conditional loading
+
+4. **Test files should be self-contained**
+   - Each test file should source its own dependencies
+   - Don't rely on parent process having sourced files
+
+### Lessons Learned from Testing Implementation
+
+**Key Insights:**
+1. **Docker over Mocks for Integration Tests**: Docker provides real system behavior without risk
+2. **Mocks for Unit Tests Only**: Use mocks for quick, isolated function testing
+3. **Pipefail Gotcha**: `set -Eeuo pipefail` + `grep` = potential silent failures
+4. **Process Isolation**: Child bash processes don't inherit function overrides
+5. **Test Independence**: Each test file must be runnable standalone
+6. **Exit Code Verification**: Always check actual exit codes, not just output
+7. **Clean Up After Tests**: Remove test artifacts (temp dirs, files)
+8. **CI Exclusions**: Document why shellcheck rules are excluded (SC1090, SC1091, SC2031, etc.)
+
+### Shellcheck CI Exclusions (with rationale)
+```bash
+# In .github/workflows/shellcheck.yml
+--exclude=SC2317  # Unreachable code (false positive in test scripts)
+--exclude=SC1091  # Not following source (relative paths)
+--exclude=SC1090  # Non-constant source (variable paths)
+--exclude=SC2034  # Unused variables (template scripts)
+--exclude=SC2031  # Subshell variable modification (testing pattern)
+```
+
 This comprehensive rule set ensures consistent, maintainable, and secure code across the entire Ethereum node setup project.
