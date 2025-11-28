@@ -77,6 +77,43 @@ test/
 
 ## CI Integration
 
-GitHub Actions runs `./test/run_tests.sh --lint-only` for pull requests.
+GitHub Actions (`.github/workflows/ci.yml`) runs:
 
-For full integration testing, use Docker locally or in CI with privileged mode.
+1. **Shellcheck** - Lints all shell scripts
+2. **Docker Lint Tests** - Runs `run_tests.sh --lint-only` in container
+3. **Docker Unit Tests** - Runs `docker_test.sh` with real system calls
+4. **run_1.sh Test** - Tests Phase 1 (system setup) end-to-end
+5. **run_2.sh Test** - Tests Phase 2 (validates structure, skips long downloads)
+
+### CI Test Scripts
+
+| Script | Purpose | User |
+|--------|---------|------|
+| `ci_test_run_1.sh` | Tests run_1.sh (SSH, user setup, security) | root |
+| `ci_test_run_2.sh` | Tests run_2.sh (validates structure, dependencies) | testuser |
+
+### Running CI Tests Locally
+
+```bash
+# Build and run all CI tests
+docker build -t eth-node-test -f test/Dockerfile .
+
+# Test run_1.sh (as root)
+docker run --rm --privileged --user root eth-node-test /workspace/test/ci_test_run_1.sh
+
+# Test run_2.sh (as testuser)
+docker run --rm --privileged eth-node-test /workspace/test/ci_test_run_2.sh
+```
+
+### Full End-to-End Testing
+
+For complete E2E testing including actual client downloads (takes 30+ minutes):
+
+```bash
+# Not run in CI due to time constraints
+# Run manually for release validation
+docker run --rm --privileged --user root eth-node-test bash -c "
+  /workspace/run_1.sh && \
+  su - testuser -c 'cd /workspace && echo -e \"1\n2\" | ./run_2.sh'
+"
+```
