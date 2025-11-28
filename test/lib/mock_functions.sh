@@ -450,10 +450,13 @@ print_mock_summary() {
     echo ""
     echo "=== Mock Call Summary ==="
     if [[ -f "$MOCK_LOG_FILE" ]]; then
-        echo "Total mock calls: $(grep -c '\[MOCK\]' "$MOCK_LOG_FILE" 2>/dev/null || echo 0)"
+        local count
+        count=$(grep -c '\[MOCK\]' "$MOCK_LOG_FILE" 2>/dev/null || echo 0)
+        echo "Total mock calls: $count"
         echo ""
         echo "Functions called:"
-        grep '\[MOCK\]' "$MOCK_LOG_FILE" 2>/dev/null | sed 's/\[MOCK\] //' | cut -d'(' -f1 | sort | uniq -c | sort -rn
+        # Use || true to prevent pipefail from causing script exit when no matches
+        grep '\[MOCK\]' "$MOCK_LOG_FILE" 2>/dev/null | sed 's/\[MOCK\] //' | cut -d'(' -f1 | sort | uniq -c | sort -rn || true
     else
         echo "No mock calls recorded"
     fi
