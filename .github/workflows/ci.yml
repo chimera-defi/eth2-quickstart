@@ -43,10 +43,10 @@ jobs:
     - name: Test run_2.sh (Phase 2 - Client Installation)
       run: |
         # Run run_2.sh inside Docker with default selections
-        # Uses non-interactive mode with preset answers
+        # Inputs: 1=MEV-Boost, 2=Default clients (Geth+Prysm)
+        # Full E2E test takes ~5-7 minutes
         docker run --rm --privileged \
           -e DEBIAN_FRONTEND=noninteractive \
-          -e CI_MODE=true \
           eth-node-test /workspace/test/ci_test_run_2.sh
 
   shellcheck:
