@@ -89,8 +89,10 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 
 | Script | Purpose | User |
 |--------|---------|------|
-| `ci_test_run_1.sh` | Tests run_1.sh (SSH, user setup, security) | root |
-| `ci_test_run_2.sh` | Tests run_2.sh (validates structure, dependencies) | testuser |
+| `ci_test_run_1.sh` | Validates run_1.sh structure, syntax, functions, basic ops | root |
+| `ci_test_run_2.sh` | Validates run_2.sh structure, syntax, configs, Geth install | testuser |
+
+**Note**: Full E2E testing with systemd services and snap packages requires special Docker setup. CI tests validate structure and components that work in standard Docker.
 
 ### Running CI Tests Locally
 
@@ -107,21 +109,15 @@ docker run --rm --privileged eth-node-test /workspace/test/ci_test_run_2.sh
 
 ### Full End-to-End Testing
 
-The CI runs full E2E testing which takes ~5-7 minutes total:
-- Dependencies: ~1-2 min
-- Geth (apt install): ~30s  
-- Prysm (download): ~1-2 min
-- MEV-Boost (build): ~2-3 min
-
-To run the full E2E test locally:
+For complete E2E testing on a real server (not Docker):
 
 ```bash
-# Build and run full E2E test
-docker build -t eth-node-test -f test/Dockerfile .
-
-# Test run_1.sh (system setup) + run_2.sh (client installation)
-docker run --rm --privileged --user root eth-node-test bash -c "
-  /workspace/test/ci_test_run_1.sh && \
-  /workspace/test/ci_test_run_2.sh
-"
+# On a fresh Ubuntu 22.04 server:
+sudo ./run_1.sh           # Phase 1: System setup (as root)
+./run_2.sh                # Phase 2: Client installation (as LOGIN_UNAME user)
 ```
+
+**Limitations in Docker**:
+- `snap` packages (Go, certbot) don't work without special setup
+- `systemd` services require privileged mode + systemd init
+- Full E2E is best tested on actual VMs or servers
