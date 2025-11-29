@@ -26,13 +26,15 @@ log_info "╚══════════════════════�
 cd "$PROJECT_ROOT"
 
 # Source exports to get variables
-source ./exports.sh
-source ./lib/common_functions.sh
+# shellcheck source=../exports.sh
+source "$PROJECT_ROOT/exports.sh"
+# shellcheck source=../lib/common_functions.sh
+source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Test 1: Verify required files exist
 log_info "Test 1: Verify required files..."
 for file in run_2.sh exports.sh lib/common_functions.sh; do
-    if [[ -f "$file" ]]; then
+    if [[ -f "$PROJECT_ROOT/$file" ]]; then
         log_info "  ✓ $file"
     else
         log_error "  ✗ Missing: $file"
@@ -42,7 +44,7 @@ done
 
 # Test 2: Verify run_2.sh syntax
 log_info "Test 2: Verify run_2.sh syntax..."
-if bash -n run_2.sh; then
+if bash -n "$PROJECT_ROOT/run_2.sh"; then
     log_info "  ✓ Syntax valid"
 else
     log_error "  ✗ Syntax error in run_2.sh"
@@ -75,7 +77,7 @@ done
 
 # Test 4: Verify common functions can be sourced
 log_info "Test 4: Verify functions load correctly..."
-if bash -c 'source ./exports.sh && source ./lib/common_functions.sh && declare -f log_info >/dev/null' 2>/dev/null; then
+if bash -c "source '$PROJECT_ROOT/exports.sh' && source '$PROJECT_ROOT/lib/common_functions.sh' && declare -f log_info >/dev/null" 2>/dev/null; then
     log_info "  ✓ Common functions load correctly"
 else
     log_error "  ✗ Failed to load common functions"
@@ -145,7 +147,7 @@ done
 
 # Test 8: Test Geth installation (uses PPA, not snap)
 log_info "Test 8: Install Geth via PPA..."
-if ./install/execution/install_geth.sh 2>&1; then
+if "$PROJECT_ROOT/install/execution/install_geth.sh" 2>&1; then
     if command -v geth &>/dev/null; then
         geth_version=$(geth version 2>/dev/null | head -1 || echo "unknown")
         log_info "  ✓ Geth installed: $geth_version"
