@@ -35,7 +35,7 @@ cd "$PROJECT_ROOT"
 # Test 1: Verify required files exist
 log_info "Test 1: Verify required files..."
 for file in run_1.sh exports.sh lib/common_functions.sh; do
-    if [[ -f "$file" ]]; then
+    if [[ -f "$PROJECT_ROOT/$file" ]]; then
         log_info "  ✓ $file"
     else
         log_error "  ✗ Missing: $file"
@@ -45,7 +45,8 @@ done
 
 # Test 2: Source exports and verify variables
 log_info "Test 2: Load and verify configuration..."
-source ./exports.sh
+# shellcheck source=../exports.sh
+source "$PROJECT_ROOT/exports.sh"
 if [[ -n "${LOGIN_UNAME:-}" ]]; then
     log_info "  ✓ LOGIN_UNAME=$LOGIN_UNAME"
 else
@@ -61,7 +62,7 @@ fi
 
 # Test 3: Verify run_1.sh syntax
 log_info "Test 3: Verify run_1.sh syntax..."
-if bash -n run_1.sh; then
+if bash -n "$PROJECT_ROOT/run_1.sh"; then
     log_info "  ✓ Syntax valid"
 else
     log_error "  ✗ Syntax error in run_1.sh"
@@ -70,7 +71,8 @@ fi
 
 # Test 4: Source common functions and verify they load
 log_info "Test 4: Verify common functions..."
-source ./lib/common_functions.sh
+# shellcheck source=../lib/common_functions.sh
+source "$PROJECT_ROOT/lib/common_functions.sh"
 
 functions_to_check=(
     "log_info" "log_error" "require_root" "check_system_compatibility"
