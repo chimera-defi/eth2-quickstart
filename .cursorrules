@@ -438,6 +438,102 @@ test/
 7. **Clean Up After Tests**: Remove test artifacts (temp dirs, files)
 8. **CI Exclusions**: Document why shellcheck rules are excluded (SC1090, SC1091, SC2031, etc.)
 
+### Critical Path Resolution Rules for Test Scripts
+
+**Problem:** CI dependency validators check sourced file paths relative to the script's directory, NOT from where `cd` commands move to. This causes false "file not found" errors.
+
+**Anti-Pattern (NEVER DO THIS):**
+```bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_ROOT"
+source ./exports.sh  # ❌ CI resolves from $SCRIPT_DIR, not $PROJECT_ROOT
+source ./lib/common_functions.sh  # ❌ Same problem
+```
+
+**Correct Pattern (ALWAYS DO THIS):**
+```bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_ROOT"
+# shellcheck source=../exports.sh
+source "$PROJECT_ROOT/exports.sh"  # ✅ Absolute path works everywhere
+# shellcheck source=../lib/common_functions.sh
+source "$PROJECT_ROOT/lib/common_functions.sh"  # ✅ Absolute path
+```
+
+**Key Rules:**
+1. **Always use `$PROJECT_ROOT` for source statements**, not relative paths
+2. **Add `# shellcheck source=` directives** to help static analysis
+3. **Use `$PROJECT_ROOT` for file existence checks** in tests
+4. **Use `$PROJECT_ROOT` for running scripts**: `"$PROJECT_ROOT/install/script.sh"`
+
+### Function Call Verification
+
+**Problem:** With `set -Eeuo pipefail`, calling functions without required arguments causes silent crashes due to unbound variable errors.
+
+**Anti-Pattern:**
+```bash
+ensure_jwt_secret  # ❌ Function requires $1 (path argument)
+# Script silently exits with error
+```
+
+**Correct Pattern:**
+```bash
+jwt_file="$HOME/secrets/jwt.hex"
+ensure_jwt_secret "$jwt_file"  # ✅ Pass required argument
+```
+
+**Key Rules:**
+1. **Always check function signatures** in `lib/common_functions.sh` before calling
+2. **Verify required vs optional parameters** - required params have no default (`$1`)
+3. **Test function calls locally** before committing
+4. **With `set -u`**, ALL positional parameters must be provided
+
+### Test Output Format Verification
+
+**Problem:** Tests may expect a different output format than what functions actually produce.
+
+**Example:** `ensure_jwt_secret` uses `openssl rand -hex 32` which produces 64 hex chars WITHOUT `0x` prefix. Tests expecting 66 chars with `0x` will fail.
+
+**Anti-Pattern:**
+```bash
+# Assuming format without checking
+if [[ ${#jwt_content} -eq 66 ]] && [[ "$jwt_content" =~ ^0x ]]; then  # ❌ Wrong format
+```
+
+**Correct Pattern:**
+```bash
+# Match actual output format (64 hex chars, no prefix)
+if [[ ${#jwt_content} -eq 64 ]] && [[ "$jwt_content" =~ ^[a-fA-F0-9]+$ ]]; then  # ✅
+```
+
+**Key Rules:**
+1. **Inspect function implementation** before writing validation tests
+2. **Test actual output** by running the function locally first
+3. **Document expected formats** in comments
+4. **Update tests when function behavior changes**
+
+### Pre-Commit CI Simulation
+
+**Always run these checks locally before pushing:**
+```bash
+# 1. Shellcheck all scripts
+find . -name "*.sh" -type f ! -path "./.git/*" -exec shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031 {} \;
+
+# 2. Syntax validation
+find . -name "*.sh" -type f ! -path "./.git/*" -exec bash -n {} \;
+
+# 3. Dependency validation (simulates CI)
+# Check that all 'source ./path' statements resolve correctly from script's directory
+
+# 4. Function unit tests
+bash install/test/test_common_functions.sh
+
+# 5. Full lint tests
+./test/run_tests.sh --lint-only
+```
+
 ### Shellcheck CI Exclusions (with rationale)
 ```bash
 # In .github/workflows/shellcheck.yml
