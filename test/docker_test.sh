@@ -247,14 +247,13 @@ fi
 
 # Test JWT secret creation
 jwt_dir="/tmp/test_jwt_$$"
-mkdir -p "$jwt_dir"
-export HOME="$jwt_dir"
+jwt_file="$jwt_dir/secrets/jwt.hex"
 mkdir -p "$jwt_dir/secrets"
 
-# shellcheck disable=SC2119  # ensure_jwt_secret uses $HOME, not $1
-if ensure_jwt_secret 2>/dev/null && [[ -f "$jwt_dir/secrets/jwt.hex" ]]; then
-    jwt_content=$(cat "$jwt_dir/secrets/jwt.hex")
-    if [[ ${#jwt_content} -eq 66 ]] && [[ "$jwt_content" =~ ^0x[a-fA-F0-9]+$ ]]; then
+if ensure_jwt_secret "$jwt_file" 2>/dev/null && [[ -f "$jwt_file" ]]; then
+    jwt_content=$(cat "$jwt_file")
+    # JWT is 64 hex chars (32 bytes) - openssl rand -hex 32 format
+    if [[ ${#jwt_content} -eq 64 ]] && [[ "$jwt_content" =~ ^[a-fA-F0-9]+$ ]]; then
         record_test "ensure_jwt_secret creates valid JWT" "PASS"
     else
         record_test "ensure_jwt_secret creates valid JWT" "FAIL"

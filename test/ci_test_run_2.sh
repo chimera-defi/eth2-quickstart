@@ -105,11 +105,11 @@ fi
 
 # Test 6: Create JWT secret
 log_info "Test 6: Test JWT secret creation..."
+jwt_file="$HOME/secrets/jwt.hex"
 mkdir -p "$HOME/secrets"
-# shellcheck disable=SC2119
-if ensure_jwt_secret; then
-    if [[ -f "$HOME/secrets/jwt.hex" ]]; then
-        jwt_len=$(wc -c < "$HOME/secrets/jwt.hex")
+if ensure_jwt_secret "$jwt_file"; then
+    if [[ -f "$jwt_file" ]]; then
+        jwt_len=$(wc -c < "$jwt_file")
         if [[ $jwt_len -ge 64 ]]; then
             log_info "  ✓ JWT secret created (${jwt_len} chars)"
         else
