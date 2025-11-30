@@ -570,13 +570,32 @@ bash install/test/test_common_functions.sh
    - Services: `create_systemd_service`, `enable_and_start_systemd_service`
    - Security: `setup_secure_user`, `configure_ssh`, `ensure_jwt_secret`
 
-### Test vs Production Dependencies
+### Centralized Dependency Management
 
-**Important Distinction:**
-- `test/Dockerfile` - Minimal packages for TESTING (shellcheck, curl, git, ufw)
-- `install/utils/install_dependencies.sh` - Full packages for PRODUCTION (build tools, languages, etc.)
+**Single Source of Truth:** `install/utils/install_dependencies.sh`
 
-These are NOT duplicates - they serve different purposes. Don't merge them.
+This script supports multiple modes:
+```bash
+./install_dependencies.sh --test       # Minimal test dependencies
+./install_dependencies.sh --base       # Base packages only  
+./install_dependencies.sh --production # Full production (default)
+```
+
+**Package Groups (defined in script):**
+- `BASE_PACKAGES` - Core utilities needed everywhere (curl, wget, git, jq, etc.)
+- `TEST_PACKAGES` - Additional test tools (shellcheck, ufw, systemd)
+- `PRODUCTION_PACKAGES` - Build tools, languages, services
+
+**Docker Usage:**
+```dockerfile
+# In test/Dockerfile - uses centralized script
+RUN /workspace/install/utils/install_dependencies.sh --test
+```
+
+**Key Features:**
+- Detects Docker environment and skips incompatible tools (snap, timedatectl)
+- Works as both root (Docker) and non-root (production)
+- Provides `--help` to show all package groups
 
 ### Shared Test Utilities (`test/lib/test_utils.sh`)
 
@@ -663,5 +682,20 @@ These scripts intentionally duplicate colors/logging for portability - they shou
    - Standalone/portable scripts
    - Scripts with specialized needs (run_tests.sh has CYAN, BOLD)
    - Generated scripts inside heredocs (aide_check.sh)
+
+7. **Centralize environment-aware scripts** - Scripts like `install_dependencies.sh` should:
+   - Detect their environment (Docker, root/non-root, snap availability)
+   - Support multiple modes via flags (--test, --production)
+   - Define package lists as arrays for easy modification
+   - Skip incompatible operations gracefully with warnings
+
+8. **Dockerfile should use project scripts** - Instead of duplicating package lists:
+   ```dockerfile
+   # BAD: Duplicates package list
+   RUN apt-get install -y curl wget git shellcheck...
+   
+   # GOOD: Uses centralized script
+   RUN /workspace/install/utils/install_dependencies.sh --test
+   ```
 
 This comprehensive rule set ensures consistent, maintainable, and secure code across the entire Ethereum node setup project.
