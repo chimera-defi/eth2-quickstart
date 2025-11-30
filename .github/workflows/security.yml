@@ -45,30 +45,32 @@ jobs:
         echo "Checking security configuration files..."
         
         # Check for SSH config
-        if [ -f "sshd_config" ]; then
+        if [ -f "configs/sshd_config" ]; then
           echo "✅ SSH config file exists"
           
           # Check for secure SSH settings
-          if grep -q "PermitRootLogin" sshd_config; then
+          if grep -q "PermitRootLogin" configs/sshd_config; then
             echo "✅ SSH config has PermitRootLogin setting"
           else
             echo "⚠️  SSH config missing PermitRootLogin setting"
           fi
           
-          if grep -q "PasswordAuthentication" sshd_config; then
+          if grep -q "PasswordAuthentication" configs/sshd_config; then
             echo "✅ SSH config has PasswordAuthentication setting"
           else
             echo "⚠️  SSH config missing PasswordAuthentication setting"
           fi
         else
           echo "❌ SSH config file missing"
+          exit 1
         fi
         
-        # Check for firewall script
-        if [ -f "install/security/firewall.sh" ]; then
-          echo "✅ Firewall script exists"
+        # Check for consolidated security script (includes firewall setup)
+        if [ -f "install/security/consolidated_security.sh" ]; then
+          echo "✅ Consolidated security script exists (includes firewall)"
         else
-          echo "❌ Firewall script missing"
+          echo "❌ Consolidated security script missing"
+          exit 1
         fi
         
         # Check for nginx hardening script
@@ -160,10 +162,11 @@ jobs:
         echo "✅ Found $security_docs security-related documentation files"
         
         # Check for security testing scripts
-        if [ -f "test_security_fixes.sh" ]; then
+        if [ -f "install/security/test_security_fixes.sh" ]; then
           echo "✅ Security testing script exists"
         else
           echo "❌ Security testing script missing"
+          exit 1
         fi
         
         # Check for security validation scripts

@@ -374,4 +374,328 @@ When implementing new MEV solutions:
 11. **Configuration Clarity**: Use TOML for Rust, YAML for Java, maintain variable substitution
 12. **Backward Compatibility**: Ensure new MEV options don't break existing MEV-Boost setups
 
+## Testing Framework Guidelines
+
+### Testing Approaches (In Order of Preference)
+
+1. **Docker-Based Testing (RECOMMENDED for integration tests)**
+   - Run tests inside isolated containers with REAL system calls
+   - No risk to host system
+   - Tests actual installation behavior
+   - Use `docker-compose up --build test` from `test/` directory
+
+2. **Local Testing with Mocks (for quick checks)**
+   - Use mock functions to intercept system calls
+   - Safe for local development
+   - Run with `USE_MOCKS=true ./test/run_tests.sh`
+
+3. **Lint-Only Testing (for CI)**
+   - Shellcheck and syntax validation
+   - No system calls needed
+   - Run with `./test/run_tests.sh --lint-only`
+
+### Testing File Structure
+```
+test/
+├── Dockerfile           # Ubuntu container for isolated testing
+├── docker-compose.yml   # Container orchestration
+├── docker_test.sh       # Real system calls inside Docker
+├── run_tests.sh         # Local test runner (supports mocks)
+├── lib/
+│   └── mock_functions.sh  # Mock implementations
+└── results/             # Test output (gitignored)
+```
+
+### Critical Testing Rules
+
+1. **Always use `|| true` for grep in pipelines** when using `set -Eeuo pipefail`
+   - `grep` returns exit code 1 when no matches found
+   - With `pipefail`, this causes script to exit
+   - Fix: `grep pattern file | process || true`
+
+2. **Mock functions must be sourced BEFORE the code under test**
+   - Mocks override functions by redefining them
+   - Order matters: source common_functions.sh, THEN mock_functions.sh
+
+3. **Separate bash processes don't inherit mocks**
+   - Running `bash script.sh` creates new process without mocks
+   - Scripts that need mocks must source them internally
+   - Use `USE_MOCKS` environment variable for conditional loading
+
+4. **Test files should be self-contained**
+   - Each test file should source its own dependencies
+   - Don't rely on parent process having sourced files
+
+### Lessons Learned from Testing Implementation
+
+**Key Insights:**
+1. **Docker over Mocks for Integration Tests**: Docker provides real system behavior without risk
+2. **Mocks for Unit Tests Only**: Use mocks for quick, isolated function testing
+3. **Pipefail Gotcha**: `set -Eeuo pipefail` + `grep` = potential silent failures
+4. **Process Isolation**: Child bash processes don't inherit function overrides
+5. **Test Independence**: Each test file must be runnable standalone
+6. **Exit Code Verification**: Always check actual exit codes, not just output
+7. **Clean Up After Tests**: Remove test artifacts (temp dirs, files)
+8. **CI Exclusions**: Document why shellcheck rules are excluded (SC1090, SC1091, SC2031, etc.)
+
+### Critical Path Resolution Rules for Test Scripts
+
+**Problem:** CI dependency validators check sourced file paths relative to the script's directory, NOT from where `cd` commands move to. This causes false "file not found" errors.
+
+**Anti-Pattern (NEVER DO THIS):**
+```bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_ROOT"
+source ./exports.sh  # ❌ CI resolves from $SCRIPT_DIR, not $PROJECT_ROOT
+source ./lib/common_functions.sh  # ❌ Same problem
+```
+
+**Correct Pattern (ALWAYS DO THIS):**
+```bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_ROOT"
+# shellcheck source=../exports.sh
+source "$PROJECT_ROOT/exports.sh"  # ✅ Absolute path works everywhere
+# shellcheck source=../lib/common_functions.sh
+source "$PROJECT_ROOT/lib/common_functions.sh"  # ✅ Absolute path
+```
+
+**Key Rules:**
+1. **Always use `$PROJECT_ROOT` for source statements**, not relative paths
+2. **Add `# shellcheck source=` directives** to help static analysis
+3. **Use `$PROJECT_ROOT` for file existence checks** in tests
+4. **Use `$PROJECT_ROOT` for running scripts**: `"$PROJECT_ROOT/install/script.sh"`
+
+### Function Call Verification
+
+**Problem:** With `set -Eeuo pipefail`, calling functions without required arguments causes silent crashes due to unbound variable errors.
+
+**Anti-Pattern:**
+```bash
+ensure_jwt_secret  # ❌ Function requires $1 (path argument)
+# Script silently exits with error
+```
+
+**Correct Pattern:**
+```bash
+jwt_file="$HOME/secrets/jwt.hex"
+ensure_jwt_secret "$jwt_file"  # ✅ Pass required argument
+```
+
+**Key Rules:**
+1. **Always check function signatures** in `lib/common_functions.sh` before calling
+2. **Verify required vs optional parameters** - required params have no default (`$1`)
+3. **Test function calls locally** before committing
+4. **With `set -u`**, ALL positional parameters must be provided
+
+### Test Output Format Verification
+
+**Problem:** Tests may expect a different output format than what functions actually produce.
+
+**Example:** `ensure_jwt_secret` uses `openssl rand -hex 32` which produces 64 hex chars WITHOUT `0x` prefix. Tests expecting 66 chars with `0x` will fail.
+
+**Anti-Pattern:**
+```bash
+# Assuming format without checking
+if [[ ${#jwt_content} -eq 66 ]] && [[ "$jwt_content" =~ ^0x ]]; then  # ❌ Wrong format
+```
+
+**Correct Pattern:**
+```bash
+# Match actual output format (64 hex chars, no prefix)
+if [[ ${#jwt_content} -eq 64 ]] && [[ "$jwt_content" =~ ^[a-fA-F0-9]+$ ]]; then  # ✅
+```
+
+**Key Rules:**
+1. **Inspect function implementation** before writing validation tests
+2. **Test actual output** by running the function locally first
+3. **Document expected formats** in comments
+4. **Update tests when function behavior changes**
+
+### Pre-Commit CI Simulation
+
+**Always run these checks locally before pushing:**
+```bash
+# 1. Shellcheck all scripts
+find . -name "*.sh" -type f ! -path "./.git/*" -exec shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031 {} \;
+
+# 2. Syntax validation
+find . -name "*.sh" -type f ! -path "./.git/*" -exec bash -n {} \;
+
+# 3. Dependency validation (simulates CI)
+# Check that all 'source ./path' statements resolve correctly from script's directory
+
+# 4. Function unit tests
+bash install/test/test_common_functions.sh
+
+# 5. Full lint tests
+./test/run_tests.sh --lint-only
+```
+
+### Shellcheck CI Exclusions (with rationale)
+```bash
+# In .github/workflows/shellcheck.yml
+--exclude=SC2317  # Unreachable code (false positive in test scripts)
+--exclude=SC1091  # Not following source (relative paths)
+--exclude=SC1090  # Non-constant source (variable paths)
+--exclude=SC2034  # Unused variables (template scripts)
+--exclude=SC2031  # Subshell variable modification (testing pattern)
+```
+
+## Code Reuse Guidelines
+
+### DRY Principle Enforcement
+
+**Rule: Never duplicate code that can be shared**
+
+1. **Test Utilities** - All test scripts MUST source `test/lib/test_utils.sh`:
+   ```bash
+   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+   LOG_PREFIX="CI"  # Optional: customize log prefix
+   source "$SCRIPT_DIR/lib/test_utils.sh"
+   ```
+
+2. **Shellcheck Configuration** - Use centralized exclusions from `test_utils.sh`:
+   ```bash
+   # Use the shared function instead of inline shellcheck calls
+   check_shellcheck "$script"  # Returns true/false
+   run_shellcheck "$script"    # Shows output
+   ```
+
+3. **Common Functions** - All scripts MUST use `lib/common_functions.sh`:
+   - Logging: `log_info`, `log_warn`, `log_error`
+   - File ops: `ensure_directory`, `secure_download`, `extract_archive`
+   - Services: `create_systemd_service`, `enable_and_start_systemd_service`
+   - Security: `setup_secure_user`, `configure_ssh`, `ensure_jwt_secret`
+
+### Centralized Dependency Management
+
+**Single Source of Truth:** `install/utils/install_dependencies.sh`
+
+This script supports multiple modes:
+```bash
+./install_dependencies.sh --test       # Minimal test dependencies
+./install_dependencies.sh --base       # Base packages only  
+./install_dependencies.sh --production # Full production (default)
+```
+
+**Package Groups (defined in script):**
+- `BASE_PACKAGES` - Core utilities needed everywhere (curl, wget, git, jq, etc.)
+- `TEST_PACKAGES` - Additional test tools (shellcheck, ufw, systemd)
+- `PRODUCTION_PACKAGES` - Build tools, languages, services
+
+**Docker Usage:**
+```dockerfile
+# In test/Dockerfile - uses centralized script
+RUN /workspace/install/utils/install_dependencies.sh --test
+```
+
+**Key Features:**
+- Detects Docker environment and skips incompatible tools (snap, timedatectl)
+- Works as both root (Docker) and non-root (production)
+- Provides `--help` to show all package groups
+
+### Shared Test Utilities (`test/lib/test_utils.sh`)
+
+Provides:
+- `SHELLCHECK_EXCLUDES` - Centralized shellcheck configuration
+- `LOG_PREFIX` - Customizable log prefix
+- `log_info/warn/error/header` - Colored logging
+- `record_test` / `print_test_summary` - Test result tracking
+- `is_docker` / `is_root` - Environment detection
+- `assert_file_exists` / `assert_command_exists` / `assert_valid_syntax` - Common assertions
+- `source_exports` / `source_common_functions` - Proper project file sourcing
+- `check_shellcheck` / `run_shellcheck` - Shellcheck with standard exclusions
+
+### Anti-Patterns to Avoid
+
+1. **Don't redefine colors in every script:**
+   ```bash
+   # BAD: Duplicates definition
+   RED='\033[0;31m'
+   GREEN='\033[0;32m'
+   
+   # GOOD: Source shared utilities
+   source "$SCRIPT_DIR/lib/test_utils.sh"
+   ```
+
+2. **Don't hardcode shellcheck exclusions:**
+   ```bash
+   # BAD: Duplicates exclusion list
+   shellcheck --exclude=SC2317,SC1091,SC1090... "$script"
+   
+   # GOOD: Use shared config
+   check_shellcheck "$script"
+   ```
+
+3. **Don't duplicate logging functions:**
+   ```bash
+   # BAD: Redefines function
+   log_info() { echo "[INFO] $1"; }
+   
+   # GOOD: Use from common_functions.sh or test_utils.sh
+   source_common_functions
+   ```
+
+4. **Don't duplicate color definitions if sourcing common_functions.sh:**
+   ```bash
+   # BAD: Already defined in common_functions.sh
+   RED='\033[0;31m'
+   GREEN='\033[0;32m'
+   
+   # GOOD: Just use them (they're exported by common_functions.sh)
+   # Colors available: RED, GREEN, YELLOW, BLUE, NC
+   ```
+
+### Standalone vs Integrated Scripts
+
+**Standalone Scripts** (don't source common_functions.sh):
+- `docs/server_security_validation.sh` - For running on production servers
+- `docs/verify_security.sh` - Portable security verification
+- `docs/validate_security_safe.sh` - Safe validation without root
+
+These scripts intentionally duplicate colors/logging for portability - they should work when copied to any server without the full project.
+
+**Integrated Scripts** (MUST source common_functions.sh):
+- All `install/**/*.sh` scripts
+- All `test/*.sh` scripts (via test_utils.sh or directly)
+- `run_1.sh`, `run_2.sh`
+
+### Code Consolidation Lessons Learned
+
+1. **Create shared utility files early** - `test/lib/test_utils.sh` eliminated ~75 lines of duplicate code across 3 test files
+
+2. **Add to common libraries proactively** - When adding a feature like BLUE color, add it to `common_functions.sh` so all scripts benefit
+
+3. **Document intentional duplication** - Standalone scripts may need their own definitions; document why
+
+4. **Use comments for removed code** - When removing duplicate definitions, leave a comment pointing to the source:
+   ```bash
+   # Colors are defined in common_functions.sh (RED, GREEN, YELLOW, BLUE, NC)
+   ```
+
+5. **Centralize configuration** - Shellcheck exclusions, test patterns, and other config should have a single source of truth
+
+6. **Don't over-consolidate** - Some duplication is acceptable for:
+   - Standalone/portable scripts
+   - Scripts with specialized needs (run_tests.sh has CYAN, BOLD)
+   - Generated scripts inside heredocs (aide_check.sh)
+
+7. **Centralize environment-aware scripts** - Scripts like `install_dependencies.sh` should:
+   - Detect their environment (Docker, root/non-root, snap availability)
+   - Support multiple modes via flags (--test, --production)
+   - Define package lists as arrays for easy modification
+   - Skip incompatible operations gracefully with warnings
+
+8. **Dockerfile should use project scripts** - Instead of duplicating package lists:
+   ```dockerfile
+   # BAD: Duplicates package list
+   RUN apt-get install -y curl wget git shellcheck...
+   
+   # GOOD: Uses centralized script
+   RUN /workspace/install/utils/install_dependencies.sh --test
+   ```
+
 This comprehensive rule set ensures consistent, maintainable, and secure code across the entire Ethereum node setup project.
