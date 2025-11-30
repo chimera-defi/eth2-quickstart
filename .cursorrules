@@ -620,4 +620,48 @@ Provides:
    source_common_functions
    ```
 
+4. **Don't duplicate color definitions if sourcing common_functions.sh:**
+   ```bash
+   # BAD: Already defined in common_functions.sh
+   RED='\033[0;31m'
+   GREEN='\033[0;32m'
+   
+   # GOOD: Just use them (they're exported by common_functions.sh)
+   # Colors available: RED, GREEN, YELLOW, BLUE, NC
+   ```
+
+### Standalone vs Integrated Scripts
+
+**Standalone Scripts** (don't source common_functions.sh):
+- `docs/server_security_validation.sh` - For running on production servers
+- `docs/verify_security.sh` - Portable security verification
+- `docs/validate_security_safe.sh` - Safe validation without root
+
+These scripts intentionally duplicate colors/logging for portability - they should work when copied to any server without the full project.
+
+**Integrated Scripts** (MUST source common_functions.sh):
+- All `install/**/*.sh` scripts
+- All `test/*.sh` scripts (via test_utils.sh or directly)
+- `run_1.sh`, `run_2.sh`
+
+### Code Consolidation Lessons Learned
+
+1. **Create shared utility files early** - `test/lib/test_utils.sh` eliminated ~75 lines of duplicate code across 3 test files
+
+2. **Add to common libraries proactively** - When adding a feature like BLUE color, add it to `common_functions.sh` so all scripts benefit
+
+3. **Document intentional duplication** - Standalone scripts may need their own definitions; document why
+
+4. **Use comments for removed code** - When removing duplicate definitions, leave a comment pointing to the source:
+   ```bash
+   # Colors are defined in common_functions.sh (RED, GREEN, YELLOW, BLUE, NC)
+   ```
+
+5. **Centralize configuration** - Shellcheck exclusions, test patterns, and other config should have a single source of truth
+
+6. **Don't over-consolidate** - Some duplication is acceptable for:
+   - Standalone/portable scripts
+   - Scripts with specialized needs (run_tests.sh has CYAN, BOLD)
+   - Generated scripts inside heredocs (aide_check.sh)
+
 This comprehensive rule set ensures consistent, maintainable, and secure code across the entire Ethereum node setup project.
