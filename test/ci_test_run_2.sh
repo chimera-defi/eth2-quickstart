@@ -6,18 +6,11 @@
 
 set -Eeuo pipefail
 
+# Setup paths and source shared utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-log_info() { echo -e "${GREEN}[CI]${NC} $*"; }
-log_warn() { echo -e "${YELLOW}[CI]${NC} $*"; }
-log_error() { echo -e "${RED}[CI]${NC} $*"; }
+LOG_PREFIX="CI"
+# shellcheck source=lib/test_utils.sh
+source "$SCRIPT_DIR/lib/test_utils.sh"
 
 log_info "╔════════════════════════════════════════════════════════════════╗"
 log_info "║  CI Test: run_2.sh (Phase 2 - Structure Validation)           ║"
@@ -26,20 +19,13 @@ log_info "╚══════════════════════�
 cd "$PROJECT_ROOT"
 
 # Source exports to get variables
-# shellcheck source=../exports.sh
-source "$PROJECT_ROOT/exports.sh"
-# shellcheck source=../lib/common_functions.sh
-source "$PROJECT_ROOT/lib/common_functions.sh"
+source_exports
+source_common_functions
 
 # Test 1: Verify required files exist
 log_info "Test 1: Verify required files..."
 for file in run_2.sh exports.sh lib/common_functions.sh; do
-    if [[ -f "$PROJECT_ROOT/$file" ]]; then
-        log_info "  ✓ $file"
-    else
-        log_error "  ✗ Missing: $file"
-        exit 1
-    fi
+    assert_file_exists "$PROJECT_ROOT/$file" "$file"
 done
 
 # Test 2: Verify run_2.sh syntax

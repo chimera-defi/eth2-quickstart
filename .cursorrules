@@ -544,4 +544,80 @@ bash install/test/test_common_functions.sh
 --exclude=SC2031  # Subshell variable modification (testing pattern)
 ```
 
+## Code Reuse Guidelines
+
+### DRY Principle Enforcement
+
+**Rule: Never duplicate code that can be shared**
+
+1. **Test Utilities** - All test scripts MUST source `test/lib/test_utils.sh`:
+   ```bash
+   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+   LOG_PREFIX="CI"  # Optional: customize log prefix
+   source "$SCRIPT_DIR/lib/test_utils.sh"
+   ```
+
+2. **Shellcheck Configuration** - Use centralized exclusions from `test_utils.sh`:
+   ```bash
+   # Use the shared function instead of inline shellcheck calls
+   check_shellcheck "$script"  # Returns true/false
+   run_shellcheck "$script"    # Shows output
+   ```
+
+3. **Common Functions** - All scripts MUST use `lib/common_functions.sh`:
+   - Logging: `log_info`, `log_warn`, `log_error`
+   - File ops: `ensure_directory`, `secure_download`, `extract_archive`
+   - Services: `create_systemd_service`, `enable_and_start_systemd_service`
+   - Security: `setup_secure_user`, `configure_ssh`, `ensure_jwt_secret`
+
+### Test vs Production Dependencies
+
+**Important Distinction:**
+- `test/Dockerfile` - Minimal packages for TESTING (shellcheck, curl, git, ufw)
+- `install/utils/install_dependencies.sh` - Full packages for PRODUCTION (build tools, languages, etc.)
+
+These are NOT duplicates - they serve different purposes. Don't merge them.
+
+### Shared Test Utilities (`test/lib/test_utils.sh`)
+
+Provides:
+- `SHELLCHECK_EXCLUDES` - Centralized shellcheck configuration
+- `LOG_PREFIX` - Customizable log prefix
+- `log_info/warn/error/header` - Colored logging
+- `record_test` / `print_test_summary` - Test result tracking
+- `is_docker` / `is_root` - Environment detection
+- `assert_file_exists` / `assert_command_exists` / `assert_valid_syntax` - Common assertions
+- `source_exports` / `source_common_functions` - Proper project file sourcing
+- `check_shellcheck` / `run_shellcheck` - Shellcheck with standard exclusions
+
+### Anti-Patterns to Avoid
+
+1. **Don't redefine colors in every script:**
+   ```bash
+   # BAD: Duplicates definition
+   RED='\033[0;31m'
+   GREEN='\033[0;32m'
+   
+   # GOOD: Source shared utilities
+   source "$SCRIPT_DIR/lib/test_utils.sh"
+   ```
+
+2. **Don't hardcode shellcheck exclusions:**
+   ```bash
+   # BAD: Duplicates exclusion list
+   shellcheck --exclude=SC2317,SC1091,SC1090... "$script"
+   
+   # GOOD: Use shared config
+   check_shellcheck "$script"
+   ```
+
+3. **Don't duplicate logging functions:**
+   ```bash
+   # BAD: Redefines function
+   log_info() { echo "[INFO] $1"; }
+   
+   # GOOD: Use from common_functions.sh or test_utils.sh
+   source_common_functions
+   ```
+
 This comprehensive rule set ensures consistent, maintainable, and secure code across the entire Ethereum node setup project.
