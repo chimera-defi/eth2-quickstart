@@ -4,38 +4,11 @@
 
 set -Eeuo pipefail
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
+# Setup paths and source shared utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-# Test results
-TESTS_RUN=0
-TESTS_PASSED=0
-TESTS_FAILED=0
-
-log_info() { echo -e "${GREEN}[INFO]${NC} $*"; }
-log_warn() { echo -e "${YELLOW}[WARN]${NC} $*"; }
-log_error() { echo -e "${RED}[ERROR]${NC} $*"; }
-log_header() { echo -e "\n${BLUE}=== $* ===${NC}\n"; }
-
-record_test() {
-    local name="$1"
-    local result="$2"
-    TESTS_RUN=$((TESTS_RUN + 1))
-    if [[ "$result" == "PASS" ]]; then
-        TESTS_PASSED=$((TESTS_PASSED + 1))
-        echo -e "${GREEN}✓${NC} $name"
-    else
-        TESTS_FAILED=$((TESTS_FAILED + 1))
-        echo -e "${RED}✗${NC} $name"
-    fi
-}
+LOG_PREFIX="INFO"
+# shellcheck source=lib/test_utils.sh
+source "$SCRIPT_DIR/lib/test_utils.sh"
 
 # Parse arguments
 TEST_MODE="${1:-full}"
@@ -52,7 +25,7 @@ log_info "Working directory: $(pwd)"
 log_header "Phase 1: Environment Verification"
 
 # Check we're in a container
-if [[ -f /.dockerenv ]] || grep -q docker /proc/1/cgroup 2>/dev/null; then
+if is_docker; then
     record_test "Running inside Docker container" "PASS"
 else
     log_warn "Not running in Docker - tests may affect host system!"
@@ -61,11 +34,7 @@ fi
 
 # Check required tools
 for tool in bash curl wget git sudo ufw jq tar; do
-    if command -v "$tool" &>/dev/null; then
-        record_test "Tool available: $tool" "PASS"
-    else
-        record_test "Tool available: $tool" "FAIL"
-    fi
+    assert_command_exists "$tool"
 done
 
 # =============================================================================
@@ -79,7 +48,7 @@ shellcheck_fail=0
 
 for script in "$PROJECT_ROOT"/*.sh "$PROJECT_ROOT"/lib/*.sh; do
     [[ -f "$script" ]] || continue
-    if shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031 "$script" >/dev/null 2>&1; then
+    if check_shellcheck "$script"; then
         shellcheck_pass=$((shellcheck_pass + 1))
     else
         shellcheck_fail=$((shellcheck_fail + 1))
@@ -119,7 +88,7 @@ fi
 log_header "Phase 3: Source File Verification"
 
 # Test exports.sh loads
-if source "$PROJECT_ROOT/exports.sh" 2>/dev/null; then
+if source_exports 2>/dev/null; then
     record_test "exports.sh loads successfully" "PASS"
     
     # Check key variables
@@ -145,16 +114,12 @@ else
 fi
 
 # Test common_functions.sh loads
-if source "$PROJECT_ROOT/lib/common_functions.sh" 2>/dev/null; then
+if source_common_functions 2>/dev/null; then
     record_test "common_functions.sh loads successfully" "PASS"
     
-    # Check key functions exist
-    for func in log_info log_error ensure_directory download_file create_systemd_service; do
-        if declare -f "$func" >/dev/null 2>&1; then
-            record_test "Function exists: $func" "PASS"
-        else
-            record_test "Function exists: $func" "FAIL"
-        fi
+    # Check key functions exist (use common_functions' log_info, not test's)
+    for func in ensure_directory download_file create_systemd_service; do
+        assert_function_exists "$func"
     done
 else
     record_test "common_functions.sh loads successfully" "FAIL"
@@ -165,9 +130,9 @@ fi
 # =============================================================================
 log_header "Phase 4: Function Unit Tests (Real System Calls)"
 
-# Source the libraries
-source "$PROJECT_ROOT/exports.sh"
-source "$PROJECT_ROOT/lib/common_functions.sh"
+# Re-source to ensure functions are available
+source_exports
+source_common_functions
 
 # Test ensure_directory - creates real directory
 test_dir="/tmp/test_ensure_dir_$$"
@@ -291,17 +256,5 @@ done
 # =============================================================================
 # SUMMARY
 # =============================================================================
-log_header "Test Summary"
-
-echo "Total tests: $TESTS_RUN"
-echo -e "Passed: ${GREEN}$TESTS_PASSED${NC}"
-echo -e "Failed: ${RED}$TESTS_FAILED${NC}"
-echo ""
-
-if [[ $TESTS_FAILED -eq 0 ]]; then
-    echo -e "${GREEN}All tests passed!${NC}"
-    exit 0
-else
-    echo -e "${RED}Some tests failed.${NC}"
-    exit 1
-fi
+print_test_summary
+exit $?

@@ -6,25 +6,18 @@
 
 set -Eeuo pipefail
 
+# Setup paths and source shared utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-log_info() { echo -e "${GREEN}[CI]${NC} $*"; }
-log_warn() { echo -e "${YELLOW}[CI]${NC} $*"; }
-log_error() { echo -e "${RED}[CI]${NC} $*"; }
+LOG_PREFIX="CI"
+# shellcheck source=lib/test_utils.sh
+source "$SCRIPT_DIR/lib/test_utils.sh"
 
 log_info "╔════════════════════════════════════════════════════════════════╗"
 log_info "║  CI Test: run_1.sh (Phase 1 - Structure Validation)           ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 
 # Verify we're running as root (required for run_1.sh)
-if [[ $EUID -ne 0 ]]; then
+if ! is_root; then
     log_error "This test must run as root"
     exit 1
 fi
@@ -35,18 +28,12 @@ cd "$PROJECT_ROOT"
 # Test 1: Verify required files exist
 log_info "Test 1: Verify required files..."
 for file in run_1.sh exports.sh lib/common_functions.sh; do
-    if [[ -f "$PROJECT_ROOT/$file" ]]; then
-        log_info "  ✓ $file"
-    else
-        log_error "  ✗ Missing: $file"
-        exit 1
-    fi
+    assert_file_exists "$PROJECT_ROOT/$file" "$file"
 done
 
 # Test 2: Source exports and verify variables
 log_info "Test 2: Load and verify configuration..."
-# shellcheck source=../exports.sh
-source "$PROJECT_ROOT/exports.sh"
+source_exports
 if [[ -n "${LOGIN_UNAME:-}" ]]; then
     log_info "  ✓ LOGIN_UNAME=$LOGIN_UNAME"
 else
@@ -71,8 +58,7 @@ fi
 
 # Test 4: Source common functions and verify they load
 log_info "Test 4: Verify common functions..."
-# shellcheck source=../lib/common_functions.sh
-source "$PROJECT_ROOT/lib/common_functions.sh"
+source_common_functions
 
 functions_to_check=(
     "log_info" "log_error" "require_root" "check_system_compatibility"
