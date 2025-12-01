@@ -254,6 +254,23 @@ for script in "$PROJECT_ROOT"/install/execution/*.sh "$PROJECT_ROOT"/install/con
 done
 
 # =============================================================================
+# PHASE 7: Client-Specific Tests
+# =============================================================================
+log_header "Phase 7: Client-Specific Tests"
+
+# Run ethrex-specific tests
+if [[ -f "$SCRIPT_DIR/test_ethrex.sh" ]]; then
+    log_info "Running ethrex client tests..."
+    if TEST_DOWNLOAD_BINARY=true "$SCRIPT_DIR/test_ethrex.sh"; then
+        record_test "Ethrex client test suite" "PASS"
+    else
+        record_test "Ethrex client test suite" "FAIL"
+    fi
+else
+    record_test "Ethrex client test suite" "SKIP"
+fi
+
+# =============================================================================
 # SUMMARY
 # =============================================================================
 print_test_summary

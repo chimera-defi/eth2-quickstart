@@ -369,6 +369,7 @@ run_config_verification() {
     
     local config_files=(
         "configs/besu/besu_base.toml"
+        "configs/ethrex/ethrex_base.toml"
         "configs/grandine/grandine_base.toml"
         "configs/lodestar/lodestar_beacon_base.json"
         "configs/lodestar/lodestar_validator_base.json"

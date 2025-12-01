@@ -83,7 +83,7 @@ if ! secure_download "$DOWNLOAD_URL" "$ETHREX_DIR/ethrex"; then
     
     cd "$TEMP_BUILD_DIR/ethrex" || exit
     
-    log_info "Building ethrex (this may take 10-15 minutes)..."
+    log_info "Building ethrex (this may take several minutes depending on your hardware)..."
     if ! cargo build --release; then
         log_error "Failed to build ethrex"
         rm -rf "$TEMP_BUILD_DIR"
@@ -115,6 +115,7 @@ ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Build the ethrex command with all necessary options
 # Using variables from exports.sh for consistency with other clients
+# Note: ethrex CLI verified against v7.0.0 --help output
 ETHREX_CMD="$ETHREX_DIR/ethrex \
 --network mainnet \
 --datadir $ETHREX_DIR/data \
@@ -128,12 +129,10 @@ ETHREX_CMD="$ETHREX_DIR/ethrex \
 --authrpc.port $ENGINE_PORT \
 --authrpc.jwtsecret $HOME/secrets/jwt.hex \
 --p2p.port 30303 \
---discovery.port 30303 \
 --target.peers $MAX_PEERS \
 --metrics \
 --metrics.addr $LH \
 --metrics.port $METRICS_PORT \
---builder.extra-data \"$GRAFITTI\" \
 --log.level info"
 
 # Create systemd service
