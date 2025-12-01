@@ -20,8 +20,8 @@ log_installation_start "Ethrex"
 check_system_requirements 8 1000
 
 # Setup firewall rules for Ethrex
-# P2P: 30303 (TCP/UDP), HTTP RPC: 8545, WS RPC: 8546, Engine API: 8551, Metrics: 9090
-setup_firewall_rules 30303 8545 8546 8551 9090
+# P2P, HTTP RPC, WS RPC, Engine API, Metrics (using variables from exports.sh)
+setup_firewall_rules "$ETHREX_P2P_PORT" "$ETHREX_HTTP_PORT" "$ETHREX_WS_PORT" "$ETHREX_ENGINE_PORT" "$ETHREX_METRICS_PORT"
 
 # Determine system architecture
 ARCH=$(uname -m)
@@ -121,18 +121,18 @@ ETHREX_CMD="$ETHREX_DIR/ethrex \
 --datadir $ETHREX_DIR/data \
 --syncmode snap \
 --http.addr $LH \
---http.port 8545 \
+--http.port $ETHREX_HTTP_PORT \
 --ws.enabled \
 --ws.addr $LH \
---ws.port 8546 \
+--ws.port $ETHREX_WS_PORT \
 --authrpc.addr $LH \
---authrpc.port $ENGINE_PORT \
+--authrpc.port $ETHREX_ENGINE_PORT \
 --authrpc.jwtsecret $HOME/secrets/jwt.hex \
---p2p.port 30303 \
+--p2p.port $ETHREX_P2P_PORT \
 --target.peers $MAX_PEERS \
 --metrics \
 --metrics.addr $LH \
---metrics.port $METRICS_PORT \
+--metrics.port $ETHREX_METRICS_PORT \
 --log.level info"
 
 # Create systemd service
@@ -151,11 +151,11 @@ Data Directory:  $ETHREX_DIR/data
 Version:         $ETHREX_INSTALLED_VERSION
 
 Endpoints:
-  HTTP RPC:      http://$LH:8545
-  WebSocket:     ws://$LH:8546
-  Engine API:    http://$LH:$ENGINE_PORT
-  Metrics:       http://$LH:$METRICS_PORT
-  P2P:           30303 (TCP/UDP)
+  HTTP RPC:      http://$LH:$ETHREX_HTTP_PORT
+  WebSocket:     ws://$LH:$ETHREX_WS_PORT
+  Engine API:    http://$LH:$ETHREX_ENGINE_PORT
+  Metrics:       http://$LH:$ETHREX_METRICS_PORT
+  P2P:           $ETHREX_P2P_PORT (TCP/UDP)
 
 Service Management:
   Status:  sudo systemctl status eth1
