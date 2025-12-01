@@ -44,6 +44,7 @@ export BESU_CACHE=8192
 export ERIGON_CACHE=8192
 export RETH_CACHE=8192
 export NIMBUS_ETH1_CACHE=4096  # Lighter client
+export ETHREX_CACHE=4096  # Minimalist client by Lambda Class
 
 # Consensus clients  
 export TEKU_CACHE=8192
@@ -61,6 +62,11 @@ export BESU_ENGINE_PORT=8551
 export NIMBUS_ETH1_HTTP_PORT=8545
 export NIMBUS_ETH1_WS_PORT=8546
 export NIMBUS_ETH1_ENGINE_PORT=8551
+export ETHREX_HTTP_PORT=8545
+export ETHREX_WS_PORT=8546
+export ETHREX_ENGINE_PORT=8551
+export ETHREX_P2P_PORT=30303
+export ETHREX_METRICS_PORT=9090
 
 # Common ports
 export ENGINE_PORT=8551  # JWT-secured Engine API port
