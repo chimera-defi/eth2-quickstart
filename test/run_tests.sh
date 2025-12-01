@@ -26,6 +26,7 @@ TESTS_RUN=0
 TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_SKIPPED=0
+TESTS_WARNED=0
 
 # Default test mode
 TEST_MODE="${TEST_MODE:-all}"
@@ -79,6 +80,10 @@ log_test() {
         "SKIP")
             TESTS_SKIPPED=$((TESTS_SKIPPED + 1))
             echo -e "${YELLOW}⊘${NC} ${name} (skipped)"
+            ;;
+        "WARN")
+            TESTS_WARNED=$((TESTS_WARNED + 1))
+            echo -e "${YELLOW}⚠${NC} ${name} (warning)"
             ;;
     esac
     
@@ -369,6 +374,7 @@ run_config_verification() {
     
     local config_files=(
         "configs/besu/besu_base.toml"
+        "configs/ethrex/ethrex_base.toml"
         "configs/grandine/grandine_base.toml"
         "configs/lodestar/lodestar_beacon_base.json"
         "configs/lodestar/lodestar_validator_base.json"
@@ -395,9 +401,10 @@ run_config_verification() {
                     fi
                     ;;
                 *.yaml|*.yml)
-                    # Basic YAML check (look for obvious errors)
-                    if ! grep -q "^[^#]*:[^:]*:[^:]*$" "$PROJECT_ROOT/$config"; then
-                        log_test "PASS" "config basic YAML check: $config"
+                    # Basic YAML check - verify file has valid structure
+                    # Check for key: value patterns (allowing URLs with http://)
+                    if grep -qE "^[a-zA-Z_-]+:" "$PROJECT_ROOT/$config"; then
+                        log_test "PASS" "config valid YAML structure: $config"
                     else
                         log_test "WARN" "config may have YAML issues: $config"
                     fi
@@ -565,14 +572,19 @@ print_summary() {
     echo -e "  ${GREEN}Passed: $TESTS_PASSED${NC}"
     echo -e "  ${RED}Failed: $TESTS_FAILED${NC}"
     echo -e "  ${YELLOW}Skipped: $TESTS_SKIPPED${NC}"
+    echo -e "  ${YELLOW}Warnings: $TESTS_WARNED${NC}"
     echo ""
     
+    local exit_code=0
     if [[ $TESTS_FAILED -eq 0 ]]; then
-        echo -e "${GREEN}${BOLD}All tests passed!${NC}"
-        local exit_code=0
+        if [[ $TESTS_WARNED -gt 0 ]]; then
+            echo -e "${GREEN}${BOLD}All tests passed!${NC} (${TESTS_WARNED} warnings)"
+        else
+            echo -e "${GREEN}${BOLD}All tests passed!${NC}"
+        fi
     else
         echo -e "${RED}${BOLD}Some tests failed. Review the output above.${NC}"
-        local exit_code=1
+        exit_code=1
     fi
     
     echo ""

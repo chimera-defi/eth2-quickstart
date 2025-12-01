@@ -81,6 +81,12 @@ show_execution_clients() {
         "• Very lightweight\n• Perfect for Raspberry Pi\n• Low bandwidth usage\n• Low memory footprint" \
         "• Uses nightly builds\n• Smaller community\n• Less battle-tested\n• Nim language less common" \
         "../execution/install_nimbus_eth1.sh"
+    
+    display_client_info "execution" "Ethrex" "Rust" \
+        "Lambda Class minimalist, fast and modular Ethereum client. Supports L1 and L2." \
+        "• Minimalist codebase\n• Fast and modular\n• Pre-built binaries available\n• L2/ZK-Rollup support\n• Active development" \
+        "• Very new client (2024)\n• Less battle-tested\n• Smaller community\n• Early adopter risk" \
+        "../execution/ethrex.sh"
 }
 
 show_consensus_clients() {
@@ -150,8 +156,13 @@ show_recommendations() {
     
     echo -e "${BOLD}For Client Diversity:${NC}"
     echo "Consider using minority clients to improve network resilience:"
-    echo "• Execution: Erigon, Reth, Nethermind, Besu, or Nimbus-eth1"
+    echo "• Execution: Erigon, Reth, Nethermind, Besu, Nimbus-eth1, or Ethrex"
     echo "• Consensus: Lighthouse, Teku, Nimbus, Lodestar, or Grandine"
+    echo
+    
+    echo -e "${BOLD}For Early Adopters/Developers:${NC}"
+    echo "• Execution: Ethrex (minimalist Rust client with L2 support)"
+    echo "• Consensus: Lodestar or Grandine (modern implementations)"
     echo
 }
 
@@ -173,6 +184,7 @@ show_system_requirements() {
     echo "• Lodestar: Requires Node.js"
     echo "• Erigon: Higher RAM during initial sync"
     echo "• Reth/Grandine: Rust compilation requires build tools"
+    echo "• Ethrex: Pre-built binaries available (8GB+ RAM recommended)"
     echo
 }
 
@@ -249,10 +261,10 @@ interactive_selection() {
                      echo "• Consensus Client: Lighthouse or Prysm" ;;
                 "b") echo "• Execution Client: Reth or Erigon"
                      echo "• Consensus Client: Lighthouse or Grandine" ;;
-                "c") echo "• Execution Client: Nethermind or Besu"
+                "c") echo "• Execution Client: Nethermind, Besu, or Ethrex"
                      echo "• Consensus Client: Teku or Lodestar" ;;
-                "d") echo "• Execution Client: Reth (modern Rust)"
-                     echo "• Consensus Client: Lodestar (TypeScript)" ;;
+                "d") echo "• Execution Client: Ethrex or Reth (modern Rust)"
+                     echo "• Consensus Client: Lodestar (TypeScript) or Grandine" ;;
             esac
             ;;
     esac
