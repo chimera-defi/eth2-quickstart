@@ -240,6 +240,23 @@ VERIFIED_OPTIONS=(
     "--log.level"
 )
 
+# Check for port variable usage (optimization check)
+PORT_VARS=(
+    "ETHREX_HTTP_PORT"
+    "ETHREX_WS_PORT"
+    "ETHREX_ENGINE_PORT"
+    "ETHREX_P2P_PORT"
+    "ETHREX_METRICS_PORT"
+)
+
+for var in "${PORT_VARS[@]}"; do
+    if grep -q "\$$var" "$ETHREX_SCRIPT"; then
+        record_test "Uses port variable: \$$var" "PASS"
+    else
+        record_test "Uses port variable: \$$var" "FAIL"
+    fi
+done
+
 for opt in "${VERIFIED_OPTIONS[@]}"; do
     if grep -q -- "$opt" "$ETHREX_SCRIPT"; then
         record_test "Uses CLI option: $opt" "PASS"
