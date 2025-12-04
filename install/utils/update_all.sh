@@ -12,7 +12,10 @@
 #   --rollback      Rollback to previous version if available (git only)
 
 # Source common functions and configuration
-source ../../lib/common_functions.sh
+# shellcheck source=../../exports.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../../exports.sh"
+# shellcheck source=../../lib/common_functions.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../../lib/common_functions.sh"
 
 # Get script directories
 get_script_directories

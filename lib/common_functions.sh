@@ -235,7 +235,7 @@ enable_and_start_systemd_service() {
 stop_all_services() {
     log_info "Stopping all Ethereum services..."
     
-    local services=("eth1" "cl" "validator" "mev-boost" "nginx" "caddy")
+    local services=("eth1" "cl" "validator" "mev" "mev-boost" "nginx" "caddy")
     
     for service in "${services[@]}"; do
         if systemctl is-active --quiet "$service" 2>/dev/null; then
@@ -245,6 +245,43 @@ stop_all_services() {
     done
     
     log_info "All services stopped"
+}
+
+# Restart all Ethereum services
+restart_all_services() {
+    log_info "Restarting all Ethereum services..."
+    
+    local services=("eth1" "cl" "validator" "mev" "nginx")
+    
+    for service in "${services[@]}"; do
+        if systemctl is-enabled --quiet "$service" 2>/dev/null; then
+            log_info "Restarting $service..."
+            sudo systemctl restart "$service" || log_warn "Failed to restart $service"
+        fi
+    done
+    
+    log_info "All services restarted"
+}
+
+# Show service status for all Ethereum services
+show_service_status() {
+    echo ""
+    echo "=== Service Status ==="
+    
+    local services=("eth1" "cl" "validator" "mev" "nginx" "caddy")
+    
+    for service in "${services[@]}"; do
+        if systemctl is-enabled --quiet "$service" 2>/dev/null; then
+            local status
+            if systemctl is-active --quiet "$service"; then
+                status="${GREEN}RUNNING${NC}"
+            else
+                status="${RED}STOPPED${NC}"
+            fi
+            echo -e "  $service: $status"
+        fi
+    done
+    echo ""
 }
 
 # Add PPA repository
