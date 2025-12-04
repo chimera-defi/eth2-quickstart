@@ -10,14 +10,17 @@
 #   --rollback  Rollback to previous version if available
 
 # Source common functions and configuration
-source ../../lib/common_functions.sh
+# shellcheck source=../../exports.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../../exports.sh"
+# shellcheck source=../../lib/common_functions.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../../lib/common_functions.sh"
 get_script_directories
 
 # Configuration
 BACKUP_DIR="$HOME/eth2-quickstart-backups"
 GIT_REPO_URL="https://github.com/chimera-defi/eth2-quickstart.git"
-CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
 TARGET_BRANCH="master"
+# Note: CURRENT_BRANCH is set after cd to PROJECT_ROOT in main()
 
 # Parse command line arguments
 CREATE_BACKUP=false
@@ -298,6 +301,10 @@ main() {
         log_error "Failed to change to project root: $PROJECT_ROOT"
         exit 1
     }
+    
+    # Get current branch now that we're in the git directory
+    CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
+    log_info "Current branch: $CURRENT_BRANCH"
     
     # Handle rollback mode
     if [[ "$ROLLBACK_MODE" == "true" ]]; then

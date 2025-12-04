@@ -48,4 +48,10 @@ create_systemd_service "mev" "MEV Boost Service" "$EXEC_START" "$(whoami)" "alwa
 enable_and_start_systemd_service "mev"
 
 # Show completion information
-log_installation_complete "MEV Boost" "mev" "" "$MEV_BOOST_DIR"
+log_installation_complete "MEV Boost" "mev"
+
+log_info "MEV Boost installed at: $MEV_BOOST_DIR"
+log_info "Configuration:"
+log_info "  Relays: $MEV_RELAYS"
+log_info "  Min Bid: $MIN_BID"
+log_info "  Listen Address: $MEV_HOST:$MEV_PORT"
