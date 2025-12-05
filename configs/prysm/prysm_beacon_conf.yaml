@@ -24,3 +24,6 @@ enable-builder: false
 http-mev-relay: http://$MEV_HOST:$MEV_PORT
 disable-broadcast-slashings: true
 aggregate-parallel: true
+
+# Fusaka compatibility
+disable-last-epoch-targets: true
