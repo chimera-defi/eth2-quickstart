@@ -138,26 +138,6 @@ check_local_changes() {
     fi
 }
 
-# Function to handle merge conflicts
-handle_merge_conflicts() {
-    log_warn "Merge conflicts detected. Please resolve them manually:"
-    echo ""
-    echo "Files with conflicts:"
-    git diff --name-only --diff-filter=U
-    echo ""
-    echo "To resolve conflicts:"
-    echo "1. Edit the conflicted files"
-    echo "2. Run: git add <resolved-files>"
-    echo "3. Run: git commit"
-    echo "4. Re-run this script"
-    echo ""
-    echo "Or to abort the update:"
-    echo "git merge --abort"
-    echo "git checkout $CURRENT_BRANCH"
-    
-    return 1
-}
-
 # Function to update from git
 update_from_git() {
     log_info "Updating eth2-quickstart from git..."
