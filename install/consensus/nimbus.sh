@@ -1,8 +1,9 @@
 #!/bin/bash
 
-
 # Nimbus Consensus Client Installation Script
+# Language: Nim
 # Nimbus is a Nim-based Ethereum consensus client designed for resource efficiency
+# Usage: ./nimbus.sh
 
 source ../../exports.sh
 source ../../lib/common_functions.sh

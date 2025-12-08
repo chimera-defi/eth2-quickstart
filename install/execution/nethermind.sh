@@ -1,8 +1,9 @@
 #!/bin/bash
 
-
 # Nethermind Execution Client Installation Script
+# Language: C# (.NET)
 # Nethermind is a .NET Ethereum client designed for enterprise use
+# Usage: ./nethermind.sh
 
 source ../../exports.sh
 source ../../lib/common_functions.sh

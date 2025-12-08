@@ -132,13 +132,13 @@ install_default_clients() {
     log_info "Installing default clients (Geth + Prysm + Selected MEV)..."
     
     log_info "Installing Geth..."
-    if ! ./install/execution/install_geth.sh; then
+    if ! ./install/execution/geth.sh; then
         log_error "Failed to install Geth"
         return 1
     fi
 
     log_info "Installing Prysm..."
-    if ! ./install/consensus/install_prysm.sh; then
+    if ! ./install/consensus/prysm.sh; then
         log_error "Failed to install Prysm"
         return 1
     fi
@@ -230,7 +230,7 @@ case "$client_choice" in
         fi
         
         log_info "Please run the recommended install scripts from the client selection tool"
-        log_info "Example: ./install/execution/install_geth.sh && ./install/consensus/install_prysm.sh"
+        log_info "Example: ./install/execution/geth.sh && ./install/consensus/prysm.sh"
         ;;
     2)
         if ! install_default_clients; then

@@ -53,7 +53,7 @@ ssh LOGIN_UNAME@<server-ip>
 
 **Actions:**
 - Installs `snapd`
-- Runs installers: `./install_geth.sh`, `./install_prysm.sh`, `./install_mev_boost.sh`
+- Runs installers: `./geth.sh`, `./prysm.sh`, `./install_mev_boost.sh`
 - Echoes next steps for Nginx + SSL
 
 **Start services:**
@@ -65,7 +65,8 @@ sudo systemctl start eth1 cl validator mev
 
 ### Execution Clients
 
-#### install_geth.sh
+#### geth.sh
+- **Language: Go**
 - Adds `ppa:ethereum/ethereum` and installs Geth
 - Builds `GETH_CMD` with flags:
   - `--syncmode snap`, `--cache $GETH_CACHE`
@@ -75,27 +76,32 @@ sudo systemctl start eth1 cl validator mev
   - Miner: `--miner.etherbase=$FEE_RECIPIENT`, `--miner.extradata=$GRAFITTI`
 - Creates systemd unit `eth1.service`
 
-#### install_erigon.sh
+#### erigon.sh
+- **Language: Go**
 - Downloads and installs Erigon
 - Configures with typical flags
 - Creates systemd unit `eth1.service`
 
-#### install_reth.sh
+#### reth.sh
+- **Language: Rust**
 - Downloads and installs Reth
 - Configures with typical flags
 - Creates systemd unit `eth1.service`
 
-#### install_nethermind.sh
+#### nethermind.sh
+- **Language: C# (.NET)**
 - Downloads and installs Nethermind
 - Configures with typical flags
 - Creates systemd unit `eth1.service`
 
-#### install_besu.sh
+#### besu.sh
+- **Language: Java**
 - Downloads and installs Besu
 - Configures with typical flags
 - Creates systemd unit `eth1.service`
 
-#### install_nimbus_eth1.sh
+#### nimbus_eth1.sh
+- **Language: Nim**
 - Downloads and installs Nimbus-eth1 (nightly builds)
 - Lightweight Nim-based execution client
 - Configures with TOML configuration file
@@ -103,7 +109,8 @@ sudo systemctl start eth1 cl validator mev
 
 ### Consensus Clients
 
-#### install_prysm.sh
+#### prysm.sh
+- **Language: Go**
 - Creates `~/prysm`, downloads `prysm.sh`, generates `jwt.hex`
 - Generates config files:
   - `prysm_validator_conf.yaml`: sets `graffiti`, `suggested-fee-recipient`, `wallet-password-file`
@@ -115,27 +122,32 @@ sudo systemctl start eth1 cl validator mev
   - Reliability: `dynamic-key-reload-debounce-interval`, `enable-doppelganger`
 - Creates systemd units `cl.service` and `validator.service`
 
-#### install_lighthouse.sh
+#### lighthouse.sh
+- **Language: Rust**
 - Downloads and installs Lighthouse
 - Configures with typical flags
 - Creates systemd units `cl.service` and `validator.service`
 
-#### install_teku.sh
+#### teku.sh
+- **Language: Java**
 - Downloads and installs Teku
 - Configures with typical flags
 - Creates systemd units `cl.service` and `validator.service`
 
-#### install_nimbus.sh
+#### nimbus.sh
+- **Language: Nim**
 - Downloads and installs Nimbus
 - Configures with typical flags
 - Creates systemd units `cl.service` and `validator.service`
 
-#### install_lodestar.sh
+#### lodestar.sh
+- **Language: TypeScript**
 - Downloads and installs Lodestar
 - Configures with typical flags
 - Creates systemd units `cl.service` and `validator.service`
 
-#### install_grandine.sh
+#### grandine.sh
+- **Language: Rust**
 - Downloads and installs Grandine
 - Configures with typical flags
 - Creates systemd units `cl.service` and `validator.service`

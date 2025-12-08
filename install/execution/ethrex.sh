@@ -1,8 +1,10 @@
 #!/bin/bash
 
 # Ethrex Execution Client Installation Script
+# Language: Rust
 # Ethrex is a minimalist, fast and modular Ethereum execution client written in Rust
 # by Lambda Class. Supports both L1 and L2 modes.
+# Usage: ./ethrex.sh
 # https://github.com/lambdaclass/ethrex
 
 source ../../exports.sh

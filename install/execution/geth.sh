@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # Geth Installation Script
+# Language: Go
 # Installs and configures Geth Ethereum execution client
-# Usage: ./install_geth.sh
+# Usage: ./geth.sh
 # Requirements: Ubuntu 20.04+, 16GB+ RAM, 2TB+ storage
 
 source ../../exports.sh

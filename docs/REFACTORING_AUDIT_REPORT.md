@@ -217,8 +217,8 @@ require_root
 **Action Required:** Implement proper JSON merging with jq
 
 **Files with TODOs:**
-- `install/execution/install_nethermind.sh` (line 82)
-- `install/consensus/install_lodestar.sh` (line 95)
+- `install/execution/nethermind.sh` (line 82)
+- `install/consensus/lodestar.sh` (line 95)
 
 ### Task 4: Comment Standardization
 **Priority:** LOW  
@@ -255,15 +255,15 @@ require_root
 ## 📝 **REMAINING FILES TO MODIFY**
 
 ### Files Needing Root Check Standardization:
-- `install/consensus/install_grandine.sh`
-- `install/consensus/install_lodestar.sh`
-- `install/consensus/install_nimbus.sh`
-- `install/consensus/install_prysm.sh`
-- `install/consensus/install_teku.sh`
+- `install/consensus/grandine.sh`
+- `install/consensus/lodestar.sh`
+- `install/consensus/nimbus.sh`
+- `install/consensus/prysm.sh`
+- `install/consensus/teku.sh`
 - `install/consensus/lighthouse.sh`
-- `install/execution/install_besu.sh`
-- `install/execution/install_geth.sh`
-- `install/execution/install_nethermind.sh`
+- `install/execution/besu.sh`
+- `install/execution/geth.sh`
+- `install/execution/nethermind.sh`
 - `install/web/install_nginx.sh`
 - `install/web/install_nginx_ssl.sh`
 - `install/ssl/install_acme_ssl.sh`

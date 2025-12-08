@@ -526,8 +526,8 @@ run_integration_tests() {
     
     # Test that install scripts can be sourced without errors
     local install_scripts=(
-        "install/execution/install_geth.sh"
-        "install/consensus/install_prysm.sh"
+        "install/execution/geth.sh"
+        "install/consensus/prysm.sh"
         "install/mev/install_mev_boost.sh"
     )
     

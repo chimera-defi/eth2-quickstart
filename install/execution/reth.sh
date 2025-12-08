@@ -1,8 +1,9 @@
 #!/bin/bash
 
-
 # Reth Execution Client Installation Script
+# Language: Rust
 # Reth is a Rust-based Ethereum client focused on performance and modularity
+# Usage: ./reth.sh
 
 source ../../exports.sh
 source ../../lib/common_functions.sh

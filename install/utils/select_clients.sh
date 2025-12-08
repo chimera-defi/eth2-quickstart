@@ -50,7 +50,7 @@ show_execution_clients() {
         "The original Go implementation of Ethereum. Most widely used and battle-tested." \
         "• Most stable and mature\n• Extensive documentation\n• Wide community support\n• Proven track record" \
         "• Higher resource usage\n• Slower sync compared to newer clients" \
-        "../execution/install_geth.sh"
+        "../execution/geth.sh"
     
     display_client_info "execution" "Erigon" "Go" \
         "Re-architected Geth focusing on efficiency and performance." \
@@ -68,19 +68,19 @@ show_execution_clients() {
         "Enterprise-focused .NET implementation with advanced features." \
         "• Enterprise features\n• Good performance\n• Active development\n• JSON-RPC compatibility" \
         "• Requires .NET runtime\n• Less common in home staking\n• Complex configuration" \
-        "../execution/install_nethermind.sh"
+        "../execution/nethermind.sh"
     
     display_client_info "execution" "Besu" "Java" \
         "Apache 2.0 licensed Java client suitable for both public and private networks." \
         "• Permissive license\n• Enterprise support\n• Good for private networks\n• Hyperledger project" \
         "• Requires Java runtime\n• Higher resource usage\n• Less optimized for home staking" \
-        "../execution/install_besu.sh"
+        "../execution/besu.sh"
     
     display_client_info "execution" "Nimbus-eth1" "Nim" \
         "Status-developed execution client optimized for resource efficiency." \
         "• Very lightweight\n• Perfect for Raspberry Pi\n• Low bandwidth usage\n• Low memory footprint" \
         "• Uses nightly builds\n• Smaller community\n• Less battle-tested\n• Nim language less common" \
-        "../execution/install_nimbus_eth1.sh"
+        "../execution/nimbus_eth1.sh"
     
     display_client_info "execution" "Ethrex" "Rust" \
         "Lambda Class minimalist, fast and modular Ethereum client. Supports L1 and L2." \
@@ -97,7 +97,7 @@ show_consensus_clients() {
         "Developed by Prysmatic Labs, known for reliability and documentation." \
         "• Excellent documentation\n• Stable and reliable\n• Good community support\n• Easy to use" \
         "• Higher resource usage\n• Less client diversity benefit" \
-        "../consensus/install_prysm.sh"
+        "../consensus/prysm.sh"
     
     display_client_info "consensus" "Lighthouse" "Rust" \
         "Rust implementation by Sigma Prime, focusing on security and performance." \
@@ -109,25 +109,25 @@ show_consensus_clients() {
         "ConsenSys-developed client designed for institutional staking." \
         "• Enterprise features\n• Institutional support\n• Good for large operations\n• Comprehensive monitoring" \
         "• Higher resource usage\n• Requires Java runtime\n• Complex for home stakers" \
-        "../consensus/install_teku.sh"
+        "../consensus/teku.sh"
     
     display_client_info "consensus" "Nimbus" "Nim" \
         "Status-developed client optimized for resource efficiency." \
         "• Very lightweight\n• Perfect for Raspberry Pi\n• Low bandwidth usage\n• Easy to run" \
         "• Smaller community\n• Less feature-rich\n• Nim language less common" \
-        "../consensus/install_nimbus.sh"
+        "../consensus/nimbus.sh"
     
     display_client_info "consensus" "Lodestar" "TypeScript" \
         "ChainSafe-developed client written in TypeScript." \
         "• Developer-friendly (TypeScript)\n• Good for development\n• Active development\n• Modern architecture" \
         "• Higher resource usage\n• Less battle-tested\n• Node.js dependency" \
-        "../consensus/install_lodestar.sh"
+        "../consensus/lodestar.sh"
     
     display_client_info "consensus" "Grandine" "Rust" \
         "High-performance Rust client focused on correctness and efficiency." \
         "• High performance\n• Modern Rust implementation\n• Performance optimized\n• Advanced features" \
         "• Very new client\n• Less documentation\n• Advanced users only\n• Still in development" \
-        "../consensus/install_grandine.sh"
+        "../consensus/grandine.sh"
 }
 
 show_recommendations() {
