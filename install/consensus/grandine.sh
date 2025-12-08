@@ -1,8 +1,9 @@
 #!/bin/bash
 
-
 # Grandine Consensus Client Installation Script
+# Language: Rust
 # Grandine is a Rust-based Ethereum consensus client focused on performance
+# Usage: ./grandine.sh
 
 source ../../exports.sh
 source ../../lib/common_functions.sh

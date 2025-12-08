@@ -146,22 +146,22 @@ For detailed MEV setup, see [docs/MEV_GUIDE.md](docs/MEV_GUIDE.md).
 ### Execution Clients (ETH1)
 | Client | Language | Description | Best For | Install Script |
 |--------|----------|-------------|----------|----------------|
-| **Geth** | Go | Original Go implementation, most stable | Beginners, stability | `install_geth.sh` |
-| **Erigon** | Go | Re-architected for efficiency | Performance, fast sync | `install_erigon.sh` |
-| **Reth** | Rust | Modern Rust implementation | Performance, modularity | `install_reth.sh` |
-| **Nethermind** | C# | Enterprise-focused .NET client | Enterprise, advanced features | `install_nethermind.sh` |
-| **Besu** | Java | Apache 2.0 licensed, enterprise-ready | Private networks, compliance | `install_besu.sh` |
-| **Nimbus-eth1** | Nim | Lightweight, resource efficient | Raspberry Pi, low resources | `install_nimbus_eth1.sh` |
+| **Geth** | Go | Original Go implementation, most stable | Beginners, stability | `geth.sh` |
+| **Erigon** | Go | Re-architected for efficiency | Performance, fast sync | `erigon.sh` |
+| **Reth** | Rust | Modern Rust implementation | Performance, modularity | `reth.sh` |
+| **Nethermind** | C# | Enterprise-focused .NET client | Enterprise, advanced features | `nethermind.sh` |
+| **Besu** | Java | Apache 2.0 licensed, enterprise-ready | Private networks, compliance | `besu.sh` |
+| **Nimbus-eth1** | Nim | Lightweight, resource efficient | Raspberry Pi, low resources | `nimbus_eth1.sh` |
 
 ### Consensus Clients (ETH2)
 | Client | Language | Description | Best For | Install Script |
 |--------|----------|-------------|----------|----------------|
-| **Prysm** | Go | Well-documented, reliable | Beginners, documentation | `install_prysm.sh` |
-| **Lighthouse** | Rust | Security-focused, high performance | Performance, security | `install_lighthouse.sh` |
-| **Teku** | Java | ConsenSys-developed, enterprise features | Institutional, monitoring | `install_teku.sh` |
-| **Nimbus** | Nim | Lightweight, resource efficient | Raspberry Pi, low resources | `install_nimbus.sh` |
-| **Lodestar** | TypeScript | Developer-friendly, modern | Development, TypeScript devs | `install_lodestar.sh` |
-| **Grandine** | Rust | High-performance, cutting-edge | Advanced users, performance | `install_grandine.sh` |
+| **Prysm** | Go | Well-documented, reliable | Beginners, documentation | `prysm.sh` |
+| **Lighthouse** | Rust | Security-focused, high performance | Performance, security | `lighthouse.sh` |
+| **Teku** | Java | ConsenSys-developed, enterprise features | Institutional, monitoring | `teku.sh` |
+| **Nimbus** | Nim | Lightweight, resource efficient | Raspberry Pi, low resources | `nimbus.sh` |
+| **Lodestar** | TypeScript | Developer-friendly, modern | Development, TypeScript devs | `lodestar.sh` |
+| **Grandine** | Rust | High-performance, cutting-edge | Advanced users, performance | `grandine.sh` |
 
 ## Configuration Architecture
 
@@ -183,7 +183,7 @@ exports.sh → Base Template + Custom Variables → Final Client Config
 │   └── teku/
 │       ├── teku_beacon_base.yaml     # Base beacon config template
 │       └── teku_validator_base.yaml  # Base validator config template
-└── install_teku.sh               # Merges base + custom configs
+└── install/consensus/teku.sh     # Merges base + custom configs
 ```
 
 ### Key Variables in exports.sh

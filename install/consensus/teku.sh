@@ -1,8 +1,9 @@
 #!/bin/bash
 
-
 # Teku Consensus Client Installation Script
+# Language: Java
 # Teku is a Java-based Ethereum consensus client developed by ConsenSys
+# Usage: ./teku.sh
 
 source ../../exports.sh
 source ../../lib/common_functions.sh

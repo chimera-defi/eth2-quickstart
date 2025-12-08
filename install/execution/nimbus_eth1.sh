@@ -1,8 +1,9 @@
 #!/bin/bash
 
-
 # Nimbus Execution Client Installation Script
+# Language: Nim
 # Nimbus-eth1 is a Nim-based Ethereum execution client designed for resource efficiency
+# Usage: ./nimbus_eth1.sh
 
 source ../../exports.sh
 source ../../lib/common_functions.sh

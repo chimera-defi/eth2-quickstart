@@ -1,8 +1,9 @@
 #!/bin/bash
 
-
 # Lighthouse Consensus Client Installation Script
+# Language: Rust
 # Lighthouse is a Rust-based Ethereum consensus client developed by Sigma Prime
+# Usage: ./lighthouse.sh
 
 source ../../exports.sh
 source ../../lib/common_functions.sh

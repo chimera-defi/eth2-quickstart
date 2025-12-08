@@ -13,7 +13,7 @@ feat: Major refactoring - Add 4 new clients, reduce code duplication, enhance UX
   * Lodestar (consensus) - TypeScript, developer-friendly client  
   * Grandine (consensus) - High-performance Rust client
 - Add interactive client selection assistant (select_clients.sh)
-- Refactor install_geth.sh to use common functions
+- Refactor geth.sh to use common functions
 - Comprehensive README.md update with client comparisons and troubleshooting
 - Improve client diversity support from 3 to 11 total clients (5 execution + 6 consensus)
 
@@ -28,7 +28,7 @@ refactor: Add common functions library to eliminate code duplication
 
 - Create lib/common_functions.sh with 20+ reusable functions
 - Standardize logging, service creation, and error handling
-- Refactor install_geth.sh to use common functions
+- Refactor geth.sh to use common functions
 - Improve maintainability and consistency across scripts
 ```
 
@@ -36,8 +36,8 @@ refactor: Add common functions library to eliminate code duplication
 ```
 feat: Add Nethermind and Besu execution client support
 
-- Add install_nethermind.sh for enterprise .NET Ethereum client
-- Add install_besu.sh for Java-based public/private network client
+- Add nethermind.sh for enterprise .NET Ethereum client
+- Add besu.sh for Java-based public/private network client
 - Include optimized configurations and systemd service setup
 - Expand execution client options from 3 to 5 total clients
 ```
@@ -46,10 +46,10 @@ feat: Add Nethermind and Besu execution client support
 ```
 feat: Add Teku, Nimbus, Lodestar, and Grandine consensus clients
 
-- Add install_teku.sh for institutional Java consensus client
-- Add install_nimbus.sh for lightweight, resource-efficient client  
-- Add install_lodestar.sh for TypeScript developer-friendly client
-- Add install_grandine.sh for high-performance Rust client
+- Add teku.sh for institutional Java consensus client
+- Add nimbus.sh for lightweight, resource-efficient client  
+- Add lodestar.sh for TypeScript developer-friendly client
+- Add grandine.sh for high-performance Rust client
 - Expand consensus client options from 2 to 6 total clients
 ```
 
@@ -82,7 +82,7 @@ git commit -m "feat: Major refactoring - Add 4 new clients, reduce code duplicat
   * Lodestar (consensus) - TypeScript, developer-friendly client  
   * Grandine (consensus) - High-performance Rust client
 - Add interactive client selection assistant (select_clients.sh)
-- Refactor install_geth.sh to use common functions
+- Refactor geth.sh to use common functions
 - Comprehensive README.md update with client comparisons and troubleshooting
 - Improve client diversity support from 3 to 11 total clients (5 execution + 6 consensus)
 
@@ -106,7 +106,7 @@ This PR represents a major enhancement focusing on code refactoring, expanded cl
 
 ## 📊 Changes Summary
 - **9 new files** added (4 new clients + common library + selection tool)
-- **2 files** modified (README.md + install_geth.sh refactored)
+- **2 files** modified (README.md + geth.sh refactored)
 - **Zero breaking changes** - fully backward compatible
 
 ## 🚀 Key Features

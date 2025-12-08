@@ -1,8 +1,9 @@
 #!/bin/bash
 
-
 # Hyperledger Besu Execution Client Installation Script
+# Language: Java
 # Besu is a Java-based Ethereum client designed for both public and private networks
+# Usage: ./besu.sh
 
 source ../../exports.sh
 source ../../lib/common_functions.sh

@@ -41,8 +41,8 @@ fi
 log_info "Test 3: Verify install scripts..."
 install_scripts=(
     "install/utils/install_dependencies.sh"
-    "install/execution/install_geth.sh"
-    "install/consensus/install_prysm.sh"
+    "install/execution/geth.sh"
+    "install/consensus/prysm.sh"
     "install/mev/install_mev_boost.sh"
     "install/mev/install_commit_boost.sh"
     "install/utils/select_clients.sh"
@@ -133,7 +133,7 @@ done
 
 # Test 8: Test Geth installation (uses PPA, not snap)
 log_info "Test 8: Install Geth via PPA..."
-if "$PROJECT_ROOT/install/execution/install_geth.sh" 2>&1; then
+if "$PROJECT_ROOT/install/execution/geth.sh" 2>&1; then
     if command -v geth &>/dev/null; then
         geth_version=$(geth version 2>/dev/null | head -1 || echo "unknown")
         log_info "  ✓ Geth installed: $geth_version"
