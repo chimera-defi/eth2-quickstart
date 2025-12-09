@@ -12,7 +12,7 @@ log_info "Starting Prysm checkpoint sync example..."
 
 # Check if Prysm is installed
 if [[ ! -f "./prysm.sh" ]]; then
-    log_error "Prysm not found. Please run ../consensus/install_prysm.sh first"
+    log_error "Prysm not found. Please run ../consensus/prysm.sh first"
     exit 1
 fi
 

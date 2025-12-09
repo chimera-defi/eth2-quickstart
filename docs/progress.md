@@ -11,7 +11,7 @@ Refactor Ethereum node installation scripts to:
 ## ✅ **Completed Steps**
 
 ### 1. **Codebase Analysis & Planning** ✅
-- Analyzed existing scripts: `install_geth.sh`, `install_prysm.sh`, `erigon.sh`, `reth.sh`, `lighthouse.sh`
+- Analyzed existing scripts: `geth.sh`, `prysm.sh`, `erigon.sh`, `reth.sh`, `lighthouse.sh`
 - Identified code duplication patterns: Service creation, logging, file operations, system checks
 - Researched missing Ethereum clients: Nethermind, Besu, Teku, Nimbus, Lodestar, Grandine
 
@@ -25,14 +25,14 @@ Refactor Ethereum node installation scripts to:
   - **Development tools**: `clone_or_update_repo()`, `get_latest_release()`, `validate_config()`
 
 ### 3. **New Execution Clients Implementation** ✅
-- **`install_nethermind.sh`**: Enterprise-focused .NET client with automated version detection
-- **`install_besu.sh`**: Java-based client with TOML configuration and Bonsai storage
+- **`nethermind.sh`**: Enterprise-focused .NET client with automated version detection
+- **`besu.sh`**: Java-based client with TOML configuration and Bonsai storage
 
 ### 4. **New Consensus Clients Implementation** ✅
-- **`install_teku.sh`**: Java-based client with enterprise features and monitoring
-- **`install_nimbus.sh`**: Lightweight Nim client with minimal resource usage
-- **`install_lodestar.sh`**: TypeScript client with modern architecture
-- **`install_grandine.sh`**: Rust client with performance optimizations
+- **`teku.sh`**: Java-based client with enterprise features and monitoring
+- **`nimbus.sh`**: Lightweight Nim client with minimal resource usage
+- **`lodestar.sh`**: TypeScript client with modern architecture
+- **`grandine.sh`**: Rust client with performance optimizations
 
 ### 5. **UX Enhancements** ✅
 - **`select_clients.sh`**: Interactive client selection with recommendations
@@ -40,11 +40,11 @@ Refactor Ethereum node installation scripts to:
 - **Automated configuration**: Template-based configuration system
 
 ### 6. **Existing Script Refactoring** ✅
-- **`install_geth.sh`**: Refactored to use common functions
-- **`install_prysm.sh`**: Updated with v6.1.2 configuration
-- **`install_erigon.sh`**: Refactored and optimized
-- **`install_reth.sh`**: Refactored and optimized
-- **`install_lighthouse.sh`**: Refactored and optimized
+- **`geth.sh`**: Refactored to use common functions
+- **`prysm.sh`**: Updated with v6.1.2 configuration
+- **`erigon.sh`**: Refactored and optimized
+- **`reth.sh`**: Refactored and optimized
+- **`lighthouse.sh`**: Refactored and optimized
 
 ### 7. **Comprehensive Documentation Update** ✅
 - **Client guides**: Individual guides for each client

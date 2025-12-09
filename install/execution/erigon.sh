@@ -1,8 +1,9 @@
 #!/bin/bash
 
-
 # Erigon Execution Client Installation Script
+# Language: Go
 # Erigon is a Go-based Ethereum client focused on efficiency and performance
+# Usage: ./erigon.sh
 
 source ../../exports.sh
 source ../../lib/common_functions.sh

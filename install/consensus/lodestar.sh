@@ -1,8 +1,9 @@
 #!/bin/bash
 
-
 # Lodestar Consensus Client Installation Script
+# Language: TypeScript
 # Lodestar is a TypeScript Ethereum consensus client developed by ChainSafe
+# Usage: ./lodestar.sh
 
 source ../../exports.sh
 source ../../lib/common_functions.sh
