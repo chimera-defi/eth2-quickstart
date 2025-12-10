@@ -7,8 +7,9 @@ execution-endpoint: http://$LH:$ENGINE_PORT
 accept-terms-of-use: true
 
 # Database & Backup
+# Enables /db/backup HTTP endpoint on monitoring port
+# Backups are stored in $DATADIR/backups/ by default
 enable-db-backup-webhook: true
-db-backup-output-dir: ./prysm_backup_beaconchain/
 
 # P2P Networking
 p2p-udp-port: 12000
@@ -35,7 +36,8 @@ enable-tracing: false
 # Note: Builder is enabled automatically when http-mev-relay is set
 http-mev-relay: http://$MEV_HOST:$MEV_PORT
 local-block-value-boost: 10
-min-builder-bid: 2000000000
+# min-builder-bid is in Gwei: 2000000 Gwei = 0.002 ETH (matches MIN_BID in exports.sh)
+min-builder-bid: 2000000
 
 # Security & Reliability
 disable-broadcast-slashings: true

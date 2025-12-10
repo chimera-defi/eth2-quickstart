@@ -9,8 +9,9 @@ web: false
 dev: false
 
 # Database & Backup
+# Enables /db/backup HTTP endpoint on monitoring port
+# Backups are stored in $DATADIR/backups/ by default
 enable-db-backup-webhook: true
-db-backup-output-dir: ./prysm_backup_beaconchain/
 
 # P2P Networking
 p2p-udp-port: 12000
