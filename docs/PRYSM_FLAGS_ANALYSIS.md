@@ -400,10 +400,43 @@ slots-per-archive-point: 4096
 
 **Context:** The `local-block-value-boost` flag adds a percentage boost to local block value when comparing to builder bids. Higher values prefer local blocks.
 
+The formula is: Accept builder block if `builder_value * 100 > local_value * (boost + 100)`
+
 **Options:**
-- 10% (default): Slight preference for builders
-- 20%: Balanced approach
-- 50%: Strong preference for local blocks
+- 10% (default): Builder must offer 10% more than local to be accepted
+- 20%: Builder must offer 20% more than local
+- 50%: Strong preference for local blocks (builder needs 50% more)
+
+---
+
+### Research: min-builder-bid Best Practices
+
+**IMPORTANT DISCOVERY:** The `min-builder-bid` flag is in **Gwei**, NOT Wei!
+
+**Unit Conversion:**
+| ETH Value | Gwei Value | USD Value (@ $3,343) |
+|-----------|------------|----------------------|
+| 0.001 ETH | 1,000,000 | ~$3.34 |
+| 0.002 ETH | 2,000,000 | ~$6.69 |
+| 0.005 ETH | 5,000,000 | ~$16.72 |
+| 0.01 ETH | 10,000,000 | ~$33.43 |
+| 0.02 ETH | 20,000,000 | ~$66.87 |
+| 0.05 ETH | 50,000,000 | ~$167.17 |
+
+**Context:**
+- Average MEV + priority fees per block: typically 0.02-0.1 ETH
+- Setting min-bid too HIGH: Reject most builder blocks, miss MEV revenue
+- Setting min-bid too LOW: Accept low-quality blocks when local might be better
+
+**Recommendations by Use Case:**
+1. **Conservative (maximize MEV capture):** 0 Gwei (default) - accept any builder block
+2. **Minimal threshold (filter garbage):** 1,000,000 Gwei (0.001 ETH)
+3. **Moderate threshold (your MIN_BID=0.002):** 2,000,000 Gwei (0.002 ETH)
+4. **Higher threshold (prefer local):** 10,000,000 Gwei (0.01 ETH)
+
+**Note:** The `MIN_BID=0.002` in `exports.sh` is used by mev-boost (which accepts ETH). For Prysm's native builder support, convert to Gwei: **2,000,000**.
+
+**ERROR FOUND:** Original config had `2000000000` (2 ETH) - way too high! Fixed to `2000000` (0.002 ETH)
 
 ---
 
@@ -574,13 +607,14 @@ web: false
 5. ❌ `rpc-max-page-size: 10000` - Removed (default is fine)
 6. ❌ `enable-builder: false` from beacon config - NOT A BEACON NODE FLAG
    (Builder is auto-enabled when http-mev-relay is set)
+7. ❌ `db-backup-output-dir` - DOES NOT EXIST (backups go to $DATADIR/backups/)
 
 ### ADDED (Performance & Reliability):
 1. ✅ `enable-discovery-reboot: true` - Auto-reboot discovery on connectivity issues
 2. ✅ `ignore-unviable-attestations: true` - Skip attestations from lagging nodes
 3. ✅ `blob-save-fsync: true` - Ensure durable blob writes
 4. ✅ `local-block-value-boost: 10` - 10% boost for local block preference
-5. ✅ `min-builder-bid: 2000000000` - Minimum bid 0.002 ETH (2 Gwei)
+5. ✅ `min-builder-bid: 2000000` - Minimum bid 0.002 ETH (2,000,000 Gwei)
 6. ✅ `blob-batch-limit: 384` - Blob batch size for sync
 7. ✅ `blob-batch-limit-burst-factor: 3` - Blob burst multiplier
 8. ✅ `enable-backfill: true` - For checkpoint sync (sync config)
