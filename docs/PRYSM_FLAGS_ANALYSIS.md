@@ -608,18 +608,28 @@ web: false
 6. ❌ `enable-builder: false` from beacon config - NOT A BEACON NODE FLAG
    (Builder is auto-enabled when http-mev-relay is set)
 7. ❌ `db-backup-output-dir` - DOES NOT EXIST (backups go to $DATADIR/backups/)
+8. ❌ `graffiti` from beacon config - **VALIDATOR-ONLY FLAG** (fixed in install script)
 
 ### ADDED (Performance & Reliability):
+
+**Beacon Node:**
 1. ✅ `enable-discovery-reboot: true` - Auto-reboot discovery on connectivity issues
 2. ✅ `ignore-unviable-attestations: true` - Skip attestations from lagging nodes
 3. ✅ `blob-save-fsync: true` - Ensure durable blob writes
 4. ✅ `local-block-value-boost: 10` - 10% boost for local block preference
 5. ✅ `min-builder-bid: 2000000` - Minimum bid 0.002 ETH (2,000,000 Gwei)
-6. ✅ `blob-batch-limit: 384` - Blob batch size for sync
-7. ✅ `blob-batch-limit-burst-factor: 3` - Blob burst multiplier
-8. ✅ `enable-backfill: true` - For checkpoint sync (sync config)
-9. ✅ `backfill-batch-size: 64` - Backfill optimization (sync config)
-10. ✅ `backfill-worker-count: 4` - Backfill concurrency (sync config)
+6. ✅ `max-builder-consecutive-missed-slots: 3` - Fallback after 3 consecutive misses
+7. ✅ `max-builder-epoch-missed-slots: 8` - Fallback after 8 misses in epoch
+8. ✅ `blob-batch-limit: 384` - Blob batch size for sync
+9. ✅ `blob-batch-limit-burst-factor: 3` - Blob burst multiplier
+
+**Sync Config:**
+10. ✅ `enable-backfill: true` - For checkpoint sync
+11. ✅ `backfill-batch-size: 64` - Backfill optimization
+12. ✅ `backfill-worker-count: 4` - Backfill concurrency
+
+**Validator:**
+13. ✅ `suggested-gas-limit: 36000000` - Gas limit for builder blocks (36M)
 
 ### UPDATED:
 - `enable-validator-registration: true` → `enable-builder: true` 
