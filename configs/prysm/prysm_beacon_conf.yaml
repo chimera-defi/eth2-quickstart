@@ -1,29 +1,43 @@
+# Prysm Beacon Node Configuration
+# Base configuration - custom settings are merged during installation
+# See docs/PRYSM_FLAGS_ANALYSIS.md for flag documentation
+
+# Core Configuration
 execution-endpoint: http://$LH:$ENGINE_PORT
 accept-terms-of-use: true
+
+# Database & Backup
 enable-db-backup-webhook: true
 db-backup-output-dir: ./prysm_backup_beaconchain/
-# web: true // change and restart prysm to access web
+
+# P2P Networking
 p2p-udp-port: 12000
 p2p-tcp-port: 13000
-rpc-max-page-size: 10000
 p2p-allowlist: public
 
-# Performance optimizations
+# Performance Optimizations
 max-goroutines: 5000
 block-batch-limit: 64
 block-batch-limit-burst-factor: 2
 slots-per-archive-point: 2048
+
+# Blob Handling (Deneb+)
+blob-batch-limit: 384
+blob-batch-limit-burst-factor: 3
+blob-save-fsync: true
 
 # Monitoring and observability
 monitoring-host: $CONSENSUS_HOST
 monitoring-port: 8080
 enable-tracing: false
 
-# MEV boost configuration
-enable-builder: false
+# MEV/Builder Configuration
+# Note: Builder is enabled automatically when http-mev-relay is set
 http-mev-relay: http://$MEV_HOST:$MEV_PORT
-disable-broadcast-slashings: true
-aggregate-parallel: true
+local-block-value-boost: 10
+min-builder-bid: 2000000000
 
-# Fusaka compatibility
-disable-last-epoch-targets: true
+# Security & Reliability
+disable-broadcast-slashings: true
+enable-discovery-reboot: true
+ignore-unviable-attestations: true

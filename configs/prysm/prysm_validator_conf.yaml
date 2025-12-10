@@ -1,12 +1,22 @@
-p2p-allowlist: public
-web: false
+# Prysm Validator Client Configuration
+# Base configuration - custom settings are merged during installation
+# See docs/PRYSM_FLAGS_ANALYSIS.md for flag documentation
+
+# Security
 enable-doppelganger: true
 enable-slashing-protection-history-pruning: true
-attest-timely: true
 
-# Performance and reliability
+# Key Management
 dynamic-key-reload-debounce-interval: 1s
-enable-beacon-rest-api: false
 
-# MEV boost configuration (validator registration only)
-enable-validator-registration: true
+# MEV/Builder Registration
+# Enables periodic validator registration with builder network
+# Note: This is the primary flag name; "enable-validator-registration" is an alias
+enable-builder: true
+
+# Web UI (disabled by default for security)
+web: false
+
+# Note: REST API is experimental but will replace gRPC after v8 (2026)
+# Uncomment when ready to migrate:
+# enable-beacon-rest-api: true
