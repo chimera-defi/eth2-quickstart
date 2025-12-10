@@ -13,6 +13,9 @@ dynamic-key-reload-debounce-interval: 1s
 # Enables periodic validator registration with builder network
 # Note: This is the primary flag name; "enable-validator-registration" is an alias
 enable-builder: true
+# Gas limit for builder-constructed blocks (default 60000000 = 60M)
+# Current mainnet target is ~30M, setting slightly higher for headroom
+suggested-gas-limit: 36000000
 
 # Web UI (disabled by default for security)
 web: false

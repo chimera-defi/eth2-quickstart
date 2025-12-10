@@ -38,6 +38,9 @@ http-mev-relay: http://$MEV_HOST:$MEV_PORT
 local-block-value-boost: 10
 # min-builder-bid is in Gwei: 2000000 Gwei = 0.002 ETH (matches MIN_BID in exports.sh)
 min-builder-bid: 2000000
+# Fallback to local building after consecutive missed slots
+max-builder-consecutive-missed-slots: 3
+max-builder-epoch-missed-slots: 8
 
 # Security & Reliability
 disable-broadcast-slashings: true
