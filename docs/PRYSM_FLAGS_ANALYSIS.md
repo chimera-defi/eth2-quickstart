@@ -610,26 +610,38 @@ web: false
 7. ❌ `db-backup-output-dir` - DOES NOT EXIST (backups go to $DATADIR/backups/)
 8. ❌ `graffiti` from beacon config - **VALIDATOR-ONLY FLAG** (fixed in install script)
 
-### ADDED (Performance & Reliability):
+### ADDED (Non-Default Values Only):
 
 **Beacon Node:**
-1. ✅ `enable-discovery-reboot: true` - Auto-reboot discovery on connectivity issues
-2. ✅ `ignore-unviable-attestations: true` - Skip attestations from lagging nodes
-3. ✅ `blob-save-fsync: true` - Ensure durable blob writes
-4. ✅ `local-block-value-boost: 10` - 10% boost for local block preference
-5. ✅ `min-builder-bid: 2000000` - Minimum bid 0.002 ETH (2,000,000 Gwei)
-6. ✅ `max-builder-consecutive-missed-slots: 3` - Fallback after 3 consecutive misses
-7. ✅ `max-builder-epoch-missed-slots: 8` - Fallback after 8 misses in epoch
-8. ✅ `blob-batch-limit: 384` - Blob batch size for sync
-9. ✅ `blob-batch-limit-burst-factor: 3` - Blob burst multiplier
+1. ✅ `blob-save-fsync: true` - Ensure durable blob writes (default: false)
+2. ✅ `min-builder-bid: 2000000` - Minimum bid 0.002 ETH (default: 0)
+3. ✅ `disable-broadcast-slashings: true` - Don't broadcast slashings (default: false)
+4. ✅ `enable-discovery-reboot: true` - Auto-reboot discovery (default: false)
+5. ✅ `ignore-unviable-attestations: true` - Skip lagging attestations (default: false)
 
-**Sync Config:**
-10. ✅ `enable-backfill: true` - For checkpoint sync
-11. ✅ `backfill-batch-size: 64` - Backfill optimization
-12. ✅ `backfill-worker-count: 4` - Backfill concurrency
+**Sync Config (aggressive settings for faster sync):**
+6. ✅ `max-goroutines: 10000` - Higher than default 5000
+7. ✅ `block-batch-limit: 128` - Higher than default 64
+8. ✅ `block-batch-limit-burst-factor: 4` - Higher than default 2
+9. ✅ `slots-per-archive-point: 4096` - Higher than default 2048
+10. ✅ `blob-batch-limit: 512` - Higher than default 384
+11. ✅ `blob-batch-limit-burst-factor: 4` - Higher than default 3
+12. ✅ `enable-backfill: true` - For checkpoint sync (default: false)
+13. ✅ `backfill-batch-size: 64` - Backfill optimization
+14. ✅ `backfill-worker-count: 4` - Backfill concurrency
 
 **Validator:**
-13. ✅ `suggested-gas-limit: 36000000` - Gas limit for builder blocks (36M)
+15. ✅ `enable-doppelganger: true` - Safety check (default: false)
+16. ✅ `enable-slashing-protection-history-pruning: true` - Prune DB (default: false)
+17. ✅ `enable-builder: true` - MEV registration (default: false)
+
+### NOT SET (Using Good Defaults):
+- `suggested-gas-limit` - Default 60M means "use max available"
+- `local-block-value-boost` - Default 10% is reasonable
+- `max-builder-consecutive-missed-slots` - Default 3 is reasonable
+- `max-builder-epoch-missed-slots` - Default 5 is reasonable
+- `dynamic-key-reload-debounce-interval` - Default 1s is fine
+- `web` - Default false is secure
 
 ### UPDATED:
 - `enable-validator-registration: true` → `enable-builder: true` 
