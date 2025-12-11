@@ -1,29 +1,37 @@
+# Prysm Beacon Node Configuration
+# Base configuration - custom settings are merged during installation
+# See docs/PRYSM_FLAGS_ANALYSIS.md for flag documentation
+#
+# Philosophy: Only set flags that differ from Prysm defaults or are required.
+# This allows Prysm to improve defaults without our config overriding them.
+
+# Core Configuration (required)
 execution-endpoint: http://$LH:$ENGINE_PORT
 accept-terms-of-use: true
+
+# Database & Backup
+# Enables /db/backup HTTP endpoint on monitoring port
 enable-db-backup-webhook: true
-db-backup-output-dir: ./prysm_backup_beaconchain/
-# web: true // change and restart prysm to access web
+
+# P2P Networking
 p2p-udp-port: 12000
 p2p-tcp-port: 13000
-rpc-max-page-size: 10000
 p2p-allowlist: public
 
-# Performance optimizations
-max-goroutines: 5000
-block-batch-limit: 64
-block-batch-limit-burst-factor: 2
-slots-per-archive-point: 2048
-
-# Monitoring and observability
+# Monitoring
 monitoring-host: $CONSENSUS_HOST
-monitoring-port: 8080
-enable-tracing: false
 
-# MEV boost configuration
-enable-builder: false
+# Blob Handling - enable fsync for data durability (non-default)
+blob-save-fsync: true
+
+# MEV/Builder Configuration
+# Builder is auto-enabled when http-mev-relay is set
 http-mev-relay: http://$MEV_HOST:$MEV_PORT
-disable-broadcast-slashings: true
-aggregate-parallel: true
+# Minimum bid to accept from builders (default: 0)
+# 2000000 Gwei = 0.002 ETH - filters out low-value blocks
+min-builder-bid: 2000000
 
-# Fusaka compatibility
-disable-last-epoch-targets: true
+# Security & Reliability (all non-default)
+disable-broadcast-slashings: true
+enable-discovery-reboot: true
+ignore-unviable-attestations: true

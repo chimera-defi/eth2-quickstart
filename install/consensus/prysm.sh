@@ -54,8 +54,8 @@ mv ./jwt.hex "$HOME/secrets/"
 create_temp_config_dir
 
 # Create custom beacon node configuration variables
+# Note: graffiti is a validator-only flag, not beacon
 cat > ./tmp/prysm_beacon_custom.yaml << EOF
-graffiti: $GRAFITTI
 suggested-fee-recipient: $FEE_RECIPIENT
 p2p-host-ip: $(curl -s v4.ident.me)
 p2p-max-peers: $MAX_PEERS
