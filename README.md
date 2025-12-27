@@ -4,6 +4,14 @@
 [![Shell Script Linting](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/shellcheck.yml)
 [![Security Validation](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/security.yml/badge.svg)](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/security.yml)
 
+**🚀 NEW: One-Liner Quick Start (Beta)**
+```bash
+curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | bash
+```
+*Transforms your fresh VPS into a validator node in minutes using our new interactive wizard.*
+
+---
+
 Get an ETH2 compatible RPC node setup in seconds!   
 Save at least 2 days compared to CoinCashew and Somersats guides using the automated scripts and included Prysm checkpoint state here!!   
 With your own uncensored & unmetered RPC node!   
