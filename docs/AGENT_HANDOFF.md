@@ -73,6 +73,21 @@ sudo reboot                # MANDATORY
 
 **Fix**: Implemented fallback chain: `ss` → `netstat` → `/proc/net/tcp`
 
+### Code Reuse: Always Use common_functions.sh
+
+**Problem**: New scripts duplicated color definitions and logging functions instead of reusing `lib/common_functions.sh`.
+
+**Root Cause**: Easier to copy-paste than to source a shared library.
+
+**Fix**: All scripts now source `lib/common_functions.sh` for:
+- Colors: `RED`, `GREEN`, `YELLOW`, `BLUE`, `NC`
+- Logging: `log_info()`, `log_warn()`, `log_error()`
+- Root checks: `require_root()`
+
+**Exception**: Bootstrap scripts (like `install.sh`) that run via `curl | bash` before the repo is cloned need local color definitions for the initial phase, but should source `common_functions.sh` after cloning.
+
+**Lesson**: Check `lib/common_functions.sh` first before defining any utility functions. If it exists, use it.
+
 ---
 
 ## The Strategy
