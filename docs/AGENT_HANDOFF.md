@@ -1,242 +1,216 @@
 # Agent Handoff: Eth2 Quick Start Upgrade
 
 ## Overview
-This document outlines the plan and initial implementation to transform "Eth2 Quick Start" from a collection of scripts into a cohesive, product-like experience (The "Flywheel").
+This document outlines the plan and implementation to transform "Eth2 Quick Start" from a collection of scripts into a cohesive, product-like experience (The "Flywheel").
+
+---
+
+## ⚠️ CRITICAL SECURITY REQUIREMENTS ⚠️
+
+**READ THIS FIRST - DO NOT SKIP**
+
+This project handles **real money** (ETH validators). Security is paramount.
+
+### The Two-Phase Security Model
+
+Installation MUST happen in TWO separate phases with a MANDATORY REBOOT between them:
+
+| Phase | User | Script | Purpose |
+|-------|------|--------|---------|
+| **Phase 1** | root | `run_1.sh` / `install_phase1.sh` | System hardening, SSH config, new user creation |
+| **REBOOT** | - | `sudo reboot` | **MANDATORY** - Security changes require reboot |
+| **Phase 2** | new user | `run_2.sh` / `install_phase2.sh` | Ethereum client installation |
+
+### Why This Matters
+
+1. **SSH Hardening**: Phase 1 changes SSH port and disables root login. User MUST verify they can login with new credentials before proceeding.
+
+2. **Privilege Separation**: Phase 1 runs as root for system changes. Phase 2 runs as the new non-root user for application installation.
+
+3. **Security Verification**: The reboot ensures all security changes (firewall, intrusion detection, SSH) are properly applied.
+
+4. **No Rollback Point**: Once Phase 2 starts, the user has committed to the new security model. The reboot forces them to verify access first.
+
+### NEVER Do This
+
+```bash
+# ❌ WRONG - Running both phases in one script
+./run_1.sh && ./run_2.sh  # DANGEROUS - skips reboot and verification
+
+# ❌ WRONG - Single manifest that chains everything
+./install_manifest.sh  # If this runs both phases, it's BROKEN
+```
+
+### Always Do This
+
+```bash
+# ✅ CORRECT - Two separate phases with reboot
+sudo ./install_phase1.sh   # As root
+sudo reboot                # MANDATORY
+# SSH back in as new user
+./install_phase2.sh        # As new user (NOT root)
+```
+
+---
+
+## Lessons Learned (Add to this section!)
+
+### 2025-12-28: Two-Phase Model Regression
+
+**Problem**: Initial flywheel implementation generated a single `install_manifest.sh` that ran `run_1.sh` followed immediately by client installation. This BROKE the security model.
+
+**Root Cause**: The reference implementation in this document was flawed - it didn't account for the required reboot between phases.
+
+**Fix**: Configure.sh now generates TWO scripts:
+- `install_phase1.sh` - Runs run_1.sh, then STOPS and requires reboot
+- `install_phase2.sh` - Runs client installation, refuses to run as root
+
+**Lesson**: Always check existing `run_1.sh` and `run_2.sh` to understand the security flow before creating new installation methods.
+
+### Port Checking Fallback
+
+**Problem**: `doctor.sh` used `ss` command which isn't available in all environments.
+
+**Fix**: Implemented fallback chain: `ss` → `netstat` → `/proc/net/tcp`
+
+---
 
 ## The Strategy
-We are moving from manual configuration (`nano exports.sh`) to an automated "One-Liner" experience (`curl | bash`).
+
+We are moving from manual configuration (`nano exports.sh`) to an automated "One-Liner" experience (`curl | bash`), while PRESERVING the two-phase security model.
 
 ### Core Components
-1.  **The One-Liner (`install.sh`)**: Bootstraps the environment.
-2.  **The Wizard (`configure.sh`)**: Interactive TUI for configuration.
-3.  **The Runner (`run_manifest.sh`)**: (To be implemented) Executes the plan.
-4.  **The Doctor (`doctor.sh`)**: (To be implemented) Verifies health.
 
-## Reference Implementation (Code to use)
+1. **The One-Liner (`install.sh`)**: Bootstraps environment, runs wizard, generates phase scripts
+2. **The Wizard (`configure.sh`)**: Interactive TUI, generates TWO phase scripts
+3. **Phase 1 Script (`install_phase1.sh`)**: Generated script for system hardening
+4. **Phase 2 Script (`install_phase2.sh`)**: Generated script for client installation
+5. **The Runner (`run_manifest.sh`)**: Phase-aware executor with logging
+6. **The Doctor (`doctor.sh`)**: Health verification
 
-### 1. `install.sh` (Entry Point)
-Place this at the root of the repository.
+---
+
+## Correct Reference Implementation
+
+### Phase Script Generation (configure.sh)
+
+The wizard MUST generate TWO separate scripts:
+
+```bash
+# Phase 1 - System Hardening (run as root)
+PHASE1_MANIFEST="$ROOT_DIR/install_phase1.sh"
+
+# Phase 2 - Client Installation (run as new user)
+PHASE2_MANIFEST="$ROOT_DIR/install_phase2.sh"
+```
+
+### Phase 1 Script Template
 
 ```bash
 #!/bin/bash
+# PHASE 1: System Hardening - MUST run as root
+# After completion: REBOOT REQUIRED
+
 set -e
 
-# Eth2 Quick Start - One-Liner Installer
-# Usage: curl -fsSL https://.../install.sh | bash
-
-REPO_URL="https://github.com/chimera-defi/eth2-quickstart.git"
-INSTALL_DIR="$HOME/.eth2-quickstart"
-BRANCH="master" # or main
-
-# Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-
-echo -e "${GREEN}==================================================${NC}"
-echo -e "${GREEN}       Eth2 Quick Start - One-Liner Setup         ${NC}"
-echo -e "${GREEN}==================================================${NC}"
-
-# 1. Check Prerequisites
-echo -e "${BLUE}[*] Checking system requirements...${NC}"
-if [ "$(id -u)" -ne 0 ]; then
-    echo -e "${RED}Error: This script must be run as root to setup the initial environment.${NC}"
-    echo "Please run: sudo bash"
+# Verify running as root
+if [[ $EUID -ne 0 ]]; then
+    echo "ERROR: Phase 1 must be run as root"
     exit 1
 fi
 
-# Check for git
-if ! command -v git &> /dev/null; then
-    echo -e "${BLUE}[*] Installing git...${NC}"
-    apt-get update && apt-get install -y git
-fi
+# Run system hardening
+./run_1.sh
 
-# 2. Clone/Update Repository
-if [ -d "$INSTALL_DIR" ]; then
-    echo -e "${BLUE}[*] Updating existing repository...${NC}"
-    cd "$INSTALL_DIR"
-    git pull origin "$BRANCH"
-else
-    echo -e "${BLUE}[*] Cloning repository...${NC}"
-    git clone -b "$BRANCH" "$REPO_URL" "$INSTALL_DIR"
-    cd "$INSTALL_DIR"
-fi
-
-# 3. Handover to Configurator/Runner
-echo -e "${BLUE}[*] Starting configuration wizard...${NC}"
-chmod +x install/utils/configure.sh
-
-./install/utils/configure.sh "$@"
+echo "=================================================="
+echo "  Phase 1 Complete - REBOOT REQUIRED"
+echo "=================================================="
+echo ""
+echo "1. Save credentials from /root/handoff_info.txt"
+echo "2. Reboot: sudo reboot"
+echo "3. SSH as NEW user (not root)"
+echo "4. Run Phase 2: ./install_phase2.sh"
 ```
 
-### 2. `install/utils/configure.sh` (The Wizard)
-This script uses `whiptail` to generate `config/user_config.env` and `install_manifest.sh`.
+### Phase 2 Script Template
 
 ```bash
 #!/bin/bash
-
-# Configuration Wizard for Eth2 Quick Start
-# Uses whiptail to prompt the user and generates config/user_config.env
+# PHASE 2: Client Installation - MUST run as new user (NOT root)
 
 set -e
 
-# Colors
-GREEN='\033[0;32m'
-NC='\033[0m'
-
-# Ensure config directory exists
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../../" && pwd)"
-CONFIG_DIR="$ROOT_DIR/config"
-CONFIG_FILE="$CONFIG_DIR/user_config.env"
-INSTALL_MANIFEST="$ROOT_DIR/install_manifest.sh"
-
-mkdir -p "$CONFIG_DIR"
-
-# Helper for whiptail
-function show_msg() {
-    whiptail --title "Eth2 Quick Start" --msgbox "$1" 10 60
-}
-
-# Check if whiptail is installed
-if ! command -v whiptail &> /dev/null; then
-    echo "Whiptail not found. Installing..."
-    sudo apt-get update && sudo apt-get install -y whiptail
+# Verify NOT running as root
+if [[ $EUID -eq 0 ]]; then
+    echo "ERROR: Phase 2 should NOT be run as root"
+    echo "SSH in as the new user created in Phase 1"
+    exit 1
 fi
 
-# Welcome
-whiptail --title "Eth2 Quick Start Wizard" --msgbox "Welcome to the Ethereum Node Setup Wizard.\n\nThis tool will guide you through configuring your node.\n\nIt will generate a configuration file at $CONFIG_FILE." 12 70
-
-# 1. Network Selection
-NETWORK=$(whiptail --title "Network Selection" --menu "Choose the Ethereum Network:" 15 60 2 \
-"mainnet" "Ethereum Mainnet (Real Value)" \
-"holesky" "Holesky Testnet (Testing)" 3>&1 1>&2 2>&3)
-if [ $? -ne 0 ]; then exit 0; fi
-
-# 2. Client Selection Strategy
-HARDWARE=$(whiptail --title "Hardware Profile" --menu "Select your hardware profile:" 15 60 3 \
-"high" "High-End (32GB+ RAM, 2TB+ NVMe) - Best Performance" \
-"mid" "Mid-Range (16GB RAM, SSD) - Balanced" \
-"low" "Low-Resource (8GB RAM) - Efficiency First" 3>&1 1>&2 2>&3)
-
-# Recommend clients based on hardware
-case $HARDWARE in
-    "high")
-        REC_EXEC="reth"
-        REC_CONS="lighthouse"
-        ;;
-    "mid")
-        REC_EXEC="geth"
-        REC_CONS="prysm"
-        ;;
-    "low")
-        REC_EXEC="nimbus_eth1"
-        REC_CONS="nimbus"
-        ;;
-esac
-
-# Confirm Client Selection
-whiptail --title "Client Recommendations" --yesno "Based on your hardware, we recommend:\n\nExecution: $REC_EXEC\nConsensus: $REC_CONS\n\nDo you want to use these defaults?" 12 60
-USE_DEFAULTS=$?
-
-if [ $USE_DEFAULTS -eq 0 ]; then
-    EXEC_CLIENT=$REC_EXEC
-    CONS_CLIENT=$REC_CONS
-else
-    # Manual Selection
-    EXEC_CLIENT=$(whiptail --title "Execution Client" --menu "Select Execution Client:" 15 60 5 \
-    "geth" "Geth (Go) - Stable, Popular" \
-    "nethermind" "Nethermind (C#) - Enterprise" \
-    "besu" "Besu (Java) - Enterprise" \
-    "erigon" "Erigon (Go) - Archival/Fast" \
-    "reth" "Reth (Rust) - High Performance" \
-    "nimbus_eth1" "Nimbus (Nim) - Lightweight" 3>&1 1>&2 2>&3)
-    
-    CONS_CLIENT=$(whiptail --title "Consensus Client" --menu "Select Consensus Client:" 15 60 5 \
-    "prysm" "Prysm (Go) - Popular, Easy" \
-    "lighthouse" "Lighthouse (Rust) - Secure, Fast" \
-    "teku" "Teku (Java) - Institutional" \
-    "nimbus" "Nimbus (Nim) - Lightweight" \
-    "lodestar" "Lodestar (TS) - JS/TS Ecosystem" \
-    "grandine" "Grandine (Rust) - Fast (Beta)" 3>&1 1>&2 2>&3)
-fi
-
-# 3. MEV Selection
-MEV_CHOICE=$(whiptail --title "MEV Configuration" --menu "Select MEV Solution (for validator rewards):" 15 70 3 \
-"mev-boost" "MEV-Boost (Standard) - Recommended" \
-"commit-boost" "Commit-Boost (Advanced) - Modular" \
-"none" "None - No extra rewards (Not Recommended)" 3>&1 1>&2 2>&3)
-
-# 4. Fee Recipient
-FEE_RECIPIENT=$(whiptail --title "Fee Recipient" --inputbox "Enter your ETH address for rewards:" 10 60 "0x0000000000000000000000000000000000000000" 3>&1 1>&2 2>&3)
-
-# 5. Graffiti
-GRAFFITI=$(whiptail --title "Graffiti" --inputbox "Enter your validator graffiti (public note on blocks):" 10 60 "Eth2QuickStart" 3>&1 1>&2 2>&3)
-
-# 6. Generate Configuration
-echo "# Auto-generated by configure.sh on $(date)" > "$CONFIG_FILE"
-echo "export ETH_NETWORK='$NETWORK'" >> "$CONFIG_FILE"
-echo "export FEE_RECIPIENT='$FEE_RECIPIENT'" >> "$CONFIG_FILE"
-echo "export GRAFITTI='$GRAFFITI'" >> "$CONFIG_FILE"
-
-echo "# Execution Client: $EXEC_CLIENT" >> "$CONFIG_FILE"
-echo "# Consensus Client: $CONS_CLIENT" >> "$CONFIG_FILE"
-
-# Generate Manifest
-echo "#!/bin/bash" > "$INSTALL_MANIFEST"
-echo "# Manifest generated on $(date)" >> "$INSTALL_MANIFEST"
-echo "set -e" >> "$INSTALL_MANIFEST"
-echo "" >> "$INSTALL_MANIFEST"
-echo "echo 'Starting Installation based on Manifest...'" >> "$INSTALL_MANIFEST"
-
-# Add System Setup
-echo "./run_1.sh" >> "$INSTALL_MANIFEST"
-
-# Add Client Installs
-echo "./install/execution/$EXEC_CLIENT.sh" >> "$INSTALL_MANIFEST"
-echo "./install/consensus/$CONS_CLIENT.sh" >> "$INSTALL_MANIFEST"
-
-# Add MEV Install
-if [ "$MEV_CHOICE" == "mev-boost" ]; then
-    echo "./install/mev/install_mev_boost.sh" >> "$INSTALL_MANIFEST"
-elif [ "$MEV_CHOICE" == "commit-boost" ]; then
-    echo "./install/mev/install_commit_boost.sh" >> "$INSTALL_MANIFEST"
-fi
-
-chmod +x "$INSTALL_MANIFEST"
-
-show_msg "Configuration Complete!\n\n1. Config saved to: $CONFIG_FILE\n2. Manifest saved to: $INSTALL_MANIFEST\n\nRun './install_manifest.sh' (or reboot and run it) to apply changes."
-
-if (whiptail --title "Run Installation?" --yesno "Do you want to run the installation now? (Requires sudo)" 10 60); then
-    clear
-    echo "Running installation..."
-    sudo "$INSTALL_MANIFEST"
-else
-    clear
-    echo "Setup complete. Run ./install_manifest.sh when ready."
-fi
+# Install clients
+./install/utils/install_dependencies.sh
+./install/execution/${EXEC_CLIENT}.sh
+./install/consensus/${CONS_CLIENT}.sh
+./install/mev/install_${MEV_CHOICE}.sh  # if applicable
 ```
 
-### 3. Modifications to `exports.sh`
-You need to add this block to `exports.sh` to load the user configuration:
+---
+
+## Modifications to `exports.sh`
+
+Add this block to load user configuration:
 
 ```bash
 # ----------------------------------------------------------------------------
 # User Configuration Override
 # ----------------------------------------------------------------------------
-# If the user configuration file exists, source it to override defaults
-# Use absolute path resolution if possible, or relative to this file
-if [ -f "$(dirname "${BASH_SOURCE[0]}")/config/user_config.env" ]; then
-    source "$(dirname "${BASH_SOURCE[0]}")/config/user_config.env"
+USER_CONFIG_FILE="$(dirname "${BASH_SOURCE[0]}")/config/user_config.env"
+if [[ -f "$USER_CONFIG_FILE" ]]; then
+    # shellcheck source=/dev/null
+    source "$USER_CONFIG_FILE"
 fi
 ```
 
-## Next Steps for the Coding Agent
+---
 
-1.  **Restore the scripts**: Re-create `install.sh` and `install/utils/configure.sh` using the code above.
-2.  **Update exports.sh**: Apply the configuration override block.
-3.  **Implement Manifest Runner**: Create `install/utils/run_manifest.sh` to execute the manifest robustly (logging, error handling).
-4.  **Implement Vibe Mode**: Add `--vibe` support to `install.sh` and `configure.sh` for non-interactive defaults.
-5.  **Create Doctor Script**: Create `install/utils/doctor.sh` to verify installation success.
+## Pre-Implementation Checklist for Future Agents
 
+Before implementing ANY changes to the installation flow:
+
+- [ ] Read `run_1.sh` - understand what it does (root operations)
+- [ ] Read `run_2.sh` - understand what it does (user operations)
+- [ ] Verify changes preserve the Phase 1 → REBOOT → Phase 2 flow
+- [ ] Test that Phase 1 scripts refuse to continue to Phase 2
+- [ ] Test that Phase 2 scripts refuse to run as root
+- [ ] Check that generated scripts have clear reboot instructions
+- [ ] Run shellcheck on all modified scripts
+- [ ] Verify no stubbed code or TODOs remain
+
+---
+
+## Files Reference
+
+| File | Purpose | Run As |
+|------|---------|--------|
+| `run_1.sh` | Original Phase 1 - system hardening | root |
+| `run_2.sh` | Original Phase 2 - client installation | new user |
+| `install.sh` | One-liner entry point | root |
+| `install/utils/configure.sh` | Configuration wizard | root |
+| `install_phase1.sh` | Generated Phase 1 wrapper | root |
+| `install_phase2.sh` | Generated Phase 2 wrapper | new user |
+| `install/utils/run_manifest.sh` | Phase-aware runner | auto-detect |
+| `install/utils/doctor.sh` | Health verification | any |
+
+---
+
+## Adding Future Lessons Learned
+
+When you encounter an issue or make a significant fix, ADD IT to the "Lessons Learned" section above with:
+
+1. **Date**: When it happened
+2. **Problem**: What went wrong
+3. **Root Cause**: Why it happened
+4. **Fix**: How you fixed it
+5. **Lesson**: What future agents should remember
+
+This ensures institutional knowledge is preserved across agent handoffs.
