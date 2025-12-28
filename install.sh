@@ -13,12 +13,13 @@ REPO_URL="https://github.com/chimera-defi/eth2-quickstart.git"
 INSTALL_DIR="$HOME/.eth2-quickstart"
 BRANCH="master"
 
-# Colors
+# Colors - defined locally because this script runs via curl|bash before repo is cloned
+# After cloning, we source lib/common_functions.sh which also provides these
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 # Parse arguments
 VIBE_MODE=false
@@ -135,14 +136,18 @@ fi
 
 echo ""
 
-# 3. Ensure scripts are executable
+# 3. Source common functions (now that repo is available)
+# shellcheck source=/dev/null
+source "$INSTALL_DIR/lib/common_functions.sh"
+
+# 4. Ensure scripts are executable
 echo -e "${BLUE}[*] Setting up scripts...${NC}"
 chmod +x install/utils/configure.sh 2>/dev/null || true
 chmod +x install/utils/run_manifest.sh 2>/dev/null || true
 chmod +x install/utils/doctor.sh 2>/dev/null || true
 chmod +x run_1.sh run_2.sh 2>/dev/null || true
 
-# 4. Run Configuration Wizard
+# 5. Run Configuration Wizard
 echo ""
 echo -e "${BLUE}[*] Starting configuration wizard...${NC}"
 echo ""
@@ -154,7 +159,7 @@ else
     ./install/utils/configure.sh "$@"
 fi
 
-# 5. After configure.sh, check if Phase 1 was run
+# 6. After configure.sh, check if Phase 1 was run
 # If not, offer to run it now
 if [[ -f "./install_phase1.sh" ]]; then
     echo ""
