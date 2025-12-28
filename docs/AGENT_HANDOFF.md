@@ -1,3 +1,79 @@
+# Agent Handoff: Eth2 Quick Start Upgrade
+
+## Overview
+This document outlines the plan and initial implementation to transform "Eth2 Quick Start" from a collection of scripts into a cohesive, product-like experience (The "Flywheel").
+
+## The Strategy
+We are moving from manual configuration (`nano exports.sh`) to an automated "One-Liner" experience (`curl | bash`).
+
+### Core Components
+1.  **The One-Liner (`install.sh`)**: Bootstraps the environment.
+2.  **The Wizard (`configure.sh`)**: Interactive TUI for configuration.
+3.  **The Runner (`run_manifest.sh`)**: (To be implemented) Executes the plan.
+4.  **The Doctor (`doctor.sh`)**: (To be implemented) Verifies health.
+
+## Reference Implementation (Code to use)
+
+### 1. `install.sh` (Entry Point)
+Place this at the root of the repository.
+
+```bash
+#!/bin/bash
+set -e
+
+# Eth2 Quick Start - One-Liner Installer
+# Usage: curl -fsSL https://.../install.sh | bash
+
+REPO_URL="https://github.com/chimera-defi/eth2-quickstart.git"
+INSTALL_DIR="$HOME/.eth2-quickstart"
+BRANCH="master" # or main
+
+# Colors
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+echo -e "${GREEN}==================================================${NC}"
+echo -e "${GREEN}       Eth2 Quick Start - One-Liner Setup         ${NC}"
+echo -e "${GREEN}==================================================${NC}"
+
+# 1. Check Prerequisites
+echo -e "${BLUE}[*] Checking system requirements...${NC}"
+if [ "$(id -u)" -ne 0 ]; then
+    echo -e "${RED}Error: This script must be run as root to setup the initial environment.${NC}"
+    echo "Please run: sudo bash"
+    exit 1
+fi
+
+# Check for git
+if ! command -v git &> /dev/null; then
+    echo -e "${BLUE}[*] Installing git...${NC}"
+    apt-get update && apt-get install -y git
+fi
+
+# 2. Clone/Update Repository
+if [ -d "$INSTALL_DIR" ]; then
+    echo -e "${BLUE}[*] Updating existing repository...${NC}"
+    cd "$INSTALL_DIR"
+    git pull origin "$BRANCH"
+else
+    echo -e "${BLUE}[*] Cloning repository...${NC}"
+    git clone -b "$BRANCH" "$REPO_URL" "$INSTALL_DIR"
+    cd "$INSTALL_DIR"
+fi
+
+# 3. Handover to Configurator/Runner
+echo -e "${BLUE}[*] Starting configuration wizard...${NC}"
+chmod +x install/utils/configure.sh
+
+./install/utils/configure.sh "$@"
+```
+
+### 2. `install/utils/configure.sh` (The Wizard)
+This script uses `whiptail` to generate `config/user_config.env` and `install_manifest.sh`.
+
+```bash
 #!/bin/bash
 
 # Configuration Wizard for Eth2 Quick Start
@@ -104,10 +180,6 @@ echo "export ETH_NETWORK='$NETWORK'" >> "$CONFIG_FILE"
 echo "export FEE_RECIPIENT='$FEE_RECIPIENT'" >> "$CONFIG_FILE"
 echo "export GRAFITTI='$GRAFFITI'" >> "$CONFIG_FILE"
 
-# Map client names to script paths or variables expected by other scripts
-# Currently existing scripts often hardcode clients or rely on the user running the specific script.
-# We will create an 'install_manifest.sh' that the master installer can run.
-
 echo "# Execution Client: $EXEC_CLIENT" >> "$CONFIG_FILE"
 echo "# Consensus Client: $CONS_CLIENT" >> "$CONFIG_FILE"
 
@@ -122,7 +194,6 @@ echo "echo 'Starting Installation based on Manifest...'" >> "$INSTALL_MANIFEST"
 echo "./run_1.sh" >> "$INSTALL_MANIFEST"
 
 # Add Client Installs
-# We assume the scripts are in install/execution/CLIENT.sh and install/consensus/CLIENT.sh
 echo "./install/execution/$EXEC_CLIENT.sh" >> "$INSTALL_MANIFEST"
 echo "./install/consensus/$CONS_CLIENT.sh" >> "$INSTALL_MANIFEST"
 
@@ -137,7 +208,6 @@ chmod +x "$INSTALL_MANIFEST"
 
 show_msg "Configuration Complete!\n\n1. Config saved to: $CONFIG_FILE\n2. Manifest saved to: $INSTALL_MANIFEST\n\nRun './install_manifest.sh' (or reboot and run it) to apply changes."
 
-# Offer to run it now?
 if (whiptail --title "Run Installation?" --yesno "Do you want to run the installation now? (Requires sudo)" 10 60); then
     clear
     echo "Running installation..."
@@ -146,3 +216,27 @@ else
     clear
     echo "Setup complete. Run ./install_manifest.sh when ready."
 fi
+```
+
+### 3. Modifications to `exports.sh`
+You need to add this block to `exports.sh` to load the user configuration:
+
+```bash
+# ----------------------------------------------------------------------------
+# User Configuration Override
+# ----------------------------------------------------------------------------
+# If the user configuration file exists, source it to override defaults
+# Use absolute path resolution if possible, or relative to this file
+if [ -f "$(dirname "${BASH_SOURCE[0]}")/config/user_config.env" ]; then
+    source "$(dirname "${BASH_SOURCE[0]}")/config/user_config.env"
+fi
+```
+
+## Next Steps for the Coding Agent
+
+1.  **Restore the scripts**: Re-create `install.sh` and `install/utils/configure.sh` using the code above.
+2.  **Update exports.sh**: Apply the configuration override block.
+3.  **Implement Manifest Runner**: Create `install/utils/run_manifest.sh` to execute the manifest robustly (logging, error handling).
+4.  **Implement Vibe Mode**: Add `--vibe` support to `install.sh` and `configure.sh` for non-interactive defaults.
+5.  **Create Doctor Script**: Create `install/utils/doctor.sh` to verify installation success.
+

@@ -150,14 +150,4 @@ else
     export ETHGAS_COLLATERAL_CONTRACT="$ETHGAS_COLLATERAL_CONTRACT_MAINNET"
 fi
 
-# ----------------------------------------------------------------------------
-# User Configuration Override
-# ----------------------------------------------------------------------------
-# If the user configuration file exists, source it to override defaults
-# Use absolute path resolution relative to this file
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -f "$SCRIPT_DIR/config/user_config.env" ]; then
-    source "$SCRIPT_DIR/config/user_config.env"
-fi
-
 set +o allexport
