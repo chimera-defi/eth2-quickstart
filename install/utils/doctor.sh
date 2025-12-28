@@ -5,16 +5,13 @@
 
 set -e
 
-# Colors
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
 # Script setup
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../" && pwd)"
+
+# Source common functions (provides colors, logging, and utility functions)
+# shellcheck source=/dev/null
+source "$ROOT_DIR/lib/common_functions.sh"
 
 # Counters
 CHECKS_PASSED=0

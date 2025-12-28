@@ -6,16 +6,13 @@
 
 set -e
 
-# Colors
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
 # Script setup
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../" && pwd)"
+
+# Source common functions (provides colors, logging, and utility functions)
+# shellcheck source=/dev/null
+source "$ROOT_DIR/lib/common_functions.sh"
 PHASE1_MANIFEST="$ROOT_DIR/install_phase1.sh"
 PHASE2_MANIFEST="$ROOT_DIR/install_phase2.sh"
 LOG_DIR="$ROOT_DIR/logs"
@@ -65,20 +62,9 @@ for arg in "$@"; do
     esac
 done
 
-# Logging function
-log() {
-    local level="$1"
-    shift
-    local message="$*"
-    local timestamp
-    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-
-    case "$level" in
-        "INFO")  echo -e "${GREEN}[INFO]${NC} $message" ;;
-        "WARN")  echo -e "${YELLOW}[WARN]${NC} $message" ;;
-        "ERROR") echo -e "${RED}[ERROR]${NC} $message" ;;
-        "DEBUG") [[ "$VERBOSE" == "true" ]] && echo -e "${BLUE}[DEBUG]${NC} $message" ;;
-    esac
+# Debug logging (verbose mode only)
+log_debug() {
+    [[ "$VERBOSE" == "true" ]] && echo -e "${BLUE}[DEBUG]${NC} $1"
 }
 
 # Detect which phase should run
@@ -118,7 +104,7 @@ fi
 
 # Detect phase
 PHASE=$(detect_phase)
-log "INFO" "Detected Phase: $PHASE"
+log_info "Detected Phase: $PHASE"
 
 case "$PHASE" in
     "1")
@@ -126,14 +112,14 @@ case "$PHASE" in
         LOG_FILE="$LOG_DIR/phase1_$(date +%Y%m%d_%H%M%S).log"
 
         if [[ ! -f "$MANIFEST_FILE" ]]; then
-            log "ERROR" "Phase 1 manifest not found: $MANIFEST_FILE"
+            log_error "Phase 1 manifest not found: $MANIFEST_FILE"
             echo ""
             echo "Please run the configuration wizard first:"
             echo "  ./install/utils/configure.sh"
             exit 1
         fi
 
-        log "INFO" "Running Phase 1: System Hardening"
+        log_info "Running Phase 1: System Hardening"
         echo ""
         echo -e "${YELLOW}This phase will:${NC}"
         echo "  - Update system packages"
@@ -149,14 +135,14 @@ case "$PHASE" in
         LOG_FILE="$LOG_DIR/phase2_$(date +%Y%m%d_%H%M%S).log"
 
         if [[ ! -f "$MANIFEST_FILE" ]]; then
-            log "ERROR" "Phase 2 manifest not found: $MANIFEST_FILE"
+            log_error "Phase 2 manifest not found: $MANIFEST_FILE"
             echo ""
             echo "Please run the configuration wizard first:"
             echo "  ./install/utils/configure.sh"
             exit 1
         fi
 
-        log "INFO" "Running Phase 2: Client Installation"
+        log_info "Running Phase 2: Client Installation"
         echo ""
         echo "Configuration:"
         echo "  Network:    ${ETH_NETWORK:-mainnet}"
@@ -166,7 +152,7 @@ case "$PHASE" in
         echo ""
         ;;
     *)
-        log "ERROR" "Unknown phase: $PHASE"
+        log_error "Unknown phase: $PHASE"
         exit 1
         ;;
 esac
@@ -188,13 +174,13 @@ echo ""
 read -r -p "Press Enter to continue or Ctrl+C to cancel..."
 
 # Execute the manifest
-log "INFO" "Starting installation..."
+log_info "Starting installation..."
 echo ""
 
 cd "$ROOT_DIR"
 if "$MANIFEST_FILE" 2>&1 | tee -a "$LOG_FILE"; then
-    log "INFO" "Phase $PHASE completed successfully"
+    log_info "Phase $PHASE completed successfully"
 else
-    log "ERROR" "Phase $PHASE failed. Check log: $LOG_FILE"
+    log_error "Phase $PHASE failed. Check log: $LOG_FILE"
     exit 1
 fi

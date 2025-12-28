@@ -107,6 +107,12 @@ This separation ensures:
   - Phase 1: System hardening (as root, requires reboot)
   - Phase 2: Client installation (as new user after reboot)
 - Preserves security paradigm from original run_1.sh/run_2.sh
+- **Refactored to reuse lib/common_functions.sh**:
+  - All scripts now source common_functions.sh for colors and logging
+  - Removed duplicate color definitions from doctor.sh, run_manifest.sh, configure.sh
+  - Generated phase scripts use require_root() and log_info/log_warn/log_error
+  - install.sh sources common_functions.sh after cloning (keeps local colors for bootstrap)
+  - Total lines reduced from 1255 to 1225 (30 lines saved + better maintainability)
 
 ---
 *Generated as part of the Eth2 Quick Start upgrade project*

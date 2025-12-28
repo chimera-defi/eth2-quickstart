@@ -10,15 +10,13 @@
 
 set -e
 
-# Colors
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m'
-
-# Ensure config directory exists
+# Script setup
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../" && pwd)"
+
+# Source common functions (provides colors, logging, and utility functions)
+# shellcheck source=/dev/null
+source "$ROOT_DIR/lib/common_functions.sh"
 CONFIG_DIR="$ROOT_DIR/config"
 CONFIG_FILE="$CONFIG_DIR/user_config.env"
 PHASE1_MANIFEST="$ROOT_DIR/install_phase1.sh"
@@ -217,28 +215,19 @@ echo -e "${GREEN}[OK]${NC} Configuration saved to $CONFIG_FILE"
 
 set -e
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
 # Navigate to script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Source exports
+# Source common functions and exports
+source ./lib/common_functions.sh
 source ./exports.sh
 if [[ -f ./config/user_config.env ]]; then
     source ./config/user_config.env
 fi
 
-# Verify running as root
-if [[ $EUID -ne 0 ]]; then
-    echo -e "${RED}ERROR: Phase 1 must be run as root${NC}"
-    echo "Please run: sudo ./install_phase1.sh"
-    exit 1
-fi
+# Verify running as root (uses require_root from common_functions.sh)
+require_root
 
 echo ""
 echo -e "${GREEN}==================================================${NC}"
@@ -303,27 +292,20 @@ echo -e "${GREEN}[OK]${NC} Phase 1 manifest saved to $PHASE1_MANIFEST"
 
 set -e
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
 # Navigate to script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Source exports
-source ./exports.sh
+# Source common functions and exports (provides colors, logging, etc.)
 source ./lib/common_functions.sh
+source ./exports.sh
 if [[ -f ./config/user_config.env ]]; then
     source ./config/user_config.env
 fi
 
 # Verify NOT running as root
 if [[ $EUID -eq 0 ]]; then
-    echo -e "${RED}ERROR: Phase 2 should NOT be run as root${NC}"
+    log_error "Phase 2 should NOT be run as root"
     echo "Please run as the secure user created in Phase 1"
     echo "Check /root/handoff_info.txt for credentials"
     exit 1
@@ -333,7 +315,7 @@ fi
 EXPECTED_USER="${LOGIN_UNAME:-eth}"
 CURRENT_USER=$(whoami)
 if [[ "$CURRENT_USER" != "$EXPECTED_USER" ]]; then
-    echo -e "${YELLOW}WARNING: Running as '$CURRENT_USER', expected '$EXPECTED_USER'${NC}"
+    log_warn "Running as '$CURRENT_USER', expected '$EXPECTED_USER'"
     read -r -p "Continue anyway? (y/N): " confirm
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         exit 1
