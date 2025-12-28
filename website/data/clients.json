@@ -1,0 +1,250 @@
+[
+  {
+    "id": "geth",
+    "type": "execution",
+    "name": "Geth",
+    "language": "Go",
+    "tagline": "The original Go implementation of Ethereum. Most widely used and battle-tested.",
+    "features": [
+      "Most stable and mature",
+      "Extensive documentation",
+      "Wide community support",
+      "Proven track record"
+    ],
+    "drawbacks": [
+      "Higher resource usage",
+      "Slower sync compared to newer clients"
+    ],
+    "install_script": "../execution/geth.sh"
+  },
+  {
+    "id": "erigon",
+    "type": "execution",
+    "name": "Erigon",
+    "language": "Go",
+    "tagline": "Re-architected Geth focusing on efficiency and performance.",
+    "features": [
+      "Faster sync times",
+      "Lower disk space usage",
+      "Better performance",
+      "Modular architecture"
+    ],
+    "drawbacks": [
+      "More complex setup",
+      "Less mature than Geth",
+      "Higher memory usage during sync"
+    ],
+    "install_script": "../execution/erigon.sh"
+  },
+  {
+    "id": "reth",
+    "type": "execution",
+    "name": "Reth",
+    "language": "Rust",
+    "tagline": "Modern Rust implementation focusing on performance and modularity.",
+    "features": [
+      "Excellent performance",
+      "Modern codebase",
+      "Active development",
+      "Modular design"
+    ],
+    "drawbacks": [
+      "Newer and less battle-tested",
+      "Rust compilation takes time",
+      "Still in development"
+    ],
+    "install_script": "../execution/reth.sh"
+  },
+  {
+    "id": "nethermind",
+    "type": "execution",
+    "name": "Nethermind",
+    "language": ".NET/C#",
+    "tagline": "Enterprise-focused .NET implementation with advanced features.",
+    "features": [
+      "Enterprise features",
+      "Good performance",
+      "Active development",
+      "JSON-RPC compatibility"
+    ],
+    "drawbacks": [
+      "Requires .NET runtime",
+      "Less common in home staking",
+      "Complex configuration"
+    ],
+    "install_script": "../execution/nethermind.sh"
+  },
+  {
+    "id": "besu",
+    "type": "execution",
+    "name": "Besu",
+    "language": "Java",
+    "tagline": "Apache 2.0 licensed Java client suitable for both public and private networks.",
+    "features": [
+      "Permissive license",
+      "Enterprise support",
+      "Good for private networks",
+      "Hyperledger project"
+    ],
+    "drawbacks": [
+      "Requires Java runtime",
+      "Higher resource usage",
+      "Less optimized for home staking"
+    ],
+    "install_script": "../execution/besu.sh"
+  },
+  {
+    "id": "nimbus_eth1",
+    "type": "execution",
+    "name": "Nimbus-eth1",
+    "language": "Nim",
+    "tagline": "Status-developed execution client optimized for resource efficiency.",
+    "features": [
+      "Very lightweight",
+      "Perfect for Raspberry Pi",
+      "Low bandwidth usage",
+      "Low memory footprint"
+    ],
+    "drawbacks": [
+      "Uses nightly builds",
+      "Smaller community",
+      "Less battle-tested",
+      "Nim language less common"
+    ],
+    "install_script": "../execution/nimbus_eth1.sh"
+  },
+  {
+    "id": "ethrex",
+    "type": "execution",
+    "name": "Ethrex",
+    "language": "Rust",
+    "tagline": "Lambda Class minimalist, fast and modular Ethereum client. Supports L1 and L2.",
+    "features": [
+      "Minimalist codebase",
+      "Fast and modular",
+      "Pre-built binaries available",
+      "L2/ZK-Rollup support",
+      "Active development"
+    ],
+    "drawbacks": [
+      "Very new client (2024)",
+      "Less battle-tested",
+      "Smaller community",
+      "Early adopter risk"
+    ],
+    "install_script": "../execution/ethrex.sh"
+  },
+  {
+    "id": "prysm",
+    "type": "consensus",
+    "name": "Prysm",
+    "language": "Go",
+    "tagline": "Developed by Prysmatic Labs, known for reliability and documentation.",
+    "features": [
+      "Excellent documentation",
+      "Stable and reliable",
+      "Good community support",
+      "Easy to use"
+    ],
+    "drawbacks": [
+      "Higher resource usage",
+      "Less client diversity benefit"
+    ],
+    "install_script": "../consensus/prysm.sh"
+  },
+  {
+    "id": "lighthouse",
+    "type": "consensus",
+    "name": "Lighthouse",
+    "language": "Rust",
+    "tagline": "Rust implementation by Sigma Prime, focusing on security and performance.",
+    "features": [
+      "Excellent performance",
+      "Security focused",
+      "Good documentation",
+      "Active development"
+    ],
+    "drawbacks": [
+      "Rust compilation required",
+      "Less beginner-friendly setup"
+    ],
+    "install_script": "../consensus/lighthouse.sh"
+  },
+  {
+    "id": "teku",
+    "type": "consensus",
+    "name": "Teku",
+    "language": "Java",
+    "tagline": "ConsenSys-developed client designed for institutional staking.",
+    "features": [
+      "Enterprise features",
+      "Institutional support",
+      "Good for large operations",
+      "Comprehensive monitoring"
+    ],
+    "drawbacks": [
+      "Higher resource usage",
+      "Requires Java runtime",
+      "Complex for home stakers"
+    ],
+    "install_script": "../consensus/teku.sh"
+  },
+  {
+    "id": "nimbus",
+    "type": "consensus",
+    "name": "Nimbus",
+    "language": "Nim",
+    "tagline": "Status-developed client optimized for resource efficiency.",
+    "features": [
+      "Very lightweight",
+      "Perfect for Raspberry Pi",
+      "Low bandwidth usage",
+      "Easy to run"
+    ],
+    "drawbacks": [
+      "Smaller community",
+      "Less feature-rich",
+      "Nim language less common"
+    ],
+    "install_script": "../consensus/nimbus.sh"
+  },
+  {
+    "id": "lodestar",
+    "type": "consensus",
+    "name": "Lodestar",
+    "language": "TypeScript",
+    "tagline": "ChainSafe-developed client written in TypeScript.",
+    "features": [
+      "Developer-friendly (TypeScript)",
+      "Good for development",
+      "Active development",
+      "Modern architecture"
+    ],
+    "drawbacks": [
+      "Higher resource usage",
+      "Less battle-tested",
+      "Node.js dependency"
+    ],
+    "install_script": "../consensus/lodestar.sh"
+  },
+  {
+    "id": "grandine",
+    "type": "consensus",
+    "name": "Grandine",
+    "language": "Rust",
+    "tagline": "High-performance Rust client focused on correctness and efficiency.",
+    "features": [
+      "High performance",
+      "Modern Rust implementation",
+      "Performance optimized",
+      "Advanced features"
+    ],
+    "drawbacks": [
+      "Very new client",
+      "Less documentation",
+      "Advanced users only",
+      "Still in development"
+    ],
+    "install_script": "../consensus/grandine.sh"
+  }
+]
