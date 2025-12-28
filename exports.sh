@@ -150,4 +150,15 @@ else
     export ETHGAS_COLLATERAL_CONTRACT="$ETHGAS_COLLATERAL_CONTRACT_MAINNET"
 fi
 
+# ----------------------------------------------------------------------------
+# User Configuration Override
+# ----------------------------------------------------------------------------
+# If the user configuration file exists, source it to override defaults
+# This allows configure.sh generated configs to take precedence
+USER_CONFIG_FILE="$(dirname "${BASH_SOURCE[0]}")/config/user_config.env"
+if [[ -f "$USER_CONFIG_FILE" ]]; then
+    # shellcheck source=/dev/null
+    source "$USER_CONFIG_FILE"
+fi
+
 set +o allexport
