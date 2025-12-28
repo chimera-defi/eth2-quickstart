@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Manifest Runner for Eth2 Quick Start
-# Executes the installation manifest with logging, progress tracking, and error handling
+# Detects the current phase and runs the appropriate installation script
+# with logging, progress tracking, and error handling
 
 set -e
 
@@ -15,13 +16,17 @@ NC='\033[0m'
 # Script setup
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../" && pwd)"
-MANIFEST_FILE="$ROOT_DIR/install_manifest.sh"
+PHASE1_MANIFEST="$ROOT_DIR/install_phase1.sh"
+PHASE2_MANIFEST="$ROOT_DIR/install_phase2.sh"
 LOG_DIR="$ROOT_DIR/logs"
-LOG_FILE="$LOG_DIR/install_$(date +%Y%m%d_%H%M%S).log"
+
+# Create log directory
+mkdir -p "$LOG_DIR"
 
 # Parse arguments
 DRY_RUN=false
 VERBOSE=false
+FORCE_PHASE=""
 for arg in "$@"; do
     case $arg in
         --dry-run)
@@ -32,6 +37,14 @@ for arg in "$@"; do
             VERBOSE=true
             shift
             ;;
+        --phase1)
+            FORCE_PHASE="1"
+            shift
+            ;;
+        --phase2)
+            FORCE_PHASE="2"
+            shift
+            ;;
         --help|-h)
             echo "Eth2 Quick Start - Manifest Runner"
             echo ""
@@ -40,13 +53,19 @@ for arg in "$@"; do
             echo "Options:"
             echo "  --dry-run   Show what would be executed without running"
             echo "  --verbose   Show detailed output"
+            echo "  --phase1    Force run Phase 1 (system hardening)"
+            echo "  --phase2    Force run Phase 2 (client installation)"
             echo "  --help, -h  Show this help message"
+            echo ""
+            echo "Security Model:"
+            echo "  Phase 1: System hardening (run as root, requires reboot)"
+            echo "  Phase 2: Client installation (run as new user after reboot)"
             exit 0
             ;;
     esac
 done
 
-# Logging functions
+# Logging function
 log() {
     local level="$1"
     shift
@@ -54,10 +73,6 @@ log() {
     local timestamp
     timestamp=$(date '+%Y-%m-%d %H:%M:%S')
 
-    # Log to file
-    echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
-
-    # Log to console with colors
     case "$level" in
         "INFO")  echo -e "${GREEN}[INFO]${NC} $message" ;;
         "WARN")  echo -e "${YELLOW}[WARN]${NC} $message" ;;
@@ -66,183 +81,120 @@ log() {
     esac
 }
 
-# Error handler
-handle_error() {
-    local exit_code=$?
-    local line_number=$1
-
-    log "ERROR" "Installation failed at line $line_number with exit code $exit_code"
-    log "ERROR" "Check the log file for details: $LOG_FILE"
-    echo ""
-    echo -e "${RED}==================================================${NC}"
-    echo -e "${RED}  Installation Failed${NC}"
-    echo -e "${RED}==================================================${NC}"
-    echo ""
-    echo "Troubleshooting steps:"
-    echo "  1. Check the log file: $LOG_FILE"
-    echo "  2. Run the doctor script: ./install/utils/doctor.sh"
-    echo "  3. Check system requirements: RAM >= 8GB, Disk >= 500GB"
-    echo ""
-    echo "To retry, run:"
-    echo "  sudo ./install/utils/run_manifest.sh"
-    echo ""
-
-    exit $exit_code
-}
-
-# Progress tracking
-TOTAL_PHASES=4
-CURRENT_PHASE=0
-
-progress() {
-    CURRENT_PHASE=$((CURRENT_PHASE + 1))
-    local percent=$((CURRENT_PHASE * 100 / TOTAL_PHASES))
-    echo ""
-    echo -e "${BLUE}[${CURRENT_PHASE}/${TOTAL_PHASES}] ($percent%)${NC} $1"
-    log "INFO" "Phase $CURRENT_PHASE: $1"
-}
-
-# Check prerequisites
-check_prerequisites() {
-    log "INFO" "Checking prerequisites..."
+# Detect which phase should run
+detect_phase() {
+    # If forced, use that
+    if [[ -n "$FORCE_PHASE" ]]; then
+        echo "$FORCE_PHASE"
+        return
+    fi
 
     # Check if running as root
-    if [[ $EUID -ne 0 ]]; then
-        log "ERROR" "This script must be run as root"
-        echo -e "${RED}Error: Please run with sudo${NC}"
-        exit 1
+    if [[ $EUID -eq 0 ]]; then
+        # Root user - should run Phase 1
+        echo "1"
+    else
+        # Non-root user - should run Phase 2
+        echo "2"
     fi
-
-    # Check if manifest exists
-    if [[ ! -f "$MANIFEST_FILE" ]]; then
-        log "ERROR" "Manifest file not found: $MANIFEST_FILE"
-        echo -e "${RED}Error: Manifest file not found${NC}"
-        echo "Please run ./install/utils/configure.sh first to generate the manifest."
-        exit 1
-    fi
-
-    # Check disk space (require at least 100GB free)
-    local free_space
-    free_space=$(df -BG / | awk 'NR==2{print $4}' | sed 's/G//')
-    if [[ $free_space -lt 100 ]]; then
-        log "WARN" "Low disk space: ${free_space}GB free (recommend 500GB+)"
-        echo -e "${YELLOW}Warning: Low disk space. Ethereum nodes require 500GB+ storage.${NC}"
-    fi
-
-    log "INFO" "Prerequisites check passed"
 }
 
-# Create log directory
-mkdir -p "$LOG_DIR"
-
-# Main execution
+# Header
 echo ""
-echo -e "${GREEN}==================================================${NC}"
-echo -e "${GREEN}  Eth2 Quick Start - Manifest Runner${NC}"
-echo -e "${GREEN}==================================================${NC}"
-echo ""
-echo "Log file: $LOG_FILE"
+echo -e "${BLUE}==================================================${NC}"
+echo -e "${BLUE}  Eth2 Quick Start - Manifest Runner${NC}"
+echo -e "${BLUE}==================================================${NC}"
 echo ""
 
-# Check prerequisites
-check_prerequisites
-
-if [[ "$DRY_RUN" == "true" ]]; then
-    echo -e "${YELLOW}[DRY RUN] Showing what would be executed:${NC}"
-    echo ""
-    echo "--- Manifest Contents ---"
-    cat "$MANIFEST_FILE"
-    echo "--- End of Manifest ---"
-    exit 0
-fi
-
-# Set up error trap
-trap 'handle_error $LINENO' ERR
-
-# Log start
-log "INFO" "Starting installation from manifest: $MANIFEST_FILE"
-
-# Source configuration
-cd "$ROOT_DIR"
-# shellcheck source=/dev/null
-source "$ROOT_DIR/exports.sh"
-
-if [[ -f "$ROOT_DIR/config/user_config.env" ]]; then
-    log "INFO" "Loading user configuration..."
+# Source configuration if available
+if [[ -f "$ROOT_DIR/exports.sh" ]]; then
     # shellcheck source=/dev/null
-    source "$ROOT_DIR/config/user_config.env"
+    source "$ROOT_DIR/exports.sh" 2>/dev/null || true
+fi
+if [[ -f "$ROOT_DIR/config/user_config.env" ]]; then
+    # shellcheck source=/dev/null
+    source "$ROOT_DIR/config/user_config.env" 2>/dev/null || true
 fi
 
-# Display configuration summary
-echo "Configuration:"
-echo "  Network:    ${ETH_NETWORK:-mainnet}"
-echo "  Execution:  ${EXEC_CLIENT:-not set}"
-echo "  Consensus:  ${CONS_CLIENT:-not set}"
-echo "  MEV:        ${MEV_SOLUTION:-not set}"
-echo ""
+# Detect phase
+PHASE=$(detect_phase)
+log "INFO" "Detected Phase: $PHASE"
 
-# Confirm before proceeding
-echo -e "${YELLOW}Press Enter to continue or Ctrl+C to cancel...${NC}"
-read -r
+case "$PHASE" in
+    "1")
+        MANIFEST_FILE="$PHASE1_MANIFEST"
+        LOG_FILE="$LOG_DIR/phase1_$(date +%Y%m%d_%H%M%S).log"
 
-# Execute phases
-log "INFO" "Beginning installation phases..."
-
-progress "System Setup"
-log "DEBUG" "Running run_1.sh"
-./run_1.sh 2>&1 | tee -a "$LOG_FILE"
-
-if [[ -n "${EXEC_CLIENT:-}" ]]; then
-    progress "Execution Client ($EXEC_CLIENT)"
-    log "DEBUG" "Installing execution client: $EXEC_CLIENT"
-    if [[ -f "./install/execution/$EXEC_CLIENT.sh" ]]; then
-        ./install/execution/"$EXEC_CLIENT".sh 2>&1 | tee -a "$LOG_FILE"
-    else
-        log "WARN" "Execution client script not found: $EXEC_CLIENT.sh"
-    fi
-fi
-
-if [[ -n "${CONS_CLIENT:-}" ]]; then
-    progress "Consensus Client ($CONS_CLIENT)"
-    log "DEBUG" "Installing consensus client: $CONS_CLIENT"
-    if [[ -f "./install/consensus/$CONS_CLIENT.sh" ]]; then
-        ./install/consensus/"$CONS_CLIENT".sh 2>&1 | tee -a "$LOG_FILE"
-    else
-        log "WARN" "Consensus client script not found: $CONS_CLIENT.sh"
-    fi
-fi
-
-progress "MEV Solution (${MEV_SOLUTION:-none})"
-case "${MEV_SOLUTION:-none}" in
-    "mev-boost")
-        log "DEBUG" "Installing MEV-Boost"
-        if [[ -f "./install/mev/install_mev_boost.sh" ]]; then
-            ./install/mev/install_mev_boost.sh 2>&1 | tee -a "$LOG_FILE"
+        if [[ ! -f "$MANIFEST_FILE" ]]; then
+            log "ERROR" "Phase 1 manifest not found: $MANIFEST_FILE"
+            echo ""
+            echo "Please run the configuration wizard first:"
+            echo "  ./install/utils/configure.sh"
+            exit 1
         fi
+
+        log "INFO" "Running Phase 1: System Hardening"
+        echo ""
+        echo -e "${YELLOW}This phase will:${NC}"
+        echo "  - Update system packages"
+        echo "  - Configure SSH security"
+        echo "  - Create secure user account"
+        echo "  - Setup firewall and intrusion detection"
+        echo ""
+        echo -e "${RED}After completion, you MUST reboot and login as the new user.${NC}"
+        echo ""
         ;;
-    "commit-boost")
-        log "DEBUG" "Installing Commit-Boost"
-        if [[ -f "./install/mev/install_commit_boost.sh" ]]; then
-            ./install/mev/install_commit_boost.sh 2>&1 | tee -a "$LOG_FILE"
+    "2")
+        MANIFEST_FILE="$PHASE2_MANIFEST"
+        LOG_FILE="$LOG_DIR/phase2_$(date +%Y%m%d_%H%M%S).log"
+
+        if [[ ! -f "$MANIFEST_FILE" ]]; then
+            log "ERROR" "Phase 2 manifest not found: $MANIFEST_FILE"
+            echo ""
+            echo "Please run the configuration wizard first:"
+            echo "  ./install/utils/configure.sh"
+            exit 1
         fi
+
+        log "INFO" "Running Phase 2: Client Installation"
+        echo ""
+        echo "Configuration:"
+        echo "  Network:    ${ETH_NETWORK:-mainnet}"
+        echo "  Execution:  ${EXEC_CLIENT:-not set}"
+        echo "  Consensus:  ${CONS_CLIENT:-not set}"
+        echo "  MEV:        ${MEV_SOLUTION:-not set}"
+        echo ""
         ;;
     *)
-        log "INFO" "Skipping MEV installation"
+        log "ERROR" "Unknown phase: $PHASE"
+        exit 1
         ;;
 esac
 
-# Success
-log "INFO" "Installation completed successfully"
+if [[ "$DRY_RUN" == "true" ]]; then
+    echo -e "${YELLOW}[DRY RUN] Would execute:${NC}"
+    echo "  $MANIFEST_FILE"
+    echo ""
+    echo "--- Manifest Contents ---"
+    head -50 "$MANIFEST_FILE"
+    echo "..."
+    echo "--- End Preview ---"
+    exit 0
+fi
 
+# Confirm before proceeding
+echo -e "${YELLOW}Log file: $LOG_FILE${NC}"
 echo ""
-echo -e "${GREEN}==================================================${NC}"
-echo -e "${GREEN}  Installation Complete!${NC}"
-echo -e "${GREEN}==================================================${NC}"
+read -r -p "Press Enter to continue or Ctrl+C to cancel..."
+
+# Execute the manifest
+log "INFO" "Starting installation..."
 echo ""
-echo "Log file: $LOG_FILE"
-echo ""
-echo "Next steps:"
-echo "  1. Verify installation: ./install/utils/doctor.sh"
-echo "  2. Check service status: sudo systemctl status eth1 cl"
-echo "  3. View logs: sudo journalctl -u eth1 -u cl -f"
-echo ""
+
+cd "$ROOT_DIR"
+if "$MANIFEST_FILE" 2>&1 | tee -a "$LOG_FILE"; then
+    log "INFO" "Phase $PHASE completed successfully"
+else
+    log "ERROR" "Phase $PHASE failed. Check log: $LOG_FILE"
+    exit 1
+fi
