@@ -1,0 +1,97 @@
+[
+  {
+    "id": "beginner",
+    "name": "For Beginners",
+    "recommendations": [
+      {
+        "type": "Execution",
+        "client": "Geth",
+        "reason": "most stable and documented"
+      },
+      {
+        "type": "Consensus",
+        "client": "Prysm",
+        "reason": "excellent documentation and support"
+      }
+    ]
+  },
+  {
+    "id": "performance",
+    "name": "For Performance",
+    "recommendations": [
+      {
+        "type": "Execution",
+        "client": "Erigon or Reth",
+        "reason": "faster sync, better efficiency"
+      },
+      {
+        "type": "Consensus",
+        "client": "Lighthouse or Nimbus",
+        "reason": "efficient resource usage"
+      }
+    ]
+  },
+  {
+    "id": "resource_constrained",
+    "name": "For Resource-Constrained Systems",
+    "recommendations": [
+      {
+        "type": "Execution",
+        "client": "Nimbus-eth1 or Geth",
+        "reason": "lightweight and proven"
+      },
+      {
+        "type": "Consensus",
+        "client": "Nimbus",
+        "reason": "designed for low-resource environments"
+      }
+    ]
+  },
+  {
+    "id": "enterprise",
+    "name": "For Enterprise/Institutional",
+    "recommendations": [
+      {
+        "type": "Execution",
+        "client": "Nethermind or Besu",
+        "reason": "enterprise features"
+      },
+      {
+        "type": "Consensus",
+        "client": "Teku",
+        "reason": "designed for institutional use"
+      }
+    ]
+  },
+  {
+    "id": "diversity",
+    "name": "For Client Diversity",
+    "description": "Consider using minority clients to improve network resilience:",
+    "recommendations": [
+      {
+        "type": "Execution",
+        "client": "Erigon, Reth, Nethermind, Besu, Nimbus-eth1, or Ethrex"
+      },
+      {
+        "type": "Consensus",
+        "client": "Lighthouse, Teku, Nimbus, Lodestar, or Grandine"
+      }
+    ]
+  },
+  {
+    "id": "early_adopter",
+    "name": "For Early Adopters/Developers",
+    "recommendations": [
+      {
+        "type": "Execution",
+        "client": "Ethrex",
+        "reason": "minimalist Rust client with L2 support"
+      },
+      {
+        "type": "Consensus",
+        "client": "Lodestar or Grandine",
+        "reason": "modern implementations"
+      }
+    ]
+  }
+]

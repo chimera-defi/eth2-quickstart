@@ -1,0 +1,38 @@
+{
+  "minimum": {
+    "cpu": "4+ cores",
+    "ram": "16GB+ (32GB+ recommended)",
+    "storage": "2TB+ SSD (NVMe preferred)",
+    "network": "Stable internet with unlimited data"
+  },
+  "client_specific": [
+    {
+      "client": "Nimbus (consensus)",
+      "note": "Can run on 4GB RAM and slower hardware"
+    },
+    {
+      "client": "Nimbus-eth1 (execution)",
+      "note": "Lightweight, suitable for low-resource systems"
+    },
+    {
+      "client": "Teku/Besu",
+      "note": "Require Java, higher RAM usage"
+    },
+    {
+      "client": "Lodestar",
+      "note": "Requires Node.js"
+    },
+    {
+      "client": "Erigon",
+      "note": "Higher RAM during initial sync"
+    },
+    {
+      "client": "Reth/Grandine",
+      "note": "Rust compilation requires build tools"
+    },
+    {
+      "client": "Ethrex",
+      "note": "Pre-built binaries available (8GB+ RAM recommended)"
+    }
+  ]
+}
