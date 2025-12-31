@@ -27,6 +27,3 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     return false
   }
 }
-
-/** GitHub repository URL */
-export const GITHUB_URL = 'https://github.com/chimera-defi/eth2-quickstart'

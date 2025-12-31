@@ -1,4 +1,4 @@
-import { cn, GITHUB_URL } from '@/lib/utils'
+import { cn, copyToClipboard } from '@/lib/utils'
 
 describe('cn utility', () => {
   it('merges class names', () => {
@@ -13,10 +13,19 @@ describe('cn utility', () => {
   it('handles undefined values', () => {
     expect(cn('base', undefined, 'other')).toBe('base other')
   })
+
+  it('handles empty string', () => {
+    expect(cn('base', '')).toBe('base')
+  })
 })
 
-describe('constants', () => {
-  it('exports correct GitHub URL', () => {
-    expect(GITHUB_URL).toBe('https://github.com/chimera-defi/eth2-quickstart')
+describe('copyToClipboard', () => {
+  it('is a function', () => {
+    expect(typeof copyToClipboard).toBe('function')
+  })
+
+  it('returns a promise', () => {
+    const result = copyToClipboard('test')
+    expect(result).toBeInstanceOf(Promise)
   })
 })
