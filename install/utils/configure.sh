@@ -58,51 +58,18 @@ for arg in "$@"; do
 done
 
 # =============================================================================
-# HARDWARE DETECTION
+# HARDWARE & WHIPTAIL HELPERS (from common_functions.sh)
 # =============================================================================
+# Uses: detect_hardware_profile(), get_recommended_clients() from common_functions.sh
+# Uses: whiptail_msg(), whiptail_yesno() from common_functions.sh
 
-detect_hardware_profile() {
-    local total_ram_gb
-    total_ram_gb=$(free -g | awk 'NR==2{print $2}')
-    
-    if [[ $total_ram_gb -ge 32 ]]; then
-        echo "high"
-    elif [[ $total_ram_gb -ge 16 ]]; then
-        echo "mid"
-    else
-        echo "low"
-    fi
-}
-
-get_recommended_clients() {
-    local profile="$1"
-    
-    case "$profile" in
-        "high")
-            echo "reth lighthouse"
-            ;;
-        "mid")
-            echo "geth prysm"
-            ;;
-        "low")
-            echo "nimbus_eth1 nimbus"
-            ;;
-        *)
-            echo "geth prysm"
-            ;;
-    esac
-}
-
-# =============================================================================
-# WHIPTAIL HELPERS
-# =============================================================================
-
+# Convenience aliases for backward compatibility
 show_msg() {
-    whiptail --title "Eth2 Quick Start" --msgbox "$1" 12 70
+    whiptail_msg "Eth2 Quick Start" "$1"
 }
 
 show_yesno() {
-    whiptail --title "Eth2 Quick Start" --yesno "$1" 12 70
+    whiptail_yesno "Eth2 Quick Start" "$1"
 }
 
 # =============================================================================
