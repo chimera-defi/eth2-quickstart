@@ -35,7 +35,8 @@ jobs:
           # SC1090: Can't follow non-constant source (common with ~/.cargo/env)
           # SC2034: Unused variables (common in template/example scripts)
           # SC2031: Variable modified in subshell (false positive when testing source in subshell)
-          if ! shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031 "$script"; then
+          # SC2181: Check exit code directly (common pattern with whiptail/dialog)
+          if ! shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 "$script"; then
             echo "❌ Shellcheck failed for $script"
             exit 1
           else

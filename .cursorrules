@@ -1,5 +1,42 @@
 # Ethereum Node Setup - Agent Context
 
+## ⚠️ CRITICAL: TWO-PHASE SECURITY MODEL ⚠️
+
+**THIS IS THE MOST IMPORTANT RULE - READ FIRST**
+
+This project handles REAL MONEY (ETH validators). The installation MUST follow a TWO-PHASE model:
+
+| Phase | User | Scripts | Ends With |
+|-------|------|---------|-----------|
+| **Phase 1** | root | `run_1.sh`, `install_phase1.sh` | **MANDATORY REBOOT** |
+| **Phase 2** | new user (NOT root) | `run_2.sh`, `install_phase2.sh` | Client running |
+
+### Why This Matters
+- Phase 1 hardens SSH (changes port, disables root login)
+- User MUST verify SSH access with new credentials before Phase 2
+- Security changes require reboot to take effect
+- Phase 2 REFUSES to run as root for privilege separation
+
+### NEVER Combine Phases
+```bash
+# ❌ DANGEROUS - Skips security verification
+./run_1.sh && ./run_2.sh
+
+# ✅ CORRECT - Mandatory reboot between phases
+sudo ./install_phase1.sh
+sudo reboot
+# SSH as new user
+./install_phase2.sh
+```
+
+### Before Modifying Installation Flow
+1. Read `run_1.sh` AND `run_2.sh` to understand the security boundary
+2. Verify your changes preserve Phase 1 → REBOOT → Phase 2
+3. Test that generated scripts refuse wrong user context
+4. See `docs/AGENT_HANDOFF.md` for full documentation
+
+---
+
 ## Documentation Structure
 This project contains comprehensive documentation organized in the `docs/` folder:
 
@@ -693,9 +730,161 @@ These scripts intentionally duplicate colors/logging for portability - they shou
    ```dockerfile
    # BAD: Duplicates package list
    RUN apt-get install -y curl wget git shellcheck...
-   
+
    # GOOD: Uses centralized script
    RUN /workspace/install/utils/install_dependencies.sh --test
    ```
+
+9. **Bootstrap scripts need local colors, then source after cloning** - For scripts that run via `curl | bash` before the repo exists:
+   ```bash
+   # Colors - defined locally because this runs before repo is cloned
+   GREEN='\033[0;32m'
+   RED='\033[0;31m'
+   NC='\033[0m'
+
+   # ... bootstrap logic (clone repo) ...
+
+   # After cloning, source common_functions.sh for remaining operations
+   source "$INSTALL_DIR/lib/common_functions.sh"
+   ```
+   See `install.sh` for the reference implementation.
+
+## One-Liner/Flywheel Implementation Guidelines
+
+### Overview
+The project supports a "one-liner" installation experience via `curl | bash`:
+```bash
+curl -sSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | bash
+```
+
+This kicks off a flywheel of automated setup via the TUI wizard (`configure.sh`).
+
+### Key Components
+- **`install.sh`** - Bootstrap script (runs before repo exists)
+- **`install/utils/configure.sh`** - TUI wizard using whiptail
+- **`install/utils/doctor.sh`** - Health verification and diagnostics
+- **`install/utils/run_manifest.sh`** - Phase-aware manifest runner
+- **`config/user_config.env`** - User-specific configuration overrides
+
+### Whiptail TUI Patterns
+
+**Exit Code Handling with Whiptail:**
+Whiptail returns user input via stdout and exit code via `$?`. Since we capture output with `$()`, we must check `$?` separately:
+```bash
+CHOICE=$(whiptail --menu "Select option:" 20 60 10 \
+    "1" "Option 1" \
+    "2" "Option 2" 3>&1 1>&2 2>&3)
+if [[ $? -ne 0 ]]; then
+    # User cancelled
+    exit 0
+fi
+```
+
+**SC2181 Exclusion:** This pattern triggers SC2181 ("Check exit code directly"). It's excluded in CI because there's no cleaner way to capture both stdout AND exit code from whiptail.
+
+### Generated Script Patterns
+
+When generating scripts via heredocs, be careful with variable expansion:
+
+**Problem: `$(pwd)` evaluates at generation time, not execution time:**
+```bash
+# ❌ BAD - pwd evaluates when configure.sh runs
+cat > install_phase1.sh << 'EOF'
+echo "Run: cd $(pwd) && ./install_phase2.sh"
+EOF
+
+# ✅ GOOD - pwd evaluates when install_phase1.sh runs
+cat > install_phase1.sh << 'EOF'
+echo "Run: cd \$(pwd) && ./install_phase2.sh"
+EOF
+```
+
+**Generated scripts MUST source exports.sh:**
+```bash
+# ✅ GOOD - includes exports.sh for safety settings
+cat > install_phase1.sh << 'EOF'
+#!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR" || exit 1
+source "$SCRIPT_DIR/exports.sh"
+source "$SCRIPT_DIR/lib/common_functions.sh"
+# ... rest of script
+EOF
+```
+
+### Argument Parsing Gotchas
+
+**`shift` is ineffective in `for` loops:**
+```bash
+# ❌ BAD - shift doesn't affect the for loop
+for arg in "$@"; do
+    case "$arg" in
+        --phase1) PHASE=1; shift ;;  # shift does nothing here!
+    esac
+done
+
+# ✅ GOOD - either use while loop or don't shift
+for arg in "$@"; do
+    case "$arg" in
+        --phase1) PHASE=1 ;;  # no shift needed
+    esac
+done
+```
+
+### User Configuration Override Pattern
+
+User-specific settings are stored in `config/user_config.env` and loaded at the end of `exports.sh`:
+```bash
+# In exports.sh (at the end)
+if [[ -f "$SCRIPT_SOURCE_DIR/config/user_config.env" ]]; then
+    source "$SCRIPT_SOURCE_DIR/config/user_config.env"
+fi
+```
+
+This allows the TUI wizard to save settings without modifying `exports.sh` directly.
+
+### CI Testing Best Practices
+
+**Always run CI checks locally before pushing:**
+```bash
+# 1. Shellcheck with project exclusions
+find . -name "*.sh" -type f ! -path "./.git/*" \
+    -exec shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 {} \;
+
+# 2. Syntax validation
+find . -name "*.sh" -type f ! -path "./.git/*" -exec bash -n {} \;
+
+# 3. Run lint-only tests
+./test/run_tests.sh --lint-only
+```
+
+**When CI fails unexpectedly:**
+1. Check `gh run view <run-id> --log-failed` for actual error
+2. Compare CI shellcheck exclusions with local command
+3. Verify all shellcheck exclusions are in BOTH workflow files:
+   - `.github/workflows/shellcheck.yml`
+   - `.github/workflows/ci.yml` (has its own shellcheck step)
+
+### Lessons Learned from Flywheel Implementation
+
+1. **Phase Scripts Must Be Complete** - Generated phase scripts must source all dependencies (exports.sh, common_functions.sh) to inherit safety settings
+
+2. **Escape Variables in Heredocs** - When generating scripts, escape `$()` if you want runtime evaluation
+
+3. **Whiptail Requires $? Pattern** - No way to avoid SC2181 with whiptail; add to exclusions
+
+4. **Don't Over-Engineer Fallbacks** - If a script runs after repo clone, common_functions.sh will exist; no fallback needed
+
+5. **Remove Unused Features** - Verbose flags and debug functions that aren't used are code bloat
+
+6. **Sync CI Workflow Exclusions** - Both shellcheck.yml and ci.yml need the same shellcheck exclusions
+
+7. **Test Generated Scripts** - Generated scripts should be tested for:
+   - Correct shebang
+   - Proper sourcing of exports.sh and common_functions.sh
+   - Correct variable escaping
+   - Proper error handling
+
+8. **User Config Should Use Real Defaults** - Example configs should show actual defaults from exports.sh, not placeholder values
 
 This comprehensive rule set ensures consistent, maintainable, and secure code across the entire Ethereum node setup project.

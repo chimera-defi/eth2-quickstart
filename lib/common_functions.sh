@@ -51,6 +51,108 @@ command_exists() {
 }
 
 # =============================================================================
+# SYSTEM CHECK FUNCTIONS
+# =============================================================================
+
+# Check if port is in use (with fallback for missing ss)
+check_port() {
+    local port="$1"
+    
+    # Try ss first (most common)
+    if command_exists ss; then
+        ss -tlnp 2>/dev/null | grep -q ":$port " && return 0
+    # Fall back to netstat
+    elif command_exists netstat; then
+        netstat -tlnp 2>/dev/null | grep -q ":$port " && return 0
+    # Last resort: check /proc/net/tcp
+    elif [[ -f /proc/net/tcp ]]; then
+        local hex_port
+        hex_port=$(printf '%04X' "$port")
+        grep -q ":$hex_port" /proc/net/tcp 2>/dev/null && return 0
+    fi
+    
+    return 1
+}
+
+# Check if systemd service exists and get status
+# Returns: running, stopped, disabled, not_installed
+check_service_status() {
+    local service="$1"
+    
+    if ! systemctl list-unit-files 2>/dev/null | grep -q "^${service}.service"; then
+        echo "not_installed"
+        return
+    fi
+    
+    if systemctl is-active --quiet "$service" 2>/dev/null; then
+        echo "running"
+    elif systemctl is-enabled --quiet "$service" 2>/dev/null; then
+        echo "stopped"
+    else
+        echo "disabled"
+    fi
+}
+
+# Detect hardware profile based on RAM
+detect_hardware_profile() {
+    local total_ram_gb
+    total_ram_gb=$(free -g | awk 'NR==2{print $2}')
+    
+    if [[ $total_ram_gb -ge 32 ]]; then
+        echo "high"
+    elif [[ $total_ram_gb -ge 16 ]]; then
+        echo "mid"
+    else
+        echo "low"
+    fi
+}
+
+# Get recommended clients based on hardware profile
+get_recommended_clients() {
+    local profile="$1"
+    
+    case "$profile" in
+        "high")
+            echo "reth lighthouse"
+            ;;
+        "mid")
+            echo "geth prysm"
+            ;;
+        "low")
+            echo "nimbus_eth1 nimbus"
+            ;;
+        *)
+            echo "geth prysm"
+            ;;
+    esac
+}
+
+# =============================================================================
+# WHIPTAIL TUI HELPERS
+# =============================================================================
+
+# Show whiptail message box
+whiptail_msg() {
+    local title="${1:-Eth2 Quick Start}"
+    local message="$2"
+    local height="${3:-12}"
+    local width="${4:-70}"
+    
+    whiptail --title "$title" --msgbox "$message" "$height" "$width"
+}
+
+# Show whiptail yes/no dialog
+# Returns 0 for yes, 1 for no
+whiptail_yesno() {
+    local title="${1:-Eth2 Quick Start}"
+    local message="$2"
+    local height="${3:-12}"
+    local width="${4:-70}"
+    
+    whiptail --title "$title" --yesno "$message" "$height" "$width"
+}
+
+# =============================================================================
 # DOWNLOAD FUNCTIONS
 # =============================================================================
 

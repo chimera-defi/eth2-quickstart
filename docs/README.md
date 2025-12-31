@@ -10,22 +10,22 @@ This directory contains all project documentation organized by category.
 
 ## Configuration & Architecture
 - **[CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md)** - Configuration architecture and conventions
+- **[COMMON_FUNCTIONS_REFERENCE.md](COMMON_FUNCTIONS_REFERENCE.md)** - Common functions library reference
 
 ## Development & Testing
 - **[SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md](SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md)** - Shell scripting standards
-- **[SHELL_SCRIPT_TEST_RESULTS.md](SHELL_SCRIPT_TEST_RESULTS.md)** - Test results and validation
+- **[COMMIT_MESSAGES.md](COMMIT_MESSAGES.md)** - Commit message conventions
 
 ## Security
-- **[SECURITY_GUIDE.md](SECURITY_GUIDE.md)** - Comprehensive security documentation (consolidated)
+- **[SECURITY_GUIDE.md](SECURITY_GUIDE.md)** - Comprehensive security documentation
+- **[SECURITY_STATUS.md](SECURITY_STATUS.md)** - Security status and improvement tasks
 
 ## MEV Technologies
 - **[MEV_GUIDE.md](MEV_GUIDE.md)** - Comprehensive MEV technologies guide (MEV Boost, Commit Boost, ETHGas)
 - **[MEV_QUICK_REFERENCE.md](MEV_QUICK_REFERENCE.md)** - Quick reference for MEV commands and configuration
-- **[MEV_NEXT_STEPS.md](MEV_NEXT_STEPS.md)** - Implementation plan for Commit Boost and ETHGas
 
-## Project Management
-- **[COMMIT_MESSAGES.md](COMMIT_MESSAGES.md)** - Commit message conventions
-- **[progress.md](progress.md)** - Development progress tracking
+## Web Server Setup
+- **[CADDY_INSTALLATION.md](CADDY_INSTALLATION.md)** - Caddy web server installation guide
 
 ## Front-End Development
 - **[FRONTEND_SUMMARY.md](FRONTEND_SUMMARY.md)** - Front-end project overview and quick reference (START HERE)
@@ -39,5 +39,8 @@ This directory contains all project documentation organized by category.
 - **[FRONTEND_REVIEW.md](FRONTEND_REVIEW.md)** - Multi-pass review results and quality assurance
 
 ## Quick Reference
-- **[AGENT_CONTEXT.md](AGENT_CONTEXT.md)** - AI agent reference
-- **[AGENT_REFERENCE.md](../configs/AGENT_REFERENCE.md)** - Configuration agent reference
+- **[../.cursorrules](../.cursorrules)** - Agent rules and development guidelines
+- **[../configs/AGENT_REFERENCE.md](../configs/AGENT_REFERENCE.md)** - Configuration agent reference
+
+## Archive
+Historical documentation that has served its purpose is preserved in [archive/](archive/).
