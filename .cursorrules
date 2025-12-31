@@ -1,5 +1,42 @@
 # Ethereum Node Setup - Agent Context
 
+## ⚠️ CRITICAL: TWO-PHASE SECURITY MODEL ⚠️
+
+**THIS IS THE MOST IMPORTANT RULE - READ FIRST**
+
+This project handles REAL MONEY (ETH validators). The installation MUST follow a TWO-PHASE model:
+
+| Phase | User | Scripts | Ends With |
+|-------|------|---------|-----------|
+| **Phase 1** | root | `run_1.sh`, `install_phase1.sh` | **MANDATORY REBOOT** |
+| **Phase 2** | new user (NOT root) | `run_2.sh`, `install_phase2.sh` | Client running |
+
+### Why This Matters
+- Phase 1 hardens SSH (changes port, disables root login)
+- User MUST verify SSH access with new credentials before Phase 2
+- Security changes require reboot to take effect
+- Phase 2 REFUSES to run as root for privilege separation
+
+### NEVER Combine Phases
+```bash
+# ❌ DANGEROUS - Skips security verification
+./run_1.sh && ./run_2.sh
+
+# ✅ CORRECT - Mandatory reboot between phases
+sudo ./install_phase1.sh
+sudo reboot
+# SSH as new user
+./install_phase2.sh
+```
+
+### Before Modifying Installation Flow
+1. Read `run_1.sh` AND `run_2.sh` to understand the security boundary
+2. Verify your changes preserve Phase 1 → REBOOT → Phase 2
+3. Test that generated scripts refuse wrong user context
+4. See `docs/AGENT_HANDOFF.md` for full documentation
+
+---
+
 ## Documentation Structure
 This project contains comprehensive documentation organized in the `docs/` folder:
 
@@ -693,9 +730,23 @@ These scripts intentionally duplicate colors/logging for portability - they shou
    ```dockerfile
    # BAD: Duplicates package list
    RUN apt-get install -y curl wget git shellcheck...
-   
+
    # GOOD: Uses centralized script
    RUN /workspace/install/utils/install_dependencies.sh --test
    ```
+
+9. **Bootstrap scripts need local colors, then source after cloning** - For scripts that run via `curl | bash` before the repo exists:
+   ```bash
+   # Colors - defined locally because this runs before repo is cloned
+   GREEN='\033[0;32m'
+   RED='\033[0;31m'
+   NC='\033[0m'
+
+   # ... bootstrap logic (clone repo) ...
+
+   # After cloning, source common_functions.sh for remaining operations
+   source "$INSTALL_DIR/lib/common_functions.sh"
+   ```
+   See `install.sh` for the reference implementation.
 
 This comprehensive rule set ensures consistent, maintainable, and secure code across the entire Ethereum node setup project.
