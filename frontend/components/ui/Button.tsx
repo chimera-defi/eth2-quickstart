@@ -4,32 +4,14 @@ import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { forwardRef } from 'react'
 
-/**
- * Button component props
- */
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  /** Visual style variant */
   variant?: 'primary' | 'secondary'
-  /** Size variant */
   size?: 'sm' | 'md' | 'lg'
-  /** If provided, renders as a link */
   href?: string
-  /** Open link in new tab */
   external?: boolean
-  /** Button content */
   children: React.ReactNode
 }
 
-/**
- * Reusable Button component with primary and secondary variants.
- * Can render as a link when href is provided.
- * 
- * @example
- * ```tsx
- * <Button variant="primary" size="lg">Get Started</Button>
- * <Button variant="secondary" href="/learn">Learn More</Button>
- * ```
- */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', href, external, children, disabled, ...props }, ref) => {
     const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50'
@@ -50,12 +32,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     if (href) {
       if (external) {
         return (
-          <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={classes}
-          >
+          <a href={href} target="_blank" rel="noopener noreferrer" className={classes}>
             {children}
           </a>
         )
@@ -68,12 +45,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     }
     
     return (
-      <button
-        ref={ref}
-        className={classes}
-        disabled={disabled}
-        {...props}
-      >
+      <button ref={ref} className={classes} disabled={disabled} {...props}>
         {children}
       </button>
     )

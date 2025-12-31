@@ -1,30 +1,12 @@
 import { cn } from '@/lib/utils'
 import { forwardRef } from 'react'
 
-/**
- * Card component props
- */
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** Card content */
   children: React.ReactNode
-  /** Enable hover effects */
   hover?: boolean
-  /** Padding size */
   padding?: 'sm' | 'md' | 'lg' | 'none'
 }
 
-/**
- * Card component with glassmorphism effect.
- * Used for feature cards, content sections, and grouped content.
- * 
- * @example
- * ```tsx
- * <Card hover padding="lg">
- *   <h3>Feature Title</h3>
- *   <p>Feature description</p>
- * </Card>
- * ```
- */
 export const Card = forwardRef<HTMLDivElement, CardProps>(
   ({ className, children, hover = false, padding = 'md', ...props }, ref) => {
     const paddingStyles = {
