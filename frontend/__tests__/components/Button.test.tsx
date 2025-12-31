@@ -10,14 +10,20 @@ describe('Button', () => {
   it('applies primary variant styles by default', () => {
     render(<Button>Primary</Button>)
     const button = screen.getByRole('button')
-    expect(button).toHaveClass('bg-gradient-to-r')
+    expect(button).toHaveClass('bg-primary')
   })
 
   it('applies secondary variant styles', () => {
     render(<Button variant="secondary">Secondary</Button>)
     const button = screen.getByRole('button')
+    expect(button).toHaveClass('border')
     expect(button).toHaveClass('bg-transparent')
-    expect(button).toHaveClass('border-2')
+  })
+
+  it('applies ghost variant styles', () => {
+    render(<Button variant="ghost">Ghost</Button>)
+    const button = screen.getByRole('button')
+    expect(button).toHaveClass('text-muted-foreground')
   })
 
   it('applies size variants correctly', () => {
@@ -25,10 +31,10 @@ describe('Button', () => {
     expect(screen.getByRole('button')).toHaveClass('h-9')
     
     rerender(<Button size="md">Medium</Button>)
-    expect(screen.getByRole('button')).toHaveClass('h-11')
+    expect(screen.getByRole('button')).toHaveClass('h-10')
     
     rerender(<Button size="lg">Large</Button>)
-    expect(screen.getByRole('button')).toHaveClass('h-12')
+    expect(screen.getByRole('button')).toHaveClass('h-11')
   })
 
   it('handles click events', () => {

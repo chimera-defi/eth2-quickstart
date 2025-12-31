@@ -8,59 +8,66 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: '#0a0a12',
-        foreground: '#f9fafb',
+        // Refined dark palette - deeper, more sophisticated
+        background: '#09090b',
+        foreground: '#fafafa',
         card: {
-          DEFAULT: 'rgba(255, 255, 255, 0.03)',
-          foreground: '#f9fafb',
+          DEFAULT: 'rgba(255, 255, 255, 0.02)',
+          foreground: '#fafafa',
         },
+        // Single, refined accent - elegant purple
         primary: {
-          DEFAULT: '#8b5cf6',
+          DEFAULT: '#a855f7',
           foreground: '#ffffff',
+          muted: 'rgba(168, 85, 247, 0.1)',
         },
+        // Subtle secondary - cool gray with hint of blue
         secondary: {
-          DEFAULT: '#06b6d4',
-          foreground: '#ffffff',
+          DEFAULT: '#71717a',
+          foreground: '#fafafa',
         },
         muted: {
-          DEFAULT: '#1f1f2e',
-          foreground: '#9ca3af',
+          DEFAULT: '#18181b',
+          foreground: '#a1a1aa',
         },
-        border: 'rgba(255, 255, 255, 0.1)',
-        success: '#10b981',
-        warning: '#f59e0b',
+        border: 'rgba(255, 255, 255, 0.06)',
+        success: '#22c55e',
+        warning: '#eab308',
       },
       fontFamily: {
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'SF Mono', 'monospace'],
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
       animation: {
-        'pulse-glow': 'pulse-glow 4s ease-in-out infinite',
-        'fade-in': 'fade-in 0.5s ease-out',
-        'slide-up': 'slide-up 0.5s ease-out',
-        'slide-in-right': 'slide-in-right 0.6s ease-out',
+        'fade-in': 'fade-in 0.6s ease-out',
+        'slide-up': 'slide-up 0.6s ease-out',
+        'slide-in': 'slide-in 0.8s ease-out',
+        'subtle-pulse': 'subtle-pulse 8s ease-in-out infinite',
       },
       keyframes: {
-        'pulse-glow': {
-          '0%, 100%': { opacity: '0.4', transform: 'scale(1)' },
-          '50%': { opacity: '0.7', transform: 'scale(1.05)' },
-        },
         'fade-in': {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
         },
         'slide-up': {
-          '0%': { opacity: '0', transform: 'translateY(24px)' },
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
-        'slide-in-right': {
-          '0%': { opacity: '0', transform: 'translateX(40px)' },
+        'slide-in': {
+          '0%': { opacity: '0', transform: 'translateX(24px)' },
           '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        'subtle-pulse': {
+          '0%, 100%': { opacity: '0.3' },
+          '50%': { opacity: '0.5' },
         },
       },
       backgroundImage: {
-        'gradient-hero': 'linear-gradient(135deg, #0a0a12 0%, #1a1a2e 50%, #0a0a12 100%)',
-        'gradient-radial': 'radial-gradient(circle, var(--tw-gradient-stops))',
+        'gradient-radial': 'radial-gradient(ellipse at center, var(--tw-gradient-stops))',
+      },
+      spacing: {
+        '18': '4.5rem',
+        '22': '5.5rem',
       },
     },
   },

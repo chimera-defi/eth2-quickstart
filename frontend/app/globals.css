@@ -2,21 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+/* Import Google Fonts - optimized loading */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
-  --background: #0a0a12;
-  --foreground: #f9fafb;
-  --card: rgba(255, 255, 255, 0.03);
-  --card-foreground: #f9fafb;
-  --primary: #8b5cf6;
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: rgba(255, 255, 255, 0.02);
+  --card-foreground: #fafafa;
+  --primary: #a855f7;
   --primary-foreground: #ffffff;
-  --secondary: #06b6d4;
-  --secondary-foreground: #ffffff;
-  --muted: #1f1f2e;
-  --muted-foreground: #9ca3af;
-  --border: rgba(255, 255, 255, 0.1);
+  --secondary: #71717a;
+  --secondary-foreground: #fafafa;
+  --muted: #18181b;
+  --muted-foreground: #a1a1aa;
+  --border: rgba(255, 255, 255, 0.06);
 }
 
 * {
@@ -25,74 +25,85 @@
   margin: 0;
 }
 
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
+html {
   scroll-behavior: smooth;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
 }
 
-/* Grid pattern background */
+/* Subtle grid pattern - barely visible */
 .bg-grid-pattern {
   background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 64px 64px;
 }
 
-/* Gradient text utility */
+/* Elegant gradient text - single color */
 .text-gradient {
-  background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 50%, #06b6d4 100%);
+  background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Custom scrollbar */
+/* Refined scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--background);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15);
 }
 
-/* Selection color */
+/* Selection */
 ::selection {
-  background-color: rgba(139, 92, 246, 0.3);
+  background-color: rgba(168, 85, 247, 0.2);
   color: #ffffff;
 }
 
-/* Focus visible styles for accessibility */
+/* Focus states - minimal */
 :focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 1px solid var(--primary);
   outline-offset: 2px;
 }
 
-/* Code blocks styling */
+/* Code blocks */
 code {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
 }
 
-/* Smooth transitions */
-.transition-default {
-  transition: all 0.2s ease-in-out;
+/* Transitions */
+.transition-subtle {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Container utilities */
+.container-narrow {
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.container-wide {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
 }

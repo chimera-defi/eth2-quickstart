@@ -5,10 +5,11 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode
   hover?: boolean
   padding?: 'sm' | 'md' | 'lg' | 'none'
+  variant?: 'default' | 'subtle'
 }
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ className, children, hover = false, padding = 'md', ...props }, ref) => {
+  ({ className, children, hover = false, padding = 'md', variant = 'default', ...props }, ref) => {
     const paddingStyles = {
       none: '',
       sm: 'p-4',
@@ -16,13 +17,20 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
       lg: 'p-8',
     }
     
+    const variantStyles = {
+      default: 'border border-border bg-card',
+      subtle: 'bg-muted/50',
+    }
+    
     return (
       <div
         ref={ref}
+        data-testid="card"
         className={cn(
-          'rounded-xl border border-border/30 bg-card/30 backdrop-blur-sm',
+          'rounded-xl',
+          variantStyles[variant],
           paddingStyles[padding],
-          hover && 'transition-all duration-300 hover:scale-[1.02] hover:border-primary/40 hover:bg-card/50',
+          hover && 'transition-colors duration-200 hover:border-primary/20 hover:bg-card/80',
           className
         )}
         {...props}

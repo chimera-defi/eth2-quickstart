@@ -2,26 +2,34 @@ import { cn } from '@/lib/utils'
 
 export interface BadgeProps {
   children: React.ReactNode
-  variant?: 'primary' | 'secondary' | 'success' | 'muted'
+  variant?: 'default' | 'primary' | 'secondary' | 'success'
   size?: 'sm' | 'md'
   className?: string
 }
 
-export function Badge({ children, variant = 'primary', size = 'md', className }: BadgeProps) {
+export function Badge({ children, variant = 'default', size = 'md', className }: BadgeProps) {
   const variants = {
-    primary: 'bg-primary/10 border-primary/30 text-primary',
-    secondary: 'bg-secondary/10 border-secondary/30 text-secondary',
-    success: 'bg-green-500/10 border-green-500/30 text-green-400',
-    muted: 'bg-muted/50 border-border/50 text-muted-foreground',
+    default: 'bg-muted text-muted-foreground',
+    primary: 'bg-primary/10 text-primary',
+    secondary: 'bg-muted text-foreground',
+    success: 'bg-green-500/10 text-green-400',
   }
   
   const sizes = {
-    sm: 'px-3 py-1 text-xs',
-    md: 'px-4 py-1.5 text-sm',
+    sm: 'px-2.5 py-0.5 text-xs',
+    md: 'px-3 py-1 text-sm',
   }
   
   return (
-    <span className={cn('inline-flex items-center rounded-full border font-medium', variants[variant], sizes[size], className)}>
+    <span 
+      data-testid="badge"
+      className={cn(
+        'inline-flex items-center rounded-md font-mono font-medium',
+        variants[variant],
+        sizes[size],
+        className
+      )}
+    >
       {children}
     </span>
   )
