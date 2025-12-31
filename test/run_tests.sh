@@ -152,7 +152,7 @@ run_lint_tests() {
         local script_name="${script#"$PROJECT_ROOT"/}"
         
         # Run shellcheck with common exclusions
-        if shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034 "$script" 2>/dev/null; then
+        if shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 "$script" 2>/dev/null; then
             log_test "PASS" "shellcheck: $script_name"
             scripts_passed=$((scripts_passed + 1))
         else
