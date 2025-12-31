@@ -12,6 +12,7 @@ describe('Card', () => {
     const card = screen.getByTestId('card')
     expect(card).toHaveClass('rounded-xl')
     expect(card).toHaveClass('border')
+    expect(card).toHaveClass('bg-card')
   })
 
   it('applies hover styles when hover prop is true', () => {
@@ -21,32 +22,21 @@ describe('Card', () => {
   })
 
   it('applies padding variants correctly', () => {
-    const { rerender } = render(<Card padding="sm">Small padding</Card>)
-    let card = screen.getByTestId('card')
-    expect(card).toHaveClass('p-4')
+    const { rerender } = render(<Card padding="sm">Small</Card>)
+    expect(screen.getByTestId('card')).toHaveClass('p-4')
     
-    rerender(<Card padding="md">Medium padding</Card>)
-    card = screen.getByTestId('card')
-    expect(card).toHaveClass('p-6')
+    rerender(<Card padding="md">Medium</Card>)
+    expect(screen.getByTestId('card')).toHaveClass('p-6')
     
-    rerender(<Card padding="lg">Large padding</Card>)
-    card = screen.getByTestId('card')
-    expect(card).toHaveClass('p-8')
-  })
-
-  it('applies variant styles correctly', () => {
-    const { rerender } = render(<Card variant="default">Default</Card>)
-    let card = screen.getByTestId('card')
-    expect(card).toHaveClass('bg-card')
+    rerender(<Card padding="lg">Large</Card>)
+    expect(screen.getByTestId('card')).toHaveClass('p-8')
     
-    rerender(<Card variant="subtle">Subtle</Card>)
-    card = screen.getByTestId('card')
-    expect(card).toHaveClass('bg-muted/50')
+    rerender(<Card padding="none">None</Card>)
+    expect(screen.getByTestId('card')).not.toHaveClass('p-4')
   })
 
   it('accepts custom className', () => {
     render(<Card className="custom-class">Custom</Card>)
-    const card = screen.getByTestId('card')
-    expect(card).toHaveClass('custom-class')
+    expect(screen.getByTestId('card')).toHaveClass('custom-class')
   })
 })

@@ -2,18 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import Google Fonts - optimized loading */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
   --background: #09090b;
   --foreground: #fafafa;
-  --card: rgba(255, 255, 255, 0.02);
-  --card-foreground: #fafafa;
   --primary: #a855f7;
-  --primary-foreground: #ffffff;
-  --secondary: #71717a;
-  --secondary-foreground: #fafafa;
   --muted: #18181b;
   --muted-foreground: #a1a1aa;
   --border: rgba(255, 255, 255, 0.06);
@@ -38,15 +32,6 @@ body {
   line-height: 1.6;
 }
 
-/* Subtle grid pattern - barely visible */
-.bg-grid-pattern {
-  background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 64px 64px;
-}
-
-/* Elegant gradient text - single color */
 .text-gradient {
   background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
   -webkit-background-clip: text;
@@ -54,10 +39,8 @@ body {
   background-clip: text;
 }
 
-/* Refined scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
-  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -69,41 +52,15 @@ body {
   border-radius: 3px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-/* Selection */
 ::selection {
   background-color: rgba(168, 85, 247, 0.2);
-  color: #ffffff;
 }
 
-/* Focus states - minimal */
 :focus-visible {
   outline: 1px solid var(--primary);
   outline-offset: 2px;
 }
 
-/* Code blocks */
 code {
   font-family: 'JetBrains Mono', 'SF Mono', monospace;
-}
-
-/* Transitions */
-.transition-subtle {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Container utilities */
-.container-narrow {
-  max-width: 680px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.container-wide {
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
 }

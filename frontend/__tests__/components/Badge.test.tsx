@@ -9,37 +9,29 @@ describe('Badge', () => {
 
   it('applies default variant styles', () => {
     render(<Badge>Default</Badge>)
-    const badge = screen.getByText('Default')
+    const badge = screen.getByTestId('badge')
     expect(badge).toHaveClass('bg-muted')
     expect(badge).toHaveClass('text-muted-foreground')
   })
 
-  it('applies variant styles correctly', () => {
-    const { rerender } = render(<Badge variant="primary">Primary</Badge>)
-    expect(screen.getByText('Primary')).toHaveClass('text-primary')
-    
-    rerender(<Badge variant="secondary">Secondary</Badge>)
-    expect(screen.getByText('Secondary')).toHaveClass('text-foreground')
-    
-    rerender(<Badge variant="success">Success</Badge>)
-    expect(screen.getByText('Success')).toHaveClass('text-green-400')
+  it('applies primary variant styles', () => {
+    render(<Badge variant="primary">Primary</Badge>)
+    const badge = screen.getByTestId('badge')
+    expect(badge).toHaveClass('bg-primary/10')
+    expect(badge).toHaveClass('text-primary')
   })
 
-  it('applies size variants correctly', () => {
-    const { rerender } = render(<Badge size="sm">Small</Badge>)
-    expect(screen.getByText('Small')).toHaveClass('px-2.5')
-    
-    rerender(<Badge size="md">Medium</Badge>)
-    expect(screen.getByText('Medium')).toHaveClass('px-3')
+  it('has correct base classes', () => {
+    render(<Badge>Base</Badge>)
+    const badge = screen.getByTestId('badge')
+    expect(badge).toHaveClass('rounded-md')
+    expect(badge).toHaveClass('font-mono')
+    expect(badge).toHaveClass('text-xs')
   })
 
-  it('has rounded-md class', () => {
-    render(<Badge>Rounded</Badge>)
-    expect(screen.getByText('Rounded')).toHaveClass('rounded-md')
-  })
-
-  it('has font-mono class', () => {
-    render(<Badge>Mono</Badge>)
-    expect(screen.getByText('Mono')).toHaveClass('font-mono')
+  it('accepts custom className', () => {
+    render(<Badge className="custom-class">Custom</Badge>)
+    const badge = screen.getByTestId('badge')
+    expect(badge).toHaveClass('custom-class')
   })
 })

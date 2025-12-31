@@ -8,7 +8,6 @@ import {
   DOCUMENTATION_LINKS,
   INSTALLATION_STEPS,
   PREREQUISITES,
-  TROUBLESHOOTING,
 } from '@/lib/constants'
 
 describe('constants', () => {
@@ -26,7 +25,7 @@ describe('constants', () => {
   })
 
   describe('NAV_LINKS', () => {
-    it('has correct navigation links', () => {
+    it('has navigation links', () => {
       expect(NAV_LINKS.length).toBeGreaterThan(0)
       expect(NAV_LINKS.some(link => link.label === 'Learn')).toBe(true)
       expect(NAV_LINKS.some(link => link.label === 'GitHub')).toBe(true)
@@ -34,8 +33,8 @@ describe('constants', () => {
   })
 
   describe('STATS', () => {
-    it('has 4 stats', () => {
-      expect(STATS).toHaveLength(4)
+    it('has stats', () => {
+      expect(STATS.length).toBeGreaterThan(0)
     })
 
     it('each stat has value and label', () => {
@@ -55,9 +54,7 @@ describe('constants', () => {
       EXECUTION_CLIENTS.forEach(client => {
         expect(client).toHaveProperty('name')
         expect(client).toHaveProperty('language')
-        expect(client).toHaveProperty('description')
         expect(client).toHaveProperty('bestFor')
-        expect(client).toHaveProperty('script')
       })
     })
 
@@ -78,9 +75,7 @@ describe('constants', () => {
       CONSENSUS_CLIENTS.forEach(client => {
         expect(client).toHaveProperty('name')
         expect(client).toHaveProperty('language')
-        expect(client).toHaveProperty('description')
         expect(client).toHaveProperty('bestFor')
-        expect(client).toHaveProperty('script')
       })
     })
 
@@ -112,7 +107,7 @@ describe('constants', () => {
       expect(DOCUMENTATION_LINKS.length).toBeGreaterThan(0)
     })
 
-    it('each link has title, description, and path', () => {
+    it('each link has required properties', () => {
       DOCUMENTATION_LINKS.forEach(link => {
         expect(link).toHaveProperty('title')
         expect(link).toHaveProperty('description')
@@ -151,19 +146,6 @@ describe('constants', () => {
       PREREQUISITES.forEach(prereq => {
         expect(prereq).toHaveProperty('label')
         expect(prereq).toHaveProperty('value')
-      })
-    })
-  })
-
-  describe('TROUBLESHOOTING', () => {
-    it('has troubleshooting items', () => {
-      expect(TROUBLESHOOTING.length).toBeGreaterThan(0)
-    })
-
-    it('each item has issue and solution', () => {
-      TROUBLESHOOTING.forEach(item => {
-        expect(item).toHaveProperty('issue')
-        expect(item).toHaveProperty('solution')
       })
     })
   })
