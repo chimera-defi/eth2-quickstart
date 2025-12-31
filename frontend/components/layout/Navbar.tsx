@@ -4,30 +4,26 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { SITE_CONFIG, NAV_LINKS } from '@/lib/constants'
-import { Menu, X, Github } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-/**
- * Navigation bar component with responsive mobile menu.
- * Displays logo, navigation links, and CTA button.
- */
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   
   return (
-    <nav className="sticky top-0 z-50 border-b border-border/30 bg-background/80 backdrop-blur-md">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
+    <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="flex h-14 items-center justify-between">
           {/* Logo */}
           <Link 
             href="/" 
-            className="flex items-center gap-2 font-mono text-lg font-bold text-foreground transition-colors hover:text-primary"
+            className="font-mono text-sm font-medium text-foreground"
           >
-            <span className="text-gradient">{SITE_CONFIG.shortName}</span>
+            {SITE_CONFIG.shortName}
           </Link>
           
           {/* Desktop navigation */}
-          <div className="hidden items-center gap-6 md:flex">
+          <div className="hidden items-center gap-8 md:flex">
             {NAV_LINKS.map((link) => (
               link.external ? (
                 <a
@@ -35,9 +31,8 @@ export function Navbar() {
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >
-                  {link.label === 'GitHub' && <Github className="h-4 w-4" />}
                   {link.label}
                 </a>
               ) : (
@@ -58,15 +53,11 @@ export function Navbar() {
           {/* Mobile menu button */}
           <button
             type="button"
-            className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden"
+            className="inline-flex items-center justify-center p-2 text-muted-foreground transition-colors hover:text-foreground md:hidden"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
           >
-            {mobileMenuOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <Menu className="h-6 w-6" />
-            )}
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
@@ -74,11 +65,11 @@ export function Navbar() {
       {/* Mobile menu */}
       <div
         className={cn(
-          'border-t border-border/30 bg-background md:hidden',
+          'border-t border-border bg-background md:hidden',
           mobileMenuOpen ? 'block' : 'hidden'
         )}
       >
-        <div className="space-y-1 px-4 py-4">
+        <div className="px-6 py-4 space-y-1">
           {NAV_LINKS.map((link) => (
             link.external ? (
               <a
@@ -86,24 +77,23 @@ export function Navbar() {
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="block py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                {link.label === 'GitHub' && <Github className="h-4 w-4" />}
                 {link.label}
               </a>
             ) : (
               <Link
                 key={link.label}
                 href={link.href}
-                className="block rounded-lg px-3 py-2 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="block py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {link.label}
               </Link>
             )
           ))}
-          <div className="px-3 pt-2">
+          <div className="pt-2">
             <Button href="/quickstart" className="w-full" onClick={() => setMobileMenuOpen(false)}>
               Get Started
             </Button>

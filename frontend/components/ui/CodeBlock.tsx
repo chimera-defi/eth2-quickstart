@@ -17,7 +17,8 @@ const codeStyle = {
   margin: 0,
   padding: 0,
   background: 'transparent',
-  fontSize: '14px',
+  fontSize: '13px',
+  lineHeight: '1.6',
 }
 
 export function CodeBlock({ code, language = 'bash', showCopy = true, className }: CodeBlockProps) {
@@ -32,11 +33,11 @@ export function CodeBlock({ code, language = 'bash', showCopy = true, className 
   }
   
   return (
-    <div className={cn('group relative overflow-hidden rounded-lg border border-border/30 bg-[#1e1e1e]', className)}>
+    <div className={cn('group relative overflow-hidden rounded-lg border border-border bg-[#0c0c0c]', className)}>
       {showCopy && (
         <button
           onClick={handleCopy}
-          className="absolute right-2 top-2 rounded-md border border-border/30 bg-[#2d2d2d] p-2 text-muted-foreground opacity-0 transition-all hover:bg-[#3d3d3d] hover:text-foreground group-hover:opacity-100 focus:opacity-100"
+          className="absolute right-2 top-2 rounded p-1.5 text-zinc-500 opacity-0 transition-all hover:text-zinc-300 group-hover:opacity-100 focus:opacity-100"
           aria-label={copied ? 'Copied!' : 'Copy code'}
         >
           {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
