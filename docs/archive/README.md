@@ -8,6 +8,7 @@ These documents were created during specific development phases and have served 
 
 | File | Reason for Archive |
 |------|-------------------|
+| `AGENT_HANDOFF.md` | Flywheel implementation planning - work completed, learnings in `.cursorrules` |
 | `progress.md` | Refactoring progress tracking - work completed |
 | `DOCUMENTATION_CONSOLIDATION_SUMMARY.md` | One-time consolidation summary - completed |
 | `REFACTORING_AUDIT_REPORT.md` | Refactoring audit - all tasks completed |

@@ -7,7 +7,6 @@ This directory contains all project documentation organized by category.
 - **[SCRIPTS.md](SCRIPTS.md)** - Detailed script reference and usage
 - **[WORKFLOW.md](WORKFLOW.md)** - Setup workflow and process documentation
 - **[GLOSSARY.md](GLOSSARY.md)** - Technical terminology and definitions
-- **[AGENT_HANDOFF.md](AGENT_HANDOFF.md)** - Agent handoff documentation (flywheel experience)
 
 ## Configuration & Architecture
 - **[CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md)** - Configuration architecture and conventions
