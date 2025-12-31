@@ -1,20 +1,11 @@
 import { clsx, type ClassValue } from 'clsx'
 
-/**
- * Utility function to merge Tailwind CSS classes conditionally.
- * Combines clsx for conditional classes.
- * @param inputs - Class values to merge
- * @returns Merged class string
- */
+/** Merge Tailwind CSS classes conditionally */
 export function cn(...inputs: ClassValue[]): string {
   return clsx(inputs)
 }
 
-/**
- * Copy text to clipboard with fallback for older browsers.
- * @param text - Text to copy
- * @returns Promise that resolves when copy is complete
- */
+/** Copy text to clipboard with fallback for older browsers */
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     if (navigator.clipboard && window.isSecureContext) {
@@ -37,16 +28,5 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-/**
- * Format large numbers with commas.
- * @param num - Number to format
- * @returns Formatted string
- */
-export function formatNumber(num: number): string {
-  return num.toLocaleString('en-US')
-}
-
-/**
- * GitHub repository URL
- */
+/** GitHub repository URL */
 export const GITHUB_URL = 'https://github.com/chimera-defi/eth2-quickstart'

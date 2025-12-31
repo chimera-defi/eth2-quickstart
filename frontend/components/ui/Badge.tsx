@@ -1,28 +1,12 @@
 import { cn } from '@/lib/utils'
 
-/**
- * Badge component props
- */
 export interface BadgeProps {
-  /** Badge content */
   children: React.ReactNode
-  /** Color variant */
   variant?: 'primary' | 'secondary' | 'success' | 'muted'
-  /** Size variant */
   size?: 'sm' | 'md'
-  /** Additional CSS classes */
   className?: string
 }
 
-/**
- * Badge component for displaying labels, tags, and status indicators.
- * 
- * @example
- * ```tsx
- * <Badge variant="primary">Geth</Badge>
- * <Badge variant="success" size="sm">Active</Badge>
- * ```
- */
 export function Badge({ children, variant = 'primary', size = 'md', className }: BadgeProps) {
   const variants = {
     primary: 'bg-primary/10 border-primary/30 text-primary',
@@ -37,14 +21,7 @@ export function Badge({ children, variant = 'primary', size = 'md', className }:
   }
   
   return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full border font-medium',
-        variants[variant],
-        sizes[size],
-        className
-      )}
-    >
+    <span className={cn('inline-flex items-center rounded-full border font-medium', variants[variant], sizes[size], className)}>
       {children}
     </span>
   )

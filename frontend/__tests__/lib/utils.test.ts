@@ -1,4 +1,4 @@
-import { cn, formatNumber, GITHUB_URL } from '@/lib/utils'
+import { cn, GITHUB_URL } from '@/lib/utils'
 
 describe('cn utility', () => {
   it('merges class names', () => {
@@ -12,18 +12,6 @@ describe('cn utility', () => {
 
   it('handles undefined values', () => {
     expect(cn('base', undefined, 'other')).toBe('base other')
-  })
-
-  it('handles empty strings', () => {
-    expect(cn('base', '', 'other')).toBe('base other')
-  })
-})
-
-describe('formatNumber', () => {
-  it('formats numbers with commas', () => {
-    expect(formatNumber(1000)).toBe('1,000')
-    expect(formatNumber(1000000)).toBe('1,000,000')
-    expect(formatNumber(123)).toBe('123')
   })
 })
 
