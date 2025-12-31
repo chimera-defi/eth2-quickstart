@@ -50,8 +50,3 @@ export function formatNumber(num: number): string {
  * GitHub repository URL
  */
 export const GITHUB_URL = 'https://github.com/chimera-defi/eth2-quickstart'
-
-/**
- * Documentation base URL
- */
-export const DOCS_URL = `${GITHUB_URL}/blob/main/docs`
