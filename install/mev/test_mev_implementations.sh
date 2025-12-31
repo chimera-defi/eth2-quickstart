@@ -365,26 +365,15 @@ echo ""
 echo -e "${BLUE}=== Port Tests ===${NC}"
 echo ""
 
-# Test 14: Check for port usage
+# Test 14: Check for port usage (uses check_port from common_functions.sh)
 check_port_in_use() {
     local port="$1"
     local service_name="$2"
     
-    if command -v ss &> /dev/null; then
-        if ss -tuln | grep -q ":$port "; then
-            record_test "Port $port ($service_name)" "PASS" "Port is in use (service running)"
-        else
-            record_test "Port $port ($service_name)" "SKIP" "Port not in use"
-        fi
-    elif command -v netstat &> /dev/null; then
-        if netstat -tuln | grep -q ":$port "; then
-            record_test "Port $port ($service_name)" "PASS" "Port is in use (service running)"
-        else
-            record_test "Port $port ($service_name)" "SKIP" "Port not in use"
-        fi
+    if check_port "$port"; then
+        record_test "Port $port ($service_name)" "PASS" "Port is in use (service running)"
     else
-        record_test "Port Check" "SKIP" "Neither ss nor netstat available"
-        return
+        record_test "Port $port ($service_name)" "SKIP" "Port not in use"
     fi
 }
 
