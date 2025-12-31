@@ -236,6 +236,52 @@ This document provides a comprehensive reference for all functions available in 
 **Usage:** `command_exists "jq"`  
 **Returns:** 0 if exists, 1 if not
 
+#### `check_port(port)`
+**Purpose:** Check if a TCP port is in use (with fallbacks for different tools)  
+**Parameters:** `port` - Port number to check  
+**Usage:** `check_port 8545`  
+**Returns:** 0 if port is in use, 1 if available  
+**Note:** Uses fallback chain: ss → netstat → /proc/net/tcp
+
+#### `check_service_status(service)`
+**Purpose:** Check systemd service status  
+**Parameters:** `service` - Service name (without .service suffix)  
+**Usage:** `check_service_status "eth1"`  
+**Returns:** One of: "running", "stopped", "disabled", "not_installed"
+
+#### `detect_hardware_profile()`
+**Purpose:** Detect hardware profile based on system RAM  
+**Parameters:** None  
+**Usage:** `profile=$(detect_hardware_profile)`  
+**Returns:** "high" (32GB+), "mid" (16GB+), or "low" (<16GB)
+
+#### `get_recommended_clients(profile)`
+**Purpose:** Get recommended Ethereum clients based on hardware profile  
+**Parameters:** `profile` - Hardware profile ("high", "mid", "low")  
+**Usage:** `read -r exec cons <<< "$(get_recommended_clients "$profile")"`  
+**Returns:** Space-separated "exec_client cons_client" string
+
+### 🖥️ **Whiptail TUI Functions**
+
+#### `whiptail_msg(title, message, height, width)`
+**Purpose:** Show whiptail message box  
+**Parameters:**
+- `title` - Dialog title (default: "Eth2 Quick Start")
+- `message` - Message to display
+- `height` - Dialog height (default: 12)
+- `width` - Dialog width (default: 70)
+**Usage:** `whiptail_msg "Title" "Your message here"`
+
+#### `whiptail_yesno(title, message, height, width)`
+**Purpose:** Show whiptail yes/no dialog  
+**Parameters:**
+- `title` - Dialog title (default: "Eth2 Quick Start")
+- `message` - Question to ask
+- `height` - Dialog height (default: 12)
+- `width` - Dialog width (default: 70)
+**Usage:** `if whiptail_yesno "Confirm" "Proceed?"; then ...`  
+**Returns:** 0 for yes, 1 for no
+
 ### 🔧 **System Configuration Functions**
 
 #### `install_dependencies()`

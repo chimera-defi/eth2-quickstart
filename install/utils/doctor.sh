@@ -68,45 +68,12 @@ record_warn() {
 }
 
 # =============================================================================
-# HELPER FUNCTIONS
+# HELPER FUNCTIONS (uses check_port, check_service_status from common_functions.sh)
 # =============================================================================
 
-# Check if port is in use (with fallback for missing ss)
-check_port() {
-    local port="$1"
-    
-    # Try ss first (most common)
-    if command -v ss &>/dev/null; then
-        ss -tlnp 2>/dev/null | grep -q ":$port " && return 0
-    # Fall back to netstat
-    elif command -v netstat &>/dev/null; then
-        netstat -tlnp 2>/dev/null | grep -q ":$port " && return 0
-    # Last resort: check /proc/net/tcp
-    elif [[ -f /proc/net/tcp ]]; then
-        local hex_port
-        hex_port=$(printf '%04X' "$port")
-        grep -q ":$hex_port" /proc/net/tcp 2>/dev/null && return 0
-    fi
-    
-    return 1
-}
-
-# Check if service exists and get status
+# Alias for backward compatibility
 check_service() {
-    local service="$1"
-    
-    if ! systemctl list-unit-files 2>/dev/null | grep -q "^${service}.service"; then
-        echo "not_installed"
-        return
-    fi
-    
-    if systemctl is-active --quiet "$service" 2>/dev/null; then
-        echo "running"
-    elif systemctl is-enabled --quiet "$service" 2>/dev/null; then
-        echo "stopped"
-    else
-        echo "disabled"
-    fi
+    check_service_status "$1"
 }
 
 # =============================================================================
