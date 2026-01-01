@@ -17,7 +17,10 @@ The frontend has been migrated from npm to [Bun](https://bun.sh) for improved pe
 
 ### Lock Files
 - **Removed:** `package-lock.json` (npm lock file)
-- **Added:** `bun.lockb` (Bun binary lock file - should be committed to git)
+- **Added:** `bun.lock` or `bun.lockb` (Bun lock file - format depends on Bun version)
+  - Bun 1.3.x uses `bun.lock` (JSON format)
+  - Newer Bun versions may use `bun.lockb` (binary format)
+  - **Important:** Whichever format Bun creates should be committed to git
 
 ### CI/CD Workflow
 - **Before:** Used `actions/setup-node@v4` with npm caching
@@ -84,6 +87,10 @@ The GitHub Actions workflow (`.github/workflows/frontend.yml`) now:
 - [x] Update .gitignore (bun.lockb should be committed)
 - [x] Create migration documentation
 - [x] Update documentation references
+- [x] Add `packageManager` field to package.json
+- [x] Verify all commands work locally (lint, build, test, type-check)
+- [x] Update .cursorrules with Bun requirements
+- [x] Document Jest vs Bun test runner distinction
 
 ## Troubleshooting
 
@@ -102,11 +109,26 @@ Bun is compatible with npm packages. If you encounter issues:
 - Some packages may need specific Bun configurations
 - Report issues to the Bun GitHub repository
 
+## Testing with Bun
+
+**Important:** React component tests use Jest (not Bun's test runner):
+- Use `bun run test` (runs Jest via package.json script)
+- Do NOT use `bun test` directly (Bun's test runner doesn't support jsdom environment)
+- Jest configuration remains unchanged (`jest.config.js`, `jest.setup.js`)
+- Bun installs and runs Jest faster than npm, but Jest is still the test framework
+
+**Why Jest instead of Bun's test runner:**
+- React Testing Library requires jsdom environment
+- Jest has mature React/Next.js integration
+- Existing test setup works perfectly with Bun as package manager
+- Performance gain comes from faster package installation, not test runner
+
 ## Future Considerations
 
-- Consider migrating Jest tests to Bun's built-in test runner for even better performance
+- Monitor Bun's test runner for jsdom support (may migrate in future)
 - Explore Bun's native bundler for potential build optimizations
 - Monitor Bun updates for new features and improvements
+- Keep Jest for now - it works perfectly with Bun as package manager
 
 ## References
 

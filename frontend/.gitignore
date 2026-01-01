@@ -3,7 +3,7 @@
 /.pnp
 .pnp.js
 .yarn/install-state.gz
-# Bun (bun.lockb should be committed)
+# Bun (bun.lock or bun.lockb should be committed - depends on Bun version)
 
 # Testing
 /coverage
