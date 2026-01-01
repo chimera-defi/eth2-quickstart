@@ -887,4 +887,126 @@ find . -name "*.sh" -type f ! -path "./.git/*" -exec bash -n {} \;
 
 8. **User Config Should Use Real Defaults** - Example configs should show actual defaults from exports.sh, not placeholder values
 
+## Frontend Development with Bun
+
+### ⚠️ CRITICAL: Frontend Uses Bun, NOT npm ⚠️
+
+**THIS PROJECT USES BUN FOR FRONTEND DEVELOPMENT - NEVER USE npm**
+
+The frontend has been migrated from npm to [Bun](https://bun.sh) for significantly faster performance. This is a **hard requirement** and must be maintained.
+
+### Bun Migration Rules
+
+**Date Migrated:** 2024-12-19  
+**Reason:** Bun provides 2-3x faster package installation, builds, and test execution compared to npm.
+
+### Required Commands
+
+| Task | ❌ NEVER Use | ✅ ALWAYS Use |
+|------|-------------|---------------|
+| Install dependencies | `npm install` | `bun install` |
+| CI install | `npm ci` | `bun install --frozen-lockfile` |
+| Run scripts | `npm run <script>` | `bun run <script>` |
+| Run tools | `npx <tool>` | `bunx <tool>` |
+| Test | `npm test` | `bun run test` (uses Jest) |
+| Build | `npm run build` | `bun run build` |
+
+### Lock Files
+
+- **Removed:** `package-lock.json` (npm lock file)
+- **Required:** `bun.lock` or `bun.lockb` (Bun lock file - format depends on Bun version)
+  - Bun 1.3.x uses `bun.lock` (JSON format)
+  - Newer versions may use `bun.lockb` (binary format)
+  - **MUST commit:** Whichever format Bun creates
+- **Never commit:** `package-lock.json` if accidentally created
+
+### CI/CD Configuration
+
+**Frontend CI Workflow:** `.github/workflows/frontend.yml`
+- Uses `oven-sh/setup-bun@v2` action (NOT `setup-node`)
+- Runs `bun install --frozen-lockfile` for reproducible builds
+- Uses `bunx` for running tools like TypeScript compiler
+- All scripts run via `bun run <script>`
+
+### Package Manager Declaration
+
+**Required in `package.json`:**
+```json
+{
+  "packageManager": "bun@latest"
+}
+```
+
+This field ensures tools like Corepack recognize Bun as the package manager.
+
+### Testing with Bun
+
+**Important:** React component tests still use Jest (not Bun's test runner):
+- Use `bun run test` (runs Jest via package.json script)
+- Do NOT use `bun test` directly (Bun's test runner doesn't support jsdom)
+- Jest configuration remains unchanged (`jest.config.js`, `jest.setup.js`)
+
+### Installation
+
+**Installing Bun:**
+```bash
+curl -fsSL https://bun.sh/install | bash
+source ~/.bashrc  # or restart terminal
+bun --version     # Verify installation
+```
+
+### Verification Checklist
+
+Before committing frontend changes:
+- [ ] Used `bun install` (not npm)
+- [ ] `bun.lock` or `bun.lockb` is committed (not package-lock.json)
+- [ ] CI workflow uses `oven-sh/setup-bun@v2`
+- [ ] All commands use `bun run` or `bunx`
+- [ ] `package.json` has `"packageManager": "bun@latest"`
+- [ ] Tests run with `bun run test` (Jest via Bun, NOT `bun test`)
+
+### Common Mistakes to Avoid
+
+1. **❌ DON'T:** Use `npm install` or `npm ci`
+   - **✅ DO:** Use `bun install` or `bun install --frozen-lockfile`
+
+2. **❌ DON'T:** Commit `package-lock.json`
+   - **✅ DO:** Commit `bun.lock` or `bun.lockb` (whichever Bun creates)
+
+3. **❌ DON'T:** Use `setup-node@v4` in CI workflows
+   - **✅ DO:** Use `oven-sh/setup-bun@v2`
+
+4. **❌ DON'T:** Use `npx` for running tools
+   - **✅ DO:** Use `bunx` instead
+
+5. **❌ DON'T:** Use `bun test` for React component tests
+   - **✅ DO:** Use `bun run test` (runs Jest)
+
+6. **❌ DON'T:** Remove `packageManager` field from package.json
+   - **✅ DO:** Keep `"packageManager": "bun@latest"`
+
+### Performance Benefits
+
+- **Installation:** 2-3x faster than npm
+- **Builds:** Faster Next.js builds
+- **CI/CD:** Reduced CI time for frontend jobs
+- **Developer Experience:** Faster feedback loops
+
+### Documentation
+
+- Migration guide: `docs/FRONTEND_BUN_MIGRATION.md`
+- Frontend README: `frontend/README.md` (updated with Bun commands)
+
+### Regression Prevention
+
+**To prevent regression back to npm:**
+1. Always check `.github/workflows/frontend.yml` uses Bun
+2. Verify `package.json` has `packageManager` field
+3. Check that `bun.lock` or `bun.lockb` exists (not `package-lock.json`)
+4. Review any PRs that mention npm in frontend context
+5. Run `grep -r "npm" frontend/` before committing to catch accidental npm usage
+6. Verify CI test job uses `bun run test` (not `bun test`)
+
+**If you see npm commands in frontend context, STOP and convert to Bun.**
+
 This comprehensive rule set ensures consistent, maintainable, and secure code across the entire Ethereum node setup project.
