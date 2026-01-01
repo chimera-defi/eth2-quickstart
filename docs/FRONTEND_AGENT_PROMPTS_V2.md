@@ -19,9 +19,9 @@ PROJECT CONTEXT:
 YOUR TASKS (complete in order):
 
 1. Initialize Next.js project:
-   - Run: npx create-next-app@latest frontend --typescript --tailwind --app --no-src-dir
+   - Run: bunx create-next-app@latest frontend --typescript --tailwind --app --no-src-dir
    - Verify structure matches: frontend/app/, frontend/components/, frontend/lib/
-   - Test: npm run dev should start successfully
+   - Test: bun run dev should start successfully
 
 2. Configure Tailwind CSS (tailwind.config.js):
    - Add custom colors:
@@ -54,12 +54,12 @@ YOUR TASKS (complete in order):
 
 6. Configure build settings (next.config.js):
    - Enable image optimization
-   - Test: npm run build succeeds
-   - Test: npm start works
+   - Test: bun run build succeeds
+   - Test: bun start works
 
 SUCCESS CRITERIA:
-✅ npm run dev starts without errors
-✅ npm run build succeeds
+✅ bun run dev starts without errors
+✅ bun run build succeeds
 ✅ All 3 pages load correctly
 ✅ Tailwind classes work (test with a test div)
 ✅ Fonts load correctly
@@ -116,7 +116,7 @@ YOUR TASKS (create these 7 components):
    - Header: macOS dots (red, yellow, green circles)
    - Content: bg-[#1e1e1e], monospace font, syntax highlighting if code prop
    - Use react-syntax-highlighter if code provided
-   - Install: npm install react-syntax-highlighter @types/react-syntax-highlighter
+   - Install: bun add react-syntax-highlighter @types/react-syntax-highlighter
 
 5. CodeBlock Component (components/ui/CodeBlock.tsx):
    - Props: code (string), language?, showCopy? (default true), className?
@@ -143,7 +143,7 @@ REQUIREMENTS FOR ALL COMPONENTS:
 - No external dependencies except React, Tailwind, Lucide icons
 
 INSTALL DEPENDENCIES:
-npm install lucide-react react-syntax-highlighter @types/react-syntax-highlighter
+bun add lucide-react react-syntax-highlighter @types/react-syntax-highlighter
 
 SUCCESS CRITERIA:
 ✅ All 7 components created
@@ -216,7 +216,7 @@ YOUR TASKS:
      * Animation: animate-pulse-glow (create custom animation)
 
 5. Entrance animations:
-   - Install: npm install framer-motion
+   - Install: bun add framer-motion
    - Headline: fade-in + slide-up
    - Description: fade-in + slide-up (delay)
    - Terminal: slide-in from right
@@ -302,7 +302,7 @@ YOUR TASKS:
    - Visual: RPC endpoint example or speed comparison
 
 3. Scroll animations:
-   - Install: npm install framer-motion (if not already)
+   - Install: bun add framer-motion (if not already)
    - Use: motion.div with useInView hook
    - Animation: fade-in + slide-up
    - Stagger: delay each card by 0.1s
