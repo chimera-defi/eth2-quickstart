@@ -13,9 +13,9 @@ This document provides detailed, actionable task lists for each development phas
 **Status:** ⏳ Pending
 
 ### Task 1.1: Initialize Next.js Project
-- [ ] Create new Next.js project with TypeScript: `npx create-next-app@latest frontend --typescript --tailwind --app --no-src-dir`
+- [ ] Create new Next.js project with TypeScript: `bunx create-next-app@latest frontend --typescript --tailwind --app --no-src-dir`
 - [ ] Verify project structure matches specification
-- [ ] Test that dev server runs: `npm run dev`
+- [ ] Test that dev server runs: `bun run dev`
 - [ ] Commit initial project setup
 
 ### Task 1.2: Configure Tailwind CSS
@@ -53,8 +53,8 @@ This document provides detailed, actionable task lists for each development phas
 - [ ] Review `next.config.js` settings
 - [ ] Configure image optimization if needed
 - [ ] Set up environment variables (if any)
-- [ ] Test production build: `npm run build`
-- [ ] Test production server: `npm start`
+- [ ] Test production build: `bun run build`
+- [ ] Test production server: `bun start`
 - [ ] Commit build configuration
 
 **Phase 1 Completion Criteria:**

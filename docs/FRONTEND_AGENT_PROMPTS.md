@@ -54,8 +54,8 @@ Review the README.md to understand what the product does.
 - Update docs/FRONTEND_PROGRESS.md as you complete tasks
 
 **Success Criteria:**
-- ✅ `npm run dev` starts successfully
-- ✅ `npm run build` succeeds
+- ✅ `bun run dev` starts successfully
+- ✅ `bun run build` succeeds
 - ✅ All pages load without errors
 - ✅ Tailwind classes work correctly
 - ✅ Fonts render properly
