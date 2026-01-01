@@ -5,10 +5,10 @@ Marketing website for the Ethereum Node Quick Setup project.
 ## Quick Start
 
 ```bash
-bun install    # Install dependencies
-bun run dev    # Start development server
-bun run build  # Build for production
-bun test       # Run tests
+bun install      # Install dependencies
+bun run dev      # Start development server
+bun run build    # Build for production
+bun run test     # Run tests (uses Jest)
 ```
 
 **Note:** This project uses [Bun](https://bun.sh) as the package manager and runtime for faster performance. Make sure you have Bun installed (`curl -fsSL https://bun.sh/install | bash`).
