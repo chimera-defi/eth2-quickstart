@@ -10,6 +10,7 @@ export const SITE_CONFIG = {
 }
 
 export const NAV_LINKS = [
+  { label: 'Install', href: '#install' },
   { label: 'Learn', href: '/learn' },
   { label: 'GitHub', href: SITE_CONFIG.github, external: true },
 ]
@@ -18,6 +19,51 @@ export const STATS = [
   { value: '12', label: 'Clients' },
   { value: '36', label: 'Combinations' },
   { value: '~30m', label: 'Setup Time' },
+  { value: '2-step', label: 'Hardened Flow' },
+]
+
+export const INSTALL_COMMAND =
+  'curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash'
+
+export const INSTALL_HIGHLIGHTS = [
+  {
+    title: 'Bootstraps safely',
+    description: 'Runs a two-phase flow: hardened base setup, reboot, then client install.',
+    icon: 'Shield',
+  },
+  {
+    title: 'Configurable wizard',
+    description: 'Launches a guided TUI to select clients, MEV options, and network presets.',
+    icon: 'Terminal',
+  },
+  {
+    title: 'Everything included',
+    description: 'Sets up monitoring, firewalls, and service management automatically.',
+    icon: 'Grid3x3',
+  },
+]
+
+export const WORKFLOW_STEPS = [
+  {
+    title: 'Bootstrap the host',
+    description: 'Run the one-line installer to clone the repo, verify requirements, and launch the wizard.',
+    detail: 'Includes firewall rules, SSH hardening, and a non-root operator user.',
+  },
+  {
+    title: 'Reboot & validate',
+    description: 'Reboot to confirm secure access with the new user and updated SSH settings.',
+    detail: 'The script pauses and reminds you to verify access before proceeding.',
+  },
+  {
+    title: 'Install clients',
+    description: 'Select execution and consensus clients, MEV relay presets, and monitoring.',
+    detail: 'The installer configures services, systemd units, and auto-start.',
+  },
+  {
+    title: 'Go live',
+    description: 'Start services and monitor sync progress from a dedicated dashboard.',
+    detail: 'Health checks and logs are included for ongoing ops.',
+  },
 ]
 
 export const EXECUTION_CLIENTS = [

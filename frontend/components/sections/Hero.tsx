@@ -1,12 +1,13 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Terminal } from '@/components/ui/Terminal'
-import { SITE_CONFIG, STATS } from '@/lib/constants'
-import { ArrowRight } from 'lucide-react'
+import { INSTALL_COMMAND, SITE_CONFIG, STATS } from '@/lib/constants'
+import { ArrowRight, CheckCircle2 } from 'lucide-react'
 
-const terminalCode = `$ curl -fsSL https://eth2.run/install | bash
+const terminalCode = `$ ${INSTALL_COMMAND}
 
 [✓] System requirements verified
 [✓] Firewall configured
@@ -26,14 +27,17 @@ export function Hero() {
         <div className="grid gap-16 lg:grid-cols-2 lg:gap-20 items-center">
           {/* Left column - Content */}
           <div className="max-w-xl">
-            <motion.p
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6 }}
-              className="font-mono text-sm tracking-wide text-muted-foreground uppercase"
+              className="flex items-center gap-3"
             >
-              Ethereum Infrastructure
-            </motion.p>
+              <Badge variant="primary">Zero-downtime onboarding</Badge>
+              <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+                Ethereum infrastructure
+              </span>
+            </motion.div>
             
             <motion.h1
               initial={{ opacity: 0, y: 16 }}
@@ -53,24 +57,45 @@ export function Hero() {
               className="mt-6 text-lg text-muted-foreground leading-relaxed"
             >
               Transform a fresh server into a fully-configured Ethereum node. 
-              Choose from 12 clients, configure MEV, and secure everything—automatically.
+              One command handles security hardening, client installs, MEV, and monitoring.
             </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.25 }}
+              className="mt-6 grid gap-3 text-sm text-muted-foreground"
+            >
+              {[
+                'Two-phase hardened workflow with guided wizard',
+                'Execution + consensus clients from all major teams',
+                'MEV-Boost, monitoring, and service management included',
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </motion.div>
             
             {/* CTA Buttons */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="mt-10 flex items-center gap-4"
+              className="mt-10 flex flex-wrap items-center gap-4"
             >
               <Button href="/quickstart" size="lg">
                 Get Started
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-              <Button 
-                variant="ghost" 
-                href={SITE_CONFIG.github} 
-                external 
+              <Button variant="secondary" href="#install" size="lg">
+                One-line Install
+              </Button>
+              <Button
+                variant="ghost"
+                href={SITE_CONFIG.github}
+                external
                 size="lg"
               >
                 View Source
@@ -82,9 +107,9 @@ export function Hero() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="mt-16 flex gap-12"
+              className="mt-16 grid gap-6 sm:grid-cols-2"
             >
-              {STATS.slice(0, 3).map((stat) => (
+              {STATS.map((stat) => (
                 <div key={stat.label}>
                   <div className="font-mono text-2xl font-semibold text-foreground">
                     {stat.value}

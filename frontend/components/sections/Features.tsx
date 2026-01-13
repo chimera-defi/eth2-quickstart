@@ -3,6 +3,7 @@
 import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { FEATURES } from '@/lib/constants'
+import { Card } from '@/components/ui/Card'
 import { Grid3x3, Terminal, Shield, TrendingUp, Globe } from 'lucide-react'
 
 const iconMap = {
@@ -31,10 +32,10 @@ export function Features() {
             Features
           </p>
           <h2 className="mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Everything you need
+            Everything you need to go live
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            A complete toolkit for running your own Ethereum infrastructure.
+            A complete toolkit for running your own Ethereum infrastructure with confidence.
           </p>
         </motion.div>
         
@@ -51,19 +52,21 @@ export function Features() {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className="group"
               >
-                <div className="flex items-start gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                    <Icon className="h-5 w-5 text-primary" />
+                <Card hover className="h-full bg-muted/30">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-background">
+                      <Icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-foreground">
+                        {feature.title}
+                      </h3>
+                      <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                        {feature.description}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-medium text-foreground">
-                      {feature.title}
-                    </h3>
-                    <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-                      {feature.description}
-                    </p>
-                  </div>
-                </div>
+                </Card>
               </motion.div>
             )
           })}
