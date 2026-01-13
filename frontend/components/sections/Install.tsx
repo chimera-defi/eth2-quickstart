@@ -40,7 +40,15 @@ export function Install() {
               with the guided configuration wizard.
             </motion.p>
             <div className="mt-8 space-y-4">
-              <CodeBlock code={INSTALL_COMMAND} language="bash" />
+              <Card className="border-border/60 bg-muted/40">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="font-mono uppercase tracking-wide">Bootstrap command</span>
+                  <span>Ubuntu 20.04+</span>
+                </div>
+                <div className="mt-3">
+                  <CodeBlock code={INSTALL_COMMAND} language="bash" />
+                </div>
+              </Card>
               <Card className="border-primary/20 bg-primary/5">
                 <div className="flex items-start gap-3 text-sm text-muted-foreground">
                   <Shield className="mt-0.5 h-4 w-4 text-primary" />

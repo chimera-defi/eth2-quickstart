@@ -33,7 +33,8 @@ export function Workflow() {
             </motion.p>
           </div>
 
-          <div className="space-y-4">
+          <div className="relative space-y-6">
+            <div className="absolute left-5 top-4 hidden h-[calc(100%-2rem)] w-px bg-border/60 sm:block" />
             {WORKFLOW_STEPS.map((step, index) => (
               <motion.div
                 key={step.title}

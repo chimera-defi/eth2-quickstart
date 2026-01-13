@@ -52,7 +52,10 @@ export function Features() {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className="group"
               >
-                <Card hover className="h-full bg-muted/30">
+                <Card
+                  hover
+                  className="h-full border-border/60 bg-muted/30 transition-all duration-300 hover:border-primary/40 hover:bg-muted/50"
+                >
                   <div className="flex items-start gap-4">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-background">
                       <Icon className="h-5 w-5 text-primary" />
