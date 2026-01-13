@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
 import { Terminal } from '@/components/ui/Terminal'
 import { INSTALL_COMMAND, SITE_CONFIG, STATS } from '@/lib/constants'
 import { ArrowRight, CheckCircle2 } from 'lucide-react'
@@ -18,9 +19,10 @@ Run './run_2.sh' to continue setup.`
 
 export function Hero() {
   return (
-    <section className="relative min-h-[90vh] flex items-center">
+    <section className="relative min-h-[90vh] flex items-center overflow-hidden">
       {/* Subtle background gradient */}
       <div className="absolute inset-0 bg-gradient-radial from-primary/[0.03] via-transparent to-transparent" />
+      <div className="absolute inset-y-0 right-0 hidden w-1/2 bg-gradient-to-l from-primary/10 via-transparent to-transparent lg:block" />
       
       {/* Content */}
       <div className="relative w-full mx-auto max-w-6xl px-6 py-24 lg:py-32">
@@ -102,22 +104,22 @@ export function Hero() {
               </Button>
             </motion.div>
             
-            {/* Stats - Minimal */}
+            {/* Stats */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="mt-16 grid gap-6 sm:grid-cols-2"
+              className="mt-16 grid gap-4 sm:grid-cols-2"
             >
               {STATS.map((stat) => (
-                <div key={stat.label}>
+                <Card key={stat.label} padding="sm" className="bg-muted/30">
                   <div className="font-mono text-2xl font-semibold text-foreground">
                     {stat.value}
                   </div>
                   <div className="mt-1 text-sm text-muted-foreground">
                     {stat.label}
                   </div>
-                </div>
+                </Card>
               ))}
             </motion.div>
           </div>
@@ -129,11 +131,17 @@ export function Hero() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="hidden lg:block"
           >
-            <Terminal 
-              code={terminalCode} 
-              language="bash"
-              title="terminal"
-            />
+            <div className="rounded-2xl border border-border/60 bg-muted/40 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
+              <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground">
+                <span className="font-mono uppercase tracking-wide">Installer preview</span>
+                <span>Phase 1</span>
+              </div>
+              <Terminal 
+                code={terminalCode} 
+                language="bash"
+                title="terminal"
+              />
+            </div>
           </motion.div>
         </div>
       </div>
