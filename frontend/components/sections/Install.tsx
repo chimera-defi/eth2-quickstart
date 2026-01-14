@@ -15,7 +15,7 @@ const iconMap = {
 
 export function Install() {
   return (
-    <section id="install" className="py-24 sm:py-32">
+    <section id="install" className="py-16 sm:py-20 lg:py-24">
       <div className="mx-auto max-w-6xl px-6">
         <div className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div>
@@ -39,6 +39,18 @@ export function Install() {
               Copy the one-line installer to bootstrap a hardened server, then continue
               with the guided configuration wizard.
             </motion.p>
+            <div className="mt-4 grid gap-3 text-sm text-muted-foreground">
+              {[
+                'Creates a locked-down operator user and enforces SSH best practices.',
+                'Installs execution + consensus clients with MEV relay presets.',
+                'Configures systemd services, health checks, and monitoring hooks.',
+              ].map((item) => (
+                <div key={item} className="flex items-start gap-2">
+                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary" />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
             <div className="mt-8 space-y-4">
               <Card className="border-border/60 bg-muted/40">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">

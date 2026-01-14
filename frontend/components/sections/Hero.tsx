@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { CodeBlock } from '@/components/ui/CodeBlock'
 import { Terminal } from '@/components/ui/Terminal'
 import { INSTALL_COMMAND, SITE_CONFIG, STATS } from '@/lib/constants'
 import { ArrowRight, CheckCircle2 } from 'lucide-react'
@@ -19,16 +20,16 @@ Run './run_2.sh' to continue setup.`
 
 export function Hero() {
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+    <section className="relative min-h-[80vh] flex items-center overflow-hidden">
       {/* Subtle background gradient */}
       <div className="absolute inset-0 bg-gradient-radial from-primary/[0.03] via-transparent to-transparent" />
       <div className="absolute inset-y-0 right-0 hidden w-1/2 bg-gradient-to-l from-primary/10 via-transparent to-transparent lg:block" />
       
       {/* Content */}
-      <div className="relative w-full mx-auto max-w-6xl px-6 py-24 lg:py-32">
-        <div className="grid gap-16 lg:grid-cols-2 lg:gap-20 items-center">
+      <div className="relative w-full mx-auto max-w-6xl px-6 py-16 sm:py-20 lg:py-28">
+        <div className="grid gap-10 lg:grid-cols-2 lg:gap-16 items-center">
           {/* Left column - Content */}
-          <div className="max-w-xl">
+          <div className="max-w-xl space-y-6">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -45,7 +46,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="mt-4 font-mono text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl"
+              className="mt-2 font-mono text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl"
             >
               <span className="text-foreground">Node Setup</span>
               <br />
@@ -56,7 +57,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="mt-6 text-lg text-muted-foreground leading-relaxed"
+              className="text-lg text-muted-foreground leading-relaxed"
             >
               Transform a fresh server into a fully-configured Ethereum node. 
               One command handles security hardening, client installs, MEV, and monitoring.
@@ -66,7 +67,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.25 }}
-              className="mt-6 grid gap-3 text-sm text-muted-foreground"
+              className="grid gap-3 text-sm text-muted-foreground"
             >
               {[
                 'Two-phase hardened workflow with guided wizard',
@@ -85,7 +86,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="mt-10 flex flex-wrap items-center gap-4"
+              className="flex flex-wrap items-center gap-4"
             >
               <Button href="/quickstart" size="lg">
                 Get Started
@@ -109,7 +110,7 @@ export function Hero() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="mt-16 grid gap-4 sm:grid-cols-2"
+              className="grid gap-4 sm:grid-cols-2"
             >
               {STATS.map((stat) => (
                 <Card key={stat.label} padding="sm" className="bg-muted/30">
@@ -122,6 +123,18 @@ export function Hero() {
                 </Card>
               ))}
             </motion.div>
+
+            <div className="lg:hidden">
+              <Card className="border-border/60 bg-muted/40">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="font-mono uppercase tracking-wide">Installer preview</span>
+                  <span>Phase 1</span>
+                </div>
+                <div className="mt-3">
+                  <CodeBlock code={INSTALL_COMMAND} language="bash" />
+                </div>
+              </Card>
+            </div>
           </div>
           
           {/* Right column - Terminal */}

@@ -7,7 +7,7 @@ import { WORKFLOW_STEPS } from '@/lib/constants'
 
 export function Workflow() {
   return (
-    <section className="py-24 sm:py-32">
+    <section className="py-16 sm:py-20 lg:py-24">
       <div className="mx-auto max-w-6xl px-6">
         <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           <div>
@@ -31,9 +31,12 @@ export function Workflow() {
               A streamlined workflow built for production reliability, with guardrails at
               every step.
             </motion.p>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Each phase is reversible and logged, so you can validate changes before proceeding.
+            </p>
           </div>
 
-          <div className="relative space-y-6">
+          <div className="relative space-y-4">
             <div className="absolute left-5 top-4 hidden h-[calc(100%-2rem)] w-px bg-border/60 sm:block" />
             {WORKFLOW_STEPS.map((step, index) => (
               <motion.div

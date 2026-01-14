@@ -19,7 +19,7 @@ export function Features() {
   const isInView = useInView(ref, { once: true, margin: '-100px' })
   
   return (
-    <section ref={ref} className="py-24 sm:py-32">
+    <section ref={ref} className="py-16 sm:py-20 lg:py-24">
       <div className="mx-auto max-w-6xl px-6">
         {/* Section header */}
         <motion.div
@@ -40,7 +40,7 @@ export function Features() {
         </motion.div>
         
         {/* Features grid */}
-        <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((feature, index) => {
             const Icon = iconMap[feature.icon as keyof typeof iconMap]
             

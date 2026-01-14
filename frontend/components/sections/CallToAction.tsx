@@ -10,9 +10,9 @@ import { ArrowRight } from 'lucide-react'
 
 export function CallToAction() {
   return (
-    <section className="py-24 sm:py-32">
+    <section className="py-16 sm:py-20 lg:py-24">
       <div className="mx-auto max-w-6xl px-6">
-        <Card className="relative overflow-hidden border-border/60 bg-muted/40 p-8 sm:p-12">
+        <Card className="relative overflow-hidden border-border/60 bg-muted/40 p-6 sm:p-10">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent" />
           <div className="relative grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div>
