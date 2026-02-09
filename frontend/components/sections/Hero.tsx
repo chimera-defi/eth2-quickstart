@@ -26,15 +26,15 @@ export function Hero() {
       <div className="absolute inset-y-0 right-0 hidden w-1/2 bg-gradient-to-l from-primary/10 via-transparent to-transparent lg:block" />
       
       {/* Content */}
-      <div className="relative w-full mx-auto max-w-6xl px-6 py-16 sm:py-20 lg:py-28">
-        <div className="grid gap-10 lg:grid-cols-2 lg:gap-16 items-center">
+      <div className="relative w-full mx-auto max-w-6xl px-4 sm:px-6 py-12 sm:py-16 md:py-20 lg:py-28">
+        <div className="grid gap-8 sm:gap-10 lg:grid-cols-2 lg:gap-16 items-center">
           {/* Left column - Content */}
-          <div className="max-w-xl space-y-6">
+          <div className="max-w-xl space-y-5 sm:space-y-6">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6 }}
-              className="flex items-center gap-3"
+              className="flex flex-wrap items-center gap-2 sm:gap-3"
             >
               <Badge variant="primary">Zero-downtime onboarding</Badge>
               <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
@@ -46,7 +46,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="mt-2 font-mono text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl"
+              className="mt-2 font-mono text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl"
             >
               <span className="text-foreground">Node Setup</span>
               <br />
@@ -57,7 +57,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-lg text-muted-foreground leading-relaxed"
+              className="text-base sm:text-lg text-muted-foreground leading-relaxed"
             >
               Transform a fresh server into a fully-configured Ethereum node. 
               One command handles security hardening, client installs, MEV, and monitoring.
@@ -67,15 +67,15 @@ export function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.25 }}
-              className="grid gap-3 text-sm text-muted-foreground"
+              className="grid gap-2.5 sm:gap-3 text-sm text-muted-foreground"
             >
               {[
                 'Two-phase hardened workflow with guided wizard',
                 'Execution + consensus clients from all major teams',
                 'MEV-Boost, monitoring, and service management included',
               ].map((item) => (
-                <div key={item} className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                <div key={item} className="flex items-start sm:items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-primary mt-0.5 sm:mt-0" />
                   <span>{item}</span>
                 </div>
               ))}
@@ -86,13 +86,13 @@ export function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="flex flex-wrap items-center gap-4"
+              className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 sm:gap-4"
             >
-              <Button href="/quickstart" size="lg">
+              <Button href="/quickstart" size="lg" className="justify-center">
                 Get Started
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-              <Button variant="secondary" href="#install" size="lg">
+              <Button variant="secondary" href="#install" size="lg" className="justify-center">
                 One-line Install
               </Button>
               <Button
@@ -100,6 +100,7 @@ export function Hero() {
                 href={SITE_CONFIG.github}
                 external
                 size="lg"
+                className="justify-center"
               >
                 View Source
               </Button>
@@ -110,34 +111,35 @@ export function Hero() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="grid gap-4 sm:grid-cols-2"
+              className="grid grid-cols-2 gap-3 sm:gap-4"
             >
               {STATS.map((stat) => (
                 <Card key={stat.label} padding="sm" className="bg-muted/30">
-                  <div className="font-mono text-2xl font-semibold text-foreground">
+                  <div className="font-mono text-xl sm:text-2xl font-semibold text-foreground">
                     {stat.value}
                   </div>
-                  <div className="mt-1 text-sm text-muted-foreground">
+                  <div className="mt-1 text-xs sm:text-sm text-muted-foreground">
                     {stat.label}
                   </div>
                 </Card>
               ))}
             </motion.div>
 
+            {/* Mobile/Tablet terminal preview */}
             <div className="lg:hidden">
               <Card className="border-border/60 bg-muted/40">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span className="font-mono uppercase tracking-wide">Installer preview</span>
                   <span>Phase 1</span>
                 </div>
-                <div className="mt-3">
+                <div className="mt-3 overflow-x-auto">
                   <CodeBlock code={INSTALL_COMMAND} language="bash" />
                 </div>
               </Card>
             </div>
           </div>
           
-          {/* Right column - Terminal */}
+          {/* Right column - Terminal (desktop only) */}
           <motion.div
             initial={{ opacity: 0, x: 24 }}
             animate={{ opacity: 1, x: 0 }}
