@@ -19,8 +19,8 @@ export function Features() {
   const isInView = useInView(ref, { once: true, margin: '-100px' })
   
   return (
-    <section ref={ref} className="py-16 sm:py-20 lg:py-24">
-      <div className="mx-auto max-w-6xl px-6">
+    <section ref={ref} className="py-12 sm:py-16 md:py-20 lg:py-24">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
         {/* Section header */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -31,16 +31,16 @@ export function Features() {
           <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
             Features
           </p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
             Everything you need to go live
           </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
+          <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground">
             A complete toolkit for running your own Ethereum infrastructure with confidence.
           </p>
         </motion.div>
         
         {/* Features grid */}
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 sm:mt-10 grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((feature, index) => {
             const Icon = iconMap[feature.icon as keyof typeof iconMap]
             
@@ -56,15 +56,15 @@ export function Features() {
                   hover
                   className="h-full border-border/60 bg-muted/30 transition-all duration-300 hover:border-primary/40 hover:bg-muted/50"
                 >
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-background">
-                      <Icon className="h-5 w-5 text-primary" />
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg bg-background">
+                      <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <h3 className="font-medium text-foreground">
                         {feature.title}
                       </h3>
-                      <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                      <p className="mt-1.5 sm:mt-2 text-sm text-muted-foreground leading-relaxed">
                         {feature.description}
                       </p>
                     </div>
