@@ -10,13 +10,13 @@ const footerLinks = [
 export function Footer() {
   return (
     <footer className="border-t border-border">
-      <div className="mx-auto max-w-6xl px-6 py-6">
-        <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-5 sm:py-6">
+        <div className="flex flex-col items-center justify-between gap-3 sm:gap-4 sm:flex-row">
           <p className="text-sm text-muted-foreground">
             ETH2 Quick Start
           </p>
           
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
             {footerLinks.map((link) => (
               link.internal ? (
                 <Link
