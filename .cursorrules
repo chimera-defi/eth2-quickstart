@@ -1,5 +1,33 @@
 # Ethereum Node Setup - Agent Context
 
+## READ THIS FIRST - MANDATORY AGENT CHECKLIST
+
+**These rules are non-negotiable. Every agent session MUST follow them.**
+
+### 1. Multi-Pass Code Review (MANDATORY)
+Every task requires minimum 3 review passes BEFORE final push:
+- **Pass 1**: Build/test/lint all pass with zero errors
+- **Pass 2**: Architecture compliance (Bun not npm, correct user context, etc.)
+- **Pass 3**: Code quality (no duplication, consistent patterns, no dead code)
+See `.cursor/rules/code-review.mdc` for full checklist.
+
+### 2. Frontend Uses Bun, NEVER npm
+- `bun install`, `bun run build`, `bun run test`, `bunx` -- ALWAYS
+- `npm`, `npx`, `package-lock.json` -- NEVER
+- See `.cursor/rules/frontend.mdc` for complete frontend rules.
+
+### 3. Conventional Commits Required
+Format: `type(scope): description` (e.g. `feat(frontend): add mobile nav`)
+Types: feat, fix, refactor, docs, test, chore, style, perf
+
+### 4. Scoped Rules in `.cursor/rules/`
+This project has focused rule files that auto-apply by file type:
+- `.cursor/rules/frontend.mdc` -- Bun, responsive design, testing
+- `.cursor/rules/shell-scripts.mdc` -- common_functions, shellcheck, security
+- `.cursor/rules/code-review.mdc` -- multi-pass review process (always applies)
+
+---
+
 ## ⚠️ CRITICAL: TWO-PHASE SECURITY MODEL ⚠️
 
 **THIS IS THE MOST IMPORTANT RULE - READ FIRST**
