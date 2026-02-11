@@ -58,12 +58,12 @@ append_once /etc/fstab $'tmpfs\t/run/shm\ttmpfs\tro,noexec,nosuid\t0 0'
 
 log_info "Shared memory disabled"
 
-# Apply security configurations
-log_info "Applying security configurations..."
+# Apply additional security configurations
+# Note: AIDE/intrusion detection is already set up by consolidated_security.sh above
+log_info "Applying additional security configurations..."
 secure_config_files
 apply_network_security
 setup_security_monitoring
-setup_intrusion_detection
 
 log_info "Security configurations applied"
 
@@ -71,40 +71,9 @@ log_info "Security configurations applied"
 log_info "Determining server IP..."
 SERVER_IP=$(curl -s v4.ident.me 2>/dev/null || curl -s ifconfig.me 2>/dev/null || echo "YOUR_SERVER_IP")
 
-# Build the correct SSH command based on port
-SSH_CMD="ssh $LOGIN_UNAME@$SERVER_IP"
-if [[ "$YourSSHPortNumber" != "22" ]]; then
-    SSH_CMD="ssh -p $YourSSHPortNumber $LOGIN_UNAME@$SERVER_IP"
-fi
-
-# Display system status
-echo "=== SYSTEM STATUS ==="
-echo "Network: $(ss -tulpn 2>/dev/null | wc -l) active connections"
-if sshd -t 2>/dev/null; then
-    echo "SSH: config validation passed"
-else
-    echo "SSH: config validation FAILED"
-fi
-echo "Firewall: $(ufw status 2>/dev/null | grep -c 'Status: active' || echo '0') active"
-echo
-
-# Generate handoff information
-generate_handoff_info "$LOGIN_UNAME" "$USER_PASSWORD" "$SERVER_IP"
-
-# Save handoff info
-cat > "/root/handoff_info.txt" << EOF
-User: $LOGIN_UNAME
-Password: $USER_PASSWORD
-Server IP: $SERVER_IP
-SSH Port: $YourSSHPortNumber
-SSH Command: $SSH_CMD
-Next Step: ./run_2.sh
-Generated: $(date)
-EOF
-
-chmod 600 "/root/handoff_info.txt"
+# Generate and save handoff information
+generate_handoff_info "$LOGIN_UNAME" "$USER_PASSWORD" "$SERVER_IP" "$YourSSHPortNumber"
 
 log_info "=== SETUP COMPLETE ==="
 log_info "Reboot required: sudo reboot"
-log_info "After reboot: $SSH_CMD"
-log_info "Then run: ./run_2.sh"
+log_info "Handoff info saved to /root/handoff_info.txt"

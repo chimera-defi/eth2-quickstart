@@ -225,9 +225,37 @@ for func_name in setup_security_monitoring setup_intrusion_detection; do
     fi
 done
 
+# Test 18: Verify run_1.sh does not duplicate AIDE setup
+# consolidated_security.sh already sets up AIDE via setup_aide()
+log_info "Test 18: Verify no duplicate AIDE setup..."
+if grep -q "setup_intrusion_detection" "$PROJECT_ROOT/run_1.sh"; then
+    log_error "  run_1.sh calls setup_intrusion_detection — duplicates AIDE from consolidated_security.sh!"
+    exit 1
+else
+    log_info "  No duplicate AIDE setup in run_1.sh (handled by consolidated_security.sh)"
+fi
+
+# Test 19: Verify consolidated_security.sh uses SCRIPT_DIR not relative paths
+log_info "Test 19: Verify consolidated_security.sh path resolution..."
+if grep -q 'source \.\./\.\.' "$PROJECT_ROOT/install/security/consolidated_security.sh"; then
+    log_error "  consolidated_security.sh uses fragile relative source paths!"
+    exit 1
+else
+    log_info "  consolidated_security.sh uses reliable path resolution"
+fi
+
+# Test 20: Verify generate_handoff_info includes SSH port parameter
+log_info "Test 20: Verify handoff info includes SSH port..."
+if declare -f generate_handoff_info | grep -q "ssh_port"; then
+    log_info "  generate_handoff_info handles SSH port"
+else
+    log_error "  generate_handoff_info does NOT handle SSH port!"
+    exit 1
+fi
+
 log_info "╔════════════════════════════════════════════════════════════════╗"
 log_info "║  run_1.sh CI Test PASSED                                      ║"
 log_info "║  Validated: Structure, syntax, functions, SSH safety,         ║"
-log_info "║  lockout prevention, idempotency                              ║"
+log_info "║  lockout prevention, idempotency, no duplicates               ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 exit 0
