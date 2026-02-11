@@ -72,14 +72,14 @@ test_input_validation() {
 # Test 3: File Permissions
 test_file_permissions() {
     log_info "Testing file permissions..."
-    
+
     local issues_found=0
-    
-    # Test secure_file_permissions function
+
+    # Test direct chmod (secure_file_permissions was removed as dead code)
     local test_file="/tmp/security_test_file"
     echo "test" > "$test_file"
-    secure_file_permissions "$test_file" 600
-    
+    chmod 600 "$test_file"
+
     local perms
     perms=$(stat -c "%a" "$test_file")
     if [[ "$perms" == "600" ]]; then
@@ -88,7 +88,7 @@ test_file_permissions() {
         log_error "File permissions not set correctly: $perms"
         issues_found=$((issues_found + 1))
     fi
-    
+
     rm -f "$test_file"
     return $issues_found
 }
@@ -96,25 +96,17 @@ test_file_permissions() {
 # Test 4: Error Handling
 test_error_handling() {
     log_info "Testing error handling..."
-    
+
     local issues_found=0
-    
-    # Test secure_error_handling function (no parameters, sets up trap)
-    if secure_error_handling >/dev/null 2>&1; then
-        log_info "✓ secure_error_handling works correctly"
+
+    # Verify set -Eeuo pipefail is active (the project's error handling mechanism)
+    if [[ -o errexit ]] && [[ -o nounset ]] && [[ -o pipefail ]]; then
+        log_info "✓ errexit, nounset, pipefail are active"
     else
-        log_error "secure_error_handling failed"
+        log_error "Shell safety flags not active"
         issues_found=$((issues_found + 1))
     fi
-    
-    # Test safe_command_execution function (takes command string)
-    if safe_command_execution "echo test" >/dev/null 2>&1; then
-        log_info "✓ safe_command_execution works correctly"
-    else
-        log_error "safe_command_execution failed"
-        issues_found=$((issues_found + 1))
-    fi
-    
+
     return $issues_found
 }
 

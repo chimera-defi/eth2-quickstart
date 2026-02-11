@@ -315,11 +315,6 @@ This document provides a comprehensive reference for all functions available in 
 **Parameters:** None  
 **Usage:** `setup_security_monitoring`
 
-#### `setup_intrusion_detection()`
-**Purpose:** Set up intrusion detection system  
-**Parameters:** None  
-**Usage:** `setup_intrusion_detection`
-
 #### `apply_network_security()`
 **Purpose:** Apply network security configurations  
 **Parameters:** None  
