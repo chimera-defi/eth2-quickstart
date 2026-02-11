@@ -246,7 +246,7 @@ secure_download() {
     local retry_count=0
     
     while [[ $retry_count -lt $max_retries ]]; do
-        if wget --timeout=30 --tries=1 --no-check-certificate -O "$output" "$url" 2>/dev/null; then
+        if wget --timeout=30 --tries=1 -O "$output" "$url" 2>/dev/null; then
             log_info "Successfully downloaded: $output"
             return 0
         fi
@@ -528,24 +528,25 @@ generate_secure_password() {
 }
 
 # Secure user creation and setup
+# Automatically migrates root's SSH authorized_keys to the new user
 setup_secure_user() {
     local username="$1"
     local password="$2"
     local ssh_key_file="${3:-}"
-    
+
     log_info "Setting up secure user: $username"
-    
+
     # Create user if it doesn't exist
     if ! id -u "$username" >/dev/null 2>&1; then
         log_info "Creating user: $username"
-        if ! sudo useradd -m -d "/home/$username" -s /bin/bash "$username"; then
+        if ! useradd -m -d "/home/$username" -s /bin/bash "$username"; then
             log_error "Failed to create user: $username"
             return 1
         fi
     else
         log_info "User $username already exists"
     fi
-    
+
     # Set password
     if [[ -n "$password" ]]; then
         log_info "Setting password for user: $username"
@@ -554,89 +555,133 @@ setup_secure_user() {
             return 1
         fi
     fi
-    
+
     # Setup SSH directory
     local ssh_dir="/home/$username/.ssh"
-    sudo mkdir -p "$ssh_dir"
-    sudo chown "$username:$username" "$ssh_dir"
-    sudo chmod 700 "$ssh_dir"
-    
-    # Copy SSH keys if provided
+    mkdir -p "$ssh_dir"
+
+    # Copy SSH keys if explicitly provided
     if [[ -n "$ssh_key_file" && -f "$ssh_key_file" ]]; then
-        sudo cp "$ssh_key_file" "$ssh_dir/authorized_keys"
-        sudo chown "$username:$username" "$ssh_dir/authorized_keys"
-        sudo chmod 600 "$ssh_dir/authorized_keys"
-        log_info "SSH key copied for user: $username"
+        cp "$ssh_key_file" "$ssh_dir/authorized_keys"
+        log_info "SSH key copied from provided file for user: $username"
     fi
-    
-    log_info "✓ User $username setup complete"
+
+    # CRITICAL: Migrate root's SSH authorized_keys to the new user
+    # This prevents lockout when PermitRootLogin is later restricted
+    if [[ -f /root/.ssh/authorized_keys ]] && [[ -s /root/.ssh/authorized_keys ]]; then
+        if [[ -f "$ssh_dir/authorized_keys" ]]; then
+            # Merge: append root's keys that aren't already present
+            while IFS= read -r key; do
+                [[ -z "$key" || "$key" =~ ^# ]] && continue
+                if ! grep -Fqx "$key" "$ssh_dir/authorized_keys" 2>/dev/null; then
+                    echo "$key" >> "$ssh_dir/authorized_keys"
+                fi
+            done < /root/.ssh/authorized_keys
+        else
+            cp /root/.ssh/authorized_keys "$ssh_dir/authorized_keys"
+        fi
+        log_info "Root SSH authorized_keys migrated to user: $username"
+    else
+        log_warn "No root SSH keys found to migrate to $username"
+        log_warn "Ensure you can authenticate as $username before restricting root access"
+    fi
+
+    # Set correct ownership and permissions
+    chown -R "$username:$username" "$ssh_dir"
+    chmod 700 "$ssh_dir"
+    if [[ -f "$ssh_dir/authorized_keys" ]]; then
+        chmod 600 "$ssh_dir/authorized_keys"
+    fi
+
+    log_info "User $username setup complete"
+}
+
+# Detect the correct SSH service name (ssh on Ubuntu 22.04+, sshd on older/other distros)
+get_ssh_service_name() {
+    if systemctl list-unit-files ssh.service &>/dev/null && systemctl list-unit-files ssh.service 2>/dev/null | grep -q "ssh.service"; then
+        echo "ssh"
+    else
+        echo "sshd"
+    fi
 }
 
 # Configure SSH with security hardening
+# Uses the hardened configs/sshd_config template with port substitution
 configure_ssh() {
     local ssh_port="$1"
-    
-    log_info "Configuring SSH security hardening..."
-    
-    # Backup original SSH config
-    sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
-    
-    # Create secure SSH configuration
-    cat > /etc/ssh/sshd_config << EOF
-# SSH Security Configuration
-Port $ssh_port
-Protocol 2
-PermitRootLogin no
-PasswordAuthentication yes
-PubkeyAuthentication yes
-AuthorizedKeysFile .ssh/authorized_keys
-PermitEmptyPasswords no
-MaxAuthTries 3
-MaxSessions 2
-ClientAliveInterval 300
-ClientAliveCountMax 2
-LoginGraceTime 60
-Banner /etc/ssh/banner
-AllowUsers $LOGIN_UNAME
-X11Forwarding no
-AllowTcpForwarding no
-GatewayPorts no
-PermitTunnel no
-ChrootDirectory none
-UsePAM yes
-PrintMotd no
-PrintLastLog yes
-TCPKeepAlive yes
-Compression no
-SyslogFacility AUTH
-LogLevel INFO
-StrictModes yes
-IgnoreRhosts yes
-IgnoreUserKnownHosts yes
-RhostsRSAAuthentication no
-HostbasedAuthentication no
-PermitUserEnvironment no
-Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
-MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha2-256,hmac-sha2-512
-KexAlgorithms curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group14-sha256
-EOF
+    local project_root="${2:-}"
 
-    # Create SSH banner
-    cat > /etc/ssh/banner << EOF
-***************************************************************************
-*                                                                         *
-*  WARNING: This system is for authorized users only. All activities     *
-*  are logged and monitored. Unauthorized access is prohibited.          *
-*                                                                         *
-***************************************************************************
-EOF
+    log_info "Configuring SSH security hardening on port $ssh_port..."
 
-    # Restart SSH service
-    sudo systemctl restart sshd
-    if sudo systemctl is-active --quiet sshd; then
-        log_info "✓ SSH configured and restarted successfully"
+    # Resolve project root if not passed
+    if [[ -z "$project_root" ]]; then
+        project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    fi
+
+    local config_template="$project_root/configs/sshd_config"
+    local banner_file="$project_root/configs/ssh_banner"
+
+    # Validate template exists
+    if [[ ! -f "$config_template" ]]; then
+        log_error "SSH config template not found: $config_template"
+        return 1
+    fi
+
+    # Backup original SSH config (only if no backup exists yet)
+    if [[ ! -f /etc/ssh/sshd_config.backup ]]; then
+        cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
+        log_info "Original SSH config backed up to /etc/ssh/sshd_config.backup"
+    fi
+
+    # Deploy the hardened config template with port substitution
+    cp "$config_template" /etc/ssh/sshd_config
+    sed -i "s/^Port .*/Port $ssh_port/" /etc/ssh/sshd_config
+
+    # CRITICAL: During Phase 1, allow BOTH root (key-only) and the new user
+    # This prevents lockout. Root access can be removed later in Phase 2
+    # after verifying the new user can log in successfully.
+    # PermitRootLogin is already "prohibit-password" in the template (key-only).
+    # Do NOT add AllowUsers here — it would lock out root before key migration.
+
+    # Deploy SSH banner
+    if [[ -f "$banner_file" ]]; then
+        cp "$banner_file" /etc/ssh/ssh_banner
+        log_info "SSH banner deployed"
     else
-        log_error "Failed to restart SSH service"
+        log_warn "SSH banner file not found: $banner_file"
+    fi
+
+    # Set secure permissions
+    chmod 600 /etc/ssh/sshd_config
+
+    # Validate the new config before applying
+    if ! sshd -t 2>/dev/null; then
+        log_error "SSH config validation failed! Restoring backup."
+        cp /etc/ssh/sshd_config.backup /etc/ssh/sshd_config
+        return 1
+    fi
+    log_info "SSH config validation passed"
+
+    # Detect correct service name and reload (not restart, to preserve active sessions)
+    local ssh_service
+    ssh_service=$(get_ssh_service_name)
+
+    if systemctl reload "$ssh_service" 2>/dev/null; then
+        log_info "SSH service reloaded successfully ($ssh_service)"
+    elif systemctl restart "$ssh_service" 2>/dev/null; then
+        log_warn "SSH reload failed, restarted $ssh_service instead"
+    else
+        log_error "Failed to reload/restart SSH service ($ssh_service)"
+        return 1
+    fi
+
+    if systemctl is-active --quiet "$ssh_service"; then
+        log_info "SSH configured and running on port $ssh_port"
+    else
+        log_error "SSH service is not running after configuration!"
+        log_error "Restoring backup config..."
+        cp /etc/ssh/sshd_config.backup /etc/ssh/sshd_config
+        systemctl restart "$ssh_service" 2>/dev/null
         return 1
     fi
 }
@@ -644,87 +689,115 @@ EOF
 # Configure sudo without password for specific user
 configure_sudo_nopasswd() {
     local username="$1"
-    
+
     log_info "Configuring sudo without password for user: $username"
-    
+
     # Add user to sudo group
-    sudo usermod -aG sudo "$username"
-    
+    usermod -aG sudo "$username"
+
     # Create sudoers file for the user
     cat > "/etc/sudoers.d/$username" << EOF
 $username ALL=(ALL) NOPASSWD:ALL
 EOF
 
-    sudo chmod 440 "/etc/sudoers.d/$username"
-    log_info "✓ Sudo configured for user: $username"
+    chmod 440 "/etc/sudoers.d/$username"
+
+    # Validate sudoers syntax
+    if visudo -cf "/etc/sudoers.d/$username" >/dev/null 2>&1; then
+        log_info "Sudo configured for user: $username"
+    else
+        log_error "Invalid sudoers syntax for $username, removing file"
+        rm -f "/etc/sudoers.d/$username"
+        return 1
+    fi
 }
 
 
-# Generate and display secure handoff information
+# Generate, display, and save secure handoff information
+# Also saves to /root/handoff_info.txt with restricted permissions
 generate_handoff_info() {
     local username="$1"
     local password="$2"
     local server_ip="$3"
-    
-    log_info "Generating secure handoff information..."
-    
-    cat << EOF
+    local ssh_port="${4:-22}"
 
+    local ssh_cmd="ssh $username@$server_ip"
+    if [[ "$ssh_port" != "22" ]]; then
+        ssh_cmd="ssh -p $ssh_port $username@$server_ip"
+    fi
+
+    log_info "Generating secure handoff information..."
+
+    local handoff_text
+    handoff_text=$(cat << EOF
 === SECURE HANDOFF INFORMATION ===
 Username: $username
 Password: $password
 Server IP: $server_ip
-SSH Command: ssh $username@$server_ip
+SSH Port: $ssh_port
+SSH Command: $ssh_cmd
 Next Step: ./run_2.sh
 
-IMPORTANT SECURITY NOTES:
-- Change the password immediately after first login
-- Consider setting up SSH key authentication
-- Keep this information secure and private
-- Delete this file after noting the information
+IMPORTANT: SSH key authentication is required.
+Root's SSH keys have been migrated to this user.
+Password is for sudo/console access only.
+Delete /root/handoff_info.txt after noting this information.
 
 Generated: $(date)
 =====================================
-
 EOF
+)
+
+    # Display to console
+    echo ""
+    echo "$handoff_text"
+    echo ""
+
+    # Save to file with restricted permissions
+    echo "$handoff_text" > /root/handoff_info.txt
+    chmod 600 /root/handoff_info.txt
+
+    log_info "After reboot: $ssh_cmd"
+    log_info "Then run: ./run_2.sh"
 }
 
 # Security configuration functions
 secure_config_files() {
     log_info "Securing configuration files..."
-    
+
     # Set secure permissions on configuration files
-    find /etc -name "*.conf" -type f -exec sudo chmod 644 {} \; 2>/dev/null || true
-    find /etc -name "*.cfg" -type f -exec sudo chmod 644 {} \; 2>/dev/null || true
-    find /etc -name "*.yaml" -type f -exec sudo chmod 644 {} \; 2>/dev/null || true
-    find /etc -name "*.yml" -type f -exec sudo chmod 644 {} \; 2>/dev/null || true
-    find /etc -name "*.json" -type f -exec sudo chmod 644 {} \; 2>/dev/null || true
-    find /etc -name "*.toml" -type f -exec sudo chmod 644 {} \; 2>/dev/null || true
-    
+    find /etc -name "*.conf" -type f -exec chmod 644 {} \; 2>/dev/null || true
+    find /etc -name "*.cfg" -type f -exec chmod 644 {} \; 2>/dev/null || true
+    find /etc -name "*.yaml" -type f -exec chmod 644 {} \; 2>/dev/null || true
+    find /etc -name "*.yml" -type f -exec chmod 644 {} \; 2>/dev/null || true
+    find /etc -name "*.json" -type f -exec chmod 644 {} \; 2>/dev/null || true
+    find /etc -name "*.toml" -type f -exec chmod 644 {} \; 2>/dev/null || true
+
     # Secure sensitive files
     if [[ -f "/etc/ssh/sshd_config" ]]; then
-        sudo chmod 600 /etc/ssh/sshd_config
+        chmod 600 /etc/ssh/sshd_config
     fi
-    
+
     if [[ -f "/etc/sudoers" ]]; then
-        sudo chmod 440 /etc/sudoers
+        chmod 440 /etc/sudoers
     fi
-    
-    log_info "✓ Configuration files secured"
+
+    log_info "Configuration files secured"
 }
 
 apply_network_security() {
     log_info "Applying network security settings..."
-    
-    # Disable unnecessary network services
-    sudo systemctl disable bluetooth 2>/dev/null || true
-    sudo systemctl disable cups 2>/dev/null || true
-    sudo systemctl disable avahi-daemon 2>/dev/null || true
-    
-    # Configure kernel parameters for security
-    cat >> /etc/sysctl.conf << EOF
 
-# Network security settings
+    # Disable unnecessary network services
+    systemctl disable bluetooth 2>/dev/null || true
+    systemctl disable cups 2>/dev/null || true
+    systemctl disable avahi-daemon 2>/dev/null || true
+
+    # Configure kernel parameters for security using a drop-in file
+    # Using /etc/sysctl.d/ avoids duplication issues with appending to sysctl.conf
+    local sysctl_file="/etc/sysctl.d/99-eth2-hardening.conf"
+    cat > "$sysctl_file" << 'EOF'
+# Network security settings - eth2-quickstart hardening
 net.ipv4.conf.all.send_redirects = 0
 net.ipv4.conf.default.send_redirects = 0
 net.ipv4.conf.all.accept_redirects = 0
@@ -741,18 +814,18 @@ net.ipv4.conf.default.rp_filter = 1
 net.ipv6.conf.all.accept_redirects = 0
 net.ipv6.conf.default.accept_redirects = 0
 EOF
-    
+
     # Apply sysctl settings
-    sudo sysctl -p >/dev/null 2>&1 || true
-    
-    log_info "✓ Network security applied"
+    sysctl --system >/dev/null 2>&1 || true
+
+    log_info "Network security applied"
 }
 
 setup_security_monitoring() {
     log_info "Setting up security monitoring..."
-    
+
     # Create security monitoring script
-    sudo tee /usr/local/bin/security_monitor.sh > /dev/null << 'EOF'
+    tee /usr/local/bin/security_monitor.sh > /dev/null << 'EOF'
 #!/bin/bash
 # Security monitoring script
 
@@ -782,32 +855,37 @@ fi
 
 echo "[$DATE] Security monitoring check complete" >> "$LOG_FILE"
 EOF
-    
-    sudo chmod +x /usr/local/bin/security_monitor.sh
-    
-    # Add to crontab for regular monitoring
-    (crontab -l 2>/dev/null; echo "*/15 * * * * /usr/local/bin/security_monitor.sh") | crontab - 2>/dev/null || true
-    
-    log_info "✓ Security monitoring setup complete"
+
+    chmod +x /usr/local/bin/security_monitor.sh
+
+    # Add to crontab (idempotent — only adds if not already present)
+    local cron_entry="*/15 * * * * /usr/local/bin/security_monitor.sh"
+    if ! crontab -l 2>/dev/null | grep -Fq "/usr/local/bin/security_monitor.sh"; then
+        (crontab -l 2>/dev/null; echo "$cron_entry") | crontab - 2>/dev/null || true
+    fi
+
+    log_info "Security monitoring setup complete"
 }
 
 setup_intrusion_detection() {
     log_info "Setting up intrusion detection..."
-    
+
     # Install AIDE if not present
     if ! command_exists aide; then
-        sudo apt-get update
-        sudo apt-get install -y aide
+        apt-get update
+        apt-get install -y aide
     fi
-    
+
     # Initialize AIDE database if it doesn't exist
     if [[ ! -f "/var/lib/aide/aide.db" ]]; then
-        sudo aideinit
-        sudo mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+        aideinit
+        if [[ -f /var/lib/aide/aide.db.new ]]; then
+            mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+        fi
     fi
-    
+
     # Create AIDE check script
-    sudo tee /usr/local/bin/aide_check.sh > /dev/null << 'EOF'
+    tee /usr/local/bin/aide_check.sh > /dev/null << 'EOF'
 #!/bin/bash
 # AIDE intrusion detection check
 
@@ -816,7 +894,7 @@ DATE=$(date '+%Y-%m-%d %H:%M:%S')
 
 echo "[$DATE] Running AIDE check..." >> "$LOG_FILE"
 
-if sudo aide --check >> "$LOG_FILE" 2>&1; then
+if aide --check >> "$LOG_FILE" 2>&1; then
     echo "[$DATE] AIDE check passed - no changes detected" >> "$LOG_FILE"
 else
     echo "[$DATE] WARNING: AIDE detected changes in system files" >> "$LOG_FILE"
@@ -824,13 +902,16 @@ fi
 
 echo "[$DATE] AIDE check complete" >> "$LOG_FILE"
 EOF
-    
-    sudo chmod +x /usr/local/bin/aide_check.sh
-    
-    # Add to crontab for daily checks
-    (crontab -l 2>/dev/null; echo "0 2 * * * /usr/local/bin/aide_check.sh") | crontab - 2>/dev/null || true
-    
-    log_info "✓ Intrusion detection setup complete"
+
+    chmod +x /usr/local/bin/aide_check.sh
+
+    # Add to crontab (idempotent — only adds if not already present)
+    local cron_entry="0 2 * * * /usr/local/bin/aide_check.sh"
+    if ! crontab -l 2>/dev/null | grep -Fq "/usr/local/bin/aide_check.sh"; then
+        (crontab -l 2>/dev/null; echo "$cron_entry") | crontab - 2>/dev/null || true
+    fi
+
+    log_info "Intrusion detection setup complete"
 }
 
 # Additional security functions required by validation
