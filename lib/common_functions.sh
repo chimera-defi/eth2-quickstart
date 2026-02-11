@@ -876,62 +876,13 @@ EOF
     log_info "Security monitoring setup complete"
 }
 
-# DEPRECATED: Superseded by setup_aide() in install/security/consolidated_security.sh
-# Retained for test/validation script compatibility (test/run_tests.sh, docs/validate_security_safe.sh)
-# Do NOT call from run_1.sh — AIDE is handled by consolidated_security.sh
-setup_intrusion_detection() {
-    log_info "Setting up intrusion detection..."
 
-    # Install AIDE if not present
-    if ! command_exists aide; then
-        apt-get update
-        apt-get install -y aide
-    fi
-
-    # Initialize AIDE database if it doesn't exist
-    if [[ ! -f "/var/lib/aide/aide.db" ]]; then
-        aideinit
-        if [[ -f /var/lib/aide/aide.db.new ]]; then
-            mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
-        fi
-    fi
-
-    # Create AIDE check script
-    tee /usr/local/bin/aide_check.sh > /dev/null << 'EOF'
-#!/bin/bash
-# AIDE intrusion detection check
-
-LOG_FILE="/var/log/aide_check.log"
-DATE=$(date '+%Y-%m-%d %H:%M:%S')
-
-echo "[$DATE] Running AIDE check..." >> "$LOG_FILE"
-
-if aide --check >> "$LOG_FILE" 2>&1; then
-    echo "[$DATE] AIDE check passed - no changes detected" >> "$LOG_FILE"
-else
-    echo "[$DATE] WARNING: AIDE detected changes in system files" >> "$LOG_FILE"
-fi
-
-echo "[$DATE] AIDE check complete" >> "$LOG_FILE"
-EOF
-
-    chmod +x /usr/local/bin/aide_check.sh
-
-    # Add to crontab (idempotent — only adds if not already present)
-    local cron_entry="0 2 * * * /usr/local/bin/aide_check.sh"
-    if ! crontab -l 2>/dev/null | grep -Fq "/usr/local/bin/aide_check.sh"; then
-        (crontab -l 2>/dev/null; echo "$cron_entry") | crontab - 2>/dev/null || true
-    fi
-
-    log_info "Intrusion detection setup complete"
-}
-
-# Additional security functions required by validation
+# validate_user_input remains — used by install scripts for interactive input
 validate_user_input() {
     local input="$1"
     local max_length="${2:-50}"
     local min_length="${3:-1}"
-    
+
     # Handle empty parameters
     if [[ -z "$max_length" ]]; then
         max_length=50
@@ -939,54 +890,18 @@ validate_user_input() {
     if [[ -z "$min_length" ]]; then
         min_length=1
     fi
-    
+
     # Check length
     if [[ ${#input} -lt $min_length ]] || [[ ${#input} -gt $max_length ]]; then
         return 1
     fi
-    
+
     # Check for dangerous characters using grep
     if echo "$input" | grep -q '[<>"'\'';&|`$]'; then
         return 1
     fi
-    
+
     return 0
-}
-
-secure_error_handling() {
-    # Set up secure error handling
-    set -Eeuo pipefail
-    trap 'log_error "Error in line $LINENO: $BASH_COMMAND"' ERR
-}
-
-safe_command_execution() {
-    local command="$1"
-    
-    # Validate command before execution using grep
-    if echo "$command" | grep -q '[;&|`$]'; then
-        log_error "Unsafe command detected: $command"
-        return 1
-    fi
-    
-    # Execute command safely
-    if eval "$command" 2>/dev/null; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-secure_file_permissions() {
-    local file="$1"
-    local permissions="${2:-600}"
-    
-    if [[ -f "$file" ]]; then
-        sudo chmod "$permissions" "$file"
-        log_info "Set permissions $permissions on $file"
-    else
-        log_error "File not found: $file"
-        return 1
-    fi
 }
 
 # =============================================================================
