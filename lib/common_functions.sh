@@ -637,6 +637,19 @@ configure_ssh() {
     cp "$config_template" /etc/ssh/sshd_config
     sed -i "s/^Port .*/Port $ssh_port/" /etc/ssh/sshd_config
 
+    # Audit sshd_config.d drop-in directory: files here can override hardened settings
+    # The template includes "Include /etc/ssh/sshd_config.d/*.conf" (Ubuntu default)
+    if [[ -d /etc/ssh/sshd_config.d ]]; then
+        local dropin_count
+        dropin_count=$(find /etc/ssh/sshd_config.d -name "*.conf" -type f 2>/dev/null | wc -l)
+        if [[ "$dropin_count" -gt 0 ]]; then
+            log_warn "Found $dropin_count drop-in config(s) in /etc/ssh/sshd_config.d/ that may override hardened settings"
+            find /etc/ssh/sshd_config.d -name "*.conf" -type f -exec basename {} \; 2>/dev/null | while read -r f; do
+                log_warn "  Drop-in: $f"
+            done
+        fi
+    fi
+
     # CRITICAL: During Phase 1, allow BOTH root (key-only) and the new user
     # This prevents lockout. Root access can be removed later in Phase 2
     # after verifying the new user can log in successfully.
@@ -765,13 +778,9 @@ EOF
 secure_config_files() {
     log_info "Securing configuration files..."
 
-    # Set secure permissions on configuration files
-    find /etc -name "*.conf" -type f -exec chmod 644 {} \; 2>/dev/null || true
-    find /etc -name "*.cfg" -type f -exec chmod 644 {} \; 2>/dev/null || true
-    find /etc -name "*.yaml" -type f -exec chmod 644 {} \; 2>/dev/null || true
-    find /etc -name "*.yml" -type f -exec chmod 644 {} \; 2>/dev/null || true
-    find /etc -name "*.json" -type f -exec chmod 644 {} \; 2>/dev/null || true
-    find /etc -name "*.toml" -type f -exec chmod 644 {} \; 2>/dev/null || true
+    # Secure specific sensitive files (targeted, not a broad /etc sweep)
+    # Broad find /etc -name "*.conf" -exec chmod 644 removed: it could weaken
+    # permissions on files that should be more restrictive (shadow, DB configs, etc.)
 
     # Secure sensitive files
     if [[ -f "/etc/ssh/sshd_config" ]]; then
@@ -867,6 +876,9 @@ EOF
     log_info "Security monitoring setup complete"
 }
 
+# DEPRECATED: Superseded by setup_aide() in install/security/consolidated_security.sh
+# Retained for test/validation script compatibility (test/run_tests.sh, docs/validate_security_safe.sh)
+# Do NOT call from run_1.sh — AIDE is handled by consolidated_security.sh
 setup_intrusion_detection() {
     log_info "Setting up intrusion detection..."
 
