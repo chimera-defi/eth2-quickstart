@@ -253,9 +253,40 @@ else
     exit 1
 fi
 
+# Test 21: Verify both 127 and 172 private network ranges are blocked in firewall
+log_info "Test 21: Verify private network blocking (127 + 172)..."
+security_script="$PROJECT_ROOT/install/security/consolidated_security.sh"
+if grep -q '"127.0.0.0/8"' "$security_script"; then
+    log_info "  127.0.0.0/8 (loopback) is blocked"
+else
+    log_error "  MISSING: 127.0.0.0/8 loopback block!"
+    exit 1
+fi
+if grep -q '"127.16.0.0/12"' "$security_script"; then
+    log_info "  127.16.0.0/12 (loopback subset, from Erigon reference) is blocked"
+else
+    log_error "  MISSING: 127.16.0.0/12 block (was incorrectly removed as 'typo')!"
+    exit 1
+fi
+if grep -q '"172.16.0.0/12"' "$security_script"; then
+    log_info "  172.16.0.0/12 (private-use networks) is blocked"
+else
+    log_error "  MISSING: 172.16.0.0/12 private network block!"
+    exit 1
+fi
+
+# Test 22: Verify secure_config_files does NOT do broad /etc permission sweep
+log_info "Test 22: Verify secure_config_files is not overly broad..."
+if declare -f secure_config_files | grep -q 'find /etc.*chmod 644'; then
+    log_error "  secure_config_files does broad chmod 644 on /etc — can weaken sensitive file permissions!"
+    exit 1
+else
+    log_info "  secure_config_files uses targeted permission setting"
+fi
+
 log_info "╔════════════════════════════════════════════════════════════════╗"
 log_info "║  run_1.sh CI Test PASSED                                      ║"
 log_info "║  Validated: Structure, syntax, functions, SSH safety,         ║"
-log_info "║  lockout prevention, idempotency, no duplicates               ║"
+log_info "║  lockout prevention, idempotency, no duplicates, firewall     ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 exit 0
