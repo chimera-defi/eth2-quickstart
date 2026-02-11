@@ -713,33 +713,52 @@ EOF
 }
 
 
-# Generate and display secure handoff information
+# Generate, display, and save secure handoff information
+# Also saves to /root/handoff_info.txt with restricted permissions
 generate_handoff_info() {
     local username="$1"
     local password="$2"
     local server_ip="$3"
-    
-    log_info "Generating secure handoff information..."
-    
-    cat << EOF
+    local ssh_port="${4:-22}"
 
+    local ssh_cmd="ssh $username@$server_ip"
+    if [[ "$ssh_port" != "22" ]]; then
+        ssh_cmd="ssh -p $ssh_port $username@$server_ip"
+    fi
+
+    log_info "Generating secure handoff information..."
+
+    local handoff_text
+    handoff_text=$(cat << EOF
 === SECURE HANDOFF INFORMATION ===
 Username: $username
 Password: $password
 Server IP: $server_ip
-SSH Command: ssh $username@$server_ip
+SSH Port: $ssh_port
+SSH Command: $ssh_cmd
 Next Step: ./run_2.sh
 
-IMPORTANT SECURITY NOTES:
-- Change the password immediately after first login
-- Consider setting up SSH key authentication
-- Keep this information secure and private
-- Delete this file after noting the information
+IMPORTANT: SSH key authentication is required.
+Root's SSH keys have been migrated to this user.
+Password is for sudo/console access only.
+Delete /root/handoff_info.txt after noting this information.
 
 Generated: $(date)
 =====================================
-
 EOF
+)
+
+    # Display to console
+    echo ""
+    echo "$handoff_text"
+    echo ""
+
+    # Save to file with restricted permissions
+    echo "$handoff_text" > /root/handoff_info.txt
+    chmod 600 /root/handoff_info.txt
+
+    log_info "After reboot: $ssh_cmd"
+    log_info "Then run: ./run_2.sh"
 }
 
 # Security configuration functions

@@ -3,12 +3,11 @@
 # Consolidated Security Setup Script
 # Combines firewall, fail2ban, and AIDE into one efficient script
 
-# Source configuration files
-source ../../exports.sh
-source ../../lib/common_functions.sh
-
-# Get script directories
-get_script_directories
+# Source configuration files using SCRIPT_DIR for reliable path resolution
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+source "$PROJECT_ROOT/exports.sh"
+source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Check if running as root
 require_root
