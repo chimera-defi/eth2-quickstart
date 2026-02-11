@@ -123,8 +123,111 @@ else
     log_warn "  ⚠ User creation had issues"
 fi
 
+# Test 9: Verify SSH config template exists and is valid
+log_info "Test 9: Verify SSH config template..."
+assert_file_exists "$PROJECT_ROOT/configs/sshd_config" "configs/sshd_config"
+assert_file_exists "$PROJECT_ROOT/configs/ssh_banner" "configs/ssh_banner"
+
+# Test 10: Verify SSH config template does NOT contain AllowUsers
+# AllowUsers in the template would lock out admins before key migration
+log_info "Test 10: Verify SSH config won't cause lockout..."
+if grep -q "^AllowUsers" "$PROJECT_ROOT/configs/sshd_config"; then
+    log_error "  CRITICAL: configs/sshd_config contains AllowUsers — this causes lockout!"
+    exit 1
+else
+    log_info "  No AllowUsers directive in template (safe)"
+fi
+
+# Verify PermitRootLogin is not set to 'no' (should be 'prohibit-password' for key-only)
+root_login=$(grep "^PermitRootLogin" "$PROJECT_ROOT/configs/sshd_config" | awk '{print $2}')
+if [[ "$root_login" == "no" ]]; then
+    log_error "  CRITICAL: PermitRootLogin is 'no' — root lockout risk!"
+    exit 1
+elif [[ "$root_login" == "prohibit-password" ]]; then
+    log_info "  PermitRootLogin is 'prohibit-password' (key-only, safe)"
+else
+    log_warn "  PermitRootLogin is '$root_login' (verify this is intended)"
+fi
+
+# Verify PasswordAuthentication setting
+pw_auth=$(grep "^PasswordAuthentication" "$PROJECT_ROOT/configs/sshd_config" | awk '{print $2}')
+log_info "  PasswordAuthentication is '$pw_auth'"
+
+# Test 11: Verify configure_ssh uses template not inline config
+log_info "Test 11: Verify configure_ssh uses template file..."
+if declare -f configure_ssh | grep -q "configs/sshd_config"; then
+    log_info "  configure_ssh references configs/sshd_config template"
+else
+    log_error "  configure_ssh does NOT use the template file!"
+    exit 1
+fi
+
+# Test 12: Verify configure_ssh validates config before applying
+log_info "Test 12: Verify configure_ssh validates before applying..."
+if declare -f configure_ssh | grep -q "sshd -t"; then
+    log_info "  configure_ssh validates config with sshd -t"
+else
+    log_error "  configure_ssh does NOT validate config before applying!"
+    exit 1
+fi
+
+# Test 13: Verify get_ssh_service_name function exists
+log_info "Test 13: Verify SSH service detection..."
+if declare -f get_ssh_service_name >/dev/null 2>&1; then
+    log_info "  get_ssh_service_name function exists"
+else
+    log_error "  Missing function: get_ssh_service_name"
+    exit 1
+fi
+
+# Test 14: Verify setup_secure_user migrates SSH keys
+log_info "Test 14: Verify SSH key migration logic..."
+if declare -f setup_secure_user | grep -q "root/.ssh/authorized_keys"; then
+    log_info "  setup_secure_user migrates root SSH keys"
+else
+    log_error "  setup_secure_user does NOT migrate root SSH keys — lockout risk!"
+    exit 1
+fi
+
+# Test 15: Verify run_1.sh creates user BEFORE configuring SSH
+log_info "Test 15: Verify user creation order in run_1.sh..."
+user_setup_line=$(grep -n "setup_secure_user" "$PROJECT_ROOT/run_1.sh" | head -1 | cut -d: -f1)
+ssh_config_line=$(grep -n "configure_ssh" "$PROJECT_ROOT/run_1.sh" | head -1 | cut -d: -f1)
+if [[ -n "$user_setup_line" && -n "$ssh_config_line" ]]; then
+    if [[ "$user_setup_line" -lt "$ssh_config_line" ]]; then
+        log_info "  User created (line $user_setup_line) before SSH hardened (line $ssh_config_line)"
+    else
+        log_error "  CRITICAL: SSH hardened before user created — lockout risk!"
+        exit 1
+    fi
+else
+    log_error "  Could not find setup_secure_user or configure_ssh in run_1.sh"
+    exit 1
+fi
+
+# Test 16: Verify sysctl uses drop-in file not appending to sysctl.conf
+log_info "Test 16: Verify sysctl idempotency..."
+if declare -f apply_network_security | grep -q "sysctl.d"; then
+    log_info "  apply_network_security uses /etc/sysctl.d/ drop-in file"
+else
+    log_error "  apply_network_security appends to sysctl.conf — duplicates on re-run!"
+    exit 1
+fi
+
+# Test 17: Verify crontab additions are idempotent
+log_info "Test 17: Verify crontab idempotency..."
+for func_name in setup_security_monitoring setup_intrusion_detection; do
+    if declare -f "$func_name" | grep -q "grep.*-Fq"; then
+        log_info "  $func_name checks for existing crontab entry"
+    else
+        log_error "  $func_name does NOT check for existing crontab entry — duplicates!"
+        exit 1
+    fi
+done
+
 log_info "╔════════════════════════════════════════════════════════════════╗"
-log_info "║  ✓ run_1.sh CI Test PASSED                                    ║"
-log_info "║  Validated: Structure, syntax, functions, basic operations    ║"
+log_info "║  run_1.sh CI Test PASSED                                      ║"
+log_info "║  Validated: Structure, syntax, functions, SSH safety,         ║"
+log_info "║  lockout prevention, idempotency                              ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 exit 0

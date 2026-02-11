@@ -163,8 +163,8 @@ Banner /etc/ssh/ssh_banner
 # PrintMotd: Disable message of the day
 PrintMotd no
 
-# ChallengeResponseAuthentication: Disable challenge-response
-ChallengeResponseAuthentication no
+# Note: ChallengeResponseAuthentication is deprecated in OpenSSH 8.7+
+# KbdInteractiveAuthentication (set above) is the modern replacement
 
 # Example of overriding settings on a per-user basis
 #Match User anoncvs
