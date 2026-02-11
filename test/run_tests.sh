@@ -270,7 +270,6 @@ run_source_verification() {
         "secure_config_files"
         "apply_network_security"
         "setup_security_monitoring"
-        "setup_intrusion_detection"
         "log_installation_start"
         "log_installation_complete"
         "display_client_setup_info"

@@ -216,23 +216,26 @@ fi
 
 # Test 17: Verify crontab additions are idempotent
 log_info "Test 17: Verify crontab idempotency..."
-for func_name in setup_security_monitoring setup_intrusion_detection; do
-    if declare -f "$func_name" | grep -q "grep.*-Fq"; then
-        log_info "  $func_name checks for existing crontab entry"
-    else
-        log_error "  $func_name does NOT check for existing crontab entry — duplicates!"
-        exit 1
-    fi
-done
+if declare -f setup_security_monitoring | grep -q "grep.*-Fq"; then
+    log_info "  setup_security_monitoring checks for existing crontab entry"
+else
+    log_error "  setup_security_monitoring does NOT check for existing crontab entry — duplicates!"
+    exit 1
+fi
 
-# Test 18: Verify run_1.sh does not duplicate AIDE setup
-# consolidated_security.sh already sets up AIDE via setup_aide()
+# Test 18: Verify dead AIDE function was removed and not called
 log_info "Test 18: Verify no duplicate AIDE setup..."
 if grep -q "setup_intrusion_detection" "$PROJECT_ROOT/run_1.sh"; then
     log_error "  run_1.sh calls setup_intrusion_detection — duplicates AIDE from consolidated_security.sh!"
     exit 1
 else
     log_info "  No duplicate AIDE setup in run_1.sh (handled by consolidated_security.sh)"
+fi
+if declare -f setup_intrusion_detection >/dev/null 2>&1; then
+    log_error "  setup_intrusion_detection still defined — should be removed (dead code)"
+    exit 1
+else
+    log_info "  setup_intrusion_detection removed from common_functions.sh"
 fi
 
 # Test 19: Verify consolidated_security.sh uses SCRIPT_DIR not relative paths
