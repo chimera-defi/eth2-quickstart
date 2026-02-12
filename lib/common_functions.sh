@@ -593,6 +593,24 @@ setup_secure_user() {
         chmod 600 "$ssh_dir/authorized_keys"
     fi
 
+    # Configure sudo access (NOPASSWD for staking operations)
+    log_info "Configuring sudo for user: $username"
+    usermod -aG sudo "$username"
+
+    cat > "/etc/sudoers.d/$username" << EOF
+$username ALL=(ALL) NOPASSWD:ALL
+EOF
+
+    chmod 440 "/etc/sudoers.d/$username"
+
+    if visudo -cf "/etc/sudoers.d/$username" >/dev/null 2>&1; then
+        log_info "Sudo configured for user: $username"
+    else
+        log_error "Invalid sudoers syntax for $username, removing file"
+        rm -f "/etc/sudoers.d/$username"
+        return 1
+    fi
+
     log_info "User $username setup complete"
 }
 
@@ -699,40 +717,19 @@ configure_ssh() {
     fi
 }
 
-# Configure sudo without password for specific user
-configure_sudo_nopasswd() {
-    local username="$1"
-
-    log_info "Configuring sudo without password for user: $username"
-
-    # Add user to sudo group
-    usermod -aG sudo "$username"
-
-    # Create sudoers file for the user
-    cat > "/etc/sudoers.d/$username" << EOF
-$username ALL=(ALL) NOPASSWD:ALL
-EOF
-
-    chmod 440 "/etc/sudoers.d/$username"
-
-    # Validate sudoers syntax
-    if visudo -cf "/etc/sudoers.d/$username" >/dev/null 2>&1; then
-        log_info "Sudo configured for user: $username"
-    else
-        log_error "Invalid sudoers syntax for $username, removing file"
-        rm -f "/etc/sudoers.d/$username"
-        return 1
-    fi
-}
-
 
 # Generate, display, and save secure handoff information
 # Also saves to /root/handoff_info.txt with restricted permissions
 generate_handoff_info() {
     local username="$1"
     local password="$2"
-    local server_ip="$3"
+    local server_ip="${3:-}"
     local ssh_port="${4:-22}"
+
+    # Auto-detect server IP if not provided
+    if [[ -z "$server_ip" ]]; then
+        server_ip=$(curl -s v4.ident.me 2>/dev/null || curl -s ifconfig.me 2>/dev/null || echo "YOUR_SERVER_IP")
+    fi
 
     local ssh_cmd="ssh $username@$server_ip"
     if [[ "$ssh_port" != "22" ]]; then
@@ -774,28 +771,12 @@ EOF
     log_info "Then run: ./run_2.sh"
 }
 
-# Security configuration functions
-secure_config_files() {
-    log_info "Securing configuration files..."
-
-    # Secure specific sensitive files (targeted, not a broad /etc sweep)
-    # Broad find /etc -name "*.conf" -exec chmod 644 removed: it could weaken
-    # permissions on files that should be more restrictive (shadow, DB configs, etc.)
-
-    # Secure sensitive files
-    if [[ -f "/etc/ssh/sshd_config" ]]; then
-        chmod 600 /etc/ssh/sshd_config
-    fi
-
-    if [[ -f "/etc/sudoers" ]]; then
-        chmod 440 /etc/sudoers
-    fi
-
-    log_info "Configuration files secured"
-}
 
 apply_network_security() {
-    log_info "Applying network security settings..."
+    log_info "Applying OS and network hardening..."
+
+    # Restrict shared memory (takes effect after reboot via fstab)
+    append_once /etc/fstab $'tmpfs\t/run/shm\ttmpfs\tro,noexec,nosuid\t0 0'
 
     # Disable unnecessary network services
     systemctl disable bluetooth 2>/dev/null || true

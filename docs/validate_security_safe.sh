@@ -125,7 +125,6 @@ run_custom_test "No duplicate functions in common_functions.sh" test_no_duplicat
 test_security_functions_exist() {
     local required_functions=(
         "setup_security_monitoring"
-        "secure_config_files"
         "apply_network_security"
         "validate_user_input"
     )
@@ -146,11 +145,6 @@ test_run1_security_calls() {
     # Check for consolidated security script call
     if ! grep -q "consolidated_security.sh" run_1.sh; then
         log_error "run_1.sh missing consolidated security script call"
-        return 1
-    fi
-    
-    if ! grep -q "secure_config_files" run_1.sh; then
-        log_error "run_1.sh missing secure_config_files call"
         return 1
     fi
     
@@ -371,7 +365,6 @@ test_function_definitions() {
     
     local required_functions=(
         "setup_security_monitoring"
-        "secure_config_files"
         "apply_network_security"
         "validate_user_input"
     )
