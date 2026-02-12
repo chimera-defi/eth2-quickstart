@@ -361,21 +361,9 @@ mock_setup_fail2ban() {
     return 0
 }
 
-mock_setup_intrusion_detection() {
-    _log_mock_call "setup_intrusion_detection"
-    echo "[MOCK] Would setup AIDE intrusion detection"
-    return 0
-}
-
 mock_setup_security_monitoring() {
     _log_mock_call "setup_security_monitoring"
     echo "[MOCK] Would setup security monitoring"
-    return 0
-}
-
-mock_secure_config_files() {
-    _log_mock_call "secure_config_files"
-    echo "[MOCK] Would secure configuration files"
     return 0
 }
 
@@ -410,9 +398,7 @@ apply_mocks() {
     get_latest_release() { mock_get_latest_release "$@"; }
     configure_ssh() { mock_configure_ssh "$@"; }
     setup_fail2ban() { mock_setup_fail2ban "$@"; }
-    setup_intrusion_detection() { mock_setup_intrusion_detection "$@"; }
     setup_security_monitoring() { mock_setup_security_monitoring "$@"; }
-    secure_config_files() { mock_secure_config_files "$@"; }
     apply_network_security() { mock_apply_network_security "$@"; }
     
     echo "[INFO] Mock functions applied successfully"

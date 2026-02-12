@@ -125,14 +125,10 @@ run_custom_test "No duplicate functions in common_functions.sh" test_no_duplicat
 test_security_functions_exist() {
     local required_functions=(
         "setup_security_monitoring"
-        "setup_intrusion_detection"
-        "secure_config_files"
         "apply_network_security"
         "validate_user_input"
-        "secure_error_handling"
-        "safe_command_execution"
     )
-    
+
     for func in "${required_functions[@]}"; do
         if ! grep -q "^${func}()" lib/common_functions.sh; then
             log_error "Missing security function: $func"
@@ -149,11 +145,6 @@ test_run1_security_calls() {
     # Check for consolidated security script call
     if ! grep -q "consolidated_security.sh" run_1.sh; then
         log_error "run_1.sh missing consolidated security script call"
-        return 1
-    fi
-    
-    if ! grep -q "secure_config_files" run_1.sh; then
-        log_error "run_1.sh missing secure_config_files call"
         return 1
     fi
     
@@ -215,31 +206,20 @@ run_custom_test "Input validation functions work correctly" test_input_validatio
 log_section "Testing File Permission Functions"
 
 test_file_permissions() {
-    # Source the common functions
-    source lib/common_functions.sh
-    
     # Create a test file in a safe location
     local test_file
     test_file="/tmp/security_test_file_$(date +%s)"
     echo "test content" > "$test_file"
-    
-    # Test secure_file_permissions function directly
-    if declare -f secure_file_permissions >/dev/null; then
-        secure_file_permissions "$test_file" 600
-        
-        # Check if the test file has correct permissions
-        local perms
-        perms=$(stat -c %a "$test_file")
-        if [[ "$perms" == "600" ]]; then
-            rm -f "$test_file"
-            return 0
-        else
-            log_error "File permissions not set correctly (expected 600, got $perms)"
-            rm -f "$test_file"
-            return 1
-        fi
+
+    chmod 600 "$test_file"
+
+    local perms
+    perms=$(stat -c %a "$test_file")
+    if [[ "$perms" == "600" ]]; then
+        rm -f "$test_file"
+        return 0
     else
-        log_error "secure_file_permissions function not found"
+        log_error "File permissions not set correctly (expected 600, got $perms)"
         rm -f "$test_file"
         return 1
     fi
@@ -249,36 +229,18 @@ run_custom_test "File permission functions work correctly" test_file_permissions
 
 echo
 
-# Test 7: Test error handling functions (safe to test)
-log_section "Testing Error Handling Functions"
+# Test 7: Test error handling (set -Eeuo pipefail)
+log_section "Testing Error Handling"
 
 test_error_handling() {
     # Source the common functions
     source lib/common_functions.sh
-    
-    # Test secure_error_handling function
-    if declare -f secure_error_handling >/dev/null; then
-        # Test safe_command_execution function
-        if declare -f safe_command_execution >/dev/null; then
-            # Test with a valid command
-            if safe_command_execution "echo 'test'" >/dev/null 2>&1; then
-                # Test with an invalid command (should not crash)
-                if ! safe_command_execution "nonexistentcommand12345" >/dev/null 2>&1; then
-                    return 0
-                else
-                    log_error "Error handling failed to handle invalid command"
-                    return 1
-                fi
-            else
-                log_error "Error handling failed with valid command"
-                return 1
-            fi
-        else
-            log_error "safe_command_execution function not found"
-            return 1
-        fi
+
+    # Verify set -Eeuo pipefail is active (the project's error handling mechanism)
+    if [[ -o errexit ]] && [[ -o nounset ]] && [[ -o pipefail ]]; then
+        return 0
     else
-        log_error "secure_error_handling function not found"
+        log_error "Shell safety flags not active after sourcing common_functions.sh"
         return 1
     fi
 }
@@ -403,14 +365,10 @@ test_function_definitions() {
     
     local required_functions=(
         "setup_security_monitoring"
-        "setup_intrusion_detection"
-        "secure_config_files"
         "apply_network_security"
         "validate_user_input"
-        "secure_error_handling"
-        "safe_command_execution"
     )
-    
+
     for func in "${required_functions[@]}"; do
         if ! declare -f "$func" >/dev/null 2>&1; then
             log_error "Function $func not properly defined"

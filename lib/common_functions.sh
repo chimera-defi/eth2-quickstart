@@ -593,6 +593,24 @@ setup_secure_user() {
         chmod 600 "$ssh_dir/authorized_keys"
     fi
 
+    # Configure sudo access (NOPASSWD for staking operations)
+    log_info "Configuring sudo for user: $username"
+    usermod -aG sudo "$username"
+
+    cat > "/etc/sudoers.d/$username" << EOF
+$username ALL=(ALL) NOPASSWD:ALL
+EOF
+
+    chmod 440 "/etc/sudoers.d/$username"
+
+    if visudo -cf "/etc/sudoers.d/$username" >/dev/null 2>&1; then
+        log_info "Sudo configured for user: $username"
+    else
+        log_error "Invalid sudoers syntax for $username, removing file"
+        rm -f "/etc/sudoers.d/$username"
+        return 1
+    fi
+
     log_info "User $username setup complete"
 }
 
@@ -636,6 +654,19 @@ configure_ssh() {
     # Deploy the hardened config template with port substitution
     cp "$config_template" /etc/ssh/sshd_config
     sed -i "s/^Port .*/Port $ssh_port/" /etc/ssh/sshd_config
+
+    # Audit sshd_config.d drop-in directory: files here can override hardened settings
+    # The template includes "Include /etc/ssh/sshd_config.d/*.conf" (Ubuntu default)
+    if [[ -d /etc/ssh/sshd_config.d ]]; then
+        local dropin_count
+        dropin_count=$(find /etc/ssh/sshd_config.d -name "*.conf" -type f 2>/dev/null | wc -l)
+        if [[ "$dropin_count" -gt 0 ]]; then
+            log_warn "Found $dropin_count drop-in config(s) in /etc/ssh/sshd_config.d/ that may override hardened settings"
+            find /etc/ssh/sshd_config.d -name "*.conf" -type f -exec basename {} \; 2>/dev/null | while read -r f; do
+                log_warn "  Drop-in: $f"
+            done
+        fi
+    fi
 
     # CRITICAL: During Phase 1, allow BOTH root (key-only) and the new user
     # This prevents lockout. Root access can be removed later in Phase 2
@@ -686,40 +717,19 @@ configure_ssh() {
     fi
 }
 
-# Configure sudo without password for specific user
-configure_sudo_nopasswd() {
-    local username="$1"
-
-    log_info "Configuring sudo without password for user: $username"
-
-    # Add user to sudo group
-    usermod -aG sudo "$username"
-
-    # Create sudoers file for the user
-    cat > "/etc/sudoers.d/$username" << EOF
-$username ALL=(ALL) NOPASSWD:ALL
-EOF
-
-    chmod 440 "/etc/sudoers.d/$username"
-
-    # Validate sudoers syntax
-    if visudo -cf "/etc/sudoers.d/$username" >/dev/null 2>&1; then
-        log_info "Sudo configured for user: $username"
-    else
-        log_error "Invalid sudoers syntax for $username, removing file"
-        rm -f "/etc/sudoers.d/$username"
-        return 1
-    fi
-}
-
 
 # Generate, display, and save secure handoff information
 # Also saves to /root/handoff_info.txt with restricted permissions
 generate_handoff_info() {
     local username="$1"
     local password="$2"
-    local server_ip="$3"
+    local server_ip="${3:-}"
     local ssh_port="${4:-22}"
+
+    # Auto-detect server IP if not provided
+    if [[ -z "$server_ip" ]]; then
+        server_ip=$(curl -s v4.ident.me 2>/dev/null || curl -s ifconfig.me 2>/dev/null || echo "YOUR_SERVER_IP")
+    fi
 
     local ssh_cmd="ssh $username@$server_ip"
     if [[ "$ssh_port" != "22" ]]; then
@@ -761,32 +771,12 @@ EOF
     log_info "Then run: ./run_2.sh"
 }
 
-# Security configuration functions
-secure_config_files() {
-    log_info "Securing configuration files..."
-
-    # Set secure permissions on configuration files
-    find /etc -name "*.conf" -type f -exec chmod 644 {} \; 2>/dev/null || true
-    find /etc -name "*.cfg" -type f -exec chmod 644 {} \; 2>/dev/null || true
-    find /etc -name "*.yaml" -type f -exec chmod 644 {} \; 2>/dev/null || true
-    find /etc -name "*.yml" -type f -exec chmod 644 {} \; 2>/dev/null || true
-    find /etc -name "*.json" -type f -exec chmod 644 {} \; 2>/dev/null || true
-    find /etc -name "*.toml" -type f -exec chmod 644 {} \; 2>/dev/null || true
-
-    # Secure sensitive files
-    if [[ -f "/etc/ssh/sshd_config" ]]; then
-        chmod 600 /etc/ssh/sshd_config
-    fi
-
-    if [[ -f "/etc/sudoers" ]]; then
-        chmod 440 /etc/sudoers
-    fi
-
-    log_info "Configuration files secured"
-}
 
 apply_network_security() {
-    log_info "Applying network security settings..."
+    log_info "Applying OS and network hardening..."
+
+    # Restrict shared memory (takes effect after reboot via fstab)
+    append_once /etc/fstab $'tmpfs\t/run/shm\ttmpfs\tro,noexec,nosuid\t0 0'
 
     # Disable unnecessary network services
     systemctl disable bluetooth 2>/dev/null || true
@@ -867,59 +857,13 @@ EOF
     log_info "Security monitoring setup complete"
 }
 
-setup_intrusion_detection() {
-    log_info "Setting up intrusion detection..."
 
-    # Install AIDE if not present
-    if ! command_exists aide; then
-        apt-get update
-        apt-get install -y aide
-    fi
-
-    # Initialize AIDE database if it doesn't exist
-    if [[ ! -f "/var/lib/aide/aide.db" ]]; then
-        aideinit
-        if [[ -f /var/lib/aide/aide.db.new ]]; then
-            mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
-        fi
-    fi
-
-    # Create AIDE check script
-    tee /usr/local/bin/aide_check.sh > /dev/null << 'EOF'
-#!/bin/bash
-# AIDE intrusion detection check
-
-LOG_FILE="/var/log/aide_check.log"
-DATE=$(date '+%Y-%m-%d %H:%M:%S')
-
-echo "[$DATE] Running AIDE check..." >> "$LOG_FILE"
-
-if aide --check >> "$LOG_FILE" 2>&1; then
-    echo "[$DATE] AIDE check passed - no changes detected" >> "$LOG_FILE"
-else
-    echo "[$DATE] WARNING: AIDE detected changes in system files" >> "$LOG_FILE"
-fi
-
-echo "[$DATE] AIDE check complete" >> "$LOG_FILE"
-EOF
-
-    chmod +x /usr/local/bin/aide_check.sh
-
-    # Add to crontab (idempotent — only adds if not already present)
-    local cron_entry="0 2 * * * /usr/local/bin/aide_check.sh"
-    if ! crontab -l 2>/dev/null | grep -Fq "/usr/local/bin/aide_check.sh"; then
-        (crontab -l 2>/dev/null; echo "$cron_entry") | crontab - 2>/dev/null || true
-    fi
-
-    log_info "Intrusion detection setup complete"
-}
-
-# Additional security functions required by validation
+# validate_user_input remains — used by install scripts for interactive input
 validate_user_input() {
     local input="$1"
     local max_length="${2:-50}"
     local min_length="${3:-1}"
-    
+
     # Handle empty parameters
     if [[ -z "$max_length" ]]; then
         max_length=50
@@ -927,54 +871,18 @@ validate_user_input() {
     if [[ -z "$min_length" ]]; then
         min_length=1
     fi
-    
+
     # Check length
     if [[ ${#input} -lt $min_length ]] || [[ ${#input} -gt $max_length ]]; then
         return 1
     fi
-    
+
     # Check for dangerous characters using grep
     if echo "$input" | grep -q '[<>"'\'';&|`$]'; then
         return 1
     fi
-    
+
     return 0
-}
-
-secure_error_handling() {
-    # Set up secure error handling
-    set -Eeuo pipefail
-    trap 'log_error "Error in line $LINENO: $BASH_COMMAND"' ERR
-}
-
-safe_command_execution() {
-    local command="$1"
-    
-    # Validate command before execution using grep
-    if echo "$command" | grep -q '[;&|`$]'; then
-        log_error "Unsafe command detected: $command"
-        return 1
-    fi
-    
-    # Execute command safely
-    if eval "$command" 2>/dev/null; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-secure_file_permissions() {
-    local file="$1"
-    local permissions="${2:-600}"
-    
-    if [[ -f "$file" ]]; then
-        sudo chmod "$permissions" "$file"
-        log_info "Set permissions $permissions on $file"
-    else
-        log_error "File not found: $file"
-        return 1
-    fi
 }
 
 # =============================================================================

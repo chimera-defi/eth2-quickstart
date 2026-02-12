@@ -63,7 +63,7 @@ source_common_functions
 functions_to_check=(
     "log_info" "log_error" "require_root" "check_system_compatibility"
     "configure_ssh" "generate_secure_password" "setup_secure_user"
-    "configure_sudo_nopasswd" "secure_config_files" "apply_network_security"
+    "apply_network_security" "setup_security_monitoring" "generate_handoff_info"
 )
 for func in "${functions_to_check[@]}"; do
     if declare -f "$func" >/dev/null 2>&1; then
@@ -216,23 +216,26 @@ fi
 
 # Test 17: Verify crontab additions are idempotent
 log_info "Test 17: Verify crontab idempotency..."
-for func_name in setup_security_monitoring setup_intrusion_detection; do
-    if declare -f "$func_name" | grep -q "grep.*-Fq"; then
-        log_info "  $func_name checks for existing crontab entry"
-    else
-        log_error "  $func_name does NOT check for existing crontab entry — duplicates!"
-        exit 1
-    fi
-done
+if declare -f setup_security_monitoring | grep -q "grep.*-Fq"; then
+    log_info "  setup_security_monitoring checks for existing crontab entry"
+else
+    log_error "  setup_security_monitoring does NOT check for existing crontab entry — duplicates!"
+    exit 1
+fi
 
-# Test 18: Verify run_1.sh does not duplicate AIDE setup
-# consolidated_security.sh already sets up AIDE via setup_aide()
+# Test 18: Verify dead AIDE function was removed and not called
 log_info "Test 18: Verify no duplicate AIDE setup..."
 if grep -q "setup_intrusion_detection" "$PROJECT_ROOT/run_1.sh"; then
     log_error "  run_1.sh calls setup_intrusion_detection — duplicates AIDE from consolidated_security.sh!"
     exit 1
 else
     log_info "  No duplicate AIDE setup in run_1.sh (handled by consolidated_security.sh)"
+fi
+if declare -f setup_intrusion_detection >/dev/null 2>&1; then
+    log_error "  setup_intrusion_detection still defined — should be removed (dead code)"
+    exit 1
+else
+    log_info "  setup_intrusion_detection removed from common_functions.sh"
 fi
 
 # Test 19: Verify consolidated_security.sh uses SCRIPT_DIR not relative paths
@@ -253,9 +256,40 @@ else
     exit 1
 fi
 
+# Test 21: Verify both 127 and 172 private network ranges are blocked in firewall
+log_info "Test 21: Verify private network blocking (127 + 172)..."
+security_script="$PROJECT_ROOT/install/security/consolidated_security.sh"
+if grep -q '"127.0.0.0/8"' "$security_script"; then
+    log_info "  127.0.0.0/8 (loopback) is blocked"
+else
+    log_error "  MISSING: 127.0.0.0/8 loopback block!"
+    exit 1
+fi
+if grep -q '"127.16.0.0/12"' "$security_script"; then
+    log_info "  127.16.0.0/12 (loopback subset, from Erigon reference) is blocked"
+else
+    log_error "  MISSING: 127.16.0.0/12 block (was incorrectly removed as 'typo')!"
+    exit 1
+fi
+if grep -q '"172.16.0.0/12"' "$security_script"; then
+    log_info "  172.16.0.0/12 (private-use networks) is blocked"
+else
+    log_error "  MISSING: 172.16.0.0/12 private network block!"
+    exit 1
+fi
+
+# Test 22: Verify setup_secure_user includes sudo configuration (consolidated)
+log_info "Test 22: Verify sudo configured inside setup_secure_user..."
+if declare -f setup_secure_user | grep -q "visudo"; then
+    log_info "  setup_secure_user includes sudo configuration with visudo validation"
+else
+    log_error "  setup_secure_user does NOT configure sudo — separate configure_sudo_nopasswd needed!"
+    exit 1
+fi
+
 log_info "╔════════════════════════════════════════════════════════════════╗"
 log_info "║  run_1.sh CI Test PASSED                                      ║"
 log_info "║  Validated: Structure, syntax, functions, SSH safety,         ║"
-log_info "║  lockout prevention, idempotency, no duplicates               ║"
+log_info "║  lockout prevention, idempotency, no duplicates, firewall     ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 exit 0

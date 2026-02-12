@@ -144,20 +144,19 @@ This document provides a comprehensive reference for all functions available in 
 
 ### 🔒 **Security Functions**
 
-#### `setup_secure_user(username, home_dir)`
-**Purpose:** Create secure user account with proper permissions  
+#### `setup_secure_user(username, password)`
+**Purpose:** Create secure user account, migrate root SSH keys, and configure passwordless sudo  
 **Parameters:**
 - `username` - Username to create
-- `home_dir` - Home directory path
-**Usage:** `setup_secure_user "ethereum" "/home/ethereum"`
+- `password` - Initial password to assign to the user
+**Usage:** `setup_secure_user "ethereum" "$USER_PASSWORD"`
 
-#### `configure_ssh(port, disable_password_auth, disable_root_login)`
-**Purpose:** Configure SSH security settings  
+#### `configure_ssh(ssh_port, script_dir)`
+**Purpose:** Apply hardened SSH template, set port, validate config, and reload SSH safely  
 **Parameters:**
-- `port` - SSH port number
-- `disable_password_auth` - Disable password authentication (true/false)
-- `disable_root_login` - Disable root login (true/false)
-**Usage:** `configure_ssh 2222 true true`
+- `ssh_port` - SSH port number
+- `script_dir` - Project root path containing `configs/sshd_config` and `configs/ssh_banner`
+**Usage:** `configure_ssh 2222 "$SCRIPT_DIR"`
 
 
 #### `generate_secure_password(length)`
@@ -303,11 +302,6 @@ This document provides a comprehensive reference for all functions available in 
 **Parameters:** `ppa` - PPA repository string  
 **Usage:** `add_ppa_repository "ppa:ethereum/ethereum"`
 
-#### `configure_sudo_nopasswd(username)`
-**Purpose:** Configure sudo without password for user  
-**Parameters:** `username` - Username to configure  
-**Usage:** `configure_sudo_nopasswd "ethereum"`
-
 ### 🔐 **Security Monitoring Functions**
 
 #### `setup_security_monitoring()`
@@ -315,20 +309,10 @@ This document provides a comprehensive reference for all functions available in 
 **Parameters:** None  
 **Usage:** `setup_security_monitoring`
 
-#### `setup_intrusion_detection()`
-**Purpose:** Set up intrusion detection system  
-**Parameters:** None  
-**Usage:** `setup_intrusion_detection`
-
 #### `apply_network_security()`
-**Purpose:** Apply network security configurations  
+**Purpose:** Apply OS/network hardening (sysctl, shared memory restrictions, unnecessary service disablement)  
 **Parameters:** None  
 **Usage:** `apply_network_security`
-
-#### `secure_config_files(path)`
-**Purpose:** Secure configuration files with proper permissions  
-**Parameters:** `path` - Path to configuration files  
-**Usage:** `secure_config_files "/etc/ethereum"`
 
 ### 🔑 **Authentication Functions**
 
@@ -337,10 +321,14 @@ This document provides a comprehensive reference for all functions available in 
 **Parameters:** `path` - Path to JWT secret file  
 **Usage:** `ensure_jwt_secret "/etc/ethereum/jwt.hex"`
 
-#### `generate_handoff_info()`
-**Purpose:** Generate handoff information for client setup  
-**Parameters:** None  
-**Usage:** `generate_handoff_info`
+#### `generate_handoff_info(username, password, server_ip, ssh_port)`
+**Purpose:** Generate and save operator handoff details for Phase 2 access  
+**Parameters:**
+- `username` - SSH username
+- `password` - Generated password shown to operator
+- `server_ip` - Server IPv4 (optional; auto-detected when empty)
+- `ssh_port` - SSH port (optional; defaults to 22)
+**Usage:** `generate_handoff_info "$LOGIN_UNAME" "$USER_PASSWORD" "" "$YourSSHPortNumber"`
 
 ### 🛡️ **Privilege Functions**
 
@@ -377,7 +365,8 @@ check_system_requirements
 install_dependencies
 
 # Create secure user
-setup_secure_user "ethereum" "/home/ethereum"
+USER_PASSWORD=$(generate_secure_password 16)
+setup_secure_user "ethereum" "$USER_PASSWORD"
 
 # Download and install client
 download_file "https://example.com/client.tar.gz" "/tmp/client.tar.gz"
