@@ -63,7 +63,7 @@ source_common_functions
 functions_to_check=(
     "log_info" "log_error" "require_root" "check_system_compatibility"
     "configure_ssh" "generate_secure_password" "setup_secure_user"
-    "configure_sudo_nopasswd" "secure_config_files" "apply_network_security"
+    "apply_network_security" "setup_security_monitoring" "generate_handoff_info"
 )
 for func in "${functions_to_check[@]}"; do
     if declare -f "$func" >/dev/null 2>&1; then
@@ -278,13 +278,13 @@ else
     exit 1
 fi
 
-# Test 22: Verify secure_config_files does NOT do broad /etc permission sweep
-log_info "Test 22: Verify secure_config_files is not overly broad..."
-if declare -f secure_config_files | grep -q 'find /etc.*chmod 644'; then
-    log_error "  secure_config_files does broad chmod 644 on /etc — can weaken sensitive file permissions!"
-    exit 1
+# Test 22: Verify setup_secure_user includes sudo configuration (consolidated)
+log_info "Test 22: Verify sudo configured inside setup_secure_user..."
+if declare -f setup_secure_user | grep -q "visudo"; then
+    log_info "  setup_secure_user includes sudo configuration with visudo validation"
 else
-    log_info "  secure_config_files uses targeted permission setting"
+    log_error "  setup_secure_user does NOT configure sudo — separate configure_sudo_nopasswd needed!"
+    exit 1
 fi
 
 log_info "╔════════════════════════════════════════════════════════════════╗"

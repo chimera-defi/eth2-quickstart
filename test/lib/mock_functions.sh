@@ -367,12 +367,6 @@ mock_setup_security_monitoring() {
     return 0
 }
 
-mock_secure_config_files() {
-    _log_mock_call "secure_config_files"
-    echo "[MOCK] Would secure configuration files"
-    return 0
-}
-
 mock_apply_network_security() {
     _log_mock_call "apply_network_security"
     echo "[MOCK] Would apply network security settings"
@@ -405,7 +399,6 @@ apply_mocks() {
     configure_ssh() { mock_configure_ssh "$@"; }
     setup_fail2ban() { mock_setup_fail2ban "$@"; }
     setup_security_monitoring() { mock_setup_security_monitoring "$@"; }
-    secure_config_files() { mock_secure_config_files "$@"; }
     apply_network_security() { mock_apply_network_security "$@"; }
     
     echo "[INFO] Mock functions applied successfully"
