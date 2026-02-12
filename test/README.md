@@ -8,6 +8,11 @@ This directory contains tests for the Ethereum node setup scripts.
 
 Run tests inside an isolated Docker container with **real system calls** - no mocks needed.
 
+**run_1 quick one-liner (from repo root):**
+```bash
+docker build -t eth-node-test -f test/Dockerfile . && docker run --rm --privileged --user root -v /sys/fs/cgroup:/sys/fs/cgroup:ro eth-node-test /workspace/test/ci_test_run_1.sh
+```
+
 ```bash
 # Build and run all tests in Docker
 cd test
