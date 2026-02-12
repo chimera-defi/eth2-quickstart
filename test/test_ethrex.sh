@@ -110,7 +110,13 @@ fi
 log_header "Phase 4: Binary Download Test"
 
 ETHREX_VERSION="v7.0.0"
-ETHREX_BINARY_URL="https://github.com/lambdaclass/ethrex/releases/download/${ETHREX_VERSION}/ethrex-linux-x86_64"
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64)  ETHREX_BINARY="ethrex-linux-x86_64" ;;
+    aarch64) ETHREX_BINARY="ethrex-linux-aarch64" ;;
+    *)       ETHREX_BINARY="ethrex-linux-x86_64" ;;
+esac
+ETHREX_BINARY_URL="https://github.com/lambdaclass/ethrex/releases/download/${ETHREX_VERSION}/${ETHREX_BINARY}"
 
 # Test if binary URL is accessible (just check headers, don't download full binary)
 if curl -sI --max-time 10 "$ETHREX_BINARY_URL" 2>/dev/null | grep -q "302\|200"; then
