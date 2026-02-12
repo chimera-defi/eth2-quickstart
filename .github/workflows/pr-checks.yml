@@ -13,6 +13,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # Validate only authored PR commits, not GitHub's synthetic merge commit.
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Check conventional commit format
         run: |
@@ -24,6 +26,11 @@ jobs:
           
           while IFS= read -r msg; do
             if [[ -z "$msg" ]]; then
+              continue
+            fi
+            # Skip merge commits (auto-generated or manual) for conventional checks.
+            if [[ "$msg" =~ ^Merge[[:space:]] ]]; then
+              echo "  SKIP: $msg"
               continue
             fi
             # Check for conventional commit pattern: type(scope): description
