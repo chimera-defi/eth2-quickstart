@@ -3,7 +3,7 @@
 # Comprehensive Update Script for eth2-quickstart
 # Updates both the eth2-quickstart files and the Ethereum software stack
 # Usage: ./update_all.sh [--git-only] [--software-only] [--backup] [--force] [--rollback]
-# 
+#
 # Options:
 #   --git-only      Update only the eth2-quickstart files from git
 #   --software-only Update only the Ethereum software stack
@@ -11,8 +11,11 @@
 #   --force         Force update even if there are local changes (git only)
 #   --rollback      Rollback to previous version if available (git only)
 
-# Source common functions and configuration
-source ../../lib/common_functions.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+# shellcheck source=../../lib/common_functions.sh
+source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Get script directories
 get_script_directories
