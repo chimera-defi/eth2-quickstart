@@ -43,7 +43,7 @@ if [[ ! -f /root/.ssh/authorized_keys ]]; then
     chmod 600 /root/.ssh/authorized_keys
 fi
 
-if SKIP_APT_UPGRADE=true "$PROJECT_ROOT/run_1.sh"; then
+if "$PROJECT_ROOT/run_1.sh"; then
     record_test "run_1.sh executed successfully" "PASS"
 else
     record_test "run_1.sh executed successfully" "FAIL"
