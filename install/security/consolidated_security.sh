@@ -146,8 +146,8 @@ EOF
 setup_aide() {
     log_info "Setting up AIDE file integrity monitoring..."
     
-    # Install AIDE
-    install_dependencies aide
+    # Install AIDE and cron (cron needed for scheduling daily check)
+    install_dependencies aide cron
     
     # Ensure AIDE database directory exists
     ensure_directory /var/lib/aide
