@@ -30,6 +30,10 @@ fi
 
 cd "$PROJECT_ROOT"
 
+# Load config for verification (LOGIN_UNAME from exports.sh)
+# shellcheck source=../exports.sh
+source "$PROJECT_ROOT/exports.sh"
+
 # =============================================================================
 # PHASE 1: Execute run_1.sh
 # =============================================================================
@@ -59,7 +63,7 @@ log_header "Phase 2: Verifying run_1.sh Results"
 # Verify handoff file exists
 if [[ -f /root/handoff_info.txt ]]; then
     record_test "Handoff info file created" "PASS"
-    if grep -q "eth" /root/handoff_info.txt; then
+    if grep -q "$LOGIN_UNAME" /root/handoff_info.txt; then
         record_test "Handoff contains username" "PASS"
     else
         record_test "Handoff contains username" "FAIL"
@@ -68,22 +72,22 @@ else
     record_test "Handoff info file created" "FAIL"
 fi
 
-# Verify user was created
-if id -u eth &>/dev/null; then
-    record_test "User 'eth' created" "PASS"
+# Verify user was created (LOGIN_UNAME from exports.sh)
+if id -u "$LOGIN_UNAME" &>/dev/null; then
+    record_test "User '$LOGIN_UNAME' created" "PASS"
 else
-    record_test "User 'eth' created" "FAIL"
+    record_test "User '$LOGIN_UNAME' created" "FAIL"
 fi
 
 # Verify user has sudo
-if sudo -u eth sudo -n true 2>/dev/null; then
+if sudo -u "$LOGIN_UNAME" sudo -n true 2>/dev/null; then
     record_test "User has sudo (NOPASSWD)" "PASS"
 else
     record_test "User has sudo (NOPASSWD)" "FAIL"
 fi
 
 # Verify SSH keys migrated to new user
-if [[ -f /home/eth/.ssh/authorized_keys ]]; then
+if [[ -f /home/${LOGIN_UNAME}/.ssh/authorized_keys ]]; then
     record_test "SSH keys migrated to new user" "PASS"
 else
     record_test "SSH keys migrated to new user" "FAIL"
