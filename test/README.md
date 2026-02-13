@@ -13,9 +13,10 @@ Run tests inside an isolated Docker container with **real system calls** - no mo
 docker build -t eth-node-test -f test/Dockerfile . && docker run --rm --privileged --user root eth-node-test /workspace/test/ci_test_run_1.sh
 ```
 
-**run_1 E2E (actually runs run_1.sh - from repo root, requires Docker):**
+**E2E (actually runs run_1.sh or run_2.sh - from repo root, requires Docker):**
 ```bash
-./test/run_run_1_e2e.sh
+./test/run_e2e.sh --phase=1   # run_1.sh (system setup)
+./test/run_e2e.sh --phase=2   # run_2.sh (client installation)
 ```
 Note: E2E requires Docker. Use `SKIP_BUILD=true` to reuse existing image (e.g. in CI).
 
@@ -71,8 +72,9 @@ test/
 ├── docker_test.sh          # Test runner for Docker (real system calls)
 ├── run_tests.sh            # Test runner for local (supports mocks)
 ├── ci_test_run_1.sh        # run_1 structure validation
-├── ci_test_run_1_e2e.sh    # run_1 E2E (executes run_1.sh, verifies results)
-├── run_run_1_e2e.sh       # Wrapper: Docker + systemd + ci_test_run_1_e2e.sh
+├── ci_test_run_2.sh        # run_2 structure validation + client installs
+├── ci_test_e2e.sh          # E2E: executes run_1 or run_2, verifies results (PHASE=1|2)
+├── run_e2e.sh              # Wrapper: Docker + systemd + ci_test_e2e.sh (--phase=1|2)
 ├── lib/
 │   ├── mock_functions.sh   # Mock implementations for safe local testing
 │   ├── test_utils.sh       # Shared test helpers (record_test, assert_*, etc.)
@@ -90,7 +92,7 @@ test/
 5. **Function behavior** - Unit tests for key functions
 6. **System integration** - Real apt, ufw, systemctl calls (Docker only)
 7. **Install script structure** - Proper shebang, sources, patterns
-8. **run_1 E2E** - Actually executes run_1.sh and verifies user creation, SSH, firewall, handoff file, etc.
+8. **E2E** - Executes run_1.sh (phase 1) or run_2.sh (phase 2) and verifies results
 
 ## CI Integration
 
@@ -100,16 +102,17 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 2. **Docker Lint Tests** - Runs `run_tests.sh --lint-only` in container
 3. **Docker Unit Tests** - Runs `docker_test.sh` with real system calls
 4. **run_1.sh Structure** - Validates syntax, functions, SSH safety (no execution)
-5. **run_1.sh E2E** - Actually runs run_1.sh and verifies results (systemd + openssh)
-6. **run_2.sh Test** - Tests Phase 2 (validates structure, skips long downloads)
+5. **run_1.sh E2E** - Runs run_1.sh and verifies results (systemd + openssh)
+6. **run_2.sh Structure** - Validates structure, syntax, configs, client scripts
+7. **run_2.sh E2E** - Runs run_2.sh and verifies geth/prysm/mev-boost install
 
 ### CI Test Scripts
 
 | Script | Purpose | User |
 |--------|---------|------|
-| `ci_test_run_1.sh` | Validates run_1.sh structure, syntax, functions, basic ops | root |
-| `ci_test_run_1_e2e.sh` | Executes run_1.sh and verifies results (run via run_run_1_e2e.sh) | root |
-| `ci_test_run_2.sh` | Validates run_2.sh structure, syntax, configs, Geth install | testuser |
+| `ci_test_run_1.sh` | Validates run_1.sh structure, syntax, functions, SSH safety | root |
+| `ci_test_run_2.sh` | Validates run_2.sh structure, syntax, configs, client installs | testuser |
+| `ci_test_e2e.sh` | Executes run_1 or run_2 and verifies results (PHASE=1|2) | root/testuser |
 
 **Note**: Full E2E testing with systemd services and snap packages requires special Docker setup. CI tests validate structure and components that work in standard Docker.
 
@@ -122,11 +125,14 @@ docker build -t eth-node-test -f test/Dockerfile .
 # Test run_1.sh structure (as root)
 docker run --rm --privileged --user root eth-node-test /workspace/test/ci_test_run_1.sh
 
-# Test run_1.sh E2E (runs run_1.sh, verifies results)
-./test/run_run_1_e2e.sh
+# Test run_1.sh E2E
+./test/run_e2e.sh --phase=1
 
-# Test run_2.sh (as testuser)
+# Test run_2.sh structure (as testuser)
 docker run --rm --privileged eth-node-test /workspace/test/ci_test_run_2.sh
+
+# Test run_2.sh E2E
+./test/run_e2e.sh --phase=2
 ```
 
 ### Full End-to-End Testing
@@ -144,12 +150,12 @@ sudo ./run_1.sh           # Phase 1: System setup (as root)
 - `systemd` services require privileged mode + systemd init
 - Full E2E is best tested on actual VMs or servers
 
-### run_1 E2E: Non-Interactive Setup
+### E2E: Non-Interactive Setup
 
-The run_1 E2E test executes `apt upgrade` which can pull in packages (postfix, cron, needrestart, tzdata) that prompt for configuration. To prevent hangs:
+Phase 1 E2E executes `apt upgrade` which can pull in packages that prompt for configuration. To prevent hangs:
 
-- **Dockerfile**: Pre-seeds debconf (postfix, cron, tzdata, needrestart) and sets `DPkg::options` for non-interactive config
-- **ci_test_run_1_e2e.sh**: Re-applies debconf pre-seeds and apt.conf before running run_1.sh
-- **CI**: 5min timeout, `continue-on-error: true` so E2E failures don't block other tests
+- **Dockerfile**: Pre-seeds debconf (postfix, cron, tzdata, needrestart)
+- **ci_test_e2e.sh**: Re-applies debconf pre-seeds before running run_1.sh
+- **CI**: 5min timeout for phase 1, 10min for phase 2
 
-If E2E hangs, run locally with `./test/run_run_1_e2e.sh` to debug.
+If E2E hangs, run locally with `./test/run_e2e.sh --phase=1` to debug.

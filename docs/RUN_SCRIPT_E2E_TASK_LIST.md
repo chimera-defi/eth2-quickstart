@@ -9,7 +9,7 @@ This document tracks the implementation of PR #77 "Client script issues" - scrip
 3. **CI_E2E support** - `setup_firewall_rules()` skips UFW when `CI_E2E=true` (Docker lacks kernel modules)
 4. **check_system_requirements()** - Never fails, only warns (allows CI with limited resources)
 5. **run_install_script()** - New function for run_2.sh flag mode
-6. **E2E test infrastructure** - `run_run_2_e2e.sh`, `ci_test_run_2_e2e.sh`, expanded `ci_test_run_2.sh`
+6. **E2E test infrastructure** - `run_e2e.sh --phase=1|2`, `ci_test_e2e.sh`, expanded `ci_test_run_2.sh`
 
 ## Implementation Rules (from user)
 
@@ -27,8 +27,8 @@ This document tracks the implementation of PR #77 "Client script issues" - scrip
 - [x] **T3**: Add run_2.sh flag mode (--execution, --consensus, --mev, --skip-deps) - **preserve sync comments**
 - [x] **T4**: Update test/lib/test_utils.sh - CLIENT_SCRIPTS, output_has_path_errors, script_loads_ok, assert_script_loads, log_subheader, TESTS_SKIPPED - **preserve shellcheck comments**
 - [x] **T5**: Update ci_test_run_2.sh - use CLIENT_SCRIPTS, expand config list, add Tests 8-11 - **preserve shellcheck comment**
-- [x] **T6**: Create run_run_2_e2e.sh wrapper
-- [x] **T7**: Create ci_test_run_2_e2e.sh E2E test
+- [x] **T6**: Create run_e2e.sh (consolidated wrapper for phase 1 and 2)
+- [x] **T7**: Create ci_test_e2e.sh (consolidated E2E for phase 1 and 2)
 - [x] **T8**: Update docker_test.sh - path resolution tests, source pattern - **preserve shellcheck comment**
 - [x] **T9**: Update .github/workflows/ci.yml - split run_2 test, add E2E step
 - [x] **T10**: Add .gitignore for config/user_config.env
@@ -48,7 +48,7 @@ This document tracks the implementation of PR #77 "Client script issues" - scrip
 
 3. **Docker testuser vs LOGIN_UNAME** - Default LOGIN_UNAME=eth, Docker creates testuser. ci_test_run_2.sh creates config/user_config.env with `LOGIN_UNAME=$(whoami)`. exports.sh loads user_config.env. **Verified**: works.
 
-4. **ci_test_run_2_e2e.sh** - Runs as testuser. Needs config/user_config.env. run_run_2_e2e.sh passes -e CI_E2E=true. ci_test_run_2_e2e.sh creates config/user_config.env before running run_2.sh. **Verified**: flow correct.
+4. **ci_test_e2e.sh** - Phase 1 runs as root, Phase 2 as testuser. run_e2e.sh passes PHASE and CI_E2E. **Verified**: flow correct.
 
 5. **eth1.service** - ci_test_run_2_e2e.sh checks for eth1.service. Geth install creates "eth1" service. **Verified**: matches.
 
@@ -106,6 +106,6 @@ This document tracks the implementation of PR #77 "Client script issues" - scrip
 - [ ] CI_E2E=true skips UFW in setup_firewall_rules
 - [ ] check_system_requirements never exits non-zero
 - [ ] config/user_config.env overrides LOGIN_UNAME for CI
-- [ ] run_run_2_e2e.sh builds, starts container, runs E2E, cleans up
+- [ ] run_e2e.sh --phase=2 builds, starts container, runs E2E, cleans up
 - [ ] Shellcheck passes on all modified scripts
 - [ ] No comment deletions (shellcheck, sync notes preserved)

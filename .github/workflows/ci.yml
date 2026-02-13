@@ -43,9 +43,7 @@ jobs:
     - name: Test run_1.sh E2E (Phase 1 - Actual Execution)
       timeout-minutes: 5
       run: |
-        # Actually runs run_1.sh and verifies results (systemd + openssh required)
-        # Uses tmpfs/cgroupns for systemd on GitHub Actions (cgroup v2)
-        SKIP_BUILD=true ./test/run_run_1_e2e.sh
+        SKIP_BUILD=true ./test/run_e2e.sh --phase=1
 
     - name: Test run_2.sh (Phase 2 - Structure Validation)
       run: |
@@ -56,8 +54,7 @@ jobs:
     - name: Test run_2.sh E2E (Phase 2 - Full Execution)
       timeout-minutes: 10
       run: |
-        # Runs run_2.sh with flags in systemd container (CI_E2E skips UFW)
-        SKIP_BUILD=true ./test/run_run_2_e2e.sh
+        SKIP_BUILD=true ./test/run_e2e.sh --phase=2
 
   shellcheck:
     runs-on: ubuntu-latest
