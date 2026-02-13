@@ -50,6 +50,9 @@ For quick syntax and lint checks without Docker:
 # Lint only (shellcheck + syntax) - safe, no system changes
 ./test/run_tests.sh --lint-only
 
+# Shellcheck only (run before push to match CI)
+./test/run_shellcheck.sh
+
 # Unit tests with mock functions (no real system calls)
 USE_MOCKS=true ./test/run_tests.sh --unit
 ```

@@ -25,7 +25,7 @@ done
 if [[ -z "$PHASE" ]] || [[ "$PHASE" != "1" && "$PHASE" != "2" ]]; then
     echo "Usage: $0 --phase=1|2  (or -1|-2)"
     echo "  Phase 1: run_1.sh (system setup)"
-    echo "  Phase 2: run_2.sh (client installation)"
+    echo "  Phase 2: run_2.sh (structure + E2E, both in systemd container)"
     exit 1
 fi
 
@@ -89,9 +89,13 @@ for _ in $(seq 1 30); do
     sleep 2
 done
 
-# Phase 1: root. Phase 2: testuser
+# Phase 1: root runs ci_test_e2e. Phase 2: testuser runs structure then E2E (both need systemd)
 if [[ "$PHASE" == "1" ]]; then
     docker exec --user root -e PHASE=1 "$CONTAINER_NAME" /workspace/test/ci_test_e2e.sh || exit
 else
+    # Phase 2: structure validation first (all 16 client scripts + run_2 flags), then full E2E
+    echo "Running run_2 structure validation (ci_test_run_2.sh)..."
+    docker exec --user testuser -e CI_E2E=true "$CONTAINER_NAME" /workspace/test/ci_test_run_2.sh || exit
+    echo "Running run_2 E2E (ci_test_e2e.sh)..."
     docker exec --user testuser -e PHASE=2 -e CI_E2E=true "$CONTAINER_NAME" /workspace/test/ci_test_e2e.sh || exit
 fi
