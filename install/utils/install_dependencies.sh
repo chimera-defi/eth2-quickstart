@@ -40,15 +40,14 @@ BASE_PACKAGES=(
     "apt-transport-https"
 )
 
-# Test packages - must match run_1 requirements (Docker E2E = real server)
-# RUN_1_SECURITY_PACKAGES from exports.sh: aide cron fail2ban
+# Test packages - minimal infra for test environment (shellcheck, systemd, ssh)
+# run_1 installs aide/cron/fail2ban via consolidated_security - same flow as real server
 TEST_PACKAGES=(
     "shellcheck"
     "ufw"
     "systemd"
     "systemd-sysv"
     "openssh-server"
-    $RUN_1_SECURITY_PACKAGES
 )
 
 # Production packages - needed for building/running Ethereum clients
