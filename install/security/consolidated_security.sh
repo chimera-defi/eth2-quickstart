@@ -37,47 +37,52 @@ setup_firewall() {
     setup_firewall_rules 30303 13000/tcp 12000/udp "$SSH_PORT/tcp" 443/tcp
 
     # Block outbound connections to private/reserved networks to prevent netscan abuse
-    log_info "Blocking outbound connections to private networks..."
-    log_info "This prevents netscan abuse warnings (updated Feb '23 from Erigon docs)"
+    # Skip in Docker: container gateway (172.17.0.1) is in 172.16.0.0/12; blocking would break connectivity
+    if ! is_docker; then
+        log_info "Blocking outbound connections to private networks..."
+        log_info "This prevents netscan abuse warnings (updated Feb '23 from Erigon docs)"
 
-    # Define private network ranges to block
-    # Hetzner expected strict outbound blocks (from Erigon README)
-    private_networks=(
-        "0.0.0.0/8"            # "This" Network
-        "10.0.0.0/8"           # Private-Use Networks
-        "100.64.0.0/10"        # Carrier-Grade NAT (CGN)
-        "127.0.0.0/8"          # Loopback
-        "127.16.0.0/12"        # Loopback subset (from Erigon reference list, intentional overlap)
-        "169.254.0.0/16"       # Link Local
-        "172.16.0.0/12"        # Private-Use Networks
-        "192.0.0.0/24"         # IETF Protocol Assignments
-        "192.0.2.0/24"         # TEST-NET-1
-        "192.88.99.0/24"       # 6to4 Relay Anycast
-        "192.168.0.0/16"       # Private-Use Networks
-        "198.18.0.0/15"        # Device Benchmark Testing
-        "198.51.100.0/24"      # TEST-NET-2
-        "203.0.113.0/24"       # TEST-NET-3
-        "224.0.0.0/4"          # Multicast
-        "240.0.0.0/4"          # Reserved for Future Use
-        "255.255.255.255/32"   # Limited Broadcast
-    )
-    
-    # Known problematic subnets that trigger Hetzner abuse reports
-    # These are public IP ranges where aggressive P2P discovery causes issues
-    # Add subnets here as needed based on abuse reports
-    problematic_subnets=(
-        "212.192.16.0/22"      # Vultr Frankfurt - triggers Hetzner netscan detection (Nov 2025)
-    )
+        # Define private network ranges to block
+        # Hetzner expected strict outbound blocks (from Erigon README)
+        private_networks=(
+            "0.0.0.0/8"            # "This" Network
+            "10.0.0.0/8"           # Private-Use Networks
+            "100.64.0.0/10"        # Carrier-Grade NAT (CGN)
+            "127.0.0.0/8"          # Loopback
+            "127.16.0.0/12"        # Loopback subset (from Erigon reference list, intentional overlap)
+            "169.254.0.0/16"       # Link Local
+            "172.16.0.0/12"        # Private-Use Networks
+            "192.0.0.0/24"         # IETF Protocol Assignments
+            "192.0.2.0/24"         # TEST-NET-1
+            "192.88.99.0/24"       # 6to4 Relay Anycast
+            "192.168.0.0/16"       # Private-Use Networks
+            "198.18.0.0/15"        # Device Benchmark Testing
+            "198.51.100.0/24"      # TEST-NET-2
+            "203.0.113.0/24"       # TEST-NET-3
+            "224.0.0.0/4"          # Multicast
+            "240.0.0.0/4"          # Reserved for Future Use
+            "255.255.255.255/32"   # Limited Broadcast
+        )
+        
+        # Known problematic subnets that trigger Hetzner abuse reports
+        # These are public IP ranges where aggressive P2P discovery causes issues
+        # Add subnets here as needed based on abuse reports
+        problematic_subnets=(
+            "212.192.16.0/22"      # Vultr Frankfurt - triggers Hetzner netscan detection (Nov 2025)
+        )
 
-    for network in "${private_networks[@]}"; do
-        ufw deny out on any to "$network" || log_warn "Failed to block outbound to $network"
-    done
-    
-    # Block problematic subnets (public IPs that cause abuse reports)
-    log_info "Blocking problematic subnets that trigger abuse reports..."
-    for subnet in "${problematic_subnets[@]}"; do
-        ufw deny out on any to "$subnet" proto udp || log_warn "Failed to block outbound UDP to $subnet"
-    done
+        for network in "${private_networks[@]}"; do
+            ufw deny out on any to "$network" || log_warn "Failed to block outbound to $network"
+        done
+        
+        # Block problematic subnets (public IPs that cause abuse reports)
+        log_info "Blocking problematic subnets that trigger abuse reports..."
+        for subnet in "${problematic_subnets[@]}"; do
+            ufw deny out on any to "$subnet" proto udp || log_warn "Failed to block outbound UDP to $subnet"
+        done
+    else
+        log_info "Skipping private network blocks in container (would break Docker networking)"
+    fi
 
     # Block specific ports (updates from Prysm docs Feb '23)
     log_info "Blocking specific ports for security..."
@@ -89,7 +94,11 @@ setup_firewall() {
     log_info "✓ Firewall configuration completed!"
     log_info "UFW firewall is now enabled with Ethereum client and security rules"
     log_info "Allowed ports: $SSH_PORT (SSH), 443 (HTTPS), 30303 (Ethereum P2P), 12000/13000 (Prysm)"
-    log_info "Blocked: Private networks, problematic subnets (UDP), specific ports (4000, 3500, 8551, 8545)"
+    if is_docker; then
+        log_info "Blocked: Specific ports (4000, 3500, 8551, 8545)"
+    else
+        log_info "Blocked: Private networks, problematic subnets (UDP), specific ports (4000, 3500, 8551, 8545)"
+    fi
 }
 
 # Function 2: Setup Fail2ban
@@ -140,11 +149,29 @@ setup_aide() {
     # Install AIDE
     install_dependencies aide
     
+    # Ensure AIDE database directory exists
+    ensure_directory /var/lib/aide
+    
     # Initialize AIDE database
+    # In Docker/containers, the default config can fail (xattr, proc, overlay fs)
+    # Use minimal config that only scans /etc, /bin, /usr/bin, /usr/sbin
     log_info "Initializing AIDE database..."
-    if ! aide --init; then
-        log_error "Failed to initialize AIDE database"
-        exit 1
+    local aide_config=""
+    if is_docker; then
+        local docker_conf="$SCRIPT_DIR/aide-docker.conf"
+        if [[ -f "$docker_conf" ]]; then
+            aide_config="--config=$docker_conf"
+            log_info "Using minimal AIDE config for container environment"
+        fi
+    fi
+    
+    if ! aide $aide_config --init; then
+        if is_docker; then
+            log_warn "AIDE init failed in container - continuing (AIDE installed; db will be created on real server)"
+        else
+            log_error "Failed to initialize AIDE database"
+            exit 1
+        fi
     fi
     
     # Move database to production location
@@ -168,6 +195,12 @@ log_warn() {
 }
 
 log_info "Running AIDE file integrity check..."
+
+# Skip if database not yet initialized (e.g. container environment)
+if [[ ! -f /var/lib/aide/aide.db ]]; then
+    log_warn "AIDE database not found - run 'aide --init' then 'mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db'"
+    exit 0
+fi
 
 # Run AIDE check
 if aide --check > /var/log/aide_check.log 2>&1; then

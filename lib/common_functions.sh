@@ -50,6 +50,11 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Check if running inside Docker/container
+is_docker() {
+    [[ -f /.dockerenv ]] || grep -q docker /proc/1/cgroup 2>/dev/null
+}
+
 # =============================================================================
 # SYSTEM CHECK FUNCTIONS
 # =============================================================================
