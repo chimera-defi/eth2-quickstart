@@ -313,8 +313,20 @@ EOF
 enable_systemd_service() {
     local service_name="$1"
     
-    sudo systemctl daemon-reload
-    sudo systemctl enable "$service_name"
+    if ! sudo systemctl daemon-reload 2>/dev/null; then
+        if [[ "${CI_E2E:-}" == "true" ]]; then
+            log_warn "CI E2E: systemctl unavailable (not in systemd), skipping enable for $service_name"
+            return 0
+        fi
+        return 1
+    fi
+    if ! sudo systemctl enable "$service_name" 2>/dev/null; then
+        if [[ "${CI_E2E:-}" == "true" ]]; then
+            log_warn "CI E2E: systemctl enable failed, skipping for $service_name"
+            return 0
+        fi
+        return 1
+    fi
     log_info "Enabled systemd service: $service_name"
 }
 
@@ -322,12 +334,24 @@ enable_systemd_service() {
 enable_and_start_systemd_service() {
     local service_name="$1"
     
-    enable_systemd_service "$service_name"
-    sudo systemctl start "$service_name"
-    
-    if sudo systemctl is-active --quiet "$service_name"; then
+    if ! enable_systemd_service "$service_name"; then
+        return 1
+    fi
+    if ! sudo systemctl start "$service_name" 2>/dev/null; then
+        if [[ "${CI_E2E:-}" == "true" ]]; then
+            log_warn "CI E2E: systemctl start failed (not in systemd), service file created for $service_name"
+            return 0
+        fi
+        log_error "Failed to start systemd service: $service_name"
+        return 1
+    fi
+    if sudo systemctl is-active --quiet "$service_name" 2>/dev/null; then
         log_info "Started systemd service: $service_name"
     else
+        if [[ "${CI_E2E:-}" == "true" ]]; then
+            log_warn "CI E2E: service $service_name not active (expected when not in systemd)"
+            return 0
+        fi
         log_error "Failed to start systemd service: $service_name"
         return 1
     fi
@@ -412,16 +436,23 @@ setup_firewall_rules() {
 run_install_script() {
     local script="$1"
     local name="${2:-$(basename "$script" .sh)}"
+    local output exit_code
     if [[ ! -f "$script" ]]; then
         log_error "Script not found: $script"
         return 1
     fi
     log_info "Installing $name..."
-    if ./"$script"; then
+    set +e
+    output=$(./"$script" 2>&1)
+    exit_code=$?
+    set -e
+    if [[ $exit_code -eq 0 ]]; then
         log_info "✓ $name installed"
         return 0
     else
-        log_error "Failed to install $name"
+        log_error "Failed to install $name (exit=$exit_code)"
+        log_error "Last 15 lines of output:"
+        echo "$output" | tail -15 | while IFS= read -r line; do log_error "  $line"; done
         return 1
     fi
 }

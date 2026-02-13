@@ -35,6 +35,17 @@ if ! add_ppa_repository "ppa:ethereum/ethereum"; then
     exit 1
 fi
 
+log_info "Installing Geth..."
+if ! sudo apt-get install -y geth; then
+    log_error "Failed to install Geth (apt-get install geth)"
+    exit 1
+fi
+
+if ! command -v geth &>/dev/null; then
+    log_error "Geth binary not found after install (expected at /usr/bin/geth)"
+    exit 1
+fi
+log_info "Geth installed: $(geth version 2>/dev/null | head -1 || echo 'version unknown')"
 
 export GETH_CMD="/usr/bin/geth --cache=$GETH_CACHE --syncmode snap \
 --http --http.addr $LH --http.corsdomain \"*\" --http.vhosts=* --http.api=\"admin, eth, net, web3, engine\" \
