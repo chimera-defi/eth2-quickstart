@@ -253,11 +253,12 @@ echo
 log_section "Testing Security Test Script"
 
 test_security_test_script() {
-    # Check if test_security_fixes.sh exists and is executable
-    if [[ -f "test_security_fixes.sh" && -x "test_security_fixes.sh" ]]; then
+    # Check if test_security_fixes.sh exists and is executable (from project root)
+    local script_path="install/security/test_security_fixes.sh"
+    if [[ -f "$script_path" && -x "$script_path" ]]; then
         # Test if it runs (exit codes 0, 1, 2, 3 are acceptable)
         local exit_code
-        ./test_security_fixes.sh >/dev/null 2>&1
+        ./"$script_path" >/dev/null 2>&1
         exit_code=$?
         
         if [[ $exit_code -eq 0 || $exit_code -eq 1 || $exit_code -eq 2 || $exit_code -eq 3 ]]; then
@@ -334,11 +335,9 @@ test_script_syntax() {
         "lib/common_functions.sh"
         "run_1.sh"
         "run_2.sh"
-        "test_security_fixes.sh"
+        "install/security/test_security_fixes.sh"
         "docs/verify_security.sh"
-        "validate_security_implementation.sh"
-        "server_security_validation.sh"
-        "test_security_real_environment.sh"
+        "docs/server_security_validation.sh"
     )
     
     for script in "${scripts[@]}"; do
