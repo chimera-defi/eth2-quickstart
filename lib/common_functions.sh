@@ -237,7 +237,6 @@ download_file() {
     secure_download "$url" "$output" "$max_retries"
 }
 
-
 # Secure download function
 secure_download() {
     local url="$1"
@@ -327,7 +326,6 @@ enable_and_start_systemd_service() {
         return 1
     fi
 }
-
 
 # =============================================================================
 # SYSTEM MANAGEMENT FUNCTIONS
@@ -701,7 +699,6 @@ configure_ssh() {
     fi
 }
 
-
 # Generate, display, and save secure handoff information
 # Also saves to /root/handoff_info.txt with restricted permissions
 generate_handoff_info() {
@@ -756,7 +753,6 @@ EOF
     log_info "After reboot: $ssh_cmd"
     log_info "Then run: ./run_2.sh"
 }
-
 
 apply_network_security() {
     log_info "Applying OS and network hardening..."
@@ -843,8 +839,7 @@ EOF
     log_info "Security monitoring setup complete"
 }
 
-
-# validate_user_input remains — used by install scripts for interactive input
+# Validate user input for interactive install scripts (length, dangerous characters)
 validate_user_input() {
     local input="$1"
     local max_length="${2:-50}"
@@ -963,10 +958,6 @@ get_script_directories() {
     log_info "Script directory: $script_dir"
     log_info "Project root: $project_root"
 }
-
-
-
-
 
 # 6. Configuration Merging - merge_client_config()
 merge_client_config() {

@@ -36,9 +36,9 @@ ssh LOGIN_UNAME@<server-ip>
 - Fail2ban: configures jails for `nginx-proxy` and `sshd`
 - User creation: creates non-root user `LOGIN_UNAME` (SSH key-only, no password)
 - Migrates root's `~/.ssh/authorized_keys` to new user (prevents lockout)
-- Security: runs consolidated security script
-- NTP: installs `chrony` and enables NTP
-- Security: mounts `/run/shm` as `tmpfs` with `ro,noexec,nosuid`
+- Security: runs consolidated security script (UFW firewall, fail2ban, AIDE)
+- OS hardening: network sysctl rules, mounts `/run/shm` as `tmpfs` with `ro,noexec,nosuid`
+- Security monitoring: scheduled cron checks for suspicious activity
 
 **Prerequisite:** Add your SSH key to root before running: `ssh-copy-id root@<server>`
 

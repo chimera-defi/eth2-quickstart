@@ -2,7 +2,7 @@
 
 **File:** `lib/common_functions.sh`  
 **Purpose:** Centralized library of reusable shell functions  
-**Status:** ✅ **COMPLETE** - All 39 functions implemented and tested
+**Status:** ✅ **COMPLETE** - All 42 functions implemented and tested
 
 ## Overview
 
@@ -175,11 +175,6 @@ This document provides a comprehensive reference for all functions available in 
 **Purpose:** Enable and start systemd service  
 **Parameters:** `service_name` - Name of the service  
 **Usage:** `enable_and_start_systemd_service "prysm-beacon"`
-
-#### `enable_and_start_system_service(service_name)`
-**Purpose:** Alias for enable_and_start_systemd_service  
-**Parameters:** `service_name` - Name of the service  
-**Usage:** `enable_and_start_system_service "prysm-beacon"`
 
 #### `enable_systemd_service(service_name)`
 **Purpose:** Enable systemd service without starting  
@@ -425,5 +420,5 @@ All functions have been tested with:
 
 ---
 
-**Last Updated:** December 2024  
-**Status:** ✅ **COMPLETE** - All functions implemented and tested
+**Last Updated:** February 2026
+**Status:** ✅ **COMPLETE** - All 42 functions implemented and tested
