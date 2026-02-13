@@ -74,8 +74,8 @@ PermitRootLogin prohibit-password
 # StrictModes: Check file permissions strictly
 StrictModes yes
 
-# MaxAuthTries: Maximum authentication attempts per connection
-MaxAuthTries 6
+# MaxAuthTries: Maximum authentication attempts per connection (CIS: 4 or fewer)
+MaxAuthTries 4
 
 # MaxSessions: Maximum concurrent sessions per connection
 MaxSessions 10

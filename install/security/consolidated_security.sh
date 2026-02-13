@@ -156,6 +156,7 @@ logpath = /var/log/auth.log
 maxretry = $MAX_RETRY
 bantime = 3600
 findtime = 600
+# port from jail config is used by fail2ban actions (matches configure_ssh)
 EOF
 
     # Enable and start fail2ban service
