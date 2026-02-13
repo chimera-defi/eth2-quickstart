@@ -98,11 +98,20 @@ This guide provides comprehensive security information for the Ethereum node set
 
 ### Log Files
 - **Security Monitoring**: `/var/log/security_monitor.log`
+- **AIDE Integrity**: `/var/log/aide_check.log`
 - **System Logs**: `/var/log/syslog`
 - **Fail2ban Logs**: `/var/log/fail2ban.log`
 
+### AIDE File Integrity Monitoring
+AIDE (Advanced Intrusion Detection Environment) creates a baseline of critical system files and detects tampering. Config: `config/aide.conf` (single source). It monitors:
+- **`/etc`** – System configuration (SSH, firewall, etc.)
+- **`/bin`, `/usr/bin`, `/usr/sbin`** – Executables
+
+The config uses SHA-256 checksums for content integrity (per [AIDE best practices](https://github.com/aide/aide/blob/master/doc/aide.conf.5)). Daily checks run at 2 AM via cron. Review `/var/log/aide_check.log` for changes.
+
 ### Monitoring Schedule
 - **Security Monitoring**: Every 15 minutes
+- **AIDE Integrity Check**: Daily at 2 AM
 - **Log Rotation**: Automated via logrotate
 
 ### Alert Conditions
