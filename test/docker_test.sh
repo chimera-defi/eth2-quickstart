@@ -229,9 +229,9 @@ fi
 rm -rf "$jwt_dir"
 
 # =============================================================================
-# PHASE 6: Install Script Structure Tests
+# PHASE 6: Install Script Structure and Load Tests
 # =============================================================================
-log_header "Phase 6: Install Script Structure Tests"
+log_header "Phase 6: Install Script Structure and Load Tests"
 
 # Check install scripts have proper structure
 for script in "$PROJECT_ROOT"/install/execution/*.sh "$PROJECT_ROOT"/install/consensus/*.sh; do
@@ -245,12 +245,20 @@ for script in "$PROJECT_ROOT"/install/execution/*.sh "$PROJECT_ROOT"/install/con
         record_test "$script_name has shebang" "FAIL"
     fi
     
-    # Check for source statements
-    if grep -q "source.*exports.sh" "$script" && grep -q "source.*common_functions.sh" "$script"; then
+    # Check for source statements (accept both relative and PROJECT_ROOT patterns)
+    if grep -qE "source.*(exports\.sh|\$PROJECT_ROOT/exports\.sh)" "$script" && \
+       grep -qE "source.*(common_functions\.sh|\$PROJECT_ROOT/lib/common_functions\.sh)" "$script"; then
         record_test "$script_name sources required files" "PASS"
     else
         record_test "$script_name sources required files" "FAIL"
     fi
+done
+
+# Verify client scripts load from any directory (path resolution)
+log_subheader "Client script path resolution"
+for script in "${CLIENT_SCRIPTS[@]}"; do
+    [[ -f "$PROJECT_ROOT/$script" ]] || continue
+    assert_script_loads "$PROJECT_ROOT/$script" "$(basename "$script")"
 done
 
 # =============================================================================

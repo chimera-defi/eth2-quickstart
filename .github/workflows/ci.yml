@@ -47,14 +47,17 @@ jobs:
         # Uses tmpfs/cgroupns for systemd on GitHub Actions (cgroup v2)
         SKIP_BUILD=true ./test/run_run_1_e2e.sh
 
-    - name: Test run_2.sh (Phase 2 - Client Installation)
+    - name: Test run_2.sh (Phase 2 - Structure Validation)
       run: |
-        # Run run_2.sh inside Docker with default selections
-        # Inputs: 1=MEV-Boost, 2=Default clients (Geth+Prysm)
-        # Full E2E test takes ~5-7 minutes
         docker run --rm --privileged \
           -e DEBIAN_FRONTEND=noninteractive \
           eth-node-test /workspace/test/ci_test_run_2.sh
+
+    - name: Test run_2.sh E2E (Phase 2 - Full Execution)
+      timeout-minutes: 10
+      run: |
+        # Runs run_2.sh with flags in systemd container (CI_E2E skips UFW)
+        SKIP_BUILD=true ./test/run_run_2_e2e.sh
 
   shellcheck:
     runs-on: ubuntu-latest
