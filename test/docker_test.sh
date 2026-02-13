@@ -7,7 +7,6 @@ set -Eeuo pipefail
 # Setup paths and source shared utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_PREFIX="INFO"
-# shellcheck source=lib/test_utils.sh
 source "$SCRIPT_DIR/lib/test_utils.sh"
 
 # Parse arguments

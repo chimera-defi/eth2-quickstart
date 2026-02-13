@@ -8,9 +8,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_ROOT" || exit 1
-# shellcheck source=../../exports.sh
 source "$PROJECT_ROOT/exports.sh"
-# shellcheck source=../../lib/common_functions.sh
 source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Get script directories
@@ -126,8 +124,8 @@ metrics-port: 8009
 EOF
 
 # Merge base configurations with custom settings
-merge_client_config "Teku" "beacon" "$SCRIPT_DIR/configs/teku/teku_beacon_base.yaml" "./tmp/teku_beacon_custom.yaml" "$TEKU_DIR/beacon.yaml"
-merge_client_config "Teku" "validator" "$SCRIPT_DIR/configs/teku/teku_validator_base.yaml" "./tmp/teku_validator_custom.yaml" "$TEKU_DIR/validator.yaml"
+merge_client_config "Teku" "beacon" "$PROJECT_ROOT/configs/teku/teku_beacon_base.yaml" "./tmp/teku_beacon_custom.yaml" "$TEKU_DIR/beacon.yaml"
+merge_client_config "Teku" "validator" "$PROJECT_ROOT/configs/teku/teku_validator_base.yaml" "./tmp/teku_validator_custom.yaml" "$TEKU_DIR/validator.yaml"
 
 # Clean up temporary files
 rm -rf ./tmp/

@@ -379,27 +379,43 @@ install_dependencies() {
 }
 
 # Setup firewall rules
+# When CI_E2E=true (Docker E2E test): skip UFW - container lacks kernel modules for iptables/nftables
 setup_firewall_rules() {
     local ports=("$@")
-    
     log_info "Setting up firewall rules for ports: ${ports[*]}"
-    
-    # Install UFW if not present
+    if [[ "${CI_E2E:-}" == "true" ]]; then
+        log_warn "CI E2E: skipping UFW (container lacks kernel modules)"
+        return 0
+    fi
     if ! command_exists ufw; then
         sudo apt-get update
         sudo apt-get install -y ufw
     fi
-    
-    # Enable UFW if not already enabled
     if ! sudo ufw status | grep -q "Status: active"; then
         sudo ufw --force enable
     fi
-    
-    # Add rules for each port
     for port in "${ports[@]}"; do
         sudo ufw allow "$port"
         log_info "Added firewall rule for port $port"
     done
+}
+
+# Run install script (used by run_2.sh flag mode)
+run_install_script() {
+    local script="$1"
+    local name="${2:-$(basename "$script" .sh)}"
+    if [[ ! -f "$script" ]]; then
+        log_error "Script not found: $script"
+        return 1
+    fi
+    log_info "Installing $name..."
+    if ./"$script"; then
+        log_info "✓ $name installed"
+        return 0
+    else
+        log_error "Failed to install $name"
+        return 1
+    fi
 }
 
 # Ensure JWT secret exists
