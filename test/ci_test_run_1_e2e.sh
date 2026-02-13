@@ -13,7 +13,6 @@ source "$SCRIPT_DIR/lib/test_utils.sh"
 LOG_PREFIX="E2E"
 
 log_header "run_1.sh End-to-End Test"
-log_info "This test ACTUALLY runs run_1.sh and verifies the results"
 log_info "Running as: $(whoami)"
 
 # Must be root (run_1 requires root)
@@ -39,28 +38,10 @@ source "$PROJECT_ROOT/exports.sh"
 # =============================================================================
 log_header "Phase 1: Executing run_1.sh"
 
-# Force non-interactive: prevent apt/dpkg from hanging on any config prompts
+# Non-interactive: Dockerfile already has debconf pre-seeds and apt.conf
 export DEBIAN_FRONTEND=noninteractive
-export DEBIAN_PRIORITY=critical
 
-# Pre-seed common packages that prompt during apt upgrade
-# postfix - mail server config (mailname, type)
-echo "postfix postfix/mailname string localhost" | debconf-set-selections 2>/dev/null || true
-echo "postfix postfix/main_mailer_type string 'Local only'" | debconf-set-selections 2>/dev/null || true
-# cron - whether to mail cron output
-echo "cron cron/upgrade_available boolean false" | debconf-set-selections 2>/dev/null || true
-echo "cron cron/upgrade_available_seen boolean true" | debconf-set-selections 2>/dev/null || true
-# tzdata - timezone (avoid prompts)
-echo "tzdata tzdata/Areas select Etc" | debconf-set-selections 2>/dev/null || true
-echo "tzdata tzdata/Zones/Etc select UTC" | debconf-set-selections 2>/dev/null || true
-# needrestart - "which services to restart?" prompt during apt upgrade
-echo "needrestart needrestart/restart-services string" | debconf-set-selections 2>/dev/null || true
-
-# dpkg: use defaults, never prompt for config file changes
-mkdir -p /etc/apt/apt.conf.d
-printf '%s\n' 'DPkg::options { "--force-confdef"; "--force-confold"; };' > /etc/apt/apt.conf.d/99local-noninteractive
-
-# Create minimal root SSH keys so setup_secure_user has something to migrate (avoids lockout warning)
+# Create root SSH keys so run_1's lockout check passes (run_1 requires keys before proceeding)
 mkdir -p /root/.ssh
 if [[ ! -f /root/.ssh/authorized_keys ]]; then
     # Generate a placeholder key so the migration logic runs (real key not needed for test)
