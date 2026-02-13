@@ -148,8 +148,8 @@ This document provides a comprehensive reference for all functions available in 
 **Purpose:** Create secure user account, migrate root SSH keys, and configure passwordless sudo  
 **Parameters:**
 - `username` - Username to create
-- `password` - Initial password to assign to the user
-**Usage:** `setup_secure_user "ethereum" "$USER_PASSWORD"`
+- `password` - Initial password (optional; use "" for SSH key-only auth)
+**Usage:** `setup_secure_user "ethereum" ""` (SSH key-only, recommended)
 
 #### `configure_ssh(ssh_port, script_dir)`
 **Purpose:** Apply hardened SSH template, set port, validate config, and reload SSH safely  
@@ -158,12 +158,6 @@ This document provides a comprehensive reference for all functions available in 
 - `script_dir` - Project root path containing `configs/sshd_config` and `configs/ssh_banner`
 **Usage:** `configure_ssh 2222 "$SCRIPT_DIR"`
 
-
-#### `generate_secure_password(length)`
-**Purpose:** Generate secure random password  
-**Parameters:** `length` - Password length (default: 32)  
-**Usage:** `generate_secure_password 24`  
-**Returns:** Secure random password
 
 ### 🖥️ **System Service Functions**
 
@@ -325,10 +319,10 @@ This document provides a comprehensive reference for all functions available in 
 **Purpose:** Generate and save operator handoff details for Phase 2 access  
 **Parameters:**
 - `username` - SSH username
-- `password` - Generated password shown to operator
+- `password` - Password for handoff (optional; use "" for SSH key-only)
 - `server_ip` - Server IPv4 (optional; auto-detected when empty)
 - `ssh_port` - SSH port (optional; defaults to 22)
-**Usage:** `generate_handoff_info "$LOGIN_UNAME" "$USER_PASSWORD" "" "$YourSSHPortNumber"`
+**Usage:** `generate_handoff_info "$LOGIN_UNAME" "" "" "$YourSSHPortNumber"` (SSH key-only)
 
 ### 🛡️ **Privilege Functions**
 
@@ -364,9 +358,8 @@ check_system_requirements
 # Install dependencies
 install_dependencies
 
-# Create secure user
-USER_PASSWORD=$(generate_secure_password 16)
-setup_secure_user "ethereum" "$USER_PASSWORD"
+# Create secure user (SSH key-only, no password)
+setup_secure_user "ethereum" ""
 
 # Download and install client
 download_file "https://example.com/client.tar.gz" "/tmp/client.tar.gz"
