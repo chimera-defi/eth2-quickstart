@@ -145,7 +145,7 @@ done
 # (reth, ethgas) which are skipped - test image has no cargo.
 log_info "Test 8: Run all client install scripts (execution + consensus + MEV)..."
 # Scripts that need Rust (cargo) - allowed to fail in CI test image
-SCRIPTS_NEED_RUST=("install/execution/reth.sh" "install/mev/install_ethgas.sh")
+SCRIPTS_NEED_RUST=("install/execution/reth.sh" "install/consensus/grandine.sh" "install/mev/install_ethgas.sh")
 load_fail=0
 install_fail=0
 total=${#CLIENT_SCRIPTS[@]}
