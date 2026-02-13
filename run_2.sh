@@ -14,9 +14,53 @@
 #       `./install/ssl/install_acme_ssl.sh`  or 
 #       `./install_certbot_ssl.sh` 
 #       to get SSL certs and configure NGINX properly
+#
+# Non-interactive (for CI/testing):
+#   ./run_2.sh --execution=geth --consensus=prysm --mev=mev-boost
+#   ./run_2.sh --execution=besu --consensus=lighthouse --mev=none --skip-deps
 
 source ./exports.sh
 source ./lib/common_functions.sh
+
+# Parse flags for non-interactive mode
+EXECUTION_CLIENT=""
+CONSENSUS_CLIENT=""
+MEV_FLAG=""
+SKIP_DEPS=false
+for arg in "$@"; do
+    case "$arg" in
+        --execution=*)
+            EXECUTION_CLIENT="${arg#*=}"
+            ;;
+        --consensus=*)
+            CONSENSUS_CLIENT="${arg#*=}"
+            ;;
+        --mev=*)
+            MEV_FLAG="${arg#*=}"
+            ;;
+        --skip-deps)
+            SKIP_DEPS=true
+            ;;
+        --help|-h)
+            echo "Usage: $0 [options]"
+            echo ""
+            echo "Options:"
+            echo "  --execution=NAME   Install execution client (geth, besu, erigon, nethermind, nimbus_eth1, reth, ethrex)"
+            echo "  --consensus=NAME   Install consensus client (prysm, lighthouse, lodestar, teku, nimbus, grandine)"
+            echo "  --mev=NAME         Install MEV (mev-boost, commit-boost, none)"
+            echo "  --skip-deps        Skip install_dependencies.sh (for CI when deps already installed)"
+            echo "  --help             Show this help"
+            echo ""
+            echo "Examples:"
+            echo "  $0                                    # Interactive mode"
+            echo "  $0 --execution=geth --consensus=prysm --mev=mev-boost"
+            echo "  $0 --execution=besu --consensus=teku --mev=none --skip-deps"
+            exit 0
+            ;;
+    esac
+done
+FLAGS_MODE=false
+[[ -n "$EXECUTION_CLIENT" || -n "$CONSENSUS_CLIENT" || -n "$MEV_FLAG" ]] && FLAGS_MODE=true
 
 # Check if running as correct user (non-root)
 check_user "$LOGIN_UNAME"
@@ -40,13 +84,61 @@ log_info "This script will install Ethereum clients and services"
 # cd prysm
 # screen -d -m ./prysm.sh beacon-chain --p2p-host-ip=$(curl -s v4.ident.me) --config-file=./prysm_conf_beacon_sync.yaml
 #  ./prysm.sh beacon-chain --checkpoint-block=$PWD/block_mainnet_altair_4620512-0xef9957e6a709223202ab00f4ee2435e1d42042ad35e160563015340df677feb0.ssz --checkpoint-state=$PWD/state_mainnet_altair_4620512-0xc1397f57149c99b3a2166d422a2ee50602e2a2c7da2e31d7ea740216b8fd99ab.ssz --genesis-state=$PWD/genesis.ssz --config-file=$PWD/prysm_beacon_conf.yaml --p2p-host-ip=88.99.65.230
-# Install all dependencies centrally
-log_info "Installing all system dependencies..."
-if ! ./install/utils/install_dependencies.sh; then
-    log_error "Failed to install dependencies"
-    exit 1
+# Install all dependencies centrally (unless --skip-deps)
+if [[ "$SKIP_DEPS" != "true" ]]; then
+    log_info "Installing all system dependencies..."
+    if ! ./install/utils/install_dependencies.sh; then
+        log_error "Failed to install dependencies"
+        exit 1
+    fi
 fi
 
+# Non-interactive path: install specified clients via flags
+if [[ "$FLAGS_MODE" == "true" ]]; then
+    FAILED=0
+    if [[ -n "$EXECUTION_CLIENT" ]]; then
+        case "$EXECUTION_CLIENT" in
+            geth|besu|erigon|nethermind|nimbus_eth1|reth|ethrex)
+                run_install_script "install/execution/${EXECUTION_CLIENT}.sh" "$EXECUTION_CLIENT" || FAILED=1
+                ;;
+            *)
+                log_error "Unknown execution client: $EXECUTION_CLIENT"
+                exit 1
+                ;;
+        esac
+    fi
+    if [[ -n "$CONSENSUS_CLIENT" ]]; then
+        case "$CONSENSUS_CLIENT" in
+            prysm|lighthouse|lodestar|teku|nimbus|grandine)
+                run_install_script "install/consensus/${CONSENSUS_CLIENT}.sh" "$CONSENSUS_CLIENT" || FAILED=1
+                ;;
+            *)
+                log_error "Unknown consensus client: $CONSENSUS_CLIENT"
+                exit 1
+                ;;
+        esac
+    fi
+    if [[ -n "$MEV_FLAG" && "$MEV_FLAG" != "none" ]]; then
+        case "$MEV_FLAG" in
+            mev-boost)
+                run_install_script "install/mev/install_mev_boost.sh" "MEV-Boost" || FAILED=1
+                ;;
+            commit-boost)
+                run_install_script "install/mev/install_commit_boost.sh" "Commit-Boost" || FAILED=1
+                ;;
+            *)
+                log_error "Unknown MEV: $MEV_FLAG (use mev-boost, commit-boost, or none)"
+                exit 1
+                ;;
+        esac
+    fi
+    if [[ $FAILED -eq 1 ]]; then
+        exit 1
+    fi
+    log_info "Flag-based installation complete."
+    # Skip to next steps / security validation
+else
+# Interactive path
 # MEV Solution Selection (Step 1: Base MEV)
 log_info "=== MEV Solution Selection ==="
 echo
@@ -246,6 +338,7 @@ case "$client_choice" in
         fi
         ;;
 esac
+fi
 
 # Security hardening already applied in run_1.sh
 log_info "Security hardening already applied in run_1.sh"
