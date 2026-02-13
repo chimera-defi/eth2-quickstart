@@ -50,6 +50,11 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Check if running inside Docker/container
+is_docker() {
+    [[ -f /.dockerenv ]] || grep -q docker /proc/1/cgroup 2>/dev/null
+}
+
 # =============================================================================
 # SYSTEM CHECK FUNCTIONS
 # =============================================================================
@@ -739,6 +744,10 @@ IMPORTANT: SSH key authentication is required.
 Root's SSH keys have been migrated to this user.
 Delete /root/handoff_info.txt after noting this information.
 
+AIDE: After apt upgrade, update the integrity database:
+  sudo aide --config=/etc/aide/aide.conf --update
+  sudo mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+
 Generated: $(date)
 =====================================
 EOF
@@ -835,9 +844,12 @@ EOF
     chmod +x /usr/local/bin/security_monitor.sh
 
     # Add to crontab (idempotent — only adds if not already present)
+    # crontab -l exits 1 when no crontab exists; capture with || true to avoid pipefail exit
     local cron_entry="*/15 * * * * /usr/local/bin/security_monitor.sh"
-    if ! crontab -l 2>/dev/null | grep -Fq "/usr/local/bin/security_monitor.sh"; then
-        (crontab -l 2>/dev/null; echo "$cron_entry") | crontab - 2>/dev/null || true
+    local existing_crontab
+    existing_crontab=$(crontab -l 2>/dev/null) || true
+    if ! echo "$existing_crontab" | grep -Fq "/usr/local/bin/security_monitor.sh"; then
+        (echo "$existing_crontab"; echo "$cron_entry") | crontab -
     fi
 
     log_info "Security monitoring setup complete"

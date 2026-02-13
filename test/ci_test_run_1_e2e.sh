@@ -43,22 +43,8 @@ log_header "Phase 1: Executing run_1.sh"
 export DEBIAN_FRONTEND=noninteractive
 export DEBIAN_PRIORITY=critical
 
-# Pre-seed common packages that prompt during apt upgrade
-# postfix - mail server config (mailname, type)
-echo "postfix postfix/mailname string localhost" | debconf-set-selections 2>/dev/null || true
-echo "postfix postfix/main_mailer_type string 'Local only'" | debconf-set-selections 2>/dev/null || true
-# cron - whether to mail cron output
-echo "cron cron/upgrade_available boolean false" | debconf-set-selections 2>/dev/null || true
-echo "cron cron/upgrade_available_seen boolean true" | debconf-set-selections 2>/dev/null || true
-# tzdata - timezone (avoid prompts)
-echo "tzdata tzdata/Areas select Etc" | debconf-set-selections 2>/dev/null || true
-echo "tzdata tzdata/Zones/Etc select UTC" | debconf-set-selections 2>/dev/null || true
-# needrestart - "which services to restart?" prompt during apt upgrade
-echo "needrestart needrestart/restart-services string" | debconf-set-selections 2>/dev/null || true
-
-# dpkg: use defaults, never prompt for config file changes
-mkdir -p /etc/apt/apt.conf.d
-printf '%s\n' 'DPkg::options { "--force-confdef"; "--force-confold"; };' > /etc/apt/apt.conf.d/99local-noninteractive
+# Pre-seed debconf (single source: install/utils/debconf_preseed.sh)
+"$PROJECT_ROOT/install/utils/debconf_preseed.sh"
 
 # Create minimal root SSH keys so setup_secure_user has something to migrate (avoids lockout warning)
 mkdir -p /root/.ssh
@@ -69,9 +55,9 @@ if [[ ! -f /root/.ssh/authorized_keys ]]; then
 fi
 
 if "$PROJECT_ROOT/run_1.sh"; then
-    record_test "run_1.sh executed successfully" "PASS"
+    record_test "run_1.sh execution" "PASS"
 else
-    record_test "run_1.sh executed successfully" "FAIL"
+    record_test "run_1.sh execution" "FAIL"
     print_test_summary
     exit 1
 fi
@@ -142,16 +128,43 @@ else
     record_test "UFW firewall active" "FAIL"
 fi
 
-# Verify fail2ban is running
+# Verify fail2ban is running and has active jails
 if systemctl is-active --quiet fail2ban 2>/dev/null; then
     record_test "Fail2ban service running" "PASS"
+    # At least sshd jail should be in the jail list (confirms jails started)
+    if fail2ban-client status 2>/dev/null | grep -q "sshd"; then
+        record_test "Fail2ban sshd jail active" "PASS"
+    else
+        record_test "Fail2ban sshd jail active" "FAIL"
+    fi
 else
     record_test "Fail2ban service running" "FAIL"
 fi
 
-# Verify AIDE is installed
+# Verify AIDE is installed and properly initialized
 if command -v aide &>/dev/null; then
     record_test "AIDE installed" "PASS"
+    if [[ -f /var/lib/aide/aide.db ]]; then
+        record_test "AIDE database initialized" "PASS"
+    else
+        record_test "AIDE database initialized" "FAIL"
+    fi
+    if [[ -f /usr/local/bin/aide_check.sh ]] && [[ -x /usr/local/bin/aide_check.sh ]]; then
+        record_test "AIDE check script installed" "PASS"
+        if /usr/local/bin/aide_check.sh &>/dev/null; then
+            record_test "AIDE check script runs successfully" "PASS"
+        else
+            record_test "AIDE check script runs successfully" "FAIL"
+        fi
+        # Verify crontab entry was added (root's crontab - run_1 runs as root)
+        if crontab -l 2>/dev/null | grep -Fq "/usr/local/bin/aide_check.sh"; then
+            record_test "AIDE cron job scheduled" "PASS"
+        else
+            record_test "AIDE cron job scheduled" "FAIL"
+        fi
+    else
+        record_test "AIDE check script installed" "FAIL"
+    fi
 else
     record_test "AIDE installed" "FAIL"
 fi
