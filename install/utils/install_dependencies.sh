@@ -4,10 +4,9 @@
 # Single source of truth for all apt packages
 #
 # Usage:
-#   ./install_dependencies.sh              # Full production install
-#   ./install_dependencies.sh --test       # Test env (shellcheck, systemd, aide, cron, fail2ban)
-#   ./install_dependencies.sh --base       # Base packages only
-#   ./install_dependencies.sh --run1-security  # run_1 consolidated security packages
+#   ./install_dependencies.sh          # Full production install
+#   ./install_dependencies.sh --test   # Test env (shellcheck, systemd, aide, cron, fail2ban)
+#   ./install_dependencies.sh --base  # Base packages only
 
 set -Eeuo pipefail
 
@@ -17,26 +16,60 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../lib/common_functions.sh"
 
 # =============================================================================
-# PACKAGE DEFINITIONS (single source of truth)
+# PACKAGE DEFINITIONS
 # =============================================================================
 
-RUN_1_SECURITY_PACKAGES=(aide cron fail2ban)
-
 BASE_PACKAGES=(
-    bash curl wget git tar gzip sudo jq openssl ca-certificates
-    gnupg lsb-release software-properties-common apt-transport-https
+    bash
+    curl
+    wget
+    git
+    tar
+    gzip
+    sudo
+    jq
+    openssl
+    ca-certificates
+    gnupg
+    lsb-release
+    software-properties-common
+    apt-transport-https
 )
 
 TEST_PACKAGES=(
-    shellcheck ufw systemd systemd-sysv openssh-server
-    "${RUN_1_SECURITY_PACKAGES[@]}"
+    shellcheck
+    ufw
+    systemd
+    systemd-sysv
+    openssh-server
+    aide
+    cron
+    fail2ban
 )
 
 PRODUCTION_PACKAGES=(
-    unzip build-essential python3 python3-pip chrony ufw
-    "${RUN_1_SECURITY_PACKAGES[@]}"
-    snapd cmake libssl-dev libgmp-dev libtinfo5 libprotobuf-dev pkg-config
-    openjdk-17-jdk libclang-dev nginx apache2-utils bmon tcptrack
+    unzip
+    build-essential
+    python3
+    python3-pip
+    chrony
+    ufw
+    aide
+    cron
+    fail2ban
+    snapd
+    cmake
+    libssl-dev
+    libgmp-dev
+    libtinfo5
+    libprotobuf-dev
+    pkg-config
+    openjdk-17-jdk
+    libclang-dev
+    nginx
+    apache2-utils
+    bmon
+    tcptrack
 )
 
 # =============================================================================
@@ -75,11 +108,6 @@ install_test() {
     log_info "Test dependencies installed successfully!"
 }
 
-install_run1_security() {
-    log_info "Installing run_1 security packages (aide, cron, fail2ban)..."
-    install_packages "${RUN_1_SECURITY_PACKAGES[@]}"
-}
-
 install_production() {
     log_info "Installing production packages..."
     
@@ -113,36 +141,30 @@ install_production() {
         install_packages "nodejs"
     fi
     
-    # Install Go via snap (skip in Docker - snap doesn't work)
+    # Snap installs: Go and certbot (skip in Docker - snap doesn't work)
     if ! is_docker && command -v snap &>/dev/null; then
         log_info "Installing Go via snap..."
         sudo snap install --classic go
         sudo ln -sf /snap/bin/go /usr/bin/go
-    else
-        log_warn "Skipping Go snap install (Docker or snap unavailable)"
-    fi
-    
-    # Install Rust
-    if ! is_docker; then
-        log_info "Installing Rust..."
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
-    fi
-    
-    # Install Bazel (may not be available in all repos)
-    if apt-cache show bazel &>/dev/null; then
-        log_info "Installing Bazel..."
-        install_packages "bazel"
-    fi
-    
-    # Install certbot via snap (skip in Docker)
-    if ! is_docker && command -v snap &>/dev/null; then
         log_info "Installing certbot via snap..."
         sudo snap install core
         sudo snap install --classic certbot
         sudo ln -sf /snap/bin/certbot /usr/bin/certbot
     else
-        log_warn "Skipping certbot snap install (Docker or snap unavailable)"
+        log_warn "Skipping snap installs (Docker or snap unavailable)"
+    fi
+
+    # Install Rust (skip in Docker)
+    if ! is_docker; then
+        log_info "Installing Rust..."
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+    fi
+
+    # Install Bazel (may not be available in all repos)
+    if apt-cache show bazel &>/dev/null; then
+        log_info "Installing Bazel..."
+        install_packages "bazel"
     fi
     
     # Configure time synchronization (skip in Docker)
@@ -168,26 +190,16 @@ main() {
         --base|-b)
             install_base
             ;;
-        --run1-security)
-            install_run1_security
-            ;;
         --production|-p|production|"")
             install_production
             ;;
         --help|-h)
-            echo "Usage: $0 [--test|--base|--run1-security|--production]"
+            echo "Usage: $0 [--test|--base|--production]"
             echo ""
             echo "Modes:"
-            echo "  --test, -t         Install test dependencies"
-            echo "  --base, -b         Install base packages only"
-            echo "  --run1-security    Install run_1 security (aide, cron, fail2ban)"
-            echo "  --production, -p   Install full production dependencies (default)"
-            echo ""
-            echo "Package groups:"
-            echo "  Base: ${BASE_PACKAGES[*]}"
-            echo "  Run1 security: ${RUN_1_SECURITY_PACKAGES[*]}"
-            echo "  Test: ${TEST_PACKAGES[*]}"
-            echo "  Production: ${PRODUCTION_PACKAGES[*]}"
+            echo "  --test, -t       Install test dependencies"
+            echo "  --base, -b       Install base packages only"
+            echo "  --production, -p Install full production dependencies (default)"
             ;;
         *)
             log_error "Unknown mode: $mode"

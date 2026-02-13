@@ -648,9 +648,8 @@ This script supports multiple modes:
 
 **Package Groups (defined in `install/utils/install_dependencies.sh`):**
 - `BASE_PACKAGES` - Core utilities
-- `RUN_1_SECURITY_PACKAGES` - aide, cron, fail2ban
-- `TEST_PACKAGES` - Test infra + run_1 security
-- `PRODUCTION_PACKAGES` - Build tools, languages, services
+- `TEST_PACKAGES` - Test infra (shellcheck, systemd, aide, cron, fail2ban)
+- `PRODUCTION_PACKAGES` - Build tools, languages, services (includes aide, cron, fail2ban)
 
 **Docker Usage:**
 ```dockerfile
@@ -663,7 +662,7 @@ RUN /workspace/install/utils/install_dependencies.sh --test
 - Works as both root (Docker) and non-root (production)
 - Provides `--help` to show all package groups
 
-**Package definitions:** Single source in `install/utils/install_dependencies.sh`. Use arrays.
+**Package definitions:** Single source in `install/utils/install_dependencies.sh`. One package per line for readability.
 
 **Local Docker build test:** `docker build -t eth-node-test -f test/Dockerfile .` — run before push to catch build failures.
 

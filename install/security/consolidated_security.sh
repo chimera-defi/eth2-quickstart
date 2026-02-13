@@ -244,8 +244,8 @@ verify_security_setup() {
 
 # Main execution
 main() {
-    # Install run_1 security packages (aide, cron, fail2ban) - defined in install_dependencies.sh
-    "$PROJECT_ROOT/install/utils/install_dependencies.sh" --run1-security
+    # Install aide, cron, fail2ban - apt handles duplicates (no reinstall if already present)
+    install_dependencies aide cron fail2ban
 
     # Run all security setup functions
     setup_firewall
