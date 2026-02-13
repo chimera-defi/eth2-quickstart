@@ -62,7 +62,7 @@ source_common_functions
 
 functions_to_check=(
     "log_info" "log_error" "require_root" "check_system_compatibility"
-    "configure_ssh" "generate_secure_password" "setup_secure_user"
+    "configure_ssh" "setup_secure_user"
     "apply_network_security" "setup_security_monitoring" "generate_handoff_info"
 )
 for func in "${functions_to_check[@]}"; do
@@ -95,26 +95,16 @@ for script in "${security_scripts[@]}"; do
     fi
 done
 
-# Test 6: Test generate_secure_password function
-log_info "Test 6: Test generate_secure_password..."
-password=$(generate_secure_password 16)
-if [[ ${#password} -ge 16 ]]; then
-    log_info "  ✓ Generated password (${#password} chars)"
-else
-    log_error "  ✗ Password generation failed"
-    exit 1
-fi
-
-# Test 7: Test apt update works (basic system test)
-log_info "Test 7: Test apt update..."
+# Test 6: Test apt update works (basic system test)
+log_info "Test 6: Test apt update..."
 if apt-get update -qq 2>/dev/null; then
     log_info "  ✓ apt-get update works"
 else
     log_warn "  ⚠ apt-get update had issues"
 fi
 
-# Test 8: Test user creation
-log_info "Test 8: Test user creation..."
+# Test 7: Test user creation
+log_info "Test 7: Test user creation..."
 TEST_USER="ci_test_user_$$"
 if useradd -m -s /bin/bash "$TEST_USER" 2>/dev/null; then
     log_info "  ✓ User creation works"
@@ -123,14 +113,14 @@ else
     log_warn "  ⚠ User creation had issues"
 fi
 
-# Test 9: Verify SSH config template exists and is valid
-log_info "Test 9: Verify SSH config template..."
+# Test 8: Verify SSH config template exists and is valid
+log_info "Test 8: Verify SSH config template..."
 assert_file_exists "$PROJECT_ROOT/configs/sshd_config" "configs/sshd_config"
 assert_file_exists "$PROJECT_ROOT/configs/ssh_banner" "configs/ssh_banner"
 
-# Test 10: Verify SSH config template does NOT contain AllowUsers
+# Test 9: Verify SSH config template does NOT contain AllowUsers
 # AllowUsers in the template would lock out admins before key migration
-log_info "Test 10: Verify SSH config won't cause lockout..."
+log_info "Test 9: Verify SSH config won't cause lockout..."
 if grep -q "^AllowUsers" "$PROJECT_ROOT/configs/sshd_config"; then
     log_error "  CRITICAL: configs/sshd_config contains AllowUsers — this causes lockout!"
     exit 1
@@ -153,8 +143,8 @@ fi
 pw_auth=$(grep "^PasswordAuthentication" "$PROJECT_ROOT/configs/sshd_config" | awk '{print $2}')
 log_info "  PasswordAuthentication is '$pw_auth'"
 
-# Test 11: Verify configure_ssh uses template not inline config
-log_info "Test 11: Verify configure_ssh uses template file..."
+# Test 10: Verify configure_ssh uses template not inline config
+log_info "Test 10: Verify configure_ssh uses template file..."
 if declare -f configure_ssh | grep -q "configs/sshd_config"; then
     log_info "  configure_ssh references configs/sshd_config template"
 else
@@ -162,8 +152,8 @@ else
     exit 1
 fi
 
-# Test 12: Verify configure_ssh validates config before applying
-log_info "Test 12: Verify configure_ssh validates before applying..."
+# Test 11: Verify configure_ssh validates config before applying
+log_info "Test 11: Verify configure_ssh validates before applying..."
 if declare -f configure_ssh | grep -q "sshd -t"; then
     log_info "  configure_ssh validates config with sshd -t"
 else
@@ -171,8 +161,8 @@ else
     exit 1
 fi
 
-# Test 13: Verify get_ssh_service_name function exists
-log_info "Test 13: Verify SSH service detection..."
+# Test 12: Verify get_ssh_service_name function exists
+log_info "Test 12: Verify SSH service detection..."
 if declare -f get_ssh_service_name >/dev/null 2>&1; then
     log_info "  get_ssh_service_name function exists"
 else
@@ -180,12 +170,21 @@ else
     exit 1
 fi
 
-# Test 14: Verify setup_secure_user migrates SSH keys
-log_info "Test 14: Verify SSH key migration logic..."
+# Test 13: Verify setup_secure_user migrates SSH keys
+log_info "Test 13: Verify SSH key migration logic..."
 if declare -f setup_secure_user | grep -q "root/.ssh/authorized_keys"; then
     log_info "  setup_secure_user migrates root SSH keys"
 else
     log_error "  setup_secure_user does NOT migrate root SSH keys — lockout risk!"
+    exit 1
+fi
+
+# Test 14: Verify run_1.sh checks for root SSH keys before proceeding (lockout prevention)
+log_info "Test 14: Verify lockout prevention check..."
+if grep -q "/root/.ssh/authorized_keys" "$PROJECT_ROOT/run_1.sh" && grep -q "ssh-copy-id" "$PROJECT_ROOT/run_1.sh"; then
+    log_info "  run_1.sh verifies root has SSH keys before proceeding"
+else
+    log_error "  run_1.sh missing lockout prevention (must check root authorized_keys)"
     exit 1
 fi
 

@@ -39,11 +39,13 @@ BASE_PACKAGES=(
 )
 
 # Test packages - additional packages needed for testing
+# openssh-server required for run_1 E2E (configure_ssh modifies sshd_config)
 TEST_PACKAGES=(
     "shellcheck"
     "ufw"
     "systemd"
     "systemd-sysv"
+    "openssh-server"
 )
 
 # Production packages - needed for building/running Ethereum clients

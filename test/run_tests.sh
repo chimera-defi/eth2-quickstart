@@ -262,7 +262,6 @@ run_source_verification() {
         "check_system_requirements"
         "check_system_compatibility"
         "require_root"
-        "generate_secure_password"
         "setup_secure_user"
         "configure_ssh"
         "generate_handoff_info"

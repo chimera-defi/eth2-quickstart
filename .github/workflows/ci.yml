@@ -5,6 +5,7 @@ on:
     branches: [ main, master, develop ]
   pull_request:
     branches: [ main, master, develop ]
+  workflow_dispatch:  # Allow manual trigger for testing
 
 jobs:
   docker-integration:
@@ -31,15 +32,23 @@ jobs:
           -e USE_MOCKS=false \
           eth-node-test /workspace/test/docker_test.sh
           
-    - name: Test run_1.sh (Phase 1 - System Setup)
+    - name: Test run_1.sh (Phase 1 - Structure Validation)
       run: |
-        # Run run_1.sh inside Docker as root
-        # This tests the full system setup flow
+        # Structural validation - syntax, functions, SSH safety, etc.
         docker run --rm --privileged \
           --user root \
           -e DEBIAN_FRONTEND=noninteractive \
           eth-node-test /workspace/test/ci_test_run_1.sh
-          
+
+    - name: Test run_1.sh E2E (Phase 1 - Actual Execution)
+      timeout-minutes: 5
+      continue-on-error: true
+      run: |
+        # Actually runs run_1.sh and verifies results (systemd + openssh required)
+        # Uses tmpfs/cgroupns for systemd on GitHub Actions (cgroup v2)
+        # continue-on-error: allows CI to pass while iterating on postfix/apt hang fixes
+        SKIP_BUILD=true ./test/run_run_1_e2e.sh
+
     - name: Test run_2.sh (Phase 2 - Client Installation)
       run: |
         # Run run_2.sh inside Docker with default selections

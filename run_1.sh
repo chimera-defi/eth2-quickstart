@@ -19,6 +19,14 @@ log_info "Using configuration: user=$LOGIN_UNAME, ssh_port=$YourSSHPortNumber, m
 
 check_system_compatibility
 
+# Lockout prevention: root must have SSH keys before we migrate them to new user
+if [[ ! -f /root/.ssh/authorized_keys ]] || [[ ! -s /root/.ssh/authorized_keys ]]; then
+    log_error "CRITICAL: No SSH keys in /root/.ssh/authorized_keys"
+    log_error "Add your key first: ssh-copy-id root@<your-server-ip>"
+    log_error "Without this, you will be locked out after reboot."
+    exit 1
+fi
+
 # Update system packages
 log_info "Updating system packages..."
 apt update -y
@@ -28,9 +36,9 @@ apt autoremove -y || log_warn "Some packages could not be removed"
 log_info "System packages updated"
 
 # Create user with sudo + SSH key migration BEFORE hardening SSH
+# SSH key-only auth (no password) - more secure
 log_info "Setting up user: $LOGIN_UNAME"
-USER_PASSWORD=$(generate_secure_password 16)
-setup_secure_user "$LOGIN_UNAME" "$USER_PASSWORD"
+setup_secure_user "$LOGIN_UNAME" ""
 
 # Harden SSH (after user exists with keys)
 configure_ssh "$YourSSHPortNumber" "$SCRIPT_DIR"
@@ -45,7 +53,7 @@ apply_network_security
 setup_security_monitoring
 
 # Generate and save handoff information (auto-detects server IP)
-generate_handoff_info "$LOGIN_UNAME" "$USER_PASSWORD" "" "$YourSSHPortNumber"
+generate_handoff_info "$LOGIN_UNAME" "" "" "$YourSSHPortNumber"
 
 log_info "=== SETUP COMPLETE ==="
 log_info "Reboot required: sudo reboot"

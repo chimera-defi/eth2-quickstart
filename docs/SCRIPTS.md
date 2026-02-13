@@ -34,15 +34,13 @@ ssh LOGIN_UNAME@<server-ip>
 - System updates: `apt update/upgrade/full-upgrade/autoremove`
 - SSH hardening: replaces `/etc/ssh/sshd_config`
 - Fail2ban: configures jails for `nginx-proxy` and `sshd`
-- User creation: creates non-root user `LOGIN_UNAME`
+- User creation: creates non-root user `LOGIN_UNAME` (SSH key-only, no password)
+- Migrates root's `~/.ssh/authorized_keys` to new user (prevents lockout)
 - Security: runs consolidated security script
 - NTP: installs `chrony` and enables NTP
 - Security: mounts `/run/shm` as `tmpfs` with `ro,noexec,nosuid`
 
-**Manual steps:**
-- Review outputs and continue
-- Run `visudo` to add `LOGIN_UNAME ALL=(ALL) NOPASSWD: ALL`
-- Set password for `LOGIN_UNAME`
+**Prerequisite:** Add your SSH key to root before running: `ssh-copy-id root@<server>`
 
 ## Stage 2: Client Installation (run_2.sh)
 
