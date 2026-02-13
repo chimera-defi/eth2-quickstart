@@ -79,29 +79,11 @@ fi
 
 # Non-interactive path: install specified clients via flags
 if [[ "$FLAGS_MODE" == "true" ]]; then
-    install_client_script() {
-        local script="$1"
-        local name="$2"
-        if [[ -f "$script" ]]; then
-            log_info "Installing $name..."
-            if ./"$script"; then
-                log_info "✓ $name installed"
-                return 0
-            else
-                log_error "Failed to install $name"
-                return 1
-            fi
-        else
-            log_error "Script not found: $script"
-            return 1
-        fi
-    }
-
     FAILED=0
     if [[ -n "$EXECUTION_CLIENT" ]]; then
         case "$EXECUTION_CLIENT" in
             geth|besu|erigon|nethermind|nimbus_eth1|reth|ethrex)
-                install_client_script "install/execution/${EXECUTION_CLIENT}.sh" "$EXECUTION_CLIENT" || FAILED=1
+                run_install_script "install/execution/${EXECUTION_CLIENT}.sh" "$EXECUTION_CLIENT" || FAILED=1
                 ;;
             *)
                 log_error "Unknown execution client: $EXECUTION_CLIENT"
@@ -112,7 +94,7 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
     if [[ -n "$CONSENSUS_CLIENT" ]]; then
         case "$CONSENSUS_CLIENT" in
             prysm|lighthouse|lodestar|teku|nimbus|grandine)
-                install_client_script "install/consensus/${CONSENSUS_CLIENT}.sh" "$CONSENSUS_CLIENT" || FAILED=1
+                run_install_script "install/consensus/${CONSENSUS_CLIENT}.sh" "$CONSENSUS_CLIENT" || FAILED=1
                 ;;
             *)
                 log_error "Unknown consensus client: $CONSENSUS_CLIENT"
@@ -123,10 +105,10 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
     if [[ -n "$MEV_FLAG" && "$MEV_FLAG" != "none" ]]; then
         case "$MEV_FLAG" in
             mev-boost)
-                install_client_script "install/mev/install_mev_boost.sh" "MEV-Boost" || FAILED=1
+                run_install_script "install/mev/install_mev_boost.sh" "MEV-Boost" || FAILED=1
                 ;;
             commit-boost)
-                install_client_script "install/mev/install_commit_boost.sh" "Commit-Boost" || FAILED=1
+                run_install_script "install/mev/install_commit_boost.sh" "Commit-Boost" || FAILED=1
                 ;;
             *)
                 log_error "Unknown MEV: $MEV_FLAG (use mev-boost, commit-boost, or none)"

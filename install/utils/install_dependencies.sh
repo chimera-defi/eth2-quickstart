@@ -13,7 +13,6 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source common functions
-# shellcheck source=../../lib/common_functions.sh
 source "$SCRIPT_DIR/../../lib/common_functions.sh"
 
 # =============================================================================

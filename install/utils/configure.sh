@@ -20,7 +20,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../" && pwd)"
 
 # Source common functions for logging (required - no fallback)
-# shellcheck source=../../lib/common_functions.sh
 source "$ROOT_DIR/lib/common_functions.sh"
 
 # Configuration paths
@@ -225,11 +224,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 # Source exports.sh for safety settings and configuration
-# shellcheck source=exports.sh
 source "$SCRIPT_DIR/exports.sh"
 
 # Source common functions
-# shellcheck source=lib/common_functions.sh
 source "$SCRIPT_DIR/lib/common_functions.sh"
 
 # Ensure running as root
@@ -296,15 +293,12 @@ SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
 cd "\$SCRIPT_DIR"
 
 # Source exports.sh for safety settings and configuration
-# shellcheck source=exports.sh
 source "\$SCRIPT_DIR/exports.sh"
 
 # Source common functions
-# shellcheck source=lib/common_functions.sh
 source "\$SCRIPT_DIR/lib/common_functions.sh"
 
 # Source user configuration (overrides exports.sh defaults)
-# shellcheck source=config/user_config.env
 if [[ -f "\$SCRIPT_DIR/config/user_config.env" ]]; then
     source "\$SCRIPT_DIR/config/user_config.env"
 fi

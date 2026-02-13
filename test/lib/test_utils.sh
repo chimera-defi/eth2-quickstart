@@ -236,11 +236,9 @@ check_shellcheck() {
 
 # Helper to source project files with proper paths
 source_exports() {
-    # shellcheck source=../../exports.sh
     source "$PROJECT_ROOT/exports.sh"
 }
 
 source_common_functions() {
-    # shellcheck source=../../lib/common_functions.sh
     source "$PROJECT_ROOT/lib/common_functions.sh"
 }

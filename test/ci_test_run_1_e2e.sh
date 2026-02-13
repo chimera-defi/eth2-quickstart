@@ -7,7 +7,6 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-# shellcheck source=lib/test_utils.sh
 source "$SCRIPT_DIR/lib/test_utils.sh"
 
 LOG_PREFIX="E2E"
@@ -31,7 +30,6 @@ fi
 cd "$PROJECT_ROOT"
 
 # Load config for verification (LOGIN_UNAME from exports.sh)
-# shellcheck source=../exports.sh
 source "$PROJECT_ROOT/exports.sh"
 
 # =============================================================================

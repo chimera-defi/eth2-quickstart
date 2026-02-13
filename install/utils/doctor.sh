@@ -22,11 +22,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../" && pwd)"
 
 # Source common functions for logging (required - no fallback)
-# shellcheck source=../../lib/common_functions.sh
 source "$ROOT_DIR/lib/common_functions.sh"
 
 # Source exports for configuration values
-# shellcheck source=../../exports.sh
 if [[ -f "$ROOT_DIR/exports.sh" ]]; then
     source "$ROOT_DIR/exports.sh" 2>/dev/null || true
 fi

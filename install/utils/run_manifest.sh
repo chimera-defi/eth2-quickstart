@@ -19,7 +19,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../" && pwd)"
 
 # Source common functions for logging (required - no fallback)
-# shellcheck source=../../lib/common_functions.sh
 source "$ROOT_DIR/lib/common_functions.sh"
 
 # Phase script locations

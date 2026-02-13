@@ -8,9 +8,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_ROOT" || exit 1
-# shellcheck source=../../exports.sh
 source "$PROJECT_ROOT/exports.sh"
-# shellcheck source=../../lib/common_functions.sh
 source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Get script directories
@@ -112,7 +110,7 @@ graffiti = "$GRAFITTI"
 EOF
 
 # Merge base configuration with custom settings
-merge_client_config "Nimbus" "main" "$SCRIPT_DIR/configs/nimbus/nimbus_base.toml" "./tmp/nimbus_custom.toml" "$NIMBUS_DIR/nimbus.toml"
+merge_client_config "Nimbus" "main" "$PROJECT_ROOT/configs/nimbus/nimbus_base.toml" "./tmp/nimbus_custom.toml" "$NIMBUS_DIR/nimbus.toml"
 
 # Clean up temporary files
 rm -rf ./tmp/
