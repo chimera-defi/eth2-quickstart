@@ -53,6 +53,7 @@ log_info() { echo -e "${GREEN}[$LOG_PREFIX]${NC} $*"; }
 log_warn() { echo -e "${YELLOW}[$LOG_PREFIX]${NC} $*"; }
 log_error() { echo -e "${RED}[$LOG_PREFIX]${NC} $*"; }
 log_header() { echo -e "\n${BLUE}=== $* ===${NC}\n"; }
+log_subheader() { echo -e "\n${BLUE}--- $* ---\n"; }
 
 # =============================================================================
 # TEST RESULT TRACKING
@@ -60,18 +61,26 @@ log_header() { echo -e "\n${BLUE}=== $* ===${NC}\n"; }
 TESTS_RUN=0
 TESTS_PASSED=0
 TESTS_FAILED=0
+TESTS_SKIPPED=0
 
 record_test() {
     local name="$1"
     local result="$2"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if [[ "$result" == "PASS" ]]; then
-        TESTS_PASSED=$((TESTS_PASSED + 1))
-        echo -e "${GREEN}✓${NC} $name"
-    else
-        TESTS_FAILED=$((TESTS_FAILED + 1))
-        echo -e "${RED}✗${NC} $name"
-    fi
+    case "$result" in
+        PASS)
+            TESTS_PASSED=$((TESTS_PASSED + 1))
+            echo -e "${GREEN}✓${NC} $name"
+            ;;
+        SKIP)
+            TESTS_SKIPPED=$((TESTS_SKIPPED + 1))
+            echo -e "${YELLOW}⊘${NC} $name (skipped)"
+            ;;
+        *)
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+            echo -e "${RED}✗${NC} $name"
+            ;;
+    esac
 }
 
 print_test_summary() {
@@ -79,13 +88,57 @@ print_test_summary() {
     echo "Total tests: $TESTS_RUN"
     echo -e "Passed: ${GREEN}$TESTS_PASSED${NC}"
     echo -e "Failed: ${RED}$TESTS_FAILED${NC}"
+    [[ $TESTS_SKIPPED -gt 0 ]] && echo -e "Skipped: ${YELLOW}$TESTS_SKIPPED${NC}"
     echo ""
     
-    if [[ $TESTS_FAILED -eq 0 ]]; then
-        echo -e "${GREEN}All tests passed!${NC}"
+    if [[ $TESTS_FAILED -gt 0 ]]; then
+        echo -e "${RED}Some tests failed - see above for details.${NC}"
+        return 1
+    fi
+    echo -e "${GREEN}All tests passed!${NC}"
+    return 0
+}
+
+# Client install scripts to verify path resolution (relative to PROJECT_ROOT)
+CLIENT_SCRIPTS=(
+    "install/execution/geth.sh"
+    "install/execution/besu.sh"
+    "install/execution/erigon.sh"
+    "install/execution/nethermind.sh"
+    "install/execution/nimbus_eth1.sh"
+    "install/execution/reth.sh"
+    "install/execution/ethrex.sh"
+    "install/consensus/prysm.sh"
+    "install/consensus/lighthouse.sh"
+    "install/consensus/lodestar.sh"
+    "install/consensus/teku.sh"
+    "install/consensus/nimbus.sh"
+    "install/consensus/grandine.sh"
+    "install/mev/install_mev_boost.sh"
+    "install/mev/install_commit_boost.sh"
+)
+
+# Returns 0 if output indicates path resolution failed (sourcing errors)
+output_has_path_errors() {
+    echo "${1:-}" | grep -qE "No such file or directory|command not found"
+}
+
+# Returns 0 if script loads (no path errors), 1 if path resolution failed
+script_loads_ok() {
+    local script="$1"
+    local output
+    output=$("$script" 2>&1) || true
+    ! output_has_path_errors "$output"
+}
+
+assert_script_loads() {
+    local script="$1"
+    local name="${2:-$(basename "$script")}"
+    if script_loads_ok "$script"; then
+        record_test "$name loads from any cwd" "PASS"
         return 0
     else
-        echo -e "${RED}Some tests failed.${NC}"
+        record_test "$name loads from any cwd" "FAIL"
         return 1
     fi
 }
