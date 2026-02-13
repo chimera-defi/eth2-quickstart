@@ -115,17 +115,26 @@ if [[ "$PHASE" == "2" ]]; then
     fi
     rm -f "$run2_log"
 
-    log_header "Verifying run_2.sh Results"
-    # Clients from run_2.sh --execution=geth --consensus=prysm --mev=mev-boost
-    if command -v geth &>/dev/null; then record_test "Geth binary installed" "PASS"; else record_test "Geth binary installed" "FAIL"; fi
+    log_header "Verifying All Client Installs (from Test 8)"
+    # Execution clients
+    if command -v geth &>/dev/null; then record_test "Geth installed" "PASS"; else record_test "Geth installed" "FAIL"; fi
+    if [[ -f "$HOME/besu/bin/besu" ]]; then record_test "Besu installed" "PASS"; else record_test "Besu installed" "FAIL"; fi
+    if [[ -f "$HOME/erigon/erigon" ]]; then record_test "Erigon installed" "PASS"; else record_test "Erigon installed" "FAIL"; fi
+    if [[ -f "$HOME/nethermind/Nethermind.Runner" ]]; then record_test "Nethermind installed" "PASS"; else record_test "Nethermind installed" "FAIL"; fi
+    if [[ -f "$HOME/nimbus-eth1/nimbus" ]] || [[ -f "$HOME/nimbus-eth1/build/nimbus" ]] || [[ -f "$HOME/nimbus-eth1/nimbus-eth1" ]]; then record_test "Nimbus-eth1 installed" "PASS"; else record_test "Nimbus-eth1 installed" "FAIL"; fi
+    if [[ -f "$HOME/ethrex/ethrex" ]]; then record_test "Ethrex installed" "PASS"; else record_test "Ethrex installed" "FAIL"; fi
+    # Consensus clients
     if [[ -f "$HOME/prysm/prysm.sh" ]]; then record_test "Prysm installed" "PASS"; else record_test "Prysm installed" "FAIL"; fi
+    if [[ -f "$HOME/lighthouse/lighthouse" ]]; then record_test "Lighthouse installed" "PASS"; else record_test "Lighthouse installed" "FAIL"; fi
+    if command -v lodestar &>/dev/null; then record_test "Lodestar installed" "PASS"; else record_test "Lodestar installed" "FAIL"; fi
+    if [[ -f "$HOME/teku/bin/teku" ]]; then record_test "Teku installed" "PASS"; else record_test "Teku installed" "FAIL"; fi
+    if [[ -f "$HOME/nimbus/build/nimbus_beacon_node" ]]; then record_test "Nimbus installed" "PASS"; else record_test "Nimbus installed" "FAIL"; fi
+    # MEV
     if [[ -f "$HOME/mev-boost/mev-boost" ]]; then record_test "MEV-Boost installed" "PASS"; else record_test "MEV-Boost installed" "FAIL"; fi
+    if [[ -f "$HOME/commit-boost/commit-boost-pbs" ]]; then record_test "Commit-Boost installed" "PASS"; else record_test "Commit-Boost installed" "FAIL"; fi
+    # Shared
     if [[ -f "$HOME/secrets/jwt.hex" ]]; then record_test "JWT secret exists" "PASS"; else record_test "JWT secret exists" "FAIL"; fi
     if systemctl list-unit-files 2>/dev/null | grep -q "eth1.service"; then record_test "eth1 systemd service created" "PASS"; else record_test "eth1 systemd service created" "FAIL"; fi
-    # Additional clients from Test 8 (ci_test_run_2 runs all install scripts before this)
-    if [[ -f "$HOME/besu/bin/besu" ]]; then record_test "Besu installed" "PASS"; else record_test "Besu installed" "FAIL"; fi
-    if [[ -f "$HOME/lighthouse/lighthouse" ]]; then record_test "Lighthouse installed" "PASS"; else record_test "Lighthouse installed" "FAIL"; fi
-    if [[ -f "$HOME/commit-boost/commit-boost-pbs" ]]; then record_test "Commit-Boost installed" "PASS"; else record_test "Commit-Boost installed" "FAIL"; fi
 fi
 
 # =============================================================================
