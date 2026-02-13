@@ -141,7 +141,10 @@ done
 
 # Test 8: Run ALL client install scripts (full install flow)
 # Each script executes: source, check_requirements, firewall, download/apt, systemd, etc.
-# We verify no path/source errors; install may fail at UFW/network - expected in CI.
+# We verify no path/source errors. Install may fail for expected reasons:
+#   - UFW/iptables in Docker (no kernel modules)
+#   - erigon/reth need build tools (make, cargo) - not in --test deps
+# Path/source errors (missing .sh, unloaded functions) cause test failure.
 log_info "Test 8: Run all client install scripts (execution + consensus + MEV)..."
 load_fail=0
 total=${#CLIENT_SCRIPTS[@]}
@@ -150,8 +153,13 @@ for script in "${CLIENT_SCRIPTS[@]}"; do
     [[ -f "$PROJECT_ROOT/$script" ]] || continue
     idx=$((idx + 1))
     log_info "  [$idx/$total] Running $(basename "$script")..."
-    output=$("$PROJECT_ROOT/$script" 2>&1) || true
-    exit_code=$?
+    script_log="/tmp/ci_client_$$_${idx}.log"
+    set +e
+    "$PROJECT_ROOT/$script" 2>&1 | tee "$script_log"
+    exit_code=${PIPESTATUS[0]}
+    set -e
+    output=$(cat "$script_log")
+    rm -f "$script_log"
     if output_has_path_errors "$output"; then
         log_error "  ✗ $(basename "$script"): path/source error (exit=$exit_code)"
         dump_output_tail "$output" 30 "    "
