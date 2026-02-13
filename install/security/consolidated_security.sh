@@ -153,15 +153,20 @@ setup_aide() {
     ensure_directory /var/lib/aide
     
     # Initialize AIDE database
-    # Ubuntu package may not create valid aide.conf; write our minimal config inline
-    # Scans /etc, /bin, /usr/bin, /usr/sbin - works in Docker and on servers
+    # AIDE detects file tampering by comparing against a baseline. We monitor security-critical
+    # paths: /etc (configs), /bin, /usr/bin, /usr/sbin (executables). Per AIDE best practices:
+    # - Include sha256 for content integrity (detects modified file contents)
+    # - p+u+g+i+n+l = perms, owner, group, inode, links, name (metadata changes)
+    # - Exclude volatile dirs (/var/log, /tmp) by only scanning static system paths
+    # Ref: https://github.com/aide/aide/blob/master/doc/aide.conf.5
     log_info "Initializing AIDE database..."
     ensure_directory /etc/aide
     cat > /etc/aide/aide.conf << 'AIDECONF'
 database=file:/var/lib/aide/aide.db
 database_out=file:/var/lib/aide/aide.db.new
 database_new=file:/var/lib/aide/aide.db.new
-R = p+u+g+i+n+l
+# R = metadata + sha256 (content integrity per AIDE best practices)
+R = p+u+g+i+n+l+sha256
 /etc R
 /bin R
 /usr/bin R
