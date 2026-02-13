@@ -229,9 +229,9 @@ fi
 rm -rf "$jwt_dir"
 
 # =============================================================================
-# PHASE 6: Install Script Structure Tests
+# PHASE 6: Install Script Structure and Load Tests
 # =============================================================================
-log_header "Phase 6: Install Script Structure Tests"
+log_header "Phase 6: Install Script Structure and Load Tests"
 
 # Check install scripts have proper structure
 for script in "$PROJECT_ROOT"/install/execution/*.sh "$PROJECT_ROOT"/install/consensus/*.sh; do
@@ -245,11 +245,31 @@ for script in "$PROJECT_ROOT"/install/execution/*.sh "$PROJECT_ROOT"/install/con
         record_test "$script_name has shebang" "FAIL"
     fi
     
-    # Check for source statements
-    if grep -q "source.*exports.sh" "$script" && grep -q "source.*common_functions.sh" "$script"; then
+    # Check for source statements (accept both relative and PROJECT_ROOT patterns)
+    if grep -qE "source.*(exports\.sh|\$PROJECT_ROOT/exports\.sh)" "$script" && \
+       grep -qE "source.*(common_functions\.sh|\$PROJECT_ROOT/lib/common_functions\.sh)" "$script"; then
         record_test "$script_name sources required files" "PASS"
     else
         record_test "$script_name sources required files" "FAIL"
+    fi
+done
+
+# Verify client scripts load from any directory (path resolution)
+log_header "Phase 6b: Client Script Path Resolution"
+client_scripts=(
+    "$PROJECT_ROOT/install/execution/geth.sh"
+    "$PROJECT_ROOT/install/execution/besu.sh"
+    "$PROJECT_ROOT/install/consensus/prysm.sh"
+    "$PROJECT_ROOT/install/mev/install_mev_boost.sh"
+)
+for script in "${client_scripts[@]}"; do
+    [[ -f "$script" ]] || continue
+    script_name=$(basename "$script")
+    output=$("$script" 2>&1) || true
+    if echo "$output" | grep -qE "No such file or directory|command not found"; then
+        record_test "$script_name loads from any cwd" "FAIL"
+    else
+        record_test "$script_name loads from any cwd" "PASS"
     fi
 done
 

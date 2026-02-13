@@ -1,11 +1,14 @@
 #!/bin/bash
 
-
 # Optional Tools Installation Script
 # Installs useful network monitoring and system utilities
 # https://askubuntu.com/questions/257263/how-to-display-network-traffic-in-the-terminal
 
-source ../../lib/common_functions.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+# shellcheck source=../../lib/common_functions.sh
+source "$PROJECT_ROOT/lib/common_functions.sh"
 
 log_installation_start "Optional Tools"
 

@@ -3,14 +3,17 @@
 # Git Update Script for eth2-quickstart
 # Updates the eth2-quickstart files by pulling the latest version from git
 # Usage: ./update_git.sh [--backup] [--force] [--rollback]
-# 
+#
 # Options:
 #   --backup    Create backup before updating (recommended)
 #   --force     Force update even if there are local changes
 #   --rollback  Rollback to previous version if available
 
-# Source common functions and configuration
-source ../../lib/common_functions.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+# shellcheck source=../../lib/common_functions.sh
+source "$PROJECT_ROOT/lib/common_functions.sh"
 get_script_directories
 
 # Configuration

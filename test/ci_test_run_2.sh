@@ -131,8 +131,46 @@ for config in "${config_files[@]}"; do
     fi
 done
 
-# Test 8: Test Geth installation (uses PPA, not snap)
-log_info "Test 8: Install Geth via PPA..."
+# Test 8: Verify all client install scripts load (path resolution from any cwd)
+log_info "Test 8: Verify client scripts load from any directory..."
+client_scripts=(
+    "install/execution/geth.sh"
+    "install/execution/besu.sh"
+    "install/execution/erigon.sh"
+    "install/execution/nethermind.sh"
+    "install/execution/nimbus_eth1.sh"
+    "install/execution/reth.sh"
+    "install/execution/ethrex.sh"
+    "install/consensus/prysm.sh"
+    "install/consensus/lighthouse.sh"
+    "install/consensus/lodestar.sh"
+    "install/consensus/teku.sh"
+    "install/consensus/nimbus.sh"
+    "install/consensus/grandine.sh"
+    "install/mev/install_mev_boost.sh"
+    "install/mev/install_commit_boost.sh"
+)
+load_fail=0
+for script in "${client_scripts[@]}"; do
+    script_name=$(basename "$script")
+    output=$("$PROJECT_ROOT/$script" 2>&1) || true
+    if echo "$output" | grep -qE "No such file or directory|command not found"; then
+        log_error "  ✗ $script_name: path resolution failed"
+        echo "$output" | head -5
+        load_fail=$((load_fail + 1))
+    elif echo "$output" | grep -qE "Script directory:|Starting |installation|Checking system|Insufficient"; then
+        log_info "  ✓ $script_name: loads correctly"
+    else
+        log_info "  ✓ $script_name: ran (exit may vary)"
+    fi
+done
+if [[ $load_fail -gt 0 ]]; then
+    log_error "  $load_fail script(s) failed to load"
+    exit 1
+fi
+
+# Test 9: Test Geth full installation (uses PPA - may fail in CI due to resources/network)
+log_info "Test 9: Install Geth via PPA (optional in CI)..."
 if "$PROJECT_ROOT/install/execution/geth.sh" 2>&1; then
     if command -v geth &>/dev/null; then
         geth_version=$(geth version 2>/dev/null | head -1 || echo "unknown")
@@ -141,11 +179,11 @@ if "$PROJECT_ROOT/install/execution/geth.sh" 2>&1; then
         log_warn "  ⚠ Geth binary not in PATH (may need shell reload)"
     fi
 else
-    log_warn "  ⚠ Geth installation had issues (may be OK in CI)"
+    log_warn "  ⚠ Geth installation had issues (may be OK in CI - check RAM/network)"
 fi
 
 log_info "╔════════════════════════════════════════════════════════════════╗"
 log_info "║  ✓ run_2.sh CI Test PASSED                                    ║"
-log_info "║  Validated: Structure, syntax, functions, configs, Geth       ║"
+log_info "║  Validated: Structure, syntax, functions, configs, all clients ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 exit 0

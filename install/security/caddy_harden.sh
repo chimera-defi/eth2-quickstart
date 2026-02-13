@@ -3,8 +3,13 @@
 # Caddy Security Hardening Script
 # Applies security best practices to Caddy configuration
 
-source ../../exports.sh
-source ../../lib/common_functions.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+# shellcheck source=../../exports.sh
+source "$PROJECT_ROOT/exports.sh"
+# shellcheck source=../../lib/common_functions.sh
+source "$PROJECT_ROOT/lib/common_functions.sh"
 source ../web/caddy_helpers.sh
 
 # Check if running as root
