@@ -119,6 +119,38 @@ CLIENT_SCRIPTS=(
     "install/mev/install_ethgas.sh"
 )
 
+# Run script with output teed to log_file. Returns script exit code.
+# Usage: run_script_with_log log_file -- script arg1 arg2
+# Or: run_script_with_log log_file script arg1 arg2
+run_script_with_log() {
+    local log_file="$1"
+    shift
+    "$@" 2>&1 | tee "$log_file"
+    return "${PIPESTATUS[0]}"
+}
+
+# Dump last N lines of log file via log_error (for failure debugging)
+dump_log_tail() {
+    local log_file="$1"
+    local lines="${2:-50}"
+    local prefix="${3:-  }"
+    if [[ -f "$log_file" ]]; then
+        log_error "--- Last $lines lines of output ---"
+        while IFS= read -r line; do log_error "${prefix}$line"; done < <(tail -n "$lines" "$log_file")
+    fi
+}
+
+# Dump last N lines of string output via log_error (for failure debugging)
+dump_output_tail() {
+    local output="$1"
+    local lines="${2:-30}"
+    local prefix="${3:-  }"
+    if [[ -n "$output" ]]; then
+        log_error "--- Last $lines lines of output ---"
+        while IFS= read -r line; do log_error "${prefix}$line"; done < <(echo "$output" | tail -n "$lines")
+    fi
+}
+
 # Returns 0 if output indicates path resolution failed (sourcing errors)
 # Must match sourcing failures only - ufw/iptables also emit "No such file or directory"
 output_has_path_errors() {

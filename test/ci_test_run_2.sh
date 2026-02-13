@@ -1,19 +1,10 @@
 #!/bin/bash
 # CI Test Script for run_2.sh (Phase 2 - Client Installation)
-# Runs inside Docker container
-#
-# Coverage (mirrors run_2.sh and select_clients.sh):
-#   - Execution: geth, besu, erigon, nethermind, nimbus_eth1, reth, ethrex (7)
-#   - Consensus: prysm, lighthouse, lodestar, teku, nimbus, grandine (6)
-#   - MEV: install_mev_boost, install_commit_boost, install_ethgas (3)
-#   - Default path: Geth + Prysm + MEV-Boost (run_2 option 2)
-#   - Interactive path: all above via select_clients.sh (run_2 option 1)
-#
-# Install scripts run full flow; failures at UFW/network/systemd expected in CI.
+# Runs inside Docker container as non-root (testuser)
+# Tests script structure, client install scripts, and run_2.sh flag flow
 
 set -Eeuo pipefail
 
-# Setup paths and source shared utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_PREFIX="CI"
 # shellcheck source=lib/test_utils.sh
@@ -23,9 +14,15 @@ log_info "╔══════════════════════�
 log_info "║  CI Test: run_2.sh (Phase 2 - Structure Validation)           ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 
+# Verify we're running as non-root (required for run_2.sh)
+if is_root; then
+    log_error "This test must run as non-root (run_2.sh requires regular user)"
+    exit 1
+fi
+log_info "✓ Running as $(whoami)"
+
 cd "$PROJECT_ROOT"
 
-# Source exports to get variables
 source_exports
 source_common_functions
 
@@ -147,55 +144,43 @@ done
 # We verify no path/source errors; install may fail at UFW/network - expected in CI.
 log_info "Test 8: Run all client install scripts (execution + consensus + MEV)..."
 load_fail=0
+total=${#CLIENT_SCRIPTS[@]}
+idx=0
 for script in "${CLIENT_SCRIPTS[@]}"; do
     [[ -f "$PROJECT_ROOT/$script" ]] || continue
+    idx=$((idx + 1))
+    log_info "  [$idx/$total] Running $(basename "$script")..."
     output=$("$PROJECT_ROOT/$script" 2>&1) || true
+    exit_code=$?
     if output_has_path_errors "$output"; then
-        log_error "  ✗ $(basename "$script"): path/source error"
-        echo "$output" | head -5
+        log_error "  ✗ $(basename "$script"): path/source error (exit=$exit_code)"
+        dump_output_tail "$output" 30 "    "
         load_fail=$((load_fail + 1))
     else
-        log_info "  ✓ $(basename "$script"): ran install flow"
+        log_info "  ✓ $(basename "$script"): ran (exit=$exit_code)"
     fi
 done
 if [[ $load_fail -gt 0 ]]; then
-    log_error "  $load_fail script(s) failed - CI will fail"
+    log_error "  $load_fail script(s) had path/source errors - CI will fail"
     exit 1
 fi
 
-# Test 9: Default path (Geth + Prysm + MEV-Boost) - explicit run_2.sh default flow
-# Mirrors what happens when user selects "2. Use default setup"
-log_info "Test 9: Default path (Geth, Prysm, MEV-Boost)..."
-for script in "install/execution/geth.sh" "install/consensus/prysm.sh" "install/mev/install_mev_boost.sh"; do
-    name=$(basename "$script")
-    if "$PROJECT_ROOT/$script" 2>&1; then
-        log_info "  ✓ $name: installed"
-    else
-        log_info "  ⊘ $name: failed (expected in CI - UFW/network)"
-    fi
-done
-
-# Test 10: run_2.sh with --execution --consensus --mev flags (non-interactive)
-log_info "Test 10: run_2.sh with flags (--execution --consensus --mev)..."
+# Test 9: run_2.sh with --execution --consensus --mev flags (non-interactive)
+log_info "Test 9: run_2.sh with flags (--execution --consensus --mev)..."
 mkdir -p "$PROJECT_ROOT/config"
 echo "export LOGIN_UNAME='$(whoami)'" > "$PROJECT_ROOT/config/user_config.env"
-if "$PROJECT_ROOT/run_2.sh" --execution=geth --consensus=prysm --mev=mev-boost --skip-deps 2>&1; then
-    log_info "  ✓ run_2.sh flag flow completed"
-else
-    log_info "  ⊘ run_2.sh flag flow failed (expected in CI - UFW/systemd)"
+run2_log="/tmp/run2_ci_$$.log"
+if ! run_script_with_log "$run2_log" "$PROJECT_ROOT/run_2.sh" --execution=geth --consensus=prysm --mev=mev-boost --skip-deps; then
+    log_error "  ✗ run_2.sh failed"
+    dump_log_tail "$run2_log" 50 "    "
+    rm -f "$run2_log"
+    exit 1
 fi
-
-# Test 11: run_2.sh with different clients (Besu + Lighthouse + none)
-log_info "Test 11: run_2.sh --execution=besu --consensus=lighthouse --mev=none..."
-if "$PROJECT_ROOT/run_2.sh" --execution=besu --consensus=lighthouse --mev=none --skip-deps 2>&1; then
-    log_info "  ✓ run_2.sh besu+lighthouse flow completed"
-else
-    log_info "  ⊘ run_2.sh besu+lighthouse failed (expected in CI)"
-fi
+rm -f "$run2_log"
+log_info "  ✓ run_2.sh flag flow completed"
 
 log_info "╔════════════════════════════════════════════════════════════════╗"
 log_info "║  ✓ run_2.sh CI Test PASSED                                    ║"
-log_info "║  Validated: 7 execution + 6 consensus + 3 MEV clients         ║"
-log_info "║  + run_2.sh flags (--execution, --consensus, --mev)            ║"
+log_info "║  Validated: 16 client scripts + run_2.sh flags (geth+prysm+mev-boost) ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 exit 0
