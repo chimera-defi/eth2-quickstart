@@ -23,7 +23,7 @@ while IFS= read -r -d '' script; do
         echo "❌ $script"
         fail=1
     fi
-done < <(find . -name "*.sh" -type f ! -path "./.git/*" -print0)
+done < <(find . -name "*.sh" -type f ! -path "./.git/*" ! -path "./erigon/*" ! -path "./reth/*" -print0)
 
 if [[ $fail -eq 1 ]]; then
     echo "Shellcheck failed. Fix issues above before pushing."

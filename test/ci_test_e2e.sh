@@ -116,11 +116,16 @@ if [[ "$PHASE" == "2" ]]; then
     rm -f "$run2_log"
 
     log_header "Verifying run_2.sh Results"
+    # Clients from run_2.sh --execution=geth --consensus=prysm --mev=mev-boost
     if command -v geth &>/dev/null; then record_test "Geth binary installed" "PASS"; else record_test "Geth binary installed" "FAIL"; fi
     if [[ -f "$HOME/prysm/prysm.sh" ]]; then record_test "Prysm installed" "PASS"; else record_test "Prysm installed" "FAIL"; fi
     if [[ -f "$HOME/mev-boost/mev-boost" ]]; then record_test "MEV-Boost installed" "PASS"; else record_test "MEV-Boost installed" "FAIL"; fi
     if [[ -f "$HOME/secrets/jwt.hex" ]]; then record_test "JWT secret exists" "PASS"; else record_test "JWT secret exists" "FAIL"; fi
     if systemctl list-unit-files 2>/dev/null | grep -q "eth1.service"; then record_test "eth1 systemd service created" "PASS"; else record_test "eth1 systemd service created" "FAIL"; fi
+    # Additional clients from Test 8 (ci_test_run_2 runs all install scripts before this)
+    if [[ -f "$HOME/besu/bin/besu" ]]; then record_test "Besu installed" "PASS"; else record_test "Besu installed" "FAIL"; fi
+    if [[ -f "$HOME/lighthouse/lighthouse" ]]; then record_test "Lighthouse installed" "PASS"; else record_test "Lighthouse installed" "FAIL"; fi
+    if [[ -f "$HOME/commit-boost/commit-boost-pbs" ]]; then record_test "Commit-Boost installed" "PASS"; else record_test "Commit-Boost installed" "FAIL"; fi
 fi
 
 # =============================================================================

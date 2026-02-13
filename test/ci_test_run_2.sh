@@ -141,12 +141,13 @@ done
 
 # Test 8: Run ALL client install scripts (full install flow)
 # Each script executes: source, check_requirements, firewall, download/apt, systemd, etc.
-# We verify no path/source errors. Install may fail for expected reasons:
-#   - UFW/iptables in Docker (no kernel modules)
-#   - erigon/reth need build tools (make, cargo) - not in --test deps
-# Path/source errors (missing .sh, unloaded functions) cause test failure.
+# Path/source errors always fail. Install failures fail except for scripts needing Rust
+# (reth, ethgas) which are skipped - test image has no cargo.
 log_info "Test 8: Run all client install scripts (execution + consensus + MEV)..."
+# Scripts that need Rust (cargo) - allowed to fail in CI test image
+SCRIPTS_NEED_RUST=("install/execution/reth.sh" "install/mev/install_ethgas.sh")
 load_fail=0
+install_fail=0
 total=${#CLIENT_SCRIPTS[@]}
 idx=0
 for script in "${CLIENT_SCRIPTS[@]}"; do
@@ -164,12 +165,29 @@ for script in "${CLIENT_SCRIPTS[@]}"; do
         log_error "  ✗ $(basename "$script"): path/source error (exit=$exit_code)"
         dump_output_tail "$output" 30 "    "
         load_fail=$((load_fail + 1))
+    elif [[ $exit_code -ne 0 ]]; then
+        # Check if script needs Rust (allowed to fail)
+        need_rust=false
+        for rust_script in "${SCRIPTS_NEED_RUST[@]}"; do
+            if [[ "$script" == "$rust_script" ]]; then need_rust=true; break; fi
+        done
+        if [[ "$need_rust" == "true" ]]; then
+            log_info "  ⊘ $(basename "$script"): skipped (needs Rust, exit=$exit_code)"
+        else
+            log_error "  ✗ $(basename "$script"): install failed (exit=$exit_code)"
+            dump_output_tail "$output" 30 "    "
+            install_fail=$((install_fail + 1))
+        fi
     else
-        log_info "  ✓ $(basename "$script"): ran (exit=$exit_code)"
+        log_info "  ✓ $(basename "$script"): installed (exit=0)"
     fi
 done
 if [[ $load_fail -gt 0 ]]; then
-    log_error "  $load_fail script(s) had path/source errors - CI will fail"
+    log_error "  $load_fail script(s) had path/source errors - CI fails"
+    exit 1
+fi
+if [[ $install_fail -gt 0 ]]; then
+    log_error "  $install_fail script(s) failed to install - CI fails"
     exit 1
 fi
 

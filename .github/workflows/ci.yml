@@ -46,9 +46,9 @@ jobs:
         SKIP_BUILD=true ./test/run_e2e.sh --phase=1
 
     - name: Test run_2.sh (Phase 2 - Structure + E2E)
-      timeout-minutes: 15
+      timeout-minutes: 25
       run: |
-        # Single systemd container: structure validation (all 16 clients) then full E2E
+        # Single systemd container: all 16 client installs + run_2 flags + E2E verification
         SKIP_BUILD=true ./test/run_e2e.sh --phase=2
 
   shellcheck:

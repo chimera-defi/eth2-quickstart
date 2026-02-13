@@ -376,28 +376,35 @@ To verify security setup, run: ./install/security/test_security_fixes.sh
 
 EOF
 
-# Run security validation
-log_info "Running security validation..."
-if [[ -f "docs/validate_security_safe.sh" && -x "docs/validate_security_safe.sh" ]]; then
-    log_info "Running code quality validation..."
-    if ./docs/validate_security_safe.sh; then
-        log_info "✓ Security code validation passed"
+# Run security validation (skip in CI E2E - run_1 not executed, security_monitor absent)
+SECURITY_VALIDATION_FAILED=0
+if [[ "${CI_E2E:-}" != "true" ]]; then
+    log_info "Running security validation..."
+    if [[ -f "docs/validate_security_safe.sh" && -x "docs/validate_security_safe.sh" ]]; then
+        log_info "Running code quality validation..."
+        if ! ./docs/validate_security_safe.sh; then
+            log_error "Security code validation failed"
+            SECURITY_VALIDATION_FAILED=1
+        fi
     else
-        log_warn "⚠ Security code validation had issues - check output above"
+        log_warn "Security validation script not found"
     fi
-else
-    log_warn "Security validation script not found"
-fi
 
-if [[ -f "docs/server_security_validation.sh" && -x "docs/server_security_validation.sh" ]]; then
-    log_info "Running server security validation..."
-    if ./docs/server_security_validation.sh; then
-        log_info "✓ Server security validation passed"
+    if [[ -f "docs/server_security_validation.sh" && -x "docs/server_security_validation.sh" ]]; then
+        log_info "Running server security validation..."
+        if ! ./docs/server_security_validation.sh; then
+            log_error "Server security validation failed"
+            SECURITY_VALIDATION_FAILED=1
+        fi
     else
-        log_warn "⚠ Server security validation had issues - check output above"
+        log_warn "Server security validation script not found"
     fi
-else
-    log_warn "Server security validation script not found"
-fi
 
-log_info "Security validation completed. Check the output above for any issues."
+    if [[ $SECURITY_VALIDATION_FAILED -eq 1 ]]; then
+        log_error "Security validation failed - fix errors above"
+        exit 1
+    fi
+    log_info "Security validation completed."
+else
+    log_info "CI E2E: skipping security validation (run_1 not executed)"
+fi

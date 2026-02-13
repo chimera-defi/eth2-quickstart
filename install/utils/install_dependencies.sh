@@ -45,6 +45,10 @@ TEST_PACKAGES=(
     aide
     cron
     fail2ban
+    build-essential
+    golang-go
+    nodejs
+    npm
 )
 
 PRODUCTION_PACKAGES=(
