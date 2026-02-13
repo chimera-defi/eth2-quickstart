@@ -646,10 +646,10 @@ This script supports multiple modes:
 ./install_dependencies.sh --production # Full production (default)
 ```
 
-**Package Groups (defined in script):**
-- `BASE_PACKAGES` - Core utilities needed everywhere (curl, wget, git, jq, etc.)
-- `TEST_PACKAGES` - Additional test tools (shellcheck, ufw, systemd)
-- `PRODUCTION_PACKAGES` - Build tools, languages, services
+**Package Groups (defined in `install/utils/install_dependencies.sh`):**
+- `BASE_PACKAGES` - Core utilities
+- `TEST_PACKAGES` - Test infra (shellcheck, systemd, aide, cron, fail2ban)
+- `PRODUCTION_PACKAGES` - Build tools, languages, services (includes aide, cron, fail2ban)
 
 **Docker Usage:**
 ```dockerfile
@@ -661,6 +661,10 @@ RUN /workspace/install/utils/install_dependencies.sh --test
 - Detects Docker environment and skips incompatible tools (snap, timedatectl)
 - Works as both root (Docker) and non-root (production)
 - Provides `--help` to show all package groups
+
+**Package definitions:** Single source in `install/utils/install_dependencies.sh`. One package per line for readability.
+
+**Local Docker build test:** `docker build -t eth-node-test -f test/Dockerfile .` — run before push to catch build failures.
 
 ### Shared Test Utilities (`test/lib/test_utils.sh`)
 
