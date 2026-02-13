@@ -149,9 +149,24 @@ else
     record_test "Fail2ban service running" "FAIL"
 fi
 
-# Verify AIDE is installed
+# Verify AIDE is installed and properly initialized
 if command -v aide &>/dev/null; then
     record_test "AIDE installed" "PASS"
+    if [[ -f /var/lib/aide/aide.db ]]; then
+        record_test "AIDE database initialized" "PASS"
+    else
+        record_test "AIDE database initialized" "FAIL"
+    fi
+    if [[ -f /usr/local/bin/aide_check.sh ]] && [[ -x /usr/local/bin/aide_check.sh ]]; then
+        record_test "AIDE check script installed" "PASS"
+        if /usr/local/bin/aide_check.sh &>/dev/null; then
+            record_test "AIDE check script runs successfully" "PASS"
+        else
+            record_test "AIDE check script runs successfully" "FAIL"
+        fi
+    else
+        record_test "AIDE check script installed" "FAIL"
+    fi
 else
     record_test "AIDE installed" "FAIL"
 fi

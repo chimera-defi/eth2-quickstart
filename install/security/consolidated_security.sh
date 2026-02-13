@@ -166,12 +166,8 @@ setup_aide() {
     fi
     
     if ! aide $aide_config --init; then
-        if is_docker; then
-            log_warn "AIDE init failed in container - continuing (AIDE installed; db will be created on real server)"
-        else
-            log_error "Failed to initialize AIDE database"
-            exit 1
-        fi
+        log_error "Failed to initialize AIDE database"
+        exit 1
     fi
     
     # Move database to production location
@@ -195,12 +191,6 @@ log_warn() {
 }
 
 log_info "Running AIDE file integrity check..."
-
-# Skip if database not yet initialized (e.g. container environment)
-if [[ ! -f /var/lib/aide/aide.db ]]; then
-    log_warn "AIDE database not found - run 'aide --init' then 'mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db'"
-    exit 0
-fi
 
 # Run AIDE check
 if aide --check > /var/log/aide_check.log 2>&1; then
