@@ -69,9 +69,9 @@ if [[ ! -f /root/.ssh/authorized_keys ]]; then
 fi
 
 if "$PROJECT_ROOT/run_1.sh"; then
-    record_test "run_1.sh executed successfully" "PASS"
+    record_test "run_1.sh execution" "PASS"
 else
-    record_test "run_1.sh executed successfully" "FAIL"
+    record_test "run_1.sh execution" "FAIL"
     print_test_summary
     exit 1
 fi

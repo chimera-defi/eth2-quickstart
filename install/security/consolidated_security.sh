@@ -156,16 +156,16 @@ setup_aide() {
     # In Docker/containers, the default config can fail (xattr, proc, overlay fs)
     # Use minimal config that only scans /etc, /bin, /usr/bin, /usr/sbin
     log_info "Initializing AIDE database..."
-    local aide_config=""
     if is_docker; then
         local docker_conf="$SCRIPT_DIR/aide-docker.conf"
-        if [[ -f "$docker_conf" ]]; then
-            aide_config="--config=$docker_conf"
+        if [[ -f "$docker_conf" ]] && [[ -d /etc/aide ]]; then
             log_info "Using minimal AIDE config for container environment"
+            # Install as main config so aide finds it (--config can fail with "missing configuration")
+            cp "$docker_conf" /etc/aide/aide.conf
         fi
     fi
     
-    if ! aide $aide_config --init; then
+    if ! aide --init; then
         log_error "Failed to initialize AIDE database"
         exit 1
     fi
