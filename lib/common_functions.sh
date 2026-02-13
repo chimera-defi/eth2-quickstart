@@ -378,8 +378,7 @@ install_dependencies() {
     fi
 }
 
-# Setup firewall rules
-# When CI_E2E=true (Docker E2E test): skip UFW - container lacks kernel modules for iptables/nftables
+# Setup firewall rules. Skip when CI_E2E=true (Docker lacks UFW kernel modules).
 setup_firewall_rules() {
     local ports=("$@")
     log_info "Setting up firewall rules for ports: ${ports[*]}"
@@ -458,9 +457,7 @@ validate_menu_choice() {
 # SYSTEM VALIDATION FUNCTIONS
 # =============================================================================
 
-# Check system requirements (min_memory_gb, min_disk_gb)
-# Logs warnings if below threshold but never fails - allows CI/Docker E2E to proceed.
-# Real servers will see the warning; clients may fail at runtime if undersized.
+# Check system requirements (min_memory_gb, min_disk_gb). Warns if below threshold, never fails.
 check_system_requirements() {
     local min_memory_gb="${1:-16}"
     local min_disk_gb="${2:-1000}"
