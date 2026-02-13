@@ -511,22 +511,6 @@ require_root() {
 # SECURITY FUNCTIONS - Required for run_1.sh and run_2.sh
 # =============================================================================
 
-# Generate secure password
-generate_secure_password() {
-    local length="${1:-16}"
-    local password
-    
-    # Generate a secure random password with mixed case, numbers, and symbols
-    password=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-"$length")
-    
-    # Ensure password has at least one of each required character type
-    while [[ ! "$password" =~ [A-Z] ]] || [[ ! "$password" =~ [a-z] ]] || [[ ! "$password" =~ [0-9] ]]; do
-        password=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-"$length")
-    done
-    
-    echo "$password"
-}
-
 # Secure user creation and setup
 # Automatically migrates root's SSH authorized_keys to the new user
 setup_secure_user() {
@@ -738,11 +722,14 @@ generate_handoff_info() {
 
     log_info "Generating secure handoff information..."
 
+    local auth_line="Authentication: SSH key only (no password)"
+    [[ -n "$password" ]] && auth_line="Password: $password (sudo/console fallback)"
+
     local handoff_text
     handoff_text=$(cat << EOF
 === SECURE HANDOFF INFORMATION ===
 Username: $username
-Password: $password
+$auth_line
 Server IP: $server_ip
 SSH Port: $ssh_port
 SSH Command: $ssh_cmd
@@ -750,7 +737,6 @@ Next Step: ./run_2.sh
 
 IMPORTANT: SSH key authentication is required.
 Root's SSH keys have been migrated to this user.
-Password is for sudo/console access only.
 Delete /root/handoff_info.txt after noting this information.
 
 Generated: $(date)

@@ -28,9 +28,9 @@ apt autoremove -y || log_warn "Some packages could not be removed"
 log_info "System packages updated"
 
 # Create user with sudo + SSH key migration BEFORE hardening SSH
+# SSH key-only auth (no password) - more secure
 log_info "Setting up user: $LOGIN_UNAME"
-USER_PASSWORD=$(generate_secure_password 16)
-setup_secure_user "$LOGIN_UNAME" "$USER_PASSWORD"
+setup_secure_user "$LOGIN_UNAME" ""
 
 # Harden SSH (after user exists with keys)
 configure_ssh "$YourSSHPortNumber" "$SCRIPT_DIR"
@@ -45,7 +45,7 @@ apply_network_security
 setup_security_monitoring
 
 # Generate and save handoff information (auto-detects server IP)
-generate_handoff_info "$LOGIN_UNAME" "$USER_PASSWORD" "" "$YourSSHPortNumber"
+generate_handoff_info "$LOGIN_UNAME" "" "" "$YourSSHPortNumber"
 
 log_info "=== SETUP COMPLETE ==="
 log_info "Reboot required: sudo reboot"
