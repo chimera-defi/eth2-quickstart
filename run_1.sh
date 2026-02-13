@@ -19,12 +19,17 @@ log_info "Using configuration: user=$LOGIN_UNAME, ssh_port=$YourSSHPortNumber, m
 
 check_system_compatibility
 
-# Update system packages
-log_info "Updating system packages..."
-apt update -y
-apt upgrade -y
-apt full-upgrade -y
-apt autoremove -y || log_warn "Some packages could not be removed"
+# Update system packages (skip full upgrade in CI/E2E for speed)
+if [[ "${SKIP_APT_UPGRADE:-false}" == "true" ]]; then
+    log_info "Skipping apt upgrade (CI/E2E mode) - running update only..."
+    apt-get update -qq || log_warn "apt update had issues"
+else
+    log_info "Updating system packages..."
+    apt update -y
+    apt upgrade -y
+    apt full-upgrade -y
+    apt autoremove -y || log_warn "Some packages could not be removed"
+fi
 log_info "System packages updated"
 
 # Create user with sudo + SSH key migration BEFORE hardening SSH
