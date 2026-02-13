@@ -12,9 +12,11 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Source common functions
+# Source common functions and exports for RUN_1_SECURITY_PACKAGES
 # shellcheck source=../../lib/common_functions.sh
 source "$SCRIPT_DIR/../../lib/common_functions.sh"
+# shellcheck source=../../exports.sh
+source "$SCRIPT_DIR/../../exports.sh"
 
 # =============================================================================
 # PACKAGE DEFINITIONS (Single Source of Truth)
@@ -38,21 +40,19 @@ BASE_PACKAGES=(
     "apt-transport-https"
 )
 
-# Test packages - additional packages needed for testing
-# openssh-server required for run_1 E2E (configure_ssh modifies sshd_config)
-# aide, fail2ban, cron required for run_1 E2E (consolidated_security, setup_security_monitoring)
+# Test packages - must match run_1 requirements (Docker E2E = real server)
+# RUN_1_SECURITY_PACKAGES from exports.sh: aide cron fail2ban
 TEST_PACKAGES=(
     "shellcheck"
     "ufw"
     "systemd"
     "systemd-sysv"
     "openssh-server"
-    "aide"
-    "fail2ban"
-    "cron"
+    $RUN_1_SECURITY_PACKAGES
 )
 
 # Production packages - needed for building/running Ethereum clients
+# Includes RUN_1_SECURITY_PACKAGES for consistency
 PRODUCTION_PACKAGES=(
     "unzip"
     "build-essential"
@@ -60,7 +60,7 @@ PRODUCTION_PACKAGES=(
     "python3-pip"
     "chrony"
     "ufw"
-    "aide"
+    $RUN_1_SECURITY_PACKAGES
     "snapd"
     "cmake"
     "libssl-dev"
@@ -70,7 +70,6 @@ PRODUCTION_PACKAGES=(
     "pkg-config"
     "openjdk-17-jdk"
     "libclang-dev"
-    "fail2ban"
     "nginx"
     "apache2-utils"
     "bmon"
@@ -80,10 +79,7 @@ PRODUCTION_PACKAGES=(
 # =============================================================================
 # HELPER FUNCTIONS
 # =============================================================================
-
-is_docker() {
-    [[ -f /.dockerenv ]] || grep -q docker /proc/1/cgroup 2>/dev/null
-}
+# is_docker from common_functions.sh
 
 install_packages() {
     local packages=("$@")

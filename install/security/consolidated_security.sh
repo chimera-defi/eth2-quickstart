@@ -37,7 +37,8 @@ setup_firewall() {
     setup_firewall_rules 30303 13000/tcp 12000/udp "$SSH_PORT/tcp" 443/tcp
 
     # Block outbound connections to private/reserved networks to prevent netscan abuse
-    # Skip in Docker: container gateway (172.17.0.1) is in 172.16.0.0/12; blocking would break connectivity
+    # Skip in Docker only: container gateway (172.17.0.1) is in 172.16.0.0/12; blocking would
+    # break connectivity. On real servers we apply full rules. Docker E2E tests the rest.
     if ! is_docker; then
         log_info "Blocking outbound connections to private networks..."
         log_info "This prevents netscan abuse warnings (updated Feb '23 from Erigon docs)"
@@ -105,9 +106,6 @@ setup_firewall() {
 setup_fail2ban() {
     log_info "Setting up fail2ban intrusion prevention..."
 
-    # Install fail2ban
-    install_dependencies fail2ban
-
     # Define variables with fallback defaults
     local SSH_PORT="${YourSSHPortNumber:-22}"
     local MAX_RETRY="${maxretry:-3}"
@@ -146,32 +144,19 @@ EOF
 setup_aide() {
     log_info "Setting up AIDE file integrity monitoring..."
     
-    # Install AIDE and cron (cron needed for scheduling daily check)
-    install_dependencies aide cron
-    
     # Ensure AIDE database directory exists
     ensure_directory /var/lib/aide
     
-    # Initialize AIDE database
-    # AIDE detects file tampering by comparing against a baseline. We monitor security-critical
-    # paths: /etc (configs), /bin, /usr/bin, /usr/sbin (executables). Per AIDE best practices:
-    # - Include sha256 for content integrity (detects modified file contents)
-    # - p+u+g+i+n+l = perms, owner, group, inode, links, name (metadata changes)
-    # - Exclude volatile dirs (/var/log, /tmp) by only scanning static system paths
-    # Ref: https://github.com/aide/aide/blob/master/doc/aide.conf.5
+    # Initialize AIDE database (config from config/aide.conf - single source)
     log_info "Initializing AIDE database..."
     ensure_directory /etc/aide
-    cat > /etc/aide/aide.conf << 'AIDECONF'
-database=file:/var/lib/aide/aide.db
-database_out=file:/var/lib/aide/aide.db.new
-database_new=file:/var/lib/aide/aide.db.new
-# R = metadata + sha256 (content integrity per AIDE best practices)
-R = p+u+g+i+n+l+sha256
-/etc R
-/bin R
-/usr/bin R
-/usr/sbin R
-AIDECONF
+    local aide_conf_src="$PROJECT_ROOT/config/aide.conf"
+    if [[ -f "$aide_conf_src" ]]; then
+        cp "$aide_conf_src" /etc/aide/aide.conf
+    else
+        log_error "AIDE config not found at $aide_conf_src"
+        exit 1
+    fi
     
     if ! aide --config=/etc/aide/aide.conf --init; then
         log_error "Failed to initialize AIDE database"
@@ -259,6 +244,9 @@ verify_security_setup() {
 
 # Main execution
 main() {
+    # Install all security packages upfront (single source: RUN_1_SECURITY_PACKAGES in exports.sh)
+    install_dependencies $RUN_1_SECURITY_PACKAGES
+
     # Run all security setup functions
     setup_firewall
     setup_fail2ban

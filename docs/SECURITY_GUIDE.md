@@ -103,7 +103,7 @@ This guide provides comprehensive security information for the Ethereum node set
 - **Fail2ban Logs**: `/var/log/fail2ban.log`
 
 ### AIDE File Integrity Monitoring
-AIDE (Advanced Intrusion Detection Environment) creates a baseline of critical system files and detects tampering. It monitors:
+AIDE (Advanced Intrusion Detection Environment) creates a baseline of critical system files and detects tampering. Config: `config/aide.conf` (single source). It monitors:
 - **`/etc`** – System configuration (SSH, firewall, etc.)
 - **`/bin`, `/usr/bin`, `/usr/sbin`** – Executables
 

@@ -43,22 +43,8 @@ log_header "Phase 1: Executing run_1.sh"
 export DEBIAN_FRONTEND=noninteractive
 export DEBIAN_PRIORITY=critical
 
-# Pre-seed common packages that prompt during apt upgrade
-# postfix - mail server config (mailname, type)
-echo "postfix postfix/mailname string localhost" | debconf-set-selections 2>/dev/null || true
-echo "postfix postfix/main_mailer_type string 'Local only'" | debconf-set-selections 2>/dev/null || true
-# cron - whether to mail cron output
-echo "cron cron/upgrade_available boolean false" | debconf-set-selections 2>/dev/null || true
-echo "cron cron/upgrade_available_seen boolean true" | debconf-set-selections 2>/dev/null || true
-# tzdata - timezone (avoid prompts)
-echo "tzdata tzdata/Areas select Etc" | debconf-set-selections 2>/dev/null || true
-echo "tzdata tzdata/Zones/Etc select UTC" | debconf-set-selections 2>/dev/null || true
-# needrestart - "which services to restart?" prompt during apt upgrade
-echo "needrestart needrestart/restart-services string" | debconf-set-selections 2>/dev/null || true
-
-# dpkg: use defaults, never prompt for config file changes
-mkdir -p /etc/apt/apt.conf.d
-printf '%s\n' 'DPkg::options { "--force-confdef"; "--force-confold"; };' > /etc/apt/apt.conf.d/99local-noninteractive
+# Pre-seed debconf (single source: install/utils/debconf_preseed.sh)
+"$PROJECT_ROOT/install/utils/debconf_preseed.sh"
 
 # Create minimal root SSH keys so setup_secure_user has something to migrate (avoids lockout warning)
 mkdir -p /root/.ssh
