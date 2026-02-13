@@ -1,27 +1,47 @@
 #!/bin/bash
 
 # Centralized Dependency Installation Script
-# Installs dependencies needed for Ethereum node setup
+# Single source of truth for all apt packages
 #
 # Usage:
-#   ./install_dependencies.sh          # Full production install
-#   ./install_dependencies.sh --test   # Minimal test dependencies only
-#   ./install_dependencies.sh --base   # Base packages only (no languages/tools)
+#   ./install_dependencies.sh              # Full production install
+#   ./install_dependencies.sh --test       # Test env (shellcheck, systemd, aide, cron, fail2ban)
+#   ./install_dependencies.sh --base       # Base packages only
+#   ./install_dependencies.sh --run1-security  # run_1 consolidated security packages
 
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Source common functions and package definitions (single source of truth)
 # shellcheck source=../../lib/common_functions.sh
 source "$SCRIPT_DIR/../../lib/common_functions.sh"
-# shellcheck source=packages.sh
-source "$SCRIPT_DIR/packages.sh"
+
+# =============================================================================
+# PACKAGE DEFINITIONS (single source of truth)
+# =============================================================================
+
+RUN_1_SECURITY_PACKAGES=(aide cron fail2ban)
+
+BASE_PACKAGES=(
+    bash curl wget git tar gzip sudo jq openssl ca-certificates
+    gnupg lsb-release software-properties-common apt-transport-https
+)
+
+TEST_PACKAGES=(
+    shellcheck ufw systemd systemd-sysv openssh-server
+    "${RUN_1_SECURITY_PACKAGES[@]}"
+)
+
+PRODUCTION_PACKAGES=(
+    unzip build-essential python3 python3-pip chrony ufw
+    "${RUN_1_SECURITY_PACKAGES[@]}"
+    snapd cmake libssl-dev libgmp-dev libtinfo5 libprotobuf-dev pkg-config
+    openjdk-17-jdk libclang-dev nginx apache2-utils bmon tcptrack
+)
 
 # =============================================================================
 # HELPER FUNCTIONS
 # =============================================================================
-# is_docker from common_functions.sh
 
 install_packages() {
     local packages=("$@")
@@ -53,6 +73,11 @@ install_test() {
     install_base
     install_packages "${TEST_PACKAGES[@]}"
     log_info "Test dependencies installed successfully!"
+}
+
+install_run1_security() {
+    log_info "Installing run_1 security packages (aide, cron, fail2ban)..."
+    install_packages "${RUN_1_SECURITY_PACKAGES[@]}"
 }
 
 install_production() {
@@ -143,19 +168,24 @@ main() {
         --base|-b)
             install_base
             ;;
+        --run1-security)
+            install_run1_security
+            ;;
         --production|-p|production|"")
             install_production
             ;;
         --help|-h)
-            echo "Usage: $0 [--test|--base|--production]"
+            echo "Usage: $0 [--test|--base|--run1-security|--production]"
             echo ""
             echo "Modes:"
-            echo "  --test, -t       Install minimal test dependencies"
-            echo "  --base, -b       Install base packages only"
-            echo "  --production, -p Install full production dependencies (default)"
+            echo "  --test, -t         Install test dependencies"
+            echo "  --base, -b         Install base packages only"
+            echo "  --run1-security    Install run_1 security (aide, cron, fail2ban)"
+            echo "  --production, -p   Install full production dependencies (default)"
             echo ""
             echo "Package groups:"
             echo "  Base: ${BASE_PACKAGES[*]}"
+            echo "  Run1 security: ${RUN_1_SECURITY_PACKAGES[*]}"
             echo "  Test: ${TEST_PACKAGES[*]}"
             echo "  Production: ${PRODUCTION_PACKAGES[*]}"
             ;;

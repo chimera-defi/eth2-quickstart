@@ -646,9 +646,9 @@ This script supports multiple modes:
 ./install_dependencies.sh --production # Full production (default)
 ```
 
-**Package Groups (defined in `install/utils/packages.sh`):**
-- `BASE_PACKAGES` - Core utilities needed everywhere
-- `RUN_1_SECURITY_PACKAGES` - aide, cron, fail2ban (consolidated_security)
+**Package Groups (defined in `install/utils/install_dependencies.sh`):**
+- `BASE_PACKAGES` - Core utilities
+- `RUN_1_SECURITY_PACKAGES` - aide, cron, fail2ban
 - `TEST_PACKAGES` - Test infra + run_1 security
 - `PRODUCTION_PACKAGES` - Build tools, languages, services
 
@@ -663,7 +663,7 @@ RUN /workspace/install/utils/install_dependencies.sh --test
 - Works as both root (Docker) and non-root (production)
 - Provides `--help` to show all package groups
 
-**Package definitions:** Single source in `install/utils/packages.sh`. Use arrays, not space-separated strings.
+**Package definitions:** Single source in `install/utils/install_dependencies.sh`. Use arrays.
 
 **Local Docker build test:** `docker build -t eth-node-test -f test/Dockerfile .` — run before push to catch build failures.
 

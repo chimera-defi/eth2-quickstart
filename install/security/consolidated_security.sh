@@ -8,8 +8,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$PROJECT_ROOT/exports.sh"
 source "$PROJECT_ROOT/lib/common_functions.sh"
-# shellcheck source=../utils/packages.sh
-source "$PROJECT_ROOT/install/utils/packages.sh"
 
 # Check if running as root
 require_root
@@ -246,8 +244,8 @@ verify_security_setup() {
 
 # Main execution
 main() {
-    # Install all security packages (single source: install/utils/packages.sh)
-    install_dependencies "${RUN_1_SECURITY_PACKAGES[@]}"
+    # Install run_1 security packages (aide, cron, fail2ban) - defined in install_dependencies.sh
+    "$PROJECT_ROOT/install/utils/install_dependencies.sh" --run1-security
 
     # Run all security setup functions
     setup_firewall
