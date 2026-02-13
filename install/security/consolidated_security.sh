@@ -161,7 +161,6 @@ setup_aide() {
 database=file:/var/lib/aide/aide.db
 database_out=file:/var/lib/aide/aide.db.new
 database_new=file:/var/lib/aide/aide.db.new
-gzip=9
 R = p+u+g+i+n+l
 /etc R
 /bin R
