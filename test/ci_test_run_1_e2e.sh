@@ -128,9 +128,15 @@ else
     record_test "UFW firewall active" "FAIL"
 fi
 
-# Verify fail2ban is running
+# Verify fail2ban is running and has active jails
 if systemctl is-active --quiet fail2ban 2>/dev/null; then
     record_test "Fail2ban service running" "PASS"
+    # At least sshd jail should be in the jail list (confirms jails started)
+    if fail2ban-client status 2>/dev/null | grep -q "sshd"; then
+        record_test "Fail2ban sshd jail active" "PASS"
+    else
+        record_test "Fail2ban sshd jail active" "FAIL"
+    fi
 else
     record_test "Fail2ban service running" "FAIL"
 fi
@@ -149,6 +155,12 @@ if command -v aide &>/dev/null; then
             record_test "AIDE check script runs successfully" "PASS"
         else
             record_test "AIDE check script runs successfully" "FAIL"
+        fi
+        # Verify crontab entry was added (root's crontab - run_1 runs as root)
+        if crontab -l 2>/dev/null | grep -Fq "/usr/local/bin/aide_check.sh"; then
+            record_test "AIDE cron job scheduled" "PASS"
+        else
+            record_test "AIDE cron job scheduled" "FAIL"
         fi
     else
         record_test "AIDE check script installed" "FAIL"

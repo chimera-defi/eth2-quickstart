@@ -2,8 +2,11 @@
 
 # Consolidated Security Setup Script
 # Combines firewall, fail2ban, and AIDE into one efficient script
+# Used by run_1.sh (Phase 1). Same behavior in Docker and production.
+#
+# Docker divergence (documented): Firewall skips private-network outbound blocks
+# in containers (172.17.0.1 gateway would be blocked). All other setup is identical.
 
-# Source configuration files using SCRIPT_DIR for reliable path resolution
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$PROJECT_ROOT/exports.sh"
@@ -110,6 +113,18 @@ setup_fail2ban() {
     local SSH_PORT="${YourSSHPortNumber:-22}"
     local MAX_RETRY="${maxretry:-3}"
 
+    # Install nginx-proxy filter (jail references it; nginx_harden adds more jails in run_2)
+    ensure_directory /etc/fail2ban/filter.d
+    if [[ ! -f /etc/fail2ban/filter.d/nginx-proxy.conf ]]; then
+        cat > /etc/fail2ban/filter.d/nginx-proxy.conf << 'FILTER'
+# Block IPs trying to use server as proxy (matches e.g. "GET http://...")
+[Definition]
+failregex = ^<HOST> -.*GET http.*
+ignoreregex =
+FILTER
+        log_info "Created nginx-proxy fail2ban filter"
+    fi
+
     # Ensure log files exist - fail2ban jails fail to start if logpath is missing
     ensure_directory /var/log/nginx
     for logfile in /var/log/auth.log /var/log/nginx/access.log; do
@@ -158,14 +173,11 @@ EOF
 setup_aide() {
     log_info "Setting up AIDE file integrity monitoring..."
 
-    # Ensure AIDE database directory exists
-    log_info "Creating directory: /var/lib/aide"
     ensure_directory /var/lib/aide
-
-    # Initialize AIDE database (config from config/aide.conf - single source)
-    log_info "Initializing AIDE database..."
-    log_info "Creating directory: /etc/aide"
     ensure_directory /etc/aide
+
+    # Copy config and initialize (config/aide.conf is single source)
+    log_info "Initializing AIDE database..."
     local aide_conf_src="$PROJECT_ROOT/config/aide.conf"
     if [[ -f "$aide_conf_src" ]]; then
         cp "$aide_conf_src" /etc/aide/aide.conf
