@@ -153,16 +153,13 @@ setup_aide() {
     ensure_directory /var/lib/aide
     
     # Initialize AIDE database
-    # In Docker/containers, the default config can fail (xattr, proc, overlay fs)
-    # Use minimal config that only scans /etc, /bin, /usr/bin, /usr/sbin
+    # Ubuntu default config can fail (missing/invalid); use our minimal config when available
+    # Scans /etc, /bin, /usr/bin, /usr/sbin - works in Docker and on servers
     log_info "Initializing AIDE database..."
-    if is_docker; then
-        local docker_conf="$SCRIPT_DIR/aide-docker.conf"
-        if [[ -f "$docker_conf" ]] && [[ -d /etc/aide ]]; then
-            log_info "Using minimal AIDE config for container environment"
-            # Install as main config so aide finds it (--config can fail with "missing configuration")
-            cp "$docker_conf" /etc/aide/aide.conf
-        fi
+    local minimal_conf="$SCRIPT_DIR/aide-docker.conf"
+    if [[ -f "$minimal_conf" ]] && [[ -d /etc/aide ]]; then
+        log_info "Using minimal AIDE config (works in containers and on servers)"
+        cp "$minimal_conf" /etc/aide/aide.conf
     fi
     
     if ! aide --init; then

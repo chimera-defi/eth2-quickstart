@@ -42,11 +42,9 @@ jobs:
 
     - name: Test run_1.sh E2E (Phase 1 - Actual Execution)
       timeout-minutes: 5
-      continue-on-error: true
       run: |
         # Actually runs run_1.sh and verifies results (systemd + openssh required)
         # Uses tmpfs/cgroupns for systemd on GitHub Actions (cgroup v2)
-        # continue-on-error: allows CI to pass while iterating on postfix/apt hang fixes
         SKIP_BUILD=true ./test/run_run_1_e2e.sh
 
     - name: Test run_2.sh (Phase 2 - Client Installation)
