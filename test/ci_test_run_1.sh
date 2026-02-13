@@ -286,9 +286,50 @@ else
     exit 1
 fi
 
+# Test 23: Verify run_1.sh does NOT generate or set a password (lockout prevention)
+log_info "Test 23: Verify no password generation in run_1.sh..."
+if grep -qE 'openssl rand|mkpasswd|pwgen|generate.*password|generate_secure_password' "$PROJECT_ROOT/run_1.sh"; then
+    log_error "  CRITICAL: run_1.sh contains password generation code — lockout risk!"
+    exit 1
+else
+    log_info "  No password generation code in run_1.sh"
+fi
+
+# Verify run_1.sh passes empty password to setup_secure_user
+setup_user_call=$(grep 'setup_secure_user' "$PROJECT_ROOT/run_1.sh" | grep -v '^#')
+if echo "$setup_user_call" | grep -qE 'setup_secure_user "\$LOGIN_UNAME" ""'; then
+    log_info "  setup_secure_user called with empty password (SSH key-only)"
+else
+    log_error "  CRITICAL: setup_secure_user NOT called with empty password!"
+    log_error "  Found: $setup_user_call"
+    exit 1
+fi
+
+# Test 24: Verify setup_secure_user skips chpasswd when password is empty
+log_info "Test 24: Verify setup_secure_user skips password when empty..."
+# The function must guard chpasswd behind a non-empty password check
+if declare -f setup_secure_user | grep -q 'if \[\[ -n "\$password" \]\]'; then
+    log_info "  setup_secure_user guards chpasswd behind non-empty password check"
+else
+    log_error "  setup_secure_user does NOT guard chpasswd — may set empty/random password!"
+    exit 1
+fi
+
+# Test 25: Verify generate_handoff_info is called with empty password
+log_info "Test 25: Verify handoff info uses empty password..."
+handoff_call=$(grep 'generate_handoff_info' "$PROJECT_ROOT/run_1.sh" | grep -v '^#')
+if echo "$handoff_call" | grep -qE 'generate_handoff_info "\$LOGIN_UNAME" "" ""'; then
+    log_info "  generate_handoff_info called with empty password (SSH key-only handoff)"
+else
+    log_error "  generate_handoff_info NOT called with empty password!"
+    log_error "  Found: $handoff_call"
+    exit 1
+fi
+
 log_info "╔════════════════════════════════════════════════════════════════╗"
 log_info "║  run_1.sh CI Test PASSED                                      ║"
 log_info "║  Validated: Structure, syntax, functions, SSH safety,         ║"
-log_info "║  lockout prevention, idempotency, no duplicates, firewall     ║"
+log_info "║  lockout prevention, idempotency, no duplicates, firewall,   ║"
+log_info "║  no password generation, SSH key-only auth                    ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 exit 0

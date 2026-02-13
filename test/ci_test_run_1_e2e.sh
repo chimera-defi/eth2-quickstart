@@ -156,7 +156,66 @@ else
     record_test "AIDE installed" "FAIL"
 fi
 
+# Verify user was created WITHOUT a password (critical lockout prevention)
+# In /etc/shadow, a locked/no-password account has "!" or "!!" or "*" in the password field
+if [[ -f /etc/shadow ]]; then
+    shadow_entry=$(grep "^${LOGIN_UNAME}:" /etc/shadow 2>/dev/null || true)
+    if [[ -n "$shadow_entry" ]]; then
+        pw_field=$(echo "$shadow_entry" | cut -d: -f2)
+        if [[ "$pw_field" == "!" || "$pw_field" == "!!" || "$pw_field" == "*" ]]; then
+            record_test "User has NO password set (SSH key-only)" "PASS"
+        else
+            record_test "User has NO password set (SSH key-only)" "FAIL"
+            echo "  WARNING: Password field is '$pw_field' — expected '!' or '!!' (no password)"
+        fi
+    else
+        record_test "User has NO password set (SSH key-only)" "FAIL"
+        echo "  WARNING: User $LOGIN_UNAME not found in /etc/shadow"
+    fi
+else
+    record_test "User has NO password set (SSH key-only)" "FAIL"
+    echo "  WARNING: /etc/shadow not accessible"
+fi
+
+# Verify SSH keys were actually migrated (content matches root's keys)
+if [[ -f /home/${LOGIN_UNAME}/.ssh/authorized_keys ]] && [[ -f /root/.ssh/authorized_keys ]]; then
+    # Every key in root's authorized_keys should be in the new user's
+    missing_keys=0
+    while IFS= read -r key; do
+        [[ -z "$key" || "$key" =~ ^# ]] && continue
+        if ! grep -Fqx "$key" "/home/${LOGIN_UNAME}/.ssh/authorized_keys" 2>/dev/null; then
+            missing_keys=$((missing_keys + 1))
+        fi
+    done < /root/.ssh/authorized_keys
+    if [[ $missing_keys -eq 0 ]]; then
+        record_test "SSH keys content matches root's keys" "PASS"
+    else
+        record_test "SSH keys content matches root's keys" "FAIL"
+        echo "  WARNING: $missing_keys key(s) from root not found in user's authorized_keys"
+    fi
+else
+    record_test "SSH keys content matches root's keys" "FAIL"
+fi
+
+# Verify SSH config deployed correctly (password auth disabled, correct port)
+if [[ -f /etc/ssh/sshd_config ]]; then
+    if grep -q "^PasswordAuthentication no" /etc/ssh/sshd_config; then
+        record_test "PasswordAuthentication disabled in deployed SSH config" "PASS"
+    else
+        record_test "PasswordAuthentication disabled in deployed SSH config" "FAIL"
+    fi
+    if grep -q "^Port ${YourSSHPortNumber}" /etc/ssh/sshd_config; then
+        record_test "SSH port set to $YourSSHPortNumber" "PASS"
+    else
+        record_test "SSH port set to $YourSSHPortNumber" "FAIL"
+    fi
+else
+    record_test "PasswordAuthentication disabled in deployed SSH config" "FAIL"
+    record_test "SSH port set to $YourSSHPortNumber" "FAIL"
+fi
+
 # =============================================================================
 # SUMMARY
 # =============================================================================
 print_test_summary
+exit $?
