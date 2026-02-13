@@ -143,32 +143,39 @@ EOF
 # Function 3: Setup AIDE
 setup_aide() {
     log_info "Setting up AIDE file integrity monitoring..."
-    
+
     # Ensure AIDE database directory exists
+    log_info "Creating directory: /var/lib/aide"
     ensure_directory /var/lib/aide
-    
+
     # Initialize AIDE database (config from config/aide.conf - single source)
     log_info "Initializing AIDE database..."
+    log_info "Creating directory: /etc/aide"
     ensure_directory /etc/aide
     local aide_conf_src="$PROJECT_ROOT/config/aide.conf"
     if [[ -f "$aide_conf_src" ]]; then
         cp "$aide_conf_src" /etc/aide/aide.conf
+        log_info "Copied AIDE config from $aide_conf_src"
     else
         log_error "AIDE config not found at $aide_conf_src"
         exit 1
     fi
-    
+
+    log_info "Running aide --init (this may take a moment)..."
     if ! aide --config=/etc/aide/aide.conf --init; then
         log_error "Failed to initialize AIDE database"
         exit 1
     fi
-    
+
     # Move database to production location
     if [[ -f /var/lib/aide/aide.db.new ]]; then
         mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
         log_info "AIDE database initialized successfully"
+    else
+        log_error "AIDE did not produce aide.db.new - init may have failed"
+        exit 1
     fi
-    
+
     # Create AIDE check script
     log_info "Creating AIDE check script..."
     cat > /usr/local/bin/aide_check.sh << 'EOF'
@@ -185,8 +192,8 @@ log_warn() {
 
 log_info "Running AIDE file integrity check..."
 
-# Run AIDE check
-if aide --check > /var/log/aide_check.log 2>&1; then
+# Run AIDE check (use config from /etc/aide - same as init)
+if aide --config=/etc/aide/aide.conf --check > /var/log/aide_check.log 2>&1; then
     log_info "✓ AIDE check passed - no changes detected"
 else
     log_warn "⚠ AIDE check found changes - check /var/log/aide_check.log"
@@ -194,47 +201,62 @@ fi
 EOF
 
     chmod +x /usr/local/bin/aide_check.sh
-    
+    log_info "AIDE check script installed at /usr/local/bin/aide_check.sh"
+
     # Schedule AIDE check in crontab (idempotent — only adds if not already present)
+    # crontab -l exits 1 when no crontab exists; use || true to avoid pipefail exit
     log_info "Scheduling AIDE check in crontab..."
-    if ! crontab -l 2>/dev/null | grep -Fq "/usr/local/bin/aide_check.sh"; then
-        (crontab -l 2>/dev/null; echo "0 2 * * * /usr/local/bin/aide_check.sh") | crontab -
+    local existing_crontab
+    existing_crontab=$(crontab -l 2>/dev/null) || true
+    if echo "$existing_crontab" | grep -Fq "/usr/local/bin/aide_check.sh"; then
+        log_info "AIDE cron job already present, skipping"
+    else
+        (echo "$existing_crontab"; echo "0 2 * * * /usr/local/bin/aide_check.sh") | crontab -
+        log_info "AIDE cron job added (daily at 2 AM)"
     fi
-    
+
     log_info "✓ AIDE file integrity monitoring setup complete"
-    log_info "AIDE check scheduled daily at 2 AM"
 }
 
 # Function 4: Security Verification
 verify_security_setup() {
     log_info "Verifying security setup..."
-    
+
     local issues=0
-    
+
     # Check firewall
-    if ufw status | grep -q "Status: active"; then
+    log_info "Checking UFW status..."
+    if ufw status 2>/dev/null | grep -q "Status: active"; then
         log_info "✓ UFW firewall is active"
     else
         log_error "✗ UFW firewall is not active"
         issues=$((issues + 1))
     fi
-    
+
     # Check fail2ban
-    if systemctl is-active --quiet fail2ban; then
+    log_info "Checking fail2ban service..."
+    if systemctl is-active --quiet fail2ban 2>/dev/null; then
         log_info "✓ Fail2ban is running"
     else
         log_error "✗ Fail2ban is not running"
         issues=$((issues + 1))
     fi
-    
+
     # Check AIDE
-    if command -v aide >/dev/null 2>&1; then
+    log_info "Checking AIDE installation..."
+    if command -v aide &>/dev/null; then
         log_info "✓ AIDE is installed"
+        if [[ -f /var/lib/aide/aide.db ]]; then
+            log_info "✓ AIDE database exists"
+        else
+            log_error "✗ AIDE database missing at /var/lib/aide/aide.db"
+            issues=$((issues + 1))
+        fi
     else
         log_error "✗ AIDE is not installed"
         issues=$((issues + 1))
     fi
-    
+
     if [[ $issues -eq 0 ]]; then
         log_info "✓ All security features verified successfully"
     else
