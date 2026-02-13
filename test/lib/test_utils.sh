@@ -99,7 +99,7 @@ print_test_summary() {
     return 0
 }
 
-# Client install scripts to verify path resolution (relative to PROJECT_ROOT)
+# All client install scripts (execution + consensus + MEV) - mirrors run_2.sh / select_clients.sh
 CLIENT_SCRIPTS=(
     "install/execution/geth.sh"
     "install/execution/besu.sh"
@@ -116,6 +116,7 @@ CLIENT_SCRIPTS=(
     "install/consensus/grandine.sh"
     "install/mev/install_mev_boost.sh"
     "install/mev/install_commit_boost.sh"
+    "install/mev/install_ethgas.sh"
 )
 
 # Returns 0 if output indicates path resolution failed (sourcing errors)
