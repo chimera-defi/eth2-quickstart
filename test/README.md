@@ -149,7 +149,6 @@ sudo ./run_1.sh           # Phase 1: System setup (as root)
 The run_1 E2E test executes `apt upgrade` which can pull in packages (postfix, cron, needrestart, tzdata) that prompt for configuration. To prevent hangs:
 
 - **Dockerfile**: Pre-seeds debconf (postfix, cron, tzdata, needrestart) and sets `DPkg::options` for non-interactive config
-- **ci_test_run_1_e2e.sh**: Re-applies debconf pre-seeds and apt.conf before running run_1.sh
 - **CI**: 5min timeout, `continue-on-error: true` so E2E failures don't block other tests
 
 If E2E hangs, run locally with `./test/run_run_1_e2e.sh` to debug.
