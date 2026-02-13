@@ -3,9 +3,12 @@
 # Caddy SSL Configuration Script
 # Configures Caddy to use manual SSL certificates (Let's Encrypt or custom)
 
-source ../../exports.sh
-source ../../lib/common_functions.sh
-source ./caddy_helpers.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+source "$PROJECT_ROOT/exports.sh"
+source "$PROJECT_ROOT/lib/common_functions.sh"
+source "$SCRIPT_DIR/caddy_helpers.sh"
 
 # Get script directories
 get_script_directories
