@@ -119,8 +119,14 @@ CLIENT_SCRIPTS=(
 )
 
 # Returns 0 if output indicates path resolution failed (sourcing errors)
+# Must match sourcing failures only - ufw/iptables also emit "No such file or directory"
 output_has_path_errors() {
-    echo "${1:-}" | grep -qE "No such file or directory|command not found"
+    local out="${1:-}"
+    # Sourcing failure: .sh file not found (e.g. exports.sh, common_functions.sh)
+    echo "$out" | grep -qE "\.sh:.*No such file or directory" && return 0
+    # Sourcing failure: functions not loaded (common_functions wasn't sourced)
+    echo "$out" | grep -qE "get_script_directories: command not found|log_installation_start: command not found" && return 0
+    return 1
 }
 
 # Returns 0 if script loads (no path errors), 1 if path resolution failed
