@@ -153,16 +153,23 @@ setup_aide() {
     ensure_directory /var/lib/aide
     
     # Initialize AIDE database
-    # Ubuntu default config can fail (missing/invalid); use our minimal config when available
+    # Ubuntu package may not create valid aide.conf; write our minimal config inline
     # Scans /etc, /bin, /usr/bin, /usr/sbin - works in Docker and on servers
     log_info "Initializing AIDE database..."
-    local minimal_conf="$SCRIPT_DIR/aide-docker.conf"
-    if [[ -f "$minimal_conf" ]] && [[ -d /etc/aide ]]; then
-        log_info "Using minimal AIDE config (works in containers and on servers)"
-        cp "$minimal_conf" /etc/aide/aide.conf
-    fi
+    ensure_directory /etc/aide
+    cat > /etc/aide/aide.conf << 'AIDECONF'
+database=file:/var/lib/aide/aide.db
+database_out=file:/var/lib/aide/aide.db.new
+database_new=file:/var/lib/aide/aide.db.new
+gzip=9
+R = p+u+g+i+n+l
+/etc R
+/bin R
+/usr/bin R
+/usr/sbin R
+AIDECONF
     
-    if ! aide --init; then
+    if ! aide --config=/etc/aide/aide.conf --init; then
         log_error "Failed to initialize AIDE database"
         exit 1
     fi
