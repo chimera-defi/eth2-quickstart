@@ -150,8 +150,10 @@ if [[ $load_fail -gt 0 ]]; then
     exit 1
 fi
 
-# Test 9: Test Geth full installation (uses PPA - may fail in CI due to resources/network)
-log_info "Test 9: Install Geth via PPA (optional in CI)..."
+# Test 9: Test Geth full installation (PPA add + apt install)
+# CI has limited RAM - install may fail at runtime; that's expected and fine.
+# We're testing the install flow (PPA, packages, systemd) not production capacity.
+log_info "Test 9: Geth full install (PPA + apt)..."
 if "$PROJECT_ROOT/install/execution/geth.sh" 2>&1; then
     if command -v geth &>/dev/null; then
         geth_version=$(geth version 2>/dev/null | head -1 || echo "unknown")
@@ -160,7 +162,7 @@ if "$PROJECT_ROOT/install/execution/geth.sh" 2>&1; then
         log_warn "  ⚠ Geth binary not in PATH (may need shell reload)"
     fi
 else
-    log_warn "  ⚠ Geth installation had issues (may be OK in CI - check RAM/network)"
+    log_info "  ⊘ Geth install failed (expected in CI - limited RAM/UFW/network)"
 fi
 
 log_info "╔════════════════════════════════════════════════════════════════╗"

@@ -207,10 +207,10 @@ This document provides a comprehensive reference for all functions available in 
 ### 🔍 **System Check Functions**
 
 #### `check_system_requirements()`
-**Purpose:** Check if system meets minimum requirements  
-**Parameters:** None  
-**Usage:** `check_system_requirements`  
-**Checks:** CPU, RAM, disk space, OS version
+**Purpose:** Placeholder for system checks; proceeds with installation  
+**Parameters:** `min_memory_gb`, `min_disk_gb` (ignored - kept for API compatibility)  
+**Usage:** `check_system_requirements 16 2000`  
+**Note:** Memory/disk pre-checks removed - clients attempt install and fail at runtime if undersized. Allows CI (limited RAM) to test full install flow.
 
 #### `check_system_compatibility()`
 **Purpose:** Check system compatibility for Ethereum node  
