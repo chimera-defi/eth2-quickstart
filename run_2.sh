@@ -19,6 +19,7 @@
 #   ./run_2.sh --execution=geth --consensus=prysm --mev=mev-boost
 #   ./run_2.sh --execution=besu --consensus=lighthouse --mev=none --skip-deps
 
+cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 1
 source ./exports.sh
 source ./lib/common_functions.sh
 
