@@ -458,12 +458,29 @@ validate_menu_choice() {
 # SYSTEM VALIDATION FUNCTIONS
 # =============================================================================
 
-# Check system requirements
-# Note: Memory/disk pre-checks removed - let clients attempt install and fail naturally.
-# This allows CI (limited RAM) to test the full install flow; real servers will fail at runtime if undersized.
+# Check system requirements (min_memory_gb, min_disk_gb)
+# Logs warnings if below threshold but never fails - allows CI/Docker E2E to proceed.
+# Real servers will see the warning; clients may fail at runtime if undersized.
 check_system_requirements() {
-    log_info "Checking system requirements..."
-    log_info "✓ Proceeding with installation (clients will fail at runtime if undersized)"
+    local min_memory_gb="${1:-16}"
+    local min_disk_gb="${2:-1000}"
+    log_info "Checking system requirements (${min_memory_gb}GB RAM, ${min_disk_gb}GB disk recommended)..."
+    local ok=true
+    local total_memory_gb
+    total_memory_gb=$(free -g 2>/dev/null | awk 'NR==2{print $2}' || echo "0")
+    if [[ "${total_memory_gb:-0}" -lt "$min_memory_gb" ]] 2>/dev/null; then
+        log_warn "⚠ Low memory: ${total_memory_gb:-?}GB available, ${min_memory_gb}GB recommended (proceeding anyway)"
+        ok=false
+    fi
+    local available_disk_gb
+    available_disk_gb=$(df -BG / 2>/dev/null | awk 'NR==2{print $4}' | sed 's/G//' || echo "0")
+    if [[ "${available_disk_gb:-0}" -lt "$min_disk_gb" ]] 2>/dev/null; then
+        log_warn "⚠ Low disk: ${available_disk_gb:-?}GB available, ${min_disk_gb}GB recommended (proceeding anyway)"
+        ok=false
+    fi
+    if [[ "$ok" == "true" ]]; then
+        log_info "✓ System requirements check passed"
+    fi
     return 0
 }
 
