@@ -110,6 +110,15 @@ setup_fail2ban() {
     local SSH_PORT="${YourSSHPortNumber:-22}"
     local MAX_RETRY="${maxretry:-3}"
 
+    # Ensure log files exist - fail2ban jails fail to start if logpath is missing
+    ensure_directory /var/log/nginx
+    for logfile in /var/log/auth.log /var/log/nginx/access.log; do
+        if [[ ! -f "$logfile" ]]; then
+            touch "$logfile"
+            log_info "Created $logfile for fail2ban jail"
+        fi
+    done
+
     # Configure fail2ban jails (write mode — idempotent on re-run)
     log_info "Configuring fail2ban jails..."
     cat > /etc/fail2ban/jail.local << EOF
@@ -137,6 +146,11 @@ EOF
     # Enable and start fail2ban service
     enable_and_start_systemd_service fail2ban
 
+    if systemctl is-active --quiet fail2ban 2>/dev/null; then
+        log_info "✓ Fail2ban service running"
+    else
+        log_warn "Fail2ban not active - check: systemctl status fail2ban"
+    fi
     log_info "✓ Fail2ban installation and configuration complete"
 }
 
