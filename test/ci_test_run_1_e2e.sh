@@ -39,6 +39,12 @@ source "$PROJECT_ROOT/exports.sh"
 # =============================================================================
 log_header "Phase 1: Executing run_1.sh"
 
+# Pre-seed postfix to prevent apt upgrade from hanging on interactive config
+# (postfix is often pulled in as a dependency and prompts for mailname/type)
+echo "postfix postfix/mailname string localhost" | debconf-set-selections 2>/dev/null || true
+echo "postfix postfix/main_mailer_type string 'Local only'" | debconf-set-selections 2>/dev/null || true
+export DEBIAN_FRONTEND=noninteractive
+
 # Create minimal root SSH keys so setup_secure_user has something to migrate (avoids lockout warning)
 mkdir -p /root/.ssh
 if [[ ! -f /root/.ssh/authorized_keys ]]; then
