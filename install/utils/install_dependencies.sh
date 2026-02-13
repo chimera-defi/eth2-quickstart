@@ -51,7 +51,11 @@ TEST_PACKAGES=(
 )
 
 # Production packages - needed for building/running Ethereum clients
-# Includes RUN_1_SECURITY_PACKAGES for consistency
+# RUN_1_SECURITY_PACKAGES from exports.sh - split on spaces (exports sets IFS=$'\n\t' so $VAR won't split)
+RUN_1_ARR=()
+old_ifs="$IFS"
+IFS=' ' read -ra RUN_1_ARR <<< "$RUN_1_SECURITY_PACKAGES"
+IFS="$old_ifs"
 PRODUCTION_PACKAGES=(
     "unzip"
     "build-essential"
@@ -59,7 +63,7 @@ PRODUCTION_PACKAGES=(
     "python3-pip"
     "chrony"
     "ufw"
-    $RUN_1_SECURITY_PACKAGES
+    "${RUN_1_ARR[@]}"
     "snapd"
     "cmake"
     "libssl-dev"

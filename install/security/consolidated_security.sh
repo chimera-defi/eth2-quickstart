@@ -245,7 +245,11 @@ verify_security_setup() {
 # Main execution
 main() {
     # Install all security packages upfront (single source: RUN_1_SECURITY_PACKAGES in exports.sh)
-    install_dependencies $RUN_1_SECURITY_PACKAGES
+    # Split on spaces - exports.sh sets IFS=$'\n\t' so unquoted $VAR would not split
+    local old_ifs="$IFS"
+    IFS=' ' read -ra SECURITY_PKGS <<< "$RUN_1_SECURITY_PACKAGES"
+    IFS="$old_ifs"
+    install_dependencies "${SECURITY_PKGS[@]}"
 
     # Run all security setup functions
     setup_firewall

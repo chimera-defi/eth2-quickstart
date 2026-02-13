@@ -662,6 +662,10 @@ RUN /workspace/install/utils/install_dependencies.sh --test
 - Works as both root (Docker) and non-root (production)
 - Provides `--help` to show all package groups
 
+**IFS gotcha:** `exports.sh` sets `IFS=$'\n\t'` (no space). When using `RUN_1_SECURITY_PACKAGES` (space-separated), split explicitly: `IFS=' ' read -ra ARR <<< "$RUN_1_SECURITY_PACKAGES"` then restore IFS. Unquoted `$VAR` won't split on spaces.
+
+**Local Docker build test:** `docker build -t eth-node-test -f test/Dockerfile .` — run before push to catch build failures.
+
 ### Shared Test Utilities (`test/lib/test_utils.sh`)
 
 Provides:

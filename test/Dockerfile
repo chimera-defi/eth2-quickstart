@@ -21,7 +21,7 @@ RUN find /workspace -name "*.sh" -exec chmod +x {} \;
 # Install test dependencies using the centralized script
 # This runs as root in Docker, which the script now handles
 RUN apt-get update && \
-    /workspace/install/utils/install_dependencies.sh --test && \
+    bash /workspace/install/utils/install_dependencies.sh --test && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
