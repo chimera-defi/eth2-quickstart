@@ -10,11 +10,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 IMAGE_NAME="${E2E_IMAGE_NAME:-eth-node-test}"
 CONTAINER_NAME="run1-e2e-$$"
+CONTAINER_STARTED=false
 
 cleanup() {
-    echo "Cleaning up container..."
-    docker stop "$CONTAINER_NAME" 2>/dev/null || true
-    docker rm "$CONTAINER_NAME" 2>/dev/null || true
+    if [[ "$CONTAINER_STARTED" == "true" ]]; then
+        echo "Cleaning up container..."
+        docker stop "$CONTAINER_NAME" 2>/dev/null || true
+        docker rm "$CONTAINER_NAME" 2>/dev/null || true
+    fi
 }
 trap cleanup EXIT
 
@@ -37,9 +40,12 @@ fi
 echo "Starting container with systemd (required for SSH, fail2ban)..."
 # Use systemd as init - required for configure_ssh, fail2ban, etc.
 # --user root: Dockerfile defaults to testuser, but init must run as root
+# systemd in Docker: tmpfs for /run, cgroupns=host for cgroup v2 (GitHub Actions)
 if ! docker run -d --privileged \
     --user root \
+    --cgroupns=host \
     -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
+    --tmpfs /run --tmpfs /run/lock \
     --name "$CONTAINER_NAME" \
     -e DEBIAN_FRONTEND=noninteractive \
     "$IMAGE_NAME" \
@@ -47,6 +53,7 @@ if ! docker run -d --privileged \
     echo "Error: Failed to start container"
     exit 1
 fi
+CONTAINER_STARTED=true
 
 # Verify container is running
 if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
@@ -58,7 +65,7 @@ fi
 # Wait for systemd to be ready
 echo "Waiting for systemd to initialize..."
 sleep 5
-for i in $(seq 1 30); do
+for _ in $(seq 1 30); do
     if docker exec "$CONTAINER_NAME" systemctl is-system-running --wait 2>/dev/null | grep -qE "running|degraded"; then
         break
     fi
