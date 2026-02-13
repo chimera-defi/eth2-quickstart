@@ -60,30 +60,30 @@ if [[ "$PHASE" == "1" ]]; then
     log_header "Verifying run_1.sh Results"
     if [[ -f /root/handoff_info.txt ]]; then
         record_test "Handoff info file created" "PASS"
-        grep -q "$LOGIN_UNAME" /root/handoff_info.txt && record_test "Handoff contains username" "PASS" || record_test "Handoff contains username" "FAIL"
+        if grep -q "$LOGIN_UNAME" /root/handoff_info.txt; then record_test "Handoff contains username" "PASS"; else record_test "Handoff contains username" "FAIL"; fi
     else
         record_test "Handoff info file created" "FAIL"
     fi
-    id -u "$LOGIN_UNAME" &>/dev/null && record_test "User '$LOGIN_UNAME' created" "PASS" || record_test "User '$LOGIN_UNAME' created" "FAIL"
-    sudo -u "$LOGIN_UNAME" sudo -n true 2>/dev/null && record_test "User has sudo (NOPASSWD)" "PASS" || record_test "User has sudo (NOPASSWD)" "FAIL"
-    [[ -f /home/${LOGIN_UNAME}/.ssh/authorized_keys ]] && record_test "SSH keys migrated to new user" "PASS" || record_test "SSH keys migrated to new user" "FAIL"
-    [[ -f /etc/ssh/sshd_config.backup ]] && record_test "SSH config backed up" "PASS" || record_test "SSH config backed up" "FAIL"
-    [[ -f /etc/sysctl.d/99-eth2-hardening.conf ]] && record_test "Network hardening applied" "PASS" || record_test "Network hardening applied" "FAIL"
-    [[ -f /usr/local/bin/security_monitor.sh ]] && record_test "Security monitoring script installed" "PASS" || record_test "Security monitoring script installed" "FAIL"
-    ufw status 2>/dev/null | grep -q "Status: active" && record_test "UFW firewall active" "PASS" || record_test "UFW firewall active" "FAIL"
+    if id -u "$LOGIN_UNAME" &>/dev/null; then record_test "User '$LOGIN_UNAME' created" "PASS"; else record_test "User '$LOGIN_UNAME' created" "FAIL"; fi
+    if sudo -u "$LOGIN_UNAME" sudo -n true 2>/dev/null; then record_test "User has sudo (NOPASSWD)" "PASS"; else record_test "User has sudo (NOPASSWD)" "FAIL"; fi
+    if [[ -f /home/${LOGIN_UNAME}/.ssh/authorized_keys ]]; then record_test "SSH keys migrated to new user" "PASS"; else record_test "SSH keys migrated to new user" "FAIL"; fi
+    if [[ -f /etc/ssh/sshd_config.backup ]]; then record_test "SSH config backed up" "PASS"; else record_test "SSH config backed up" "FAIL"; fi
+    if [[ -f /etc/sysctl.d/99-eth2-hardening.conf ]]; then record_test "Network hardening applied" "PASS"; else record_test "Network hardening applied" "FAIL"; fi
+    if [[ -f /usr/local/bin/security_monitor.sh ]]; then record_test "Security monitoring script installed" "PASS"; else record_test "Security monitoring script installed" "FAIL"; fi
+    if ufw status 2>/dev/null | grep -q "Status: active"; then record_test "UFW firewall active" "PASS"; else record_test "UFW firewall active" "FAIL"; fi
     if systemctl is-active --quiet fail2ban 2>/dev/null; then
         record_test "Fail2ban service running" "PASS"
-        fail2ban-client status 2>/dev/null | grep -q "sshd" && record_test "Fail2ban sshd jail active" "PASS" || record_test "Fail2ban sshd jail active" "FAIL"
+        if fail2ban-client status 2>/dev/null | grep -q "sshd"; then record_test "Fail2ban sshd jail active" "PASS"; else record_test "Fail2ban sshd jail active" "FAIL"; fi
     else
         record_test "Fail2ban service running" "FAIL"
     fi
     if command -v aide &>/dev/null; then
         record_test "AIDE installed" "PASS"
-        [[ -f /var/lib/aide/aide.db ]] && record_test "AIDE database initialized" "PASS" || record_test "AIDE database initialized" "FAIL"
+        if [[ -f /var/lib/aide/aide.db ]]; then record_test "AIDE database initialized" "PASS"; else record_test "AIDE database initialized" "FAIL"; fi
         if [[ -f /usr/local/bin/aide_check.sh ]] && [[ -x /usr/local/bin/aide_check.sh ]]; then
             record_test "AIDE check script installed" "PASS"
-            /usr/local/bin/aide_check.sh &>/dev/null && record_test "AIDE check script runs" "PASS" || record_test "AIDE check script runs" "FAIL"
-            crontab -l 2>/dev/null | grep -Fq "/usr/local/bin/aide_check.sh" && record_test "AIDE cron job scheduled" "PASS" || record_test "AIDE cron job scheduled" "FAIL"
+            if /usr/local/bin/aide_check.sh &>/dev/null; then record_test "AIDE check script runs" "PASS"; else record_test "AIDE check script runs" "FAIL"; fi
+            if crontab -l 2>/dev/null | grep -Fq "/usr/local/bin/aide_check.sh"; then record_test "AIDE cron job scheduled" "PASS"; else record_test "AIDE cron job scheduled" "FAIL"; fi
         else
             record_test "AIDE check script installed" "FAIL"
         fi
@@ -116,11 +116,11 @@ if [[ "$PHASE" == "2" ]]; then
     rm -f "$run2_log"
 
     log_header "Verifying run_2.sh Results"
-    command -v geth &>/dev/null && record_test "Geth binary installed" "PASS" || record_test "Geth binary installed" "FAIL"
-    [[ -f "$HOME/prysm/prysm.sh" ]] && record_test "Prysm installed" "PASS" || record_test "Prysm installed" "FAIL"
-    [[ -f "$HOME/mev-boost/mev-boost" ]] && record_test "MEV-Boost installed" "PASS" || record_test "MEV-Boost installed" "FAIL"
-    [[ -f "$HOME/secrets/jwt.hex" ]] && record_test "JWT secret exists" "PASS" || record_test "JWT secret exists" "FAIL"
-    systemctl list-unit-files 2>/dev/null | grep -q "eth1.service" && record_test "eth1 systemd service created" "PASS" || record_test "eth1 systemd service created" "FAIL"
+    if command -v geth &>/dev/null; then record_test "Geth binary installed" "PASS"; else record_test "Geth binary installed" "FAIL"; fi
+    if [[ -f "$HOME/prysm/prysm.sh" ]]; then record_test "Prysm installed" "PASS"; else record_test "Prysm installed" "FAIL"; fi
+    if [[ -f "$HOME/mev-boost/mev-boost" ]]; then record_test "MEV-Boost installed" "PASS"; else record_test "MEV-Boost installed" "FAIL"; fi
+    if [[ -f "$HOME/secrets/jwt.hex" ]]; then record_test "JWT secret exists" "PASS"; else record_test "JWT secret exists" "FAIL"; fi
+    if systemctl list-unit-files 2>/dev/null | grep -q "eth1.service"; then record_test "eth1 systemd service created" "PASS"; else record_test "eth1 systemd service created" "FAIL"; fi
 fi
 
 # =============================================================================

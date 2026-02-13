@@ -45,15 +45,10 @@ jobs:
       run: |
         SKIP_BUILD=true ./test/run_e2e.sh --phase=1
 
-    - name: Test run_2.sh (Phase 2 - Structure Validation)
+    - name: Test run_2.sh (Phase 2 - Structure + E2E)
+      timeout-minutes: 15
       run: |
-        docker run --rm --privileged \
-          -e DEBIAN_FRONTEND=noninteractive \
-          eth-node-test /workspace/test/ci_test_run_2.sh
-
-    - name: Test run_2.sh E2E (Phase 2 - Full Execution)
-      timeout-minutes: 10
-      run: |
+        # Single systemd container: structure validation (all 16 clients) then full E2E
         SKIP_BUILD=true ./test/run_e2e.sh --phase=2
 
   shellcheck:
