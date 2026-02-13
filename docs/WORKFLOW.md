@@ -13,11 +13,10 @@ chmod +x run_1.sh run_2.sh
 
 3) Stage 1: Harden and base setup (root)
 ```bash
+# IMPORTANT: Add your SSH key to root first: ssh-copy-id root@<server>
+# run_1 migrates root's keys to LOGIN_UNAME — no keys = lockout risk
 ./run_1.sh
-# Follow prompts:
-# - Review outputs
-# - In another shell: visudo → add "LOGIN_UNAME ALL=(ALL) NOPASSWD: ALL"
-# - Set password for LOGIN_UNAME when prompted
+# Review handoff info, then:
 sudo reboot
 ```
 

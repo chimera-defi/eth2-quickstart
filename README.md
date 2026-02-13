@@ -50,13 +50,15 @@ Additionally, by using a VPS, they can more easily offer a censorship resistant 
 
 2. **Run server setup** (as root):
    ```bash
+   # Add your SSH key first (required - prevents lockout):
+   ssh-copy-id root@<your-server-ip>
    ./run_1.sh
    ```
    **Read through scripts first** to make sure you understand what is happening and it's correct. It can bork your server.
    
    - Upgrades Ubuntu and programs
    - Sets up firewalls and security hardening
-   - Creates non-root user for safety
+   - Creates non-root user (SSH key-only, migrates root's keys)
    - Installs required programs
 
 3. **Reboot and configure**:

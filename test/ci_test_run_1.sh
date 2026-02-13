@@ -179,8 +179,17 @@ else
     exit 1
 fi
 
-# Test 14: Verify run_1.sh creates user BEFORE configuring SSH
-log_info "Test 14: Verify user creation order in run_1.sh..."
+# Test 14: Verify run_1.sh checks for root SSH keys before proceeding (lockout prevention)
+log_info "Test 14: Verify lockout prevention check..."
+if grep -q "/root/.ssh/authorized_keys" "$PROJECT_ROOT/run_1.sh" && grep -q "ssh-copy-id" "$PROJECT_ROOT/run_1.sh"; then
+    log_info "  run_1.sh verifies root has SSH keys before proceeding"
+else
+    log_error "  run_1.sh missing lockout prevention (must check root authorized_keys)"
+    exit 1
+fi
+
+# Test 15: Verify run_1.sh creates user BEFORE configuring SSH
+log_info "Test 15: Verify user creation order in run_1.sh..."
 user_setup_line=$(grep -n "setup_secure_user" "$PROJECT_ROOT/run_1.sh" | head -1 | cut -d: -f1)
 ssh_config_line=$(grep -n "configure_ssh" "$PROJECT_ROOT/run_1.sh" | head -1 | cut -d: -f1)
 if [[ -n "$user_setup_line" && -n "$ssh_config_line" ]]; then
@@ -195,8 +204,8 @@ else
     exit 1
 fi
 
-# Test 15: Verify sysctl uses drop-in file not appending to sysctl.conf
-log_info "Test 15: Verify sysctl idempotency..."
+# Test 16: Verify sysctl uses drop-in file not appending to sysctl.conf
+log_info "Test 16: Verify sysctl idempotency..."
 if declare -f apply_network_security | grep -q "sysctl.d"; then
     log_info "  apply_network_security uses /etc/sysctl.d/ drop-in file"
 else
@@ -204,8 +213,8 @@ else
     exit 1
 fi
 
-# Test 16: Verify crontab additions are idempotent
-log_info "Test 16: Verify crontab idempotency..."
+# Test 17: Verify crontab additions are idempotent
+log_info "Test 17: Verify crontab idempotency..."
 if declare -f setup_security_monitoring | grep -q "grep.*-Fq"; then
     log_info "  setup_security_monitoring checks for existing crontab entry"
 else
@@ -213,8 +222,8 @@ else
     exit 1
 fi
 
-# Test 17: Verify dead AIDE function was removed and not called
-log_info "Test 17: Verify no duplicate AIDE setup..."
+# Test 18: Verify dead AIDE function was removed and not called
+log_info "Test 18: Verify no duplicate AIDE setup..."
 if grep -q "setup_intrusion_detection" "$PROJECT_ROOT/run_1.sh"; then
     log_error "  run_1.sh calls setup_intrusion_detection — duplicates AIDE from consolidated_security.sh!"
     exit 1
@@ -228,8 +237,8 @@ else
     log_info "  setup_intrusion_detection removed from common_functions.sh"
 fi
 
-# Test 18: Verify consolidated_security.sh uses SCRIPT_DIR not relative paths
-log_info "Test 18: Verify consolidated_security.sh path resolution..."
+# Test 19: Verify consolidated_security.sh uses SCRIPT_DIR not relative paths
+log_info "Test 19: Verify consolidated_security.sh path resolution..."
 if grep -q 'source \.\./\.\.' "$PROJECT_ROOT/install/security/consolidated_security.sh"; then
     log_error "  consolidated_security.sh uses fragile relative source paths!"
     exit 1
@@ -237,8 +246,8 @@ else
     log_info "  consolidated_security.sh uses reliable path resolution"
 fi
 
-# Test 19: Verify generate_handoff_info includes SSH port parameter
-log_info "Test 19: Verify handoff info includes SSH port..."
+# Test 20: Verify generate_handoff_info includes SSH port parameter
+log_info "Test 20: Verify handoff info includes SSH port..."
 if declare -f generate_handoff_info | grep -q "ssh_port"; then
     log_info "  generate_handoff_info handles SSH port"
 else
@@ -246,8 +255,8 @@ else
     exit 1
 fi
 
-# Test 20: Verify both 127 and 172 private network ranges are blocked in firewall
-log_info "Test 20: Verify private network blocking (127 + 172)..."
+# Test 21: Verify both 127 and 172 private network ranges are blocked in firewall
+log_info "Test 21: Verify private network blocking (127 + 172)..."
 security_script="$PROJECT_ROOT/install/security/consolidated_security.sh"
 if grep -q '"127.0.0.0/8"' "$security_script"; then
     log_info "  127.0.0.0/8 (loopback) is blocked"
@@ -268,8 +277,8 @@ else
     exit 1
 fi
 
-# Test 21: Verify setup_secure_user includes sudo configuration (consolidated)
-log_info "Test 21: Verify sudo configured inside setup_secure_user..."
+# Test 22: Verify setup_secure_user includes sudo configuration (consolidated)
+log_info "Test 22: Verify sudo configured inside setup_secure_user..."
 if declare -f setup_secure_user | grep -q "visudo"; then
     log_info "  setup_secure_user includes sudo configuration with visudo validation"
 else
