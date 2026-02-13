@@ -13,10 +13,11 @@ Run tests inside an isolated Docker container with **real system calls** - no mo
 docker build -t eth-node-test -f test/Dockerfile . && docker run --rm --privileged --user root eth-node-test /workspace/test/ci_test_run_1.sh
 ```
 
-**run_1 E2E (actually runs run_1.sh - from repo root):**
+**run_1 E2E (actually runs run_1.sh - from repo root, requires Docker):**
 ```bash
 ./test/run_run_1_e2e.sh
 ```
+Note: E2E requires Docker. Use `SKIP_BUILD=true` to reuse existing image (e.g. in CI).
 
 ```bash
 # Build and run all tests in Docker
