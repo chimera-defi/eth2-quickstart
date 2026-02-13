@@ -24,6 +24,9 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# Enable SSH for run_1 E2E (configure_ssh needs sshd running under systemd)
+RUN systemctl enable ssh 2>/dev/null || systemctl enable sshd 2>/dev/null || true
+
 # Create a non-root user for testing (mimics real deployment)
 RUN useradd -m -s /bin/bash testuser \
     && echo "testuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers

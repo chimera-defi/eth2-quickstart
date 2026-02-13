@@ -8,9 +8,14 @@ This directory contains tests for the Ethereum node setup scripts.
 
 Run tests inside an isolated Docker container with **real system calls** - no mocks needed.
 
-**run_1 quick one-liner (from repo root):**
+**run_1 structure validation (from repo root):**
 ```bash
-docker build -t eth-node-test -f test/Dockerfile . && docker run --rm --privileged --user root -v /sys/fs/cgroup:/sys/fs/cgroup:ro eth-node-test /workspace/test/ci_test_run_1.sh
+docker build -t eth-node-test -f test/Dockerfile . && docker run --rm --privileged --user root eth-node-test /workspace/test/ci_test_run_1.sh
+```
+
+**run_1 E2E (actually runs run_1.sh - from repo root):**
+```bash
+./test/run_run_1_e2e.sh
 ```
 
 ```bash
@@ -79,6 +84,7 @@ test/
 5. **Function behavior** - Unit tests for key functions
 6. **System integration** - Real apt, ufw, systemctl calls (Docker only)
 7. **Install script structure** - Proper shebang, sources, patterns
+8. **run_1 E2E** - Actually executes run_1.sh and verifies user creation, SSH, firewall, handoff file, etc.
 
 ## CI Integration
 
@@ -87,8 +93,9 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 1. **Shellcheck** - Lints all shell scripts
 2. **Docker Lint Tests** - Runs `run_tests.sh --lint-only` in container
 3. **Docker Unit Tests** - Runs `docker_test.sh` with real system calls
-4. **run_1.sh Test** - Tests Phase 1 (system setup) end-to-end
-5. **run_2.sh Test** - Tests Phase 2 (validates structure, skips long downloads)
+4. **run_1.sh Structure** - Validates syntax, functions, SSH safety (no execution)
+5. **run_1.sh E2E** - Actually runs run_1.sh and verifies results (systemd + openssh)
+6. **run_2.sh Test** - Tests Phase 2 (validates structure, skips long downloads)
 
 ### CI Test Scripts
 
