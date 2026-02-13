@@ -8,6 +8,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$PROJECT_ROOT/exports.sh"
 source "$PROJECT_ROOT/lib/common_functions.sh"
+# shellcheck source=../utils/packages.sh
+source "$PROJECT_ROOT/install/utils/packages.sh"
 
 # Check if running as root
 require_root
@@ -244,12 +246,8 @@ verify_security_setup() {
 
 # Main execution
 main() {
-    # Install all security packages upfront (single source: RUN_1_SECURITY_PACKAGES in exports.sh)
-    # Split on spaces - exports.sh sets IFS=$'\n\t' so unquoted $VAR would not split
-    local old_ifs="$IFS"
-    IFS=' ' read -ra SECURITY_PKGS <<< "$RUN_1_SECURITY_PACKAGES"
-    IFS="$old_ifs"
-    install_dependencies "${SECURITY_PKGS[@]}"
+    # Install all security packages (single source: install/utils/packages.sh)
+    install_dependencies "${RUN_1_SECURITY_PACKAGES[@]}"
 
     # Run all security setup functions
     setup_firewall

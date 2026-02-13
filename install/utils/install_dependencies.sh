@@ -12,72 +12,11 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Source common functions and exports for RUN_1_SECURITY_PACKAGES
+# Source common functions and package definitions (single source of truth)
 # shellcheck source=../../lib/common_functions.sh
 source "$SCRIPT_DIR/../../lib/common_functions.sh"
-# shellcheck source=../../exports.sh
-source "$SCRIPT_DIR/../../exports.sh"
-
-# =============================================================================
-# PACKAGE DEFINITIONS (Single Source of Truth)
-# =============================================================================
-
-# Base packages - needed for ALL environments (test + production)
-BASE_PACKAGES=(
-    "bash"
-    "curl"
-    "wget"
-    "git"
-    "tar"
-    "gzip"
-    "sudo"
-    "jq"
-    "openssl"
-    "ca-certificates"
-    "gnupg"
-    "lsb-release"
-    "software-properties-common"
-    "apt-transport-https"
-)
-
-# Test packages - minimal infra for test environment (shellcheck, systemd, ssh)
-# run_1 installs aide/cron/fail2ban via consolidated_security - same flow as real server
-TEST_PACKAGES=(
-    "shellcheck"
-    "ufw"
-    "systemd"
-    "systemd-sysv"
-    "openssh-server"
-)
-
-# Production packages - needed for building/running Ethereum clients
-# RUN_1_SECURITY_PACKAGES from exports.sh - split on spaces (exports sets IFS=$'\n\t' so $VAR won't split)
-RUN_1_ARR=()
-old_ifs="$IFS"
-IFS=' ' read -ra RUN_1_ARR <<< "$RUN_1_SECURITY_PACKAGES"
-IFS="$old_ifs"
-PRODUCTION_PACKAGES=(
-    "unzip"
-    "build-essential"
-    "python3"
-    "python3-pip"
-    "chrony"
-    "ufw"
-    "${RUN_1_ARR[@]}"
-    "snapd"
-    "cmake"
-    "libssl-dev"
-    "libgmp-dev"
-    "libtinfo5"
-    "libprotobuf-dev"
-    "pkg-config"
-    "openjdk-17-jdk"
-    "libclang-dev"
-    "nginx"
-    "apache2-utils"
-    "bmon"
-    "tcptrack"
-)
+# shellcheck source=packages.sh
+source "$SCRIPT_DIR/packages.sh"
 
 # =============================================================================
 # HELPER FUNCTIONS

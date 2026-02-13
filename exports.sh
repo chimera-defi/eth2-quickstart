@@ -17,9 +17,6 @@ export YourSSHPortNumber='22'
 export maxretry='3'
 export REPO_NAME="eth2-quickstart"
 
-# Packages for run_1 consolidated security (firewall, fail2ban, AIDE) - single source
-export RUN_1_SECURITY_PACKAGES="aide cron fail2ban"
-
 # Server name used for nginx, caddy & ssl setup
 export SERVER_NAME="rpc.sharedtools.org"
 
