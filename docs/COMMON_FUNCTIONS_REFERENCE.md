@@ -207,9 +207,10 @@ This document provides a comprehensive reference for all functions available in 
 ### 🔍 **System Check Functions**
 
 #### `check_system_requirements(min_memory_gb, min_disk_gb)`
-**Purpose:** Check memory and disk; warns if below threshold, never fails  
+**Purpose:** Check memory and disk; logs warnings if below threshold but never fails  
 **Parameters:** `min_memory_gb` (default 16), `min_disk_gb` (default 1000)  
-**Usage:** `check_system_requirements 16 2000`
+**Usage:** `check_system_requirements 16 2000`  
+**Note:** Always returns 0 - allows CI/Docker E2E to proceed. Real servers see warnings; clients may fail at runtime if undersized.
 
 #### `check_system_compatibility()`
 **Purpose:** Check system compatibility for Ethereum node  
