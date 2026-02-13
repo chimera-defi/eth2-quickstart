@@ -133,39 +133,20 @@ done
 
 # Test 8: Verify all client install scripts load (path resolution from any cwd)
 log_info "Test 8: Verify client scripts load from any directory..."
-client_scripts=(
-    "install/execution/geth.sh"
-    "install/execution/besu.sh"
-    "install/execution/erigon.sh"
-    "install/execution/nethermind.sh"
-    "install/execution/nimbus_eth1.sh"
-    "install/execution/reth.sh"
-    "install/execution/ethrex.sh"
-    "install/consensus/prysm.sh"
-    "install/consensus/lighthouse.sh"
-    "install/consensus/lodestar.sh"
-    "install/consensus/teku.sh"
-    "install/consensus/nimbus.sh"
-    "install/consensus/grandine.sh"
-    "install/mev/install_mev_boost.sh"
-    "install/mev/install_commit_boost.sh"
-)
 load_fail=0
-for script in "${client_scripts[@]}"; do
-    script_name=$(basename "$script")
+for script in "${CLIENT_SCRIPTS[@]}"; do
+    [[ -f "$PROJECT_ROOT/$script" ]] || continue
     output=$("$PROJECT_ROOT/$script" 2>&1) || true
-    if echo "$output" | grep -qE "No such file or directory|command not found"; then
-        log_error "  ✗ $script_name: path resolution failed"
+    if output_has_path_errors "$output"; then
+        log_error "  ✗ $(basename "$script"): path resolution failed"
         echo "$output" | head -5
         load_fail=$((load_fail + 1))
-    elif echo "$output" | grep -qE "Script directory:|Starting |installation|Checking system|Insufficient"; then
-        log_info "  ✓ $script_name: loads correctly"
     else
-        log_info "  ✓ $script_name: ran (exit may vary)"
+        log_info "  ✓ $(basename "$script"): loads correctly"
     fi
 done
 if [[ $load_fail -gt 0 ]]; then
-    log_error "  $load_fail script(s) failed to load"
+    log_error "  $load_fail script(s) failed to load - CI will fail"
     exit 1
 fi
 

@@ -255,22 +255,10 @@ for script in "$PROJECT_ROOT"/install/execution/*.sh "$PROJECT_ROOT"/install/con
 done
 
 # Verify client scripts load from any directory (path resolution)
-log_header "Phase 6b: Client Script Path Resolution"
-client_scripts=(
-    "$PROJECT_ROOT/install/execution/geth.sh"
-    "$PROJECT_ROOT/install/execution/besu.sh"
-    "$PROJECT_ROOT/install/consensus/prysm.sh"
-    "$PROJECT_ROOT/install/mev/install_mev_boost.sh"
-)
-for script in "${client_scripts[@]}"; do
-    [[ -f "$script" ]] || continue
-    script_name=$(basename "$script")
-    output=$("$script" 2>&1) || true
-    if echo "$output" | grep -qE "No such file or directory|command not found"; then
-        record_test "$script_name loads from any cwd" "FAIL"
-    else
-        record_test "$script_name loads from any cwd" "PASS"
-    fi
+log_subheader "Client script path resolution"
+for script in "${CLIENT_SCRIPTS[@]}"; do
+    [[ -f "$PROJECT_ROOT/$script" ]] || continue
+    assert_script_loads "$PROJECT_ROOT/$script" "$(basename "$script")"
 done
 
 # =============================================================================
