@@ -19,6 +19,14 @@ log_info "Using configuration: user=$LOGIN_UNAME, ssh_port=$YourSSHPortNumber, m
 
 check_system_compatibility
 
+# Lockout prevention: root must have SSH keys before we migrate them to new user
+if [[ ! -f /root/.ssh/authorized_keys ]] || [[ ! -s /root/.ssh/authorized_keys ]]; then
+    log_error "CRITICAL: No SSH keys in /root/.ssh/authorized_keys"
+    log_error "Add your key first: ssh-copy-id root@<your-server-ip>"
+    log_error "Without this, you will be locked out after reboot."
+    exit 1
+fi
+
 # Update system packages
 log_info "Updating system packages..."
 apt update -y
