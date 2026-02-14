@@ -11,11 +11,9 @@ install_nginx() {
     log_info "Installing Nginx web server..."
     
     if ! command_exists nginx; then
-        # Update package list
-        sudo apt-get update
-        
-        # Install Nginx
-        sudo apt-get install -y nginx
+        # Update package list and install (non-interactive)
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get update -qq
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y nginx
         
         log_info "Nginx installed successfully"
     else

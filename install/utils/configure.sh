@@ -104,7 +104,7 @@ else
     # Check if whiptail is installed
     if ! command -v whiptail &>/dev/null; then
         log_error "Whiptail not found. Installing..."
-        sudo apt-get update && sudo apt-get install -y whiptail
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get update -qq && sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y whiptail
     fi
     
     # Welcome message

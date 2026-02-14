@@ -5,8 +5,9 @@
 
 FROM ubuntu:22.04
 
-# Prevent interactive prompts during package installation
+# Prevent interactive prompts during package installation (batteries-included)
 ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_PRIORITY=critical
 
 # Set up working directory and copy project first (needed for debconf_preseed.sh)
 WORKDIR /workspace

@@ -17,11 +17,9 @@ install_caddy() {
         # Add Caddy's repository
         curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
         
-        # Update package list
-        sudo apt-get update
-        
-        # Install Caddy
-        sudo apt-get install -y caddy
+        # Update package list and install (non-interactive)
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get update -qq
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y caddy
         
         log_info "Caddy installed successfully"
     else
