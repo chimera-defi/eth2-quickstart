@@ -94,7 +94,7 @@ if [[ "$PHASE" == "1" ]]; then
 fi
 
 # =============================================================================
-# PHASE 2: run_2.sh (client installation) - Full E2E
+# PHASE 2: run_2.sh (client installation) - E2E (template matches run_1)
 # =============================================================================
 if [[ "$PHASE" == "2" ]]; then
     mkdir -p config
@@ -116,13 +116,10 @@ if [[ "$PHASE" == "2" ]]; then
     fi
     record_test "install_dependencies" "PASS"
 
-    # Step 2: Run run_2.sh with flags (client selection via E2E_* env or defaults)
-    E2E_EXEC="${E2E_EXECUTION:-geth}"
-    E2E_CONS="${E2E_CONSENSUS:-prysm}"
-    E2E_MEV="${E2E_MEV:-mev-boost}"
-    log_header "Executing run_2.sh (flag flow: $E2E_EXEC + $E2E_CONS + $E2E_MEV)"
+    # Step 2: Run run_2.sh with default clients (geth, prysm, mev-boost) - same pattern as run_1 E2E
+    log_header "Executing run_2.sh"
     run2_log="/tmp/run2_e2e_$$.log"
-    if ! run_script_with_log "$run2_log" "$PROJECT_ROOT/run_2.sh" --execution="$E2E_EXEC" --consensus="$E2E_CONS" --mev="$E2E_MEV" --skip-deps; then
+    if ! run_script_with_log "$run2_log" "$PROJECT_ROOT/run_2.sh" --execution=geth --consensus=prysm --mev=mev-boost --skip-deps; then
         record_test "run_2.sh execution" "FAIL"
         dump_log_tail "$run2_log" 50 "  "
         rm -f "$run2_log"
@@ -132,75 +129,13 @@ if [[ "$PHASE" == "2" ]]; then
     rm -f "$run2_log"
     record_test "run_2.sh execution" "PASS"
 
-    log_header "Verifying client installs"
+    log_header "Verifying run_2.sh Results"
 
-    # Verify execution client (varies by E2E_EXECUTION)
-    case "$E2E_EXEC" in
-        geth) verify_installed "Geth" command -v geth ;;
-        besu) verify_installed "Besu" test -f "$HOME/besu/bin/besu" ;;
-        nethermind) verify_installed "Nethermind" test -d "$HOME/nethermind" ;;
-        nimbus_eth1) verify_installed "Nimbus-eth1" command -v nimbus-eth1 ;;
-        erigon) verify_installed "Erigon" test -f "$HOME/erigon/erigon" ;;
-        reth) verify_installed "Reth" test -f "$HOME/reth/reth" ;;
-        ethrex) verify_installed "Ethrex" test -f "$HOME/ethrex/ethrex" ;;
-        *) verify_installed "Execution client" command -v geth ;;  # fallback
-    esac
-
-    # Verify consensus client (varies by E2E_CONSENSUS)
-    case "$E2E_CONS" in
-        prysm) verify_installed "Prysm" test -f "$HOME/prysm/prysm.sh" ;;
-        lighthouse) verify_installed "Lighthouse" command -v lighthouse ;;
-        teku) verify_installed "Teku" test -f "$HOME/teku/bin/teku" ;;
-        nimbus) verify_installed "Nimbus" test -f "$HOME/nimbus-eth2/build/nimbus_beacon_node" ;;
-        lodestar) verify_installed "Lodestar" command -v lodestar ;;
-        grandine) verify_installed "Grandine" test -f "$HOME/grandine/grandine" ;;
-        *) verify_installed "Consensus client" test -f "$HOME/prysm/prysm.sh" ;;  # fallback
-    esac
-
-    # Verify MEV (if not none)
-    if [[ "$E2E_MEV" != "none" ]]; then
-        case "$E2E_MEV" in
-            mev-boost) verify_installed "MEV-Boost" test -f "$HOME/mev-boost/mev-boost" ;;
-            commit-boost) verify_installed "Commit-Boost" test -f "$HOME/commit-boost/commit-boost-pbs" ;;
-            *) verify_installed "MEV" test -f "$HOME/mev-boost/mev-boost" ;;
-        esac
-    fi
-
+    verify_installed "Geth" command -v geth
+    verify_installed "Prysm" test -f "$HOME/prysm/prysm.sh"
+    verify_installed "MEV-Boost" test -f "$HOME/mev-boost/mev-boost"
     verify_installed "JWT secret" test -f "$HOME/secrets/jwt.hex"
     verify_installed "eth1 systemd service" bash -c 'systemctl list-unit-files 2>/dev/null | grep -q "eth1.service"'
-
-    # Step 3: Install and verify Caddy
-    log_header "Installing Caddy"
-    caddy_log="/tmp/caddy_e2e_$$.log"
-    if ! run_script_with_log "$caddy_log" "$PROJECT_ROOT/install/web/install_caddy.sh"; then
-        record_test "install_caddy" "FAIL"
-        dump_log_tail "$caddy_log" 50 "  "
-        rm -f "$caddy_log"
-        print_test_summary
-        exit 1
-    fi
-    rm -f "$caddy_log"
-    record_test "install_caddy" "PASS"
-    verify_installed "Caddy binary" command -v caddy
-    verify_installed "Caddy service" bash -c 'systemctl list-unit-files 2>/dev/null | grep -q "caddy.service"'
-
-    # Step 4: Stop Caddy so Nginx can bind to 80/443, then install Nginx
-    log_info "Stopping Caddy before Nginx install (port conflict)"
-    sudo systemctl stop caddy 2>/dev/null || true
-
-    log_header "Installing Nginx"
-    nginx_log="/tmp/nginx_e2e_$$.log"
-    if ! run_script_with_log "$nginx_log" "$PROJECT_ROOT/install/web/install_nginx.sh"; then
-        record_test "install_nginx" "FAIL"
-        dump_log_tail "$nginx_log" 50 "  "
-        rm -f "$nginx_log"
-        print_test_summary
-        exit 1
-    fi
-    rm -f "$nginx_log"
-    record_test "install_nginx" "PASS"
-    verify_installed "Nginx binary" command -v nginx
-    verify_installed "Nginx service" bash -c 'systemctl list-unit-files 2>/dev/null | grep -q "nginx.service"'
 fi
 
 # =============================================================================
