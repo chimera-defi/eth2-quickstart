@@ -134,10 +134,10 @@ install_production() {
         install_packages "ethereum"
     fi
     
-    # Install Node.js (for Lodestar). In Docker, only when CI_E2E (full client testing)
+    # Install Node.js LTS (for Lodestar). In Docker, only when CI_E2E (full client testing)
     if ! is_docker || [[ "${CI_E2E:-}" == "true" ]]; then
-        log_info "Installing Node.js..."
-        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+        log_info "Installing Node.js LTS..."
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
         install_packages "nodejs"
     fi
 
