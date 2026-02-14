@@ -134,24 +134,7 @@ EOF
 run_lint_tests() {
     log_header "PHASE 1: Lint and Static Analysis"
     
-    # Run shellcheck (run ./test/run_shellcheck.sh locally before push to match CI)
-    if command -v shellcheck &>/dev/null; then
-        log_subheader "Running shellcheck on all scripts"
-        local scripts_checked=0 scripts_passed=0 scripts_failed=0
-        while IFS= read -r script; do
-            scripts_checked=$((scripts_checked + 1))
-            local script_name="${script#"$PROJECT_ROOT"/}"
-            if shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 "$script" 2>/dev/null; then
-                log_test "PASS" "shellcheck: $script_name"
-                scripts_passed=$((scripts_passed + 1))
-            else
-                log_test "FAIL" "shellcheck: $script_name" "Has shellcheck warnings"
-                scripts_failed=$((scripts_failed + 1))
-            fi
-        done < <(find "$PROJECT_ROOT" -name "*.sh" -type f ! -path "*/.git/*" ! -path "*/erigon/*" ! -path "*/reth/*")
-        log_info "Shellcheck: $scripts_passed/$scripts_checked scripts passed"
-    fi
-    
+    # Shellcheck runs only in shellcheck.yml (single source). Run ./test/run_shellcheck.sh locally before push.
     log_subheader "Checking script syntax (bash -n)"
     
     while IFS= read -r script; do
@@ -614,7 +597,7 @@ main() {
                 echo "Usage: $0 [--lint-only|--unit|--integration|--full] [--no-mocks]"
                 echo ""
                 echo "Options:"
-                echo "  --lint-only     Run only shellcheck and syntax validation"
+                echo "  --lint-only     Run syntax, source, and config validation (shellcheck in shellcheck.yml)"
                 echo "  --unit          Run lint + unit tests"
                 echo "  --integration   Run lint + unit + integration tests"
                 echo "  --full          Run all tests (default)"

@@ -38,29 +38,10 @@ for tool in bash curl wget git sudo ufw jq tar; do
 done
 
 # =============================================================================
-# Step 2: Shellcheck and Syntax
+# Step 2: Syntax Validation
 # =============================================================================
-log_header "Step 2: Shellcheck and Syntax Validation"
-
-# Run shellcheck on key files
-shellcheck_pass=0
-shellcheck_fail=0
-
-for script in "$PROJECT_ROOT"/*.sh "$PROJECT_ROOT"/lib/*.sh; do
-    [[ -f "$script" ]] || continue
-    if check_shellcheck "$script"; then
-        shellcheck_pass=$((shellcheck_pass + 1))
-    else
-        shellcheck_fail=$((shellcheck_fail + 1))
-        log_error "Shellcheck failed: $script"
-    fi
-done
-
-if [[ $shellcheck_fail -eq 0 ]]; then
-    record_test "Shellcheck: $shellcheck_pass scripts passed" "PASS"
-else
-    record_test "Shellcheck: $shellcheck_fail scripts failed" "FAIL"
-fi
+log_header "Step 2: Syntax Validation"
+# Shellcheck runs only in shellcheck.yml (single source)
 
 # Syntax check
 syntax_pass=0
