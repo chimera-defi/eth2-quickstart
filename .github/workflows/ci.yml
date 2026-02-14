@@ -7,6 +7,11 @@ on:
     branches: [ main, master, develop, 'cursor/**' ]
   workflow_dispatch:  # Allow manual trigger for testing
 
+# Cancel in-progress runs when new push/PR (avoids 2 runs from push+PR on same branch)
+concurrency:
+  group: ci-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
 jobs:
   docker-integration:
     runs-on: ubuntu-latest
@@ -69,7 +74,7 @@ jobs:
         sudo apt-get update && sudo apt-get install -y shellcheck
         
         echo "Running shellcheck on all shell scripts..."
-        find . -name "*.sh" -type f | while read -r script; do
+        find . -name "*.sh" -type f ! -path "./.git/*" ! -path "./erigon/*" ! -path "./reth/*" | while read -r script; do
           echo "Checking $script..."
           if ! shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 "$script"; then
             echo "❌ Shellcheck failed for $script"
