@@ -93,20 +93,56 @@ if [[ "$PHASE" == "1" ]]; then
 fi
 
 # =============================================================================
-# PHASE 2: run_2.sh (client installation)
+# PHASE 2: run_2.sh (client installation) - Full E2E like run_1
 # =============================================================================
 if [[ "$PHASE" == "2" ]]; then
     mkdir -p config
     echo "export LOGIN_UNAME='$(whoami)'" > config/user_config.env
-
-    log_header "Executing run_2.sh"
     export CI_E2E=true
     export DEBIAN_FRONTEND=noninteractive
 
+    # Step 1: Install dependencies (like run_2.sh when not --skip-deps)
+    log_header "Installing dependencies"
+    if ! ./install/utils/install_dependencies.sh --production; then
+        record_test "install_dependencies" "FAIL"
+        print_test_summary
+        exit 1
+    fi
+    record_test "install_dependencies" "PASS"
+
+    # Step 2: Run ALL 16 client install scripts (actual execution)
+    log_header "Installing all clients (16 scripts)"
+    install_fail=0
+    idx=0
+    total=${#CLIENT_SCRIPTS[@]}
+    for script in "${CLIENT_SCRIPTS[@]}"; do
+        [[ -f "$PROJECT_ROOT/$script" ]] || continue
+        idx=$((idx + 1))
+        log_info "  [$idx/$total] $(basename "$script")..."
+        script_log="/tmp/e2e_client_$$_${idx}.log"
+        set +e
+        "$PROJECT_ROOT/$script" 2>&1 | tee "$script_log"
+        exit_code=${PIPESTATUS[0]}
+        set -e
+        if [[ $exit_code -ne 0 ]]; then
+            record_test "Install $(basename "$script")" "FAIL"
+            dump_log_tail "$script_log" 30 "    "
+            install_fail=$((install_fail + 1))
+        else
+            record_test "Install $(basename "$script")" "PASS"
+        fi
+        rm -f "$script_log"
+    done
+    if [[ $install_fail -gt 0 ]]; then
+        log_error "$install_fail client(s) failed to install"
+        print_test_summary
+        exit 1
+    fi
+
+    # Step 3: Run run_2.sh with flags (tests the run_2 flow)
+    log_header "Executing run_2.sh (flag flow)"
     run2_log="/tmp/run2_e2e_$$.log"
-    if run_script_with_log "$run2_log" ./run_2.sh --execution=geth --consensus=prysm --mev=mev-boost --skip-deps; then
-        record_test "run_2.sh execution" "PASS"
-    else
+    if ! run_script_with_log "$run2_log" ./run_2.sh --execution=geth --consensus=prysm --mev=mev-boost --skip-deps; then
         record_test "run_2.sh execution" "FAIL"
         dump_log_tail "$run2_log" 50 "  "
         rm -f "$run2_log"
@@ -114,8 +150,9 @@ if [[ "$PHASE" == "2" ]]; then
         exit 1
     fi
     rm -f "$run2_log"
+    record_test "run_2.sh execution" "PASS"
 
-    log_header "Verifying All Client Installs (from Test 8)"
+    log_header "Verifying all client installs"
     # Execution clients
     if command -v geth &>/dev/null; then record_test "Geth installed" "PASS"; else record_test "Geth installed" "FAIL"; fi
     if [[ -f "$HOME/besu/bin/besu" ]]; then record_test "Besu installed" "PASS"; else record_test "Besu installed" "FAIL"; fi
