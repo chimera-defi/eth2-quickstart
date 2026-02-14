@@ -1,7 +1,7 @@
 #!/bin/bash
-# CI Test Script for run_2.sh (Phase 2 - Client Installation)
-# Runs inside Docker container as non-root (testuser)
-# Structure validation only - syntax, files, configs. Full E2E in ci_test_e2e.sh
+# Phase 2: run_2.sh - Structure Validation
+# Phase 2 = client installation (run as non-root). Tests structure, syntax, configs.
+# Runs inside Docker container as testuser. Full E2E in run_e2e.sh --phase=2.
 
 set -Eeuo pipefail
 
@@ -11,7 +11,7 @@ LOG_PREFIX="CI"
 source "$SCRIPT_DIR/lib/test_utils.sh"
 
 log_info "╔════════════════════════════════════════════════════════════════╗"
-log_info "║  CI Test: run_2.sh (Phase 2 - Structure Validation)           ║"
+log_info "║  Phase 2: run_2.sh - Structure Validation                     ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 
 # Verify we're running as non-root (required for run_2.sh)
@@ -136,7 +136,7 @@ for config in "${config_files[@]}"; do
 done
 
 log_info "╔════════════════════════════════════════════════════════════════╗"
-log_info "║  run_2.sh Structure Validation PASSED                         ║"
-log_info "║  Full E2E (actual installs) runs in ci_test_e2e.sh --phase=2   ║"
+log_info "║  Phase 2: run_2.sh - Structure Validation PASSED               ║"
+log_info "║  Full E2E runs via: ./test/run_e2e.sh --phase=2                 ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 exit 0

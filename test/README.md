@@ -8,21 +8,21 @@ This directory contains tests for the Ethereum node setup scripts.
 
 Run tests inside an isolated Docker container with **real system calls** - no mocks needed.
 
-**run_1 structure validation (from repo root):**
+**Phase 1: run_1.sh - Structure validation:**
 ```bash
 docker build -t eth-node-test -f test/Dockerfile . && docker run --rm --privileged \
   --user root -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
   eth-node-test /workspace/test/ci_test_run_1.sh
 ```
 
-**run_2 structure validation:**
+**Phase 2: run_2.sh - Structure validation:**
 ```bash
 docker run --rm --privileged \
   --user testuser -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
   eth-node-test /workspace/test/ci_test_run_2.sh
 ```
 
-**E2E (actually runs run_1.sh or run_2.sh - from repo root, requires Docker):**
+**E2E (runs run_1.sh or run_2.sh - from repo root, requires Docker):**
 ```bash
 ./test/run_e2e.sh --phase=1   # run_1.sh (system setup)
 ./test/run_e2e.sh --phase=2   # run_2.sh (client installation)
@@ -83,9 +83,9 @@ test/
 ├── docker-compose.yml      # Easy container management
 ├── docker_test.sh          # Test runner for Docker (real system calls)
 ├── run_tests.sh            # Test runner for local (supports mocks)
-├── ci_test_run_1.sh        # run_1 structure validation
-├── ci_test_run_2.sh        # run_2 structure validation only (Tests 1-7)
-├── ci_test_e2e.sh          # E2E: executes run_1 or run_2, verifies results (PHASE=1|2)
+├── ci_test_run_1.sh        # Phase 1: run_1.sh - Structure validation
+├── ci_test_run_2.sh        # Phase 2: run_2.sh - Structure validation
+├── ci_test_e2e.sh          # Phase 1|2: run_1 or run_2 - E2E (PHASE=1|2)
 ├── run_e2e.sh              # Wrapper: Docker + systemd + ci_test_e2e.sh (--phase=1|2)
 ├── lib/
 │   ├── mock_functions.sh   # Mock implementations for safe local testing
@@ -104,7 +104,12 @@ test/
 5. **Function behavior** - Unit tests for key functions
 6. **System integration** - Real apt, ufw, systemctl calls (Docker only)
 7. **Install script structure** - Proper shebang, sources, patterns
-8. **E2E** - Executes run_1.sh (phase 1) or run_2.sh (phase 2) and verifies results
+8. **E2E** - Executes run_1.sh (Phase 1) or run_2.sh (Phase 2) and verifies results
+
+## Naming Convention
+
+- **Phase 1** = run_1.sh (system setup, runs as root)
+- **Phase 2** = run_2.sh (client installation, runs as non-root user)
 
 ## CI Integration
 
@@ -113,18 +118,18 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 1. **Shellcheck** - Lints all shell scripts
 2. **Docker Lint Tests** - Runs `run_tests.sh --lint-only` in container
 3. **Docker Unit Tests** - Runs `docker_test.sh` with real system calls
-4. **run_1.sh Structure** - Validates syntax, functions, SSH safety (no execution)
-5. **run_1.sh E2E** - Runs run_1.sh and verifies results (systemd + openssh)
-6. **run_2.sh Structure** - Validates structure, syntax, configs, client scripts
-7. **run_2.sh E2E** - Runs run_2.sh and verifies all client installs (execution, consensus, MEV)
+4. **Phase 1: run_1.sh - Structure Validation** - Syntax, functions, SSH safety (no execution)
+5. **Phase 1: run_1.sh - E2E** - Runs run_1.sh and verifies results (systemd + openssh)
+6. **Phase 2: run_2.sh - Structure Validation** - Structure, syntax, configs, client scripts
+7. **Phase 2: run_2.sh - E2E** - Runs run_2.sh and verifies all client installs
 
 ### CI Test Scripts
 
-| Script | Purpose | User |
-|--------|---------|------|
-| `ci_test_run_1.sh` | Validates run_1.sh structure, syntax, functions, SSH safety | root |
-| `ci_test_run_2.sh` | Validates run_2.sh structure, syntax, configs (Tests 1-7). Full E2E in ci_test_e2e.sh | testuser |
-| `ci_test_e2e.sh` | Executes run_1 or run_2 and verifies results (PHASE=1|2) | root/testuser |
+| Script | Purpose | Phase | User |
+|--------|---------|-------|------|
+| `ci_test_run_1.sh` | Structure validation for run_1.sh | Phase 1 | root |
+| `ci_test_run_2.sh` | Structure validation for run_2.sh | Phase 2 | testuser |
+| `ci_test_e2e.sh` | E2E: executes run_1 or run_2 (PHASE=1|2) | Phase 1 or 2 | root/testuser |
 
 **Note**: Full E2E testing with systemd services and snap packages requires special Docker setup. CI tests validate structure and components that work in standard Docker.
 
@@ -134,20 +139,20 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 # Build and run all CI tests
 docker build -t eth-node-test -f test/Dockerfile .
 
-# Test run_1.sh structure (as root)
+# Phase 1: run_1.sh - Structure
 docker run --rm --privileged --user root \
   -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
   eth-node-test /workspace/test/ci_test_run_1.sh
 
-# Test run_1.sh E2E
+# Phase 1: run_1.sh - E2E
 ./test/run_e2e.sh --phase=1
 
-# Test run_2.sh structure (as testuser)
+# Phase 2: run_2.sh - Structure
 docker run --rm --privileged --user testuser \
   -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
   eth-node-test /workspace/test/ci_test_run_2.sh
 
-# Test run_2.sh E2E
+# Phase 2: run_2.sh - E2E
 ./test/run_e2e.sh --phase=2
 ```
 
@@ -171,7 +176,7 @@ sudo ./run_1.sh           # Phase 1: System setup (as root)
 Both phases run apt/dpkg which can prompt for configuration (tzdata, postfix, cron). To prevent hangs:
 
 - **Dockerfile**: Pre-seeds debconf (postfix, cron, tzdata, needrestart)
-- **ci_test_e2e.sh**: Re-applies debconf pre-seeds before run_1.sh (Phase 1) and before install_dependencies (Phase 2)
+- **ci_test_e2e.sh**: Re-applies debconf pre-seeds before run_1.sh (Phase 1) and before install_dependencies (Phase 2 E2E)
 - **run_e2e.sh**: Passes DEBIAN_FRONTEND=noninteractive and DEBIAN_PRIORITY=critical to container and exec
 - **CI**: 5min timeout for phase 1, 15min for phase 2
 

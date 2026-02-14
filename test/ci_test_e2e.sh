@@ -1,7 +1,7 @@
 #!/bin/bash
-# E2E Test - Executes run_1.sh or run_2.sh and verifies results
-# Run inside Docker with systemd: docker exec <container> /workspace/test/ci_test_e2e.sh
-# Requires: PHASE=1 (root) or PHASE=2 (testuser) set by run_e2e.sh
+# E2E Test - Executes run_1.sh (Phase 1) or run_2.sh (Phase 2) and verifies results
+# Phase 1 = run_1.sh (system setup, root). Phase 2 = run_2.sh (client install, testuser).
+# Run inside Docker with systemd. Requires PHASE=1|2 set by run_e2e.sh.
 
 set -Eeuo pipefail
 
@@ -18,7 +18,8 @@ if [[ -z "$PHASE" ]] || [[ "$PHASE" != "1" && "$PHASE" != "2" ]]; then
     exit 1
 fi
 
-log_header "Phase $PHASE End-to-End Test"
+# Phase 1 = run_1.sh, Phase 2 = run_2.sh
+log_header "Phase $PHASE: run_${PHASE}.sh - E2E"
 log_info "Running as: $(whoami)"
 
 if ! command -v systemctl &>/dev/null; then
