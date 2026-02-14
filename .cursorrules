@@ -601,7 +601,7 @@ bash install/test/test_common_functions.sh
 
 ### Shellcheck CI Exclusions (with rationale)
 ```bash
-# In .github/workflows/ci.yml (shellcheck job)
+# In .github/workflows/shellcheck.yml and ci.yml lint
 --exclude=SC2317  # Unreachable code (false positive in test scripts)
 --exclude=SC1091  # Not following source (relative paths)
 --exclude=SC1090  # Non-constant source (variable paths)
@@ -893,7 +893,7 @@ find . -name "*.sh" -type f ! -path "./.git/*" -exec bash -n {} \;
 **When CI fails unexpectedly:**
 1. Check `gh run view <run-id> --log-failed` for actual error
 2. Compare CI shellcheck exclusions with local command
-3. Verify all shellcheck exclusions are in `.github/workflows/ci.yml` (shellcheck job)
+3. Verify all shellcheck exclusions are in `.github/workflows/shellcheck.yml` and ci.yml lint
 
 ### Lessons Learned from Flywheel Implementation
 
@@ -907,7 +907,7 @@ find . -name "*.sh" -type f ! -path "./.git/*" -exec bash -n {} \;
 
 5. **Remove Unused Features** - Verbose flags and debug functions that aren't used are code bloat
 
-6. **Sync CI Workflow Exclusions** - ci.yml shellcheck job uses project exclusions (SC2317, SC1091, etc.)
+6. **Sync CI Workflow Exclusions** - shellcheck.yml and ci.yml lint use project exclusions (SC2317, SC1091, etc.)
 
 7. **Test Generated Scripts** - Generated scripts should be tested for:
    - Correct shebang
