@@ -125,6 +125,17 @@ else
     record_test "common_functions.sh loads successfully" "FAIL"
 fi
 
+# Caddy config validation (CI_E2E minimal config must validate with default Caddy)
+if command -v caddy &>/dev/null && [[ -f "$PROJECT_ROOT/test/validate_caddy_config.sh" ]]; then
+    if "$PROJECT_ROOT/test/validate_caddy_config.sh" 2>/dev/null; then
+        record_test "Caddy config validates" "PASS"
+    else
+        record_test "Caddy config validates" "FAIL"
+    fi
+else
+    record_test "Caddy config validates" "SKIP"
+fi
+
 # =============================================================================
 # PHASE 4: Function Unit Tests (Real System Calls)
 # =============================================================================
