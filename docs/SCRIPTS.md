@@ -49,9 +49,18 @@ ssh LOGIN_UNAME@<server-ip>
 ./run_2.sh
 ```
 
+**Non-interactive (for CI/automation):**
+```bash
+./run_2.sh --execution=geth --consensus=prysm --mev=mev-boost
+./run_2.sh --execution=besu --consensus=lighthouse --mev=none --skip-deps
+./run_2.sh --help
+```
+
+**Flags:** `--execution=NAME` `--consensus=NAME` `--mev=NAME` `--skip-deps`
+
 **Actions:**
-- Installs `snapd`
-- Runs installers: `./geth.sh`, `./prysm.sh`, `./install_mev_boost.sh`
+- Installs dependencies (unless `--skip-deps`)
+- Runs installers for selected clients
 - Echoes next steps for Nginx + SSL
 
 **Start services:**
