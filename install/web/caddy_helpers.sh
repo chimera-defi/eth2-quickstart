@@ -77,13 +77,11 @@ create_caddy_config_auto_https() {
     # CI/E2E: minimal config - tls internal, no rate_limit/request_body (require plugins in default Caddy)
     # Production: full config with dns cloudflare, rate_limit, request_body
     if [[ "${CI_E2E:-}" == "true" ]]; then
-        # Minimal config for default Caddy (no plugins)
+        # Minimal config for default Caddy - matches Nginx structure (ws/rpc reverse proxy)
+        # No log block, no rate_limit/request_body (require plugins)
         cat > "$caddyfile_path" << EOF
 {
     auto_https off
-    servers {
-        protocols h1 h2 h3
-    }
 }
 
 http://$server_name {
@@ -117,16 +115,6 @@ https://$server_name {
         X-Content-Type-Options "nosniff"
         X-XSS-Protection "1; mode=block"
         Referrer-Policy "strict-origin-when-cross-origin"
-    }
-    
-    log {
-        output file /var/log/caddy/access.log {
-            roll_size 100mb
-            roll_keep 5
-            roll_keep_for 720h
-        }
-        format json
-        level INFO
     }
 }
 EOF

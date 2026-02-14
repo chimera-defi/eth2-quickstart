@@ -98,5 +98,6 @@ else
     [[ -n "${E2E_EXECUTION:-}" ]] && DOCKER_E2E+=(-e "E2E_EXECUTION=$E2E_EXECUTION")
     [[ -n "${E2E_CONSENSUS:-}" ]] && DOCKER_E2E+=(-e "E2E_CONSENSUS=$E2E_CONSENSUS")
     [[ -n "${E2E_MEV:-}" ]] && DOCKER_E2E+=(-e "E2E_MEV=$E2E_MEV")
+    [[ -n "${GITHUB_TOKEN:-}" ]] && DOCKER_E2E+=(-e "GITHUB_TOKEN=$GITHUB_TOKEN")
     docker exec --user testuser "${DOCKER_E2E[@]}" "$CONTAINER_NAME" /workspace/test/ci_test_e2e.sh || exit
 fi
