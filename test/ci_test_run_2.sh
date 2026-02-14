@@ -26,6 +26,16 @@ cd "$PROJECT_ROOT"
 source_exports
 source_common_functions
 
+# Install all dependencies first (like run_2.sh does when not using --skip-deps)
+# Ensures Rust, Go, Node, etc. are available for all client installs
+log_info "Installing dependencies (install_dependencies --production)..."
+export CI_E2E=true
+if ! "$PROJECT_ROOT/install/utils/install_dependencies.sh" --production; then
+    log_error "Failed to install dependencies"
+    exit 1
+fi
+log_info "✓ Dependencies installed"
+
 # Test 1: Verify required files exist
 log_info "Test 1: Verify required files..."
 for file in run_2.sh exports.sh lib/common_functions.sh; do
@@ -140,12 +150,9 @@ for config in "${config_files[@]}"; do
 done
 
 # Test 8: Run ALL client install scripts (full install flow)
-# Each script executes: source, check_requirements, firewall, download/apt, systemd, etc.
-# Path/source errors always fail. Install failures fail except for scripts needing Rust
-# (reth, ethgas) which are skipped - test image has no cargo.
+# Dependencies installed above. Each script: source, check_requirements, firewall, download, systemd.
+# Path/source errors and install failures both cause CI failure.
 log_info "Test 8: Run all client install scripts (execution + consensus + MEV)..."
-# Scripts that need Rust (cargo) - allowed to fail in CI test image
-SCRIPTS_NEED_RUST=("install/execution/reth.sh" "install/consensus/grandine.sh" "install/mev/install_ethgas.sh")
 load_fail=0
 install_fail=0
 total=${#CLIENT_SCRIPTS[@]}
@@ -166,18 +173,9 @@ for script in "${CLIENT_SCRIPTS[@]}"; do
         dump_output_tail "$output" 30 "    "
         load_fail=$((load_fail + 1))
     elif [[ $exit_code -ne 0 ]]; then
-        # Check if script needs Rust (allowed to fail)
-        need_rust=false
-        for rust_script in "${SCRIPTS_NEED_RUST[@]}"; do
-            if [[ "$script" == "$rust_script" ]]; then need_rust=true; break; fi
-        done
-        if [[ "$need_rust" == "true" ]]; then
-            log_info "  ⊘ $(basename "$script"): skipped (needs Rust, exit=$exit_code)"
-        else
-            log_error "  ✗ $(basename "$script"): install failed (exit=$exit_code)"
-            dump_output_tail "$output" 30 "    "
-            install_fail=$((install_fail + 1))
-        fi
+        log_error "  ✗ $(basename "$script"): install failed (exit=$exit_code)"
+        dump_output_tail "$output" 30 "    "
+        install_fail=$((install_fail + 1))
     else
         log_info "  ✓ $(basename "$script"): installed (exit=0)"
     fi
