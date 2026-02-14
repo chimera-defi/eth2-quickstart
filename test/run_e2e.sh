@@ -55,8 +55,8 @@ else
     echo "Skipping build (SKIP_BUILD=true)"
 fi
 
-# Phase 2 needs CI_E2E (skips UFW)
-DOCKER_ENV=(-e DEBIAN_FRONTEND=noninteractive)
+# Prevent tty hangs (tzdata, postfix, cron) - same as Phase 1
+DOCKER_ENV=(-e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical)
 [[ "$PHASE" == "2" ]] && DOCKER_ENV+=(-e CI_E2E=true)
 
 echo "Starting container with systemd..."
@@ -90,8 +90,9 @@ for _ in $(seq 1 30); do
 done
 
 # Phase 1: root runs ci_test_e2e. Phase 2: testuser runs ci_test_e2e (full E2E, like run_1)
+# Pass DEBIAN_* to prevent apt/dpkg tty hangs (tzdata, postfix, etc.)
 if [[ "$PHASE" == "1" ]]; then
-    docker exec --user root -e PHASE=1 "$CONTAINER_NAME" /workspace/test/ci_test_e2e.sh || exit
+    docker exec --user root -e PHASE=1 -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical "$CONTAINER_NAME" /workspace/test/ci_test_e2e.sh || exit
 else
-    docker exec --user testuser -e PHASE=2 -e CI_E2E=true "$CONTAINER_NAME" /workspace/test/ci_test_e2e.sh || exit
+    docker exec --user testuser -e PHASE=2 -e CI_E2E=true -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical "$CONTAINER_NAME" /workspace/test/ci_test_e2e.sh || exit
 fi

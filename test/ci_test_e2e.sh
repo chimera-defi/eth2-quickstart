@@ -100,6 +100,11 @@ if [[ "$PHASE" == "2" ]]; then
     echo "export LOGIN_UNAME='$(whoami)'" > config/user_config.env
     export CI_E2E=true
     export DEBIAN_FRONTEND=noninteractive
+    export DEBIAN_PRIORITY=critical
+
+    # Re-apply debconf preseed (like Phase 1) to prevent tzdata/postfix/cron hangs
+    log_header "Pre-seeding debconf (prevent tty hangs)"
+    sudo bash "$PROJECT_ROOT/install/utils/debconf_preseed.sh"
 
     # Step 1: Install dependencies (like run_2.sh when not --skip-deps)
     log_header "Installing dependencies"

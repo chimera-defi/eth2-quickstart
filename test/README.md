@@ -155,10 +155,11 @@ sudo ./run_1.sh           # Phase 1: System setup (as root)
 
 ### E2E: Non-Interactive Setup
 
-Phase 1 E2E executes `apt upgrade` which can pull in packages that prompt for configuration. To prevent hangs:
+Both phases run apt/dpkg which can prompt for configuration (tzdata, postfix, cron). To prevent hangs:
 
 - **Dockerfile**: Pre-seeds debconf (postfix, cron, tzdata, needrestart)
-- **ci_test_e2e.sh**: Re-applies debconf pre-seeds before running run_1.sh
-- **CI**: 5min timeout for phase 1, 10min for phase 2
+- **ci_test_e2e.sh**: Re-applies debconf pre-seeds before run_1.sh (Phase 1) and before install_dependencies (Phase 2)
+- **run_e2e.sh**: Passes DEBIAN_FRONTEND=noninteractive and DEBIAN_PRIORITY=critical to container and exec
+- **CI**: 5min timeout for phase 1, 15min for phase 2
 
 If E2E hangs, run locally with `./test/run_e2e.sh --phase=1` to debug.

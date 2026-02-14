@@ -53,7 +53,7 @@ jobs:
           eth-node-test /workspace/test/ci_test_run_2.sh
 
     - name: Test run_2.sh E2E (Phase 2 - Actual Execution)
-      timeout-minutes: 35
+      timeout-minutes: 15
       run: |
         # Full E2E: install deps, all 16 client installs, run_2 flags, verify (like run_1 E2E)
         SKIP_BUILD=true ./test/run_e2e.sh --phase=2
