@@ -60,18 +60,26 @@ log_header() { echo -e "\n${BLUE}=== $* ===${NC}\n"; }
 TESTS_RUN=0
 TESTS_PASSED=0
 TESTS_FAILED=0
+TESTS_SKIPPED=0
 
 record_test() {
     local name="$1"
     local result="$2"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if [[ "$result" == "PASS" ]]; then
-        TESTS_PASSED=$((TESTS_PASSED + 1))
-        echo -e "${GREEN}✓${NC} $name"
-    else
-        TESTS_FAILED=$((TESTS_FAILED + 1))
-        echo -e "${RED}✗${NC} $name"
-    fi
+    case "$result" in
+        PASS)
+            TESTS_PASSED=$((TESTS_PASSED + 1))
+            echo -e "${GREEN}✓${NC} $name"
+            ;;
+        SKIP)
+            TESTS_SKIPPED=$((TESTS_SKIPPED + 1))
+            echo -e "${YELLOW}⊘${NC} $name (skipped)"
+            ;;
+        *)
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+            echo -e "${RED}✗${NC} $name"
+            ;;
+    esac
 }
 
 print_test_summary() {
@@ -79,14 +87,45 @@ print_test_summary() {
     echo "Total tests: $TESTS_RUN"
     echo -e "Passed: ${GREEN}$TESTS_PASSED${NC}"
     echo -e "Failed: ${RED}$TESTS_FAILED${NC}"
+    [[ $TESTS_SKIPPED -gt 0 ]] && echo -e "Skipped: ${YELLOW}$TESTS_SKIPPED${NC}"
     echo ""
     
-    if [[ $TESTS_FAILED -eq 0 ]]; then
-        echo -e "${GREEN}All tests passed!${NC}"
-        return 0
-    else
-        echo -e "${RED}Some tests failed.${NC}"
+    if [[ $TESTS_FAILED -gt 0 ]]; then
+        echo -e "${RED}Some tests failed - see above for details.${NC}"
         return 1
+    fi
+    echo -e "${GREEN}All tests passed!${NC}"
+    return 0
+}
+
+# Run script with output teed to log_file. Returns script exit code.
+run_script_with_log() {
+    local log_file="$1"
+    shift
+    "$@" 2>&1 | tee "$log_file"
+    return "${PIPESTATUS[0]}"
+}
+
+# Dump last N lines of log file via log_error (for failure debugging)
+dump_log_tail() {
+    local log_file="$1"
+    local lines="${2:-50}"
+    local prefix="${3:-  }"
+    if [[ -f "$log_file" ]]; then
+        log_error "--- Last $lines lines of output ---"
+        while IFS= read -r line; do log_error "${prefix}$line"; done < <(tail -n "$lines" "$log_file")
+    fi
+}
+
+# Verify client/component installed (for E2E verification)
+# Usage: verify_installed "Name" command args...
+verify_installed() {
+    local name="$1"
+    shift
+    if "$@" 2>/dev/null; then
+        record_test "$name installed" "PASS"
+    else
+        record_test "$name installed" "FAIL"
     fi
 }
 

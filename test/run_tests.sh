@@ -273,6 +273,7 @@ run_source_verification() {
         "create_temp_config_dir"
         "get_script_directories"
         "merge_client_config"
+        "run_install_script"
     )
     
     for func in "${required_functions[@]}"; do
