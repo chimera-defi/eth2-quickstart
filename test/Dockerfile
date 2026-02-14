@@ -29,8 +29,11 @@ RUN apt-get update && \
 RUN systemctl enable ssh 2>/dev/null || systemctl enable sshd 2>/dev/null || true
 
 # Create a non-root user for testing (mimics real deployment)
+# Preserve DEBIAN_* through sudo so apt/dpkg stay noninteractive (prevents tzdata Readline hang)
 RUN useradd -m -s /bin/bash testuser \
-    && echo "testuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+    && echo "testuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
+    && echo 'Defaults env_keep += "DEBIAN_FRONTEND DEBIAN_PRIORITY"' > /etc/sudoers.d/99-noninteractive \
+    && chmod 440 /etc/sudoers.d/99-noninteractive
 
 # Set ownership
 RUN chown -R testuser:testuser /workspace
