@@ -109,7 +109,7 @@ if [[ "$PHASE" == "2" ]]; then
 
     # Step 1: Install dependencies (like run_2.sh when not --skip-deps)
     log_header "Installing dependencies"
-    if ! ./install/utils/install_dependencies.sh --production; then
+    if ! "$PROJECT_ROOT/install/utils/install_dependencies.sh" --production; then
         record_test "install_dependencies" "FAIL"
         print_test_summary
         exit 1
@@ -119,7 +119,7 @@ if [[ "$PHASE" == "2" ]]; then
     # Step 2: Run run_2.sh with flags (tests the run_2 flow - geth, prysm, mev-boost)
     log_header "Executing run_2.sh (flag flow)"
     run2_log="/tmp/run2_e2e_$$.log"
-    if ! run_script_with_log "$run2_log" ./run_2.sh --execution=geth --consensus=prysm --mev=mev-boost --skip-deps; then
+    if ! run_script_with_log "$run2_log" "$PROJECT_ROOT/run_2.sh" --execution=geth --consensus=prysm --mev=mev-boost --skip-deps; then
         record_test "run_2.sh execution" "FAIL"
         dump_log_tail "$run2_log" 50 "  "
         rm -f "$run2_log"

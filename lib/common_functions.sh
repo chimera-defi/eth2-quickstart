@@ -447,7 +447,7 @@ run_install_script() {
     log_file=$(mktemp)
     trap 'rm -f "$log_file"' RETURN
     set +e
-    ./"$script" 2>&1 | tee "$log_file"
+    "$script" 2>&1 | tee "$log_file"
     exit_code=$?
     set -e
     if [[ $exit_code -eq 0 ]]; then
