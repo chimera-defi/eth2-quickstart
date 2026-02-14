@@ -1073,9 +1073,9 @@ merge_client_config() {
         return 1
     fi
     
-    # Merge based on file type
+    # Merge based on file type (Nethermind uses .cfg with JSON content)
     case "$base_config" in
-        *.json)
+        *.json|*.cfg)
             if command_exists jq; then
                 jq -s '.[0] * .[1]' "$base_config" "$custom_config" > "$output_config"
             else

@@ -99,7 +99,7 @@ if [[ "$PHASE" == "2" ]]; then
         lighthouse) verify_installed "Lighthouse" command -v lighthouse ;;
         teku) verify_installed "Teku" test -f "$HOME/teku/bin/teku" ;;
         nimbus) verify_installed "Nimbus" test -f "$HOME/nimbus/build/nimbus_beacon_node" ;;
-        lodestar) verify_installed "Lodestar" command -v lodestar ;;
+        lodestar) verify_installed "Lodestar" test -f "$HOME/lodestar/node_modules/.bin/lodestar" ;;
         grandine) verify_installed "Grandine" test -f "$HOME/grandine/grandine" ;;
         *) verify_installed "Consensus client" test -f "$HOME/prysm/prysm.sh" ;;
     esac
