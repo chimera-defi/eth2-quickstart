@@ -88,11 +88,11 @@ install_packages() {
     
     log_info "Installing packages: ${packages[*]}"
     
-    # Use sudo if not root, direct apt if root. Pass DEBIAN_* for non-interactive (batteries-included)
+    # Use sudo if not root, direct apt if root
     if [[ $EUID -eq 0 ]]; then
         apt-get install -y --no-install-recommends "${packages[@]}"
     else
-        sudo env DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical apt-get install -y --no-install-recommends "${packages[@]}"
+        sudo apt-get install -y --no-install-recommends "${packages[@]}"
     fi
 }
 
@@ -121,11 +121,11 @@ install_production() {
         exit 1
     fi
     
-    # Update system (non-interactive)
+    # Update system
     if [[ $EUID -eq 0 ]]; then
         apt-get update -y
     else
-        sudo env DEBIAN_FRONTEND=noninteractive apt-get update -y
+        sudo apt-get update -y
     fi
     
     # Install all packages
