@@ -72,7 +72,7 @@ test/
 ├── run_tests.sh            # Test runner for local (supports mocks)
 ├── ci_test_run_1.sh        # run_1 structure validation
 ├── ci_test_run_1_e2e.sh    # run_1 E2E (executes run_1.sh, verifies results)
-├── run_run_1_e2e.sh       # Wrapper: Docker + systemd + ci_test_run_1_e2e.sh
+├── run_e2e.sh             # Wrapper: Docker + systemd + ci_test_e2e.sh (--phase=1|2)
 ├── lib/
 │   ├── mock_functions.sh   # Mock implementations for safe local testing
 │   ├── test_utils.sh       # Shared test helpers (record_test, assert_*, etc.)
@@ -108,7 +108,7 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 | Script | Purpose | User |
 |--------|---------|------|
 | `ci_test_run_1.sh` | Validates run_1.sh structure, syntax, functions, basic ops | root |
-| `ci_test_run_1_e2e.sh` | Executes run_1.sh and verifies results (run via run_run_1_e2e.sh) | root |
+| `ci_test_run_1_e2e.sh` | Executes run_1.sh and verifies results (run via run_e2e.sh --phase=1) | root |
 | `ci_test_run_2.sh` | Validates run_2.sh structure, syntax, configs, Geth install | testuser |
 
 **Note**: Full E2E testing with systemd services and snap packages requires special Docker setup. CI tests validate structure and components that work in standard Docker.
