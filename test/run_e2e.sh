@@ -1,8 +1,8 @@
 #!/bin/bash
 # Wrapper to run E2E tests in Docker with systemd
 # Usage: ./run_e2e.sh [--phase=1|2]  or  ./run_e2e.sh -1|-2
-#   Phase 1: run_1.sh (system setup, security)
-#   Phase 2: run_2.sh (client installation)
+#   Phase 1 = run_1.sh (system setup, root)
+#   Phase 2 = run_2.sh (client installation, testuser)
 # Builds image, starts container with systemd init, execs E2E test, cleans up
 # Requires: Docker installed and running
 
@@ -24,8 +24,8 @@ done
 
 if [[ -z "$PHASE" ]] || [[ "$PHASE" != "1" && "$PHASE" != "2" ]]; then
     echo "Usage: $0 --phase=1|2  (or -1|-2)"
-    echo "  Phase 1: run_1.sh (system setup)"
-    echo "  Phase 2: run_2.sh (full E2E - deps, all 16 installs, run_2, verify)"
+    echo "  Phase 1 = run_1.sh (system setup)"
+    echo "  Phase 2 = run_2.sh (client installation)"
     exit 1
 fi
 
@@ -47,7 +47,7 @@ if ! command -v docker &>/dev/null; then
     exit 1
 fi
 
-echo "=== Phase $PHASE E2E Test ==="
+echo "=== Phase $PHASE: run_${PHASE}.sh - E2E ==="
 if [[ "${SKIP_BUILD:-false}" != "true" ]]; then
     echo "Building image..."
     docker build -t "$IMAGE_NAME" -f test/Dockerfile .
@@ -89,7 +89,7 @@ for _ in $(seq 1 30); do
     sleep 2
 done
 
-# Phase 1: root runs ci_test_e2e. Phase 2: testuser runs ci_test_e2e (full E2E, like run_1)
+# Phase 1 = run_1 (root). Phase 2 = run_2 (testuser).
 # Pass DEBIAN_* to prevent apt/dpkg tty hangs (tzdata, postfix, etc.)
 if [[ "$PHASE" == "1" ]]; then
     docker exec --user root -e PHASE=1 -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical "$CONTAINER_NAME" /workspace/test/ci_test_e2e.sh || exit

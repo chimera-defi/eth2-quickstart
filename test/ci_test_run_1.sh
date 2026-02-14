@@ -1,19 +1,17 @@
 #!/bin/bash
-# CI Test Script for run_1.sh (Phase 1 - System Setup)
-# Runs inside Docker container as root
-# Tests script structure and key components
-# Note: Full systemd services don't work in standard Docker
+# Phase 1: run_1.sh - Structure Validation
+# Phase 1 = system setup (run as root). Tests script structure, syntax, SSH safety.
+# Runs inside Docker container as root. Full E2E in run_e2e.sh --phase=1.
 
 set -Eeuo pipefail
 
-# Setup paths and source shared utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_PREFIX="CI"
 # shellcheck source=lib/test_utils.sh
 source "$SCRIPT_DIR/lib/test_utils.sh"
 
 log_info "╔════════════════════════════════════════════════════════════════╗"
-log_info "║  CI Test: run_1.sh (Phase 1 - Structure Validation)           ║"
+log_info "║  Phase 1: run_1.sh - Structure Validation                     ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 
 # Verify we're running as root (required for run_1.sh)
@@ -287,8 +285,7 @@ else
 fi
 
 log_info "╔════════════════════════════════════════════════════════════════╗"
-log_info "║  run_1.sh Structure Validation PASSED                        ║"
-log_info "║  Validated: syntax, functions, SSH safety, lockout prevention, ║"
-log_info "║  idempotency, no duplicates, firewall                         ║"
+log_info "║  Phase 1: run_1.sh - Structure Validation PASSED               ║"
+log_info "║  Validated: syntax, functions, SSH safety, lockout prevention ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 exit 0
