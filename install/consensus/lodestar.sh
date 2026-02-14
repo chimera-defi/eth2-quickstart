@@ -32,10 +32,17 @@ ensure_directory "$LODESTAR_DIR"
 
 cd "$LODESTAR_DIR" || exit
 
-# Install Lodestar globally using npm
+# Install Lodestar locally (avoids npm -g which requires root)
 log_info "Installing Lodestar via npm..."
-if ! npm install -g @chainsafe/lodestar; then
+if ! npm install @chainsafe/lodestar; then
     log_error "Failed to install Lodestar via npm. Please check your Node.js installation and try again."
+    exit 1
+fi
+
+# Use local lodestar binary
+LODESTAR_BIN="$LODESTAR_DIR/node_modules/.bin/lodestar"
+if [[ ! -x "$LODESTAR_BIN" ]]; then
+    log_error "Lodestar binary not found at $LODESTAR_BIN"
     exit 1
 fi
 
@@ -106,12 +113,12 @@ fi
 rm -rf ./tmp/
 
 # Create systemd service for beacon node
-BEACON_EXEC_START="lodestar beacon --paramsFile $LODESTAR_DIR/beacon.config.json"
+BEACON_EXEC_START="$LODESTAR_BIN beacon --paramsFile $LODESTAR_DIR/beacon.config.json"
 
 create_systemd_service "cl" "Lodestar Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
 # Create systemd service for validator
-VALIDATOR_EXEC_START="lodestar validator --paramsFile $LODESTAR_DIR/validator.config.json"
+VALIDATOR_EXEC_START="$LODESTAR_BIN validator --paramsFile $LODESTAR_DIR/validator.config.json"
 
 create_systemd_service "validator" "Lodestar Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target"
 
@@ -156,7 +163,7 @@ Node.js version: $(node --version)
 NPM version: $(npm --version)
 
 Useful commands:
-- Check Lodestar version: lodestar --version
-- Import validator keys: lodestar validator import --keystoresDir $VALIDATOR_DATA_DIR/keystores --secretsDir $VALIDATOR_DATA_DIR/secrets
+- Check Lodestar version: $LODESTAR_BIN --version
+- Import validator keys: $LODESTAR_BIN validator import --keystoresDir $VALIDATOR_DATA_DIR/keystores --secretsDir $VALIDATOR_DATA_DIR/secrets
 
 EOF
