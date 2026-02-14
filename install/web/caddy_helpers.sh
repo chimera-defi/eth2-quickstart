@@ -72,6 +72,15 @@ create_caddy_config_auto_https() {
     
     log_info "Creating Caddy configuration with automatic HTTPS for $server_name..."
     
+    # CI/E2E: use tls internal (self-signed, no plugins). Production: cloudflare DNS
+    if [[ "${CI_E2E:-}" == "true" ]]; then
+        TLS_BLOCK='tls internal'
+    else
+        TLS_BLOCK='dns cloudflare {
+            env CLOUDFLARE_API_TOKEN
+        }'
+    fi
+    
     cat > "$caddyfile_path" << EOF
 {
     # Global options (Caddy v2)
@@ -90,11 +99,8 @@ http://$server_name {
 
 # Main HTTPS site
 https://$server_name {
-    # Enable automatic HTTPS
     tls {
-        dns cloudflare {
-            env CLOUDFLARE_API_TOKEN
-        }
+        $TLS_BLOCK
     }
     
     # WebSocket proxy with rate limiting
