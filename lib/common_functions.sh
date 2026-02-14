@@ -188,6 +188,21 @@ get_latest_release() {
     fi
 }
 
+# Get download URL for a release asset matching a pattern (e.g. "nimbus-eth2_Linux_amd64")
+# Use when asset filename includes commit hash or other variable parts
+get_github_release_asset_url() {
+    local repo="$1"
+    local match_pattern="$2"
+    local release_url="https://api.github.com/repos/${repo}/releases/latest"
+    local url
+    url=$(curl -sf "$release_url" 2>/dev/null | grep -oE '"browser_download_url": "https://[^"]*'"${match_pattern}"'[^"]*"' | head -1 | sed 's/.*"\(https:\/\/[^"]*\)".*/\1/')
+    if [[ -n "$url" ]]; then
+        echo "$url"
+        return 0
+    fi
+    return 1
+}
+
 # Extract archive (tar.gz, tgz, zip)
 extract_archive() {
     local archive_file="$1"
@@ -467,8 +482,9 @@ ensure_jwt_secret() {
     
     if [[ ! -f "$jwt_path" ]]; then
         log_info "Generating JWT secret at $jwt_path"
+        mkdir -p "$(dirname "$jwt_path")"
         openssl rand -hex 32 > "$jwt_path"
-        sudo chmod 600 "$jwt_path"
+        chmod 600 "$jwt_path"
         log_info "JWT secret generated and secured"
     else
         log_info "JWT secret already exists at $jwt_path"

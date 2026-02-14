@@ -30,19 +30,17 @@ ensure_directory "$NIMBUS_DIR"
 
 cd "$NIMBUS_DIR" || exit
 
-# Get latest release version
+# Get download URL from GitHub API (asset name includes commit hash, e.g. nimbus-eth2_Linux_amd64_26.2.0_fa7a87e8.tar.gz)
 log_info "Fetching latest Nimbus release..."
-LATEST_VERSION=$(get_latest_release "status-im/nimbus-eth2")
-if [[ -z "$LATEST_VERSION" ]]; then
-    LATEST_VERSION="v23.11.0"  # Fallback version
-    log_warn "Could not fetch latest version, using fallback: $LATEST_VERSION"
+DOWNLOAD_URL=$(get_github_release_asset_url "status-im/nimbus-eth2" "nimbus-eth2_Linux_amd64")
+if [[ -z "$DOWNLOAD_URL" ]]; then
+    log_error "Could not fetch Nimbus release asset URL"
+    exit 1
 fi
 
-# Download Nimbus
-DOWNLOAD_URL="https://github.com/status-im/nimbus-eth2/releases/download/${LATEST_VERSION}/nimbus-eth2_Linux_amd64_${LATEST_VERSION}.tar.gz"
-ARCHIVE_FILE="nimbus-eth2_Linux_amd64_${LATEST_VERSION}.tar.gz"
+ARCHIVE_FILE="${DOWNLOAD_URL##*/}"
 
-log_info "Downloading Nimbus ${LATEST_VERSION}..."
+log_info "Downloading Nimbus..."
 if download_file "$DOWNLOAD_URL" "$ARCHIVE_FILE"; then
     if ! extract_archive "$ARCHIVE_FILE" "$NIMBUS_DIR" 1; then
         log_error "Failed to extract Nimbus archive"
