@@ -26,16 +26,7 @@ cd "$PROJECT_ROOT"
 source_exports
 source_common_functions
 
-# Install all dependencies first (like run_2.sh does when not using --skip-deps)
-# Ensures Rust, Go, Node, etc. are available for all client installs
-log_info "Installing dependencies (install_dependencies --production)..."
-export CI_E2E=true
-if ! "$PROJECT_ROOT/install/utils/install_dependencies.sh" --production; then
-    log_error "Failed to install dependencies"
-    exit 1
-fi
-log_info "✓ Dependencies installed"
-
+# Structure validation only - no actual installs. E2E (actual execution) is in ci_test_e2e.sh
 # Test 1: Verify required files exist
 log_info "Test 1: Verify required files..."
 for file in run_2.sh exports.sh lib/common_functions.sh; do
@@ -149,62 +140,8 @@ for config in "${config_files[@]}"; do
     fi
 done
 
-# Test 8: Run ALL client install scripts (full install flow)
-# Dependencies installed above. Each script: source, check_requirements, firewall, download, systemd.
-# Path/source errors and install failures both cause CI failure.
-log_info "Test 8: Run all client install scripts (execution + consensus + MEV)..."
-load_fail=0
-install_fail=0
-total=${#CLIENT_SCRIPTS[@]}
-idx=0
-for script in "${CLIENT_SCRIPTS[@]}"; do
-    [[ -f "$PROJECT_ROOT/$script" ]] || continue
-    idx=$((idx + 1))
-    log_info "  [$idx/$total] Running $(basename "$script")..."
-    script_log="/tmp/ci_client_$$_${idx}.log"
-    set +e
-    "$PROJECT_ROOT/$script" 2>&1 | tee "$script_log"
-    exit_code=${PIPESTATUS[0]}
-    set -e
-    output=$(cat "$script_log")
-    rm -f "$script_log"
-    if output_has_path_errors "$output"; then
-        log_error "  ✗ $(basename "$script"): path/source error (exit=$exit_code)"
-        dump_output_tail "$output" 30 "    "
-        load_fail=$((load_fail + 1))
-    elif [[ $exit_code -ne 0 ]]; then
-        log_error "  ✗ $(basename "$script"): install failed (exit=$exit_code)"
-        dump_output_tail "$output" 30 "    "
-        install_fail=$((install_fail + 1))
-    else
-        log_info "  ✓ $(basename "$script"): installed (exit=0)"
-    fi
-done
-if [[ $load_fail -gt 0 ]]; then
-    log_error "  $load_fail script(s) had path/source errors - CI fails"
-    exit 1
-fi
-if [[ $install_fail -gt 0 ]]; then
-    log_error "  $install_fail script(s) failed to install - CI fails"
-    exit 1
-fi
-
-# Test 9: run_2.sh with --execution --consensus --mev flags (non-interactive)
-log_info "Test 9: run_2.sh with flags (--execution --consensus --mev)..."
-mkdir -p "$PROJECT_ROOT/config"
-echo "export LOGIN_UNAME='$(whoami)'" > "$PROJECT_ROOT/config/user_config.env"
-run2_log="/tmp/run2_ci_$$.log"
-if ! run_script_with_log "$run2_log" "$PROJECT_ROOT/run_2.sh" --execution=geth --consensus=prysm --mev=mev-boost --skip-deps; then
-    log_error "  ✗ run_2.sh failed"
-    dump_log_tail "$run2_log" 50 "    "
-    rm -f "$run2_log"
-    exit 1
-fi
-rm -f "$run2_log"
-log_info "  ✓ run_2.sh flag flow completed"
-
 log_info "╔════════════════════════════════════════════════════════════════╗"
-log_info "║  ✓ run_2.sh CI Test PASSED                                    ║"
-log_info "║  Validated: 16 client scripts + run_2.sh flags (geth+prysm+mev-boost) ║"
+log_info "║  ✓ run_2.sh Structure Validation PASSED                       ║"
+log_info "║  Full E2E (actual installs) runs in ci_test_e2e.sh --phase=2   ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 exit 0
