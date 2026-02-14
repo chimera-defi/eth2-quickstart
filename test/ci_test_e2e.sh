@@ -136,6 +136,34 @@ if [[ "$PHASE" == "2" ]]; then
     verify_installed "MEV-Boost" test -f "$HOME/mev-boost/mev-boost"
     verify_installed "JWT secret" test -f "$HOME/secrets/jwt.hex"
     verify_installed "eth1 systemd service" bash -c 'systemctl list-unit-files 2>/dev/null | grep -q "eth1.service"'
+
+    # Verify Caddy and Nginx install (confirm before server deploy)
+    log_header "Installing and verifying Caddy"
+    if ! run_script_with_log "/tmp/caddy_e2e_$$.log" "$PROJECT_ROOT/install/web/install_caddy.sh"; then
+        record_test "install_caddy" "FAIL"
+        dump_log_tail "/tmp/caddy_e2e_$$.log" 50 "  "
+        rm -f "/tmp/caddy_e2e_$$.log"
+        print_test_summary
+        exit 1
+    fi
+    rm -f "/tmp/caddy_e2e_$$.log"
+    record_test "install_caddy" "PASS"
+    verify_installed "Caddy" command -v caddy
+
+    log_info "Stopping Caddy before Nginx (port conflict)"
+    sudo systemctl stop caddy 2>/dev/null || true
+
+    log_header "Installing and verifying Nginx"
+    if ! run_script_with_log "/tmp/nginx_e2e_$$.log" "$PROJECT_ROOT/install/web/install_nginx.sh"; then
+        record_test "install_nginx" "FAIL"
+        dump_log_tail "/tmp/nginx_e2e_$$.log" 50 "  "
+        rm -f "/tmp/nginx_e2e_$$.log"
+        print_test_summary
+        exit 1
+    fi
+    rm -f "/tmp/nginx_e2e_$$.log"
+    record_test "install_nginx" "PASS"
+    verify_installed "Nginx" command -v nginx
 fi
 
 # =============================================================================
