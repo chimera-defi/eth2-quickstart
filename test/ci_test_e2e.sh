@@ -96,7 +96,7 @@ if [[ "$PHASE" == "2" ]]; then
     # Verify consensus client
     case "$E2E_CONS" in
         prysm) verify_installed "Prysm" test -f "$HOME/prysm/prysm.sh" ;;
-        lighthouse) verify_installed "Lighthouse" command -v lighthouse ;;
+        lighthouse) verify_installed "Lighthouse" test -f "$HOME/lighthouse/lighthouse" ;;
         teku) verify_installed "Teku" test -f "$HOME/teku/bin/teku" ;;
         nimbus) verify_installed "Nimbus" test -f "$HOME/nimbus/build/nimbus_beacon_node" ;;
         lodestar) verify_installed "Lodestar" test -f "$HOME/lodestar/node_modules/.bin/lodestar" ;;
