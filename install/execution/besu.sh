@@ -34,8 +34,8 @@ cd "$BESU_DIR" || exit
 log_info "Fetching latest Besu release..."
 LATEST_VERSION=$(get_latest_release "hyperledger/besu")
 if [[ -z "$LATEST_VERSION" ]]; then
-    LATEST_VERSION="23.10.3"  # Fallback version
-    log_warn "Could not fetch latest version, using fallback: $LATEST_VERSION"
+    log_error "Could not fetch latest Besu version from GitHub"
+    exit 1
 fi
 
 # Download Besu

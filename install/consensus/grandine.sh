@@ -34,8 +34,8 @@ cd "$GRANDINE_DIR" || exit
 log_info "Fetching latest Grandine release..."
 LATEST_VERSION=$(get_latest_release "grandinetech/grandine")
 if [[ -z "$LATEST_VERSION" ]]; then
-    LATEST_VERSION="2.0.1"
-    log_warn "Could not fetch latest version, using fallback: $LATEST_VERSION"
+    log_error "Could not fetch latest Grandine version from GitHub"
+    exit 1
 fi
 
 # Grandine releases: grandine-2.0.1-amd64 (raw binary, no extension)

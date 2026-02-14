@@ -31,11 +31,10 @@ cd "$COMMIT_BOOST_DIR" || exit
 log_info "Fetching latest Commit-Boost release..."
 LATEST_VERSION=$(get_latest_release "Commit-Boost/commit-boost-client")
 if [[ -z "$LATEST_VERSION" ]]; then
-    LATEST_VERSION="v0.9.2"  # Fallback version
-    log_warn "Could not fetch latest version, using fallback: $LATEST_VERSION"
-else
-    log_info "Latest version: $LATEST_VERSION"
+    log_error "Could not fetch latest Commit-Boost version from GitHub"
+    exit 1
 fi
+log_info "Latest version: $LATEST_VERSION"
 
 # Download Commit-Boost PBS binary
 log_info "Downloading Commit-Boost PBS binary..."

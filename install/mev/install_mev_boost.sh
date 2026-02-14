@@ -31,11 +31,10 @@ cd "$MEV_BOOST_DIR" || exit
 log_info "Fetching latest MEV-Boost release..."
 LATEST_VERSION=$(get_latest_release "flashbots/mev-boost")
 if [[ -z "$LATEST_VERSION" ]]; then
-    LATEST_VERSION="v1.9"
-    log_warn "Could not fetch latest version, using fallback: $LATEST_VERSION"
-else
-    log_info "Latest version: $LATEST_VERSION"
+    log_error "Could not fetch latest MEV-Boost version from GitHub"
+    exit 1
 fi
+log_info "Latest version: $LATEST_VERSION"
 
 # Parse version for download URL (v1.9 -> 1.9, v1.11 -> 1.11)
 VERSION_NUM="${LATEST_VERSION#v}"
