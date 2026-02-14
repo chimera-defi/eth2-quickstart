@@ -14,9 +14,9 @@ log_header "Ethrex Execution Client Tests"
 log_info "Testing ethrex installation script and configuration"
 
 # =============================================================================
-# PHASE 1: Script Structure Tests
+# Step 1: Script Structure Tests
 # =============================================================================
-log_header "Phase 1: Script Structure Tests"
+log_header "Step 1: Script Structure Tests"
 
 ETHREX_SCRIPT="$PROJECT_ROOT/install/execution/ethrex.sh"
 ETHREX_CONFIG="$PROJECT_ROOT/configs/ethrex/ethrex_base.toml"
@@ -52,9 +52,9 @@ else
 fi
 
 # =============================================================================
-# PHASE 2: Shellcheck Validation
+# Step 2: Shellcheck Validation
 # =============================================================================
-log_header "Phase 2: Shellcheck Validation"
+log_header "Step 2: Shellcheck Validation"
 
 if command -v shellcheck &>/dev/null; then
     if check_shellcheck "$ETHREX_SCRIPT"; then
@@ -70,9 +70,9 @@ else
 fi
 
 # =============================================================================
-# PHASE 3: Script Content Validation
+# Step 3: Script Content Validation
 # =============================================================================
-log_header "Phase 3: Script Content Validation"
+log_header "Step 3: Script Content Validation"
 
 # Test script uses common functions
 for func in log_installation_start check_system_requirements setup_firewall_rules ensure_directory secure_download ensure_jwt_secret create_systemd_service; do
@@ -107,7 +107,7 @@ fi
 # =============================================================================
 # PHASE 4: Binary Download Test (if network available)
 # =============================================================================
-log_header "Phase 4: Binary Download Test"
+log_header "Step 4: Binary Download Test"
 
 ETHREX_VERSION="v7.0.0"
 ETHREX_BINARY_URL="https://github.com/lambdaclass/ethrex/releases/download/${ETHREX_VERSION}/ethrex-linux-x86_64"
@@ -153,7 +153,7 @@ fi
 # =============================================================================
 # PHASE 5: Configuration Integration Tests
 # =============================================================================
-log_header "Phase 5: Configuration Integration Tests"
+log_header "Step 5: Configuration Integration Tests"
 
 # Test exports.sh has ethrex variables
 source_exports 2>/dev/null || true
@@ -179,7 +179,7 @@ fi
 # =============================================================================
 # PHASE 6: Client Selection Integration Tests
 # =============================================================================
-log_header "Phase 6: Client Selection Integration Tests"
+log_header "Step 6: Client Selection Integration Tests"
 
 SELECT_CLIENTS_SCRIPT="$PROJECT_ROOT/install/utils/select_clients.sh"
 
@@ -215,9 +215,9 @@ else
 fi
 
 # =============================================================================
-# PHASE 7: CLI Options Validation
+# Step 7: CLI Options Validation
 # =============================================================================
-log_header "Phase 7: CLI Options Validation"
+log_header "Step 7: CLI Options Validation"
 
 # Verify script uses verified CLI options
 VERIFIED_OPTIONS=(
