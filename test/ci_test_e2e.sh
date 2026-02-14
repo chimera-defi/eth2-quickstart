@@ -86,7 +86,7 @@ if [[ "$PHASE" == "2" ]]; then
         geth) verify_installed "Geth" command -v geth ;;
         besu) verify_installed "Besu" test -f "$HOME/besu/bin/besu" ;;
         nethermind) verify_installed "Nethermind" test -d "$HOME/nethermind" ;;
-        nimbus_eth1) verify_installed "Nimbus-eth1" command -v nimbus-eth1 ;;
+        nimbus_eth1) verify_installed "Nimbus-eth1" test -d "$HOME/nimbus-eth1" ;;
         erigon) verify_installed "Erigon" test -f "$HOME/erigon/erigon" ;;
         reth) verify_installed "Reth" test -f "$HOME/reth/reth" ;;
         ethrex) verify_installed "Ethrex" test -f "$HOME/ethrex/ethrex" ;;
@@ -118,32 +118,32 @@ if [[ "$PHASE" == "2" ]]; then
 
     # Caddy and Nginx (main job only - skip in client matrix to save time)
     if [[ -z "${E2E_EXECUTION:-}" && -z "${E2E_CONSENSUS:-}" ]]; then
-    log_header "Installing and verifying Caddy"
-    if ! run_script_with_log "/tmp/caddy_e2e_$$.log" "$PROJECT_ROOT/install/web/install_caddy.sh"; then
-        record_test "install_caddy" "FAIL"
-        dump_log_tail "/tmp/caddy_e2e_$$.log" 50 "  "
+        log_header "Installing and verifying Caddy"
+        if ! run_script_with_log "/tmp/caddy_e2e_$$.log" "$PROJECT_ROOT/install/web/install_caddy.sh"; then
+            record_test "install_caddy" "FAIL"
+            dump_log_tail "/tmp/caddy_e2e_$$.log" 50 "  "
+            rm -f "/tmp/caddy_e2e_$$.log"
+            print_test_summary
+            exit 1
+        fi
         rm -f "/tmp/caddy_e2e_$$.log"
-        print_test_summary
-        exit 1
-    fi
-    rm -f "/tmp/caddy_e2e_$$.log"
-    record_test "install_caddy" "PASS"
-    verify_installed "Caddy" command -v caddy
+        record_test "install_caddy" "PASS"
+        verify_installed "Caddy" command -v caddy
 
-    log_info "Stopping Caddy before Nginx (port conflict)"
-    sudo systemctl stop caddy 2>/dev/null || true
+        log_info "Stopping Caddy before Nginx (port conflict)"
+        sudo systemctl stop caddy 2>/dev/null || true
 
-    log_header "Installing and verifying Nginx"
-    if ! run_script_with_log "/tmp/nginx_e2e_$$.log" "$PROJECT_ROOT/install/web/install_nginx.sh"; then
-        record_test "install_nginx" "FAIL"
-        dump_log_tail "/tmp/nginx_e2e_$$.log" 50 "  "
+        log_header "Installing and verifying Nginx"
+        if ! run_script_with_log "/tmp/nginx_e2e_$$.log" "$PROJECT_ROOT/install/web/install_nginx.sh"; then
+            record_test "install_nginx" "FAIL"
+            dump_log_tail "/tmp/nginx_e2e_$$.log" 50 "  "
+            rm -f "/tmp/nginx_e2e_$$.log"
+            print_test_summary
+            exit 1
+        fi
         rm -f "/tmp/nginx_e2e_$$.log"
-        print_test_summary
-        exit 1
-    fi
-    rm -f "/tmp/nginx_e2e_$$.log"
-    record_test "install_nginx" "PASS"
-    verify_installed "Nginx" command -v nginx
+        record_test "install_nginx" "PASS"
+        verify_installed "Nginx" command -v nginx
     fi
 fi
 
