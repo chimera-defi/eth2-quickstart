@@ -150,9 +150,6 @@ install_production() {
         sudo snap install core
         sudo snap install --classic certbot
         sudo ln -sf /snap/bin/certbot /usr/bin/certbot
-    elif is_docker && [[ "${CI_E2E:-}" == "true" ]]; then
-        log_info "CI E2E: Installing Go via apt (required for MEV-Boost build)..."
-        install_packages "golang-go"
     else
         log_warn "Skipping snap installs (Docker or snap unavailable)"
     fi
