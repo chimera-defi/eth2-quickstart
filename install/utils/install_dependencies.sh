@@ -138,14 +138,17 @@ install_production() {
         install_packages "ethereum"
     fi
     
-    # Install Node.js (skip in Docker - often not needed for tests)
+    # Install Node.js (skip in Docker unless CI_E2E - needed for lodestar)
     if ! is_docker; then
         log_info "Installing Node.js..."
         curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
         install_packages "nodejs"
+    elif [[ "${CI_E2E:-}" == "true" ]]; then
+        log_info "CI E2E: Installing Node.js via apt..."
+        install_packages "nodejs" "npm"
     fi
-    
-    # Snap installs: Go and certbot (skip in Docker - snap doesn't work)
+
+    # Go: snap (production) or apt golang-go (Docker CI_E2E)
     if ! is_docker && command -v snap &>/dev/null; then
         log_info "Installing Go via snap..."
         sudo snap install --classic go
@@ -154,13 +157,20 @@ install_production() {
         sudo snap install core
         sudo snap install --classic certbot
         sudo ln -sf /snap/bin/certbot /usr/bin/certbot
+    elif is_docker && [[ "${CI_E2E:-}" == "true" ]]; then
+        log_info "CI E2E: Installing Go via apt..."
+        install_packages "golang-go"
     else
         log_warn "Skipping snap installs (Docker or snap unavailable)"
     fi
 
-    # Install Rust (skip in Docker)
+    # Install Rust (skip in Docker unless CI_E2E - needed for reth, grandine, ethgas)
     if ! is_docker; then
         log_info "Installing Rust..."
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+    elif [[ "${CI_E2E:-}" == "true" ]]; then
+        log_info "CI E2E: Installing Rust..."
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
         [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
     fi

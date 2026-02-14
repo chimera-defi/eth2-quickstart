@@ -129,9 +129,12 @@ if [[ "$PHASE" == "2" ]]; then
     if command -v lodestar &>/dev/null; then record_test "Lodestar installed" "PASS"; else record_test "Lodestar installed" "FAIL"; fi
     if [[ -f "$HOME/teku/bin/teku" ]]; then record_test "Teku installed" "PASS"; else record_test "Teku installed" "FAIL"; fi
     if [[ -f "$HOME/nimbus/build/nimbus_beacon_node" ]]; then record_test "Nimbus installed" "PASS"; else record_test "Nimbus installed" "FAIL"; fi
+    if [[ -f "$HOME/grandine/target/release/grandine" ]]; then record_test "Grandine installed" "PASS"; else record_test "Grandine installed" "FAIL"; fi
     # MEV
     if [[ -f "$HOME/mev-boost/mev-boost" ]]; then record_test "MEV-Boost installed" "PASS"; else record_test "MEV-Boost installed" "FAIL"; fi
     if [[ -f "$HOME/commit-boost/commit-boost-pbs" ]]; then record_test "Commit-Boost installed" "PASS"; else record_test "Commit-Boost installed" "FAIL"; fi
+    if [[ -f "$HOME/ethgas/target/release/ethgas_commit" ]]; then record_test "ETHGas installed" "PASS"; else record_test "ETHGas installed" "FAIL"; fi
+    if [[ -f "$HOME/.cargo/bin/reth" ]]; then record_test "Reth installed" "PASS"; else record_test "Reth installed" "FAIL"; fi
     # Shared
     if [[ -f "$HOME/secrets/jwt.hex" ]]; then record_test "JWT secret exists" "PASS"; else record_test "JWT secret exists" "FAIL"; fi
     if systemctl list-unit-files 2>/dev/null | grep -q "eth1.service"; then record_test "eth1 systemd service created" "PASS"; else record_test "eth1 systemd service created" "FAIL"; fi
