@@ -47,6 +47,13 @@ if ! ./install/utils/install_dependencies.sh; then
     exit 1
 fi
 
+# Verify client configs resolve correctly before client installation
+log_info "Verifying client configuration files..."
+if ! ./install/utils/verify_client_configs.sh; then
+    log_error "Client config verification failed - check config paths and exports.sh"
+    exit 1
+fi
+
 # MEV Solution Selection (Step 1: Base MEV)
 log_info "=== MEV Solution Selection ==="
 echo

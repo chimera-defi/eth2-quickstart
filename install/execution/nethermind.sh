@@ -129,7 +129,7 @@ cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
 EOF
 
 # Merge base configuration with custom settings
-merge_client_config "Nethermind" "main" "$SCRIPT_DIR/configs/nethermind/nethermind_base.cfg" "$NETHERMIND_DIR/nethermind_custom.cfg" "$NETHERMIND_DIR/nethermind.cfg"
+merge_client_config "Nethermind" "main" "$PROJECT_ROOT/configs/nethermind/nethermind_base.cfg" "$NETHERMIND_DIR/nethermind_custom.cfg" "$NETHERMIND_DIR/nethermind.cfg"
 
 # Clean up temporary files
 rm -rf ./tmp/
