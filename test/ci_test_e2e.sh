@@ -153,28 +153,24 @@ if [[ "$PHASE" == "2" ]]; then
     record_test "run_2.sh execution" "PASS"
 
     log_header "Verifying all client installs"
-    # Execution clients
-    if command -v geth &>/dev/null; then record_test "Geth installed" "PASS"; else record_test "Geth installed" "FAIL"; fi
-    if [[ -f "$HOME/besu/bin/besu" ]]; then record_test "Besu installed" "PASS"; else record_test "Besu installed" "FAIL"; fi
-    if [[ -f "$HOME/erigon/erigon" ]]; then record_test "Erigon installed" "PASS"; else record_test "Erigon installed" "FAIL"; fi
-    if [[ -f "$HOME/nethermind/Nethermind.Runner" ]]; then record_test "Nethermind installed" "PASS"; else record_test "Nethermind installed" "FAIL"; fi
-    if [[ -f "$HOME/nimbus-eth1/nimbus" ]] || [[ -f "$HOME/nimbus-eth1/build/nimbus" ]] || [[ -f "$HOME/nimbus-eth1/nimbus-eth1" ]]; then record_test "Nimbus-eth1 installed" "PASS"; else record_test "Nimbus-eth1 installed" "FAIL"; fi
-    if [[ -f "$HOME/ethrex/ethrex" ]]; then record_test "Ethrex installed" "PASS"; else record_test "Ethrex installed" "FAIL"; fi
-    # Consensus clients
-    if [[ -f "$HOME/prysm/prysm.sh" ]]; then record_test "Prysm installed" "PASS"; else record_test "Prysm installed" "FAIL"; fi
-    if [[ -f "$HOME/lighthouse/lighthouse" ]]; then record_test "Lighthouse installed" "PASS"; else record_test "Lighthouse installed" "FAIL"; fi
-    if command -v lodestar &>/dev/null; then record_test "Lodestar installed" "PASS"; else record_test "Lodestar installed" "FAIL"; fi
-    if [[ -f "$HOME/teku/bin/teku" ]]; then record_test "Teku installed" "PASS"; else record_test "Teku installed" "FAIL"; fi
-    if [[ -f "$HOME/nimbus/build/nimbus_beacon_node" ]]; then record_test "Nimbus installed" "PASS"; else record_test "Nimbus installed" "FAIL"; fi
-    if [[ -f "$HOME/grandine/target/release/grandine" ]]; then record_test "Grandine installed" "PASS"; else record_test "Grandine installed" "FAIL"; fi
-    # MEV
-    if [[ -f "$HOME/mev-boost/mev-boost" ]]; then record_test "MEV-Boost installed" "PASS"; else record_test "MEV-Boost installed" "FAIL"; fi
-    if [[ -f "$HOME/commit-boost/commit-boost-pbs" ]]; then record_test "Commit-Boost installed" "PASS"; else record_test "Commit-Boost installed" "FAIL"; fi
-    if [[ -f "$HOME/ethgas/target/release/ethgas_commit" ]]; then record_test "ETHGas installed" "PASS"; else record_test "ETHGas installed" "FAIL"; fi
-    if [[ -f "$HOME/.cargo/bin/reth" ]]; then record_test "Reth installed" "PASS"; else record_test "Reth installed" "FAIL"; fi
-    # Shared
-    if [[ -f "$HOME/secrets/jwt.hex" ]]; then record_test "JWT secret exists" "PASS"; else record_test "JWT secret exists" "FAIL"; fi
-    if systemctl list-unit-files 2>/dev/null | grep -q "eth1.service"; then record_test "eth1 systemd service created" "PASS"; else record_test "eth1 systemd service created" "FAIL"; fi
+    verify_installed "Geth" command -v geth
+    verify_installed "Besu" test -f "$HOME/besu/bin/besu"
+    verify_installed "Erigon" test -f "$HOME/erigon/erigon"
+    verify_installed "Nethermind" test -f "$HOME/nethermind/Nethermind.Runner"
+    verify_installed "Nimbus-eth1" test -f "$HOME/nimbus-eth1/nimbus" -o -f "$HOME/nimbus-eth1/build/nimbus" -o -f "$HOME/nimbus-eth1/nimbus-eth1"
+    verify_installed "Ethrex" test -f "$HOME/ethrex/ethrex"
+    verify_installed "Prysm" test -f "$HOME/prysm/prysm.sh"
+    verify_installed "Lighthouse" test -f "$HOME/lighthouse/lighthouse"
+    verify_installed "Lodestar" command -v lodestar
+    verify_installed "Teku" test -f "$HOME/teku/bin/teku"
+    verify_installed "Nimbus" test -f "$HOME/nimbus/build/nimbus_beacon_node"
+    verify_installed "Grandine" test -f "$HOME/grandine/target/release/grandine"
+    verify_installed "MEV-Boost" test -f "$HOME/mev-boost/mev-boost"
+    verify_installed "Commit-Boost" test -f "$HOME/commit-boost/commit-boost-pbs"
+    verify_installed "ETHGas" test -f "$HOME/ethgas/target/release/ethgas_commit"
+    verify_installed "Reth" test -f "$HOME/.cargo/bin/reth"
+    verify_installed "JWT secret" test -f "$HOME/secrets/jwt.hex"
+    verify_installed "eth1 systemd service" bash -c 'systemctl list-unit-files 2>/dev/null | grep -q "eth1.service"'
 fi
 
 # =============================================================================

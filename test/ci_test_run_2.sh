@@ -1,7 +1,7 @@
 #!/bin/bash
 # CI Test Script for run_2.sh (Phase 2 - Client Installation)
 # Runs inside Docker container as non-root (testuser)
-# Tests script structure, client install scripts, and run_2.sh flag flow
+# Structure validation only - syntax, files, configs. Full E2E in ci_test_e2e.sh
 
 set -Eeuo pipefail
 
@@ -132,12 +132,7 @@ config_files=(
     "configs/teku/teku_validator_base.yaml"
 )
 for config in "${config_files[@]}"; do
-    if [[ -f "$PROJECT_ROOT/$config" ]]; then
-        log_info "  ✓ $config"
-    else
-        log_error "  ✗ Missing: $config"
-        exit 1
-    fi
+    assert_file_exists "$PROJECT_ROOT/$config" "$config" || exit 1
 done
 
 log_info "╔════════════════════════════════════════════════════════════════╗"

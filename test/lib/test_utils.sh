@@ -234,6 +234,20 @@ assert_valid_syntax() {
     fi
 }
 
+# Verify client/component installed (for E2E verification)
+# Usage: verify_installed "Name" command args...
+# Example: verify_installed "Geth" command -v geth
+# Example: verify_installed "Besu" test -f "$HOME/besu/bin/besu"
+verify_installed() {
+    local name="$1"
+    shift
+    if "$@" 2>/dev/null; then
+        record_test "$name installed" "PASS"
+    else
+        record_test "$name installed" "FAIL"
+    fi
+}
+
 # Verify function exists after sourcing
 assert_function_exists() {
     local func="$1"
