@@ -21,7 +21,7 @@ if is_root; then
 fi
 log_info "✓ Running as $(whoami)"
 
-cd "$PROJECT_ROOT"
+cd "$PROJECT_ROOT" || exit 1
 
 source_exports
 source_common_functions
@@ -136,7 +136,7 @@ for config in "${config_files[@]}"; do
 done
 
 log_info "╔════════════════════════════════════════════════════════════════╗"
-log_info "║  ✓ run_2.sh Structure Validation PASSED                       ║"
+log_info "║  run_2.sh Structure Validation PASSED                         ║"
 log_info "║  Full E2E (actual installs) runs in ci_test_e2e.sh --phase=2   ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 exit 0

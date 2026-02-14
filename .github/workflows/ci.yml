@@ -37,7 +37,7 @@ jobs:
         # Structural validation - syntax, functions, SSH safety, etc.
         docker run --rm --privileged \
           --user root \
-          -e DEBIAN_FRONTEND=noninteractive \
+          -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
           eth-node-test /workspace/test/ci_test_run_1.sh
 
     - name: Test run_1.sh E2E (Phase 1 - Actual Execution)
@@ -49,7 +49,7 @@ jobs:
       run: |
         docker run --rm --privileged \
           --user testuser \
-          -e DEBIAN_FRONTEND=noninteractive \
+          -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
           eth-node-test /workspace/test/ci_test_run_2.sh
 
     - name: Test run_2.sh E2E (Phase 2 - Actual Execution)

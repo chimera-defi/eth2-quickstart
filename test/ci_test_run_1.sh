@@ -287,8 +287,8 @@ else
 fi
 
 log_info "╔════════════════════════════════════════════════════════════════╗"
-log_info "║  run_1.sh CI Test PASSED                                      ║"
-log_info "║  Validated: Structure, syntax, functions, SSH safety,         ║"
-log_info "║  lockout prevention, idempotency, no duplicates, firewall     ║"
+log_info "║  run_1.sh Structure Validation PASSED                        ║"
+log_info "║  Validated: syntax, functions, SSH safety, lockout prevention, ║"
+log_info "║  idempotency, no duplicates, firewall                         ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 exit 0

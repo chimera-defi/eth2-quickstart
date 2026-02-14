@@ -10,7 +10,16 @@ Run tests inside an isolated Docker container with **real system calls** - no mo
 
 **run_1 structure validation (from repo root):**
 ```bash
-docker build -t eth-node-test -f test/Dockerfile . && docker run --rm --privileged --user root eth-node-test /workspace/test/ci_test_run_1.sh
+docker build -t eth-node-test -f test/Dockerfile . && docker run --rm --privileged \
+  --user root -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
+  eth-node-test /workspace/test/ci_test_run_1.sh
+```
+
+**run_2 structure validation:**
+```bash
+docker run --rm --privileged \
+  --user testuser -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
+  eth-node-test /workspace/test/ci_test_run_2.sh
 ```
 
 **E2E (actually runs run_1.sh or run_2.sh - from repo root, requires Docker):**
@@ -126,13 +135,17 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 docker build -t eth-node-test -f test/Dockerfile .
 
 # Test run_1.sh structure (as root)
-docker run --rm --privileged --user root eth-node-test /workspace/test/ci_test_run_1.sh
+docker run --rm --privileged --user root \
+  -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
+  eth-node-test /workspace/test/ci_test_run_1.sh
 
 # Test run_1.sh E2E
 ./test/run_e2e.sh --phase=1
 
 # Test run_2.sh structure (as testuser)
-docker run --rm --privileged eth-node-test /workspace/test/ci_test_run_2.sh
+docker run --rm --privileged --user testuser \
+  -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
+  eth-node-test /workspace/test/ci_test_run_2.sh
 
 # Test run_2.sh E2E
 ./test/run_e2e.sh --phase=2
