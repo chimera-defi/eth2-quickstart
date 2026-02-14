@@ -9,7 +9,7 @@ This document tracks the implementation of PR #77 "Client script issues" - scrip
 3. **CI_E2E support** - `setup_firewall_rules()` skips UFW when `CI_E2E=true` (Docker lacks kernel modules)
 4. **check_system_requirements()** - Never fails, only warns (allows CI with limited resources)
 5. **run_install_script()** - New function for run_2.sh flag mode
-6. **E2E test infrastructure** - `run_e2e.sh --phase=1|2`, `ci_test_e2e.sh`, expanded `ci_test_run_2.sh`
+6. **E2E test infrastructure** - `run_e2e.sh --phase=1|2`, `ci_test_e2e.sh` (full E2E), `ci_test_run_2.sh` (structure validation only)
 
 ## Implementation Rules (from user)
 
@@ -26,7 +26,7 @@ This document tracks the implementation of PR #77 "Client script issues" - scrip
 - [x] **T2**: Update `lib/common_functions.sh` - add CI_E2E skip in setup_firewall_rules, run_install_script(), check_system_requirements() never-fail
 - [x] **T3**: Add run_2.sh flag mode (--execution, --consensus, --mev, --skip-deps) - **preserve sync comments**
 - [x] **T4**: Update test/lib/test_utils.sh - CLIENT_SCRIPTS, output_has_path_errors, script_loads_ok, assert_script_loads, log_subheader, TESTS_SKIPPED - **preserve shellcheck comments**
-- [x] **T5**: Update ci_test_run_2.sh - use CLIENT_SCRIPTS, expand config list, add Tests 8-11 - **preserve shellcheck comment**
+- [x] **T5**: Update ci_test_run_2.sh - use CLIENT_SCRIPTS, expand config list, structure validation only (Tests 1-7). Full E2E in ci_test_e2e.sh
 - [x] **T6**: Create run_e2e.sh (consolidated wrapper for phase 1 and 2)
 - [x] **T7**: Create ci_test_e2e.sh (consolidated E2E for phase 1 and 2)
 - [x] **T8**: Update docker_test.sh - path resolution tests, source pattern - **preserve shellcheck comment**
@@ -42,7 +42,7 @@ This document tracks the implementation of PR #77 "Client script issues" - scrip
 
 ### Potential Issues Identified
 
-1. **run_install_script path** - Uses `./"$script"` - requires run_2.sh to be invoked from project root. run_2.sh doesn't cd to PROJECT_ROOT. If user runs from elsewhere, it may fail. **Mitigation**: run_2.sh could add `cd "$(dirname "$0")/.."` or similar at start. Current run_2.sh uses `source ./exports.sh` so it already assumes cwd. Document this.
+1. **run_install_script path** - Uses `./"$script"` - requires cwd to be project root. **Resolved**: run_2.sh now does `cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 1` at start, so it always runs from project root regardless of invocation directory.
 
 2. **install_dependencies.sh** - Uses `source "$SCRIPT_DIR/../../lib/common_functions.sh"` - SCRIPT_DIR is script's dir, so ../../ goes to project root. This is already script-relative. PR only changed comment. **No change needed** for path.
 
@@ -50,7 +50,7 @@ This document tracks the implementation of PR #77 "Client script issues" - scrip
 
 4. **ci_test_e2e.sh** - Phase 1 runs as root, Phase 2 as testuser. run_e2e.sh passes PHASE and CI_E2E. **Verified**: flow correct.
 
-5. **eth1.service** - ci_test_run_2_e2e.sh checks for eth1.service. Geth install creates "eth1" service. **Verified**: matches.
+5. **eth1.service** - ci_test_e2e.sh (PHASE=2) checks for eth1.service. Geth install creates "eth1" service. **Verified**: matches.
 
 6. **install/web scripts** - They source `./caddy_helpers.sh` or `./nginx_helpers.sh`. With `cd "$PROJECT_ROOT"` at start, ./ is project root. But caddy_helpers.sh is in install/web/. So ./caddy_helpers.sh would need to be from install/web/. The scripts are IN install/web/, so when they run, their dir is install/web. After `cd "$PROJECT_ROOT"`, cwd is project root. So ./caddy_helpers.sh would look for project_root/caddy_helpers.sh - WRONG. It should be install/web/caddy_helpers.sh. Let me check - install_caddy.sh has `source ./caddy_helpers.sh`. After cd PROJECT_ROOT, ./ is project root. So we need `source "$SCRIPT_DIR/caddy_helpers.sh"` or `source "$PROJECT_ROOT/install/web/caddy_helpers.sh"`. The PR doesn't change this - it only adds the SCRIPT_DIR/PROJECT_ROOT at top. So the scripts would do:
    ```
