@@ -164,15 +164,14 @@ install_production() {
         log_warn "Skipping snap installs (Docker or snap unavailable)"
     fi
 
-    # Install Rust (skip in Docker unless CI_E2E - needed for reth, grandine, ethgas)
+    # Install Rust (needed for grandine, ethgas, ethrex fallback; reth uses prebuilt)
+    # Skip in CI_E2E: grandine/ethgas skipped in E2E, ethrex uses prebuilt, reth uses prebuilt
     if ! is_docker; then
         log_info "Installing Rust..."
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
         [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
     elif [[ "${CI_E2E:-}" == "true" ]]; then
-        log_info "CI E2E: Installing Rust..."
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+        log_info "CI E2E: Skipping Rust (Erigon/Reth/Ethrex use prebuilt; Grandine/ETHGas skipped in E2E)"
     fi
 
     # Install Bazel (may not be available in all repos)
