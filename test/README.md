@@ -8,14 +8,14 @@ This directory contains tests for the Ethereum node setup scripts.
 
 Run tests inside an isolated Docker container with **real system calls** - no mocks needed.
 
-**Phase 1: run_1.sh - Structure validation:**
+**run_1.sh - Structure:**
 ```bash
 docker build -t eth-node-test -f test/Dockerfile . && docker run --rm --privileged \
   --user root -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
   eth-node-test /workspace/test/ci_test_run_1.sh
 ```
 
-**Phase 2: run_2.sh - Structure validation:**
+**run_2.sh - Structure:**
 ```bash
 docker run --rm --privileged \
   --user testuser -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
@@ -83,9 +83,9 @@ test/
 ├── docker-compose.yml      # Easy container management
 ├── docker_test.sh          # Test runner for Docker (real system calls)
 ├── run_tests.sh            # Test runner for local (supports mocks)
-├── ci_test_run_1.sh        # Phase 1: run_1.sh - Structure validation
-├── ci_test_run_2.sh        # Phase 2: run_2.sh - Structure validation
-├── ci_test_e2e.sh          # Phase 1|2: run_1 or run_2 - E2E (PHASE=1|2)
+├── ci_test_run_1.sh        # run_1.sh - Structure
+├── ci_test_run_2.sh        # run_2.sh - Structure
+├── ci_test_e2e.sh          # run_1.sh or run_2.sh - E2E (PHASE=1|2)
 ├── run_e2e.sh              # Wrapper: Docker + systemd + ci_test_e2e.sh (--phase=1|2)
 ├── lib/
 │   ├── mock_functions.sh   # Mock implementations for safe local testing
@@ -108,8 +108,11 @@ test/
 
 ## Naming Convention
 
-- **Phase 1** = run_1.sh (system setup, runs as root)
-- **Phase 2** = run_2.sh (client installation, runs as non-root user)
+- **run_1.sh** = Phase 1 (system setup, root)
+- **run_2.sh** = Phase 2 (client installation, non-root)
+- **Structure** = validation only (syntax, configs, no execution)
+- **E2E** = end-to-end (actually runs the script)
+- **Step N** = internal test stages in docker_test.sh (not installation phases)
 
 ## CI Integration
 
@@ -118,18 +121,18 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to main, master, dev
 1. **Shellcheck** - Lints all shell scripts
 2. **Docker Lint Tests** - Runs `run_tests.sh --lint-only` in container
 3. **Docker Unit Tests** - Runs `docker_test.sh` with real system calls
-4. **Phase 1: run_1.sh - Structure Validation** - Syntax, functions, SSH safety (no execution)
-5. **Phase 1: run_1.sh - E2E** - Runs run_1.sh and verifies results (systemd + openssh)
-6. **Phase 2: run_2.sh - Structure Validation** - Structure, syntax, configs, client scripts
-7. **Phase 2: run_2.sh - E2E** - Runs run_2.sh and verifies all client installs
+4. **run_1.sh - Structure** - Syntax, functions, SSH safety (no execution)
+5. **run_1.sh - E2E** - Runs run_1.sh and verifies results (systemd + openssh)
+6. **run_2.sh - Structure** - Structure, syntax, configs, client scripts
+7. **run_2.sh - E2E** - Runs run_2.sh and verifies all client installs
 
 ### CI Test Scripts
 
-| Script | Purpose | Phase | User |
-|--------|---------|-------|------|
-| `ci_test_run_1.sh` | Structure validation for run_1.sh | Phase 1 | root |
-| `ci_test_run_2.sh` | Structure validation for run_2.sh | Phase 2 | testuser |
-| `ci_test_e2e.sh` | E2E: executes run_1 or run_2 (PHASE=1|2) | Phase 1 or 2 | root/testuser |
+| Script | Purpose | User |
+|--------|---------|------|
+| `ci_test_run_1.sh` | run_1.sh - Structure | root |
+| `ci_test_run_2.sh` | run_2.sh - Structure | testuser |
+| `ci_test_e2e.sh` | run_1.sh or run_2.sh - E2E (PHASE=1|2) | root/testuser |
 
 **Note**: Full E2E testing with systemd services and snap packages requires special Docker setup. CI tests validate structure and components that work in standard Docker.
 
@@ -139,20 +142,20 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to main, master, dev
 # Build and run all CI tests
 docker build -t eth-node-test -f test/Dockerfile .
 
-# Phase 1: run_1.sh - Structure
+# run_1.sh - Structure
 docker run --rm --privileged --user root \
   -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
   eth-node-test /workspace/test/ci_test_run_1.sh
 
-# Phase 1: run_1.sh - E2E
+# run_1.sh - E2E
 ./test/run_e2e.sh --phase=1
 
-# Phase 2: run_2.sh - Structure
+# run_2.sh - Structure
 docker run --rm --privileged --user testuser \
   -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
   eth-node-test /workspace/test/ci_test_run_2.sh
 
-# Phase 2: run_2.sh - E2E
+# run_2.sh - E2E
 ./test/run_e2e.sh --phase=2
 ```
 

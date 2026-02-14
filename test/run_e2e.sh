@@ -47,7 +47,7 @@ if ! command -v docker &>/dev/null; then
     exit 1
 fi
 
-echo "=== Phase $PHASE: run_${PHASE}.sh - E2E ==="
+echo "=== run_${PHASE}.sh - E2E ==="
 if [[ "${SKIP_BUILD:-false}" != "true" ]]; then
     echo "Building image..."
     docker build -t "$IMAGE_NAME" -f test/Dockerfile .

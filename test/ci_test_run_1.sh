@@ -1,7 +1,6 @@
 #!/bin/bash
-# Phase 1: run_1.sh - Structure Validation
-# Phase 1 = system setup (run as root). Tests script structure, syntax, SSH safety.
-# Runs inside Docker container as root. Full E2E in run_e2e.sh --phase=1.
+# run_1.sh - Structure
+# run_1.sh = Phase 1 (system setup, root). Structure validation only. E2E in run_e2e.sh --phase=1.
 
 set -Eeuo pipefail
 
@@ -11,7 +10,7 @@ LOG_PREFIX="CI"
 source "$SCRIPT_DIR/lib/test_utils.sh"
 
 log_info "╔════════════════════════════════════════════════════════════════╗"
-log_info "║  Phase 1: run_1.sh - Structure Validation                     ║"
+log_info "║  run_1.sh - Structure                                         ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 
 # Verify we're running as root (required for run_1.sh)
@@ -285,7 +284,7 @@ else
 fi
 
 log_info "╔════════════════════════════════════════════════════════════════╗"
-log_info "║  Phase 1: run_1.sh - Structure Validation PASSED               ║"
+log_info "║  run_1.sh - Structure PASSED                                   ║"
 log_info "║  Validated: syntax, functions, SSH safety, lockout prevention ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 exit 0

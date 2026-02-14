@@ -18,8 +18,8 @@ if [[ -z "$PHASE" ]] || [[ "$PHASE" != "1" && "$PHASE" != "2" ]]; then
     exit 1
 fi
 
-# Phase 1 = run_1.sh, Phase 2 = run_2.sh
-log_header "Phase $PHASE: run_${PHASE}.sh - E2E"
+# run_1.sh = Phase 1, run_2.sh = Phase 2
+log_header "run_${PHASE}.sh - E2E"
 log_info "Running as: $(whoami)"
 
 if ! command -v systemctl &>/dev/null; then

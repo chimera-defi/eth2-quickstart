@@ -37,27 +37,27 @@ jobs:
           -e USE_MOCKS=false \
           eth-node-test /workspace/test/docker_test.sh
           
-    # Phase 1 = run_1.sh (system setup). Phase 2 = run_2.sh (client installation).
-    - name: "Phase 1: run_1.sh - Structure Validation"
+    # run_1.sh = Phase 1 (system setup). run_2.sh = Phase 2 (client install).
+    - name: "run_1.sh - Structure"
       run: |
         docker run --rm --privileged \
           --user root \
           -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
           eth-node-test /workspace/test/ci_test_run_1.sh
 
-    - name: "Phase 1: run_1.sh - E2E"
+    - name: "run_1.sh - E2E"
       timeout-minutes: 5
       run: |
         SKIP_BUILD=true ./test/run_e2e.sh --phase=1
 
-    - name: "Phase 2: run_2.sh - Structure Validation"
+    - name: "run_2.sh - Structure"
       run: |
         docker run --rm --privileged \
           --user testuser \
           -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
           eth-node-test /workspace/test/ci_test_run_2.sh
 
-    - name: "Phase 2: run_2.sh - E2E"
+    - name: "run_2.sh - E2E"
       timeout-minutes: 15
       run: |
         SKIP_BUILD=true ./test/run_e2e.sh --phase=2

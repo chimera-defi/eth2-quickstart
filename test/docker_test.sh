@@ -20,9 +20,9 @@ log_info "User: $(whoami)"
 log_info "Working directory: $(pwd)"
 
 # =============================================================================
-# PHASE 1: Environment Verification
+# Step 1: Environment Verification
 # =============================================================================
-log_header "Phase 1: Environment Verification"
+log_header "Step 1: Environment Verification"
 
 # Check we're in a container
 if is_docker; then
@@ -38,9 +38,9 @@ for tool in bash curl wget git sudo ufw jq tar; do
 done
 
 # =============================================================================
-# PHASE 2: Shellcheck and Syntax
+# Step 2: Shellcheck and Syntax
 # =============================================================================
-log_header "Phase 2: Shellcheck and Syntax Validation"
+log_header "Step 2: Shellcheck and Syntax Validation"
 
 # Run shellcheck on key files
 shellcheck_pass=0
@@ -83,9 +83,9 @@ else
 fi
 
 # =============================================================================
-# PHASE 3: Source File Verification
+# Step 3: Source File Verification
 # =============================================================================
-log_header "Phase 3: Source File Verification"
+log_header "Step 3: Source File Verification"
 
 # Test exports.sh loads
 if source_exports 2>/dev/null; then
@@ -126,9 +126,9 @@ else
 fi
 
 # =============================================================================
-# PHASE 4: Function Unit Tests (Real System Calls)
+# Step 4: Function Unit Tests (Real System Calls)
 # =============================================================================
-log_header "Phase 4: Function Unit Tests (Real System Calls)"
+log_header "Step 4: Function Unit Tests (Real System Calls)"
 
 # Re-source to ensure functions are available
 source_exports
@@ -187,7 +187,7 @@ fi
 # =============================================================================
 # PHASE 5: System Integration Tests
 # =============================================================================
-log_header "Phase 5: System Integration Tests"
+log_header "Step 5: System Integration Tests"
 
 # Test UFW (firewall) - requires sudo
 if sudo ufw status >/dev/null 2>&1; then
@@ -229,9 +229,9 @@ fi
 rm -rf "$jwt_dir"
 
 # =============================================================================
-# PHASE 6: Install Script Structure and Load Tests
+# Step 6: Install Script Structure and Load Tests
 # =============================================================================
-log_header "Phase 6: Install Script Structure and Load Tests"
+log_header "Step 6: Install Script Structure and Load Tests"
 
 # Check install scripts have proper structure
 for script in "$PROJECT_ROOT"/install/execution/*.sh "$PROJECT_ROOT"/install/consensus/*.sh; do
@@ -264,7 +264,7 @@ done
 # =============================================================================
 # PHASE 7: Client-Specific Tests
 # =============================================================================
-log_header "Phase 7: Client-Specific Tests"
+log_header "Step 7: Client-Specific Tests"
 
 # Run ethrex-specific tests
 if [[ -f "$SCRIPT_DIR/test_ethrex.sh" ]]; then
