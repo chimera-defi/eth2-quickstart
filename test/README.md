@@ -75,7 +75,7 @@ test/
 ├── docker_test.sh          # Test runner for Docker (real system calls)
 ├── run_tests.sh            # Test runner for local (supports mocks)
 ├── ci_test_run_1.sh        # run_1 structure validation
-├── ci_test_run_2.sh        # run_2 structure validation + client installs
+├── ci_test_run_2.sh        # run_2 structure validation only (Tests 1-7)
 ├── ci_test_e2e.sh          # E2E: executes run_1 or run_2, verifies results (PHASE=1|2)
 ├── run_e2e.sh              # Wrapper: Docker + systemd + ci_test_e2e.sh (--phase=1|2)
 ├── lib/
@@ -107,14 +107,14 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 4. **run_1.sh Structure** - Validates syntax, functions, SSH safety (no execution)
 5. **run_1.sh E2E** - Runs run_1.sh and verifies results (systemd + openssh)
 6. **run_2.sh Structure** - Validates structure, syntax, configs, client scripts
-7. **run_2.sh E2E** - Runs run_2.sh and verifies geth/prysm/mev-boost install
+7. **run_2.sh E2E** - Runs run_2.sh and verifies all client installs (execution, consensus, MEV)
 
 ### CI Test Scripts
 
 | Script | Purpose | User |
 |--------|---------|------|
 | `ci_test_run_1.sh` | Validates run_1.sh structure, syntax, functions, SSH safety | root |
-| `ci_test_run_2.sh` | Validates run_2.sh structure, syntax, configs, client installs | testuser |
+| `ci_test_run_2.sh` | Validates run_2.sh structure, syntax, configs (Tests 1-7). Full E2E in ci_test_e2e.sh | testuser |
 | `ci_test_e2e.sh` | Executes run_1 or run_2 and verifies results (PHASE=1|2) | root/testuser |
 
 **Note**: Full E2E testing with systemd services and snap packages requires special Docker setup. CI tests validate structure and components that work in standard Docker.
