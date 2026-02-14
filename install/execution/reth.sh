@@ -36,8 +36,8 @@ cd "$RETH_DIR" || exit
 log_info "Fetching latest Reth release..."
 LATEST_VERSION=$(get_latest_release "paradigmxyz/reth")
 if [[ -z "$LATEST_VERSION" ]]; then
-    LATEST_VERSION="v1.10.2"
-    log_warn "Could not fetch latest version, using fallback: $LATEST_VERSION"
+    log_error "Could not fetch latest Reth version from GitHub"
+    exit 1
 fi
 
 # Download URL: reth-v1.10.2-x86_64-unknown-linux-gnu.tar.gz

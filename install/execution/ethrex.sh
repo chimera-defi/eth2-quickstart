@@ -47,8 +47,8 @@ esac
 log_info "Fetching latest ethrex release..."
 ETHREX_VERSION=$(get_latest_release "lambdaclass/ethrex")
 if [[ -z "$ETHREX_VERSION" ]]; then
-    log_warn "Could not fetch latest version, using v7.0.0"
-    ETHREX_VERSION="v7.0.0"
+    log_error "Could not fetch latest Ethrex version from GitHub"
+    exit 1
 fi
 log_info "Installing ethrex version: $ETHREX_VERSION"
 

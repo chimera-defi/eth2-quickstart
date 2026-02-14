@@ -39,8 +39,8 @@ cd "$ERIGON_DIR" || exit
 log_info "Fetching latest Erigon release..."
 LATEST_VERSION=$(get_latest_release "erigontech/erigon")
 if [[ -z "$LATEST_VERSION" ]]; then
-    LATEST_VERSION="v3.3.7"
-    log_warn "Could not fetch latest version, using fallback: $LATEST_VERSION"
+    log_error "Could not fetch latest Erigon version from GitHub"
+    exit 1
 fi
 
 # Parse version for download URL (v3.3.7 -> 3.3.7, filename: erigon_v3.3.7_linux_amd64.tar.gz)

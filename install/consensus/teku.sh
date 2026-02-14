@@ -34,8 +34,8 @@ cd "$TEKU_DIR" || exit
 log_info "Fetching latest Teku release..."
 LATEST_VERSION=$(get_latest_release "ConsenSys/teku")
 if [[ -z "$LATEST_VERSION" ]]; then
-    LATEST_VERSION="23.12.0"  # Fallback version
-    log_warn "Could not fetch latest version, using fallback: $LATEST_VERSION"
+    log_error "Could not fetch latest Teku version from GitHub"
+    exit 1
 fi
 
 # Download Teku

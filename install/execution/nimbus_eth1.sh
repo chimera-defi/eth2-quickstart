@@ -28,18 +28,15 @@ ensure_directory "$NIMBUS_ETH1_DIR"
 
 cd "$NIMBUS_ETH1_DIR" || exit
 
-# Nimbus-eth1 uses nightly builds, so we'll use the latest nightly release
+# Nimbus-eth1 uses nightly builds - fetch latest from GitHub API
 log_info "Fetching latest Nimbus-eth1 nightly release..."
-# Get the latest nightly release asset URL
-NIGHTLY_URL=$(curl -s https://api.github.com/repos/status-im/nimbus-eth1/releases/latest | grep -o '"browser_download_url": "[^"]*linux-amd64-nightly-latest[^"]*"' | head -1 | cut -d'"' -f4)
-
+NIGHTLY_URL=$(get_github_release_asset_url "status-im/nimbus-eth1" "linux-amd64-nightly-latest")
 if [[ -z "$NIGHTLY_URL" ]]; then
-    # Fallback to a known nightly URL pattern
-    NIGHTLY_URL="https://github.com/status-im/nimbus-eth1/releases/download/nightly/nimbus-eth1-linux-amd64-nightly-latest.tar.gz"
-    log_warn "Could not fetch latest nightly URL, using fallback: $NIGHTLY_URL"
+    log_error "Could not fetch Nimbus-eth1 nightly release URL from GitHub"
+    exit 1
 fi
 
-ARCHIVE_FILE="nimbus-eth1-linux-amd64-nightly-latest.tar.gz"
+ARCHIVE_FILE="${NIGHTLY_URL##*/}"
 
 log_info "Downloading Nimbus-eth1 nightly build..."
 if download_file "$NIGHTLY_URL" "$ARCHIVE_FILE"; then
