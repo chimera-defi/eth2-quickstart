@@ -67,14 +67,7 @@ fi
 chmod +x "$LIGHTHOUSE_BIN"
 rm -f "$ARCHIVE_FILE"
 
-# Generate JWT secret
-log_info "Generating JWT secret..."
-if ! openssl rand -hex 32 > "$HOME/secrets/jwt.hex"; then
-    log_error "Failed to generate JWT secret"
-    exit 1
-fi
-
-# Ensure JWT secret exists
+# Ensure JWT secret exists (creates dir and file if missing)
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create systemd service for beacon node
