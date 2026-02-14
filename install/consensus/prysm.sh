@@ -72,8 +72,8 @@ wallet-password-file: $HOME/secrets/pass.txt
 EOF
 
 # Merge base configurations with custom settings
-merge_client_config "Prysm" "beacon" "$SCRIPT_DIR/configs/prysm/prysm_beacon_conf.yaml" "./tmp/prysm_beacon_custom.yaml" "$PRYSM_DIR/prysm_beacon_conf.yaml"
-merge_client_config "Prysm" "validator" "$SCRIPT_DIR/configs/prysm/prysm_validator_conf.yaml" "./tmp/prysm_validator_custom.yaml" "$PRYSM_DIR/prysm_validator_conf.yaml"
+merge_client_config "Prysm" "beacon" "$PROJECT_ROOT/configs/prysm/prysm_beacon_conf.yaml" "./tmp/prysm_beacon_custom.yaml" "$PRYSM_DIR/prysm_beacon_conf.yaml"
+merge_client_config "Prysm" "validator" "$PROJECT_ROOT/configs/prysm/prysm_validator_conf.yaml" "./tmp/prysm_validator_custom.yaml" "$PRYSM_DIR/prysm_validator_conf.yaml"
 
 # Clean up temporary files
 rm -rf ./tmp/

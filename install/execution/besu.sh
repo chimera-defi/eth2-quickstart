@@ -91,7 +91,7 @@ miner-extra-data="$GRAFITTI"
 EOF
 
 # Merge base configuration with custom settings
-merge_client_config "Besu" "main" "$SCRIPT_DIR/configs/besu/besu_base.toml" "./tmp/besu_custom.toml" "$BESU_DIR/besu.toml"
+merge_client_config "Besu" "main" "$PROJECT_ROOT/configs/besu/besu_base.toml" "./tmp/besu_custom.toml" "$BESU_DIR/besu.toml"
 
 # Clean up temporary files
 rm -rf ./tmp/

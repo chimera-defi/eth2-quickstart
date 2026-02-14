@@ -99,7 +99,7 @@ graffiti = "$GRAFITTI"
 EOF
 
 # Merge base configuration with custom settings
-merge_client_config "Grandine" "main" "$SCRIPT_DIR/configs/grandine/grandine_base.toml" "./tmp/grandine_custom.toml" "$GRANDINE_DIR/grandine.toml"
+merge_client_config "Grandine" "main" "$PROJECT_ROOT/configs/grandine/grandine_base.toml" "./tmp/grandine_custom.toml" "$GRANDINE_DIR/grandine.toml"
 
 # Clean up temporary files
 rm -rf ./tmp/

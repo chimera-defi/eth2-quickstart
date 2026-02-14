@@ -121,8 +121,8 @@ metrics-port: 8009
 EOF
 
 # Merge base configurations with custom settings
-merge_client_config "Teku" "beacon" "$SCRIPT_DIR/configs/teku/teku_beacon_base.yaml" "./tmp/teku_beacon_custom.yaml" "$TEKU_DIR/beacon.yaml"
-merge_client_config "Teku" "validator" "$SCRIPT_DIR/configs/teku/teku_validator_base.yaml" "./tmp/teku_validator_custom.yaml" "$TEKU_DIR/validator.yaml"
+merge_client_config "Teku" "beacon" "$PROJECT_ROOT/configs/teku/teku_beacon_base.yaml" "./tmp/teku_beacon_custom.yaml" "$TEKU_DIR/beacon.yaml"
+merge_client_config "Teku" "validator" "$PROJECT_ROOT/configs/teku/teku_validator_base.yaml" "./tmp/teku_validator_custom.yaml" "$TEKU_DIR/validator.yaml"
 
 # Clean up temporary files
 rm -rf ./tmp/

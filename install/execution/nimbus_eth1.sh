@@ -133,7 +133,7 @@ log-file = "$NIMBUS_ETH1_DATA_DIR/nimbus-eth1.log"
 EOF
 
 # Merge base configuration with custom settings
-merge_client_config "Nimbus-eth1" "main" "$SCRIPT_DIR/configs/nimbus/nimbus_eth1_base.toml" "./tmp/nimbus_eth1_custom.toml" "$NIMBUS_ETH1_DIR/nimbus-eth1.toml"
+merge_client_config "Nimbus-eth1" "main" "$PROJECT_ROOT/configs/nimbus/nimbus_eth1_base.toml" "./tmp/nimbus_eth1_custom.toml" "$NIMBUS_ETH1_DIR/nimbus-eth1.toml"
 
 # Clean up temporary files
 rm -rf ./tmp/
