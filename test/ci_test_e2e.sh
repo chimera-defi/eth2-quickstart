@@ -30,67 +30,14 @@ fi
 cd "$PROJECT_ROOT"
 
 # =============================================================================
-# PHASE 1: run_1.sh (system setup)
+# PHASE 1: run_1.sh (system setup) - delegates to ci_test_run_1_e2e.sh (single source)
 # =============================================================================
 if [[ "$PHASE" == "1" ]]; then
     if ! is_root; then
         log_error "Phase 1 E2E must run as root"
         exit 1
     fi
-
-    source "$PROJECT_ROOT/exports.sh"
-
-    log_header "Executing run_1.sh"
-    export DEBIAN_FRONTEND=noninteractive
-    export DEBIAN_PRIORITY=critical
-
-    "$PROJECT_ROOT/install/utils/debconf_preseed.sh"
-    mkdir -p /root/.ssh
-    if [[ ! -f /root/.ssh/authorized_keys ]]; then
-        echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > /root/.ssh/authorized_keys
-        chmod 600 /root/.ssh/authorized_keys
-    fi
-
-    if ! "$PROJECT_ROOT/run_1.sh"; then
-        record_test "run_1.sh execution" "FAIL"
-        print_test_summary
-        exit 1
-    fi
-    record_test "run_1.sh execution" "PASS"
-
-    log_header "Verifying run_1.sh Results"
-    if [[ -f /root/handoff_info.txt ]]; then
-        record_test "Handoff info file created" "PASS"
-        if grep -q "$LOGIN_UNAME" /root/handoff_info.txt; then record_test "Handoff contains username" "PASS"; else record_test "Handoff contains username" "FAIL"; fi
-    else
-        record_test "Handoff info file created" "FAIL"
-    fi
-    if id -u "$LOGIN_UNAME" &>/dev/null; then record_test "User '$LOGIN_UNAME' created" "PASS"; else record_test "User '$LOGIN_UNAME' created" "FAIL"; fi
-    if sudo -u "$LOGIN_UNAME" sudo -n true 2>/dev/null; then record_test "User has sudo (NOPASSWD)" "PASS"; else record_test "User has sudo (NOPASSWD)" "FAIL"; fi
-    if [[ -f /home/${LOGIN_UNAME}/.ssh/authorized_keys ]]; then record_test "SSH keys migrated to new user" "PASS"; else record_test "SSH keys migrated to new user" "FAIL"; fi
-    if [[ -f /etc/ssh/sshd_config.backup ]]; then record_test "SSH config backed up" "PASS"; else record_test "SSH config backed up" "FAIL"; fi
-    if [[ -f /etc/sysctl.d/99-eth2-hardening.conf ]]; then record_test "Network hardening applied" "PASS"; else record_test "Network hardening applied" "FAIL"; fi
-    if [[ -f /usr/local/bin/security_monitor.sh ]]; then record_test "Security monitoring script installed" "PASS"; else record_test "Security monitoring script installed" "FAIL"; fi
-    if ufw status 2>/dev/null | grep -q "Status: active"; then record_test "UFW firewall active" "PASS"; else record_test "UFW firewall active" "FAIL"; fi
-    if systemctl is-active --quiet fail2ban 2>/dev/null; then
-        record_test "Fail2ban service running" "PASS"
-        if fail2ban-client status 2>/dev/null | grep -q "sshd"; then record_test "Fail2ban sshd jail active" "PASS"; else record_test "Fail2ban sshd jail active" "FAIL"; fi
-    else
-        record_test "Fail2ban service running" "FAIL"
-    fi
-    if command -v aide &>/dev/null; then
-        record_test "AIDE installed" "PASS"
-        if [[ -f /var/lib/aide/aide.db ]]; then record_test "AIDE database initialized" "PASS"; else record_test "AIDE database initialized" "FAIL"; fi
-        if [[ -f /usr/local/bin/aide_check.sh ]] && [[ -x /usr/local/bin/aide_check.sh ]]; then
-            record_test "AIDE check script installed" "PASS"
-            if /usr/local/bin/aide_check.sh &>/dev/null; then record_test "AIDE check script runs" "PASS"; else record_test "AIDE check script runs" "FAIL"; fi
-            if crontab -l 2>/dev/null | grep -Fq "/usr/local/bin/aide_check.sh"; then record_test "AIDE cron job scheduled" "PASS"; else record_test "AIDE cron job scheduled" "FAIL"; fi
-        else
-            record_test "AIDE check script installed" "FAIL"
-        fi
-    else
-        record_test "AIDE installed" "FAIL"
-    fi
+    exec "$SCRIPT_DIR/ci_test_run_1_e2e.sh"
 fi
 
 # =============================================================================
