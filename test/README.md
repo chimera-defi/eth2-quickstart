@@ -113,7 +113,7 @@ test/
 
 ## CI Integration
 
-GitHub Actions (`.github/workflows/ci.yml`) runs:
+GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to main, master, develop, and cursor/* branches:
 
 1. **Shellcheck** - Lints all shell scripts
 2. **Docker Lint Tests** - Runs `run_tests.sh --lint-only` in container

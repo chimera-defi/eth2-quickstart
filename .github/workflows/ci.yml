@@ -2,9 +2,9 @@ name: CI - Docker Integration Tests
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, 'cursor/**' ]
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, 'cursor/**' ]
   workflow_dispatch:  # Allow manual trigger for testing
 
 jobs:
@@ -33,26 +33,26 @@ jobs:
           eth-node-test /workspace/test/docker_test.sh
           
     # Phase 1 = run_1.sh (system setup). Phase 2 = run_2.sh (client installation).
-    - name: Phase 1: run_1.sh - Structure Validation
+    - name: "Phase 1: run_1.sh - Structure Validation"
       run: |
         docker run --rm --privileged \
           --user root \
           -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
           eth-node-test /workspace/test/ci_test_run_1.sh
 
-    - name: Phase 1: run_1.sh - E2E
+    - name: "Phase 1: run_1.sh - E2E"
       timeout-minutes: 5
       run: |
         SKIP_BUILD=true ./test/run_e2e.sh --phase=1
 
-    - name: Phase 2: run_2.sh - Structure Validation
+    - name: "Phase 2: run_2.sh - Structure Validation"
       run: |
         docker run --rm --privileged \
           --user testuser \
           -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
           eth-node-test /workspace/test/ci_test_run_2.sh
 
-    - name: Phase 2: run_2.sh - E2E
+    - name: "Phase 2: run_2.sh - E2E"
       timeout-minutes: 15
       run: |
         SKIP_BUILD=true ./test/run_e2e.sh --phase=2
