@@ -443,6 +443,35 @@ validate_menu_choice() {
     return 0
 }
 
+# Run an install script with logging (for run_2.sh flag mode)
+# Usage: run_install_script /path/to/script.sh "DisplayName"
+# Accepts absolute or relative paths; invokes script directly
+run_install_script() {
+    local script="$1"
+    local name="${2:-$(basename "$script" .sh)}"
+    local log_file exit_code
+    if [[ ! -f "$script" ]]; then
+        log_error "Script not found: $script"
+        return 1
+    fi
+    log_info "Installing $name..."
+    log_file=$(mktemp)
+    trap 'rm -f "$log_file"' RETURN
+    set +e
+    "$script" 2>&1 | tee "$log_file"
+    exit_code=$?
+    set -e
+    if [[ $exit_code -eq 0 ]]; then
+        log_info "✓ $name installed"
+        return 0
+    else
+        log_error "Failed to install $name (exit=$exit_code)"
+        log_error "Last 15 lines of output:"
+        tail -15 "$log_file" | while IFS= read -r line; do log_error "  $line"; done
+        return 1
+    fi
+}
+
 # =============================================================================
 # SYSTEM VALIDATION FUNCTIONS
 # =============================================================================
