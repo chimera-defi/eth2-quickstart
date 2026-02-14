@@ -153,7 +153,7 @@ if [[ "$PHASE" == "2" ]]; then
         teku) verify_installed "Teku" test -f "$HOME/teku/bin/teku" ;;
         nimbus) verify_installed "Nimbus" test -f "$HOME/nimbus-eth2/build/nimbus_beacon_node" ;;
         lodestar) verify_installed "Lodestar" command -v lodestar ;;
-        grandine) verify_installed "Grandine" test -f "$HOME/grandine/target/release/grandine" ;;
+        grandine) verify_installed "Grandine" test -f "$HOME/grandine/grandine" ;;
         *) verify_installed "Consensus client" test -f "$HOME/prysm/prysm.sh" ;;  # fallback
     esac
 

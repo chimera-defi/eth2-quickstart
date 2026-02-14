@@ -62,6 +62,40 @@ jobs:
       run: |
         SKIP_BUILD=true ./test/run_e2e.sh --phase=2
 
+  # Job-level matrix: each combo runs in parallel, tests different clients
+  e2e-client-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - exec: geth
+            cons: prysm
+            mev: mev-boost
+          - exec: besu
+            cons: lighthouse
+            mev: commit-boost
+          - exec: nethermind
+            cons: teku
+            mev: none
+          - exec: erigon
+            cons: nimbus
+            mev: mev-boost
+          - exec: reth
+            cons: grandine
+            mev: none
+          - exec: nimbus_eth1
+            cons: lodestar
+            mev: mev-boost
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and run E2E (${{ matrix.exec }}+${{ matrix.cons }}+${{ matrix.mev }})
+        timeout-minutes: 25
+        run: |
+          docker build -t eth-node-test -f test/Dockerfile .
+          SKIP_BUILD=true E2E_EXECUTION=${{ matrix.exec }} E2E_CONSENSUS=${{ matrix.cons }} E2E_MEV=${{ matrix.mev }} ./test/run_e2e.sh --phase=2
+
   shellcheck:
     runs-on: ubuntu-latest
     
