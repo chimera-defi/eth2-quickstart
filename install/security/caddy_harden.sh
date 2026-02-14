@@ -34,11 +34,7 @@ cat > /tmp/caddy_hardened << 'EOF'
     servers {
         protocols h1 h2 h3
         strict_sni_host
-        read_timeout 30s
-        read_header_timeout 10s
-        write_timeout 30s
-        idle_timeout 60s
-        max_header_bytes 1048576
+        max_header_size 1048576
     }
     # Disable admin API for security
     admin off
