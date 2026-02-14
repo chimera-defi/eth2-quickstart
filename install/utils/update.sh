@@ -18,9 +18,9 @@ log_info "Stopping services for update..."
 sudo systemctl stop eth1 cl mev nginx
 # Note: Validators are not stopped to avoid downtime during upgrades
 
-# regular linux housecleaning (non-interactive)
+# regular linux housecleaning
 log_info "Updating system packages..."
-sudo env DEBIAN_FRONTEND=noninteractive apt-get update -qq
+sudo apt-get update
 sudo apt upgrade -y
 sudo apt dist-upgrade -y
 sudo apt autoremove -y
