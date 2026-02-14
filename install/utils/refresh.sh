@@ -14,4 +14,4 @@ log_info "Refreshing all Ethereum services..."
 restart_all_services
 
 log_info "Running system stats..."
-./install/utils/stats.sh
+"$PROJECT_ROOT/install/utils/stats.sh"

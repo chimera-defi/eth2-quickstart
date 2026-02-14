@@ -19,9 +19,10 @@
 #   ./run_2.sh --execution=geth --consensus=prysm --mev=mev-boost
 #   ./run_2.sh --execution=besu --consensus=lighthouse --mev=none --skip-deps
 
-cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 1
-source ./exports.sh
-source ./lib/common_functions.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR" || exit 1
+source "$SCRIPT_DIR/exports.sh"
+source "$SCRIPT_DIR/lib/common_functions.sh"
 
 # Parse flags for non-interactive mode
 EXECUTION_CLIENT=""
@@ -88,7 +89,7 @@ log_info "This script will install Ethereum clients and services"
 # Install all dependencies centrally (unless --skip-deps)
 if [[ "$SKIP_DEPS" != "true" ]]; then
     log_info "Installing all system dependencies..."
-    if ! ./install/utils/install_dependencies.sh; then
+    if ! "$SCRIPT_DIR/install/utils/install_dependencies.sh"; then
         log_error "Failed to install dependencies"
         exit 1
     fi
@@ -100,7 +101,7 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
     if [[ -n "$EXECUTION_CLIENT" ]]; then
         case "$EXECUTION_CLIENT" in
             geth|besu|erigon|nethermind|nimbus_eth1|reth|ethrex)
-                run_install_script "install/execution/${EXECUTION_CLIENT}.sh" "$EXECUTION_CLIENT" || FAILED=1
+                run_install_script "$SCRIPT_DIR/install/execution/${EXECUTION_CLIENT}.sh" "$EXECUTION_CLIENT" || FAILED=1
                 ;;
             *)
                 log_error "Unknown execution client: $EXECUTION_CLIENT"
@@ -111,7 +112,7 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
     if [[ -n "$CONSENSUS_CLIENT" ]]; then
         case "$CONSENSUS_CLIENT" in
             prysm|lighthouse|lodestar|teku|nimbus|grandine)
-                run_install_script "install/consensus/${CONSENSUS_CLIENT}.sh" "$CONSENSUS_CLIENT" || FAILED=1
+                run_install_script "$SCRIPT_DIR/install/consensus/${CONSENSUS_CLIENT}.sh" "$CONSENSUS_CLIENT" || FAILED=1
                 ;;
             *)
                 log_error "Unknown consensus client: $CONSENSUS_CLIENT"
@@ -122,10 +123,10 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
     if [[ -n "$MEV_FLAG" && "$MEV_FLAG" != "none" ]]; then
         case "$MEV_FLAG" in
             mev-boost)
-                run_install_script "install/mev/install_mev_boost.sh" "MEV-Boost" || FAILED=1
+                run_install_script "$SCRIPT_DIR/install/mev/install_mev_boost.sh" "MEV-Boost" || FAILED=1
                 ;;
             commit-boost)
-                run_install_script "install/mev/install_commit_boost.sh" "Commit-Boost" || FAILED=1
+                run_install_script "$SCRIPT_DIR/install/mev/install_commit_boost.sh" "Commit-Boost" || FAILED=1
                 ;;
             *)
                 log_error "Unknown MEV: $MEV_FLAG (use mev-boost, commit-boost, or none)"
@@ -225,13 +226,13 @@ install_default_clients() {
     log_info "Installing default clients (Geth + Prysm + Selected MEV)..."
     
     log_info "Installing Geth..."
-    if ! ./install/execution/geth.sh; then
+    if ! "$SCRIPT_DIR/install/execution/geth.sh"; then
         log_error "Failed to install Geth"
         return 1
     fi
 
     log_info "Installing Prysm..."
-    if ! ./install/consensus/prysm.sh; then
+    if ! "$SCRIPT_DIR/install/consensus/prysm.sh"; then
         log_error "Failed to install Prysm"
         return 1
     fi
@@ -260,7 +261,7 @@ install_mev_solution() {
     case "$mev_type" in
         "mev-boost")
             log_info "Installing MEV-Boost..."
-            if ! ./install/mev/install_mev_boost.sh; then
+            if ! "$SCRIPT_DIR/install/mev/install_mev_boost.sh"; then
                 log_error "Failed to install MEV-Boost"
                 return 1
             fi
@@ -269,7 +270,7 @@ install_mev_solution() {
             
         "commit-boost")
             log_info "Installing Commit-Boost..."
-            if ! ./install/mev/install_commit_boost.sh; then
+            if ! "$SCRIPT_DIR/install/mev/install_commit_boost.sh"; then
                 log_error "Failed to install Commit-Boost"
                 return 1
             fi
@@ -281,7 +282,7 @@ install_mev_solution() {
                 log_info "Installing ETHGas add-on..."
                 log_warn "Building from Rust source (5-10 minutes)..."
                 
-                if ! ./install/mev/install_ethgas.sh; then
+                if ! "$SCRIPT_DIR/install/mev/install_ethgas.sh"; then
                     log_error "Failed to install ETHGas"
                     log_warn "Commit-Boost is still installed and functional"
                     return 1
@@ -313,7 +314,7 @@ install_mev_solution() {
 case "$client_choice" in
     1)
         log_info "Starting interactive client selection..."
-        ./install/utils/select_clients.sh
+        "$SCRIPT_DIR/install/utils/select_clients.sh"
         
         # Install selected MEV solution
         if [[ "$MEV_SELECTED" != "none" ]]; then
@@ -380,9 +381,9 @@ EOF
 SECURITY_VALIDATION_FAILED=0
 if [[ "${CI_E2E:-}" != "true" ]]; then
     log_info "Running security validation..."
-    if [[ -f "docs/validate_security_safe.sh" && -x "docs/validate_security_safe.sh" ]]; then
+    if [[ -f "$SCRIPT_DIR/docs/validate_security_safe.sh" && -x "$SCRIPT_DIR/docs/validate_security_safe.sh" ]]; then
         log_info "Running code quality validation..."
-        if ! ./docs/validate_security_safe.sh; then
+        if ! "$SCRIPT_DIR/docs/validate_security_safe.sh"; then
             log_error "Security code validation failed"
             SECURITY_VALIDATION_FAILED=1
         fi
@@ -390,9 +391,9 @@ if [[ "${CI_E2E:-}" != "true" ]]; then
         log_warn "Security validation script not found"
     fi
 
-    if [[ -f "docs/server_security_validation.sh" && -x "docs/server_security_validation.sh" ]]; then
+    if [[ -f "$SCRIPT_DIR/docs/server_security_validation.sh" && -x "$SCRIPT_DIR/docs/server_security_validation.sh" ]]; then
         log_info "Running server security validation..."
-        if ! ./docs/server_security_validation.sh; then
+        if ! "$SCRIPT_DIR/docs/server_security_validation.sh"; then
             log_error "Server security validation failed"
             SECURITY_VALIDATION_FAILED=1
         fi

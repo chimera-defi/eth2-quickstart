@@ -206,11 +206,11 @@ This document provides a comprehensive reference for all functions available in 
 
 ### 🔍 **System Check Functions**
 
-#### `check_system_requirements(min_memory_gb, min_disk_gb)`
-**Purpose:** Check memory and disk; logs warnings if below threshold but never fails  
-**Parameters:** `min_memory_gb` (default 16), `min_disk_gb` (default 1000)  
-**Usage:** `check_system_requirements 16 2000`  
-**Note:** Always returns 0 - allows CI/Docker E2E to proceed. Real servers see warnings; clients may fail at runtime if undersized.
+#### `check_system_requirements()`
+**Purpose:** Check if system meets minimum requirements  
+**Parameters:** None  
+**Usage:** `check_system_requirements`  
+**Checks:** CPU, RAM, disk space, OS version
 
 #### `check_system_compatibility()`
 **Purpose:** Check system compatibility for Ethereum node  
@@ -283,17 +283,13 @@ This document provides a comprehensive reference for all functions available in 
 **Usage:** `install_dependencies`  
 **Installs:** curl, wget, jq, systemd, ufw, fail2ban
 
-#### `setup_firewall_rules(ports...)`
-**Purpose:** Configure firewall rules (UFW). When `CI_E2E=true`, skips UFW (container lacks kernel modules).  
-**Parameters:** Port numbers to allow  
-**Usage:** `setup_firewall_rules 2222 8545 30303`
-
-#### `run_install_script(script_path, name)`
-**Purpose:** Run an install script and report success/failure. Used by run_2.sh flag mode.  
+#### `setup_firewall_rules(ssh_port, rpc_port, p2p_port)`
+**Purpose:** Configure firewall rules  
 **Parameters:**
-- `script_path` - Path to install script (relative to project root)
-- `name` - Display name (optional; defaults to basename)
-**Usage:** `run_install_script "install/execution/geth.sh" "geth"`
+- `ssh_port` - SSH port number
+- `rpc_port` - RPC port number
+- `p2p_port` - P2P port number
+**Usage:** `setup_firewall_rules 2222 8545 30303`
 
 #### `add_ppa_repository(ppa)`
 **Purpose:** Add PPA repository  
