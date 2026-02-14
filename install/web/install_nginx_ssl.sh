@@ -70,7 +70,7 @@ fi
 
 # Run Nginx hardening
 log_info "Running Nginx security hardening..."
-if ! ../security/nginx_harden.sh; then
+if ! sudo "$SCRIPT_DIR/../security/nginx_harden.sh"; then
     log_warn "Nginx hardening script failed, but continuing..."
 fi
 

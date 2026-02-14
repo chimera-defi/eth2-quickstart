@@ -48,7 +48,7 @@ validate_caddy_config "/etc/caddy/Caddyfile"
 
 # Run Caddy hardening
 log_info "Running Caddy security hardening..."
-if ! ../security/caddy_harden.sh; then
+if ! sudo "$SCRIPT_DIR/../security/caddy_harden.sh"; then
     log_warn "Caddy hardening script failed, but continuing..."
 fi
 
