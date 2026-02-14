@@ -105,9 +105,6 @@ limit_conn_zone $binary_remote_addr zone=conn_limit_total:10m;
 limit_conn conn_limit_per_ip 50;
 limit_conn_status 429;
 
-# Hide Nginx version
-server_tokens off;
-
 # Additional DDoS mitigations
 client_body_temp_path /var/cache/nginx/client_temp 1 2;
 client_body_in_file_only clean;
