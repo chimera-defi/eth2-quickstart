@@ -2,10 +2,15 @@ name: CI - Docker Integration Tests
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, 'cursor/**' ]
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, 'cursor/**' ]
   workflow_dispatch:  # Allow manual trigger for testing
+
+# Cancel in-progress runs when new push/PR (avoids 2 runs from push+PR on same branch)
+concurrency:
+  group: ci-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
 
 jobs:
   docker-integration:
@@ -32,29 +37,30 @@ jobs:
           -e USE_MOCKS=false \
           eth-node-test /workspace/test/docker_test.sh
           
-    - name: Test run_1.sh (Phase 1 - Structure Validation)
+    # run_1.sh = Phase 1 (system setup). run_2.sh = Phase 2 (client install).
+    - name: "run_1.sh - Structure"
       run: |
-        # Structural validation - syntax, functions, SSH safety, etc.
         docker run --rm --privileged \
           --user root \
-          -e DEBIAN_FRONTEND=noninteractive \
+          -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
           eth-node-test /workspace/test/ci_test_run_1.sh
 
-    - name: Test run_1.sh E2E (Phase 1 - Actual Execution)
+    - name: "run_1.sh - E2E"
       timeout-minutes: 5
       run: |
-        # Actually runs run_1.sh and verifies results (systemd + openssh required)
-        # Uses tmpfs/cgroupns for systemd on GitHub Actions (cgroup v2)
-        SKIP_BUILD=true ./test/run_run_1_e2e.sh
+        SKIP_BUILD=true ./test/run_e2e.sh --phase=1
 
-    - name: Test run_2.sh (Phase 2 - Client Installation)
+    - name: "run_2.sh - Structure"
       run: |
-        # Run run_2.sh inside Docker with default selections
-        # Inputs: 1=MEV-Boost, 2=Default clients (Geth+Prysm)
-        # Full E2E test takes ~5-7 minutes
         docker run --rm --privileged \
-          -e DEBIAN_FRONTEND=noninteractive \
+          --user testuser \
+          -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
           eth-node-test /workspace/test/ci_test_run_2.sh
+
+    - name: "run_2.sh - E2E"
+      timeout-minutes: 15
+      run: |
+        SKIP_BUILD=true ./test/run_e2e.sh --phase=2
 
   shellcheck:
     runs-on: ubuntu-latest

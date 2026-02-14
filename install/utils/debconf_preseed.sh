@@ -1,6 +1,6 @@
 #!/bin/bash
 # Debconf pre-seeding - single source for non-interactive apt/dpkg
-# Used by: test/Dockerfile (build), test/ci_test_run_1_e2e.sh (run_1 apt upgrade)
+# Used by: test/Dockerfile (build), test/ci_test_e2e.sh (Phase 1 and 2 E2E)
 # Prevents hangs on postfix, cron, tzdata, needrestart during install/upgrade
 
 set -Eeuo pipefail

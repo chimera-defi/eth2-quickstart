@@ -5,8 +5,11 @@
 # Lodestar is a TypeScript Ethereum consensus client developed by ChainSafe
 # Usage: ./lodestar.sh
 
-source ../../exports.sh
-source ../../lib/common_functions.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+source "$PROJECT_ROOT/exports.sh"
+source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Get script directories
 get_script_directories
@@ -90,13 +93,13 @@ EOF
 
 # Merge base configurations with custom settings using jq (if available) or simple concatenation
 if command -v jq &> /dev/null; then
-    jq -s '.[0] * .[1]' "$SCRIPT_DIR/configs/lodestar/lodestar_beacon_base.json" ./tmp/lodestar_beacon_custom.json > "$LODESTAR_DIR/beacon.config.json"
-    jq -s '.[0] * .[1]' "$SCRIPT_DIR/configs/lodestar/lodestar_validator_base.json" ./tmp/lodestar_validator_custom.json > "$LODESTAR_DIR/validator.config.json"
+    jq -s '.[0] * .[1]' "$PROJECT_ROOT/configs/lodestar/lodestar_beacon_base.json" ./tmp/lodestar_beacon_custom.json > "$LODESTAR_DIR/beacon.config.json"
+    jq -s '.[0] * .[1]' "$PROJECT_ROOT/configs/lodestar/lodestar_validator_base.json" ./tmp/lodestar_validator_custom.json > "$LODESTAR_DIR/validator.config.json"
 else
     # Fallback: use merge_client_config for proper JSON merging
     log_warn "jq not found, using fallback JSON merging"
-    merge_client_config "Lodestar" "beacon" "$SCRIPT_DIR/configs/lodestar/lodestar_beacon_base.json" "./tmp/lodestar_beacon_custom.json" "$LODESTAR_DIR/beacon.config.json"
-    merge_client_config "Lodestar" "validator" "$SCRIPT_DIR/configs/lodestar/lodestar_validator_base.json" "./tmp/lodestar_validator_custom.json" "$LODESTAR_DIR/validator.config.json"
+    merge_client_config "Lodestar" "beacon" "$PROJECT_ROOT/configs/lodestar/lodestar_beacon_base.json" "./tmp/lodestar_beacon_custom.json" "$LODESTAR_DIR/beacon.config.json"
+    merge_client_config "Lodestar" "validator" "$PROJECT_ROOT/configs/lodestar/lodestar_validator_base.json" "./tmp/lodestar_validator_custom.json" "$LODESTAR_DIR/validator.config.json"
 fi
 
 # Clean up temporary files

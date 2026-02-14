@@ -4,13 +4,17 @@
 # Removes all Ethereum client data directories for clean client switching
 # Usage: ./purge_ethereum_data.sh [--confirm] [--dry-run]
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+
 # Source common functions
-source ../../lib/common_functions.sh
+source "$PROJECT_ROOT/lib/common_functions.sh"
 get_script_directories
 
 # Source exports for configuration
-if [[ -f "$SCRIPT_DIR/../../exports.sh" ]]; then
-    source ../../exports.sh
+if [[ -f "$PROJECT_ROOT/exports.sh" ]]; then
+    source "$PROJECT_ROOT/exports.sh"
 else
     export LOGIN_UNAME="eth"
 fi
