@@ -136,6 +136,17 @@ else
     record_test "Caddy config validates" "SKIP"
 fi
 
+# Download URL validation (get_latest_release, get_github_release_asset_url)
+if [[ -f "$PROJECT_ROOT/test/validate_downloads.sh" ]]; then
+    if "$PROJECT_ROOT/test/validate_downloads.sh" 2>/dev/null; then
+        record_test "Download URL functions" "PASS"
+    else
+        record_test "Download URL functions" "FAIL"
+    fi
+else
+    record_test "Download URL functions" "SKIP"
+fi
+
 # =============================================================================
 # PHASE 4: Function Unit Tests (Real System Calls)
 # =============================================================================

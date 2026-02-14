@@ -162,19 +162,20 @@ whiptail_yesno() {
 # =============================================================================
 
 # Get latest release version from GitHub
+# Uses GITHUB_TOKEN or GH_TOKEN if set (avoids 60/hr rate limit in CI)
 get_latest_release() {
     local repo="$1"
     local release_url="https://api.github.com/repos/${repo}/releases/latest"
     local version
+    local curl_opts=(-sf)
+    [[ -n "${GITHUB_TOKEN:-}${GH_TOKEN:-}" ]] && curl_opts+=(-H "Authorization: Bearer ${GITHUB_TOKEN:-$GH_TOKEN}")
     
-    # Check if curl is available
     if ! command_exists curl; then
         log_error "curl is not installed"
         return 1
     fi
     
-    # Try to fetch latest release tag from GitHub API with error handling
-    if ! version=$(curl -sf "$release_url" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'); then
+    if ! version=$(curl "${curl_opts[@]}" "$release_url" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'); then
         log_warn "Could not fetch latest release for $repo (API request failed)"
         return 1
     fi
@@ -190,12 +191,15 @@ get_latest_release() {
 
 # Get download URL for a release asset matching a pattern (e.g. "nimbus-eth2_Linux_amd64")
 # Use when asset filename includes commit hash or other variable parts
+# Uses GITHUB_TOKEN or GH_TOKEN if set (avoids 60/hr rate limit in CI)
 get_github_release_asset_url() {
     local repo="$1"
     local match_pattern="$2"
     local release_url="https://api.github.com/repos/${repo}/releases/latest"
     local url
-    url=$(curl -sf "$release_url" 2>/dev/null | grep -oE '"browser_download_url": "https://[^"]*'"${match_pattern}"'[^"]*"' | head -1 | sed 's/.*"\(https:\/\/[^"]*\)".*/\1/')
+    local curl_opts=(-sf)
+    [[ -n "${GITHUB_TOKEN:-}${GH_TOKEN:-}" ]] && curl_opts+=(-H "Authorization: Bearer ${GITHUB_TOKEN:-$GH_TOKEN}")
+    url=$(curl "${curl_opts[@]}" "$release_url" 2>/dev/null | grep -oE '"browser_download_url": "https://[^"]*'"${match_pattern}"'[^"]*"' | head -1 | sed 's/.*"\(https:\/\/[^"]*\)".*/\1/')
     if [[ -n "$url" ]]; then
         echo "$url"
         return 0

@@ -12,55 +12,75 @@ concurrency:
   group: ci-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
+# All jobs run in parallel for clear failure visibility
 jobs:
-  docker-integration:
+  docker-lint:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Build test Docker image
-      run: |
-        docker build -t eth-node-test -f test/Dockerfile .
-        
-    - name: Run lint tests in Docker
-      run: |
-        docker run --rm eth-node-test /workspace/test/run_tests.sh --lint-only
-        
-    - name: Run unit tests in Docker
-      run: |
-        docker run --rm --privileged \
-          -e USE_MOCKS=false \
-          eth-node-test /workspace/test/docker_test.sh
-          
-    # run_1.sh = Phase 1 (system setup). run_2.sh = Phase 2 (client install).
-    - name: "run_1.sh - Structure"
-      run: |
-        docker run --rm --privileged \
-          --user root \
-          -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
-          eth-node-test /workspace/test/ci_test_run_1.sh
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and run lint
+        run: |
+          docker build -t eth-node-test -f test/Dockerfile .
+          docker run --rm eth-node-test /workspace/test/run_tests.sh --lint-only
 
-    - name: "run_1.sh - E2E"
-      timeout-minutes: 5
-      run: |
-        SKIP_BUILD=true ./test/run_e2e.sh --phase=1
+  docker-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and run unit tests (includes Caddy validate)
+        run: |
+          docker build -t eth-node-test -f test/Dockerfile .
+          docker run --rm --privileged -e USE_MOCKS=false eth-node-test /workspace/test/docker_test.sh
 
-    - name: "run_2.sh - Structure"
-      run: |
-        docker run --rm --privileged \
-          --user testuser \
-          -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
-          eth-node-test /workspace/test/ci_test_run_2.sh
+  run-1-structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and run_1 structure
+        run: |
+          docker build -t eth-node-test -f test/Dockerfile .
+          docker run --rm --privileged --user root \
+            -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
+            eth-node-test /workspace/test/ci_test_run_1.sh
 
-    - name: "run_2.sh - E2E"
-      timeout-minutes: 25
-      run: |
-        SKIP_BUILD=true ./test/run_e2e.sh --phase=2
+  run-1-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and run_1 E2E
+        run: |
+          docker build -t eth-node-test -f test/Dockerfile .
+          SKIP_BUILD=true ./test/run_e2e.sh --phase=1
+
+  run-2-structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and run_2 structure
+        run: |
+          docker build -t eth-node-test -f test/Dockerfile .
+          docker run --rm --privileged --user testuser \
+            -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical \
+            eth-node-test /workspace/test/ci_test_run_2.sh
+
+  run-2-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and run_2 E2E (default clients)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          docker build -t eth-node-test -f test/Dockerfile .
+          SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" ./test/run_e2e.sh --phase=2
 
   # Test all execution + consensus clients install and configure (job-level matrix)
   e2e-client-matrix:
@@ -95,9 +115,11 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - name: "E2E ${{ matrix.exec }}+${{ matrix.cons }}+${{ matrix.mev }}"
         timeout-minutes: 25
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           docker build -t eth-node-test -f test/Dockerfile .
-          SKIP_BUILD=true E2E_EXECUTION=${{ matrix.exec }} E2E_CONSENSUS=${{ matrix.cons }} E2E_MEV=${{ matrix.mev }} ./test/run_e2e.sh --phase=2
+          SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" E2E_EXECUTION=${{ matrix.exec }} E2E_CONSENSUS=${{ matrix.cons }} E2E_MEV=${{ matrix.mev }} ./test/run_e2e.sh --phase=2
 
   shellcheck:
     runs-on: ubuntu-latest

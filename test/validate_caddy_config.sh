@@ -23,9 +23,10 @@ export CI_E2E=true
 
 create_caddy_config_auto_https "${SERVER_NAME:-rpc.sharedtools.org}" "$CADDYFILE"
 
+# Caddy requires --adapter caddyfile for Caddyfile format (otherwise parses as JSON)
 if command -v caddy &>/dev/null; then
     echo "Validating with caddy validate..."
-    if caddy validate --config "$CADDYFILE"; then
+    if caddy validate --config "$CADDYFILE" --adapter caddyfile; then
         echo "✓ Caddy config is valid"
         rm -f "$CADDYFILE"
         exit 0
@@ -36,7 +37,7 @@ if command -v caddy &>/dev/null; then
     fi
 elif command -v docker &>/dev/null; then
     echo "Validating with docker run caddy..."
-    if docker run --rm -v "$CADDYFILE:/etc/caddy/Caddyfile:ro" caddy:2 caddy validate --config /etc/caddy/Caddyfile; then
+    if docker run --rm -v "$CADDYFILE:/etc/caddy/Caddyfile:ro" caddy:2 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile; then
         echo "✓ Caddy config is valid"
         rm -f "$CADDYFILE"
         exit 0
