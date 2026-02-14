@@ -2,6 +2,15 @@
 
 This directory contains tests for the Ethereum node setup scripts.
 
+## Before Push (Local Validation)
+
+Run these locally to avoid CI failures:
+
+```bash
+./test/run_shellcheck.sh           # Must pass - matches shellcheck.yml
+./test/run_tests.sh --lint-only    # Lint + syntax + config verification
+```
+
 ## Testing Approaches
 
 ### 1. Docker-Based Testing (Recommended)
