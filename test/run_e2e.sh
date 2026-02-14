@@ -90,9 +90,13 @@ for _ in $(seq 1 30); do
 done
 
 # Phase 1 = run_1 (root). Phase 2 = run_2 (testuser).
-# Pass DEBIAN_* to prevent apt/dpkg tty hangs (tzdata, postfix, etc.)
+# Phase 2: E2E_EXECUTION, E2E_CONSENSUS, E2E_MEV select clients (for client matrix job)
 if [[ "$PHASE" == "1" ]]; then
     docker exec --user root -e PHASE=1 -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical "$CONTAINER_NAME" /workspace/test/ci_test_e2e.sh || exit
 else
-    docker exec --user testuser -e PHASE=2 -e CI_E2E=true -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical "$CONTAINER_NAME" /workspace/test/ci_test_e2e.sh || exit
+    DOCKER_E2E=(-e PHASE=2 -e CI_E2E=true -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical)
+    [[ -n "${E2E_EXECUTION:-}" ]] && DOCKER_E2E+=(-e "E2E_EXECUTION=$E2E_EXECUTION")
+    [[ -n "${E2E_CONSENSUS:-}" ]] && DOCKER_E2E+=(-e "E2E_CONSENSUS=$E2E_CONSENSUS")
+    [[ -n "${E2E_MEV:-}" ]] && DOCKER_E2E+=(-e "E2E_MEV=$E2E_MEV")
+    docker exec --user testuser "${DOCKER_E2E[@]}" "$CONTAINER_NAME" /workspace/test/ci_test_e2e.sh || exit
 fi
