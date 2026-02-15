@@ -41,12 +41,14 @@ docker build -t eth-node-test -f test/Dockerfile .
 SKIP_BUILD=true ./test/run_e2e.sh --phase=2
 ```
 
-## Last run: 2026-02-14
-- Lint: 250 passed
+## Last run: 2026-02-15
+- Lint: 254 passed
 - Syntax: all scripts valid
 - Shellcheck: passed
+- Caddy config: valid
+- verify_client_configs: 28 passed
 - ensure_jwt_secret: creates dir, works
 - get_github_release_asset_url: returns Nimbus URL
 - common_functions: 10/10 passed
-- docker_test: 72 passed
+- docker_test: 74 passed
 - CI YAML: valid

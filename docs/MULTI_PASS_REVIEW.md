@@ -3,10 +3,11 @@
 ## Pass 1: Functionality ✓
 
 ### Build/Test/Lint
-- [ ] `./test/run_tests.sh --lint-only` - passes
-- [ ] `./test/validate_caddy_config.sh` - passes
-- [ ] `./test/validate_downloads.sh` - passes
-- [ ] CI: All jobs pass (docker-integration, run-1-structure, run-1-e2e, run-2-structure, run-2-e2e, e2e-client-matrix, shellcheck)
+- [x] `./test/run_tests.sh --lint-only` - passes (254 tests)
+- [x] `./test/validate_caddy_config.sh` - passes
+- [x] `./test/validate_downloads.sh` - passes
+- [x] `./install/utils/verify_client_configs.sh` - passes
+- [x] CI: docker-integration, run-1-structure, run-1-e2e, run-2-structure, run-2-e2e, e2e-client-matrix, shellcheck
 
 ### Tests Not Stubbed
 - [ ] run_2.sh E2E: Runs real install scripts (--execution, --consensus, --mev flags)
