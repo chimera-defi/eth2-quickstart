@@ -130,13 +130,17 @@ run_script_with_log() {
 }
 
 # Dump last N lines of log file via log_error (for failure debugging)
+# In CI: default 150 lines for more context when multiple tests fail
 dump_log_tail() {
     local log_file="$1"
-    local lines="${2:-50}"
+    local default_lines=50
+    [[ -n "${CI:-}" || -n "${CI_E2E:-}" || -n "${GITHUB_ACTIONS:-}" ]] && default_lines=150
+    local lines="${2:-$default_lines}"
     local prefix="${3:-  }"
     if [[ -f "$log_file" ]]; then
-        log_error "--- Last $lines lines of output ---"
+        log_error "--- Last $lines lines of $log_file ---"
         while IFS= read -r line; do log_error "${prefix}$line"; done < <(tail -n "$lines" "$log_file")
+        log_error "--- Full log: $log_file ---"
     fi
 }
 

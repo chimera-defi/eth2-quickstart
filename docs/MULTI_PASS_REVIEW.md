@@ -47,3 +47,11 @@
 - run_1.sh: 61 lines (master: 93) - refactored: lockout check, reorder user/SSH, consolidated handles append_once/secure_config/setup_intrusion
 - Files with net deletions: docs/validate_security_safe.sh (-43), run_1.sh (-32), install_dependencies.sh restructure
 - **Note:** run_1.sh changes came from prior refactoring (consolidated_security, ci_test_run_1 expects no setup_intrusion_detection). Reverting run_1 to master would break ci_test_run_1.
+
+## Co-Author Attribution
+
+When AI-assisted changes are committed, include co-author in commit body:
+```
+Co-authored-by: Human Name <human@example.com>
+```
+Add via: `git commit -m "..." -m "Co-authored-by: Name <email>"`
