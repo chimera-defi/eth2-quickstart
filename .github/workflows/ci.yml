@@ -2,12 +2,13 @@ name: CI - Docker Integration Tests
 
 on:
   push:
-    branches: [ main, master, develop, 'cursor/**' ]
+    branches: [ main, master, develop ]
   pull_request:
     branches: [ main, master, develop, 'cursor/**' ]
   workflow_dispatch:  # Allow manual trigger for testing
 
-# Cancel in-progress runs when new push/PR (avoids 2 runs from push+PR on same branch)
+# One run per commit: push only on main/master/develop; PR triggers for all branches
+# (Avoids 2 runs when pushing to a PR branch - push+PR both fired before)
 concurrency:
   group: ci-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
@@ -15,9 +16,9 @@ concurrency:
 # All jobs run in parallel. Docker layer cache (gha) speeds rebuilds.
 # Job-level timeouts prevent runaway jobs (e.g. 10hr hangs).
 jobs:
-  docker-lint:
+  docker-integration:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -29,29 +30,12 @@ jobs:
           tags: eth-node-test
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Run lint
+      - name: Lint and unit tests
         run: |
-          echo "::group::Lint output"
+          echo "::group::Lint"
           docker run --rm eth-node-test /workspace/test/run_tests.sh --lint-only
           echo "::endgroup::"
-
-  docker-unit:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: test/Dockerfile
-          load: true
-          tags: eth-node-test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      - name: Run unit tests (includes Caddy validate)
-        run: |
-          echo "::group::Unit test output"
+          echo "::group::Unit tests (Caddy validate, downloads, functions)"
           docker run --rm --privileged -e USE_MOCKS=false -e CI=true eth-node-test /workspace/test/docker_test.sh
           echo "::endgroup::"
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -Eeuo pipefail
 
 # Caddy Installation Script
 # Installs and configures Caddy web server with automatic HTTPS
@@ -46,10 +47,11 @@ setup_firewall_rules 80 443
 # Validate Caddy configuration
 validate_caddy_config "/etc/caddy/Caddyfile"
 
-# Run Caddy hardening
+# Run Caddy hardening (sudo -E preserves CI_E2E for minimal config in Docker)
 log_info "Running Caddy security hardening..."
-if ! sudo "$SCRIPT_DIR/../security/caddy_harden.sh"; then
-    log_warn "Caddy hardening script failed, but continuing..."
+if ! sudo -E "$SCRIPT_DIR/../security/caddy_harden.sh"; then
+    log_error "Caddy hardening failed"
+    exit 1
 fi
 
 # Verify Caddy is running

@@ -20,22 +20,10 @@ services:
     # Use systemd as init
     command: ["/workspace/test/docker_test.sh"]
     
-  # Alternative: run specific test modes
+  # Alternative: run lint only (faster, no privileged)
   lint:
     build:
       context: ..
       dockerfile: test/Dockerfile
     container_name: eth-node-setup-lint
     command: ["/workspace/test/run_tests.sh", "--lint-only"]
-    
-  unit:
-    build:
-      context: ..
-      dockerfile: test/Dockerfile
-    container_name: eth-node-setup-unit
-    privileged: true
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-    environment:
-      - USE_MOCKS=false
-    command: ["/workspace/test/docker_test.sh", "--unit"]
