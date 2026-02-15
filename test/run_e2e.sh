@@ -91,13 +91,19 @@ done
 
 # Phase 1 = run_1 (root). Phase 2 = run_2 (testuser).
 # Phase 2: E2E_EXECUTION, E2E_CONSENSUS, E2E_MEV select clients (for client matrix job)
+# Pass CI/GITHUB_ACTIONS for expanded debug output (dump_log_tail 150 lines) on failure
 if [[ "$PHASE" == "1" ]]; then
-    docker exec --user root -e PHASE=1 -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical "$CONTAINER_NAME" /workspace/test/ci_test_e2e.sh || exit
+    DOCKER_EXEC_ENV=(-e PHASE=1 -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical)
+    [[ -n "${CI:-}" ]] && DOCKER_EXEC_ENV+=(-e "CI=$CI")
+    [[ -n "${GITHUB_ACTIONS:-}" ]] && DOCKER_EXEC_ENV+=(-e "GITHUB_ACTIONS=$GITHUB_ACTIONS")
+    docker exec --user root "${DOCKER_EXEC_ENV[@]}" "$CONTAINER_NAME" /workspace/test/ci_test_e2e.sh || exit
 else
     DOCKER_E2E=(-e PHASE=2 -e CI_E2E=true -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical)
     [[ -n "${E2E_EXECUTION:-}" ]] && DOCKER_E2E+=(-e "E2E_EXECUTION=$E2E_EXECUTION")
     [[ -n "${E2E_CONSENSUS:-}" ]] && DOCKER_E2E+=(-e "E2E_CONSENSUS=$E2E_CONSENSUS")
     [[ -n "${E2E_MEV:-}" ]] && DOCKER_E2E+=(-e "E2E_MEV=$E2E_MEV")
     [[ -n "${GITHUB_TOKEN:-}" ]] && DOCKER_E2E+=(-e "GITHUB_TOKEN=$GITHUB_TOKEN")
+    [[ -n "${CI:-}" ]] && DOCKER_E2E+=(-e "CI=$CI")
+    [[ -n "${GITHUB_ACTIONS:-}" ]] && DOCKER_E2E+=(-e "GITHUB_ACTIONS=$GITHUB_ACTIONS")
     docker exec --user testuser "${DOCKER_E2E[@]}" "$CONTAINER_NAME" /workspace/test/ci_test_e2e.sh || exit
 fi
