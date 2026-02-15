@@ -95,6 +95,13 @@ if [[ "$SKIP_DEPS" != "true" ]]; then
     fi
 fi
 
+# Verify client configs resolve correctly before client installation
+log_info "Verifying client configuration files..."
+if ! "$SCRIPT_DIR/install/utils/verify_client_configs.sh"; then
+    log_error "Client config verification failed - check config paths and exports.sh"
+    exit 1
+fi
+
 # Non-interactive path: install specified clients via flags
 if [[ "$FLAGS_MODE" == "true" ]]; then
     FAILED=0

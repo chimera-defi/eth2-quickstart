@@ -58,7 +58,7 @@ validate_caddy_config() {
     
     log_info "Validating Caddy configuration..."
     
-    if sudo caddy validate --config "$caddyfile_path"; then
+    if sudo caddy validate --config "$caddyfile_path" --adapter caddyfile; then
         log_info "✓ Caddy configuration is valid"
         return 0
     else

@@ -1004,7 +1004,7 @@ EOF
     cat << EOF
 
 Configuration files are located in:
-- Base configs: $SCRIPT_DIR/configs/$client_name/
+- Base configs: \$PROJECT_ROOT/configs/ (use PROJECT_ROOT for merge_client_config)
 - Active configs: /etc/$client_name/
 
 Data directories:

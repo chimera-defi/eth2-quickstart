@@ -10,12 +10,8 @@ LOG_PREFIX="INFO"
 # shellcheck source=lib/test_utils.sh
 source "$SCRIPT_DIR/lib/test_utils.sh"
 
-# Parse arguments
-TEST_MODE="${1:-full}"
-
 log_header "Docker Integration Tests"
 log_info "Running inside container with REAL system calls"
-log_info "Test mode: $TEST_MODE"
 log_info "User: $(whoami)"
 log_info "Working directory: $(pwd)"
 
@@ -127,10 +123,13 @@ fi
 
 # Caddy config validation (CI_E2E minimal config must validate with default Caddy)
 if command -v caddy &>/dev/null && [[ -f "$PROJECT_ROOT/test/validate_caddy_config.sh" ]]; then
-    if "$PROJECT_ROOT/test/validate_caddy_config.sh" 2>/dev/null; then
+    if "$PROJECT_ROOT/test/validate_caddy_config.sh"; then
         record_test "Caddy config validates" "PASS"
     else
         record_test "Caddy config validates" "FAIL"
+        log_error "Caddy config validation failed - fix config and re-run"
+        print_test_summary
+        exit 1
     fi
 else
     record_test "Caddy config validates" "SKIP"
@@ -138,10 +137,13 @@ fi
 
 # Download URL validation (get_latest_release, get_github_release_asset_url)
 if [[ -f "$PROJECT_ROOT/test/validate_downloads.sh" ]]; then
-    if "$PROJECT_ROOT/test/validate_downloads.sh" 2>/dev/null; then
+    if "$PROJECT_ROOT/test/validate_downloads.sh"; then
         record_test "Download URL functions" "PASS"
     else
         record_test "Download URL functions" "FAIL"
+        log_error "Download URL validation failed - check get_latest_release/get_github_release_asset_url"
+        print_test_summary
+        exit 1
     fi
 else
     record_test "Download URL functions" "SKIP"
