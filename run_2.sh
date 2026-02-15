@@ -28,6 +28,7 @@ source "$SCRIPT_DIR/lib/common_functions.sh"
 EXECUTION_CLIENT=""
 CONSENSUS_CLIENT=""
 MEV_FLAG=""
+ETHGAS_FLAG=false
 SKIP_DEPS=false
 for arg in "$@"; do
     case "$arg" in
@@ -40,6 +41,9 @@ for arg in "$@"; do
         --mev=*)
             MEV_FLAG="${arg#*=}"
             ;;
+        --ethgas)
+            ETHGAS_FLAG=true
+            ;;
         --skip-deps)
             SKIP_DEPS=true
             ;;
@@ -50,13 +54,14 @@ for arg in "$@"; do
             echo "  --execution=NAME   Install execution client (geth, besu, erigon, nethermind, nimbus_eth1, reth, ethrex)"
             echo "  --consensus=NAME   Install consensus client (prysm, lighthouse, lodestar, teku, nimbus, grandine)"
             echo "  --mev=NAME         Install MEV (mev-boost, commit-boost, none)"
+            echo "  --ethgas           Install ETHGas with Commit-Boost (requires commit-boost)"
             echo "  --skip-deps        Skip install_dependencies.sh (for CI when deps already installed)"
             echo "  --help             Show this help"
             echo ""
             echo "Examples:"
             echo "  $0                                    # Interactive mode"
             echo "  $0 --execution=geth --consensus=prysm --mev=mev-boost"
-            echo "  $0 --execution=besu --consensus=teku --mev=none --skip-deps"
+            echo "  $0 --execution=besu --consensus=lighthouse --mev=commit-boost --ethgas --skip-deps"
             exit 0
             ;;
     esac
@@ -104,6 +109,12 @@ fi
 
 # Non-interactive path: install specified clients via flags
 if [[ "$FLAGS_MODE" == "true" ]]; then
+    # Validate ETHGas flag constraints
+    if [[ "$ETHGAS_FLAG" == "true" && "$MEV_FLAG" != "commit-boost" ]]; then
+        log_error "ETHGas requires --mev=commit-boost (got --mev=$MEV_FLAG)"
+        exit 1
+    fi
+    
     FAILED=0
     if [[ -n "$EXECUTION_CLIENT" ]]; then
         case "$EXECUTION_CLIENT" in
@@ -134,6 +145,19 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
                 ;;
             commit-boost)
                 run_install_script "$SCRIPT_DIR/install/mev/install_commit_boost.sh" "Commit-Boost" || FAILED=1
+                # Install ETHGas if requested
+                if [[ "$ETHGAS_FLAG" == "true" ]]; then
+                    echo ""
+                    log_info "Installing ETHGas add-on..."
+                    log_warn "Building from Rust source (5-10 minutes)..."
+                    if ! "$SCRIPT_DIR/install/mev/install_ethgas.sh"; then
+                        log_error "Failed to install ETHGas"
+                        log_warn "Commit-Boost is still installed and functional"
+                        FAILED=1
+                    else
+                        log_info "✓ ETHGas installed successfully"
+                    fi
+                fi
                 ;;
             *)
                 log_error "Unknown MEV: $MEV_FLAG (use mev-boost, commit-boost, or none)"
