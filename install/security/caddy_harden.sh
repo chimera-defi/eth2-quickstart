@@ -71,10 +71,18 @@ https://$SERVER_NAME {
             header_up X-Forwarded-Proto {scheme}
         }
     }
-    handle /admin* { respond "Access Denied" 403 }
-    handle /wp-admin* { respond "Access Denied" 403 }
-    handle /.env* { respond "Access Denied" 403 }
-    handle /config* { respond "Access Denied" 403 }
+    handle /admin* {
+        respond 403 "Access Denied"
+    }
+    handle /wp-admin* {
+        respond 403 "Access Denied"
+    }
+    handle /.env* {
+        respond 403 "Access Denied"
+    }
+    handle /config* {
+        respond 403 "Access Denied"
+    }
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
         X-Frame-Options "DENY"
@@ -84,8 +92,12 @@ https://$SERVER_NAME {
     }
 }
 
-:80 { respond "Access Denied" 403 }
-:443 { respond "Access Denied" 403 }
+:80 {
+    respond 403 "Access Denied"
+}
+:443 {
+    respond 403 "Access Denied"
+}
 CIEOF
 else
     cat > /tmp/caddy_hardened << 'EOF'
@@ -166,19 +178,19 @@ https://$SERVER_NAME {
     
     # Block common attack patterns
     handle /admin* {
-        respond "Access Denied" 403
+        respond 403 "Access Denied"
     }
     
     handle /wp-admin* {
-        respond "Access Denied" 403
+        respond 403 "Access Denied"
     }
     
     handle /.env* {
-        respond "Access Denied" 403
+        respond 403 "Access Denied"
     }
     
     handle /config* {
-        respond "Access Denied" 403
+        respond 403 "Access Denied"
     }
     
     # Comprehensive security headers (consistent with Nginx)
@@ -243,11 +255,11 @@ https://$SERVER_NAME {
 
 # Block requests to unknown hosts
 :80 {
-    respond "Access Denied" 403
+    respond 403 "Access Denied"
 }
 
 :443 {
-    respond "Access Denied" 403
+    respond 403 "Access Denied"
 }
 EOF
 fi
