@@ -7,8 +7,11 @@
 # Usage: ./ethrex.sh
 # https://github.com/lambdaclass/ethrex
 
-source ../../exports.sh
-source ../../lib/common_functions.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+source "$PROJECT_ROOT/exports.sh"
+source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Get script directories
 get_script_directories
@@ -44,8 +47,8 @@ esac
 log_info "Fetching latest ethrex release..."
 ETHREX_VERSION=$(get_latest_release "lambdaclass/ethrex")
 if [[ -z "$ETHREX_VERSION" ]]; then
-    log_warn "Could not fetch latest version, using v7.0.0"
-    ETHREX_VERSION="v7.0.0"
+    log_error "Could not fetch latest Ethrex version from GitHub"
+    exit 1
 fi
 log_info "Installing ethrex version: $ETHREX_VERSION"
 

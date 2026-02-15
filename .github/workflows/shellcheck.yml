@@ -2,9 +2,9 @@ name: Shell Script Linting
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, 'cursor/**' ]
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, 'cursor/**' ]
 
 jobs:
   shellcheck:

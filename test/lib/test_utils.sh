@@ -53,6 +53,7 @@ log_info() { echo -e "${GREEN}[$LOG_PREFIX]${NC} $*"; }
 log_warn() { echo -e "${YELLOW}[$LOG_PREFIX]${NC} $*"; }
 log_error() { echo -e "${RED}[$LOG_PREFIX]${NC} $*"; }
 log_header() { echo -e "\n${BLUE}=== $* ===${NC}\n"; }
+log_subheader() { echo -e "\n${BLUE}--- $* ---\n"; }
 
 # =============================================================================
 # TEST RESULT TRACKING
@@ -60,18 +61,26 @@ log_header() { echo -e "\n${BLUE}=== $* ===${NC}\n"; }
 TESTS_RUN=0
 TESTS_PASSED=0
 TESTS_FAILED=0
+TESTS_SKIPPED=0
 
 record_test() {
     local name="$1"
     local result="$2"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if [[ "$result" == "PASS" ]]; then
-        TESTS_PASSED=$((TESTS_PASSED + 1))
-        echo -e "${GREEN}✓${NC} $name"
-    else
-        TESTS_FAILED=$((TESTS_FAILED + 1))
-        echo -e "${RED}✗${NC} $name"
-    fi
+    case "$result" in
+        PASS)
+            TESTS_PASSED=$((TESTS_PASSED + 1))
+            echo -e "${GREEN}✓${NC} $name"
+            ;;
+        SKIP)
+            TESTS_SKIPPED=$((TESTS_SKIPPED + 1))
+            echo -e "${YELLOW}⊘${NC} $name (skipped)"
+            ;;
+        *)
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+            echo -e "${RED}✗${NC} $name"
+            ;;
+    esac
 }
 
 print_test_summary() {
@@ -79,13 +88,89 @@ print_test_summary() {
     echo "Total tests: $TESTS_RUN"
     echo -e "Passed: ${GREEN}$TESTS_PASSED${NC}"
     echo -e "Failed: ${RED}$TESTS_FAILED${NC}"
+    [[ $TESTS_SKIPPED -gt 0 ]] && echo -e "Skipped: ${YELLOW}$TESTS_SKIPPED${NC}"
     echo ""
     
-    if [[ $TESTS_FAILED -eq 0 ]]; then
-        echo -e "${GREEN}All tests passed!${NC}"
+    if [[ $TESTS_FAILED -gt 0 ]]; then
+        echo -e "${RED}Some tests failed - see above for details.${NC}"
+        return 1
+    fi
+    echo -e "${GREEN}All tests passed!${NC}"
+    return 0
+}
+
+# All client install scripts (execution + consensus + MEV) - mirrors run_2.sh / select_clients.sh
+CLIENT_SCRIPTS=(
+    "install/execution/geth.sh"
+    "install/execution/besu.sh"
+    "install/execution/erigon.sh"
+    "install/execution/nethermind.sh"
+    "install/execution/nimbus_eth1.sh"
+    "install/execution/reth.sh"
+    "install/execution/ethrex.sh"
+    "install/consensus/prysm.sh"
+    "install/consensus/lighthouse.sh"
+    "install/consensus/lodestar.sh"
+    "install/consensus/teku.sh"
+    "install/consensus/nimbus.sh"
+    "install/consensus/grandine.sh"
+    "install/mev/install_mev_boost.sh"
+    "install/mev/install_commit_boost.sh"
+    "install/mev/install_ethgas.sh"
+)
+
+# Run script with output teed to log_file. Returns script exit code.
+# Usage: run_script_with_log log_file -- script arg1 arg2
+# Or: run_script_with_log log_file script arg1 arg2
+run_script_with_log() {
+    local log_file="$1"
+    shift
+    "$@" 2>&1 | tee "$log_file"
+    return "${PIPESTATUS[0]}"
+}
+
+# Dump last N lines of log file via log_error (for failure debugging)
+# In CI: default 150 lines for more context when multiple tests fail
+dump_log_tail() {
+    local log_file="$1"
+    local default_lines=50
+    [[ -n "${CI:-}" || -n "${CI_E2E:-}" || -n "${GITHUB_ACTIONS:-}" ]] && default_lines=150
+    local lines="${2:-$default_lines}"
+    local prefix="${3:-  }"
+    if [[ -f "$log_file" ]]; then
+        log_error "--- Last $lines lines of $log_file ---"
+        while IFS= read -r line; do log_error "${prefix}$line"; done < <(tail -n "$lines" "$log_file")
+        log_error "--- Full log: $log_file ---"
+    fi
+}
+
+# Returns 0 if output indicates path resolution failed (sourcing errors)
+# Must match sourcing failures only - ufw/iptables also emit "No such file or directory"
+output_has_path_errors() {
+    local out="${1:-}"
+    # Sourcing failure: .sh file not found (e.g. exports.sh, common_functions.sh)
+    echo "$out" | grep -qE "\.sh:.*No such file or directory" && return 0
+    # Sourcing failure: functions not loaded (common_functions wasn't sourced)
+    echo "$out" | grep -qE "get_script_directories: command not found|log_installation_start: command not found" && return 0
+    return 1
+}
+
+# Returns 0 if script loads (no path errors), 1 if path resolution failed
+script_loads_ok() {
+    local script="$1"
+    local output
+    output=$("$script" 2>&1) || true
+    ! output_has_path_errors "$output"
+}
+
+assert_script_loads() {
+    local script="$1"
+    local name="${2:-$(basename "$script")}"
+    if script_loads_ok "$script"; then
+        record_test "$name loads from any cwd" "PASS"
         return 0
     else
-        echo -e "${RED}Some tests failed.${NC}"
+        record_test "$name loads from any cwd" "FAIL"
         return 1
     fi
 }
@@ -139,6 +224,20 @@ assert_valid_syntax() {
     else
         record_test "$description has valid syntax" "FAIL"
         return 1
+    fi
+}
+
+# Verify client/component installed (for E2E verification)
+# Usage: verify_installed "Name" command args...
+# Example: verify_installed "Geth" command -v geth
+# Example: verify_installed "Besu" test -f "$HOME/besu/bin/besu"
+verify_installed() {
+    local name="$1"
+    shift
+    if "$@" 2>/dev/null; then
+        record_test "$name installed" "PASS"
+    else
+        record_test "$name installed" "FAIL"
     fi
 }
 

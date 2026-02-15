@@ -1,12 +1,15 @@
 #!/bin/bash
 
 # Reth Execution Client Installation Script
-# Language: Rust
+# Language: Rust (pre-built binaries from GitHub releases)
 # Reth is a Rust-based Ethereum client focused on performance and modularity
 # Usage: ./reth.sh
 
-source ../../exports.sh
-source ../../lib/common_functions.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+source "$PROJECT_ROOT/exports.sh"
+source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Get script directories
 get_script_directories
@@ -20,59 +23,51 @@ log_installation_start "Reth"
 # Check system requirements
 check_system_requirements 16 2000
 
-# Source Rust environment (installed centrally via install_dependencies.sh)
-[[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
-
-# Verify Rust is available
-if ! command -v cargo &> /dev/null; then
-    log_error "Rust/Cargo not found. Please run install_dependencies.sh first."
-    log_error "Or run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
-    exit 1
-fi
-
-log_info "Using Rust: $(rustc --version)"
-
 # Setup firewall rules for Reth
 setup_firewall_rules 30303 30304 42069 4000 4001
 
-# Clone and build Reth
-log_info "Cloning Reth repository..."
-if ! git clone https://github.com/paradigmxyz/reth.git; then
-    log_error "Failed to clone Reth repository"
-    exit 1
-fi
-
-cd reth || exit
-
-log_info "Building Reth..."
-if ! cargo build --release; then
-    log_error "Failed to build Reth"
-    exit 1
-fi
-
-# Install Reth globally
-log_info "Installing Reth..."
-if ! cargo install --path . --bin reth; then
-    log_error "Failed to install Reth"
-    exit 1
-fi
-
 # Create Reth directory
 RETH_DIR="$HOME/reth"
-rm -rf "${RETH_DIR:?}"/*
 ensure_directory "$RETH_DIR"
+
+cd "$RETH_DIR" || exit
+
+# Get latest release (pre-built binaries)
+log_info "Fetching latest Reth release..."
+LATEST_VERSION=$(get_latest_release "paradigmxyz/reth")
+if [[ -z "$LATEST_VERSION" ]]; then
+    log_error "Could not fetch latest Reth version from GitHub"
+    exit 1
+fi
+
+# Download URL: reth-v1.10.2-x86_64-unknown-linux-gnu.tar.gz
+VERSION_NUM="${LATEST_VERSION#v}"
+DOWNLOAD_URL="https://github.com/paradigmxyz/reth/releases/download/${LATEST_VERSION}/reth-v${VERSION_NUM}-x86_64-unknown-linux-gnu.tar.gz"
+ARCHIVE_FILE="reth-v${VERSION_NUM}-x86_64-unknown-linux-gnu.tar.gz"
+
+log_info "Downloading Reth ${LATEST_VERSION}..."
+if ! download_file "$DOWNLOAD_URL" "$ARCHIVE_FILE"; then
+    log_error "Failed to download Reth"
+    exit 1
+fi
+
+log_info "Extracting Reth..."
+tar -xzf "$ARCHIVE_FILE"
+rm -f "$ARCHIVE_FILE"
+
+# Tarball contains single 'reth' binary at root
+if [[ ! -f "$RETH_DIR/reth" ]]; then
+    log_error "Reth binary not found after extraction"
+    exit 1
+fi
+
+chmod +x "$RETH_DIR/reth"
 
 # Ensure JWT secret exists
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create systemd service
-EXEC_START="$HOME/.cargo/bin/reth node"
-
-# Verify Reth binary exists
-if [[ ! -f "$HOME/.cargo/bin/reth" ]]; then
-    log_error "Reth binary not found at $HOME/.cargo/bin/reth"
-    exit 1
-fi
+EXEC_START="$RETH_DIR/reth node"
 
 create_systemd_service "eth1" "Reth Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "6000" "10" "3000"
 

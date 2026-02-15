@@ -4,8 +4,11 @@
 # Commit-Boost is a modular Ethereum validator sidecar that standardizes
 # communication between validators and third-party protocols including MEV-Boost
 
-source ../../exports.sh
-source ../../lib/common_functions.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+source "$PROJECT_ROOT/exports.sh"
+source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Get script directories
 get_script_directories
@@ -28,11 +31,10 @@ cd "$COMMIT_BOOST_DIR" || exit
 log_info "Fetching latest Commit-Boost release..."
 LATEST_VERSION=$(get_latest_release "Commit-Boost/commit-boost-client")
 if [[ -z "$LATEST_VERSION" ]]; then
-    LATEST_VERSION="v0.9.2"  # Fallback version
-    log_warn "Could not fetch latest version, using fallback: $LATEST_VERSION"
-else
-    log_info "Latest version: $LATEST_VERSION"
+    log_error "Could not fetch latest Commit-Boost version from GitHub"
+    exit 1
 fi
+log_info "Latest version: $LATEST_VERSION"
 
 # Download Commit-Boost PBS binary
 log_info "Downloading Commit-Boost PBS binary..."

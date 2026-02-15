@@ -5,8 +5,11 @@
 # Nimbus-eth1 is a Nim-based Ethereum execution client designed for resource efficiency
 # Usage: ./nimbus_eth1.sh
 
-source ../../exports.sh
-source ../../lib/common_functions.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+source "$PROJECT_ROOT/exports.sh"
+source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Get script directories
 get_script_directories
@@ -25,18 +28,15 @@ ensure_directory "$NIMBUS_ETH1_DIR"
 
 cd "$NIMBUS_ETH1_DIR" || exit
 
-# Nimbus-eth1 uses nightly builds, so we'll use the latest nightly release
+# Nimbus-eth1 uses nightly builds - fetch latest from GitHub API
 log_info "Fetching latest Nimbus-eth1 nightly release..."
-# Get the latest nightly release asset URL
-NIGHTLY_URL=$(curl -s https://api.github.com/repos/status-im/nimbus-eth1/releases/latest | grep -o '"browser_download_url": "[^"]*linux-amd64-nightly-latest[^"]*"' | head -1 | cut -d'"' -f4)
-
+NIGHTLY_URL=$(get_github_release_asset_url "status-im/nimbus-eth1" "linux-amd64-nightly-latest")
 if [[ -z "$NIGHTLY_URL" ]]; then
-    # Fallback to a known nightly URL pattern
-    NIGHTLY_URL="https://github.com/status-im/nimbus-eth1/releases/download/nightly/nimbus-eth1-linux-amd64-nightly-latest.tar.gz"
-    log_warn "Could not fetch latest nightly URL, using fallback: $NIGHTLY_URL"
+    log_error "Could not fetch Nimbus-eth1 nightly release URL from GitHub"
+    exit 1
 fi
 
-ARCHIVE_FILE="nimbus-eth1-linux-amd64-nightly-latest.tar.gz"
+ARCHIVE_FILE="${NIGHTLY_URL##*/}"
 
 log_info "Downloading Nimbus-eth1 nightly build..."
 if download_file "$NIGHTLY_URL" "$ARCHIVE_FILE"; then
@@ -133,7 +133,7 @@ log-file = "$NIMBUS_ETH1_DATA_DIR/nimbus-eth1.log"
 EOF
 
 # Merge base configuration with custom settings
-merge_client_config "Nimbus-eth1" "main" "$SCRIPT_DIR/configs/nimbus/nimbus_eth1_base.toml" "./tmp/nimbus_eth1_custom.toml" "$NIMBUS_ETH1_DIR/nimbus-eth1.toml"
+merge_client_config "Nimbus-eth1" "main" "$PROJECT_ROOT/configs/nimbus/nimbus_eth1_base.toml" "./tmp/nimbus_eth1_custom.toml" "$NIMBUS_ETH1_DIR/nimbus-eth1.toml"
 
 # Clean up temporary files
 rm -rf ./tmp/

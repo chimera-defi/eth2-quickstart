@@ -3,8 +3,11 @@
 # NGINX Security Hardening Script
 # Applies security best practices to Nginx configuration
 
-source ../../exports.sh
-source ../../lib/common_functions.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+source "$PROJECT_ROOT/exports.sh"
+source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Check if running as root
 require_root
@@ -95,14 +98,16 @@ EOF
 
 sudo mv /tmp/nginx-limit-req.conf /etc/fail2ban/filter.d/nginx-limit-req.conf
 
-# Add additional security settings to nginx.conf
+# Add additional security settings to nginx.conf (avoid duplicate server_tokens)
 log_info "Enhancing nginx.conf with security settings..."
 if [[ -f /etc/nginx/nginx.conf ]]; then
-    # Add security settings if not already present
-    if ! grep -q "# Security headers" /etc/nginx/nginx.conf; then
-        sudo sed -i '/http {/a\
+    # Only add server_tokens if not already present anywhere in nginx config (avoids duplicate directive)
+    if ! grep -rq "server_tokens" /etc/nginx/ 2>/dev/null; then
+        if ! grep -q "# Security headers" /etc/nginx/nginx.conf; then
+            sudo sed -i '/http {/a\
     # Security headers\
     server_tokens off;' /etc/nginx/nginx.conf
+        fi
     fi
 fi
 
@@ -117,8 +122,9 @@ fi
 log_info "Validating Nginx configuration..."
 if ! sudo nginx -t; then
     log_error "Nginx configuration validation failed after hardening"
-    log_info "Restoring backup..."
-    sudo cp /etc/nginx/sites-enabled/default.backup.* /etc/nginx/sites-enabled/default
+    log_info "Restoring backups..."
+    sudo cp /etc/nginx/sites-enabled/default.backup.* /etc/nginx/sites-enabled/default 2>/dev/null || true
+    sudo cp /etc/nginx/nginx.conf.backup.* /etc/nginx/nginx.conf 2>/dev/null || true
     sudo systemctl restart nginx
     exit 1
 fi
@@ -126,8 +132,9 @@ fi
 log_info "Restarting nginx..."
 if ! sudo systemctl restart nginx; then
     log_error "Failed to restart nginx"
-    log_info "Restoring backup..."
-    sudo cp /etc/nginx/sites-enabled/default.backup.* /etc/nginx/sites-enabled/default
+    log_info "Restoring backups..."
+    sudo cp /etc/nginx/sites-enabled/default.backup.* /etc/nginx/sites-enabled/default 2>/dev/null || true
+    sudo cp /etc/nginx/nginx.conf.backup.* /etc/nginx/nginx.conf 2>/dev/null || true
     sudo systemctl restart nginx
     exit 1
 fi

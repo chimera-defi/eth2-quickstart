@@ -1,11 +1,15 @@
 #!/bin/bash
+set -Eeuo pipefail
 
 # Caddy Installation Script
 # Installs and configures Caddy web server with automatic HTTPS
 
-source ../../exports.sh
-source ../../lib/common_functions.sh
-source ./caddy_helpers.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+source "$PROJECT_ROOT/exports.sh"
+source "$PROJECT_ROOT/lib/common_functions.sh"
+source "$SCRIPT_DIR/caddy_helpers.sh"
 
 # Get script directories
 get_script_directories
@@ -43,10 +47,11 @@ setup_firewall_rules 80 443
 # Validate Caddy configuration
 validate_caddy_config "/etc/caddy/Caddyfile"
 
-# Run Caddy hardening
+# Run Caddy hardening (sudo -E preserves CI_E2E for minimal config in Docker)
 log_info "Running Caddy security hardening..."
-if ! ../security/caddy_harden.sh; then
-    log_warn "Caddy hardening script failed, but continuing..."
+if ! sudo -E "$SCRIPT_DIR/../security/caddy_harden.sh"; then
+    log_error "Caddy hardening failed"
+    exit 1
 fi
 
 # Verify Caddy is running

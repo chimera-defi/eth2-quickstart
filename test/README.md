@@ -15,7 +15,7 @@ docker build -t eth-node-test -f test/Dockerfile . && docker run --rm --privileg
 
 **run_1 E2E (actually runs run_1.sh - from repo root, requires Docker):**
 ```bash
-./test/run_run_1_e2e.sh
+./test/run_e2e.sh --phase=1
 ```
 Note: E2E requires Docker. Use `SKIP_BUILD=true` to reuse existing image (e.g. in CI).
 
@@ -72,11 +72,10 @@ test/
 ├── run_tests.sh            # Test runner for local (supports mocks)
 ├── ci_test_run_1.sh        # run_1 structure validation
 ├── ci_test_run_1_e2e.sh    # run_1 E2E (executes run_1.sh, verifies results)
-├── run_run_1_e2e.sh       # Wrapper: Docker + systemd + ci_test_run_1_e2e.sh
+├── run_e2e.sh             # Wrapper: Docker + systemd + ci_test_e2e.sh (--phase=1|2)
 ├── lib/
 │   ├── mock_functions.sh   # Mock implementations for safe local testing
-│   ├── test_utils.sh       # Shared test helpers (record_test, assert_*, etc.)
-│   └── shellcheck_config.sh
+│   └── test_utils.sh       # Shared test helpers (record_test, assert_*, shellcheck config)
 ├── results/                # Test output (gitignored)
 └── README.md
 ```
@@ -97,18 +96,19 @@ test/
 GitHub Actions (`.github/workflows/ci.yml`) runs:
 
 1. **Shellcheck** - Lints all shell scripts
-2. **Docker Lint Tests** - Runs `run_tests.sh --lint-only` in container
-3. **Docker Unit Tests** - Runs `docker_test.sh` with real system calls
-4. **run_1.sh Structure** - Validates syntax, functions, SSH safety (no execution)
-5. **run_1.sh E2E** - Actually runs run_1.sh and verifies results (systemd + openssh)
-6. **run_2.sh Test** - Tests Phase 2 (validates structure, skips long downloads)
+2. **Docker Integration** - Lint (`run_tests.sh --lint-only`) + unit tests (`docker_test.sh`) in one job
+3. **run_1.sh Structure** - Validates syntax, functions, SSH safety (no execution)
+4. **run_1.sh E2E** - Actually runs run_1.sh and verifies results (systemd + openssh)
+5. **run_2.sh Structure** - Validates run_2.sh structure, configs
+6. **run_2.sh E2E** - Runs run_2.sh with default clients, verifies installs
+7. **e2e-client-matrix** - 7 client combos (geth+prysm, besu+lighthouse, etc.)
 
 ### CI Test Scripts
 
 | Script | Purpose | User |
 |--------|---------|------|
 | `ci_test_run_1.sh` | Validates run_1.sh structure, syntax, functions, basic ops | root |
-| `ci_test_run_1_e2e.sh` | Executes run_1.sh and verifies results (run via run_run_1_e2e.sh) | root |
+| `ci_test_run_1_e2e.sh` | Executes run_1.sh and verifies results (run via run_e2e.sh --phase=1) | root |
 | `ci_test_run_2.sh` | Validates run_2.sh structure, syntax, configs, Geth install | testuser |
 
 **Note**: Full E2E testing with systemd services and snap packages requires special Docker setup. CI tests validate structure and components that work in standard Docker.
@@ -123,7 +123,7 @@ docker build -t eth-node-test -f test/Dockerfile .
 docker run --rm --privileged --user root eth-node-test /workspace/test/ci_test_run_1.sh
 
 # Test run_1.sh E2E (runs run_1.sh, verifies results)
-./test/run_run_1_e2e.sh
+./test/run_e2e.sh --phase=1
 
 # Test run_2.sh (as testuser)
 docker run --rm --privileged eth-node-test /workspace/test/ci_test_run_2.sh
@@ -152,4 +152,4 @@ The run_1 E2E test executes `apt upgrade` which can pull in packages (postfix, c
 - **ci_test_run_1_e2e.sh**: Re-applies debconf pre-seeds and apt.conf before running run_1.sh
 - **CI**: 5min timeout, `continue-on-error: true` so E2E failures don't block other tests
 
-If E2E hangs, run locally with `./test/run_run_1_e2e.sh` to debug.
+If E2E hangs, run locally with `./test/run_e2e.sh --phase=1` or `--phase=2` to debug.

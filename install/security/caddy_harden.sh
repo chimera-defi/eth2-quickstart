@@ -3,9 +3,12 @@
 # Caddy Security Hardening Script
 # Applies security best practices to Caddy configuration
 
-source ../../exports.sh
-source ../../lib/common_functions.sh
-source ../web/caddy_helpers.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+source "$PROJECT_ROOT/exports.sh"
+source "$PROJECT_ROOT/lib/common_functions.sh"
+source "$PROJECT_ROOT/install/web/caddy_helpers.sh"
 
 # Check if running as root
 require_root
@@ -22,20 +25,89 @@ else
     exit 1
 fi
 
-# Create hardened Caddyfile
+# Create hardened Caddyfile (CI_E2E: minimal config without plugins; production: full with rate_limit)
 log_info "Creating hardened Caddyfile..."
-cat > /tmp/caddy_hardened << 'EOF'
+if [[ "${CI_E2E:-}" == "true" ]]; then
+    # Minimal hardening for default Caddy (no rate_limit, request_body, metrics - require plugins/different Caddy build)
+    cat > /tmp/caddy_hardened << 'CIEOF'
+{
+    auto_https off
+    servers {
+        protocols h1 h2 h3
+        strict_sni_host
+        max_header_size 1048576
+    }
+    admin off
+}
+
+http://$SERVER_NAME {
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Frame-Options "DENY"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+    redir https://$SERVER_NAME{uri} permanent
+}
+
+https://$SERVER_NAME {
+    tls internal
+    handle /ws* {
+        reverse_proxy $LH:$NETHERMIND_WS_PORT {
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
+            header_up X-Forwarded-Proto {scheme}
+            header_up Connection "upgrade"
+            header_up Upgrade "websocket"
+        }
+    }
+    handle /rpc* {
+        reverse_proxy $LH:$NETHERMIND_HTTP_PORT {
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+    handle /admin* {
+        respond 403 "Access Denied"
+    }
+    handle /wp-admin* {
+        respond 403 "Access Denied"
+    }
+    handle /.env* {
+        respond 403 "Access Denied"
+    }
+    handle /config* {
+        respond 403 "Access Denied"
+    }
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Frame-Options "DENY"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+}
+
+:80 {
+    respond 403 "Access Denied"
+}
+:443 {
+    respond 403 "Access Denied"
+}
+CIEOF
+else
+    cat > /tmp/caddy_hardened << 'EOF'
 {
     # Global options with security hardening
     auto_https off
     servers {
         protocols h1 h2 h3
         strict_sni_host
-        read_timeout 30s
-        read_header_timeout 10s
-        write_timeout 30s
-        idle_timeout 60s
-        max_header_bytes 1048576
+        max_header_size 1048576
     }
     # Disable admin API for security
     admin off
@@ -106,19 +178,19 @@ https://$SERVER_NAME {
     
     # Block common attack patterns
     handle /admin* {
-        respond "Access Denied" 403
+        respond 403 "Access Denied"
     }
     
     handle /wp-admin* {
-        respond "Access Denied" 403
+        respond 403 "Access Denied"
     }
     
     handle /.env* {
-        respond "Access Denied" 403
+        respond 403 "Access Denied"
     }
     
     handle /config* {
-        respond "Access Denied" 403
+        respond 403 "Access Denied"
     }
     
     # Comprehensive security headers (consistent with Nginx)
@@ -183,16 +255,20 @@ https://$SERVER_NAME {
 
 # Block requests to unknown hosts
 :80 {
-    respond "Access Denied" 403
+    respond 403 "Access Denied"
 }
 
 :443 {
-    respond "Access Denied" 403
+    respond 403 "Access Denied"
 }
 EOF
+fi
 
-# Replace SERVER_NAME placeholder
+# Replace placeholders (heredocs use quoted delimiter so vars are literal)
 sed -i "s/\$SERVER_NAME/$SERVER_NAME/g" /tmp/caddy_hardened
+sed -i "s/\$LH/${LH:-127.0.0.1}/g" /tmp/caddy_hardened
+sed -i "s/\$NETHERMIND_WS_PORT/${NETHERMIND_WS_PORT:-8546}/g" /tmp/caddy_hardened
+sed -i "s/\$NETHERMIND_HTTP_PORT/${NETHERMIND_HTTP_PORT:-8545}/g" /tmp/caddy_hardened
 
 # Install hardened configuration
 log_info "Installing hardened Caddyfile..."

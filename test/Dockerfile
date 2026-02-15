@@ -5,8 +5,9 @@
 
 FROM ubuntu:22.04
 
-# Prevent interactive prompts during package installation
+# Prevent interactive prompts during package installation (batteries-included)
 ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_PRIORITY=critical
 
 # Set up working directory and copy project first (needed for debconf_preseed.sh)
 WORKDIR /workspace
@@ -25,12 +26,20 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# Install Caddy for config validation (validate_caddy_config.sh)
+RUN curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg && \
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list && \
+    apt-get update && apt-get install -y caddy && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Enable SSH for run_1 E2E (configure_ssh needs sshd running under systemd)
 RUN systemctl enable ssh 2>/dev/null || systemctl enable sshd 2>/dev/null || true
 
 # Create a non-root user for testing (mimics real deployment)
+# Preserve DEBIAN_* through sudo so apt/dpkg stay noninteractive (prevents tzdata Readline hang)
 RUN useradd -m -s /bin/bash testuser \
-    && echo "testuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+    && echo "testuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
+    && echo 'Defaults env_keep += "DEBIAN_FRONTEND DEBIAN_PRIORITY"' > /etc/sudoers.d/99-noninteractive \
+    && chmod 440 /etc/sudoers.d/99-noninteractive
 
 # Set ownership
 RUN chown -R testuser:testuser /workspace

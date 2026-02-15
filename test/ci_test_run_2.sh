@@ -1,27 +1,35 @@
 #!/bin/bash
-# CI Test Script for run_2.sh (Phase 2 - Client Installation)
-# Runs inside Docker container
-# Tests script structure and validates installation would work
-# Note: Full E2E with snap requires special Docker setup, so we test components
+# run_2.sh - Structure
+# run_2.sh = Phase 2 (client install, non-root). Structure validation only. E2E in run_e2e.sh --phase=2.
 
 set -Eeuo pipefail
 
-# Setup paths and source shared utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_PREFIX="CI"
 # shellcheck source=lib/test_utils.sh
 source "$SCRIPT_DIR/lib/test_utils.sh"
 
 log_info "╔════════════════════════════════════════════════════════════════╗"
-log_info "║  CI Test: run_2.sh (Phase 2 - Structure Validation)           ║"
+log_info "║  run_2.sh - Structure                                         ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 
-cd "$PROJECT_ROOT"
+# Verify we're running as non-root (required for run_2.sh)
+if is_root; then
+    log_error "This test must run as non-root (run_2.sh requires regular user)"
+    exit 1
+fi
+log_info "✓ Running as $(whoami)"
 
-# Source exports to get variables
+cd "$PROJECT_ROOT" || exit 1
+
+# Override LOGIN_UNAME for Docker testuser (exports.sh loads config/user_config.env)
+mkdir -p config
+echo "export LOGIN_UNAME='$(whoami)'" > config/user_config.env
+
 source_exports
 source_common_functions
 
+# Structure validation only - no actual installs. E2E (actual execution) is in ci_test_e2e.sh
 # Test 1: Verify required files exist
 log_info "Test 1: Verify required files..."
 for file in run_2.sh exports.sh lib/common_functions.sh; do
@@ -37,29 +45,26 @@ else
     exit 1
 fi
 
-# Test 3: Verify all install scripts exist and have valid syntax
-log_info "Test 3: Verify install scripts..."
-install_scripts=(
-    "install/utils/install_dependencies.sh"
-    "install/execution/geth.sh"
-    "install/consensus/prysm.sh"
-    "install/mev/install_mev_boost.sh"
-    "install/mev/install_commit_boost.sh"
-    "install/utils/select_clients.sh"
-)
-for script in "${install_scripts[@]}"; do
-    if [[ -f "$script" ]]; then
-        if bash -n "$script" 2>/dev/null; then
-            log_info "  ✓ $script (exists, syntax valid)"
+# Test 3: Verify ALL install scripts exist and have valid syntax
+# Covers: execution (7), consensus (6), MEV (3), web (caddy, nginx), utils
+log_info "Test 3: Verify all install scripts (syntax)..."
+syntax_fail=0
+for script in "${CLIENT_SCRIPTS[@]}" "install/utils/install_dependencies.sh" "install/utils/select_clients.sh" "install/web/install_caddy.sh" "install/web/install_nginx.sh"; do
+    if [[ -f "$PROJECT_ROOT/$script" ]]; then
+        if bash -n "$PROJECT_ROOT/$script" 2>/dev/null; then
+            log_info "  ✓ $script"
         else
             log_error "  ✗ $script has syntax errors"
-            exit 1
+            syntax_fail=$((syntax_fail + 1))
         fi
     else
         log_error "  ✗ Missing: $script"
-        exit 1
+        syntax_fail=$((syntax_fail + 1))
     fi
 done
+if [[ $syntax_fail -gt 0 ]]; then
+    exit 1
+fi
 
 # Test 4: Verify common functions can be sourced
 log_info "Test 4: Verify functions load correctly..."
@@ -113,39 +118,28 @@ else
     exit 1
 fi
 
-# Test 7: Verify config files exist
-log_info "Test 7: Verify config files..."
+# Test 7: Verify config files exist for ALL clients
+log_info "Test 7: Verify client config files..."
 config_files=(
+    "configs/besu/besu_base.toml"
+    "configs/ethrex/ethrex_base.toml"
+    "configs/grandine/grandine_base.toml"
+    "configs/lodestar/lodestar_beacon_base.json"
+    "configs/lodestar/lodestar_validator_base.json"
+    "configs/nethermind/nethermind_base.cfg"
+    "configs/nimbus/nimbus_base.toml"
+    "configs/nimbus/nimbus_eth1_base.toml"
     "configs/prysm/prysm_beacon_conf.yaml"
     "configs/prysm/prysm_validator_conf.yaml"
     "configs/teku/teku_beacon_base.yaml"
-    "configs/lodestar/lodestar_beacon_base.json"
-    "configs/besu/besu_base.toml"
+    "configs/teku/teku_validator_base.yaml"
 )
 for config in "${config_files[@]}"; do
-    if [[ -f "$config" ]]; then
-        log_info "  ✓ $config"
-    else
-        log_error "  ✗ Missing: $config"
-        exit 1
-    fi
+    assert_file_exists "$PROJECT_ROOT/$config" "$config" || exit 1
 done
 
-# Test 8: Test Geth installation (uses PPA, not snap)
-log_info "Test 8: Install Geth via PPA..."
-if "$PROJECT_ROOT/install/execution/geth.sh" 2>&1; then
-    if command -v geth &>/dev/null; then
-        geth_version=$(geth version 2>/dev/null | head -1 || echo "unknown")
-        log_info "  ✓ Geth installed: $geth_version"
-    else
-        log_warn "  ⚠ Geth binary not in PATH (may need shell reload)"
-    fi
-else
-    log_warn "  ⚠ Geth installation had issues (may be OK in CI)"
-fi
-
 log_info "╔════════════════════════════════════════════════════════════════╗"
-log_info "║  ✓ run_2.sh CI Test PASSED                                    ║"
-log_info "║  Validated: Structure, syntax, functions, configs, Geth       ║"
+log_info "║  run_2.sh - Structure PASSED                                  ║"
+log_info "║  Full E2E: ./test/run_e2e.sh --phase=2                        ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 exit 0

@@ -5,8 +5,11 @@
 # Nethermind is a .NET Ethereum client designed for enterprise use
 # Usage: ./nethermind.sh
 
-source ../../exports.sh
-source ../../lib/common_functions.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+source "$PROJECT_ROOT/exports.sh"
+source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Get script directories
 get_script_directories
@@ -26,19 +29,17 @@ ensure_directory "$NETHERMIND_DIR"
 
 cd "$NETHERMIND_DIR" || exit
 
-# Get latest release version
+# Get download URL from GitHub API (asset name includes commit hash, e.g. nethermind-1.36.0-31cb81b7-linux-x64.zip)
 log_info "Fetching latest Nethermind release..."
-LATEST_VERSION=$(get_latest_release "NethermindEth/nethermind")
-if [[ -z "$LATEST_VERSION" ]]; then
-    LATEST_VERSION="1.25.4"  # Fallback version
-    log_warn "Could not fetch latest version, using fallback: $LATEST_VERSION"
+DOWNLOAD_URL=$(get_github_release_asset_url "NethermindEth/nethermind" "nethermind-.*-linux-x64\.zip")
+if [[ -z "$DOWNLOAD_URL" ]]; then
+    log_error "Could not fetch Nethermind release asset URL"
+    exit 1
 fi
 
-# Download Nethermind
-DOWNLOAD_URL="https://github.com/NethermindEth/nethermind/releases/download/${LATEST_VERSION}/nethermind-${LATEST_VERSION}-linux-x64.zip"
-ARCHIVE_FILE="nethermind-${LATEST_VERSION}-linux-x64.zip"
+ARCHIVE_FILE="${DOWNLOAD_URL##*/}"
 
-log_info "Downloading Nethermind ${LATEST_VERSION}..."
+log_info "Downloading Nethermind..."
 if download_file "$DOWNLOAD_URL" "$ARCHIVE_FILE"; then
     extract_archive "$ARCHIVE_FILE" "$NETHERMIND_DIR" 0
     rm -f "$ARCHIVE_FILE"
@@ -129,7 +130,7 @@ cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
 EOF
 
 # Merge base configuration with custom settings
-merge_client_config "Nethermind" "main" "$SCRIPT_DIR/configs/nethermind/nethermind_base.cfg" "$NETHERMIND_DIR/nethermind_custom.cfg" "$NETHERMIND_DIR/nethermind.cfg"
+merge_client_config "Nethermind" "main" "$PROJECT_ROOT/configs/nethermind/nethermind_base.cfg" "$NETHERMIND_DIR/nethermind_custom.cfg" "$NETHERMIND_DIR/nethermind.cfg"
 
 # Clean up temporary files
 rm -rf ./tmp/

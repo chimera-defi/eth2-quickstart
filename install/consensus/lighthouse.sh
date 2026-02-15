@@ -5,8 +5,11 @@
 # Lighthouse is a Rust-based Ethereum consensus client developed by Sigma Prime
 # Usage: ./lighthouse.sh
 
-source ../../exports.sh
-source ../../lib/common_functions.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+source "$PROJECT_ROOT/exports.sh"
+source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Get script directories
 get_script_directories
@@ -30,32 +33,50 @@ ensure_directory "$LIGHTHOUSE_DIR"
 
 cd "$LIGHTHOUSE_DIR" || exit
 
-# Download Lighthouse
+# Download Lighthouse (use latest release - asset name includes version)
+log_info "Fetching latest Lighthouse release..."
+LIGHTHOUSE_URL=$(get_github_release_asset_url "sigp/lighthouse" "lighthouse-.*-x86_64-unknown-linux-gnu\.tar\.gz")
+if [[ -z "$LIGHTHOUSE_URL" ]]; then
+    log_error "Could not fetch Lighthouse release asset URL"
+    exit 1
+fi
+
+ARCHIVE_FILE="${LIGHTHOUSE_URL##*/}"
 log_info "Downloading Lighthouse..."
-if ! download_file "https://github.com/sigp/lighthouse/releases/download/v4.5.0/lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz" "lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz"; then
+if ! download_file "$LIGHTHOUSE_URL" "$ARCHIVE_FILE"; then
     log_error "Failed to download Lighthouse"
     exit 1
 fi
 
-tar -xvf lighthouse-v4.5.0-x86_64-unknown-linux-gnu.tar.gz
-
-# Generate JWT secret
-log_info "Generating JWT secret..."
-if ! openssl rand -hex 32 > "$HOME/secrets/jwt.hex"; then
-    log_error "Failed to generate JWT secret"
+tar -xvf "$ARCHIVE_FILE"
+# Binary may be in subdir (e.g. lighthouse-v8.1.0-x86_64-unknown-linux-gnu/) or at root
+if [[ -f "$LIGHTHOUSE_DIR/lighthouse" ]]; then
+    LIGHTHOUSE_BIN="$LIGHTHOUSE_DIR/lighthouse"
+else
+    LIGHTHOUSE_SUBDIR=$(find "$LIGHTHOUSE_DIR" -maxdepth 1 -type d -name "lighthouse-*" | head -1)
+    if [[ -n "$LIGHTHOUSE_SUBDIR" && -f "$LIGHTHOUSE_SUBDIR/lighthouse" ]]; then
+        mv "$LIGHTHOUSE_SUBDIR"/lighthouse "$LIGHTHOUSE_DIR/"
+        rmdir "$LIGHTHOUSE_SUBDIR" 2>/dev/null || true
+    fi
+    LIGHTHOUSE_BIN="$LIGHTHOUSE_DIR/lighthouse"
+fi
+if [[ ! -f "$LIGHTHOUSE_BIN" ]]; then
+    log_error "Lighthouse binary not found after extraction"
     exit 1
 fi
+chmod +x "$LIGHTHOUSE_BIN"
+rm -f "$ARCHIVE_FILE"
 
-# Ensure JWT secret exists
+# Ensure JWT secret exists (creates dir and file if missing)
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create systemd service for beacon node
-BEACON_EXEC_START="RUST_LOG=info $LIGHTHOUSE_DIR/lighthouse bn --checkpoint-sync-url $LIGHTHOUSE_CHECKPOINT_URL --execution-endpoint http://$LH:$ENGINE_PORT --execution-jwt $HOME/secrets/jwt.hex --disable-deposit-contract-sync"
+BEACON_EXEC_START="RUST_LOG=info $LIGHTHOUSE_BIN bn --checkpoint-sync-url $LIGHTHOUSE_CHECKPOINT_URL --execution-endpoint http://$LH:$ENGINE_PORT --execution-jwt $HOME/secrets/jwt.hex --disable-deposit-contract-sync"
 
 create_systemd_service "cl" "Lighthouse Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
 # Create systemd service for validator
-VALIDATOR_EXEC_START="RUST_LOG=info $LIGHTHOUSE_DIR/lighthouse vc --beacon-nodes http://$CONSENSUS_HOST:5052"
+VALIDATOR_EXEC_START="RUST_LOG=info $LIGHTHOUSE_BIN vc --beacon-nodes http://$CONSENSUS_HOST:5052"
 
 create_systemd_service "validator" "Lighthouse Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target"
 

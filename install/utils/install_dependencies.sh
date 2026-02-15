@@ -134,13 +134,13 @@ install_production() {
         install_packages "ethereum"
     fi
     
-    # Install Node.js (skip in Docker - often not needed for tests)
-    if ! is_docker; then
-        log_info "Installing Node.js..."
-        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    # Install Node.js LTS (for Lodestar). In Docker, only when CI_E2E (full client testing)
+    if ! is_docker || [[ "${CI_E2E:-}" == "true" ]]; then
+        log_info "Installing Node.js LTS..."
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
         install_packages "nodejs"
     fi
-    
+
     # Snap installs: Go and certbot (skip in Docker - snap doesn't work)
     if ! is_docker && command -v snap &>/dev/null; then
         log_info "Installing Go via snap..."
@@ -154,8 +154,8 @@ install_production() {
         log_warn "Skipping snap installs (Docker or snap unavailable)"
     fi
 
-    # Install Rust (skip in Docker)
-    if ! is_docker; then
+    # Install Rust (for ETHGas build). In Docker, only when CI_E2E (full client testing)
+    if ! is_docker || [[ "${CI_E2E:-}" == "true" ]]; then
         log_info "Installing Rust..."
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
         [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"

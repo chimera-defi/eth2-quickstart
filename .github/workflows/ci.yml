@@ -4,60 +4,173 @@ on:
   push:
     branches: [ main, master, develop ]
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, 'cursor/**' ]
   workflow_dispatch:  # Allow manual trigger for testing
 
+# One run per commit: push only on main/master/develop; PR triggers for all branches
+# (Avoids 2 runs when pushing to a PR branch - push+PR both fired before)
+concurrency:
+  group: ci-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+# All jobs run in parallel. Docker layer cache (gha) speeds rebuilds.
+# Job-level timeouts prevent runaway jobs (e.g. 10hr hangs).
 jobs:
   docker-integration:
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 20
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Build test Docker image
-      run: |
-        docker build -t eth-node-test -f test/Dockerfile .
-        
-    - name: Run lint tests in Docker
-      run: |
-        docker run --rm eth-node-test /workspace/test/run_tests.sh --lint-only
-        
-    - name: Run unit tests in Docker
-      run: |
-        docker run --rm --privileged \
-          -e USE_MOCKS=false \
-          eth-node-test /workspace/test/docker_test.sh
-          
-    - name: Test run_1.sh (Phase 1 - Structure Validation)
-      run: |
-        # Structural validation - syntax, functions, SSH safety, etc.
-        docker run --rm --privileged \
-          --user root \
-          -e DEBIAN_FRONTEND=noninteractive \
-          eth-node-test /workspace/test/ci_test_run_1.sh
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: test/Dockerfile
+          load: true
+          tags: eth-node-test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Lint and unit tests
+        run: |
+          echo "::group::Lint"
+          docker run --rm eth-node-test /workspace/test/run_tests.sh --lint-only
+          echo "::endgroup::"
+          echo "::group::Unit tests (Caddy validate, downloads, functions)"
+          docker run --rm --privileged -e USE_MOCKS=false -e CI=true eth-node-test /workspace/test/docker_test.sh
+          echo "::endgroup::"
 
-    - name: Test run_1.sh E2E (Phase 1 - Actual Execution)
-      timeout-minutes: 5
-      run: |
-        # Actually runs run_1.sh and verifies results (systemd + openssh required)
-        # Uses tmpfs/cgroupns for systemd on GitHub Actions (cgroup v2)
-        SKIP_BUILD=true ./test/run_run_1_e2e.sh
+  run-1-structure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: test/Dockerfile
+          load: true
+          tags: eth-node-test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Run run_1 structure
+        run: |
+          docker run --rm --privileged --user root \
+            -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical -e CI=true \
+            eth-node-test /workspace/test/ci_test_run_1.sh
 
-    - name: Test run_2.sh (Phase 2 - Client Installation)
-      run: |
-        # Run run_2.sh inside Docker with default selections
-        # Inputs: 1=MEV-Boost, 2=Default clients (Geth+Prysm)
-        # Full E2E test takes ~5-7 minutes
-        docker run --rm --privileged \
-          -e DEBIAN_FRONTEND=noninteractive \
-          eth-node-test /workspace/test/ci_test_run_2.sh
+  run-1-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: test/Dockerfile
+          load: true
+          tags: eth-node-test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Run run_1 E2E
+        env:
+          CI: true
+        run: SKIP_BUILD=true ./test/run_e2e.sh --phase=1
+
+  run-2-structure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: test/Dockerfile
+          load: true
+          tags: eth-node-test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Run run_2 structure
+        run: |
+          docker run --rm --privileged --user testuser \
+            -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical -e CI=true \
+            eth-node-test /workspace/test/ci_test_run_2.sh
+
+  run-2-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: test/Dockerfile
+          load: true
+          tags: eth-node-test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Run run_2 E2E (default clients)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI: true
+        run: SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" ./test/run_e2e.sh --phase=2
+
+  # Test all execution + consensus clients install and configure (job-level matrix)
+  e2e-client-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - exec: geth
+            cons: prysm
+            mev: mev-boost
+          - exec: besu
+            cons: lighthouse
+            mev: commit-boost
+          - exec: erigon
+            cons: teku
+            mev: none
+          - exec: nethermind
+            cons: nimbus
+            mev: mev-boost
+          - exec: nimbus_eth1
+            cons: grandine
+            mev: none
+          - exec: reth
+            cons: lodestar
+            mev: mev-boost
+          - exec: ethrex
+            cons: prysm
+            mev: mev-boost
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: test/Dockerfile
+          load: true
+          tags: eth-node-test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: "E2E ${{ matrix.exec }}+${{ matrix.cons }}+${{ matrix.mev }}"
+        timeout-minutes: 25
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI: true
+        run: |
+          SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" \
+          E2E_EXECUTION=${{ matrix.exec }} E2E_CONSENSUS=${{ matrix.cons }} E2E_MEV=${{ matrix.mev }} \
+          ./test/run_e2e.sh --phase=2
 
   shellcheck:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     
     steps:
     - name: Checkout code

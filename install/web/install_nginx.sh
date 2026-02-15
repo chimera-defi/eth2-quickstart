@@ -4,9 +4,12 @@
 # NGINX Installation Script
 # Installs and configures NGINX web server
 
-source ../../exports.sh
-source ../../lib/common_functions.sh
-source ./nginx_helpers.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+source "$PROJECT_ROOT/exports.sh"
+source "$PROJECT_ROOT/lib/common_functions.sh"
+source "$SCRIPT_DIR/nginx_helpers.sh"
 
 # Get script directories
 get_script_directories
@@ -54,7 +57,7 @@ validate_nginx_config
 
 # Run Nginx hardening
 log_info "Running Nginx security hardening..."
-if ! ../security/nginx_harden.sh; then
+if ! sudo "$SCRIPT_DIR/../security/nginx_harden.sh"; then
     log_warn "Nginx hardening script failed, but continuing..."
 fi
 

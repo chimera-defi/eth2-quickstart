@@ -5,8 +5,11 @@
 # Teku is a Java-based Ethereum consensus client developed by ConsenSys
 # Usage: ./teku.sh
 
-source ../../exports.sh
-source ../../lib/common_functions.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+source "$PROJECT_ROOT/exports.sh"
+source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Get script directories
 get_script_directories
@@ -31,8 +34,8 @@ cd "$TEKU_DIR" || exit
 log_info "Fetching latest Teku release..."
 LATEST_VERSION=$(get_latest_release "ConsenSys/teku")
 if [[ -z "$LATEST_VERSION" ]]; then
-    LATEST_VERSION="23.12.0"  # Fallback version
-    log_warn "Could not fetch latest version, using fallback: $LATEST_VERSION"
+    log_error "Could not fetch latest Teku version from GitHub"
+    exit 1
 fi
 
 # Download Teku
@@ -121,8 +124,8 @@ metrics-port: 8009
 EOF
 
 # Merge base configurations with custom settings
-merge_client_config "Teku" "beacon" "$SCRIPT_DIR/configs/teku/teku_beacon_base.yaml" "./tmp/teku_beacon_custom.yaml" "$TEKU_DIR/beacon.yaml"
-merge_client_config "Teku" "validator" "$SCRIPT_DIR/configs/teku/teku_validator_base.yaml" "./tmp/teku_validator_custom.yaml" "$TEKU_DIR/validator.yaml"
+merge_client_config "Teku" "beacon" "$PROJECT_ROOT/configs/teku/teku_beacon_base.yaml" "./tmp/teku_beacon_custom.yaml" "$TEKU_DIR/beacon.yaml"
+merge_client_config "Teku" "validator" "$PROJECT_ROOT/configs/teku/teku_validator_base.yaml" "./tmp/teku_validator_custom.yaml" "$TEKU_DIR/validator.yaml"
 
 # Clean up temporary files
 rm -rf ./tmp/

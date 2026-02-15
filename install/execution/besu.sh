@@ -5,8 +5,11 @@
 # Besu is a Java-based Ethereum client designed for both public and private networks
 # Usage: ./besu.sh
 
-source ../../exports.sh
-source ../../lib/common_functions.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+source "$PROJECT_ROOT/exports.sh"
+source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Get script directories
 get_script_directories
@@ -31,8 +34,8 @@ cd "$BESU_DIR" || exit
 log_info "Fetching latest Besu release..."
 LATEST_VERSION=$(get_latest_release "hyperledger/besu")
 if [[ -z "$LATEST_VERSION" ]]; then
-    LATEST_VERSION="23.10.3"  # Fallback version
-    log_warn "Could not fetch latest version, using fallback: $LATEST_VERSION"
+    log_error "Could not fetch latest Besu version from GitHub"
+    exit 1
 fi
 
 # Download Besu
@@ -91,7 +94,7 @@ miner-extra-data="$GRAFITTI"
 EOF
 
 # Merge base configuration with custom settings
-merge_client_config "Besu" "main" "$SCRIPT_DIR/configs/besu/besu_base.toml" "./tmp/besu_custom.toml" "$BESU_DIR/besu.toml"
+merge_client_config "Besu" "main" "$PROJECT_ROOT/configs/besu/besu_base.toml" "./tmp/besu_custom.toml" "$BESU_DIR/besu.toml"
 
 # Clean up temporary files
 rm -rf ./tmp/

@@ -1,12 +1,15 @@
 #!/bin/bash
 
 # Grandine Consensus Client Installation Script
-# Language: Rust
+# Language: Rust (pre-built binaries from GitHub releases)
 # Grandine is a Rust-based Ethereum consensus client focused on performance
 # Usage: ./grandine.sh
 
-source ../../exports.sh
-source ../../lib/common_functions.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
+source "$PROJECT_ROOT/exports.sh"
+source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Get script directories
 get_script_directories
@@ -18,18 +21,6 @@ log_installation_start "Grandine"
 # Check system requirements
 check_system_requirements 16 1000
 
-# Source Rust environment (installed centrally via install_dependencies.sh)
-[[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
-
-# Verify Rust is available
-if ! command -v cargo &> /dev/null; then
-    log_error "Rust/Cargo not found. Please run install_dependencies.sh first."
-    log_error "Or run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
-    exit 1
-fi
-
-log_info "Using Rust: $(rustc --version)"
-
 # Setup firewall rules for Grandine
 setup_firewall_rules 9000 5052
 
@@ -39,23 +30,26 @@ ensure_directory "$GRANDINE_DIR"
 
 cd "$GRANDINE_DIR" || exit
 
-# Clone Grandine repository (as it may not have regular releases yet)
-log_info "Cloning Grandine repository..."
-if [[ -d ".git" ]]; then
-    log_info "Updating existing Grandine repository..."
-    git fetch origin
-    git checkout main
-    git pull origin main
-else
-    git clone https://github.com/grandinetech/grandine.git .
-fi
-
-# Build Grandine
-log_info "Building Grandine... This may take some time."
-if ! cargo build --release --bin grandine; then
-    log_error "Failed to build Grandine. Please check your Rust installation and try again."
+# Get latest release (pre-built binary, no tarball - raw binary)
+log_info "Fetching latest Grandine release..."
+LATEST_VERSION=$(get_latest_release "grandinetech/grandine")
+if [[ -z "$LATEST_VERSION" ]]; then
+    log_error "Could not fetch latest Grandine version from GitHub"
     exit 1
 fi
+
+# Grandine releases: grandine-2.0.1-amd64 (raw binary, no extension)
+DOWNLOAD_URL="https://github.com/grandinetech/grandine/releases/download/${LATEST_VERSION}/grandine-${LATEST_VERSION}-amd64"
+BINARY_FILE="grandine-${LATEST_VERSION}-amd64"
+
+log_info "Downloading Grandine ${LATEST_VERSION}..."
+if ! download_file "$DOWNLOAD_URL" "$BINARY_FILE"; then
+    log_error "Failed to download Grandine"
+    exit 1
+fi
+
+mv "$BINARY_FILE" "$GRANDINE_DIR/grandine"
+chmod +x "$GRANDINE_DIR/grandine"
 
 # Ensure JWT secret exists
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
@@ -99,14 +93,14 @@ graffiti = "$GRAFITTI"
 EOF
 
 # Merge base configuration with custom settings
-merge_client_config "Grandine" "main" "$SCRIPT_DIR/configs/grandine/grandine_base.toml" "./tmp/grandine_custom.toml" "$GRANDINE_DIR/grandine.toml"
+merge_client_config "Grandine" "main" "$PROJECT_ROOT/configs/grandine/grandine_base.toml" "./tmp/grandine_custom.toml" "$GRANDINE_DIR/grandine.toml"
 
 # Clean up temporary files
 rm -rf ./tmp/
 
 
 # Create systemd service for beacon node
-BEACON_EXEC_START="$GRANDINE_DIR/target/release/grandine --config $GRANDINE_DIR/grandine.toml"
+BEACON_EXEC_START="$GRANDINE_DIR/grandine --config $GRANDINE_DIR/grandine.toml"
 
 create_systemd_service "cl" "Grandine Ethereum Consensus Client" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
