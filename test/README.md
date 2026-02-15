@@ -75,8 +75,7 @@ test/
 ├── run_e2e.sh             # Wrapper: Docker + systemd + ci_test_e2e.sh (--phase=1|2)
 ├── lib/
 │   ├── mock_functions.sh   # Mock implementations for safe local testing
-│   ├── test_utils.sh       # Shared test helpers (record_test, assert_*, etc.)
-│   └── shellcheck_config.sh
+│   └── test_utils.sh       # Shared test helpers (record_test, assert_*, shellcheck config)
 ├── results/                # Test output (gitignored)
 └── README.md
 ```
