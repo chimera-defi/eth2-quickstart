@@ -124,8 +124,42 @@ export const DOCUMENTATION_LINKS = [
   { title: 'Security', description: 'Security documentation', path: 'docs/SECURITY_GUIDE.md' },
 ]
 
-/** Installation steps - matches README and repo (run_1.sh, run_2.sh) */
-export const INSTALLATION_STEPS = [
+/** One-liner flow - curl runs install.sh, wizard generates phase scripts */
+export const INSTALLATION_STEPS_ONELINER = [
+  {
+    step: 1,
+    title: 'Run the one-line installer',
+    description: 'Clones the repo, runs the configuration wizard, generates phase scripts. Path shown when complete.',
+    code: 'curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash',
+  },
+  {
+    step: 2,
+    title: 'Run Phase 1 (as root)',
+    description: 'Use the path from step 1. Hardens firewall, SSH, creates non-root user.',
+    code: 'cd ~/.eth2-quickstart && ./install_phase1.sh',
+  },
+  {
+    step: 3,
+    title: 'Reboot',
+    description: 'Reboot and SSH back in as the new user.',
+    code: 'sudo reboot',
+  },
+  {
+    step: 4,
+    title: 'Run Phase 2 (as new user)',
+    description: 'Use the path from step 1 (default: /root/.eth2-quickstart when run as root).',
+    code: 'cd /root/.eth2-quickstart && ./install_phase2.sh',
+  },
+  {
+    step: 5,
+    title: 'Start Services',
+    description: 'Start and verify all services. Omit mev if you skipped MEV installation.',
+    code: 'sudo systemctl start eth1 cl validator mev',
+  },
+]
+
+/** Manual flow - matches README (run_1.sh, run_2.sh) */
+export const INSTALLATION_STEPS_MANUAL = [
   {
     step: 1,
     title: 'Clone Repository',

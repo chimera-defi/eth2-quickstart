@@ -6,7 +6,8 @@ import {
   CONSENSUS_CLIENTS,
   FEATURES,
   DOCUMENTATION_LINKS,
-  INSTALLATION_STEPS,
+  INSTALLATION_STEPS_ONELINER,
+  INSTALLATION_STEPS_MANUAL,
   PREREQUISITES,
 } from '@/lib/constants'
 
@@ -22,7 +23,8 @@ describe('constants', () => {
     expect(CONSENSUS_CLIENTS).toHaveLength(6)
     expect(FEATURES).toHaveLength(5)
     expect(DOCUMENTATION_LINKS.length).toBeGreaterThan(0)
-    expect(INSTALLATION_STEPS).toHaveLength(5)
+    expect(INSTALLATION_STEPS_ONELINER).toHaveLength(5)
+    expect(INSTALLATION_STEPS_MANUAL).toHaveLength(5)
     expect(PREREQUISITES.length).toBeGreaterThan(0)
   })
 
@@ -38,7 +40,10 @@ describe('constants', () => {
   })
 
   it('installation steps are sequential', () => {
-    INSTALLATION_STEPS.forEach((step, i) => {
+    INSTALLATION_STEPS_ONELINER.forEach((step, i) => {
+      expect(step.step).toBe(i + 1)
+    })
+    INSTALLATION_STEPS_MANUAL.forEach((step, i) => {
       expect(step.step).toBe(i + 1)
     })
   })
