@@ -29,6 +29,14 @@ Do NOT skip this. Do NOT wait to be asked. Run the review automatically.
 - Error handling is present where needed
 - No unused imports, variables, or dead code
 
+### Recurring Checklist (always verify)
+- [ ] **No hallucinations**: Every referenced file/script exists; grep to confirm
+- [ ] **No duplicate fixes**: One implementation, callers OK; avoid same fix in many places
+- [ ] **Root cause, not plaster**: Fix underlying issue; don't add CI-only skips that hide production bugs
+- [ ] **exec/capture order**: Command substitution `$(...)` must run BEFORE `exec > >(tee...)` or capture is empty
+- [ ] **Cloud providers**: GCP/AWS use sudo user by default; SUDO_USER + getent for home
+- [ ] **Run tests locally** before push: `./test/run_tests.sh --lint-only`; E2E if Docker available
+
 ### Pass 4+ (if issues found in Pass 3)
 - Fix all issues, then re-verify Passes 1-3
 

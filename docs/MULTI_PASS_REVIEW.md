@@ -49,6 +49,15 @@
 - Files with net deletions: docs/validate_security_safe.sh (-43), run_1.sh (-32), install_dependencies.sh restructure
 - **Note:** run_1.sh changes came from prior refactoring (consolidated_security, ci_test_run_1 expects no setup_intrusion_detection). Reverting run_1 to master would break ci_test_run_1.
 
+## Recurring Verification (user-requested)
+
+- No hallucinations: verify referenced files exist
+- No duplicate fixes: one implementation
+- Root cause fixes, not plaster/skips
+- exec/capture order: `$(...)` before `exec > >(tee...)`
+- GCP/sudo: SUDO_USER + getent for home
+- Run tests locally before push
+
 ## Co-Author Attribution
 
 When AI-assisted changes are committed, include co-author in commit body:
