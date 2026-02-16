@@ -188,6 +188,15 @@ else
     exit 1
 fi
 
+# Test 14b: Regression - SUDO_USER home uses getent (supports non-/home paths)
+log_info "Test 14b: Verify getent for SUDO_USER home (non-/home support)..."
+if grep -q "getent passwd.*SUDO_USER" "$PROJECT_ROOT/lib/common_functions.sh"; then
+    log_info "  collect/ensure_root use getent for SUDO_USER home"
+else
+    log_error "  common_functions must use getent for SUDO_USER home (supports /var/lib/jenkins etc)"
+    exit 1
+fi
+
 # Test 15: Verify run_1.sh creates user BEFORE configuring SSH
 log_info "Test 15: Verify user creation order in run_1.sh..."
 user_setup_line=$(grep -n "setup_secure_user" "$PROJECT_ROOT/run_1.sh" | head -1 | cut -d: -f1)

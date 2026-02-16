@@ -609,7 +609,10 @@ ensure_root_has_authorized_keys() {
         return 0
     fi
     if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
-        local src="/home/$SUDO_USER/.ssh/authorized_keys"
+        local sudo_home
+        sudo_home=$(getent passwd "$SUDO_USER" 2>/dev/null | cut -d: -f6 || true)
+        [[ -z "$sudo_home" ]] && sudo_home="/home/$SUDO_USER"
+        local src="$sudo_home/.ssh/authorized_keys"
         if [[ -f "$src" ]] && [[ -s "$src" ]]; then
             mkdir -p /root/.ssh
             cp "$src" /root/.ssh/authorized_keys
@@ -653,8 +656,12 @@ collect_and_backup_authorized_keys() {
     _collect_keys_from /root/.ssh/authorized_keys "root" "$merged_file" key_count sources
 
     # Collect from SUDO_USER (original user who ran sudo) if different from root
+    # Use getent for home - supports users with non-/home paths (e.g. /var/lib/jenkins)
     if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
-        _collect_keys_from "/home/$SUDO_USER/.ssh/authorized_keys" "$SUDO_USER" "$merged_file" key_count sources
+        local sudo_home
+        sudo_home=$(getent passwd "$SUDO_USER" 2>/dev/null | cut -d: -f6 || true)
+        [[ -z "$sudo_home" ]] && sudo_home="/home/$SUDO_USER"
+        _collect_keys_from "$sudo_home/.ssh/authorized_keys" "$SUDO_USER" "$merged_file" key_count sources
     fi
 
     # Collect from current user's home (whoami) - catches user who invoked without sudo
