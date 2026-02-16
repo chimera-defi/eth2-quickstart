@@ -11,15 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/exports.sh"
 source "$SCRIPT_DIR/lib/common_functions.sh"
 
-# E2E/CI: ensure authorized_keys exist before collect (Docker/container only)
-# Some runtimes lack /.dockerenv; use CI as fallback when keys missing
-if [[ ! -s /root/.ssh/authorized_keys ]] && (is_docker || [[ "${CI:-}" == "true" ]]); then
-    mkdir -p /root/.ssh
-    printf '%s\n' "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > /root/.ssh/authorized_keys
-    chmod 600 /root/.ssh/authorized_keys
-fi
-
-# Require root - re-exec with sudo if running as non-root
+# Require root - re-exec with sudo if running as non-root (preserves SUDO_USER for key collection)
 require_sudo_or_root "$@"
 
 LOG_DIR="/var/log/eth2-quickstart"
@@ -43,8 +35,9 @@ if [[ -f "$SCRIPT_DIR/install/utils/debconf_preseed.sh" ]]; then
     "$SCRIPT_DIR/install/utils/debconf_preseed.sh"
 fi
 
-# Lockout prevention: collect and back up authorized_keys from all sources (root, SUDO_USER)
-# Must have keys somewhere before we create new user and harden SSH
+# Lockout prevention: ensure root has keys (copy from SUDO_USER if needed), then collect
+# When user runs sudo ./run_1.sh, keys are in ~/.ssh/authorized_keys - copy to root so collect finds them
+ensure_root_has_authorized_keys || true
 COLLECTED_KEYS_FILE=""
 COLLECTED_KEYS_FILE=$(collect_and_backup_authorized_keys) || true
 if [[ -z "$COLLECTED_KEYS_FILE" ]] || [[ ! -s "$COLLECTED_KEYS_FILE" ]]; then

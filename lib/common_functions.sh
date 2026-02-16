@@ -602,6 +602,25 @@ require_sudo_or_root() {
     fi
 }
 
+# Ensure root has authorized_keys before collect - copy from invoking user (SUDO_USER) when root has none
+# Call after require_sudo_or_root (must be root). Handles: user ran sudo ./run_1.sh, keys in ~/.ssh/authorized_keys
+ensure_root_has_authorized_keys() {
+    if [[ -f /root/.ssh/authorized_keys ]] && [[ -s /root/.ssh/authorized_keys ]]; then
+        return 0
+    fi
+    if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
+        local src="/home/$SUDO_USER/.ssh/authorized_keys"
+        if [[ -f "$src" ]] && [[ -s "$src" ]]; then
+            mkdir -p /root/.ssh
+            cp "$src" /root/.ssh/authorized_keys
+            chmod 600 /root/.ssh/authorized_keys
+            log_info "Copied authorized_keys from $SUDO_USER to root (lockout prevention)"
+            return 0
+        fi
+    fi
+    return 1
+}
+
 # Collect authorized_keys from all accessible sources (root, SUDO_USER) and back up
 # Returns path to merged keys file. Caller must have root (or will get it via require_sudo_or_root)
 # Output: path to temp file with merged keys; also creates backup in /root/authorized_keys_backup_*.txt
