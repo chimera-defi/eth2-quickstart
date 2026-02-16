@@ -24,14 +24,12 @@ cd "$SCRIPT_DIR" || exit 1
 source "$SCRIPT_DIR/exports.sh"
 source "$SCRIPT_DIR/lib/common_functions.sh"
 
-# Log to file for later review
 LOG_DIR="$SCRIPT_DIR/logs"
 LOG_FILE="$LOG_DIR/run_2_$(date +%Y%m%d_%H%M%S).log"
 mkdir -p "$LOG_DIR"
 exec > >(tee -a "$LOG_FILE") 2>&1
 log_info "Log file: $LOG_FILE"
 
-# Prevent apt/dpkg from prompting (tzdata, needrestart, etc.) - same as run_1
 export DEBIAN_FRONTEND=noninteractive
 export DEBIAN_PRIORITY=critical
 
@@ -99,7 +97,6 @@ log_info "This script will install Ethereum clients and services"
 #  ./prysm.sh beacon-chain --checkpoint-block=$PWD/block_mainnet_altair_4620512-0xef9957e6a709223202ab00f4ee2435e1d42042ad35e160563015340df677feb0.ssz --checkpoint-state=$PWD/state_mainnet_altair_4620512-0xc1397f57149c99b3a2166d422a2ee50602e2a2c7da2e31d7ea740216b8fd99ab.ssz --genesis-state=$PWD/genesis.ssz --config-file=$PWD/prysm_beacon_conf.yaml --p2p-host-ip=88.99.65.230
 # Install all dependencies centrally (unless --skip-deps)
 if [[ "$SKIP_DEPS" != "true" ]]; then
-    # Pre-seed debconf so apt/dpkg never prompt (tzdata, needrestart, etc.)
     if [[ -f "$SCRIPT_DIR/install/utils/debconf_preseed.sh" ]]; then
         log_info "Pre-seeding debconf for non-interactive install..."
         sudo bash "$SCRIPT_DIR/install/utils/debconf_preseed.sh"
@@ -436,11 +433,9 @@ if [[ "${CI_E2E:-}" != "true" ]]; then
     fi
 
     if [[ $SECURITY_VALIDATION_FAILED -eq 1 ]]; then
-        log_error "Security validation failed. Review the output above for specific failures."
-        log_error "Common causes: run_1 not executed on this machine, security_monitor needs root cron,"
-        log_error "or AIDE/firewall/fail2ban not fully configured."
-        log_error "Full validation log: $SECURITY_VALIDATION_LOG"
-        log_error "Re-run validation manually: ./install/security/test_security_fixes.sh"
+        log_error "Security validation failed. See output above for details."
+        log_error "Log: $SECURITY_VALIDATION_LOG"
+        log_error "Re-run: ./install/security/test_security_fixes.sh"
         exit 1
     fi
     log_info "Security validation completed."

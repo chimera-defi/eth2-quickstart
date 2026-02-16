@@ -45,7 +45,6 @@ export GETH_CMD="/usr/bin/geth --cache=$GETH_CACHE --syncmode snap \
 --metrics --metrics.addr $LH --metrics.port $METRICS_PORT"
 
 
-# Ensure JWT secret exists (idempotent - skip if present; needed for authrpc)
 ensure_directory "$HOME/secrets"
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 

@@ -399,7 +399,6 @@ stop_all_services() {
     log_info "All services stopped"
 }
 
-# Add PPA repository (non-interactive to avoid prompts)
 add_ppa_repository() {
     local ppa="$1"
     
