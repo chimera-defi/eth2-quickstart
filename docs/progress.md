@@ -51,9 +51,6 @@
 ## Verification Commands (run before push)
 
 ```bash
-./test/run_tests.sh --lint-only
-find . -name "*.sh" -type f ! -path "./.git/*" -exec bash -n {} \;
-find . -name "*.sh" -type f ! -path "./.git/*" -exec shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 {} \;
-./install/utils/verify_client_configs.sh
-bash install/test/test_common_functions.sh
+./scripts/pre-commit.sh
+# Optional: ./install/utils/verify_client_configs.sh
 ```

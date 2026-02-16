@@ -424,6 +424,8 @@ Additionally, the beacon checkpoint states have been made available by Sharedsta
 - Bun migration guide: [docs/FRONTEND_BUN_MIGRATION.md](docs/FRONTEND_BUN_MIGRATION.md)
 
 ### Testing & Validation
+- **Pre-commit**: `./scripts/pre-commit.sh` — local CI simulation before pushing
+- CI path filtering: [docs/CI_WORKFLOWS.md](docs/CI_WORKFLOWS.md) — when each workflow runs
 - Shell script test results: [docs/SHELL_SCRIPT_TEST_RESULTS.md](docs/SHELL_SCRIPT_TEST_RESULTS.md)
 
 ### Project Management
