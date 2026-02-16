@@ -11,21 +11,16 @@ cd "$PROJECT_ROOT" || exit 1
 # shellcheck source=lib/common_functions.sh
 source "$PROJECT_ROOT/lib/common_functions.sh"
 
-PASS=0
-FAIL=0
-
 run_test() {
     local name="$1"
     local result
     shift
     if result=$("$@") && [[ -n "$result" ]]; then
         echo "PASS: $name"
-        ((PASS++)) || true
         return 0
     else
         echo "FAIL: $name"
-        ((FAIL++)) || true
-        return 1
+        exit 1
     fi
 }
 
@@ -47,5 +42,4 @@ run_test "Nethermind linux-x64" get_github_release_asset_url "NethermindEth/neth
 run_test "Nimbus-eth2 Linux amd64" get_github_release_asset_url "status-im/nimbus-eth2" "nimbus-eth2_Linux_amd64"
 
 echo ""
-echo "=== Summary: $PASS passed, $FAIL failed ==="
-[[ $FAIL -eq 0 ]]
+echo "=== Summary: all passed ==="
