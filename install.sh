@@ -128,6 +128,9 @@ fi
 
 log_info "Starting configuration wizard..."
 echo ""
+echo -e "${YELLOW}Tip: If the OK button doesn't respond, press Ctrl+C and run with --vibe:${NC}"
+echo -e "  ${BLUE}curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash -s -- --vibe${NC}"
+echo ""
 
 # Make scripts executable
 chmod +x "$INSTALL_DIR/install/utils/configure.sh"
@@ -163,16 +166,20 @@ for arg in "$@"; do
 done
 
 # Launch the configuration wizard
-# Use </dev/tty so whiptail OK/buttons work when run via "curl | bash" (stdin is pipe)
+# When run via "curl | bash", stdin is a pipe - whiptail can't read keyboard input.
+# Use 'script' to create a PTY so the wizard gets proper terminal I/O.
 if [[ "$VIBE_MODE" == "true" ]]; then
     log_info "Running in vibe mode (non-interactive defaults)..."
     "$INSTALL_DIR/install/utils/configure.sh" --vibe
 else
-    if [[ -e /dev/tty ]]; then
-        "$INSTALL_DIR/install/utils/configure.sh" < /dev/tty
+    if [[ -c /dev/tty ]] && command -v script &>/dev/null && ! [[ -t 0 ]]; then
+        script -q -c "$INSTALL_DIR/install/utils/configure.sh" /dev/null
     else
-        bootstrap_log_warn "No TTY detected - falling back to vibe mode"
-        "$INSTALL_DIR/install/utils/configure.sh" --vibe
+        # Fallback: redirect stdin from terminal
+        if [[ -c /dev/tty ]] && ! [[ -t 0 ]]; then
+            exec 0</dev/tty
+        fi
+        "$INSTALL_DIR/install/utils/configure.sh"
     fi
 fi
 

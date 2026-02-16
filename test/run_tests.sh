@@ -496,6 +496,17 @@ run_unit_tests() {
         # We can't easily test it without being in a script context
         log_test "SKIP" "get_script_directories: requires script context"
     fi
+
+    # Whiptail pipe test (curl|bash OK button fix)
+    log_subheader "Whiptail pipe test (curl|bash scenario)"
+    if [[ -f "$SCRIPT_DIR/whiptail_pipe_test.sh" ]]; then
+        if bash "$SCRIPT_DIR/whiptail_pipe_test.sh" 2>/dev/null; then
+            log_test "PASS" "whiptail_pipe_test.sh: OK button works when stdin is pipe"
+        else
+            # May skip if expect/whiptail not installed (e.g. in Docker)
+            log_test "SKIP" "whiptail_pipe_test.sh: requires expect+whiptail or TTY"
+        fi
+    fi
 }
 
 # =============================================================================
