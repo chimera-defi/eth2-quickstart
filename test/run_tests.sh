@@ -503,8 +503,15 @@ run_unit_tests() {
         if bash "$SCRIPT_DIR/whiptail_pipe_test.sh" 2>/dev/null; then
             log_test "PASS" "whiptail_pipe_test.sh: OK button works when stdin is pipe"
         else
-            # May skip if expect/whiptail not installed (e.g. in Docker)
             log_test "SKIP" "whiptail_pipe_test.sh: requires expect+whiptail or TTY"
+        fi
+    fi
+    # Configure.sh pipe test (full wizard with piped stdin)
+    if [[ -f "$SCRIPT_DIR/test_configure_pipe_local.sh" ]]; then
+        if bash "$SCRIPT_DIR/test_configure_pipe_local.sh" 2>/dev/null; then
+            log_test "PASS" "test_configure_pipe_local.sh: configure.sh OK button works"
+        else
+            log_test "SKIP" "test_configure_pipe_local.sh: requires expect+whiptail"
         fi
     fi
 }
