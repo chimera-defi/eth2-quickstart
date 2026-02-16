@@ -35,7 +35,7 @@ export function Install() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.4 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground"
+              className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground leading-relaxed"
             >
               Copy the one-line installer to bootstrap a hardened server, then continue
               with the guided configuration wizard.
@@ -48,7 +48,7 @@ export function Install() {
               ].map((item) => (
                 <div key={item} className="flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                  <span>{item}</span>
+                  <span className="min-w-0">{item}</span>
                 </div>
               ))}
             </div>
@@ -70,7 +70,7 @@ export function Install() {
                 <Shield className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <div className="min-w-0">
                   <p className="font-medium text-foreground">Two-phase security model</p>
-                  <p className="mt-1">
+                  <p className="mt-1 leading-relaxed">
                     Phase one runs as root to harden the host. After reboot, phase two
                     completes client installs as the new operator.
                   </p>
@@ -97,7 +97,7 @@ export function Install() {
                     </div>
                     <div className="min-w-0">
                       <h3 className="font-medium text-foreground">{item.title}</h3>
-                      <p className="mt-1 text-sm text-muted-foreground">
+                      <p className="mt-1.5 sm:mt-2 text-sm text-muted-foreground leading-relaxed">
                         {item.description}
                       </p>
                     </div>

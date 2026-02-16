@@ -32,7 +32,7 @@ export function CallToAction() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.4 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
-                className="text-base sm:text-lg text-muted-foreground max-w-2xl"
+                className="text-base sm:text-lg text-muted-foreground leading-relaxed max-w-2xl"
               >
                 Start with the one-line installer, then follow the guided wizard to pick
                 clients, MEV, and monitoring.
@@ -49,11 +49,11 @@ export function CallToAction() {
             </div>
 
             {/* Install command - below all text */}
-            <div className="mt-2 border-t border-border/60 pt-6 sm:pt-8">
+            <div className="mt-4 sm:mt-6 border-t border-border/60 pt-6 sm:pt-8">
               <div className="mb-3 text-xs font-mono uppercase tracking-wide text-muted-foreground">
                 Install command
               </div>
-              <div className="overflow-x-auto rounded-lg">
+              <div className="overflow-x-auto">
                 <CodeBlock code={INSTALL_COMMAND} language="bash" />
               </div>
             </div>
