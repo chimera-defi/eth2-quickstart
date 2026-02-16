@@ -649,7 +649,8 @@ collect_and_backup_authorized_keys() {
 
     # Backup merged keys to /root for recovery
     local backup_dir="/root"
-    local backup_file="$backup_dir/authorized_keys_backup_$(date +%Y%m%d_%H%M%S).txt"
+    local backup_file
+    backup_file="$backup_dir/authorized_keys_backup_$(date +%Y%m%d_%H%M%S).txt"
     cp "$merged_file" "$backup_file"
     chmod 600 "$backup_file"
     log_info "Backed up authorized_keys to $backup_file (from: ${sources[*]})"

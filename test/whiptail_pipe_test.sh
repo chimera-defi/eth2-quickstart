@@ -25,6 +25,7 @@ if ! command -v expect &>/dev/null || ! command -v whiptail &>/dev/null; then
 fi
 
 # Test 1: whiptail msgbox with </dev/tty - should work when stdin is pipe
+# shellcheck disable=SC2016
 expect -c '
     set timeout 10
     exit_code 0
