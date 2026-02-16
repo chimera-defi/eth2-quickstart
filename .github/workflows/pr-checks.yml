@@ -5,6 +5,28 @@ on:
     branches: [ main, master, develop, 'cursor/**' ]
 
 jobs:
+  # Path filters: run no-npm only when frontend changes, review-checklist when frontend or shell
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      shell: ${{ steps.filter.outputs.shell }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/frontend.yml'
+            shell:
+              - '**/*.sh'
+              - 'test/**'
+              - 'install/**'
+              - 'lib/**'
+              - '.github/workflows/ci.yml'
+
   commit-conventions:
     name: Commit Message Format
     runs-on: ubuntu-latest
@@ -57,6 +79,8 @@ jobs:
   no-npm-in-frontend:
     name: No npm in Frontend
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -106,6 +130,8 @@ jobs:
   review-checklist:
     name: PR Description Checklist
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.shell == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

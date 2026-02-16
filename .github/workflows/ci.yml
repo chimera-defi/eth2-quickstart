@@ -5,24 +5,22 @@ on:
     branches: [ main, master, develop ]
     paths:
       - '**/*.sh'
-      - 'test/**'
-      - 'install/**'
-      - 'lib/**'
-      - 'configs/**'
+      - 'test/Dockerfile'
+      - 'test/docker-compose.yml'
       - '.github/workflows/ci.yml'
   pull_request:
     branches: [ main, master, develop, 'cursor/**' ]
     paths:
       - '**/*.sh'
-      - 'test/**'
-      - 'install/**'
-      - 'lib/**'
-      - 'configs/**'
+      - 'test/Dockerfile'
+      - 'test/docker-compose.yml'
       - '.github/workflows/ci.yml'
   workflow_dispatch:  # Allow manual trigger for testing
 
-# One run per commit: push only on main/master/develop; PR triggers for all branches
-# (Avoids 2 runs when pushing to a PR branch - push+PR both fired before)
+# Path filters: run ONLY when shell files or test infra change. Skip on doc-only, config-only, frontend-only.
+# - **/*.sh: all shell scripts (install, lib, test, docs, root)
+# - test/Dockerfile, test/docker-compose.yml: Docker build (not .sh)
+# - workflow_dispatch: always runs (manual trigger)
 concurrency:
   group: ci-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
