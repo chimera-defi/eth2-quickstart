@@ -128,9 +128,6 @@ fi
 
 log_info "Starting configuration wizard..."
 echo ""
-echo -e "${YELLOW}Tip: If the OK button doesn't respond, press Ctrl+C and run with --vibe:${NC}"
-echo -e "  ${BLUE}curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash -s -- --vibe${NC}"
-echo ""
 
 # Make scripts executable
 chmod +x "$INSTALL_DIR/install/utils/configure.sh"
@@ -165,22 +162,20 @@ for arg in "$@"; do
     esac
 done
 
+# When run via "curl | bash", stdin is a pipe - whiptail cannot read keyboard input
+# and the OK button will not respond. Auto-use vibe mode (sensible defaults) instead.
+if ! [[ -t 0 ]]; then
+    log_info "Detected pipe input (curl|bash) - using non-interactive mode with sensible defaults."
+    log_info "To customize later: edit $INSTALL_DIR/config/user_config.env or run ./install/utils/configure.sh from a terminal"
+    VIBE_MODE=true
+fi
+
 # Launch the configuration wizard
 if [[ "$VIBE_MODE" == "true" ]]; then
     log_info "Running in vibe mode (non-interactive defaults)..."
     "$INSTALL_DIR/install/utils/configure.sh" --vibe
 else
-    # When run via "curl | bash", stdin is a pipe - whiptail can't read keyboard input.
-    # Use 'script' to create a PTY so the wizard gets proper terminal I/O.
-    if [[ -c /dev/tty ]] && command -v script &>/dev/null && ! [[ -t 0 ]]; then
-        script -q -c "$INSTALL_DIR/install/utils/configure.sh" /dev/null
-    else
-        # Fallback: redirect stdin from terminal
-        if [[ -c /dev/tty ]] && ! [[ -t 0 ]]; then
-            exec 0</dev/tty
-        fi
-        "$INSTALL_DIR/install/utils/configure.sh"
-    fi
+    "$INSTALL_DIR/install/utils/configure.sh"
 fi
 
 # Display next steps
