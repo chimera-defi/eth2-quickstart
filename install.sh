@@ -163,11 +163,17 @@ for arg in "$@"; do
 done
 
 # Launch the configuration wizard
+# Use </dev/tty so whiptail OK/buttons work when run via "curl | bash" (stdin is pipe)
 if [[ "$VIBE_MODE" == "true" ]]; then
     log_info "Running in vibe mode (non-interactive defaults)..."
     "$INSTALL_DIR/install/utils/configure.sh" --vibe
 else
-    "$INSTALL_DIR/install/utils/configure.sh"
+    if [[ -e /dev/tty ]]; then
+        "$INSTALL_DIR/install/utils/configure.sh" < /dev/tty
+    else
+        bootstrap_log_warn "No TTY detected - falling back to vibe mode"
+        "$INSTALL_DIR/install/utils/configure.sh" --vibe
+    fi
 fi
 
 # Display next steps
