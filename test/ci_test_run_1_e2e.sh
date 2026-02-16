@@ -28,6 +28,16 @@ if ! command -v systemctl &>/dev/null; then
     exit 1
 fi
 
+# Create root SSH keys FIRST (before any cd/source) so run_1's collect_and_backup finds keys
+# Must exist before run_1 or it exits with lockout error
+mkdir -p /root/.ssh
+printf '%s\n' "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > /root/.ssh/authorized_keys
+chmod 600 /root/.ssh/authorized_keys
+if [[ ! -s /root/.ssh/authorized_keys ]]; then
+    log_error "Failed to create /root/.ssh/authorized_keys - cannot run run_1.sh"
+    exit 1
+fi
+
 cd "$PROJECT_ROOT"
 
 # Load config for verification (LOGIN_UNAME from exports.sh)
@@ -45,16 +55,6 @@ export DEBIAN_PRIORITY=critical
 
 # Pre-seed debconf (single source: install/utils/debconf_preseed.sh)
 "$PROJECT_ROOT/install/utils/debconf_preseed.sh"
-
-# Create root SSH keys so run_1's collect_and_backup finds keys (avoids lockout exit)
-mkdir -p /root/.ssh
-echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > /root/.ssh/authorized_keys
-chmod 600 /root/.ssh/authorized_keys
-
-if [[ ! -s /root/.ssh/authorized_keys ]]; then
-    log_error "Failed to create /root/.ssh/authorized_keys - cannot run run_1.sh"
-    exit 1
-fi
 
 if "$PROJECT_ROOT/run_1.sh"; then
     record_test "run_1.sh execution" "PASS"
