@@ -860,11 +860,13 @@ configure_ssh() {
 
 # Generate, display, and save secure handoff information
 # Also saves to /root/handoff_info.txt with restricted permissions
+# install_path: path to eth2-quickstart for new user (e.g. /home/eth/eth2-quickstart)
 generate_handoff_info() {
     local username="$1"
     local password="$2"
     local server_ip="${3:-}"
     local ssh_port="${4:-22}"
+    local install_path="${5:-}"
 
     # Auto-detect server IP if not provided
     if [[ -z "$server_ip" ]]; then
@@ -878,6 +880,17 @@ generate_handoff_info() {
 
     log_info "Generating secure handoff information..."
 
+    # Determine Phase 2 script: install_phase2.sh (from install wizard) or run_2.sh
+    local phase2_script="run_2.sh"
+    if [[ -n "$install_path" ]] && [[ -f "$install_path/install_phase2.sh" ]]; then
+        phase2_script="install_phase2.sh"
+    elif [[ -n "$install_path" ]] && [[ -f "$install_path/run_2.sh" ]]; then
+        phase2_script="run_2.sh"
+    fi
+
+    # run_1.sh copies repo to ~/eth2-quickstart - handoff always references that path
+    local next_step="cd ~/eth2-quickstart && ./$phase2_script"
+
     local auth_line="Authentication: SSH key only (no password)"
     [[ -n "$password" ]] && auth_line="Password: $password (sudo/console fallback)"
 
@@ -889,7 +902,9 @@ $auth_line
 Server IP: $server_ip
 SSH Port: $ssh_port
 SSH Command: $ssh_cmd
-Next Step: ./run_2.sh
+
+Next Step (after reboot, SSH as $username):
+  $next_step
 
 IMPORTANT: SSH key authentication is required.
 Root's SSH keys have been migrated to this user.
@@ -914,7 +929,7 @@ EOF
     chmod 600 /root/handoff_info.txt
 
     log_info "After reboot: $ssh_cmd"
-    log_info "Then run: ./run_2.sh"
+    log_info "Then run: $next_step"
 }
 
 

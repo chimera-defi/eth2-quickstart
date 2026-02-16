@@ -78,8 +78,17 @@ if command -v aide &>/dev/null && [[ -f /var/lib/aide/aide.db ]]; then
     fi
 fi
 
+# Copy eth2-quickstart to new user's home so they can run Phase 2 after reboot
+# Without this, the new user cannot find the folder (e.g. if it was in /root/.eth2-quickstart)
+USER_INSTALL_DIR="/home/$LOGIN_UNAME/eth2-quickstart"
+log_info "Copying eth2-quickstart to $USER_INSTALL_DIR for new user..."
+rm -rf "$USER_INSTALL_DIR"
+cp -a "$SCRIPT_DIR" "$USER_INSTALL_DIR"
+chown -R "$LOGIN_UNAME:$LOGIN_UNAME" "$USER_INSTALL_DIR"
+log_info "eth2-quickstart ready at ~/eth2-quickstart for user $LOGIN_UNAME"
+
 # Generate and save handoff information (auto-detects server IP)
-generate_handoff_info "$LOGIN_UNAME" "" "" "$YourSSHPortNumber"
+generate_handoff_info "$LOGIN_UNAME" "" "" "$YourSSHPortNumber" "$USER_INSTALL_DIR"
 
 log_info "=== SETUP COMPLETE ==="
 log_info "Reboot required: sudo reboot"

@@ -100,6 +100,13 @@ else
     record_test "SSH keys migrated to new user" "FAIL"
 fi
 
+# Verify eth2-quickstart copied to new user home (handoff commands work)
+if [[ -d /home/${LOGIN_UNAME}/eth2-quickstart ]] && [[ -f /home/${LOGIN_UNAME}/eth2-quickstart/run_2.sh ]]; then
+    record_test "eth2-quickstart copied to new user home" "PASS"
+else
+    record_test "eth2-quickstart copied to new user home" "FAIL"
+fi
+
 # Verify SSH config was applied
 if [[ -f /etc/ssh/sshd_config.backup ]]; then
     record_test "SSH config backed up" "PASS"

@@ -72,12 +72,13 @@ echo ""
 echo -e "${RED}You MUST reboot between phases to verify SSH access.${NC}"
 echo ""
 
-# Check if running as root
+# Check if running as root (required for git clone, apt install)
+# For curl|bash: use "curl ... | sudo bash"
 bootstrap_log_info "Checking system requirements..."
 if [[ "$(id -u)" -ne 0 ]]; then
     bootstrap_log_error "This script must be run as root to setup the initial environment."
     echo ""
-    echo "Please run: sudo bash -c 'curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | bash'"
+    echo "Please run: curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash"
     echo ""
     exit 1
 fi
@@ -200,7 +201,7 @@ echo "  2. REBOOT the system:"
 echo -e "     ${BLUE}sudo reboot${NC}"
 echo ""
 echo "  3. SSH back in as the new user and run Phase 2:"
-echo -e "     ${BLUE}cd $INSTALL_DIR && ./install_phase2.sh${NC}"
+echo -e "     ${BLUE}cd ~/eth2-quickstart && ./install_phase2.sh${NC}"
 echo ""
 echo -e "${RED}⚠️  Do NOT skip the reboot - it verifies your SSH access!${NC}"
 echo ""
