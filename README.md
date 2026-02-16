@@ -417,6 +417,10 @@ Additionally, the beacon checkpoint states have been made available by Sharedsta
 - Configuration guide: [docs/CONFIGURATION_GUIDE.md](docs/CONFIGURATION_GUIDE.md)
 - Shell scripting best practices: [docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md](docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md)
 
+### Marketing Website (Frontend)
+- Frontend quick start: [frontend/README.md](frontend/README.md) - Uses **Bun** for fast installs
+- Bun migration guide: [docs/FRONTEND_BUN_MIGRATION.md](docs/FRONTEND_BUN_MIGRATION.md)
+
 ### Testing & Validation
 - Shell script test results: [docs/SHELL_SCRIPT_TEST_RESULTS.md](docs/SHELL_SCRIPT_TEST_RESULTS.md)
 

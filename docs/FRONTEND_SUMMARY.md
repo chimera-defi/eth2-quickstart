@@ -188,7 +188,18 @@ This document provides a quick overview of all front-end development documentati
 
 ## 🏗️ Technical Stack
 
+### Package Manager: Bun (Required)
+This project uses [Bun](https://bun.sh) for 2-3x faster installs and builds. **Do not use npm.**
+
+```bash
+curl -fsSL https://bun.sh/install | bash   # Install Bun
+cd frontend && bun install && bun run dev # Start development
+```
+
+See [FRONTEND_BUN_MIGRATION.md](FRONTEND_BUN_MIGRATION.md) for full details.
+
 ### Recommended Stack
+- **Package Manager:** Bun (not npm)
 - **Framework:** Next.js 14+ (App Router)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS

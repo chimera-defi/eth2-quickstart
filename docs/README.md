@@ -29,6 +29,7 @@ This directory contains all project documentation organized by category.
 
 ## Front-End Development
 - **[FRONTEND_SUMMARY.md](FRONTEND_SUMMARY.md)** - Front-end project overview and quick reference (START HERE)
+- **[FRONTEND_BUN_MIGRATION.md](FRONTEND_BUN_MIGRATION.md)** - Bun package manager setup (required: use Bun, not npm)
 - **[FRONTEND_COMPONENT_SPECS.md](FRONTEND_COMPONENT_SPECS.md)** - ⭐ Detailed component specifications (11 components, minimal and properly spec'd)
 - **[FRONTEND_AGENT_PROMPTS_V2.md](FRONTEND_AGENT_PROMPTS_V2.md)** - ⭐ Copy-paste ready prompts for each agent (RECOMMENDED)
 - **[FRONTEND_AGENT_HANDOFF.md](FRONTEND_AGENT_HANDOFF.md)** - Comprehensive handoff documentation for front-end development
