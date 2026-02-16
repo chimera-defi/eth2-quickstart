@@ -13,10 +13,34 @@ concurrency:
   group: ci-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
-# All jobs run in parallel. Docker layer cache (gha) speeds rebuilds.
+# Fail-fast: jobs run in dependency chain. When one fails, subsequent jobs are skipped.
+# Order: shellcheck (fastest) -> docker-integration -> run-* -> e2e-client-matrix (slowest).
 # Job-level timeouts prevent runaway jobs (e.g. 10hr hangs).
 jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run shellcheck
+      run: |
+        sudo apt-get update && sudo apt-get install -y shellcheck
+
+        echo "Running shellcheck on all shell scripts..."
+        find . -name "*.sh" -type f | while read -r script; do
+          echo "Checking $script..."
+          if ! shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 "$script"; then
+            echo "❌ Shellcheck failed for $script"
+            exit 1
+          fi
+        done
+        echo "✅ All scripts passed shellcheck!"
+
   docker-integration:
+    needs: [shellcheck]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -42,6 +66,7 @@ jobs:
           echo "::endgroup::"
 
   run-1-structure:
+    needs: [docker-integration]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -62,6 +87,7 @@ jobs:
             eth-node-test /workspace/test/ci_test_run_1.sh
 
   run-1-e2e:
+    needs: [docker-integration]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -81,6 +107,7 @@ jobs:
         run: SKIP_BUILD=true ./test/run_e2e.sh --phase=1
 
   run-2-structure:
+    needs: [docker-integration]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -101,6 +128,7 @@ jobs:
             eth-node-test /workspace/test/ci_test_run_2.sh
 
   run-2-e2e:
+    needs: [docker-integration]
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -122,10 +150,11 @@ jobs:
 
   # Test all execution + consensus clients install and configure (job-level matrix)
   e2e-client-matrix:
+    needs: [run-1-structure, run-1-e2e, run-2-structure, run-2-e2e]
     runs-on: ubuntu-latest
     timeout-minutes: 35
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - exec: geth
@@ -169,25 +198,3 @@ jobs:
           SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" \
           E2E_EXECUTION=${{ matrix.exec }} E2E_CONSENSUS=${{ matrix.cons }} E2E_MEV=${{ matrix.mev }} \
           ./test/run_e2e.sh --phase=2
-
-  shellcheck:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Run shellcheck
-      run: |
-        sudo apt-get update && sudo apt-get install -y shellcheck
-        
-        echo "Running shellcheck on all shell scripts..."
-        find . -name "*.sh" -type f | while read -r script; do
-          echo "Checking $script..."
-          if ! shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 "$script"; then
-            echo "❌ Shellcheck failed for $script"
-            exit 1
-          fi
-        done
-        echo "✅ All scripts passed shellcheck!"
