@@ -397,6 +397,7 @@ Next step is to start syncing via:
 - Firewall rules configured for all client ports
 
 To verify security setup, run: ./install/security/test_security_fixes.sh
+To view logs: ./install/utils/view_logs.sh [--list|--run1|--run2|--security]
 
 === Running Security Validation ===
 
