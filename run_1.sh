@@ -61,6 +61,7 @@ export DEBIAN_PRIORITY=critical
 export TZ=UTC
 if [[ -f "$SCRIPT_DIR/install/utils/debconf_preseed.sh" ]]; then
     log_info "Pre-seeding debconf for non-interactive install..."
+    chmod +x "$SCRIPT_DIR/install/utils/debconf_preseed.sh"
     "$SCRIPT_DIR/install/utils/debconf_preseed.sh"
 fi
 

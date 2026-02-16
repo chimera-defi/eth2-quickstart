@@ -693,7 +693,7 @@ collect_and_backup_authorized_keys() {
     backup_file="$backup_dir/authorized_keys_backup_$(date +%Y%m%d_%H%M%S).txt"
     cp "$merged_file" "$backup_file"
     chmod 600 "$backup_file"
-    log_info "Backed up authorized_keys to $backup_file (from: ${sources[*]})"
+    log_info "Backed up authorized_keys to $backup_file (from: ${sources[*]})" >&2
 
     echo "$merged_file"
     return 0
