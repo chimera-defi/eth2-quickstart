@@ -34,7 +34,7 @@
 ## Regressions to Watch
 
 - JWT: Prysm must generate; consensus before execution
-- E2E: /root/.ssh/authorized_keys must exist before run_1 (baked into test/Dockerfile + ci_test_run_1_e2e.sh)
+- E2E: authorized_keys before run_1 (Dockerfile + ci_test creates first; run_1 has /.dockerenv fallback)
 - Phase 2: Must run as non-root (LOGIN_UNAME)
 - Security validation: runs as eth user; check existence/cron, don't execute root scripts
 
