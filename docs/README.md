@@ -2,6 +2,12 @@
 
 This directory contains all project documentation organized by category.
 
+## For Agents
+
+**Start here:** [AGENT_GUIDE.md](AGENT_GUIDE.md) – Consolidated entry point for AI agents. Covers two-phase security, tool discovery (`./help.sh --markdown`), script manifest, and doc map.
+
+**Quick discovery:** Run `./help.sh --markdown` from project root for Markdown-formatted script inventory and post-install tools.
+
 ## Core Documentation
 - **[README.md](../README.md)** - Main project overview and quickstart guide
 - **[SCRIPTS.md](SCRIPTS.md)** - Detailed script reference and usage
@@ -38,8 +44,12 @@ This directory contains all project documentation organized by category.
 - **[FRONTEND_AGENT_PROMPTS.md](FRONTEND_AGENT_PROMPTS.md)** - Original prompts (use V2 instead)
 - **[FRONTEND_REVIEW.md](FRONTEND_REVIEW.md)** - Multi-pass review results and quality assurance
 
+## Tooling & Help
+- **[HELP_SYSTEM_REARCH_SPEC.md](HELP_SYSTEM_REARCH_SPEC.md)** - Help system spec, manifest format, task list, handoff
+
 ## Quick Reference
 - **[../.cursorrules](../.cursorrules)** - Agent rules and development guidelines
+- **[AGENT_GUIDE.md](AGENT_GUIDE.md)** - Consolidated agent guide (install, tooling, docs map)
 - **[../configs/AGENT_REFERENCE.md](../configs/AGENT_REFERENCE.md)** - Configuration agent reference
 
 ## Archive

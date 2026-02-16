@@ -26,6 +26,7 @@ exports.sh → Base Template + Custom Variables → Final Client Config
 
 ### For AI Agents
 When working with configurations:
+- **Start**: `docs/AGENT_GUIDE.md` – consolidated agent entry point
 - **Read**: `docs/CONFIGURATION_GUIDE.md` for detailed architecture
 - **Follow**: Template + custom variable pattern
 - **Maintain**: Consistency across all client configurations
