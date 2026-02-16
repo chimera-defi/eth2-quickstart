@@ -4,23 +4,12 @@ import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { CodeBlock } from '@/components/ui/CodeBlock'
-import { Terminal } from '@/components/ui/Terminal'
-import { INSTALL_COMMAND, SITE_CONFIG, STATS } from '@/lib/constants'
+import { SITE_CONFIG, STATS } from '@/lib/constants'
 import { ArrowRight, CheckCircle2 } from 'lucide-react'
-
-const terminalCode = `$ ${INSTALL_COMMAND}
-
-[✓] System requirements verified
-[✓] Firewall configured
-[✓] Dependencies installed
-[✓] Ready for client selection
-
-Run './run_2.sh' to continue setup.`
 
 export function Hero() {
   return (
-    <section className="relative min-h-[80vh] flex items-center overflow-hidden">
+    <section className="relative min-h-[70vh] sm:min-h-[75vh] lg:min-h-[80vh] flex items-center overflow-hidden">
       {/* Subtle background gradient */}
       <div className="absolute inset-0 bg-gradient-radial from-primary/[0.03] via-transparent to-transparent" />
       <div className="absolute inset-y-0 right-0 hidden w-1/2 bg-gradient-to-l from-primary/10 via-transparent to-transparent lg:block" />
@@ -36,7 +25,7 @@ export function Hero() {
               transition={{ duration: 0.6 }}
               className="flex flex-wrap items-center gap-2 sm:gap-3"
             >
-              <Badge variant="primary">Zero-downtime onboarding</Badge>
+              <Badge variant="primary">Two-phase setup</Badge>
               <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
                 Ethereum infrastructure
               </span>
@@ -125,38 +114,26 @@ export function Hero() {
               ))}
             </motion.div>
 
-            {/* Mobile/Tablet terminal preview */}
-            <div className="lg:hidden">
-              <Card className="border-border/60 bg-muted/40">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="font-mono uppercase tracking-wide">Installer preview</span>
-                  <span>Phase 1</span>
-                </div>
-                <div className="mt-3 overflow-x-auto">
-                  <CodeBlock code={INSTALL_COMMAND} language="bash" />
-                </div>
-              </Card>
-            </div>
           </div>
           
-          {/* Right column - Terminal (desktop only) */}
+          {/* Right column - Stats emphasis (desktop) / CTA card (mobile) */}
           <motion.div
             initial={{ opacity: 0, x: 24 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="hidden lg:block"
+            className="hidden lg:flex flex-col justify-center"
           >
-            <div className="rounded-2xl border border-border/60 bg-muted/40 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
-              <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground">
-                <span className="font-mono uppercase tracking-wide">Installer preview</span>
-                <span>Phase 1</span>
-              </div>
-              <Terminal 
-                code={terminalCode} 
-                language="bash"
-                title="terminal"
-              />
-            </div>
+            <Card className="border-border/60 bg-muted/40 p-5">
+              <p className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+                One command
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Scroll down to copy the install command.
+              </p>
+              <Button href="#install" variant="secondary" size="sm" className="mt-4 w-fit">
+                View Install Command
+              </Button>
+            </Card>
           </motion.div>
         </div>
       </div>

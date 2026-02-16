@@ -37,7 +37,7 @@ export function Workflow() {
           </div>
 
           <div className="relative space-y-3 sm:space-y-4">
-            <div className="absolute left-5 top-4 hidden h-[calc(100%-2rem)] w-px bg-border/60 sm:block" />
+            <div className="absolute left-[1.75rem] sm:left-[2rem] top-8 hidden h-[calc(100%-2rem)] w-px bg-border/60 sm:block" />
             {WORKFLOW_STEPS.map((step, index) => (
               <motion.div
                 key={step.title}
@@ -46,9 +46,9 @@ export function Workflow() {
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ duration: 0.4, delay: index * 0.1 }}
               >
-                <Card className="bg-muted/40">
+                <Card padding="sm" className="bg-muted/40">
                   <div className="flex items-start gap-3 sm:gap-4">
-                    <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full border border-border bg-background font-mono text-xs sm:text-sm text-muted-foreground">
+                    <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full border border-border bg-background font-mono text-xs text-muted-foreground">
                       0{index + 1}
                     </div>
                     <div className="min-w-0">
