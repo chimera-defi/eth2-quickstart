@@ -14,6 +14,7 @@ This directory contains all project documentation organized by category.
 
 ## Development & Testing
 - **[CI_WORKFLOWS.md](CI_WORKFLOWS.md)** - CI path filtering (when each workflow runs)
+- **[CI_TROUBLESHOOTING.md](CI_TROUBLESHOOTING.md)** - Common CI failures and fixes
 - **[SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md](SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md)** - Shell scripting standards
 - **[COMMIT_MESSAGES.md](COMMIT_MESSAGES.md)** - Commit message conventions
 

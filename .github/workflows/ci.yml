@@ -41,6 +41,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Cache apt packages
+      uses: actions/cache@v4
+      with:
+        path: /var/cache/apt/archives
+        key: apt-${{ runner.os }}-shellcheck
+        restore-keys: apt-${{ runner.os }}-
+
     - name: Run shellcheck
       run: |
         sudo apt-get update && sudo apt-get install -y shellcheck
@@ -91,29 +98,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        if: needs.build-docker.outputs.image != ''
+      - uses: ./.github/actions/docker-prep
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull image
-        if: needs.build-docker.outputs.image != ''
-        run: |
-          docker pull ${{ needs.build-docker.outputs.image }}
-          docker tag ${{ needs.build-docker.outputs.image }} eth-node-test
-      - name: Build image (fallback for fork PRs)
-        uses: docker/build-push-action@v6
-        if: needs.build-docker.outputs.image == ''
-        with:
-          context: .
-          file: test/Dockerfile
-          load: true
-          tags: eth-node-test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          image: ${{ needs.build-docker.outputs.image }}
       - name: Lint and unit tests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -133,29 +120,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        if: needs.build-docker.outputs.image != ''
+      - uses: ./.github/actions/docker-prep
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull image
-        if: needs.build-docker.outputs.image != ''
-        run: |
-          docker pull ${{ needs.build-docker.outputs.image }}
-          docker tag ${{ needs.build-docker.outputs.image }} eth-node-test
-      - name: Build image (fallback for fork PRs)
-        if: needs.build-docker.outputs.image == ''
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: test/Dockerfile
-          load: true
-          tags: eth-node-test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          image: ${{ needs.build-docker.outputs.image }}
       - name: Run run_1 structure
         run: |
           docker run --rm --privileged --user root \
@@ -167,29 +134,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        if: needs.build-docker.outputs.image != ''
+      - uses: ./.github/actions/docker-prep
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull image
-        if: needs.build-docker.outputs.image != ''
-        run: |
-          docker pull ${{ needs.build-docker.outputs.image }}
-          docker tag ${{ needs.build-docker.outputs.image }} eth-node-test
-      - name: Build image (fallback for fork PRs)
-        if: needs.build-docker.outputs.image == ''
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: test/Dockerfile
-          load: true
-          tags: eth-node-test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          image: ${{ needs.build-docker.outputs.image }}
       - name: Run run_1 E2E
         env:
           CI: true
@@ -200,29 +147,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        if: needs.build-docker.outputs.image != ''
+      - uses: ./.github/actions/docker-prep
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull image
-        if: needs.build-docker.outputs.image != ''
-        run: |
-          docker pull ${{ needs.build-docker.outputs.image }}
-          docker tag ${{ needs.build-docker.outputs.image }} eth-node-test
-      - name: Build image (fallback for fork PRs)
-        if: needs.build-docker.outputs.image == ''
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: test/Dockerfile
-          load: true
-          tags: eth-node-test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          image: ${{ needs.build-docker.outputs.image }}
       - name: Run run_2 structure
         run: |
           docker run --rm --privileged --user testuser \
@@ -234,29 +161,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        if: needs.build-docker.outputs.image != ''
+      - uses: ./.github/actions/docker-prep
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull image
-        if: needs.build-docker.outputs.image != ''
-        run: |
-          docker pull ${{ needs.build-docker.outputs.image }}
-          docker tag ${{ needs.build-docker.outputs.image }} eth-node-test
-      - name: Build image (fallback for fork PRs)
-        if: needs.build-docker.outputs.image == ''
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: test/Dockerfile
-          load: true
-          tags: eth-node-test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          image: ${{ needs.build-docker.outputs.image }}
       - name: Run run_2 E2E (default clients)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -273,29 +180,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        if: needs.build-docker.outputs.image != ''
+      - uses: ./.github/actions/docker-prep
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull image
-        if: needs.build-docker.outputs.image != ''
-        run: |
-          docker pull ${{ needs.build-docker.outputs.image }}
-          docker tag ${{ needs.build-docker.outputs.image }} eth-node-test
-      - name: Build image (fallback for fork PRs)
-        if: needs.build-docker.outputs.image == ''
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: test/Dockerfile
-          load: true
-          tags: eth-node-test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          image: ${{ needs.build-docker.outputs.image }}
       - name: Run run_2 E2E (Caddy + Nginx install)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -338,29 +225,9 @@ jobs:
             cons: prysm
             mev: mev-boost
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        if: needs.build-docker.outputs.image != ''
+      - uses: ./.github/actions/docker-prep
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull image
-        if: needs.build-docker.outputs.image != ''
-        run: |
-          docker pull ${{ needs.build-docker.outputs.image }}
-          docker tag ${{ needs.build-docker.outputs.image }} eth-node-test
-      - name: Build image (fallback for fork PRs)
-        if: needs.build-docker.outputs.image == ''
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: test/Dockerfile
-          load: true
-          tags: eth-node-test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          image: ${{ needs.build-docker.outputs.image }}
       - name: "E2E ${{ matrix.exec }}+${{ matrix.cons }}+${{ matrix.mev }}"
         timeout-minutes: 25
         env:
