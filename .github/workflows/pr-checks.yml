@@ -81,15 +81,6 @@ jobs:
           
           echo "All commit messages follow conventional commit format."
 
-      - name: Job summary (success)
-        if: success()
-        run: echo "## ✅ Commit Message Format passed" >> $GITHUB_STEP_SUMMARY
-      - name: Job summary (failure)
-        if: failure()
-        run: |
-          echo "## ❌ Commit Message Format failed" >> $GITHUB_STEP_SUMMARY
-          echo "Some commits don't follow conventional format. Use \`git rebase -i\` to fix." >> $GITHUB_STEP_SUMMARY
-
   no-npm-in-frontend:
     name: No npm in Frontend
     runs-on: ubuntu-latest
@@ -140,12 +131,3 @@ jobs:
           fi
           
           echo "Frontend Bun compliance verified."
-
-      - name: Job summary (success)
-        if: success()
-        run: echo "## ✅ No npm in Frontend passed" >> $GITHUB_STEP_SUMMARY
-      - name: Job summary (failure)
-        if: failure()
-        run: |
-          echo "## ❌ No npm in Frontend failed" >> $GITHUB_STEP_SUMMARY
-          echo "Found npm usage or missing Bun config. See logs for details." >> $GITHUB_STEP_SUMMARY

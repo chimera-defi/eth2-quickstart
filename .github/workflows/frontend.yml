@@ -50,15 +50,6 @@ jobs:
       - name: TypeScript type check
         run: bunx tsc --noEmit
 
-      - name: Job summary (success)
-        if: success()
-        run: echo "## ✅ Lint passed" >> $GITHUB_STEP_SUMMARY
-      - name: Job summary (failure)
-        if: failure()
-        run: |
-          echo "## ❌ Lint failed" >> $GITHUB_STEP_SUMMARY
-          echo "ESLint or TypeScript check failed. See logs for details." >> $GITHUB_STEP_SUMMARY
-
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -96,15 +87,6 @@ jobs:
           name: coverage-report
           path: frontend/coverage/
           retention-days: 7
-
-      - name: Job summary (success)
-        if: success()
-        run: echo "## ✅ Test passed" >> $GITHUB_STEP_SUMMARY
-      - name: Job summary (failure)
-        if: failure()
-        run: |
-          echo "## ❌ Test failed" >> $GITHUB_STEP_SUMMARY
-          echo "Jest tests failed. See logs and coverage-report artifact for details." >> $GITHUB_STEP_SUMMARY
 
   build:
     name: Build
@@ -145,14 +127,3 @@ jobs:
             frontend/.next/
             frontend/out/
           retention-days: 7
-
-      - name: Job summary (success)
-        if: success()
-        run: |
-          echo "## ✅ Build passed" >> $GITHUB_STEP_SUMMARY
-          echo "Artifacts: nextjs-build (retention: 7 days)" >> $GITHUB_STEP_SUMMARY
-      - name: Job summary (failure)
-        if: failure()
-        run: |
-          echo "## ❌ Build failed" >> $GITHUB_STEP_SUMMARY
-          echo "Next.js build failed. See logs for details." >> $GITHUB_STEP_SUMMARY

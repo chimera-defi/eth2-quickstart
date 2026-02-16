@@ -18,7 +18,3 @@ Workflows run only when relevant files change. Docs-only changes skip most CI.
 |-----------------|------------|-----------|
 | coverage-report | frontend   | 7 days    |
 | nextjs-build    | frontend   | 7 days    |
-
-## Job summaries
-
-Most jobs write to `$GITHUB_STEP_SUMMARY` (success/failure + context). See the job UI for quick pass/fail and matrix combo info.
