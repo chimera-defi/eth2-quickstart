@@ -27,6 +27,10 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+log_header() {
+    echo -e "\n${BLUE}=== $* ===${NC}\n"
+}
+
 # Check if running as correct user
 check_user() {
     local expected_user="$1"

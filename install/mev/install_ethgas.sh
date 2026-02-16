@@ -39,7 +39,7 @@ fi
 log_info "✓ Commit-Boost dependency verified"
 
 # Verify Rust is available (installed centrally via install_dependencies.sh)
-[[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+[[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:${PATH:-}"
 
 if ! command -v cargo &> /dev/null; then
     log_error "Rust/Cargo not found. Please run install_dependencies.sh first."

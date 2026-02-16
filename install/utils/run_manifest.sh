@@ -28,7 +28,7 @@ PHASE2_MANIFEST="$ROOT_DIR/install_phase2.sh"
 LOG_DIR="$ROOT_DIR/logs"
 
 # Create log directory
-mkdir -p "$LOG_DIR"
+ensure_directory "$LOG_DIR"
 
 # =============================================================================
 # ARGUMENT PARSING

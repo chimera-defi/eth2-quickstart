@@ -30,6 +30,12 @@ This document provides a comprehensive reference for all functions available in 
 **Usage:** `log_error "Installation failed"`  
 **Output:** `[ERROR] Installation failed`
 
+#### `log_header(message)`
+**Purpose:** Display a section header with consistent formatting  
+**Parameters:** `message` - The header text to display  
+**Usage:** `log_header "Phase 1: System Setup"`  
+**Output:** `=== Phase 1: System Setup ===`
+
 ### 🚀 **Installation Functions**
 
 #### `log_installation_start(client_name)`
