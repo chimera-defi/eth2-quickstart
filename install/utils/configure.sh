@@ -101,6 +101,12 @@ else
     # INTERACTIVE MODE (WHIPTAIL TUI)
     # =============================================================================
     
+    # Redirect stdin from terminal when it's a pipe (e.g. curl|bash) - whiptail needs
+    # terminal input for OK/Enter to work
+    if [[ -c /dev/tty ]] && ! [[ -t 0 ]]; then
+        exec 0</dev/tty
+    fi
+    
     # Check if whiptail is installed
     if ! command -v whiptail &>/dev/null; then
         log_error "Whiptail not found. Installing..."
