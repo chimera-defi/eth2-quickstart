@@ -1,5 +1,9 @@
 name: CI - Docker Integration Tests
 
+permissions:
+  contents: read
+  packages: write  # For pushing test image to GHCR (image reuse across jobs)
+
 on:
   push:
     branches: [ main, master, develop ]
@@ -26,7 +30,8 @@ concurrency:
   cancel-in-progress: true
 
 # Fail-fast: jobs run in dependency chain. When one fails, subsequent jobs are skipped.
-# Order: shellcheck (fastest) -> docker-integration -> run-* -> e2e-client-matrix (slowest).
+# Order: shellcheck -> build-docker -> docker-integration -> run-* -> e2e-client-matrix.
+# build-docker pushes to GHCR when not a fork; other jobs pull instead of building.
 # Job-level timeouts prevent runaway jobs (e.g. 10hr hangs).
 jobs:
   shellcheck:
@@ -51,14 +56,60 @@ jobs:
         done
         echo "✅ All scripts passed shellcheck!"
 
-  docker-integration:
+  # Build once, push to GHCR. Other jobs pull instead of building (saves ~5 builds).
+  # Fork PRs: push fails (no package write), jobs fall back to building.
+  build-docker:
     needs: [shellcheck]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        id: build
+        with:
+          context: .
+          file: test/Dockerfile
+          load: true
+          push: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+          tags: |
+            eth-node-test
+            ghcr.io/${{ github.repository }}/eth-node-test:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - id: meta
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: echo "image=ghcr.io/${{ github.repository }}/eth-node-test:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+  docker-integration:
+    needs: [build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/login-action@v3
+        if: needs.build-docker.outputs.image != ''
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull image
+        if: needs.build-docker.outputs.image != ''
+        run: |
+          docker pull ${{ needs.build-docker.outputs.image }}
+          docker tag ${{ needs.build-docker.outputs.image }} eth-node-test
+      - name: Build image (fallback for fork PRs)
+        uses: docker/build-push-action@v6
+        if: needs.build-docker.outputs.image == ''
         with:
           context: .
           file: test/Dockerfile
@@ -81,13 +132,26 @@ jobs:
           echo "::endgroup::"
 
   run-1-structure:
-    needs: [docker-integration]
+    needs: [docker-integration, build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/login-action@v3
+        if: needs.build-docker.outputs.image != ''
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull image
+        if: needs.build-docker.outputs.image != ''
+        run: |
+          docker pull ${{ needs.build-docker.outputs.image }}
+          docker tag ${{ needs.build-docker.outputs.image }} eth-node-test
+      - name: Build image (fallback for fork PRs)
+        if: needs.build-docker.outputs.image == ''
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: test/Dockerfile
@@ -102,13 +166,26 @@ jobs:
             eth-node-test /workspace/test/ci_test_run_1.sh
 
   run-1-e2e:
-    needs: [docker-integration]
+    needs: [docker-integration, build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/login-action@v3
+        if: needs.build-docker.outputs.image != ''
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull image
+        if: needs.build-docker.outputs.image != ''
+        run: |
+          docker pull ${{ needs.build-docker.outputs.image }}
+          docker tag ${{ needs.build-docker.outputs.image }} eth-node-test
+      - name: Build image (fallback for fork PRs)
+        if: needs.build-docker.outputs.image == ''
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: test/Dockerfile
@@ -122,13 +199,26 @@ jobs:
         run: SKIP_BUILD=true ./test/run_e2e.sh --phase=1
 
   run-2-structure:
-    needs: [docker-integration]
+    needs: [docker-integration, build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/login-action@v3
+        if: needs.build-docker.outputs.image != ''
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull image
+        if: needs.build-docker.outputs.image != ''
+        run: |
+          docker pull ${{ needs.build-docker.outputs.image }}
+          docker tag ${{ needs.build-docker.outputs.image }} eth-node-test
+      - name: Build image (fallback for fork PRs)
+        if: needs.build-docker.outputs.image == ''
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: test/Dockerfile
@@ -143,13 +233,26 @@ jobs:
             eth-node-test /workspace/test/ci_test_run_2.sh
 
   run-2-e2e:
-    needs: [docker-integration]
+    needs: [docker-integration, build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/login-action@v3
+        if: needs.build-docker.outputs.image != ''
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull image
+        if: needs.build-docker.outputs.image != ''
+        run: |
+          docker pull ${{ needs.build-docker.outputs.image }}
+          docker tag ${{ needs.build-docker.outputs.image }} eth-node-test
+      - name: Build image (fallback for fork PRs)
+        if: needs.build-docker.outputs.image == ''
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: test/Dockerfile
@@ -166,7 +269,7 @@ jobs:
   # Test all execution + consensus clients install and configure (job-level matrix)
   # PRs: 2 combos (geth+prysm, besu+lighthouse) for faster feedback. Push: full 7 combos.
   e2e-client-matrix:
-    needs: [run-1-structure, run-1-e2e, run-2-structure, run-2-e2e]
+    needs: [run-1-structure, run-1-e2e, run-2-structure, run-2-e2e, build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 35
     strategy:
@@ -176,7 +279,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/login-action@v3
+        if: needs.build-docker.outputs.image != ''
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull image
+        if: needs.build-docker.outputs.image != ''
+        run: |
+          docker pull ${{ needs.build-docker.outputs.image }}
+          docker tag ${{ needs.build-docker.outputs.image }} eth-node-test
+      - name: Build image (fallback for fork PRs)
+        if: needs.build-docker.outputs.image == ''
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: test/Dockerfile
