@@ -155,7 +155,7 @@ run_lint_tests() {
         local script_dir script_name
         script_dir="$(dirname "$script")"
         script_name="$(basename "$script")"
-        if (cd "$script_dir" && shellcheck -x --exclude=SC2317,SC1090,SC2034,SC2031,SC2181 "$script_name" 2>/dev/null); then
+        if (cd "$script_dir" && shellcheck -x --exclude=SC2317,SC1090,SC2034,SC2031 "$script_name" 2>/dev/null); then
             log_test "PASS" "shellcheck: $script_name"
             scripts_passed=$((scripts_passed + 1))
         else

@@ -34,11 +34,11 @@ jobs:
           # SC1090: Can't follow non-constant source (common with ~/.cargo/env)
           # SC2034: Unused variables (common in template/example scripts)
           # SC2031: Variable modified in subshell (false positive when testing source in subshell)
-          # SC2181: Check exit code directly (common pattern with whiptail/dialog)
           # SC1091 removed: we use # shellcheck source= directives and run from script dir
+          # SC2181 removed: whiptail patterns refactored to check exit code directly
           script_dir=$(dirname "$script")
           script_name=$(basename "$script")
-          if ! (cd "$script_dir" && shellcheck -x --exclude=SC2317,SC1090,SC2034,SC2031,SC2181 "$script_name"); then
+          if ! (cd "$script_dir" && shellcheck -x --exclude=SC2317,SC1090,SC2034,SC2031 "$script_name"); then
             echo "❌ Shellcheck failed for $script"
             exit 1
           else

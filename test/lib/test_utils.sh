@@ -11,9 +11,9 @@
 # SC1090 - Can't follow non-constant source (variable paths)
 # SC2034 - Unused variables (template scripts)
 # SC2031 - Variable modified in subshell (testing pattern)
-# SC2181 - Check exit code directly (common in whiptail/dialog scripts)
 # Note: SC1091 removed - we use # shellcheck source= directives and run from script dir
-SHELLCHECK_EXCLUDES="SC2317,SC1090,SC2034,SC2031,SC2181"
+# Note: SC2181 removed - whiptail patterns refactored to check exit code directly
+SHELLCHECK_EXCLUDES="SC2317,SC1090,SC2034,SC2031"
 
 # =============================================================================
 # PATH RESOLUTION
