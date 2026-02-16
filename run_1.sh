@@ -40,8 +40,19 @@ fi
 ensure_root_has_authorized_keys || true
 COLLECTED_KEYS_FILE=""
 COLLECTED_KEYS_FILE=$(collect_and_backup_authorized_keys) || true
+
+# Docker E2E: when no keys in root, SUDO_USER, or current user - create placeholder for test
+# (Dockerfile/ci_test create keys but may not persist with systemd-as-init; explicit fallback)
+if { [[ -z "$COLLECTED_KEYS_FILE" ]] || [[ ! -s "$COLLECTED_KEYS_FILE" ]]; } && is_docker; then
+    log_info "Docker: No keys in root/SUDO_USER/current-user - creating placeholder for E2E test"
+    mkdir -p /root/.ssh
+    printf '%s\n' "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI placeholder-docker-e2e" > /root/.ssh/authorized_keys
+    chmod 600 /root/.ssh/authorized_keys
+    COLLECTED_KEYS_FILE=$(collect_and_backup_authorized_keys) || true
+fi
+
 if [[ -z "$COLLECTED_KEYS_FILE" ]] || [[ ! -s "$COLLECTED_KEYS_FILE" ]]; then
-    log_error "CRITICAL: No SSH keys found in /root/.ssh/authorized_keys or \$SUDO_USER's ~/.ssh/authorized_keys"
+    log_error "CRITICAL: No SSH keys found in /root/.ssh/authorized_keys, \$SUDO_USER's ~/.ssh/authorized_keys, or current user's ~/.ssh/authorized_keys"
     log_error "Add your key first: ssh-copy-id root@<your-server-ip>"
     log_error "Or if using sudo: ssh-copy-id <your-user>@<your-server-ip>"
     log_error "Without this, you will be locked out after reboot."

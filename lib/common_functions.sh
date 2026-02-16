@@ -621,7 +621,26 @@ ensure_root_has_authorized_keys() {
     return 1
 }
 
-# Collect authorized_keys from all accessible sources (root, SUDO_USER) and back up
+# Helper: add keys from a file to merged_file, track count and sources
+_collect_keys_from() {
+    local src_file="$1"
+    local source_name="$2"
+    local merged_file="$3"
+    local -n _count=$4
+    local -n _sources=$5
+    if [[ -f "$src_file" ]] && [[ -s "$src_file" ]]; then
+        while IFS= read -r key; do
+            [[ -z "$key" || "$key" =~ ^# ]] && continue
+            if ! grep -Fqx "$key" "$merged_file" 2>/dev/null; then
+                echo "$key" >> "$merged_file"
+                _count=$((_count + 1))
+            fi
+        done < "$src_file"
+        _sources+=("$source_name")
+    fi
+}
+
+# Collect authorized_keys from all accessible sources (root, SUDO_USER, current user) and back up
 # Returns path to merged keys file. Caller must have root (or will get it via require_sudo_or_root)
 # Output: path to temp file with merged keys; also creates backup in /root/authorized_keys_backup_*.txt
 collect_and_backup_authorized_keys() {
@@ -631,34 +650,25 @@ collect_and_backup_authorized_keys() {
     local sources=()
 
     # Collect from root
-    if [[ -f /root/.ssh/authorized_keys ]] && [[ -s /root/.ssh/authorized_keys ]]; then
-        while IFS= read -r key; do
-            [[ -z "$key" || "$key" =~ ^# ]] && continue
-            if ! grep -Fqx "$key" "$merged_file" 2>/dev/null; then
-                echo "$key" >> "$merged_file"
-                key_count=$((key_count + 1))
-            fi
-        done < /root/.ssh/authorized_keys
-        sources+=("root")
-    fi
+    _collect_keys_from /root/.ssh/authorized_keys "root" "$merged_file" key_count sources
 
     # Collect from SUDO_USER (original user who ran sudo) if different from root
     if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
-        local sudo_user_keys="/home/$SUDO_USER/.ssh/authorized_keys"
-        if [[ -f "$sudo_user_keys" ]] && [[ -s "$sudo_user_keys" ]]; then
-            while IFS= read -r key; do
-                [[ -z "$key" || "$key" =~ ^# ]] && continue
-                if ! grep -Fqx "$key" "$merged_file" 2>/dev/null; then
-                    echo "$key" >> "$merged_file"
-                    key_count=$((key_count + 1))
-                fi
-            done < "$sudo_user_keys"
-            sources+=("$SUDO_USER")
-        fi
+        _collect_keys_from "/home/$SUDO_USER/.ssh/authorized_keys" "$SUDO_USER" "$merged_file" key_count sources
     fi
 
-    # Also collect from current user's home if we're root but SUDO_USER ran from a different account
-    # (e.g. deploy key in /root, user ran sudo from their account - we already have both above)
+    # Collect from current user's home (whoami) - catches user who invoked without sudo
+    local current_user current_home
+    current_user=$(whoami 2>/dev/null || true)
+    if [[ -n "$current_user" ]]; then
+        current_home=$(getent passwd "$current_user" 2>/dev/null | cut -d: -f6 || true)
+        if [[ -n "$current_home" ]]; then
+            local skip=0
+            [[ "$current_home" == "/root" ]] && skip=1
+            [[ -n "${SUDO_USER:-}" && "$current_home" == "/home/$SUDO_USER" ]] && skip=1
+            [[ $skip -eq 0 ]] && _collect_keys_from "$current_home/.ssh/authorized_keys" "$current_user" "$merged_file" key_count sources
+        fi
+    fi
 
     if [[ $key_count -eq 0 ]]; then
         rm -f "$merged_file"
