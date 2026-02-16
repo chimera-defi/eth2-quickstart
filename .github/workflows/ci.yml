@@ -185,7 +185,7 @@ jobs:
           echo "Checking $script..."
           script_dir=$(dirname "$script")
           script_name=$(basename "$script")
-          if ! (cd "$script_dir" && shellcheck -x --exclude=SC2317,SC1090,SC2034,SC2031,SC2181 "$script_name"); then
+          if ! (cd "$script_dir" && shellcheck -x --exclude=SC2317,SC1090,SC2034,SC2031 "$script_name"); then
             echo "❌ Shellcheck failed for $script"
             exit 1
           fi
