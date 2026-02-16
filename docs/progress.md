@@ -41,5 +41,7 @@
 ```bash
 ./test/run_tests.sh --lint-only
 find . -name "*.sh" -type f ! -path "./.git/*" -exec bash -n {} \;
-shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 lib/common_functions.sh run_1.sh run_2.sh install/utils/view_logs.sh
+find . -name "*.sh" -type f ! -path "./.git/*" -exec shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 {} \;
+./install/utils/verify_client_configs.sh
+bash install/test/test_common_functions.sh
 ```

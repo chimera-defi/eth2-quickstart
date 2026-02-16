@@ -42,13 +42,13 @@ SKIP_BUILD=true ./test/run_e2e.sh --phase=2
 ```
 
 ## Last run: 2026-02-16
-- Lint: 254 passed
+- Lint: 258 passed
 - Syntax: all scripts valid
-- Shellcheck: passed
-- Caddy config: valid
+- Shellcheck: all scripts passed (CI exclusions)
 - verify_client_configs: 28 passed
 - ensure_jwt_secret: creates dir, works
-- get_github_release_asset_url: returns Nimbus URL
+- validate_downloads: 12 passed
 - common_functions: 10/10 passed
-- docker_test: 74 passed
 - CI YAML: valid
+- Caddy config: requires caddy/docker (skip if not installed)
+- docker_test: requires Docker with ufw (run in CI)
