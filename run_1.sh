@@ -66,6 +66,18 @@ chmod +x "$SCRIPT_DIR/install/security/consolidated_security.sh"
 apply_network_security
 setup_security_monitoring
 
+# Update AIDE db to include all files we just installed (security_monitor.sh, etc.)
+# So the first aide_check won't report false changes
+if command -v aide &>/dev/null && [[ -f /var/lib/aide/aide.db ]]; then
+    log_info "Updating AIDE database with installed files..."
+    if aide --config=/etc/aide/aide.conf --update 2>/dev/null; then
+        [[ -f /var/lib/aide/aide.db.new ]] && mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+        log_info "AIDE database updated"
+    else
+        log_warn "AIDE update had issues - first aide_check may report changes"
+    fi
+fi
+
 # Generate and save handoff information (auto-detects server IP)
 generate_handoff_info "$LOGIN_UNAME" "" "" "$YourSSHPortNumber"
 

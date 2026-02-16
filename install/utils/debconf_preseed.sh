@@ -9,9 +9,11 @@
 
 set -Eeuo pipefail
 
-# postfix - fallback if pulled in by apt (Local only = no mail server, no prompts)
+# postfix - skip config entirely if pulled in by apt (No configuration = no config screen)
+# Use both select and string - package may use either depending on version
 echo "postfix postfix/mailname string localhost" | debconf-set-selections 2>/dev/null || true
-echo "postfix postfix/main_mailer_type string 'Local only'" | debconf-set-selections 2>/dev/null || true
+echo "postfix postfix/main_mailer_type select No configuration" | debconf-set-selections 2>/dev/null || true
+echo "postfix postfix/main_mailer_type string No configuration" | debconf-set-selections 2>/dev/null || true
 
 # cron - whether to mail cron output
 echo "cron cron/upgrade_available boolean false" | debconf-set-selections 2>/dev/null || true
