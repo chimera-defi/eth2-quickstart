@@ -137,24 +137,26 @@ get_recommended_clients() {
 # =============================================================================
 
 # Show whiptail message box
+# Uses </dev/tty so whiptail reads from terminal when script is run via "curl | bash"
 whiptail_msg() {
     local title="${1:-Eth2 Quick Start}"
     local message="$2"
     local height="${3:-12}"
     local width="${4:-70}"
     
-    whiptail --title "$title" --msgbox "$message" "$height" "$width"
+    whiptail --title "$title" --msgbox "$message" "$height" "$width" </dev/tty
 }
 
 # Show whiptail yes/no dialog
 # Returns 0 for yes, 1 for no
+# Uses </dev/tty so whiptail reads from terminal when script is run via "curl | bash"
 whiptail_yesno() {
     local title="${1:-Eth2 Quick Start}"
     local message="$2"
     local height="${3:-12}"
     local width="${4:-70}"
     
-    whiptail --title "$title" --yesno "$message" "$height" "$width"
+    whiptail --title "$title" --yesno "$message" "$height" "$width" </dev/tty
 }
 
 # =============================================================================
