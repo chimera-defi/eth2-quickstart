@@ -61,12 +61,15 @@ sudo reboot
 1. Read `run_1.sh` AND `run_2.sh` to understand the security boundary
 2. Verify your changes preserve Phase 1 → REBOOT → Phase 2
 3. Test that generated scripts refuse wrong user context
-4. See `docs/AGENT_HANDOFF.md` for full documentation
+4. See `docs/AGENT_GUIDE.md` and `docs/archive/AGENT_HANDOFF.md` for full documentation
 
 ---
 
 ## Documentation Structure
 This project contains comprehensive documentation organized in the `docs/` folder:
+
+### For Agents (Start Here)
+- `docs/AGENT_GUIDE.md` - Consolidated agent guide: install flow, tool discovery (`./help.sh --markdown`), docs map
 
 ### Core Documentation
 - `docs/README.md` - Main project overview and quickstart guide

@@ -166,6 +166,10 @@ output_markdown() {
     echo "6. **Check logs on issues:** \`./install/utils/view_logs.sh --run2 -f\`"
     echo "7. **Purge is destructive:** Use \`--dry-run\` first with purge_ethereum_data.sh"
     echo ""
+    echo "## For Agents"
+    echo ""
+    echo "See \`docs/AGENT_GUIDE.md\` for consolidated agent documentation (install flow, tool discovery, docs map)."
+    echo ""
 }
 
 # -----------------------------------------------------------------------------

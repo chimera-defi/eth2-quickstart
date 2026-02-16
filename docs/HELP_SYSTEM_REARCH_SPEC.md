@@ -89,9 +89,11 @@ install/utils/doctor.sh :: diagnostics :: Health check: system, services, config
 - Post-install tools (doctor, stats, view_logs, refresh, start, update) must be easy to find
 
 ### For Agents
+- **Entry point:** `docs/AGENT_GUIDE.md` – consolidated agent guide (install, tooling, docs map)
 - Use `./help.sh --markdown` for structured output; Markdown parses well
 - Quick Reference set is the primary debugging/maintenance flow
 - Manifest path is `scripts.manifest` at project root
+- When adding scripts: update manifest, run `./test/validate_help.sh`
 
 ---
 
