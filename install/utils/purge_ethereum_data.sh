@@ -9,11 +9,13 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_ROOT" || exit 1
 
 # Source common functions
+# shellcheck source=../../lib/common_functions.sh
 source "$PROJECT_ROOT/lib/common_functions.sh"
 get_script_directories
 
 # Source exports for configuration
 if [[ -f "$PROJECT_ROOT/exports.sh" ]]; then
+    # shellcheck source=../../exports.sh
     source "$PROJECT_ROOT/exports.sh"
 else
     export LOGIN_UNAME="eth"

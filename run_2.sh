@@ -21,7 +21,9 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR" || exit 1
+# shellcheck source=exports.sh
 source "$SCRIPT_DIR/exports.sh"
+# shellcheck source=lib/common_functions.sh
 source "$SCRIPT_DIR/lib/common_functions.sh"
 
 # Parse flags for non-interactive mode

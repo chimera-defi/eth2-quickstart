@@ -10,7 +10,7 @@ find . -name "*.sh" -type f ! -path "./.git/*" -exec bash -n {} \;
 
 ## 2. Shellcheck (key files)
 ```bash
-shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 \
+shellcheck -x --exclude=SC2317,SC1090,SC2034,SC2031,SC2181 \
   lib/common_functions.sh install/consensus/nimbus.sh \
   install/execution/erigon.sh install/execution/reth.sh \
   install/consensus/grandine.sh install/web/install_caddy.sh \

@@ -8,7 +8,9 @@ set -Eeuo pipefail
 
 # Source required files
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=exports.sh
 source "$SCRIPT_DIR/exports.sh"
+# shellcheck source=lib/common_functions.sh
 source "$SCRIPT_DIR/lib/common_functions.sh"
 
 # Check if running as root

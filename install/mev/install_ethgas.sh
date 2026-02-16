@@ -8,7 +8,9 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_ROOT" || exit 1
+# shellcheck source=../../exports.sh
 source "$PROJECT_ROOT/exports.sh"
+# shellcheck source=../../lib/common_functions.sh
 source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Get script directories
@@ -39,6 +41,7 @@ fi
 log_info "✓ Commit-Boost dependency verified"
 
 # Verify Rust is available (installed centrally via install_dependencies.sh)
+# shellcheck source=/dev/null
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 
 if ! command -v cargo &> /dev/null; then

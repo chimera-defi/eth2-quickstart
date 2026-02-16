@@ -8,12 +8,12 @@
 # =============================================================================
 # Exclusions with rationale:
 # SC2317 - Unreachable code (false positive in test scripts)
-# SC1091 - Not following source files (relative paths)
 # SC1090 - Can't follow non-constant source (variable paths)
 # SC2034 - Unused variables (template scripts)
 # SC2031 - Variable modified in subshell (testing pattern)
 # SC2181 - Check exit code directly (common in whiptail/dialog scripts)
-SHELLCHECK_EXCLUDES="SC2317,SC1091,SC1090,SC2034,SC2031,SC2181"
+# Note: SC1091 removed - we use # shellcheck source= directives and run from script dir
+SHELLCHECK_EXCLUDES="SC2317,SC1090,SC2034,SC2031,SC2181"
 
 # =============================================================================
 # PATH RESOLUTION
@@ -258,15 +258,22 @@ assert_function_exists() {
 # =============================================================================
 
 # Run shellcheck with standard exclusions
+# Run from script's directory so # shellcheck source= paths resolve (SC1091 compliance)
 run_shellcheck() {
     local script="$1"
-    shellcheck -x --exclude="$SHELLCHECK_EXCLUDES" "$script"
+    local script_dir script_name
+    script_dir="$(dirname "$script")"
+    script_name="$(basename "$script")"
+    (cd "$script_dir" && shellcheck -x --exclude="$SHELLCHECK_EXCLUDES" "$script_name")
 }
 
 # Check if shellcheck passes (silent)
 check_shellcheck() {
     local script="$1"
-    shellcheck -x --exclude="$SHELLCHECK_EXCLUDES" "$script" >/dev/null 2>&1
+    local script_dir script_name
+    script_dir="$(dirname "$script")"
+    script_name="$(basename "$script")"
+    (cd "$script_dir" && shellcheck -x --exclude="$SHELLCHECK_EXCLUDES" "$script_name" >/dev/null 2>&1)
 }
 
 # =============================================================================

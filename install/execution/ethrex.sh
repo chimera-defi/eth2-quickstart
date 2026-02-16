@@ -10,7 +10,9 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_ROOT" || exit 1
+# shellcheck source=../../exports.sh
 source "$PROJECT_ROOT/exports.sh"
+# shellcheck source=../../lib/common_functions.sh
 source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Get script directories
@@ -66,6 +68,7 @@ if ! secure_download "$DOWNLOAD_URL" "$ETHREX_DIR/ethrex"; then
     
     # Fallback: Build from source
     # Source Rust environment (installed centrally via install_dependencies.sh)
+    # shellcheck source=/dev/null
     [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
     
     # Verify Rust is available

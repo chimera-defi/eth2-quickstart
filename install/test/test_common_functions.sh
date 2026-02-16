@@ -11,7 +11,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Source exports and common functions
+# shellcheck source=../../exports.sh
 source "$PROJECT_ROOT/exports.sh"
+# shellcheck source=../../lib/common_functions.sh
 source "$PROJECT_ROOT/lib/common_functions.sh"
 
 # Apply mocks for safe testing (prevents actual systemctl, apt, etc. calls)
