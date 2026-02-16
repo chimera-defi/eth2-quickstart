@@ -306,59 +306,10 @@ jobs:
           # Verifies install_caddy.sh, install_nginx.sh, config validity, no regressions
           SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" ./test/run_e2e.sh --phase=2
 
-  # Matrix: PRs run 2 combos (fast); push runs 7 combos covering all execution + consensus clients
-  # Execution: geth, besu, erigon, nethermind, nimbus_eth1, reth, ethrex. Consensus: prysm, lighthouse, teku, nimbus, grandine, lodestar
-  e2e-client-matrix-pr:
-    if: github.event_name == 'pull_request'
-    needs: [run-1-structure, run-1-e2e, run-2-structure, run-2-e2e, run-2-web, build-docker]
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
-    strategy:
-      fail-fast: true
-      matrix:
-        include:
-          - exec: geth
-            cons: prysm
-            mev: mev-boost
-          - exec: besu
-            cons: lighthouse
-            mev: commit-boost
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        if: needs.build-docker.outputs.image != ''
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull image
-        if: needs.build-docker.outputs.image != ''
-        run: |
-          docker pull ${{ needs.build-docker.outputs.image }}
-          docker tag ${{ needs.build-docker.outputs.image }} eth-node-test
-      - name: Build image (fallback for fork PRs)
-        if: needs.build-docker.outputs.image == ''
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: test/Dockerfile
-          load: true
-          tags: eth-node-test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      - name: "E2E ${{ matrix.exec }}+${{ matrix.cons }}+${{ matrix.mev }}"
-        timeout-minutes: 25
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CI: true
-        run: |
-          SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" \
-          E2E_EXECUTION=${{ matrix.exec }} E2E_CONSENSUS=${{ matrix.cons }} E2E_MEV=${{ matrix.mev }} \
-          ./test/run_e2e.sh --phase=2
-
-  e2e-client-matrix-full:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+  # Matrix: all 7 execution + 6 consensus clients (runs on PR and push)
+  # Execution: geth, besu, erigon, nethermind, nimbus_eth1, reth, ethrex
+  # Consensus: prysm, lighthouse, teku, nimbus, grandine, lodestar
+  e2e-client-matrix:
     needs: [run-1-structure, run-1-e2e, run-2-structure, run-2-e2e, run-2-web, build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 35
