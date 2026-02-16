@@ -12,7 +12,8 @@ source "$SCRIPT_DIR/exports.sh"
 source "$SCRIPT_DIR/lib/common_functions.sh"
 
 # E2E/CI: ensure authorized_keys exist before any logic (Docker/container only)
-if is_docker && [[ ! -s /root/.ssh/authorized_keys ]]; then
+# Only when root - non-root cannot write to /root/.ssh; require_sudo_or_root will re-exec
+if is_docker && [[ $EUID -eq 0 ]] && [[ ! -s /root/.ssh/authorized_keys ]]; then
     mkdir -p /root/.ssh
     printf '%s\n' "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > /root/.ssh/authorized_keys
     chmod 600 /root/.ssh/authorized_keys
@@ -44,6 +45,13 @@ fi
 
 # Lockout prevention: collect and back up authorized_keys from all sources (root, SUDO_USER)
 # Must have keys somewhere before we create new user and harden SSH
+# E2E/CI: ensure keys exist before collect (ci_test_run_1_e2e may run debconf before run_1; this guarantees keys)
+if is_docker && [[ ! -s /root/.ssh/authorized_keys ]]; then
+    mkdir -p /root/.ssh
+    printf '%s\n' "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > /root/.ssh/authorized_keys
+    chmod 600 /root/.ssh/authorized_keys
+    log_info "Creating E2E test keys (Docker/CI only)"
+fi
 COLLECTED_KEYS_FILE=""
 COLLECTED_KEYS_FILE=$(collect_and_backup_authorized_keys) || true
 if [[ -z "$COLLECTED_KEYS_FILE" ]] || [[ ! -s "$COLLECTED_KEYS_FILE" ]]; then

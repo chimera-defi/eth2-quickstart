@@ -624,8 +624,12 @@ collect_and_backup_authorized_keys() {
     fi
 
     # Collect from SUDO_USER (original user who ran sudo) if different from root
+    # Use actual home dir (getent) - supports users with non-/home homes
     if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
-        local sudo_user_keys="/home/$SUDO_USER/.ssh/authorized_keys"
+        local sudo_user_home
+        sudo_user_home="$(getent passwd "$SUDO_USER" 2>/dev/null | cut -d: -f6)"
+        [[ -z "$sudo_user_home" ]] && sudo_user_home="/home/$SUDO_USER"
+        local sudo_user_keys="$sudo_user_home/.ssh/authorized_keys"
         if [[ -f "$sudo_user_keys" ]] && [[ -s "$sudo_user_keys" ]]; then
             while IFS= read -r key; do
                 [[ -z "$key" || "$key" =~ ^# ]] && continue
