@@ -124,7 +124,42 @@ export const DOCUMENTATION_LINKS = [
   { title: 'Security', description: 'Security documentation', path: 'docs/SECURITY_GUIDE.md' },
 ]
 
+/** One-liner flow (recommended) - matches landing page install command */
 export const INSTALLATION_STEPS = [
+  {
+    step: 1,
+    title: 'Run the one-line installer',
+    description: 'Bootstraps the repo, runs the configuration wizard, and generates phase scripts.',
+    code: 'curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash',
+  },
+  {
+    step: 2,
+    title: 'Run Phase 1 (as root)',
+    description: 'Hardens the host: firewall, SSH, fail2ban, and creates a non-root operator user.',
+    code: 'cd ~/.eth2-quickstart && ./install_phase1.sh',
+  },
+  {
+    step: 3,
+    title: 'Reboot',
+    description: 'Required between phases. Reboot, then SSH back in as the new user.',
+    code: 'sudo reboot',
+  },
+  {
+    step: 4,
+    title: 'Run Phase 2 (as new user)',
+    description: 'Installs execution + consensus clients, MEV, and monitoring.',
+    code: 'cd ~/.eth2-quickstart && ./install_phase2.sh',
+  },
+  {
+    step: 5,
+    title: 'Start Services',
+    description: 'Start and verify all services.',
+    code: 'sudo systemctl start eth1 cl validator mev',
+  },
+]
+
+/** Manual flow (alternative to one-liner) */
+export const INSTALLATION_STEPS_MANUAL = [
   {
     step: 1,
     title: 'Clone Repository',
@@ -155,13 +190,15 @@ cd eth2-quickstart && chmod +x run_1.sh`,
     step: 5,
     title: 'Start Services',
     description: 'Start and verify all services.',
-    code: 'sudo systemctl start eth1 cl validator',
+    code: 'sudo systemctl start eth1 cl validator mev',
   },
 ]
 
 export const PREREQUISITES = [
-  { label: 'Server', value: 'Ubuntu 20.04+ with SSH access' },
-  { label: 'Storage', value: '2-4TB SSD/NVMe' },
-  { label: 'Memory', value: '16-64GB RAM' },
-  { label: 'Network', value: 'Stable broadband connection' },
+  { label: 'Server', value: 'Ubuntu 20.04+ with SSH key access (bare metal VPS preferred)' },
+  { label: 'Storage', value: '2–4TB SSD/NVMe (4TB NVMe recommended)' },
+  { label: 'Memory', value: '16–64GB RAM (32GB+ recommended)' },
+  { label: 'CPU', value: '4–8+ cores (8+ recommended for sync)' },
+  { label: 'Network', value: 'Stable broadband, unlimited data preferred' },
+  { label: 'RAID', value: 'Set swraid 1 & swraidlevel 0 for full disk access before install' },
 ]
