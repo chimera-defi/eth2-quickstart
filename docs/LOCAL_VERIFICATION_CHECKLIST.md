@@ -38,7 +38,8 @@ python3 -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"
 ## 6. Docker (if available)
 ```bash
 docker build -t eth-node-test -f test/Dockerfile .
-SKIP_BUILD=true ./test/run_e2e.sh --phase=2
+SKIP_BUILD=true ./test/run_e2e.sh --phase=1   # run_1 E2E
+SKIP_BUILD=true ./test/run_e2e.sh --phase=2   # run_2 E2E
 ```
 
 ## Last run: 2026-02-16
