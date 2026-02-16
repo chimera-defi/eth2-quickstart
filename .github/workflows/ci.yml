@@ -3,8 +3,22 @@ name: CI - Docker Integration Tests
 on:
   push:
     branches: [ main, master, develop ]
+    paths:
+      - '**/*.sh'
+      - 'test/**'
+      - 'install/**'
+      - 'lib/**'
+      - 'configs/**'
+      - '.github/workflows/ci.yml'
   pull_request:
     branches: [ main, master, develop, 'cursor/**' ]
+    paths:
+      - '**/*.sh'
+      - 'test/**'
+      - 'install/**'
+      - 'lib/**'
+      - 'configs/**'
+      - '.github/workflows/ci.yml'
   workflow_dispatch:  # Allow manual trigger for testing
 
 # One run per commit: push only on main/master/develop; PR triggers for all branches

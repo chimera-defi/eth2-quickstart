@@ -2,7 +2,7 @@ name: PR Rule Enforcement
 
 on:
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, 'cursor/**' ]
 
 jobs:
   commit-conventions:
