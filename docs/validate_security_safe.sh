@@ -176,7 +176,8 @@ echo
 log_section "Testing Input Validation Functions"
 
 test_input_validation() {
-    # Source the common functions
+    # Source the common functions (script runs from project root)
+    # shellcheck source=../lib/common_functions.sh
     source lib/common_functions.sh
     
     # Test validate_user_input function
@@ -233,7 +234,8 @@ echo
 log_section "Testing Error Handling"
 
 test_error_handling() {
-    # Source the common functions
+    # Source the common functions (script runs from project root)
+    # shellcheck source=../lib/common_functions.sh
     source lib/common_functions.sh
 
     # Verify set -Eeuo pipefail is active (the project's error handling mechanism)
@@ -359,7 +361,8 @@ echo
 log_section "Testing Function Definitions"
 
 test_function_definitions() {
-    # Source the common functions
+    # Source the common functions (script runs from project root)
+    # shellcheck source=../lib/common_functions.sh
     source lib/common_functions.sh
     
     local required_functions=(

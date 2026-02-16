@@ -183,7 +183,9 @@ jobs:
         echo "Running shellcheck on all shell scripts..."
         find . -name "*.sh" -type f | while read -r script; do
           echo "Checking $script..."
-          if ! shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 "$script"; then
+          script_dir=$(dirname "$script")
+          script_name=$(basename "$script")
+          if ! (cd "$script_dir" && shellcheck -x --exclude=SC2317,SC1090,SC2034,SC2031,SC2181 "$script_name"); then
             echo "❌ Shellcheck failed for $script"
             exit 1
           fi

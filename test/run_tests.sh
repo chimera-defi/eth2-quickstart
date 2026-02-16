@@ -151,8 +151,11 @@ run_lint_tests() {
         scripts_checked=$((scripts_checked + 1))
         local script_name="${script#"$PROJECT_ROOT"/}"
         
-        # Run shellcheck with common exclusions
-        if shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 "$script" 2>/dev/null; then
+        # Run shellcheck from script's directory so source= paths resolve (SC1091 compliance)
+        local script_dir script_name
+        script_dir="$(dirname "$script")"
+        script_name="$(basename "$script")"
+        if (cd "$script_dir" && shellcheck -x --exclude=SC2317,SC1090,SC2034,SC2031,SC2181 "$script_name" 2>/dev/null); then
             log_test "PASS" "shellcheck: $script_name"
             scripts_passed=$((scripts_passed + 1))
         else
@@ -198,6 +201,7 @@ run_source_verification() {
     log_subheader "Verifying exports.sh"
     
     # Test exports.sh loads without errors
+    # shellcheck source=../exports.sh
     if (source "$PROJECT_ROOT/exports.sh" 2>/dev/null); then
         log_test "PASS" "exports.sh: loads successfully"
     else
@@ -205,6 +209,7 @@ run_source_verification() {
     fi
     
     # Check required variables exist
+    # shellcheck source=../exports.sh
     source "$PROJECT_ROOT/exports.sh" 2>/dev/null || true
     
     local required_vars=(
@@ -230,6 +235,7 @@ run_source_verification() {
     log_subheader "Verifying lib/common_functions.sh"
     
     # Test common_functions.sh loads without errors
+    # shellcheck source=../lib/common_functions.sh
     if (source "$PROJECT_ROOT/lib/common_functions.sh" 2>/dev/null); then
         log_test "PASS" "common_functions.sh: loads successfully"
     else
@@ -237,6 +243,7 @@ run_source_verification() {
     fi
     
     # Check required functions exist
+    # shellcheck source=../lib/common_functions.sh
     source "$PROJECT_ROOT/lib/common_functions.sh" 2>/dev/null || true
     
     local required_functions=(
@@ -285,6 +292,7 @@ run_source_verification() {
     
     log_subheader "Verifying lib/utils.sh"
     
+    # shellcheck source=../lib/utils.sh
     if (source "$PROJECT_ROOT/lib/utils.sh" 2>/dev/null); then
         log_test "PASS" "utils.sh: loads successfully"
     else
@@ -293,6 +301,7 @@ run_source_verification() {
     
     # Check utils.sh functions (backward-compat shim)
     # Note: utils.sh is deprecated - functions are now in common_functions.sh
+    # shellcheck source=../lib/utils.sh
     source "$PROJECT_ROOT/lib/utils.sh" 2>/dev/null || true
     
     # Only check for functions that should exist for backward compatibility
@@ -422,6 +431,7 @@ run_unit_tests() {
     # Source mock functions if enabled
     if [[ "$USE_MOCKS" == "true" ]]; then
         log_info "Loading mock functions..."
+        # shellcheck source=lib/mock_functions.sh
         source "$SCRIPT_DIR/lib/mock_functions.sh"
     fi
     
@@ -440,10 +450,13 @@ run_unit_tests() {
     log_subheader "Testing individual functions"
     
     # Source required files
+    # shellcheck source=../exports.sh
     source "$PROJECT_ROOT/exports.sh" 2>/dev/null || true
+    # shellcheck source=../lib/common_functions.sh
     source "$PROJECT_ROOT/lib/common_functions.sh" 2>/dev/null || true
     
     if [[ "$USE_MOCKS" == "true" ]]; then
+        # shellcheck source=lib/mock_functions.sh
         source "$SCRIPT_DIR/lib/mock_functions.sh"
         apply_mocks
     fi
@@ -512,8 +525,11 @@ run_integration_tests() {
     fi
     
     # Source everything with mocks
+    # shellcheck source=../exports.sh
     source "$PROJECT_ROOT/exports.sh" 2>/dev/null || true
+    # shellcheck source=../lib/common_functions.sh
     source "$PROJECT_ROOT/lib/common_functions.sh" 2>/dev/null || true
+    # shellcheck source=lib/mock_functions.sh
     source "$SCRIPT_DIR/lib/mock_functions.sh"
     apply_mocks
     reset_mock_log

@@ -6,8 +6,11 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_ROOT" || exit 1
+# shellcheck source=../../exports.sh
 source "$PROJECT_ROOT/exports.sh"
+# shellcheck source=../../lib/common_functions.sh
 source "$PROJECT_ROOT/lib/common_functions.sh"
+# shellcheck source=nginx_helpers.sh
 source "$SCRIPT_DIR/nginx_helpers.sh"
 
 # Get script directories
@@ -59,7 +62,7 @@ log_info "Configuring firewall for SSL..."
 setup_firewall_rules 80 443
 
 # Validate Nginx configuration
-validate_nginx_config
+validate_nginx_config "$@"
 
 # Restart Nginx with SSL configuration
 log_info "Restarting Nginx with SSL configuration..."

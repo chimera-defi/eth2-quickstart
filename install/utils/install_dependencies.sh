@@ -158,6 +158,7 @@ install_production() {
     if ! is_docker || [[ "${CI_E2E:-}" == "true" ]]; then
         log_info "Installing Rust..."
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        # shellcheck source=/dev/null
         [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
     fi
 

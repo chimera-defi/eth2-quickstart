@@ -4,6 +4,7 @@
 # Local helper functions for Nginx installation scripts
 
 # Source common web helpers
+# shellcheck source=web_helpers_common.sh
 source "$(dirname "$0")/web_helpers_common.sh"
 
 # Install Nginx web server
