@@ -47,11 +47,15 @@ export DEBIAN_PRIORITY=critical
 "$PROJECT_ROOT/install/utils/debconf_preseed.sh"
 
 # Create minimal root SSH keys so setup_secure_user has something to migrate (avoids lockout warning)
+# Always overwrite (don't condition on existence): ensures content even if image has empty file
 mkdir -p /root/.ssh
-if [[ ! -f /root/.ssh/authorized_keys ]]; then
-    # Generate a placeholder key so the migration logic runs (real key not needed for test)
-    echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > /root/.ssh/authorized_keys
-    chmod 600 /root/.ssh/authorized_keys
+echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > /root/.ssh/authorized_keys
+chmod 600 /root/.ssh/authorized_keys
+
+# Verify keys exist before run_1.sh (fail fast with clear message)
+if [[ ! -s /root/.ssh/authorized_keys ]]; then
+    log_error "Failed to create /root/.ssh/authorized_keys - cannot run run_1.sh"
+    exit 1
 fi
 
 if "$PROJECT_ROOT/run_1.sh"; then
