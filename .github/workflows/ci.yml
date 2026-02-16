@@ -59,10 +59,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "::group::Lint"
-          docker run --rm eth-node-test /workspace/test/run_tests.sh --lint-only
+          docker run --rm -e SKIP_SHELLCHECK=true eth-node-test /workspace/test/run_tests.sh --lint-only
+          echo "::endgroup::"
+          echo "::group::Common functions unit tests"
+          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_common_functions.sh
           echo "::endgroup::"
           echo "::group::Unit tests (Caddy validate, downloads, functions)"
-          docker run --rm --privileged -e USE_MOCKS=false -e CI=true -e GITHUB_TOKEN="$GITHUB_TOKEN" eth-node-test /workspace/test/docker_test.sh
+          docker run --rm --privileged -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true -e GITHUB_TOKEN="$GITHUB_TOKEN" eth-node-test /workspace/test/docker_test.sh
           echo "::endgroup::"
 
   run-1-structure:
