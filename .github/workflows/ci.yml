@@ -233,7 +233,7 @@ jobs:
   run-2-e2e:
     needs: [docker-integration, build-docker]
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -262,7 +262,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CI: true
-        run: SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" ./test/run_e2e.sh --phase=2
+        run: |
+          # Pass E2E_EXECUTION/E2E_CONSENSUS to skip Caddy/Nginx (saves ~1.5 min)
+          # Same geth+prysm+mev-boost as matrix; Caddy config validated in docker-integration
+          SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" \
+          E2E_EXECUTION=geth E2E_CONSENSUS=prysm E2E_MEV=mev-boost \
+          ./test/run_e2e.sh --phase=2
 
   # Matrix: PRs run 2 combos (fast); push runs 7 combos covering all execution + consensus clients
   # Execution: geth, besu, erigon, nethermind, nimbus_eth1, reth, ethrex. Consensus: prysm, lighthouse, teku, nimbus, grandine, lodestar
