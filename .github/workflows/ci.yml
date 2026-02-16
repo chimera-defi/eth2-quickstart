@@ -31,12 +31,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Lint and unit tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "::group::Lint"
           docker run --rm eth-node-test /workspace/test/run_tests.sh --lint-only
           echo "::endgroup::"
           echo "::group::Unit tests (Caddy validate, downloads, functions)"
-          docker run --rm --privileged -e USE_MOCKS=false -e CI=true eth-node-test /workspace/test/docker_test.sh
+          docker run --rm --privileged -e USE_MOCKS=false -e CI=true -e GITHUB_TOKEN="$GITHUB_TOKEN" eth-node-test /workspace/test/docker_test.sh
           echo "::endgroup::"
 
   run-1-structure:
