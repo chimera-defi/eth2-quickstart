@@ -7,6 +7,14 @@ concurrency:
 on:
   pull_request:
     branches: [ main, master, develop, 'cursor/**' ]
+    paths:
+      - 'frontend/**'
+      - '**/*.sh'
+      - 'test/**'
+      - 'install/**'
+      - 'lib/**'
+      - 'configs/**'
+      - '.github/**'
 
 jobs:
   # Path filters: run no-npm only when frontend changes
