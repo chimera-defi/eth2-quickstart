@@ -17,7 +17,8 @@ export function Install() {
   return (
     <section id="install" className="py-12 sm:py-16 md:py-20 lg:py-24">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="grid gap-8 sm:gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12 lg:items-center">
+        <div className="flex flex-col gap-8 sm:gap-10 lg:gap-12">
+          {/* Header and description */}
           <div>
             <Badge variant="primary">Install</Badge>
             <motion.h2
@@ -51,32 +52,35 @@ export function Install() {
                 </div>
               ))}
             </div>
-            <div className="mt-6 sm:mt-8 space-y-3 sm:space-y-4">
-              <Card className="border-border/60 bg-muted/40">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="font-mono uppercase tracking-wide">Bootstrap command</span>
-                  <span>Ubuntu 20.04+</span>
-                </div>
-                <div className="mt-3 overflow-x-auto">
-                  <CodeBlock code={INSTALL_COMMAND} language="bash" />
-                </div>
-              </Card>
-              <Card className="border-primary/20 bg-primary/5">
-                <div className="flex items-start gap-3 text-sm text-muted-foreground">
-                  <Shield className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <div>
-                    <p className="font-medium text-foreground">Two-phase security model</p>
-                    <p className="mt-1">
-                      Phase one runs as root to harden the host. After reboot, phase two
-                      completes client installs as the new operator.
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            </div>
           </div>
 
+          {/* Install command and two-phase card - stacked vertically */}
           <div className="space-y-3 sm:space-y-4">
+            <Card className="border-border/60 bg-muted/40">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="font-mono uppercase tracking-wide">Bootstrap command</span>
+                <span>Ubuntu 20.04+</span>
+              </div>
+              <div className="mt-3 overflow-x-auto">
+                <CodeBlock code={INSTALL_COMMAND} language="bash" />
+              </div>
+            </Card>
+            <Card className="border-primary/20 bg-primary/5">
+              <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                <Shield className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground">Two-phase security model</p>
+                  <p className="mt-1">
+                    Phase one runs as root to harden the host. After reboot, phase two
+                    completes client installs as the new operator.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Highlight cards - grid layout: 1 col mobile, 2 cols tablet, 3 cols desktop */}
+          <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {INSTALL_HIGHLIGHTS.map((item, index) => {
               const Icon = iconMap[item.icon as keyof typeof iconMap]
               return (
@@ -87,7 +91,7 @@ export function Install() {
                   viewport={{ once: true, amount: 0.4 }}
                   transition={{ duration: 0.4, delay: index * 0.1 }}
                 >
-                  <Card className="flex items-start gap-3 sm:gap-4 bg-muted/40">
+                  <Card className="flex h-full items-start gap-3 sm:gap-4 bg-muted/40">
                     <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-background">
                       <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                     </div>
