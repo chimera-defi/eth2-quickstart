@@ -22,10 +22,20 @@ pass() { echo -e "${GREEN}✓${NC} $1"; }
 fail() { echo -e "${RED}✗${NC} $1"; FAILED=1; }
 
 # Manifest exists
-[[ -f "$MANIFEST" ]] && pass "scripts.manifest exists" || { fail "scripts.manifest not found"; exit 1; }
+if [[ -f "$MANIFEST" ]]; then
+    pass "scripts.manifest exists"
+else
+    fail "scripts.manifest not found"
+    exit 1
+fi
 
 # help.sh exists
-[[ -f "$HELP_SCRIPT" ]] && pass "help.sh exists" || { fail "help.sh not found"; exit 1; }
+if [[ -f "$HELP_SCRIPT" ]]; then
+    pass "help.sh exists"
+else
+    fail "help.sh not found"
+    exit 1
+fi
 
 # help.sh exits 0
 cd "$PROJECT_ROOT" || exit 1

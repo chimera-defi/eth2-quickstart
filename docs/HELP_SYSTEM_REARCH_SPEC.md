@@ -112,8 +112,12 @@ When handing off to another agent or developer:
 ./help.sh                    # Human output
 ./help.sh --markdown         # Agent output
 ./test/validate_help.sh      # Validation
-./test/run_tests.sh --lint-only  # Full lint
+./test/run_tests.sh --lint-only  # Full lint (includes shellcheck when installed)
 ```
+
+### Pre-Commit (Required)
+- Run `./test/run_tests.sh --lint-only` – includes shellcheck, validate_help, syntax
+- Or run shellcheck directly: `find . -name "*.sh" ! -path "./.git/*" -exec shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 {} \;`
 
 ### What Not to Change
 - run_1.sh, run_2.sh, install.sh – already point to help.sh; do not modify
