@@ -38,7 +38,7 @@ RUN systemctl enable ssh 2>/dev/null || systemctl enable sshd 2>/dev/null || tru
 # Preserve DEBIAN_* through sudo so apt/dpkg stay noninteractive (prevents tzdata Readline hang)
 RUN useradd -m -s /bin/bash testuser \
     && echo "testuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
-    && echo 'Defaults env_keep += "DEBIAN_FRONTEND DEBIAN_PRIORITY"' > /etc/sudoers.d/99-noninteractive \
+    && echo 'Defaults env_keep += "DEBIAN_FRONTEND DEBIAN_PRIORITY TZ"' > /etc/sudoers.d/99-noninteractive \
     && chmod 440 /etc/sudoers.d/99-noninteractive
 
 # Set ownership

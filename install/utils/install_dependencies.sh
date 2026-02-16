@@ -168,7 +168,7 @@ install_production() {
     # Configure time synchronization (skip in Docker)
     if ! is_docker && command -v timedatectl &>/dev/null; then
         log_info "Configuring time synchronization..."
-        timedatectl set-ntp on || log_warn "Could not enable NTP"
+        TZ=UTC timedatectl set-ntp true 2>/dev/null || log_warn "Could not enable NTP (chrony uses pool.ntp.org by default)"
     fi
     
     log_info "All production dependencies installed successfully!"
