@@ -399,17 +399,17 @@ stop_all_services() {
     log_info "All services stopped"
 }
 
-# Add PPA repository
+# Add PPA repository (non-interactive to avoid prompts)
 add_ppa_repository() {
     local ppa="$1"
     
     if ! command_exists add-apt-repository; then
-        sudo apt-get update
-        sudo apt-get install -y software-properties-common
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get update
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common
     fi
     
     sudo add-apt-repository -y "$ppa"
-    sudo apt-get update
+    sudo env DEBIAN_FRONTEND=noninteractive apt-get update
     log_info "Added PPA repository: $ppa"
 }
 

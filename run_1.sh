@@ -54,6 +54,13 @@ log_info "Setting up user: $LOGIN_UNAME"
 setup_secure_user "$LOGIN_UNAME" "" "$COLLECTED_KEYS_FILE"
 rm -f "$COLLECTED_KEYS_FILE"
 
+# Preserve DEBIAN_* through sudo so Phase 2 apt/dpkg stay noninteractive (no tzdata/NTP prompts)
+if [[ ! -f /etc/sudoers.d/99-noninteractive ]]; then
+    echo 'Defaults env_keep += "DEBIAN_FRONTEND DEBIAN_PRIORITY"' > /etc/sudoers.d/99-noninteractive
+    chmod 440 /etc/sudoers.d/99-noninteractive
+    log_info "Configured sudo to preserve DEBIAN_FRONTEND for non-interactive apt"
+fi
+
 # Harden SSH (after user exists with keys)
 configure_ssh "$YourSSHPortNumber" "$SCRIPT_DIR"
 
