@@ -78,11 +78,9 @@ jobs:
         with:
           context: .
           file: test/Dockerfile
-          load: true
+          load: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
           push: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-          tags: |
-            eth-node-test
-            ghcr.io/${{ github.repository }}/eth-node-test:${{ github.sha }}
+          tags: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('ghcr.io/{0}/eth-node-test:{1}', github.repository, github.sha) || 'eth-node-test' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - id: meta
