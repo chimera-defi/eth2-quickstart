@@ -5,7 +5,7 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOG_PREFIX="CI"
+export LOG_PREFIX="CI"
 # shellcheck source=lib/test_utils.sh
 source "$SCRIPT_DIR/lib/test_utils.sh"
 
@@ -22,12 +22,14 @@ log_info "✓ Running as $(whoami)"
 
 cd "$PROJECT_ROOT" || exit 1
 
+# Need common_functions for ensure_directory before creating config
+source_common_functions
+
 # Override LOGIN_UNAME for Docker testuser (exports.sh loads config/user_config.env)
-mkdir -p config
+ensure_directory config
 echo "export LOGIN_UNAME='$(whoami)'" > config/user_config.env
 
 source_exports
-source_common_functions
 
 # Structure validation only - no actual installs. E2E (actual execution) is in ci_test_e2e.sh
 # Test 1: Verify required files exist
@@ -99,7 +101,7 @@ fi
 # Test 6: Create JWT secret
 log_info "Test 6: Test JWT secret creation..."
 jwt_file="$HOME/secrets/jwt.hex"
-mkdir -p "$HOME/secrets"
+ensure_directory "$HOME/secrets"
 if ensure_jwt_secret "$jwt_file"; then
     if [[ -f "$jwt_file" ]]; then
         jwt_len=$(wc -c < "$jwt_file")

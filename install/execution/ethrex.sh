@@ -65,8 +65,8 @@ if ! secure_download "$DOWNLOAD_URL" "$ETHREX_DIR/ethrex"; then
     log_warn "Pre-built binary not available, attempting to build from source..."
     
     # Fallback: Build from source
-    # Source Rust environment (installed centrally via install_dependencies.sh)
-    [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+    # Add Rust to PATH (installed centrally via install_dependencies.sh)
+    [[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:${PATH:-}"
     
     # Verify Rust is available
     if ! command -v cargo &> /dev/null; then

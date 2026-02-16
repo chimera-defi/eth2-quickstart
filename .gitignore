@@ -4,3 +4,6 @@ config/user_config.env
 # Cloned by install scripts (erigon.sh, reth.sh)
 erigon/
 reth/
+
+# Installation logs (run_1, run_2)
+logs/

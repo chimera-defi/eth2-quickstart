@@ -101,6 +101,12 @@ else
     # INTERACTIVE MODE (WHIPTAIL TUI)
     # =============================================================================
     
+    # Redirect stdin from terminal when it's a pipe (e.g. curl|bash) - whiptail needs
+    # terminal input for OK/Enter to work
+    if [[ -c /dev/tty ]] && ! [[ -t 0 ]]; then
+        exec 0</dev/tty
+    fi
+    
     # Check if whiptail is installed
     if ! command -v whiptail &>/dev/null; then
         log_error "Whiptail not found. Installing..."
@@ -214,7 +220,7 @@ cat > "$PHASE1_SCRIPT" << 'PHASE1_EOF'
 #!/bin/bash
 
 # Eth2 Quick Start - Phase 1: System Hardening
-# This script must be run as ROOT
+# Run as root or with sudo (re-execs with sudo if run as non-root user)
 #
 # After this script completes:
 # 1. REBOOT the system
@@ -232,8 +238,8 @@ source "$SCRIPT_DIR/exports.sh"
 # shellcheck source=lib/common_functions.sh
 source "$SCRIPT_DIR/lib/common_functions.sh"
 
-# Ensure running as root
-require_root
+# Require root - re-exec with sudo if running as non-root (preserves SUDO_USER for key collection)
+require_sudo_or_root "$@"
 
 echo ""
 echo "=============================================="
@@ -266,7 +272,7 @@ echo "Next steps:"
 echo "  1. Note the SSH credentials shown above"
 echo "  2. Reboot: sudo reboot"
 echo "  3. SSH back in as the NEW user"
-echo "  4. Run: cd \$(pwd) && ./install_phase2.sh"
+echo "  4. Run: cd ~/eth2-quickstart && ./install_phase2.sh"
 echo ""
 log_error "Do NOT skip the reboot - security changes require it!"
 echo ""
