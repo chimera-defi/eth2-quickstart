@@ -61,7 +61,7 @@ log_info "Test 4: Verify common functions..."
 source_common_functions
 
 functions_to_check=(
-    "log_info" "log_error" "require_sudo_or_root" "check_system_compatibility"
+    "log_info" "log_error" "require_sudo_or_root" "ensure_docker_e2e_keys" "check_system_compatibility"
     "configure_ssh" "setup_secure_user" "collect_and_backup_authorized_keys"
     "apply_network_security" "setup_security_monitoring" "generate_handoff_info"
 )

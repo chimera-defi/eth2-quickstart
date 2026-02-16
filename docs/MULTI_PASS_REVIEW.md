@@ -3,7 +3,7 @@
 ## Pass 1: Functionality ✓
 
 ### Build/Test/Lint
-- [x] `./test/run_tests.sh --lint-only` - passes (254 tests)
+- [x] `./test/run_tests.sh --lint-only` - passes (258 tests)
 - [x] `./test/validate_caddy_config.sh` - passes
 - [x] `./test/validate_downloads.sh` - passes
 - [x] `./install/utils/verify_client_configs.sh` - passes
@@ -21,7 +21,7 @@
 ## Pass 2: Architecture Compliance ✓
 
 ### Phase 1 / Phase 2 Boundary
-- [x] run_1.sh: require_root, ends with reboot
+- [x] run_1.sh: require_sudo_or_root, ends with reboot
 - [x] run_2.sh: check_user $LOGIN_UNAME (non-root)
 - [x] E2E: Phase 1 as root, Phase 2 as testuser
 

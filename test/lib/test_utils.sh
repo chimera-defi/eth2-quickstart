@@ -179,9 +179,9 @@ assert_script_loads() {
 # COMMON TEST UTILITIES
 # =============================================================================
 
-# Check if running inside Docker container
+# Check if running inside Docker/container (align with lib/common_functions.sh)
 is_docker() {
-    [[ -f /.dockerenv ]] || grep -q docker /proc/1/cgroup 2>/dev/null
+    [[ -f /.dockerenv ]] || grep -qE 'docker|containerd' /proc/1/cgroup 2>/dev/null
 }
 
 # Check if running as root
