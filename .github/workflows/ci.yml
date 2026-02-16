@@ -12,6 +12,7 @@ on:
       - 'test/Dockerfile'
       - 'test/docker-compose.yml'
       - '.github/workflows/ci.yml'
+      - '.github/actions/**'
   pull_request:
     branches: [ main, master, develop, 'cursor/**' ]
     paths:
@@ -19,6 +20,7 @@ on:
       - 'test/Dockerfile'
       - 'test/docker-compose.yml'
       - '.github/workflows/ci.yml'
+      - '.github/actions/**'
   workflow_dispatch:  # Allow manual trigger for testing
 
 # Path filters: run ONLY when shell files or test infra change. Skip on doc-only, config-only, frontend-only.

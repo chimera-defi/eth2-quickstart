@@ -30,6 +30,7 @@ Common CI failures and how to fix them.
 - `**/*.sh`
 - `test/Dockerfile`, `test/docker-compose.yml`
 - `.github/workflows/ci.yml`
+- `.github/actions/**`
 
 **Fix:** Ensure your changes touch one of these. Docs-only or frontend-only changes skip CI. Use `workflow_dispatch` to manually trigger if needed.
 
