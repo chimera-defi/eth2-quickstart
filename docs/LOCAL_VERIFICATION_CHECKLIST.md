@@ -6,7 +6,7 @@ Run before pushing to catch regressions.
 ```bash
 ./scripts/pre-commit.sh
 ```
-Runs shellcheck, syntax, shebang, dependency validation, run_1/run_2 structure, and common_functions unit tests. Matches ci.yml + shellcheck.yml.
+Runs shellcheck, syntax, shebang, dependency validation, run_1/run_2 structure, and common_functions unit tests. Matches shellcheck.yml (shell validation) and ci docker-integration (lint).
 
 ## Optional: Docker E2E (if Docker available)
 ```bash

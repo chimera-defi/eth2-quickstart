@@ -101,7 +101,7 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 4. **run_1.sh E2E** - Actually runs run_1.sh and verifies results (systemd + openssh)
 5. **run_2.sh Structure** - Validates run_2.sh structure, configs
 6. **run_2.sh E2E** - Runs run_2.sh with default clients, verifies installs
-7. **e2e-client-matrix** - 7 client combos (geth+prysm, besu+lighthouse, etc.)
+7. **e2e-client-matrix** - 6 client combos (besu+lighthouse, erigon+teku, etc.; geth+prysm in run-2-e2e)
 
 ### CI Test Scripts
 

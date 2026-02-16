@@ -75,7 +75,7 @@ Or manually: `./test/run_tests.sh --lint-only && bash install/test/test_common_f
 
 ## Job summaries
 
-Each job writes a short summary to `$GITHUB_STEP_SUMMARY`, visible in the job UI. On success: ✅ and key info (e.g. image tag, matrix combo). On failure: ❌ and guidance. Use these to quickly see what failed without scrolling logs.
+Most jobs write a short summary to `$GITHUB_STEP_SUMMARY`, visible in the job UI (filter jobs like pr-checks/changes omit it). On success: ✅ and key info (e.g. image tag, matrix combo). On failure: ❌ and guidance. Use these to quickly see what failed without scrolling logs.
 
 ## Artifact retention
 

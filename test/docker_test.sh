@@ -38,7 +38,7 @@ done
 # =============================================================================
 log_header "Step 2: Shellcheck and Syntax Validation"
 
-# Skip shellcheck if already run in CI (e.g. ci.yml shellcheck job runs first)
+# Skip shellcheck (runs in shellcheck.yml; ci docker jobs skip to avoid duplication)
 if [[ "${SKIP_SHELLCHECK:-false}" == "true" ]]; then
     log_info "Skipping shellcheck (already run in CI)"
     record_test "Shellcheck" "SKIP"

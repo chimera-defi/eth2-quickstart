@@ -1,5 +1,5 @@
 #!/bin/bash
-# Pre-commit checks matching CI (ci.yml + shellcheck.yml). Run before pushing.
+# Pre-commit checks matching shellcheck.yml. Run before pushing.
 # Usage: ./scripts/pre-commit.sh
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
