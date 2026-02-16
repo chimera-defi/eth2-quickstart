@@ -61,7 +61,7 @@ PRODUCTION_PACKAGES=(
     cmake
     libssl-dev
     libgmp-dev
-    libtinfo5
+    libtinfo6  # Terminal info (ncurses) - LLVM/clang, Rust, build tools. libtinfo5 removed in Ubuntu 24.04.
     libprotobuf-dev
     pkg-config
     openjdk-17-jdk
