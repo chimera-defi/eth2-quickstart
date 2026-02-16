@@ -1,5 +1,5 @@
 #!/bin/bash
-# View run_1, run_2, and security validation logs
+# View run_1.sh, run_2.sh, and security validation logs
 # Usage: ./install/utils/view_logs.sh [--list|--run1|--run2|--security] [-n N] [-f]
 
 set -e
@@ -42,8 +42,8 @@ while [[ $# -gt 0 ]]; do
         *)
             echo "Usage: $0 [--list|--run1|--run2|--security] [-n N] [-f]"
             echo "  --list     List all logs"
-            echo "  --run1     Latest run_1 log"
-            echo "  --run2     Latest run_2 log"
+            echo "  --run1     Latest run_1.sh log"
+            echo "  --run2     Latest run_2.sh log"
             echo "  --security Latest security validation log"
             echo "  -n N       Show last N lines (default 50)"
             echo "  -f         Follow (like tail -f)"
@@ -61,14 +61,14 @@ latest() {
 
 case "$MODE" in
     list)
-        echo "=== run_1 (sudo may be needed) ==="
+        echo "=== run_1.sh (sudo may be needed) ==="
         if [[ -d "$RUN1_DIR" ]]; then
             ls -la "$RUN1_DIR"/*.log 2>/dev/null || echo "  (none)"
         else
             echo "  (dir not found)"
         fi
         echo ""
-        echo "=== run_2 / security ==="
+        echo "=== run_2.sh / security validation ==="
         if [[ -d "$RUN2_DIR" ]]; then
             ls -la "$RUN2_DIR"/*.log 2>/dev/null || echo "  (none)"
         else
@@ -78,7 +78,7 @@ case "$MODE" in
     run1)
         f=$(latest "$RUN1_DIR" "run_1_*.log")
         if [[ -z "$f" ]]; then
-            echo "No run_1 logs in $RUN1_DIR"
+            echo "No run_1.sh logs in $RUN1_DIR"
             exit 1
         fi
         if [[ -r "$f" ]]; then
@@ -90,7 +90,7 @@ case "$MODE" in
     run2)
         f=$(latest "$RUN2_DIR" "run_2_*.log")
         if [[ -z "$f" || ! -r "$f" ]]; then
-            echo "No run_2 logs in $RUN2_DIR"
+            echo "No run_2.sh logs in $RUN2_DIR"
             exit 1
         fi
         if [[ "$FOLLOW" == true ]]; then tail -n "$LINES" -f "$f"; else tail -n "$LINES" "$f"; fi

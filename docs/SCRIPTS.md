@@ -62,13 +62,13 @@ sudo systemctl start eth1 cl validator mev
 
 ## Logs
 
-run_1 and run_2 write logs to disk. View them with:
+run_1.sh and run_2.sh write logs to disk. View them with:
 ```bash
 ./install/utils/view_logs.sh [--list|--run1|--run2|--security] [-n N] [-f]
 ```
 - `--list` – list all logs
-- `--run1` – latest run_1 log (in /var/log/eth2-quickstart)
-- `--run2` – latest run_2 log (in ~/eth2-quickstart/logs)
+- `--run1` – latest run_1.sh log (in /var/log/eth2-quickstart)
+- `--run2` – latest run_2.sh log (in ~/eth2-quickstart/logs)
 - `--security` – latest security validation log
 - `-n N` – last N lines (default 50)
 - `-f` – follow (tail -f)

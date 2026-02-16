@@ -880,7 +880,7 @@ generate_handoff_info() {
 
     log_info "Generating secure handoff information..."
 
-    # Determine Phase 2 script: install_phase2.sh (from install wizard) or run_2.sh
+    # Phase 2 script: run_2.sh (direct) or install_phase2.sh (wizard-generated), whichever exists
     local phase2_script="run_2.sh"
     if [[ -n "$install_path" ]] && [[ -f "$install_path/install_phase2.sh" ]]; then
         phase2_script="install_phase2.sh"
