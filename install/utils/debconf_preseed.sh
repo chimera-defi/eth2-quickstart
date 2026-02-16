@@ -19,9 +19,11 @@ echo "postfix postfix/main_mailer_type string No configuration" | debconf-set-se
 echo "cron cron/upgrade_available boolean false" | debconf-set-selections 2>/dev/null || true
 echo "cron cron/upgrade_available_seen boolean true" | debconf-set-selections 2>/dev/null || true
 
-# tzdata - timezone
+# tzdata - timezone (chrony depends on this; default UTC)
 echo "tzdata tzdata/Areas select Etc" | debconf-set-selections 2>/dev/null || true
 echo "tzdata tzdata/Zones/Etc select UTC" | debconf-set-selections 2>/dev/null || true
+echo "tzdata tzdata/Areas string Etc" | debconf-set-selections 2>/dev/null || true
+echo "tzdata tzdata/Zones/Etc string UTC" | debconf-set-selections 2>/dev/null || true
 
 # needrestart - which services to restart
 echo "needrestart needrestart/restart-services string" | debconf-set-selections 2>/dev/null || true

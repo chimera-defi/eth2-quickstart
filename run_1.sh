@@ -29,6 +29,7 @@ check_system_compatibility
 # Postfix is NOT needed for Ethereum nodes - we avoid it via --no-install-recommends
 export DEBIAN_FRONTEND=noninteractive
 export DEBIAN_PRIORITY=critical
+export TZ=UTC
 if [[ -f "$SCRIPT_DIR/install/utils/debconf_preseed.sh" ]]; then
     log_info "Pre-seeding debconf for non-interactive install..."
     "$SCRIPT_DIR/install/utils/debconf_preseed.sh"
@@ -62,7 +63,7 @@ rm -f "$COLLECTED_KEYS_FILE"
 
 # Preserve DEBIAN_* through sudo so Phase 2 apt/dpkg stay noninteractive (no tzdata/NTP prompts)
 if [[ ! -f /etc/sudoers.d/99-noninteractive ]]; then
-    echo 'Defaults env_keep += "DEBIAN_FRONTEND DEBIAN_PRIORITY"' > /etc/sudoers.d/99-noninteractive
+    echo 'Defaults env_keep += "DEBIAN_FRONTEND DEBIAN_PRIORITY TZ"' > /etc/sudoers.d/99-noninteractive
     chmod 440 /etc/sudoers.d/99-noninteractive
     log_info "Sudo configured for non-interactive apt"
 fi

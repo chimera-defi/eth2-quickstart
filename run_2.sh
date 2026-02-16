@@ -32,6 +32,7 @@ log_info "Log file: $LOG_FILE"
 
 export DEBIAN_FRONTEND=noninteractive
 export DEBIAN_PRIORITY=critical
+export TZ=UTC
 
 # Parse flags for non-interactive mode
 EXECUTION_CLIENT=""
