@@ -501,6 +501,7 @@ ensure_jwt_secret() {
     if [[ ! -f "$jwt_path" ]]; then
         log_info "Generating JWT secret at $jwt_path"
         mkdir -p "$(dirname "$jwt_path")"
+        chmod 700 "$(dirname "$jwt_path")"
         openssl rand -hex 32 > "$jwt_path"
         chmod 600 "$jwt_path"
         log_info "JWT secret generated and secured"
@@ -1048,6 +1049,18 @@ EOF
     if ! echo "$existing_crontab" | grep -Fq "/usr/local/bin/security_monitor.sh"; then
         (echo "$existing_crontab"; echo "$cron_entry") | crontab -
     fi
+
+    # Setup log rotation for security monitor
+    tee /etc/logrotate.d/security_monitor > /dev/null << 'LOGROTATE'
+/var/log/security_monitor.log {
+    weekly
+    rotate 4
+    compress
+    delaycompress
+    missingok
+    notifempty
+}
+LOGROTATE
 
     log_info "Security monitoring setup complete"
 }
