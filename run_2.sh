@@ -102,6 +102,11 @@ if ! "$SCRIPT_DIR/install/utils/verify_client_configs.sh"; then
     exit 1
 fi
 
+# Ensure JWT secret exists before any client install (idempotent - skip if present)
+# Execution clients need this at service start; creating early allows any install order
+ensure_directory "$HOME/secrets"
+ensure_jwt_secret "$HOME/secrets/jwt.hex"
+
 # Non-interactive path: install specified clients via flags
 if [[ "$FLAGS_MODE" == "true" ]]; then
     FAILED=0
