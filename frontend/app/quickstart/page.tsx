@@ -1,12 +1,7 @@
 import type { Metadata } from 'next'
 import { CodeBlock } from '@/components/ui/CodeBlock'
 import { Button } from '@/components/ui/Button'
-import {
-  INSTALLATION_STEPS,
-  INSTALLATION_STEPS_MANUAL,
-  PREREQUISITES,
-  SITE_CONFIG,
-} from '@/lib/constants'
+import { INSTALLATION_STEPS, PREREQUISITES, SITE_CONFIG } from '@/lib/constants'
 import { ArrowRight, Server, HardDrive, Cpu } from 'lucide-react'
 
 export const metadata: Metadata = {
@@ -104,28 +99,16 @@ export default function QuickstartPage() {
           </div>
         </section>
         
-        {/* Installation Steps - One-liner (recommended) */}
+        {/* Installation Steps */}
         <section className="mt-10 sm:mt-16">
           <h2 className="text-lg sm:text-xl font-semibold text-foreground">
-            Installation (One-Liner)
+            Installation
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Runs the wizard, then generates phase scripts. Same command as the homepage.
+            Clone the repo, run run_1.sh, reboot, then run_2.sh. Matches the README.
           </p>
           
-          <InstallationStepsList steps={INSTALLATION_STEPS} idPrefix="oneline" />
-        </section>
-        
-        {/* Manual Installation (alternative) */}
-        <section className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
-            Alternative: Manual Installation
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Clone the repo and run run_1.sh, run_2.sh directly.
-          </p>
-          
-          <InstallationStepsList steps={INSTALLATION_STEPS_MANUAL} idPrefix="manual" />
+          <InstallationStepsList steps={INSTALLATION_STEPS} idPrefix="install" />
         </section>
         
         {/* Help section */}
