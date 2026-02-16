@@ -117,7 +117,7 @@ else
 fi
 
 # Generate and save handoff information (auto-detects server IP)
-generate_handoff_info "$LOGIN_UNAME" "" "" "$YourSSHPortNumber" "$USER_INSTALL_DIR"
+generate_handoff_info "$LOGIN_UNAME" "" "" "$YourSSHPortNumber"
 
 log_info "=== SETUP COMPLETE ==="
 log_info "Reboot required: sudo reboot"
