@@ -413,6 +413,24 @@ run_config_verification() {
 }
 
 # =============================================================================
+# PHASE 4b: HELP SYSTEM VALIDATION
+# =============================================================================
+
+run_help_validation() {
+    log_header "PHASE 4b: Help System Validation"
+    
+    if [[ -x "$SCRIPT_DIR/validate_help.sh" ]]; then
+        if "$SCRIPT_DIR/validate_help.sh"; then
+            log_test "PASS" "validate_help.sh: all checks passed"
+        else
+            log_test "FAIL" "validate_help.sh: some checks failed"
+        fi
+    else
+        log_test "SKIP" "validate_help.sh not found or not executable"
+    fi
+}
+
+# =============================================================================
 # PHASE 5: UNIT TESTS
 # =============================================================================
 
@@ -659,6 +677,7 @@ main() {
         run_source_verification
         run_source_path_tests
         run_config_verification
+        run_help_validation
     fi
     
     if $run_unit; then
