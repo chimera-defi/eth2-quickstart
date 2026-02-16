@@ -29,10 +29,9 @@ concurrency:
   group: ci-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
-# Fail-fast: jobs run in dependency chain. When one fails, subsequent jobs are skipped.
-# Order: shellcheck -> build-docker -> docker-integration -> run-* -> e2e-client-matrix.
-# build-docker pushes to GHCR when not a fork; other jobs pull instead of building.
-# Job-level timeouts prevent runaway jobs (e.g. 10hr hangs).
+# Fail-fast: shellcheck -> build-docker -> (docker-integration + run-* in parallel) -> e2e-client-matrix.
+# docker-integration and run-* run in parallel (all need image only). Matrix has fail-fast.
+# Note: GitHub Actions cannot cancel sibling jobs when one fails; matrix jobs cancel each other.
 jobs:
   shellcheck:
     runs-on: ubuntu-latest
@@ -130,7 +129,7 @@ jobs:
           echo "::endgroup::"
 
   run-1-structure:
-    needs: [docker-integration, build-docker]
+    needs: [build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -164,7 +163,7 @@ jobs:
             eth-node-test /workspace/test/ci_test_run_1.sh
 
   run-1-e2e:
-    needs: [docker-integration, build-docker]
+    needs: [build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -197,7 +196,7 @@ jobs:
         run: SKIP_BUILD=true ./test/run_e2e.sh --phase=1
 
   run-2-structure:
-    needs: [docker-integration, build-docker]
+    needs: [build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -231,7 +230,7 @@ jobs:
             eth-node-test /workspace/test/ci_test_run_2.sh
 
   run-2-e2e:
-    needs: [docker-integration, build-docker]
+    needs: [build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -270,7 +269,7 @@ jobs:
           ./test/run_e2e.sh --phase=2
 
   run-2-web:
-    needs: [docker-integration, build-docker]
+    needs: [build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
