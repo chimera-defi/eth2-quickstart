@@ -35,10 +35,7 @@ if [[ -f "$SCRIPT_DIR/install/utils/debconf_preseed.sh" ]]; then
     "$SCRIPT_DIR/install/utils/debconf_preseed.sh"
 fi
 
-# Lockout prevention: ensure root has keys (copy from SUDO_USER if needed), then collect
-# When user runs sudo ./run_1.sh, keys are in ~/.ssh/authorized_keys - copy to root so collect finds them
-ensure_root_has_authorized_keys || true
-COLLECTED_KEYS_FILE=""
+# Lockout prevention: collect from root and SUDO_USER (collect uses getent for SUDO_USER home)
 COLLECTED_KEYS_FILE=$(collect_and_backup_authorized_keys) || true
 
 # Docker E2E: when no keys - create placeholder (is_docker or CI/GITHUB_ACTIONS; latter more reliable in GA)
@@ -51,7 +48,7 @@ if { [[ -z "$COLLECTED_KEYS_FILE" ]] || [[ ! -s "$COLLECTED_KEYS_FILE" ]]; } && 
 fi
 
 if [[ -z "$COLLECTED_KEYS_FILE" ]] || [[ ! -s "$COLLECTED_KEYS_FILE" ]]; then
-    log_error "CRITICAL: No SSH keys found in /root/.ssh/authorized_keys, \$SUDO_USER's ~/.ssh/authorized_keys, or current user's ~/.ssh/authorized_keys"
+    log_error "CRITICAL: No SSH keys found in /root/.ssh/authorized_keys or \$SUDO_USER's ~/.ssh/authorized_keys"
     log_error "Diagnostics: root_keys=$([[ -f /root/.ssh/authorized_keys ]] && wc -c < /root/.ssh/authorized_keys || echo 0) SUDO_USER=${SUDO_USER:-unset} CI=${CI:-unset}"
     log_error "Add your key first: ssh-copy-id root@<your-server-ip>"
     log_error "Or if using sudo: ssh-copy-id <your-user>@<your-server-ip>"

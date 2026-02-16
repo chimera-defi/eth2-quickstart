@@ -214,10 +214,10 @@ test_check_system_compatibility_nonroot() {
     fi
 }
 
-# Test 11: Regression - ensure_root_has_authorized_keys and collect use getent for SUDO_USER
+# Test 11: Regression - collect uses getent for SUDO_USER home (non-/home paths)
 test_getent_for_sudo_user() {
     if grep -q "getent passwd.*SUDO_USER" "$PROJECT_ROOT/lib/common_functions.sh"; then
-        echo "  ensure_root and collect use getent for SUDO_USER home"
+        echo "  collect uses getent for SUDO_USER home"
         return 0
     else
         echo "  ERROR: getent for SUDO_USER missing (needed for non-/home paths)"

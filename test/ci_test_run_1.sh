@@ -188,12 +188,12 @@ else
     exit 1
 fi
 
-# Test 14b: Regression - SUDO_USER home uses getent (supports non-/home paths)
-log_info "Test 14b: Verify getent for SUDO_USER home (non-/home support)..."
+# Test 14b: Regression - collect uses getent for SUDO_USER home (non-/home paths)
+log_info "Test 14b: Verify getent for SUDO_USER home..."
 if grep -q "getent passwd.*SUDO_USER" "$PROJECT_ROOT/lib/common_functions.sh"; then
-    log_info "  collect/ensure_root use getent for SUDO_USER home"
+    log_info "  collect uses getent for SUDO_USER home"
 else
-    log_error "  common_functions must use getent for SUDO_USER home (supports /var/lib/jenkins etc)"
+    log_error "  common_functions must use getent for SUDO_USER home"
     exit 1
 fi
 
