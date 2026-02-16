@@ -21,6 +21,7 @@
 | view_logs.sh helper | Done | d879d6a |
 | Security validation debug output | Done | e0d2bd8 |
 | Naming consistency (run_1.sh/run_2.sh) | Done | 42ecca9 |
+| Security validation (PR 88): non-root permission fix | Done | (this branch) |
 
 ## Multi-Pass Review Status (2026-02-16)
 
@@ -35,6 +36,7 @@
 - JWT: Prysm must generate; consensus before execution
 - E2E: /root/.ssh/authorized_keys must exist before run_1 (baked into test/Dockerfile + ci_test_run_1_e2e.sh)
 - Phase 2: Must run as non-root (LOGIN_UNAME)
+- Security validation: runs as eth user; check existence/cron, don't execute root scripts
 
 ## Verification Commands (run before push)
 
