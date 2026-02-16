@@ -651,7 +651,17 @@ collect_and_backup_authorized_keys() {
         _collect_keys_from "$sudo_home/.ssh/authorized_keys" "$SUDO_USER" "$merged_file" key_count sources
     fi
 
-    # 3. All users with /home/*/.ssh/authorized_keys (ubuntu, admin, deploy, etc)
+    # 3. Current user (whoami) - may differ from root in containers; getent for home
+    local current_user
+    current_user=$(whoami 2>/dev/null || true)
+    if [[ -n "$current_user" ]]; then
+        local current_home
+        current_home=$(getent passwd "$current_user" 2>/dev/null | cut -d: -f6 || true)
+        [[ -z "$current_home" ]] && current_home="/home/$current_user"
+        _collect_keys_from "$current_home/.ssh/authorized_keys" "$current_user" "$merged_file" key_count sources
+    fi
+
+    # 4. All /home/* users (ubuntu, admin, deploy, etc) - _collect_keys_from dedupes by key
     local home_dir
     for home_dir in /home/*/; do
         [[ -d "$home_dir" ]] || continue
