@@ -56,6 +56,19 @@ export DEBIAN_PRIORITY=critical
 # Pre-seed debconf (single source: install/utils/debconf_preseed.sh)
 "$PROJECT_ROOT/install/utils/debconf_preseed.sh"
 
+# Strategy 3: Explicitly pass CI env to run_1 (in case docker exec doesn't inherit)
+export CI=true
+export GITHUB_ACTIONS="${GITHUB_ACTIONS:-true}"
+
+# Strategy 4: Pass pre-created keys file - run_1 can use this to bypass collect if needed
+CI_KEYS_FILE="/tmp/ci_authorized_keys_$$"
+mkdir -p /root/.ssh
+printf '%s\n' "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > "$CI_KEYS_FILE"
+cp "$CI_KEYS_FILE" /root/.ssh/authorized_keys
+chmod 600 /root/.ssh/authorized_keys
+chmod 600 "$CI_KEYS_FILE"
+export CI_KEYS_FILE
+
 if "$PROJECT_ROOT/run_1.sh"; then
     record_test "run_1.sh execution" "PASS"
 else
