@@ -122,6 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
@@ -153,6 +154,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
@@ -176,6 +178,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
@@ -198,6 +201,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
@@ -221,6 +225,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
@@ -249,6 +254,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
@@ -303,6 +309,7 @@ jobs:
             cons: prysm
             mev: mev-boost
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}

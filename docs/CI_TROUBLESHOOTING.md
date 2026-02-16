@@ -20,6 +20,12 @@ Common CI failures and how to fix them.
 
 **Expected:** Fork PRs fall back to building the image locally in each job. The `docker-prep` action detects empty `image` and runs the build step. CI is slower but works.
 
+### Can't find action.yml under .github/actions/docker-prep
+
+**Symptom:** `Error: Can't find 'action.yml' ... Did you forget to run actions/checkout before running your local action?`
+
+**Cause:** Local composite actions are loaded from the workspace. The workspace is empty until checkout runs. Jobs that use `./.github/actions/docker-prep` must run `actions/checkout@v4` **before** the docker-prep step so GitHub can find the action definition.
+
 ## Path filters
 
 ### CI didn't run on my PR
