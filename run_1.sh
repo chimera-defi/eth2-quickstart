@@ -106,4 +106,4 @@ generate_handoff_info "$LOGIN_UNAME" "" "" "$YourSSHPortNumber" "$USER_INSTALL_D
 log_info "=== SETUP COMPLETE ==="
 log_info "Reboot required: sudo reboot"
 log_info "Handoff info saved to /root/handoff_info.txt"
-log_info "Full log saved to: $LOG_FILE"
+log_info "Log: $LOG_FILE (view: ./install/utils/view_logs.sh --run1)"
