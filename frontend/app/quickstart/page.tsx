@@ -20,6 +20,31 @@ const RECOMMENDED_SPECS = [
   { label: 'Storage', value: '4TB NVMe', icon: HardDrive },
 ]
 
+type Step = { step: number; title: string; description: string; code: string }
+
+function InstallationStepsList({ steps, idPrefix }: { steps: Step[]; idPrefix: string }) {
+  return (
+    <div className="mt-6 sm:mt-8 space-y-8 sm:space-y-12">
+      {steps.map((item, index) => (
+        <div key={`${idPrefix}-${item.step}`}>
+          <div className="flex items-start gap-3 sm:gap-4">
+            <span className="font-mono text-sm text-muted-foreground shrink-0 mt-0.5">
+              {String(index + 1).padStart(2, '0')}
+            </span>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-medium text-foreground">{item.title}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
+            </div>
+          </div>
+          <div className="mt-3 sm:mt-4 ml-0 sm:ml-10 overflow-x-auto">
+            <CodeBlock code={item.code} language="bash" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function QuickstartPage() {
   return (
     <div className="min-h-screen py-12 sm:py-16 md:py-24">
@@ -85,27 +110,10 @@ export default function QuickstartPage() {
             Installation (One-Liner)
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Matches the install command on the homepage. Runs the wizard, then generates phase scripts.
+            Runs the wizard, then generates phase scripts. Same command as the homepage.
           </p>
           
-          <div className="mt-6 sm:mt-8 space-y-8 sm:space-y-12">
-            {INSTALLATION_STEPS.map((item, index) => (
-              <div key={item.step}>
-                <div className="flex items-start gap-3 sm:gap-4">
-                  <span className="font-mono text-sm text-muted-foreground shrink-0 mt-0.5">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-foreground">{item.title}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
-                  </div>
-                </div>
-                <div className="mt-3 sm:mt-4 ml-0 sm:ml-10 overflow-x-auto">
-                  <CodeBlock code={item.code} language="bash" />
-                </div>
-              </div>
-            ))}
-          </div>
+          <InstallationStepsList steps={INSTALLATION_STEPS} idPrefix="oneline" />
         </section>
         
         {/* Manual Installation (alternative) */}
@@ -114,27 +122,10 @@ export default function QuickstartPage() {
             Alternative: Manual Installation
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            If you prefer to clone the repo and run scripts directly instead of the one-liner.
+            Clone the repo and run run_1.sh, run_2.sh directly.
           </p>
           
-          <div className="mt-6 sm:mt-8 space-y-8 sm:space-y-12">
-            {INSTALLATION_STEPS_MANUAL.map((item, index) => (
-              <div key={`manual-${item.step}`}>
-                <div className="flex items-start gap-3 sm:gap-4">
-                  <span className="font-mono text-sm text-muted-foreground shrink-0 mt-0.5">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-foreground">{item.title}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
-                  </div>
-                </div>
-                <div className="mt-3 sm:mt-4 ml-0 sm:ml-10 overflow-x-auto">
-                  <CodeBlock code={item.code} language="bash" />
-                </div>
-              </div>
-            ))}
-          </div>
+          <InstallationStepsList steps={INSTALLATION_STEPS_MANUAL} idPrefix="manual" />
         </section>
         
         {/* Help section */}

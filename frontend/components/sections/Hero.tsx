@@ -25,7 +25,7 @@ export function Hero() {
               transition={{ duration: 0.6 }}
               className="flex flex-wrap items-center gap-2 sm:gap-3"
             >
-              <Badge variant="primary">Zero-downtime onboarding</Badge>
+              <Badge variant="primary">Two-phase setup</Badge>
               <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
                 Ethereum infrastructure
               </span>
@@ -128,7 +128,7 @@ export function Hero() {
                 One command
               </p>
               <p className="mt-2 text-sm text-muted-foreground">
-                Copy the install command from the section below to bootstrap your server.
+                Scroll down to copy the install command.
               </p>
               <Button href="#install" variant="secondary" size="sm" className="mt-4 w-fit">
                 View Install Command
