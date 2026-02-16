@@ -116,25 +116,10 @@ if ! "$SCRIPT_DIR/install/utils/verify_client_configs.sh"; then
     exit 1
 fi
 
-# Ensure JWT secret exists before any client install (idempotent - skip if present)
-# Execution clients need this at service start; creating early allows any install order
-ensure_directory "$HOME/secrets"
-ensure_jwt_secret "$HOME/secrets/jwt.hex"
-
 # Non-interactive path: install specified clients via flags
+# Consensus before execution so Prysm can generate JWT (execution clients need it)
 if [[ "$FLAGS_MODE" == "true" ]]; then
     FAILED=0
-    if [[ -n "$EXECUTION_CLIENT" ]]; then
-        case "$EXECUTION_CLIENT" in
-            geth|besu|erigon|nethermind|nimbus_eth1|reth|ethrex)
-                run_install_script "$SCRIPT_DIR/install/execution/${EXECUTION_CLIENT}.sh" "$EXECUTION_CLIENT" || FAILED=1
-                ;;
-            *)
-                log_error "Unknown execution client: $EXECUTION_CLIENT"
-                exit 1
-                ;;
-        esac
-    fi
     if [[ -n "$CONSENSUS_CLIENT" ]]; then
         case "$CONSENSUS_CLIENT" in
             prysm|lighthouse|lodestar|teku|nimbus|grandine)
@@ -142,6 +127,21 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
                 ;;
             *)
                 log_error "Unknown consensus client: $CONSENSUS_CLIENT"
+                exit 1
+                ;;
+        esac
+    fi
+    if [[ -n "$EXECUTION_CLIENT" ]]; then
+        if [[ ! -s "$HOME/secrets/jwt.hex" ]]; then
+            ensure_directory "$HOME/secrets"
+            ensure_jwt_secret "$HOME/secrets/jwt.hex"
+        fi
+        case "$EXECUTION_CLIENT" in
+            geth|besu|erigon|nethermind|nimbus_eth1|reth|ethrex)
+                run_install_script "$SCRIPT_DIR/install/execution/${EXECUTION_CLIENT}.sh" "$EXECUTION_CLIENT" || FAILED=1
+                ;;
+            *)
+                log_error "Unknown execution client: $EXECUTION_CLIENT"
                 exit 1
                 ;;
         esac
@@ -248,18 +248,19 @@ if ! validate_menu_choice "$client_choice" 2; then
 fi
 
 # Function to install default clients (reduces code duplication)
+# Prysm before Geth so Prysm generates JWT (execution clients need it)
 install_default_clients() {
     log_info "Installing default clients (Geth + Prysm + Selected MEV)..."
     
-    log_info "Installing Geth..."
-    if ! "$SCRIPT_DIR/install/execution/geth.sh"; then
-        log_error "Failed to install Geth"
-        return 1
-    fi
-
     log_info "Installing Prysm..."
     if ! "$SCRIPT_DIR/install/consensus/prysm.sh"; then
         log_error "Failed to install Prysm"
+        return 1
+    fi
+
+    log_info "Installing Geth..."
+    if ! "$SCRIPT_DIR/install/execution/geth.sh"; then
+        log_error "Failed to install Geth"
         return 1
     fi
 
@@ -350,7 +351,7 @@ case "$client_choice" in
         fi
         
         log_info "Please run the recommended install scripts from the client selection tool"
-        log_info "Example: ./install/execution/geth.sh && ./install/consensus/prysm.sh"
+        log_info "Example: ./install/consensus/prysm.sh && ./install/execution/geth.sh"
         ;;
     2)
         if ! install_default_clients; then
