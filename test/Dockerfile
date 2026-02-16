@@ -1,9 +1,9 @@
 # Test Environment Dockerfile
-# 
-# Uses the centralized install_dependencies.sh script with --test mode
-# This ensures test and production dependencies stay in sync
+#
+# Uses Ubuntu 24.04 - production target. E2E runs install_dependencies --production
+# at runtime (ci_test_e2e.sh), validating PRODUCTION_PACKAGES on Ubuntu 24.
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 # Prevent interactive prompts during package installation (batteries-included)
 ENV DEBIAN_FRONTEND=noninteractive
