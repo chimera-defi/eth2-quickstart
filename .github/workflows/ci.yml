@@ -309,7 +309,7 @@ jobs:
   # Execution: geth, besu, erigon, nethermind, nimbus_eth1, reth, ethrex
   # Consensus: prysm, lighthouse, teku, nimbus, grandine, lodestar
   e2e-client-matrix:
-    needs: [run-1-structure, run-1-e2e, run-2-structure, run-2-e2e, run-2-web, build-docker]
+    needs: [docker-integration, run-1-structure, run-1-e2e, run-2-structure, run-2-e2e, run-2-web, build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 35
     strategy:
