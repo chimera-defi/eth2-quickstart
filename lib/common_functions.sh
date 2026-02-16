@@ -414,13 +414,15 @@ add_ppa_repository() {
 }
 
 # Install dependencies
+# Uses --no-install-recommends to avoid pulling in postfix (cron suggests mail-transport-agent)
+# Ethereum nodes do not need a mail server or local mailbox
 install_dependencies() {
     local packages=("$@")
     
     log_info "Installing dependencies: ${packages[*]}"
     
     sudo apt-get update
-    if sudo apt-get install -y "${packages[@]}"; then
+    if sudo apt-get install -y --no-install-recommends "${packages[@]}"; then
         log_info "Dependencies installed successfully"
     else
         log_error "Failed to install some dependencies"

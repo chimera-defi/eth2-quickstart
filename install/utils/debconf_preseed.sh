@@ -1,11 +1,15 @@
 #!/bin/bash
 # Debconf pre-seeding - single source for non-interactive apt/dpkg
-# Used by: test/Dockerfile (build), test/ci_test_e2e.sh (Phase 1 and 2 E2E)
+# Used by: run_1.sh (production), test/Dockerfile (build), test/ci_test_e2e.sh (Phase 1 and 2 E2E)
 # Prevents hangs on postfix, cron, tzdata, needrestart during install/upgrade
+#
+# Note: Postfix is NOT needed for Ethereum nodes. We avoid it via --no-install-recommends
+# in install_dependencies. This preseed is a fallback if apt upgrade pulls it in as a
+# dependency - "Local only" means no SMTP, no mailbox config, minimal footprint.
 
 set -Eeuo pipefail
 
-# postfix - mail server config
+# postfix - fallback if pulled in by apt (Local only = no mail server, no prompts)
 echo "postfix postfix/mailname string localhost" | debconf-set-selections 2>/dev/null || true
 echo "postfix postfix/main_mailer_type string 'Local only'" | debconf-set-selections 2>/dev/null || true
 
