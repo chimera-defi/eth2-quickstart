@@ -91,9 +91,9 @@ export function Install() {
                   viewport={{ once: true, amount: 0.4 }}
                   transition={{ duration: 0.4, delay: index * 0.1 }}
                 >
-                  <Card className="flex h-full items-start gap-3 sm:gap-4 bg-muted/40">
-                    <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-background">
-                      <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                  <Card padding="sm" className="flex h-full items-start gap-3 sm:gap-4 bg-muted/40">
+                    <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg bg-background">
+                      <Icon className="h-4 w-4 text-primary" />
                     </div>
                     <div className="min-w-0">
                       <h3 className="font-medium text-foreground">{item.title}</h3>
