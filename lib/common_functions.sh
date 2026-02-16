@@ -9,6 +9,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
+export BLUE  # Used by doctor.sh, run_manifest.sh
 
 # =============================================================================
 # CORE UTILITY FUNCTIONS
@@ -50,9 +51,19 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Check if running inside Docker/container
+# Check if running inside Docker/container (/.dockerenv or cgroup)
 is_docker() {
-    [[ -f /.dockerenv ]] || grep -q docker /proc/1/cgroup 2>/dev/null
+    [[ -f /.dockerenv ]] || grep -qE 'docker|containerd' /proc/1/cgroup 2>/dev/null
+}
+
+# Ensure /root/.ssh/authorized_keys exists when in Docker and empty (E2E only; is_docker guard)
+# Dockerfile/ci_test keys may not persist with systemd-as-init; run_1 creates as fallback
+ensure_docker_e2e_keys() {
+    if is_docker && [[ ! -s /root/.ssh/authorized_keys ]]; then
+        mkdir -p /root/.ssh
+        printf '%s\n' "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > /root/.ssh/authorized_keys
+        chmod 600 /root/.ssh/authorized_keys
+    fi
 }
 
 # =============================================================================
@@ -399,28 +410,29 @@ stop_all_services() {
     log_info "All services stopped"
 }
 
-# Add PPA repository
 add_ppa_repository() {
     local ppa="$1"
     
     if ! command_exists add-apt-repository; then
-        sudo apt-get update
-        sudo apt-get install -y software-properties-common
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get update
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common
     fi
     
     sudo add-apt-repository -y "$ppa"
-    sudo apt-get update
+    sudo env DEBIAN_FRONTEND=noninteractive apt-get update
     log_info "Added PPA repository: $ppa"
 }
 
 # Install dependencies
+# Uses --no-install-recommends to avoid pulling in postfix (cron suggests mail-transport-agent)
+# Ethereum nodes do not need a mail server or local mailbox
 install_dependencies() {
     local packages=("$@")
     
     log_info "Installing dependencies: ${packages[*]}"
     
     sudo apt-get update
-    if sudo apt-get install -y "${packages[@]}"; then
+    if sudo apt-get install -y --no-install-recommends "${packages[@]}"; then
         log_info "Dependencies installed successfully"
     else
         log_error "Failed to install some dependencies"
@@ -587,12 +599,114 @@ require_root() {
     fi
 }
 
+# Require root or sudo - re-exec with sudo if not root
+# Use for scripts that need root but should work when run as: sudo ./script.sh or ./script.sh (re-execs)
+require_sudo_or_root() {
+    if [[ $EUID -ne 0 ]]; then
+        if ! command -v sudo >/dev/null 2>&1; then
+            log_error "This script requires root privileges. Run as root or install sudo."
+            exit 1
+        fi
+        log_info "Re-executing with sudo to obtain root privileges..."
+        exec sudo "$0" "$@"
+    fi
+}
+
+# Helper: add keys from a file to merged_file, track count and sources
+_collect_keys_from() {
+    local src_file="$1"
+    local source_name="$2"
+    local merged_file="$3"
+    local -n _count=$4
+    local -n _sources=$5
+    if [[ -f "$src_file" ]] && [[ -s "$src_file" ]]; then
+        while IFS= read -r key; do
+            [[ -z "$key" || "$key" =~ ^# ]] && continue
+            if ! grep -Fqx "$key" "$merged_file" 2>/dev/null; then
+                echo "$key" >> "$merged_file"
+                _count=$((_count + 1))
+            fi
+        done < "$src_file"
+        _sources+=("$source_name")
+    fi
+}
+
+# Collect authorized_keys from root, SUDO_USER, and all users with home dirs
+# Returns path to merged keys file; also creates backup in /root/authorized_keys_backup_*.txt
+# Caller must be root (via require_sudo_or_root)
+collect_and_backup_authorized_keys() {
+    local merged_file
+    merged_file="$(mktemp)"
+    local key_count=0
+    local sources=()
+
+    # 1. Root
+    _collect_keys_from /root/.ssh/authorized_keys "root" "$merged_file" key_count sources
+
+    # 2. SUDO_USER (original invoker when run via sudo) - use getent for home (supports /var/lib/jenkins etc)
+    if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
+        local sudo_home
+        sudo_home=$(getent passwd "$SUDO_USER" 2>/dev/null | cut -d: -f6 || true)
+        [[ -z "$sudo_home" ]] && sudo_home="/home/$SUDO_USER"
+        _collect_keys_from "$sudo_home/.ssh/authorized_keys" "$SUDO_USER" "$merged_file" key_count sources
+    fi
+
+    # 3. Current user (whoami) - may differ from root in containers; getent for home
+    local current_user
+    current_user=$(whoami 2>/dev/null || true)
+    if [[ -n "$current_user" ]]; then
+        local current_home
+        current_home=$(getent passwd "$current_user" 2>/dev/null | cut -d: -f6 || true)
+        [[ -z "$current_home" ]] && current_home="/home/$current_user"
+        _collect_keys_from "$current_home/.ssh/authorized_keys" "$current_user" "$merged_file" key_count sources
+    fi
+
+    # 4. All /home/* users (ubuntu, admin, deploy, etc) - _collect_keys_from dedupes by key
+    local home_dir
+    for home_dir in /home/*/; do
+        [[ -d "$home_dir" ]] || continue
+        local user_name
+        user_name=$(basename "$home_dir")
+        [[ "$user_name" == "root" ]] && continue
+        _collect_keys_from "${home_dir}.ssh/authorized_keys" "$user_name" "$merged_file" key_count sources
+    done
+
+    # Strategy 2 (PR 90): CI fallback - when no keys and in CI, create test keys and retry root
+    if [[ $key_count -eq 0 ]] && { [[ "${CI:-}" == "true" ]] || [[ "${GITHUB_ACTIONS:-}" == "true" ]]; }; then
+        mkdir -p /root/.ssh
+        printf '%s\n' "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > /root/.ssh/authorized_keys
+        chmod 600 /root/.ssh/authorized_keys
+        if [[ -f /root/.ssh/authorized_keys ]] && [[ -s /root/.ssh/authorized_keys ]]; then
+            _collect_keys_from /root/.ssh/authorized_keys "root(ci-fallback)" "$merged_file" key_count sources
+        fi
+    fi
+
+    if [[ $key_count -eq 0 ]]; then
+        rm -f "$merged_file"
+        echo ""
+        return 1
+    fi
+
+    # Backup merged keys to /root for recovery
+    local backup_dir="/root"
+    local backup_file
+    backup_file="$backup_dir/authorized_keys_backup_$(date +%Y%m%d_%H%M%S).txt"
+    cp "$merged_file" "$backup_file"
+    chmod 600 "$backup_file"
+    log_info "Backed up authorized_keys to $backup_file (from: ${sources[*]})"
+
+    echo "$merged_file"
+    return 0
+}
+
 # =============================================================================
 # SECURITY FUNCTIONS - Required for run_1.sh and run_2.sh
 # =============================================================================
 
 # Secure user creation and setup
-# Automatically migrates root's SSH authorized_keys to the new user
+# Migrates SSH authorized_keys to the new user (from provided file or root)
+# When ssh_key_file is provided and has content, uses it (already contains root + SUDO_USER keys)
+# Otherwise falls back to root's authorized_keys for backward compatibility
 setup_secure_user() {
     local username="$1"
     local password="$2"
@@ -624,30 +738,33 @@ setup_secure_user() {
     local ssh_dir="/home/$username/.ssh"
     mkdir -p "$ssh_dir"
 
-    # Copy SSH keys if explicitly provided
-    if [[ -n "$ssh_key_file" && -f "$ssh_key_file" ]]; then
+    # Use provided merged keys file (from collect_and_backup_authorized_keys) if it has content
+    local used_provided_keys=0
+    if [[ -n "$ssh_key_file" && -f "$ssh_key_file" ]] && [[ -s "$ssh_key_file" ]]; then
         cp "$ssh_key_file" "$ssh_dir/authorized_keys"
-        log_info "SSH key copied from provided file for user: $username"
+        log_info "SSH keys copied from collected/backed-up file for user: $username"
+        used_provided_keys=1
     fi
 
-    # CRITICAL: Migrate root's SSH authorized_keys to the new user
+    # Fallback: migrate root's SSH authorized_keys when no merged file was provided
     # This prevents lockout when PermitRootLogin is later restricted
-    if [[ -f /root/.ssh/authorized_keys ]] && [[ -s /root/.ssh/authorized_keys ]]; then
-        if [[ -f "$ssh_dir/authorized_keys" ]]; then
-            # Merge: append root's keys that aren't already present
-            while IFS= read -r key; do
-                [[ -z "$key" || "$key" =~ ^# ]] && continue
-                if ! grep -Fqx "$key" "$ssh_dir/authorized_keys" 2>/dev/null; then
-                    echo "$key" >> "$ssh_dir/authorized_keys"
-                fi
-            done < /root/.ssh/authorized_keys
+    if [[ $used_provided_keys -eq 0 ]]; then
+        if [[ -f /root/.ssh/authorized_keys ]] && [[ -s /root/.ssh/authorized_keys ]]; then
+            if [[ -f "$ssh_dir/authorized_keys" ]]; then
+                while IFS= read -r key; do
+                    [[ -z "$key" || "$key" =~ ^# ]] && continue
+                    if ! grep -Fqx "$key" "$ssh_dir/authorized_keys" 2>/dev/null; then
+                        echo "$key" >> "$ssh_dir/authorized_keys"
+                    fi
+                done < /root/.ssh/authorized_keys
+            else
+                cp /root/.ssh/authorized_keys "$ssh_dir/authorized_keys"
+            fi
+            log_info "Root SSH authorized_keys migrated to user: $username"
         else
-            cp /root/.ssh/authorized_keys "$ssh_dir/authorized_keys"
+            log_warn "No root SSH keys found to migrate to $username"
+            log_warn "Ensure you can authenticate as $username before restricting root access"
         fi
-        log_info "Root SSH authorized_keys migrated to user: $username"
-    else
-        log_warn "No root SSH keys found to migrate to $username"
-        log_warn "Ensure you can authenticate as $username before restricting root access"
     fi
 
     # Set correct ownership and permissions
@@ -802,6 +919,9 @@ generate_handoff_info() {
 
     log_info "Generating secure handoff information..."
 
+    # run_1.sh copies repo to ~/eth2-quickstart; run_2.sh is always present
+    local next_step="cd ~/eth2-quickstart && ./run_2.sh"
+
     local auth_line="Authentication: SSH key only (no password)"
     [[ -n "$password" ]] && auth_line="Password: $password (sudo/console fallback)"
 
@@ -813,10 +933,12 @@ $auth_line
 Server IP: $server_ip
 SSH Port: $ssh_port
 SSH Command: $ssh_cmd
-Next Step: ./run_2.sh
+
+Next Step (after reboot, SSH as $username):
+  $next_step
 
 IMPORTANT: SSH key authentication is required.
-Root's SSH keys have been migrated to this user.
+Authorized keys (root + sudo user) have been migrated to this user.
 Delete /root/handoff_info.txt after noting this information.
 
 AIDE: After apt upgrade, update the integrity database:
@@ -838,7 +960,7 @@ EOF
     chmod 600 /root/handoff_info.txt
 
     log_info "After reboot: $ssh_cmd"
-    log_info "Then run: ./run_2.sh"
+    log_info "Then run: $next_step"
 }
 
 

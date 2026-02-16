@@ -241,10 +241,10 @@ fi
 # Override setup_secure_user
 mock_setup_secure_user() {
     local username="$1"
-    # Password is captured but intentionally not used (for future logging)
-    # shellcheck disable=SC2034
     local password="${2:-}"
-    _log_mock_call "setup_secure_user" "$username" "(password hidden)"
+    local pw_status="unset"
+    [[ -n "$password" ]] && pw_status="set"
+    _log_mock_call "setup_secure_user" "$username" "(password $pw_status)"
     echo "[MOCK] Would setup secure user: $username"
     return 0
 }

@@ -12,7 +12,7 @@
 #       manually run: `sudo su`
 #       Followed by: 
 #       `./install/ssl/install_acme_ssl.sh`  or 
-#       `./install_certbot_ssl.sh` 
+#       `./install/ssl/install_ssl_certbot.sh` 
 #       to get SSL certs and configure NGINX properly
 #
 # Non-interactive (for CI/testing):
@@ -23,6 +23,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 source "$SCRIPT_DIR/exports.sh"
 source "$SCRIPT_DIR/lib/common_functions.sh"
+
+LOG_DIR="$SCRIPT_DIR/logs"
+LOG_FILE="$LOG_DIR/run_2_$(date +%Y%m%d_%H%M%S).log"
+ensure_directory "$LOG_DIR"
+exec > >(tee -a "$LOG_FILE") 2>&1
+log_info "Log file: $LOG_FILE"
+
+export DEBIAN_FRONTEND=noninteractive
+export DEBIAN_PRIORITY=critical
+export TZ=UTC
 
 # Parse flags for non-interactive mode
 EXECUTION_CLIENT=""
@@ -88,6 +98,10 @@ log_info "This script will install Ethereum clients and services"
 #  ./prysm.sh beacon-chain --checkpoint-block=$PWD/block_mainnet_altair_4620512-0xef9957e6a709223202ab00f4ee2435e1d42042ad35e160563015340df677feb0.ssz --checkpoint-state=$PWD/state_mainnet_altair_4620512-0xc1397f57149c99b3a2166d422a2ee50602e2a2c7da2e31d7ea740216b8fd99ab.ssz --genesis-state=$PWD/genesis.ssz --config-file=$PWD/prysm_beacon_conf.yaml --p2p-host-ip=88.99.65.230
 # Install all dependencies centrally (unless --skip-deps)
 if [[ "$SKIP_DEPS" != "true" ]]; then
+    if [[ -f "$SCRIPT_DIR/install/utils/debconf_preseed.sh" ]]; then
+        log_info "Pre-seeding debconf for non-interactive install..."
+        sudo bash "$SCRIPT_DIR/install/utils/debconf_preseed.sh"
+    fi
     log_info "Installing all system dependencies..."
     if ! "$SCRIPT_DIR/install/utils/install_dependencies.sh"; then
         log_error "Failed to install dependencies"
@@ -103,19 +117,9 @@ if ! "$SCRIPT_DIR/install/utils/verify_client_configs.sh"; then
 fi
 
 # Non-interactive path: install specified clients via flags
+# Consensus before execution so Prysm can generate JWT (execution clients need it)
 if [[ "$FLAGS_MODE" == "true" ]]; then
     FAILED=0
-    if [[ -n "$EXECUTION_CLIENT" ]]; then
-        case "$EXECUTION_CLIENT" in
-            geth|besu|erigon|nethermind|nimbus_eth1|reth|ethrex)
-                run_install_script "$SCRIPT_DIR/install/execution/${EXECUTION_CLIENT}.sh" "$EXECUTION_CLIENT" || FAILED=1
-                ;;
-            *)
-                log_error "Unknown execution client: $EXECUTION_CLIENT"
-                exit 1
-                ;;
-        esac
-    fi
     if [[ -n "$CONSENSUS_CLIENT" ]]; then
         case "$CONSENSUS_CLIENT" in
             prysm|lighthouse|lodestar|teku|nimbus|grandine)
@@ -123,6 +127,21 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
                 ;;
             *)
                 log_error "Unknown consensus client: $CONSENSUS_CLIENT"
+                exit 1
+                ;;
+        esac
+    fi
+    if [[ -n "$EXECUTION_CLIENT" ]]; then
+        if [[ ! -s "$HOME/secrets/jwt.hex" ]]; then
+            ensure_directory "$HOME/secrets"
+            ensure_jwt_secret "$HOME/secrets/jwt.hex"
+        fi
+        case "$EXECUTION_CLIENT" in
+            geth|besu|erigon|nethermind|nimbus_eth1|reth|ethrex)
+                run_install_script "$SCRIPT_DIR/install/execution/${EXECUTION_CLIENT}.sh" "$EXECUTION_CLIENT" || FAILED=1
+                ;;
+            *)
+                log_error "Unknown execution client: $EXECUTION_CLIENT"
                 exit 1
                 ;;
         esac
@@ -229,18 +248,19 @@ if ! validate_menu_choice "$client_choice" 2; then
 fi
 
 # Function to install default clients (reduces code duplication)
+# Prysm before Geth so Prysm generates JWT (execution clients need it)
 install_default_clients() {
     log_info "Installing default clients (Geth + Prysm + Selected MEV)..."
     
-    log_info "Installing Geth..."
-    if ! "$SCRIPT_DIR/install/execution/geth.sh"; then
-        log_error "Failed to install Geth"
-        return 1
-    fi
-
     log_info "Installing Prysm..."
     if ! "$SCRIPT_DIR/install/consensus/prysm.sh"; then
         log_error "Failed to install Prysm"
+        return 1
+    fi
+
+    log_info "Installing Geth..."
+    if ! "$SCRIPT_DIR/install/execution/geth.sh"; then
+        log_error "Failed to install Geth"
         return 1
     fi
 
@@ -331,7 +351,7 @@ case "$client_choice" in
         fi
         
         log_info "Please run the recommended install scripts from the client selection tool"
-        log_info "Example: ./install/execution/geth.sh && ./install/consensus/prysm.sh"
+        log_info "Example: ./install/consensus/prysm.sh && ./install/execution/geth.sh"
         ;;
     2)
         if ! install_default_clients; then
@@ -379,6 +399,7 @@ Next step is to start syncing via:
 - Firewall rules configured for all client ports
 
 To verify security setup, run: ./install/security/test_security_fixes.sh
+To view logs: ./install/utils/view_logs.sh [--list|--run1|--run2|--security]
 
 === Running Security Validation ===
 
@@ -386,12 +407,16 @@ EOF
 
 # Run security validation (skip in CI E2E - run_1 not executed, security_monitor absent)
 SECURITY_VALIDATION_FAILED=0
+SECURITY_VALIDATION_LOG="$LOG_DIR/security_validation_$(date +%Y%m%d_%H%M%S).log"
 if [[ "${CI_E2E:-}" != "true" ]]; then
     log_info "Running security validation..."
+
     if [[ -f "$SCRIPT_DIR/docs/validate_security_safe.sh" && -x "$SCRIPT_DIR/docs/validate_security_safe.sh" ]]; then
         log_info "Running code quality validation..."
-        if ! "$SCRIPT_DIR/docs/validate_security_safe.sh"; then
-            log_error "Security code validation failed"
+        "$SCRIPT_DIR/docs/validate_security_safe.sh" 2>&1 | tee -a "$SECURITY_VALIDATION_LOG"
+        VAL_EXIT=${PIPESTATUS[0]}
+        if [[ $VAL_EXIT -ne 0 ]]; then
+            log_error "Security code validation failed (exit $VAL_EXIT) - see output above"
             SECURITY_VALIDATION_FAILED=1
         fi
     else
@@ -400,8 +425,10 @@ if [[ "${CI_E2E:-}" != "true" ]]; then
 
     if [[ -f "$SCRIPT_DIR/docs/server_security_validation.sh" && -x "$SCRIPT_DIR/docs/server_security_validation.sh" ]]; then
         log_info "Running server security validation..."
-        if ! "$SCRIPT_DIR/docs/server_security_validation.sh"; then
-            log_error "Server security validation failed"
+        "$SCRIPT_DIR/docs/server_security_validation.sh" 2>&1 | tee -a "$SECURITY_VALIDATION_LOG"
+        VAL_EXIT=${PIPESTATUS[0]}
+        if [[ $VAL_EXIT -ne 0 ]]; then
+            log_error "Server security validation failed (exit $VAL_EXIT) - see output above"
             SECURITY_VALIDATION_FAILED=1
         fi
     else
@@ -409,10 +436,14 @@ if [[ "${CI_E2E:-}" != "true" ]]; then
     fi
 
     if [[ $SECURITY_VALIDATION_FAILED -eq 1 ]]; then
-        log_error "Security validation failed - fix errors above"
+        log_error "Security validation failed. See output above for details."
+        log_error "Log: $SECURITY_VALIDATION_LOG"
+        log_error "Re-run: ./install/security/test_security_fixes.sh"
         exit 1
     fi
     log_info "Security validation completed."
 else
     log_info "CI E2E: skipping security validation (run_1 not executed)"
 fi
+
+log_info "Full log saved to: $LOG_FILE"

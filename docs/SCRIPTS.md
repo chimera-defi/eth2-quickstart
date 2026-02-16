@@ -23,9 +23,10 @@ Key variables:
 
 ## Stage 1: Initial Hardening (run_1.sh)
 
-**Run as root:**
+**Run with sudo (or as root):**
 ```bash
 sudo ./run_1.sh
+# Or: ./run_1.sh  (re-execs with sudo if not root)
 sudo reboot
 ssh LOGIN_UNAME@<server-ip>
 ```
@@ -35,12 +36,13 @@ ssh LOGIN_UNAME@<server-ip>
 - SSH hardening: replaces `/etc/ssh/sshd_config`
 - Fail2ban: configures jails for `nginx-proxy` and `sshd`
 - User creation: creates non-root user `LOGIN_UNAME` (SSH key-only, no password)
-- Migrates root's `~/.ssh/authorized_keys` to new user (prevents lockout)
+- Backs up and migrates authorized_keys from root, SUDO_USER, and all /home/* users to new user (prevents lockout)
+- Copies eth2-quickstart to `~/eth2-quickstart` for new user (handoff: `cd ~/eth2-quickstart && ./run_2.sh`)
 - Security: runs consolidated security script
 - NTP: installs `chrony` and enables NTP
 - Security: mounts `/run/shm` as `tmpfs` with `ro,noexec,nosuid`
 
-**Prerequisite:** Add your SSH key to root before running: `ssh-copy-id root@<server>`
+**Prerequisite:** Add your SSH key before running: `ssh-copy-id root@<server>` or `ssh-copy-id <your-user>@<server>` (if using sudo)
 
 ## Stage 2: Client Installation (run_2.sh)
 
@@ -58,6 +60,19 @@ ssh LOGIN_UNAME@<server-ip>
 ```bash
 sudo systemctl start eth1 cl validator mev
 ```
+
+## Logs
+
+run_1.sh and run_2.sh write logs to disk. View them with:
+```bash
+./install/utils/view_logs.sh [--list|--run1|--run2|--security] [-n N] [-f]
+```
+- `--list` – list all logs
+- `--run1` – latest run_1.sh log (in /var/log/eth2-quickstart)
+- `--run2` – latest run_2.sh log (in ~/eth2-quickstart/logs)
+- `--security` – latest security validation log
+- `-n N` – last N lines (default 50)
+- `-f` – follow (tail -f)
 
 ## Client Installation Scripts
 

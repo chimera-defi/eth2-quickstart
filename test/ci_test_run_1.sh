@@ -61,8 +61,8 @@ log_info "Test 4: Verify common functions..."
 source_common_functions
 
 functions_to_check=(
-    "log_info" "log_error" "require_root" "check_system_compatibility"
-    "configure_ssh" "setup_secure_user"
+    "log_info" "log_error" "require_sudo_or_root" "ensure_docker_e2e_keys" "check_system_compatibility"
+    "configure_ssh" "setup_secure_user" "collect_and_backup_authorized_keys"
     "apply_network_security" "setup_security_monitoring" "generate_handoff_info"
 )
 for func in "${functions_to_check[@]}"; do
@@ -172,19 +172,28 @@ fi
 
 # Test 13: Verify setup_secure_user migrates SSH keys
 log_info "Test 13: Verify SSH key migration logic..."
-if declare -f setup_secure_user | grep -q "root/.ssh/authorized_keys"; then
-    log_info "  setup_secure_user migrates root SSH keys"
+if declare -f setup_secure_user | grep -q "authorized_keys"; then
+    log_info "  setup_secure_user migrates SSH keys (from provided file or root)"
 else
-    log_error "  setup_secure_user does NOT migrate root SSH keys — lockout risk!"
+    log_error "  setup_secure_user does NOT migrate SSH keys — lockout risk!"
     exit 1
 fi
 
-# Test 14: Verify run_1.sh checks for root SSH keys before proceeding (lockout prevention)
+# Test 14: Verify run_1.sh checks for SSH keys before proceeding (lockout prevention)
 log_info "Test 14: Verify lockout prevention check..."
-if grep -q "/root/.ssh/authorized_keys" "$PROJECT_ROOT/run_1.sh" && grep -q "ssh-copy-id" "$PROJECT_ROOT/run_1.sh"; then
-    log_info "  run_1.sh verifies root has SSH keys before proceeding"
+if grep -q "collect_and_backup_authorized_keys" "$PROJECT_ROOT/run_1.sh" && grep -q "ssh-copy-id" "$PROJECT_ROOT/run_1.sh"; then
+    log_info "  run_1.sh collects and verifies SSH keys from all sources before proceeding"
 else
-    log_error "  run_1.sh missing lockout prevention (must check root authorized_keys)"
+    log_error "  run_1.sh missing lockout prevention (must collect authorized_keys)"
+    exit 1
+fi
+
+# Test 14b: Regression - collect uses getent for SUDO_USER home (non-/home paths)
+log_info "Test 14b: Verify getent for SUDO_USER home..."
+if grep -q "getent passwd.*SUDO_USER" "$PROJECT_ROOT/lib/common_functions.sh"; then
+    log_info "  collect uses getent for SUDO_USER home"
+else
+    log_error "  common_functions must use getent for SUDO_USER home"
     exit 1
 fi
 
@@ -283,6 +292,15 @@ if declare -f setup_secure_user | grep -q "visudo"; then
     log_info "  setup_secure_user includes sudo configuration with visudo validation"
 else
     log_error "  setup_secure_user does NOT configure sudo — separate configure_sudo_nopasswd needed!"
+    exit 1
+fi
+
+# Test 23: Verify run_1.sh copies eth2-quickstart to new user's home (handoff usability)
+log_info "Test 23: Verify eth2-quickstart copied to new user home..."
+if grep -q "USER_INSTALL_DIR.*eth2-quickstart" "$PROJECT_ROOT/run_1.sh" && grep -q "cp -a.*USER_INSTALL_DIR" "$PROJECT_ROOT/run_1.sh"; then
+    log_info "  run_1.sh copies eth2-quickstart to new user's ~/eth2-quickstart"
+else
+    log_error "  run_1.sh must copy eth2-quickstart to new user home so handoff commands work!"
     exit 1
 fi
 

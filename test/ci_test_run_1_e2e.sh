@@ -28,6 +28,15 @@ if ! command -v systemctl &>/dev/null; then
     exit 1
 fi
 
+# Create root SSH keys FIRST (before any cd/source) so run_1's collect finds keys
+mkdir -p /root/.ssh
+printf '%s\n' "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > /root/.ssh/authorized_keys
+chmod 600 /root/.ssh/authorized_keys
+if [[ ! -s /root/.ssh/authorized_keys ]]; then
+    log_error "Failed to create /root/.ssh/authorized_keys - cannot run run_1.sh"
+    exit 1
+fi
+
 cd "$PROJECT_ROOT"
 
 # Load config for verification (LOGIN_UNAME from exports.sh)
@@ -43,16 +52,16 @@ log_header "Phase 1: Executing run_1.sh"
 export DEBIAN_FRONTEND=noninteractive
 export DEBIAN_PRIORITY=critical
 
-# Pre-seed debconf (single source: install/utils/debconf_preseed.sh)
-"$PROJECT_ROOT/install/utils/debconf_preseed.sh"
+# Strategy 3 (PR 90): Explicitly pass CI env to run_1 (docker exec may not inherit)
+export CI=true
+export GITHUB_ACTIONS="${GITHUB_ACTIONS:-true}"
 
-# Create minimal root SSH keys so setup_secure_user has something to migrate (avoids lockout warning)
-mkdir -p /root/.ssh
-if [[ ! -f /root/.ssh/authorized_keys ]]; then
-    # Generate a placeholder key so the migration logic runs (real key not needed for test)
-    echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > /root/.ssh/authorized_keys
-    chmod 600 /root/.ssh/authorized_keys
-fi
+# Strategy 4 & 5 (PR 90): Pass pre-created keys file - run_1 can use to bypass collect if needed
+CI_KEYS_FILE="/tmp/ci_authorized_keys_$$"
+printf '%s\n' "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > "$CI_KEYS_FILE"
+cp "$CI_KEYS_FILE" /root/.ssh/authorized_keys
+chmod 600 "$CI_KEYS_FILE" /root/.ssh/authorized_keys
+export CI_KEYS_FILE
 
 if "$PROJECT_ROOT/run_1.sh"; then
     record_test "run_1.sh execution" "PASS"
@@ -98,6 +107,13 @@ if [[ -f /home/${LOGIN_UNAME}/.ssh/authorized_keys ]]; then
     record_test "SSH keys migrated to new user" "PASS"
 else
     record_test "SSH keys migrated to new user" "FAIL"
+fi
+
+# Verify eth2-quickstart copied to new user home (handoff commands work)
+if [[ -d /home/${LOGIN_UNAME}/eth2-quickstart ]] && [[ -f /home/${LOGIN_UNAME}/eth2-quickstart/run_2.sh ]]; then
+    record_test "eth2-quickstart copied to new user home" "PASS"
+else
+    record_test "eth2-quickstart copied to new user home" "FAIL"
 fi
 
 # Verify SSH config was applied

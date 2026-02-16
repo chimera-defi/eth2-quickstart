@@ -3,7 +3,7 @@
 ## Pass 1: Functionality ✓
 
 ### Build/Test/Lint
-- [x] `./test/run_tests.sh --lint-only` - passes (254 tests)
+- [x] `./test/run_tests.sh --lint-only` - passes (258 tests)
 - [x] `./test/validate_caddy_config.sh` - passes
 - [x] `./test/validate_downloads.sh` - passes
 - [x] `./install/utils/verify_client_configs.sh` - passes
@@ -21,7 +21,7 @@
 ## Pass 2: Architecture Compliance ✓
 
 ### Phase 1 / Phase 2 Boundary
-- [x] run_1.sh: require_root, ends with reboot
+- [x] run_1.sh: require_sudo_or_root, ends with reboot
 - [x] run_2.sh: check_user $LOGIN_UNAME (non-root)
 - [x] E2E: Phase 1 as root, Phase 2 as testuser
 
@@ -48,6 +48,15 @@
 - run_1.sh: 61 lines (master: 93) - refactored: lockout check, reorder user/SSH, consolidated handles append_once/secure_config/setup_intrusion
 - Files with net deletions: docs/validate_security_safe.sh (-43), run_1.sh (-32), install_dependencies.sh restructure
 - **Note:** run_1.sh changes came from prior refactoring (consolidated_security, ci_test_run_1 expects no setup_intrusion_detection). Reverting run_1 to master would break ci_test_run_1.
+
+## Recurring Verification (user-requested)
+
+- No hallucinations: verify referenced files exist
+- No duplicate fixes: one implementation
+- Root cause fixes, not plaster/skips
+- exec/capture order: `$(...)` before `exec > >(tee...)`
+- GCP/sudo: SUDO_USER + getent for home
+- Run tests locally before push
 
 ## Co-Author Attribution
 

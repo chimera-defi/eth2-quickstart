@@ -2,7 +2,7 @@
 
 **File:** `lib/common_functions.sh`  
 **Purpose:** Centralized library of reusable shell functions  
-**Status:** ✅ **COMPLETE** - All 39 functions implemented and tested
+**Status:** ✅ **COMPLETE** - All functions implemented and tested
 
 ## Overview
 
@@ -324,13 +324,31 @@ This document provides a comprehensive reference for all functions available in 
 - `ssh_port` - SSH port (optional; defaults to 22)
 **Usage:** `generate_handoff_info "$LOGIN_UNAME" "" "" "$YourSSHPortNumber"` (SSH key-only)
 
-### 🛡️ **Privilege Functions**
+### 🛡️ **Privilege and Environment Functions**
 
 #### `require_root()`
 **Purpose:** Check if script is running as root  
 **Parameters:** None  
 **Usage:** `require_root`  
 **Exits:** Script if not running as root
+
+#### `require_sudo_or_root()`
+**Purpose:** Require root; re-exec with sudo if running as non-root (preserves SUDO_USER for key collection)  
+**Parameters:** Pass-through for script args  
+**Usage:** `require_sudo_or_root "$@"`  
+**Exits:** Re-execs with sudo if not root
+
+#### `is_docker()`
+**Purpose:** Detect if running inside Docker or containerd  
+**Parameters:** None  
+**Usage:** `if is_docker; then ...`  
+**Returns:** 0 if in container, 1 otherwise
+
+#### `ensure_docker_e2e_keys()`
+**Purpose:** E2E only - ensure /root/.ssh/authorized_keys exists when in Docker and empty (is_docker guard)  
+**Parameters:** None  
+**Usage:** `ensure_docker_e2e_keys` (called at start of run_1.sh)  
+**Note:** Never runs in production; keys may not persist from Dockerfile in systemd-as-init
 
 ## Usage Examples
 

@@ -214,6 +214,17 @@ test_check_system_compatibility_nonroot() {
     fi
 }
 
+# Test 11: Regression - collect uses getent for SUDO_USER home (non-/home paths)
+test_getent_for_sudo_user() {
+    if grep -q "getent passwd.*SUDO_USER" "$PROJECT_ROOT/lib/common_functions.sh"; then
+        echo "  collect uses getent for SUDO_USER home"
+        return 0
+    else
+        echo "  ERROR: getent for SUDO_USER missing (needed for non-/home paths)"
+        return 1
+    fi
+}
+
 # Main test execution
 main() {
     echo "=========================================="
@@ -232,7 +243,8 @@ main() {
     run_test "stop_all_services doesn't crash" test_stop_all_services
     run_test "download_file calls secure_download" test_download_file_calls_secure
     run_test "check_system_compatibility works without root" test_check_system_compatibility_nonroot
-    
+    run_test "getent for SUDO_USER home (regression)" test_getent_for_sudo_user
+
     # Print summary
     echo ""
     echo "=========================================="
