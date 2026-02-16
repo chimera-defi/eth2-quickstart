@@ -137,6 +137,7 @@ echo ""
 chmod +x "$INSTALL_DIR/install/utils/configure.sh"
 chmod +x "$INSTALL_DIR/run_1.sh"
 chmod +x "$INSTALL_DIR/run_2.sh"
+chmod +x "$INSTALL_DIR/help.sh"
 
 # Check for vibe mode (non-interactive)
 VIBE_MODE=false
@@ -160,6 +161,8 @@ for arg in "$@"; do
             echo "Environment Variables:"
             echo "  ETH2_INSTALL_DIR    Installation directory (default: \$HOME/.eth2-quickstart)"
             echo "  ETH2_BRANCH         Git branch to use (default: master)"
+            echo ""
+            echo "After installation, run ./help.sh for full list of tools and scripts."
             echo ""
             exit 0
             ;;
@@ -204,4 +207,6 @@ echo "  3. SSH back in as the new user and run Phase 2:"
 echo -e "     ${BLUE}cd ~/eth2-quickstart && ./install_phase2.sh${NC}"
 echo ""
 echo -e "${RED}⚠️  Do NOT skip the reboot - it verifies your SSH access!${NC}"
+echo ""
+echo "  Run ./help.sh for full list of tools and scripts."
 echo ""

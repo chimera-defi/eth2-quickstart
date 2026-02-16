@@ -78,6 +78,8 @@ Additionally, by using a VPS, they can more easily offer a censorship resistant 
    sudo systemctl status eth1 cl validator mev
    ```
 
+**Tip:** Run `./help.sh` to see all available scripts (update, stats, doctor, logs, etc.).
+
 ## Sync and Configure
 
 **Note: You may be able to skip this step now with checkpoint URLs added**
