@@ -595,20 +595,8 @@ if [[ ${#jwt_content} -eq 64 ]] && [[ "$jwt_content" =~ ^[a-fA-F0-9]+$ ]]; then 
 
 **Always run these checks locally before pushing:**
 ```bash
-# 1. Shellcheck all scripts
-find . -name "*.sh" -type f ! -path "./.git/*" -exec shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031 {} \;
-
-# 2. Syntax validation
-find . -name "*.sh" -type f ! -path "./.git/*" -exec bash -n {} \;
-
-# 3. Dependency validation (simulates CI)
-# Check that all 'source ./path' statements resolve correctly from script's directory
-
-# 4. Function unit tests
-bash install/test/test_common_functions.sh
-
-# 5. Full lint tests
-./test/run_tests.sh --lint-only
+./scripts/pre-commit.sh
+# Or manually: ./test/run_tests.sh --lint-only && bash install/test/test_common_functions.sh
 ```
 
 ### Shellcheck CI Exclusions (with rationale)
@@ -623,8 +611,7 @@ bash install/test/test_common_functions.sh
 ```
 
 ### Extended Shell Script Checks (.github/workflows/shellcheck.yml)
-Runs in parallel with ci.yml. Uses `continue-on-error: true` so it reports results without blocking.
-Remove that when all checks pass. Includes:
+Runs in parallel with ci.yml. Includes:
 - **Shellcheck** (same exclusions as ci.yml)
 - **Shebang**: All .sh files must have #!/bin/bash on line 1
 - **Executable**: Warning only for non-executable scripts

@@ -13,6 +13,7 @@ This directory contains all project documentation organized by category.
 - **[COMMON_FUNCTIONS_REFERENCE.md](COMMON_FUNCTIONS_REFERENCE.md)** - Common functions library reference
 
 ## Development & Testing
+- **[CI_WORKFLOWS.md](CI_WORKFLOWS.md)** - CI path filtering (when each workflow runs)
 - **[SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md](SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md)** - Shell scripting standards
 - **[COMMIT_MESSAGES.md](COMMIT_MESSAGES.md)** - Commit message conventions
 

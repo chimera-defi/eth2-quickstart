@@ -1,6 +1,5 @@
 # Extended shell script validation (shebang, executable, dependencies, structure).
-# Runs in parallel with ci.yml. Does not block merges (continue-on-error) so CI stays fast
-# while we get visibility into script quality. Remove continue-on-error when all checks pass.
+# Runs in parallel with ci.yml on shell script changes.
 name: Shell Script Validation (Extended)
 
 on:
@@ -24,7 +23,6 @@ jobs:
   shellcheck-extended:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    continue-on-error: true  # Report results but don't block; remove when all pass
 
     steps:
     - name: Checkout code

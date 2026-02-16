@@ -264,7 +264,8 @@ jobs:
           CI: true
         run: SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" ./test/run_e2e.sh --phase=2
 
-  # Test all execution + consensus clients (PRs: 2 combos for speed, push: full 7)
+  # Matrix: PRs run 2 combos (fast); push runs 7 combos covering all execution + consensus clients
+  # Execution: geth, besu, erigon, nethermind, nimbus_eth1, reth, ethrex. Consensus: prysm, lighthouse, teku, nimbus, grandine, lodestar
   e2e-client-matrix-pr:
     if: github.event_name == 'pull_request'
     needs: [run-1-structure, run-1-e2e, run-2-structure, run-2-e2e, build-docker]
