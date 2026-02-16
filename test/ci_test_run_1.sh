@@ -286,6 +286,15 @@ else
     exit 1
 fi
 
+# Test 23: Verify run_1.sh copies eth2-quickstart to new user's home (handoff usability)
+log_info "Test 23: Verify eth2-quickstart copied to new user home..."
+if grep -q "USER_INSTALL_DIR.*eth2-quickstart" "$PROJECT_ROOT/run_1.sh" && grep -q "cp -a.*USER_INSTALL_DIR" "$PROJECT_ROOT/run_1.sh"; then
+    log_info "  run_1.sh copies eth2-quickstart to new user's ~/eth2-quickstart"
+else
+    log_error "  run_1.sh must copy eth2-quickstart to new user home so handoff commands work!"
+    exit 1
+fi
+
 log_info "╔════════════════════════════════════════════════════════════════╗"
 log_info "║  run_1.sh CI Test PASSED                                      ║"
 log_info "║  Validated: Structure, syntax, functions, SSH safety,         ║"
