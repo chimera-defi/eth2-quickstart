@@ -11,8 +11,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/exports.sh"
 source "$SCRIPT_DIR/lib/common_functions.sh"
 
-# E2E/CI: ensure authorized_keys exist before any logic (Docker/container only)
-if is_docker && [[ ! -s /root/.ssh/authorized_keys ]]; then
+# E2E/CI: ensure authorized_keys exist before collect (Docker/container only)
+# Some runtimes lack /.dockerenv; use CI as fallback when keys missing
+if [[ ! -s /root/.ssh/authorized_keys ]] && (is_docker || [[ "${CI:-}" == "true" ]]); then
     mkdir -p /root/.ssh
     printf '%s\n' "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > /root/.ssh/authorized_keys
     chmod 600 /root/.ssh/authorized_keys
