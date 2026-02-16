@@ -14,6 +14,13 @@ source "$SCRIPT_DIR/lib/common_functions.sh"
 # Require root - re-exec with sudo if running as non-root
 require_sudo_or_root "$@"
 
+# Log to file for later review
+LOG_DIR="/var/log/eth2-quickstart"
+LOG_FILE="$LOG_DIR/run_1_$(date +%Y%m%d_%H%M%S).log"
+mkdir -p "$LOG_DIR"
+exec > >(tee -a "$LOG_FILE") 2>&1
+log_info "Log file: $LOG_FILE"
+
 log_info "Starting system setup - Phase 1..."
 log_info "Using configuration: user=$LOGIN_UNAME, ssh_port=$YourSSHPortNumber, max_retry=$maxretry"
 
@@ -100,3 +107,4 @@ generate_handoff_info "$LOGIN_UNAME" "" "" "$YourSSHPortNumber" "$USER_INSTALL_D
 log_info "=== SETUP COMPLETE ==="
 log_info "Reboot required: sudo reboot"
 log_info "Handoff info saved to /root/handoff_info.txt"
+log_info "Full log saved to: $LOG_FILE"
