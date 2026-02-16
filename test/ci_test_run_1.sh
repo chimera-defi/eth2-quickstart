@@ -61,8 +61,8 @@ log_info "Test 4: Verify common functions..."
 source_common_functions
 
 functions_to_check=(
-    "log_info" "log_error" "require_root" "check_system_compatibility"
-    "configure_ssh" "setup_secure_user"
+    "log_info" "log_error" "require_sudo_or_root" "check_system_compatibility"
+    "configure_ssh" "setup_secure_user" "collect_and_backup_authorized_keys"
     "apply_network_security" "setup_security_monitoring" "generate_handoff_info"
 )
 for func in "${functions_to_check[@]}"; do
@@ -172,19 +172,19 @@ fi
 
 # Test 13: Verify setup_secure_user migrates SSH keys
 log_info "Test 13: Verify SSH key migration logic..."
-if declare -f setup_secure_user | grep -q "root/.ssh/authorized_keys"; then
-    log_info "  setup_secure_user migrates root SSH keys"
+if declare -f setup_secure_user | grep -q "authorized_keys"; then
+    log_info "  setup_secure_user migrates SSH keys (from provided file or root)"
 else
-    log_error "  setup_secure_user does NOT migrate root SSH keys — lockout risk!"
+    log_error "  setup_secure_user does NOT migrate SSH keys — lockout risk!"
     exit 1
 fi
 
-# Test 14: Verify run_1.sh checks for root SSH keys before proceeding (lockout prevention)
+# Test 14: Verify run_1.sh checks for SSH keys before proceeding (lockout prevention)
 log_info "Test 14: Verify lockout prevention check..."
-if grep -q "/root/.ssh/authorized_keys" "$PROJECT_ROOT/run_1.sh" && grep -q "ssh-copy-id" "$PROJECT_ROOT/run_1.sh"; then
-    log_info "  run_1.sh verifies root has SSH keys before proceeding"
+if grep -q "collect_and_backup_authorized_keys" "$PROJECT_ROOT/run_1.sh" && grep -q "ssh-copy-id" "$PROJECT_ROOT/run_1.sh"; then
+    log_info "  run_1.sh collects and verifies SSH keys from all sources before proceeding"
 else
-    log_error "  run_1.sh missing lockout prevention (must check root authorized_keys)"
+    log_error "  run_1.sh missing lockout prevention (must collect authorized_keys)"
     exit 1
 fi
 

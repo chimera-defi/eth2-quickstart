@@ -23,9 +23,10 @@ Key variables:
 
 ## Stage 1: Initial Hardening (run_1.sh)
 
-**Run as root:**
+**Run with sudo (or as root):**
 ```bash
 sudo ./run_1.sh
+# Or: ./run_1.sh  (re-execs with sudo if not root)
 sudo reboot
 ssh LOGIN_UNAME@<server-ip>
 ```
@@ -35,12 +36,12 @@ ssh LOGIN_UNAME@<server-ip>
 - SSH hardening: replaces `/etc/ssh/sshd_config`
 - Fail2ban: configures jails for `nginx-proxy` and `sshd`
 - User creation: creates non-root user `LOGIN_UNAME` (SSH key-only, no password)
-- Migrates root's `~/.ssh/authorized_keys` to new user (prevents lockout)
+- Backs up and migrates authorized_keys from root and (if run via sudo) the invoking user to new user (prevents lockout)
 - Security: runs consolidated security script
 - NTP: installs `chrony` and enables NTP
 - Security: mounts `/run/shm` as `tmpfs` with `ro,noexec,nosuid`
 
-**Prerequisite:** Add your SSH key to root before running: `ssh-copy-id root@<server>`
+**Prerequisite:** Add your SSH key before running: `ssh-copy-id root@<server>` or `ssh-copy-id <your-user>@<server>` (if using sudo)
 
 ## Stage 2: Client Installation (run_2.sh)
 
