@@ -104,12 +104,11 @@ jobs:
         done
         echo "✅ Structure check done"
 
-    - name: Job summary
-      if: always()
+    - name: Job summary (success)
+      if: success()
+      run: echo "## ✅ shellcheck-extended passed" >> $GITHUB_STEP_SUMMARY
+    - name: Job summary (failure)
+      if: failure()
       run: |
-        if [ "${{ job.status }}" = "success" ]; then
-          echo "## ✅ shellcheck-extended passed" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "## ❌ shellcheck-extended failed" >> $GITHUB_STEP_SUMMARY
-          echo "Shebang, executable, dependency, or structure check failed. See logs for details." >> $GITHUB_STEP_SUMMARY
-        fi
+        echo "## ❌ shellcheck-extended failed" >> $GITHUB_STEP_SUMMARY
+        echo "Shebang, executable, dependency, or structure check failed. See logs for details." >> $GITHUB_STEP_SUMMARY

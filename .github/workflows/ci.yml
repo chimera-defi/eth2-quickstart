@@ -65,18 +65,18 @@ jobs:
       - id: meta
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: echo "image=ghcr.io/${{ github.repository }}/eth-node-test:${{ github.sha }}" >> $GITHUB_OUTPUT
-      - name: Job summary
-        if: always()
+      - name: Job summary (success)
+        if: success()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "## ✅ build-docker passed" >> $GITHUB_STEP_SUMMARY
-            if [ "${{ github.event_name }}" != "pull_request" ] || [ "${{ github.event.pull_request.head.repo.full_name }}" = "${{ github.repository }}" ]; then
-              echo "Image: \`ghcr.io/${{ github.repository }}/eth-node-test:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-            fi
-          else
-            echo "## ❌ build-docker failed" >> $GITHUB_STEP_SUMMARY
-            echo "Docker build or push failed. See logs for details." >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ build-docker passed" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event_name }}" != "pull_request" ] || [ "${{ github.event.pull_request.head.repo.full_name }}" = "${{ github.repository }}" ]; then
+            echo "Image: \`ghcr.io/${{ github.repository }}/eth-node-test:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           fi
+      - name: Job summary (failure)
+        if: failure()
+        run: |
+          echo "## ❌ build-docker failed" >> $GITHUB_STEP_SUMMARY
+          echo "Docker build or push failed. See logs for details." >> $GITHUB_STEP_SUMMARY
 
   docker-integration:
     needs: [build-docker]
@@ -100,15 +100,14 @@ jobs:
           echo "::group::Unit tests (Caddy validate, downloads, functions)"
           docker run --rm --privileged -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true -e GITHUB_TOKEN="$GITHUB_TOKEN" eth-node-test /workspace/test/docker_test.sh
           echo "::endgroup::"
-      - name: Job summary
-        if: always()
+      - name: Job summary (success)
+        if: success()
+        run: echo "## ✅ docker-integration passed" >> $GITHUB_STEP_SUMMARY
+      - name: Job summary (failure)
+        if: failure()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "## ✅ docker-integration passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "## ❌ docker-integration failed" >> $GITHUB_STEP_SUMMARY
-            echo "Lint, unit tests, or Docker integration checks failed. See logs for details." >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "## ❌ docker-integration failed" >> $GITHUB_STEP_SUMMARY
+          echo "Lint, unit tests, or Docker integration checks failed. See logs for details." >> $GITHUB_STEP_SUMMARY
 
   run-1-structure:
     needs: [build-docker]
@@ -124,15 +123,14 @@ jobs:
           docker run --rm --privileged --user root \
             -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical -e CI=true \
             eth-node-test /workspace/test/ci_test_run_1.sh
-      - name: Job summary
-        if: always()
+      - name: Job summary (success)
+        if: success()
+        run: echo "## ✅ run-1-structure passed" >> $GITHUB_STEP_SUMMARY
+      - name: Job summary (failure)
+        if: failure()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "## ✅ run-1-structure passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "## ❌ run-1-structure failed" >> $GITHUB_STEP_SUMMARY
-            echo "run_1.sh structure test failed. See logs for details." >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "## ❌ run-1-structure failed" >> $GITHUB_STEP_SUMMARY
+          echo "run_1.sh structure test failed. See logs for details." >> $GITHUB_STEP_SUMMARY
 
   run-1-e2e:
     needs: [build-docker]
@@ -147,15 +145,14 @@ jobs:
         env:
           CI: true
         run: SKIP_BUILD=true ./test/run_e2e.sh --phase=1
-      - name: Job summary
-        if: always()
+      - name: Job summary (success)
+        if: success()
+        run: echo "## ✅ run-1-e2e passed" >> $GITHUB_STEP_SUMMARY
+      - name: Job summary (failure)
+        if: failure()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "## ✅ run-1-e2e passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "## ❌ run-1-e2e failed" >> $GITHUB_STEP_SUMMARY
-            echo "Phase 1 E2E test failed. See logs for details." >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "## ❌ run-1-e2e failed" >> $GITHUB_STEP_SUMMARY
+          echo "Phase 1 E2E test failed. See logs for details." >> $GITHUB_STEP_SUMMARY
 
   run-2-structure:
     needs: [build-docker]
@@ -171,15 +168,14 @@ jobs:
           docker run --rm --privileged --user testuser \
             -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical -e CI=true \
             eth-node-test /workspace/test/ci_test_run_2.sh
-      - name: Job summary
-        if: always()
+      - name: Job summary (success)
+        if: success()
+        run: echo "## ✅ run-2-structure passed" >> $GITHUB_STEP_SUMMARY
+      - name: Job summary (failure)
+        if: failure()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "## ✅ run-2-structure passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "## ❌ run-2-structure failed" >> $GITHUB_STEP_SUMMARY
-            echo "run_2.sh structure test failed. See logs for details." >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "## ❌ run-2-structure failed" >> $GITHUB_STEP_SUMMARY
+          echo "run_2.sh structure test failed. See logs for details." >> $GITHUB_STEP_SUMMARY
 
   run-2-e2e:
     needs: [build-docker]
@@ -200,15 +196,14 @@ jobs:
           SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" \
           E2E_EXECUTION=geth E2E_CONSENSUS=prysm E2E_MEV=mev-boost \
           ./test/run_e2e.sh --phase=2
-      - name: Job summary
-        if: always()
+      - name: Job summary (success)
+        if: success()
+        run: echo "## ✅ run-2-e2e passed" >> $GITHUB_STEP_SUMMARY
+      - name: Job summary (failure)
+        if: failure()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "## ✅ run-2-e2e passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "## ❌ run-2-e2e failed" >> $GITHUB_STEP_SUMMARY
-            echo "Phase 2 E2E (geth+prysm+mev-boost) failed. See logs for details." >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "## ❌ run-2-e2e failed" >> $GITHUB_STEP_SUMMARY
+          echo "Phase 2 E2E (geth+prysm+mev-boost) failed. See logs for details." >> $GITHUB_STEP_SUMMARY
 
   run-2-web:
     needs: [build-docker]
@@ -227,15 +222,14 @@ jobs:
           # No E2E_EXECUTION/E2E_CONSENSUS = runs Caddy+Nginx install (geth+prysm defaults)
           # Verifies install_caddy.sh, install_nginx.sh, config validity, no regressions
           SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" ./test/run_e2e.sh --phase=2
-      - name: Job summary
-        if: always()
+      - name: Job summary (success)
+        if: success()
+        run: echo "## ✅ run-2-web passed" >> $GITHUB_STEP_SUMMARY
+      - name: Job summary (failure)
+        if: failure()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "## ✅ run-2-web passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "## ❌ run-2-web failed" >> $GITHUB_STEP_SUMMARY
-            echo "Caddy/Nginx E2E install failed. See logs for details." >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "## ❌ run-2-web failed" >> $GITHUB_STEP_SUMMARY
+          echo "Caddy/Nginx E2E install failed. See logs for details." >> $GITHUB_STEP_SUMMARY
 
   # Matrix: 6 client combos (geth+prysm+mev-boost covered by run-2-e2e)
   # Execution: besu, erigon, nethermind, nimbus_eth1, reth, ethrex
@@ -280,14 +274,14 @@ jobs:
           SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" \
           E2E_EXECUTION=${{ matrix.exec }} E2E_CONSENSUS=${{ matrix.cons }} E2E_MEV=${{ matrix.mev }} \
           ./test/run_e2e.sh --phase=2
-      - name: Job summary
-        if: always()
+      - name: Job summary (success)
+        if: success()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "## ✅ e2e-client-matrix passed" >> $GITHUB_STEP_SUMMARY
-            echo "**Combo:** ${{ matrix.exec }}+${{ matrix.cons }}+${{ matrix.mev }}" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "## ❌ e2e-client-matrix failed" >> $GITHUB_STEP_SUMMARY
-            echo "**Combo:** ${{ matrix.exec }}+${{ matrix.cons }}+${{ matrix.mev }}" >> $GITHUB_STEP_SUMMARY
-            echo "E2E install failed for this client combination. See logs for details." >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "## ✅ e2e-client-matrix passed" >> $GITHUB_STEP_SUMMARY
+          echo "**Combo:** ${{ matrix.exec }}+${{ matrix.cons }}+${{ matrix.mev }}" >> $GITHUB_STEP_SUMMARY
+      - name: Job summary (failure)
+        if: failure()
+        run: |
+          echo "## ❌ e2e-client-matrix failed" >> $GITHUB_STEP_SUMMARY
+          echo "**Combo:** ${{ matrix.exec }}+${{ matrix.cons }}+${{ matrix.mev }}" >> $GITHUB_STEP_SUMMARY
+          echo "E2E install failed for this client combination. See logs for details." >> $GITHUB_STEP_SUMMARY

@@ -50,15 +50,14 @@ jobs:
       - name: TypeScript type check
         run: bunx tsc --noEmit
 
-      - name: Job summary
-        if: always()
+      - name: Job summary (success)
+        if: success()
+        run: echo "## ✅ Lint passed" >> $GITHUB_STEP_SUMMARY
+      - name: Job summary (failure)
+        if: failure()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "## ✅ Lint passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "## ❌ Lint failed" >> $GITHUB_STEP_SUMMARY
-            echo "ESLint or TypeScript check failed. See logs for details." >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "## ❌ Lint failed" >> $GITHUB_STEP_SUMMARY
+          echo "ESLint or TypeScript check failed. See logs for details." >> $GITHUB_STEP_SUMMARY
 
   test:
     name: Test
@@ -98,15 +97,14 @@ jobs:
           path: frontend/coverage/
           retention-days: 7
 
-      - name: Job summary
-        if: always()
+      - name: Job summary (success)
+        if: success()
+        run: echo "## ✅ Test passed" >> $GITHUB_STEP_SUMMARY
+      - name: Job summary (failure)
+        if: failure()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "## ✅ Test passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "## ❌ Test failed" >> $GITHUB_STEP_SUMMARY
-            echo "Jest tests failed. See logs and coverage-report artifact for details." >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "## ❌ Test failed" >> $GITHUB_STEP_SUMMARY
+          echo "Jest tests failed. See logs and coverage-report artifact for details." >> $GITHUB_STEP_SUMMARY
 
   build:
     name: Build
@@ -148,13 +146,13 @@ jobs:
             frontend/out/
           retention-days: 7
 
-      - name: Job summary
-        if: always()
+      - name: Job summary (success)
+        if: success()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "## ✅ Build passed" >> $GITHUB_STEP_SUMMARY
-            echo "Artifacts: nextjs-build (retention: 7 days)" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "## ❌ Build failed" >> $GITHUB_STEP_SUMMARY
-            echo "Next.js build failed. See logs for details." >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "## ✅ Build passed" >> $GITHUB_STEP_SUMMARY
+          echo "Artifacts: nextjs-build (retention: 7 days)" >> $GITHUB_STEP_SUMMARY
+      - name: Job summary (failure)
+        if: failure()
+        run: |
+          echo "## ❌ Build failed" >> $GITHUB_STEP_SUMMARY
+          echo "Next.js build failed. See logs for details." >> $GITHUB_STEP_SUMMARY
