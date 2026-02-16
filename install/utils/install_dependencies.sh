@@ -84,8 +84,6 @@ install_packages() {
     
     log_info "Installing packages: ${packages[*]}"
     
-    # Use sudo if not root, direct apt if root
-    # Always set DEBIAN_FRONTEND so apt/dpkg never prompt (tzdata, needrestart, NTP, etc.)
     if [[ $EUID -eq 0 ]]; then
         DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical apt-get install -y --no-install-recommends "${packages[@]}"
     else
@@ -118,7 +116,6 @@ install_production() {
         exit 1
     fi
     
-    # Update system (non-interactive to avoid tzdata/NTP prompts)
     if [[ $EUID -eq 0 ]]; then
         DEBIAN_FRONTEND=noninteractive apt-get update -y
     else

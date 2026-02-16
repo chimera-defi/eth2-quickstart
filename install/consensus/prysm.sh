@@ -45,7 +45,6 @@ if [[ ! -f "prysm.sh" || ! -x "prysm.sh" ]]; then
     exit 1
 fi
 
-# Ensure JWT secret exists (idempotent - skip if present; matches other clients)
 ensure_directory "$HOME/secrets"
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 

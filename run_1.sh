@@ -14,7 +14,6 @@ source "$SCRIPT_DIR/lib/common_functions.sh"
 # Require root - re-exec with sudo if running as non-root
 require_sudo_or_root "$@"
 
-# Log to file for later review
 LOG_DIR="/var/log/eth2-quickstart"
 LOG_FILE="$LOG_DIR/run_1_$(date +%Y%m%d_%H%M%S).log"
 mkdir -p "$LOG_DIR"
@@ -65,7 +64,7 @@ rm -f "$COLLECTED_KEYS_FILE"
 if [[ ! -f /etc/sudoers.d/99-noninteractive ]]; then
     echo 'Defaults env_keep += "DEBIAN_FRONTEND DEBIAN_PRIORITY"' > /etc/sudoers.d/99-noninteractive
     chmod 440 /etc/sudoers.d/99-noninteractive
-    log_info "Configured sudo to preserve DEBIAN_FRONTEND for non-interactive apt"
+    log_info "Sudo configured for non-interactive apt"
 fi
 
 # Harden SSH (after user exists with keys)
