@@ -45,13 +45,9 @@ if [[ ! -f "prysm.sh" || ! -x "prysm.sh" ]]; then
     exit 1
 fi
 
-# Generate JWT secret
-log_info "Generating JWT secret..."
-./prysm.sh beacon-chain generate-auth-secret
-
-# Ensure secrets directory exists
+# Ensure JWT secret exists (idempotent - skip if present; matches other clients)
 ensure_directory "$HOME/secrets"
-mv ./jwt.hex "$HOME/secrets/"
+ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create temporary directory for custom configuration
 create_temp_config_dir
