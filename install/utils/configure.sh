@@ -107,13 +107,13 @@ else
         sudo apt-get update && sudo apt-get install -y whiptail
     fi
     
-    # Welcome message
-    whiptail --title "Eth2 Quick Start Wizard" --msgbox "Welcome to the Ethereum Node Setup Wizard.\n\nThis tool will guide you through configuring your node.\n\nIMPORTANT: Installation happens in TWO PHASES:\n  Phase 1: System hardening (as root, requires reboot)\n  Phase 2: Client installation (as new user)\n\nConfiguration will be saved to:\n  $CONFIG_FILE" 16 70
+    # Welcome message (</dev/tty fixes OK button when run via "curl | bash")
+    whiptail --title "Eth2 Quick Start Wizard" --msgbox "Welcome to the Ethereum Node Setup Wizard.\n\nThis tool will guide you through configuring your node.\n\nIMPORTANT: Installation happens in TWO PHASES:\n  Phase 1: System hardening (as root, requires reboot)\n  Phase 2: Client installation (as new user)\n\nConfiguration will be saved to:\n  $CONFIG_FILE" 16 70 </dev/tty
     
     # 1. Network Selection
     NETWORK=$(whiptail --title "Network Selection" --menu "Choose the Ethereum Network:" 15 60 2 \
         "mainnet" "Ethereum Mainnet (Real Value)" \
-        "holesky" "Holesky Testnet (Testing)" 3>&1 1>&2 2>&3)
+        "holesky" "Holesky Testnet (Testing)" 3>&1 1>&2 2>&3 </dev/tty)
     if [[ $? -ne 0 ]]; then exit 0; fi
     
     # 2. Hardware Profile Detection
@@ -123,7 +123,7 @@ else
         "high" "High-End (32GB+ RAM, 2TB+ NVMe) - Best Performance" \
         "mid" "Mid-Range (16GB RAM, SSD) - Balanced" \
         "low" "Low-Resource (8GB RAM) - Efficiency First" \
-        --default-item "$HARDWARE_PROFILE" 3>&1 1>&2 2>&3)
+        --default-item "$HARDWARE_PROFILE" 3>&1 1>&2 2>&3 </dev/tty)
     if [[ $? -ne 0 ]]; then HARDWARE="$HARDWARE_PROFILE"; fi
     
     # Get recommended clients based on hardware
@@ -141,7 +141,7 @@ else
             "besu" "Besu (Java) - Enterprise, Modular" \
             "erigon" "Erigon (Go) - Archival/Fast Sync" \
             "reth" "Reth (Rust) - High Performance" \
-            "nimbus_eth1" "Nimbus (Nim) - Lightweight" 3>&1 1>&2 2>&3)
+            "nimbus_eth1" "Nimbus (Nim) - Lightweight" 3>&1 1>&2 2>&3 </dev/tty)
         if [[ $? -ne 0 ]]; then EXEC_CLIENT="geth"; fi
         
         # Manual consensus client selection
@@ -151,7 +151,7 @@ else
             "teku" "Teku (Java) - Institutional Grade" \
             "nimbus" "Nimbus (Nim) - Lightweight" \
             "lodestar" "Lodestar (TypeScript) - JS Ecosystem" \
-            "grandine" "Grandine (Rust) - Fast Sync (Beta)" 3>&1 1>&2 2>&3)
+            "grandine" "Grandine (Rust) - Fast Sync (Beta)" 3>&1 1>&2 2>&3 </dev/tty)
         if [[ $? -ne 0 ]]; then CONS_CLIENT="prysm"; fi
     fi
     
@@ -159,17 +159,17 @@ else
     MEV_CHOICE=$(whiptail --title "MEV Configuration" --menu "Select MEV Solution (for validator rewards):\n\nMEV-Boost is recommended for most users." 16 75 3 \
         "mev-boost" "MEV-Boost (RECOMMENDED) - Standard, Stable" \
         "commit-boost" "Commit-Boost (Advanced) - Modular, Experimental" \
-        "none" "None - Skip MEV (Not Recommended)" 3>&1 1>&2 2>&3)
+        "none" "None - Skip MEV (Not Recommended)" 3>&1 1>&2 2>&3 </dev/tty)
     if [[ $? -ne 0 ]]; then MEV_CHOICE="mev-boost"; fi
     
     # 5. Fee Recipient
-    FEE_RECIPIENT=$(whiptail --title "Fee Recipient" --inputbox "Enter your ETH address for validator rewards:\n\n(This is where tips and MEV rewards will be sent)" 12 70 "0x0000000000000000000000000000000000000000" 3>&1 1>&2 2>&3)
+    FEE_RECIPIENT=$(whiptail --title "Fee Recipient" --inputbox "Enter your ETH address for validator rewards:\n\n(This is where tips and MEV rewards will be sent)" 12 70 "0x0000000000000000000000000000000000000000" 3>&1 1>&2 2>&3 </dev/tty)
     if [[ $? -ne 0 ]] || [[ -z "$FEE_RECIPIENT" ]]; then 
         FEE_RECIPIENT="0x0000000000000000000000000000000000000000"
     fi
     
     # 6. Graffiti
-    GRAFFITI=$(whiptail --title "Graffiti" --inputbox "Enter your validator graffiti:\n\n(This public note appears on blocks you propose)" 12 70 "Eth2QuickStart" 3>&1 1>&2 2>&3)
+    GRAFFITI=$(whiptail --title "Graffiti" --inputbox "Enter your validator graffiti:\n\n(This public note appears on blocks you propose)" 12 70 "Eth2QuickStart" 3>&1 1>&2 2>&3 </dev/tty)
     if [[ $? -ne 0 ]] || [[ -z "$GRAFFITI" ]]; then 
         GRAFFITI="Eth2QuickStart"
     fi
