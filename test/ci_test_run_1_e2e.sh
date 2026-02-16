@@ -53,9 +53,7 @@ log_header "Phase 1: Executing run_1.sh"
 export DEBIAN_FRONTEND=noninteractive
 export DEBIAN_PRIORITY=critical
 
-# Pre-seed debconf (single source: install/utils/debconf_preseed.sh)
-"$PROJECT_ROOT/install/utils/debconf_preseed.sh"
-
+# run_1.sh calls debconf_preseed.sh internally (single source: install/utils/debconf_preseed.sh)
 if "$PROJECT_ROOT/run_1.sh"; then
     record_test "run_1.sh execution" "PASS"
 else
