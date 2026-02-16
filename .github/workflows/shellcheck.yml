@@ -103,3 +103,13 @@ jobs:
           grep -q "source.*exports.sh" "$script" || { echo "❌ $script must source exports.sh"; exit 1; }
         done
         echo "✅ Structure check done"
+
+    - name: Job summary
+      if: always()
+      run: |
+        if [ "${{ job.status }}" = "success" ]; then
+          echo "## ✅ shellcheck-extended passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "## ❌ shellcheck-extended failed" >> $GITHUB_STEP_SUMMARY
+          echo "Shebang, executable, dependency, or structure check failed. See logs for details." >> $GITHUB_STEP_SUMMARY
+        fi

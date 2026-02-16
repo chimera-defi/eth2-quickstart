@@ -194,3 +194,13 @@ jobs:
         echo "✅ Security documentation checked"
         echo ""
         echo "Security validation completed!"
+
+    - name: Job summary
+      if: always()
+      run: |
+        if [ "${{ job.status }}" = "success" ]; then
+          echo "## ✅ security-validation passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "## ❌ security-validation failed" >> $GITHUB_STEP_SUMMARY
+          echo "Security config, scripts, or documentation check failed. See logs for details." >> $GITHUB_STEP_SUMMARY
+        fi

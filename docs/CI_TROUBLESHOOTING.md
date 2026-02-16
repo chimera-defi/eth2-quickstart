@@ -65,3 +65,16 @@ Or manually: `./test/run_tests.sh --lint-only && bash install/test/test_common_f
 - **shellcheck** → **build-docker** → (docker-integration + run-* in parallel) → **e2e-client-matrix**
 - `docker-prep` composite action: used by all Docker jobs for pull/build
 - Matrix: 7 client combos, fail-fast (one fails → others cancelled)
+
+## Job summaries
+
+Each job writes a short summary to `$GITHUB_STEP_SUMMARY`, visible in the job UI. On success: ✅ and key info (e.g. image tag, matrix combo). On failure: ❌ and guidance. Use these to quickly see what failed without scrolling logs.
+
+## Artifact retention
+
+| Artifact        | Workflow   | Retention |
+|-----------------|------------|-----------|
+| coverage-report | frontend   | 7 days    |
+| nextjs-build    | frontend   | 7 days    |
+
+CI (ci.yml) does not upload artifacts; the Docker image is pushed to GHCR. To change retention, edit `retention-days` on the `upload-artifact` step.
