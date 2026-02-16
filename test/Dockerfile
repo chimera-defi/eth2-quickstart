@@ -34,11 +34,14 @@ RUN curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --de
 # Enable SSH for run_1 E2E (configure_ssh needs sshd running under systemd)
 RUN systemctl enable ssh 2>/dev/null || systemctl enable sshd 2>/dev/null || true
 
+# Create root SSH keys for run_1 E2E (collect_and_backup_authorized_keys requires keys or exits)
+RUN mkdir -p /root/.ssh && echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > /root/.ssh/authorized_keys && chmod 600 /root/.ssh/authorized_keys
+
 # Create a non-root user for testing (mimics real deployment)
 # Preserve DEBIAN_* through sudo so apt/dpkg stay noninteractive (prevents tzdata Readline hang)
 RUN useradd -m -s /bin/bash testuser \
     && echo "testuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
-    && echo 'Defaults env_keep += "DEBIAN_FRONTEND DEBIAN_PRIORITY"' > /etc/sudoers.d/99-noninteractive \
+    && echo 'Defaults env_keep += "DEBIAN_FRONTEND DEBIAN_PRIORITY TZ"' > /etc/sudoers.d/99-noninteractive \
     && chmod 440 /etc/sudoers.d/99-noninteractive
 
 # Set ownership

@@ -84,11 +84,10 @@ install_packages() {
     
     log_info "Installing packages: ${packages[*]}"
     
-    # Use sudo if not root, direct apt if root
     if [[ $EUID -eq 0 ]]; then
-        apt-get install -y --no-install-recommends "${packages[@]}"
+        DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical apt-get install -y --no-install-recommends "${packages[@]}"
     else
-        sudo apt-get install -y --no-install-recommends "${packages[@]}"
+        sudo env DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical apt-get install -y --no-install-recommends "${packages[@]}"
     fi
 }
 
@@ -117,11 +116,10 @@ install_production() {
         exit 1
     fi
     
-    # Update system
     if [[ $EUID -eq 0 ]]; then
-        apt-get update -y
+        DEBIAN_FRONTEND=noninteractive apt-get update -y
     else
-        sudo apt-get update -y
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get update -y
     fi
     
     # Install all packages
@@ -158,7 +156,7 @@ install_production() {
     if ! is_docker || [[ "${CI_E2E:-}" == "true" ]]; then
         log_info "Installing Rust..."
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+        [[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:${PATH:-}"
     fi
 
     # Install Bazel (may not be available in all repos)
@@ -170,7 +168,7 @@ install_production() {
     # Configure time synchronization (skip in Docker)
     if ! is_docker && command -v timedatectl &>/dev/null; then
         log_info "Configuring time synchronization..."
-        timedatectl set-ntp on || log_warn "Could not enable NTP"
+        TZ=UTC timedatectl set-ntp true 2>/dev/null || log_warn "Could not enable NTP (chrony uses pool.ntp.org by default)"
     fi
     
     log_info "All production dependencies installed successfully!"

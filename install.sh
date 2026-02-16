@@ -72,12 +72,13 @@ echo ""
 echo -e "${RED}You MUST reboot between phases to verify SSH access.${NC}"
 echo ""
 
-# Check if running as root
+# Check if running as root (required for git clone, apt install)
+# For curl|bash: use "curl ... | sudo bash"
 bootstrap_log_info "Checking system requirements..."
 if [[ "$(id -u)" -ne 0 ]]; then
     bootstrap_log_error "This script must be run as root to setup the initial environment."
     echo ""
-    echo "Please run: sudo bash -c 'curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | bash'"
+    echo "Please run: curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash"
     echo ""
     exit 1
 fi
@@ -128,6 +129,9 @@ fi
 
 log_info "Starting configuration wizard..."
 echo ""
+echo -e "${YELLOW}Tip: If the OK button doesn't respond, press Ctrl+C and run with --vibe:${NC}"
+echo -e "  ${BLUE}curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash -s -- --vibe${NC}"
+echo ""
 
 # Make scripts executable
 chmod +x "$INSTALL_DIR/install/utils/configure.sh"
@@ -163,11 +167,21 @@ for arg in "$@"; do
 done
 
 # Launch the configuration wizard
+# When run via "curl | bash", stdin is a pipe - whiptail can't read keyboard input.
+# Use 'script' to create a PTY so the wizard gets proper terminal I/O.
 if [[ "$VIBE_MODE" == "true" ]]; then
     log_info "Running in vibe mode (non-interactive defaults)..."
     "$INSTALL_DIR/install/utils/configure.sh" --vibe
 else
-    "$INSTALL_DIR/install/utils/configure.sh"
+    if [[ -c /dev/tty ]] && command -v script &>/dev/null && ! [[ -t 0 ]]; then
+        script -q -c "$INSTALL_DIR/install/utils/configure.sh" /dev/null
+    else
+        # Fallback: redirect stdin from terminal
+        if [[ -c /dev/tty ]] && ! [[ -t 0 ]]; then
+            exec 0</dev/tty
+        fi
+        "$INSTALL_DIR/install/utils/configure.sh"
+    fi
 fi
 
 # Display next steps
@@ -187,7 +201,7 @@ echo "  2. REBOOT the system:"
 echo -e "     ${BLUE}sudo reboot${NC}"
 echo ""
 echo "  3. SSH back in as the new user and run Phase 2:"
-echo -e "     ${BLUE}cd $INSTALL_DIR && ./install_phase2.sh${NC}"
+echo -e "     ${BLUE}cd ~/eth2-quickstart && ./install_phase2.sh${NC}"
 echo ""
 echo -e "${RED}⚠️  Do NOT skip the reboot - it verifies your SSH access!${NC}"
 echo ""
