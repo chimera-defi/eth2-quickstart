@@ -220,7 +220,7 @@ cat > "$PHASE1_SCRIPT" << 'PHASE1_EOF'
 #!/bin/bash
 
 # Eth2 Quick Start - Phase 1: System Hardening
-# This script must be run as ROOT
+# Run as root or with sudo (re-execs with sudo if run as non-root user)
 #
 # After this script completes:
 # 1. REBOOT the system
@@ -238,8 +238,8 @@ source "$SCRIPT_DIR/exports.sh"
 # shellcheck source=lib/common_functions.sh
 source "$SCRIPT_DIR/lib/common_functions.sh"
 
-# Ensure running as root
-require_root
+# Require root - re-exec with sudo if running as non-root (preserves SUDO_USER for key collection)
+require_sudo_or_root "$@"
 
 echo ""
 echo "=============================================="
