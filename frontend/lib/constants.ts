@@ -147,8 +147,8 @@ export const INSTALLATION_STEPS = [
   {
     step: 4,
     title: 'Run Phase 2 (as new user)',
-    description: 'Installs execution + consensus clients, MEV, and monitoring.',
-    code: 'cd ~/.eth2-quickstart && ./install_phase2.sh',
+    description: 'Installs execution + consensus clients, MEV, and monitoring. Use the path shown when the one-liner completed.',
+    code: 'cd /root/.eth2-quickstart && ./install_phase2.sh',
   },
   {
     step: 5,
@@ -170,7 +170,7 @@ cd eth2-quickstart && chmod +x run_1.sh`,
   {
     step: 2,
     title: 'Run Setup',
-    description: 'Configure firewalls, security hardening, and create a non-root user.',
+    description: 'Add SSH key first (ssh-copy-id root@<server-ip>), then run. Hardens firewall, SSH, creates non-root user.',
     code: 'sudo ./run_1.sh',
   },
   {

@@ -15,7 +15,7 @@ export function CallToAction() {
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent" />
           <div className="relative flex flex-col gap-4 sm:gap-6">
             <div className="flex flex-col gap-3 sm:gap-4">
-              <Badge variant="primary">Ready to ship</Badge>
+              <Badge variant="primary">Get started</Badge>
               <motion.h2
                 initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
