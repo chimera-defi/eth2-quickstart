@@ -19,6 +19,15 @@ log_info "Using configuration: user=$LOGIN_UNAME, ssh_port=$YourSSHPortNumber, m
 
 check_system_compatibility
 
+# Prevent apt/dpkg from prompting (postfix, cron, tzdata, needrestart)
+# Postfix is NOT needed for Ethereum nodes - we avoid it via --no-install-recommends
+export DEBIAN_FRONTEND=noninteractive
+export DEBIAN_PRIORITY=critical
+if [[ -f "$SCRIPT_DIR/install/utils/debconf_preseed.sh" ]]; then
+    log_info "Pre-seeding debconf for non-interactive install..."
+    "$SCRIPT_DIR/install/utils/debconf_preseed.sh"
+fi
+
 # Lockout prevention: collect and back up authorized_keys from all sources (root, SUDO_USER)
 # Must have keys somewhere before we create new user and harden SSH
 COLLECTED_KEYS_FILE=""
