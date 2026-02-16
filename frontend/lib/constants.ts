@@ -124,42 +124,8 @@ export const DOCUMENTATION_LINKS = [
   { title: 'Security', description: 'Security documentation', path: 'docs/SECURITY_GUIDE.md' },
 ]
 
-/** One-liner flow (recommended) - matches landing page install command */
+/** Installation steps - matches README and repo (run_1.sh, run_2.sh) */
 export const INSTALLATION_STEPS = [
-  {
-    step: 1,
-    title: 'Run the one-line installer',
-    description: 'Bootstraps the repo, runs the configuration wizard, and generates phase scripts.',
-    code: 'curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash',
-  },
-  {
-    step: 2,
-    title: 'Run Phase 1 (as root)',
-    description: 'Hardens the host: firewall, SSH, fail2ban, and creates a non-root operator user.',
-    code: 'cd ~/.eth2-quickstart && ./install_phase1.sh',
-  },
-  {
-    step: 3,
-    title: 'Reboot',
-    description: 'Required between phases. Reboot, then SSH back in as the new user.',
-    code: 'sudo reboot',
-  },
-  {
-    step: 4,
-    title: 'Run Phase 2 (as new user)',
-    description: 'Installs execution + consensus clients, MEV, and monitoring. Use the path shown when the one-liner completed.',
-    code: 'cd /root/.eth2-quickstart && ./install_phase2.sh',
-  },
-  {
-    step: 5,
-    title: 'Start Services',
-    description: 'Start and verify all services.',
-    code: 'sudo systemctl start eth1 cl validator mev',
-  },
-]
-
-/** Manual flow (alternative to one-liner) */
-export const INSTALLATION_STEPS_MANUAL = [
   {
     step: 1,
     title: 'Clone Repository',
@@ -169,7 +135,7 @@ cd eth2-quickstart && chmod +x run_1.sh`,
   },
   {
     step: 2,
-    title: 'Run Setup',
+    title: 'Run Phase 1 (as root)',
     description: 'Add SSH key first (ssh-copy-id root@<server-ip>), then run. Hardens firewall, SSH, creates non-root user.',
     code: 'sudo ./run_1.sh',
   },
@@ -181,7 +147,7 @@ cd eth2-quickstart && chmod +x run_1.sh`,
   },
   {
     step: 4,
-    title: 'Install Clients',
+    title: 'Install Clients (as new user)',
     description: 'Configure your settings and run the installation.',
     code: `nano exports.sh  # Edit settings
 ./run_2.sh       # Install clients`,
