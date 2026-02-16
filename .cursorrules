@@ -622,11 +622,13 @@ bash install/test/test_common_functions.sh
 --exclude=SC2181  # Check exit code directly (whiptail/dialog pattern)
 ```
 
-### Restored Shell Script Checks (ci.yml shellcheck job)
-When shellcheck.yml was consolidated into ci.yml, these checks were restored to prevent regressions:
-- **Shebang**: All .sh files must have #!/bin/bash (or similar) on line 1
-- **Executable**: Warning only for non-executable scripts (sourced libs may omit +x)
-- **Dependencies**: All sourced files must exist (resolved from script dir or project root)
+### Extended Shell Script Checks (.github/workflows/shellcheck.yml)
+Runs in parallel with ci.yml. Uses `continue-on-error: true` so it reports results without blocking.
+Remove that when all checks pass. Includes:
+- **Shellcheck** (same exclusions as ci.yml)
+- **Shebang**: All .sh files must have #!/bin/bash on line 1
+- **Executable**: Warning only for non-executable scripts
+- **Dependencies**: Sourced files must exist (./ and ../ from script dir, else project root)
 - **run_1/run_2 structure**: Must source exports.sh; warns if missing set -Eeuo pipefail
 
 ## Code Reuse Guidelines

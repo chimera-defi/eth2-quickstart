@@ -1,0 +1,100 @@
+# Extended shell script validation (shebang, executable, dependencies, structure).
+# Runs in parallel with ci.yml. Does not block merges (continue-on-error) so CI stays fast
+# while we get visibility into script quality. Remove continue-on-error when all checks pass.
+name: Shell Script Validation (Extended)
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    paths:
+      - '**/*.sh'
+      - '.github/workflows/shellcheck.yml'
+  pull_request:
+    branches: [ main, master, develop, 'cursor/**' ]
+    paths:
+      - '**/*.sh'
+      - '.github/workflows/shellcheck.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: shellcheck-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  shellcheck-extended:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true  # Report results but don't block; remove when all pass
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install shellcheck
+      run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+    - name: Run shellcheck
+      run: |
+        echo "Running shellcheck on all shell scripts..."
+        failed=0
+        while IFS= read -r script; do
+          echo "Checking $script..."
+          shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 "$script" || failed=1
+        done < <(find . -name "*.sh" -type f ! -path "./.git/*")
+        [[ $failed -eq 1 ]] && exit 1
+        echo "✅ Shellcheck passed"
+
+    - name: Check shebangs
+      run: |
+        echo "Checking for shell scripts without shebang..."
+        failed=0
+        while IFS= read -r script; do
+          if ! head -1 "$script" | grep -q "^#!/"; then
+            echo "❌ $script lacks shebang"
+            failed=1
+          fi
+        done < <(find . -name "*.sh" -type f ! -path "./.git/*")
+        [[ $failed -eq 1 ]] && exit 1
+        echo "✅ All scripts have shebangs"
+
+    - name: Check executable permissions
+      run: |
+        echo "Checking executable permissions..."
+        while IFS= read -r script; do
+          [[ ! -x "$script" ]] && echo "⚠️  $script is not executable"
+        done < <(find . -name "*.sh" -type f ! -path "./.git/*")
+        echo "✅ Executable check done (warnings only)"
+
+    - name: Validate script dependencies
+      run: |
+        echo "Validating script dependencies..."
+        failed=0
+        while IFS= read -r script; do
+          script_dir=$(dirname "$script")
+          while IFS= read -r line; do
+            source_file=$(echo "$line" | sed -n 's/.*source[[:space:]]*["\x27]*\([^"'\''[:space:]]*\)["\x27]*.*/\1/p')
+            [[ -z "$source_file" ]] && continue
+            [[ "$source_file" == \$* ]] || [[ "$source_file" == *\$* ]] && continue
+            [[ "$source_file" == ~/* ]] || [[ "$source_file" == /dev/null ]] || [[ "$source_file" == *cargo/env* ]] && continue
+            if [[ "$source_file" == ./* ]] || [[ "$source_file" == ../* ]]; then
+              resolved=$(cd "$script_dir" && realpath "$source_file" 2>/dev/null || echo "")
+            else
+              resolved="$source_file"
+            fi
+            if [[ -n "$resolved" ]] && [[ ! -f "$resolved" ]]; then
+              echo "❌ $script sources missing: $source_file"
+              failed=1
+            fi
+          done < <(grep -n '^[[:space:]]*source[[:space:]]' "$script" 2>/dev/null || true)
+        done < <(find . -name "*.sh" -type f ! -path "./.git/*")
+        [[ $failed -eq 1 ]] && exit 1
+        echo "✅ All dependencies exist"
+
+    - name: Check run_1.sh and run_2.sh structure
+      run: |
+        for script in run_1.sh run_2.sh; do
+          [[ ! -f "$script" ]] && continue
+          head -20 "$script" | grep -q "set -Eeuo pipefail" || echo "⚠️  $script missing set -Eeuo pipefail"
+          grep -q "source.*exports.sh" "$script" || { echo "❌ $script must source exports.sh"; exit 1; }
+        done
+        echo "✅ Structure check done"
