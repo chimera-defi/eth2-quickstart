@@ -134,34 +134,35 @@ EOF
 run_lint_tests() {
     log_header "PHASE 1: Lint and Static Analysis"
     
-    # Check shellcheck is available
-    if ! command -v shellcheck &> /dev/null; then
+    # Skip shellcheck (runs in shellcheck.yml; ci docker jobs skip to avoid duplication)
+    if [[ "${SKIP_SHELLCHECK:-false}" == "true" ]]; then
+        log_info "Skipping shellcheck (already run in CI)"
+    elif ! command -v shellcheck &> /dev/null; then
         log_warn "shellcheck not found - skipping lint tests"
-        return 0
-    fi
-    
-    log_subheader "Running shellcheck on all scripts"
-    
-    local scripts_checked=0
-    local scripts_passed=0
-    local scripts_failed=0
-    
-    # Find all shell scripts
-    while IFS= read -r script; do
-        scripts_checked=$((scripts_checked + 1))
-        local script_name="${script#"$PROJECT_ROOT"/}"
+    else
+        log_subheader "Running shellcheck on all scripts"
         
-        # Run shellcheck with common exclusions
-        if shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 "$script" 2>/dev/null; then
-            log_test "PASS" "shellcheck: $script_name"
-            scripts_passed=$((scripts_passed + 1))
-        else
-            log_test "FAIL" "shellcheck: $script_name" "Has shellcheck warnings"
-            scripts_failed=$((scripts_failed + 1))
-        fi
-    done < <(find "$PROJECT_ROOT" -name "*.sh" -type f ! -path "*/test/*")
+        local scripts_checked=0
+        local scripts_passed=0
+        local scripts_failed=0
+        
+        # Find all shell scripts
+        while IFS= read -r script; do
+            scripts_checked=$((scripts_checked + 1))
+            local script_name="${script#"$PROJECT_ROOT"/}"
+            
+            # Run shellcheck with common exclusions
+            if shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 "$script" 2>/dev/null; then
+                log_test "PASS" "shellcheck: $script_name"
+                scripts_passed=$((scripts_passed + 1))
+            else
+                log_test "FAIL" "shellcheck: $script_name" "Has shellcheck warnings"
+                scripts_failed=$((scripts_failed + 1))
+            fi
+        done < <(find "$PROJECT_ROOT" -name "*.sh" -type f ! -path "*/test/*")
     
-    log_info "Shellcheck: $scripts_passed/$scripts_checked scripts passed"
+        log_info "Shellcheck: $scripts_passed/$scripts_checked scripts passed"
+    fi
     
     log_subheader "Checking script syntax (bash -n)"
     

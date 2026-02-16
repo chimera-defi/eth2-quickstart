@@ -1,10 +1,37 @@
 name: PR Rule Enforcement
 
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
 on:
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, 'cursor/**' ]
+    paths:
+      - 'frontend/**'
+      - '**/*.sh'
+      - 'test/**'
+      - 'install/**'
+      - 'lib/**'
+      - 'configs/**'
+      - '.github/**'
 
 jobs:
+  # Path filters: run no-npm only when frontend changes
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/frontend.yml'
+
   commit-conventions:
     name: Commit Message Format
     runs-on: ubuntu-latest
@@ -57,6 +84,8 @@ jobs:
   no-npm-in-frontend:
     name: No npm in Frontend
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -102,30 +131,3 @@ jobs:
           fi
           
           echo "Frontend Bun compliance verified."
-
-  review-checklist:
-    name: PR Description Checklist
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Verify changes were tested
-        run: |
-          echo "Checking that modified areas have been validated..."
-          
-          # Check if frontend was modified
-          FRONTEND_CHANGED=$(git diff --name-only origin/${{ github.base_ref }}..HEAD 2>/dev/null | grep "^frontend/" | head -1 || true)
-          SHELL_CHANGED=$(git diff --name-only origin/${{ github.base_ref }}..HEAD 2>/dev/null | grep "\.sh$" | head -1 || true)
-          
-          if [[ -n "$FRONTEND_CHANGED" ]]; then
-            echo "Frontend files changed - CI will run build/test/lint via frontend.yml"
-          fi
-          
-          if [[ -n "$SHELL_CHANGED" ]]; then
-            echo "Shell scripts changed - CI will run shellcheck via ci.yml"
-          fi
-          
-          echo "Review checklist passed."

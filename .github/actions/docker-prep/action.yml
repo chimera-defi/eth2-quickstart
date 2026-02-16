@@ -1,0 +1,41 @@
+# Composite action: setup buildx, login to GHCR, pull or build eth-node-test.
+# Jobs must run actions/checkout before this (needed to load local action).
+# Use in jobs that need the test image. Pass image from build-docker outputs.
+name: 'Docker prep (pull or build)'
+description: 'Setup buildx, pull image from GHCR or build locally'
+inputs:
+  image:
+    description: 'GHCR image URL (e.g. ghcr.io/owner/repo/eth-node-test:sha). Empty = build locally.'
+    required: false
+    default: ''
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GHCR
+      if: inputs.image != ''
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Pull image
+      if: inputs.image != ''
+      shell: bash
+      run: |
+        docker pull ${{ inputs.image }}
+        docker tag ${{ inputs.image }} eth-node-test
+
+    - name: Build image (fallback for fork PRs)
+      if: inputs.image == ''
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: test/Dockerfile
+        load: true
+        tags: eth-node-test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max

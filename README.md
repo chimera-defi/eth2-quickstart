@@ -1,7 +1,8 @@
 # Ethereum Node Quick Setup
 
 [![CI Build and Test](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/ci.yml/badge.svg)](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/ci.yml)
-[![Shell Script Linting](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/shellcheck.yml)
+[![Shell Script Validation](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/shellcheck.yml)
+[![Frontend CI](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/frontend.yml/badge.svg)](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/frontend.yml)
 [![Security Validation](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/security.yml/badge.svg)](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/security.yml)
 
 Get an ETH2 compatible RPC node setup in seconds!   
@@ -418,7 +419,13 @@ Additionally, the beacon checkpoint states have been made available by Sharedsta
 - Configuration guide: [docs/CONFIGURATION_GUIDE.md](docs/CONFIGURATION_GUIDE.md)
 - Shell scripting best practices: [docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md](docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md)
 
+### Marketing Website (Frontend)
+- Frontend quick start: [frontend/README.md](frontend/README.md) - Uses **Bun** for fast installs
+- Bun migration guide: [docs/FRONTEND_BUN_MIGRATION.md](docs/FRONTEND_BUN_MIGRATION.md)
+
 ### Testing & Validation
+- **Pre-commit**: `./scripts/pre-commit.sh` — local CI simulation before pushing
+- CI path filtering: [docs/CI_WORKFLOWS.md](docs/CI_WORKFLOWS.md) — when each workflow runs
 - Shell script test results: [docs/SHELL_SCRIPT_TEST_RESULTS.md](docs/SHELL_SCRIPT_TEST_RESULTS.md)
 
 ### Project Management

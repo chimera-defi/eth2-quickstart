@@ -13,6 +13,8 @@ This directory contains all project documentation organized by category.
 - **[COMMON_FUNCTIONS_REFERENCE.md](COMMON_FUNCTIONS_REFERENCE.md)** - Common functions library reference
 
 ## Development & Testing
+- **[CI_WORKFLOWS.md](CI_WORKFLOWS.md)** - CI path filtering (when each workflow runs)
+- **[CI_TROUBLESHOOTING.md](CI_TROUBLESHOOTING.md)** - Common CI failures and fixes
 - **[SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md](SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md)** - Shell scripting standards
 - **[COMMIT_MESSAGES.md](COMMIT_MESSAGES.md)** - Commit message conventions
 
@@ -29,6 +31,7 @@ This directory contains all project documentation organized by category.
 
 ## Front-End Development
 - **[FRONTEND_SUMMARY.md](FRONTEND_SUMMARY.md)** - Front-end project overview and quick reference (START HERE)
+- **[FRONTEND_BUN_MIGRATION.md](FRONTEND_BUN_MIGRATION.md)** - Bun package manager setup (required: use Bun, not npm)
 - **[FRONTEND_COMPONENT_SPECS.md](FRONTEND_COMPONENT_SPECS.md)** - ⭐ Detailed component specifications (11 components, minimal and properly spec'd)
 - **[FRONTEND_AGENT_PROMPTS_V2.md](FRONTEND_AGENT_PROMPTS_V2.md)** - ⭐ Copy-paste ready prompts for each agent (RECOMMENDED)
 - **[FRONTEND_AGENT_HANDOFF.md](FRONTEND_AGENT_HANDOFF.md)** - Comprehensive handoff documentation for front-end development

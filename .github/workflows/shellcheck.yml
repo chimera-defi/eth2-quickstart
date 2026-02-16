@@ -1,193 +1,105 @@
-name: Shell Script Linting
+# Extended shell script validation (shebang, executable, dependencies, structure).
+# Runs in parallel with ci.yml on shell script changes.
+name: Shell Script Validation (Extended)
 
 on:
   push:
-    branches: [ main, master, develop, 'cursor/**' ]
+    branches: [ main, master, develop ]
+    paths:
+      - '**/*.sh'
+      - '.github/workflows/shellcheck.yml'
   pull_request:
     branches: [ main, master, develop, 'cursor/**' ]
+    paths:
+      - '**/*.sh'
+      - '.github/workflows/shellcheck.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: shellcheck-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
 
 jobs:
-  shellcheck:
+  shellcheck-extended:
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 10
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
+    - name: Cache apt packages
+      uses: actions/cache@v4
+      with:
+        path: /var/cache/apt/archives
+        key: apt-${{ runner.os }}-shellcheck
+        restore-keys: apt-${{ runner.os }}-
+
     - name: Install shellcheck
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y shellcheck
-        
-    - name: Run shellcheck on all shell scripts
+      run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+    - name: Run shellcheck
       run: |
         echo "Running shellcheck on all shell scripts..."
-        echo "Current directory: $(pwd)"
-        echo "Files in current directory:"
-        ls -la
-        
-        # Find all shell scripts and run shellcheck
-        find . -name "*.sh" -type f | while read -r script; do
+        failed=0
+        while IFS= read -r script; do
           echo "Checking $script..."
-          # Use shellcheck with exclusions for common false positives
-          # SC2317: Unreachable code (common in test scripts with dynamic function calls)
-          # SC1091: Not following source files (common with relative paths)
-          # SC1090: Can't follow non-constant source (common with ~/.cargo/env)
-          # SC2034: Unused variables (common in template/example scripts)
-          # SC2031: Variable modified in subshell (false positive when testing source in subshell)
-          # SC2181: Check exit code directly (common pattern with whiptail/dialog)
-          if ! shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 "$script"; then
-            echo "❌ Shellcheck failed for $script"
-            exit 1
-          else
-            echo "✅ $script passed shellcheck"
-          fi
-        done
-        
-        echo "✅ All shell scripts passed shellcheck!"
-        
-    - name: Check for common shell scripting issues
+          shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 "$script" || failed=1
+        done < <(find . -name "*.sh" -type f ! -path "./.git/*")
+        [[ $failed -eq 1 ]] && exit 1
+        echo "✅ Shellcheck passed"
+
+    - name: Check shebangs
       run: |
-        echo "Checking for common shell scripting issues..."
-        
-        # Check for files without shebang
         echo "Checking for shell scripts without shebang..."
-        find . -name "*.sh" -type f | while read -r script; do
+        failed=0
+        while IFS= read -r script; do
           if ! head -1 "$script" | grep -q "^#!/"; then
-            echo "⚠️  Warning: $script doesn't have a shebang"
+            echo "❌ $script lacks shebang"
+            failed=1
           fi
-        done
-        
-        # Check for executable permissions
+        done < <(find . -name "*.sh" -type f ! -path "./.git/*")
+        [[ $failed -eq 1 ]] && exit 1
+        echo "✅ All scripts have shebangs"
+
+    - name: Check executable permissions
+      run: |
         echo "Checking executable permissions..."
-        find . -name "*.sh" -type f | while read -r script; do
-          if [ ! -x "$script" ]; then
-            echo "⚠️  Warning: $script is not executable"
-          fi
-        done
-        
-        # Check for common anti-patterns
-        echo "Checking for common anti-patterns..."
-        
-        # Check for unquoted variables
-        if grep -r '\$[A-Za-z_][A-Za-z0-9_]*[^"]' --include="*.sh" . | grep -v 'echo' | grep -v 'log_' | head -5; then
-          echo "⚠️  Found potentially unquoted variables (first 5 matches shown)"
-        fi
-        
-        # Check for `cd` without error handling
-        if grep -r 'cd [^;]*$' --include="*.sh" . | head -3; then
-          echo "⚠️  Found 'cd' commands without error handling (first 3 matches shown)"
-        fi
-        
-        echo "✅ Common issues check completed"
-        
+        while IFS= read -r script; do
+          [[ ! -x "$script" ]] && echo "⚠️  $script is not executable"
+        done < <(find . -name "*.sh" -type f ! -path "./.git/*")
+        echo "✅ Executable check done (warnings only)"
+
     - name: Validate script dependencies
       run: |
         echo "Validating script dependencies..."
-        
-        # Check that all sourced files exist
-        find . -name "*.sh" -type f | while read -r script; do
-          echo "Checking dependencies for $script..."
-          
-          # Get the directory of the script
+        failed=0
+        while IFS= read -r script; do
           script_dir=$(dirname "$script")
-          
-          # Extract source commands (only actual source statements, not comments)
-          grep -n '^[[:space:]]*source[[:space:]]' "$script" | while read -r line; do
-            # Extract the source file path more carefully
-            source_file=$(echo "$line" | sed 's/.*source[[:space:]]*//' | sed 's/[[:space:]].*//' | sed 's/^["'\'']//' | sed 's/["'\'']$//')
-            
-            # Skip if it's not a valid file path (contains spaces, special chars, etc.)
-            if [[ "$source_file" =~ [[:space:]] ]] || [[ "$source_file" =~ [^a-zA-Z0-9._/\\~$-] ]]; then
-              continue
-            fi
-            
-            # Skip variable-based paths and home directory paths that don't exist in CI
-            if [[ "$source_file" == \$* ]] || [[ "$source_file" == ~/* ]] || [[ "$source_file" == *cargo/env* ]]; then
-              echo "⚠️  Skipping variable/path-based source: $source_file"
-              continue
-            fi
-            
-            # Resolve relative paths from the script's directory
+          while IFS= read -r line; do
+            source_file=$(echo "$line" | sed -n 's/.*source[[:space:]]*["\x27]*\([^"'\''[:space:]]*\)["\x27]*.*/\1/p')
+            [[ -z "$source_file" ]] && continue
+            [[ "$source_file" == \$* ]] || [[ "$source_file" == *\$* ]] && continue
+            [[ "$source_file" == ~/* ]] || [[ "$source_file" == /dev/null ]] || [[ "$source_file" == *cargo/env* ]] && continue
             if [[ "$source_file" == ./* ]] || [[ "$source_file" == ../* ]]; then
-              # Resolve relative path from script's directory
-              resolved_path=$(cd "$script_dir" && realpath "$source_file" 2>/dev/null || echo "$source_file")
+              resolved=$(cd "$script_dir" && realpath "$source_file" 2>/dev/null || echo "")
             else
-              # Absolute path or simple filename
-              resolved_path="$source_file"
+              resolved="$source_file"
             fi
-            
-            # Check if file exists
-            if [ ! -f "$resolved_path" ]; then
-              echo "❌ $script sources non-existent file: $source_file (resolved to: $resolved_path)"
-              exit 1
-            else
-              echo "✅ $script -> $source_file exists"
+            if [[ -n "$resolved" ]] && [[ ! -f "$resolved" ]]; then
+              echo "❌ $script sources missing: $source_file"
+              failed=1
             fi
-          done
-        done
-        
-        echo "✅ All script dependencies validated"
-        
-    - name: Check script structure
+          done < <(grep -n '^[[:space:]]*source[[:space:]]' "$script" 2>/dev/null || true)
+        done < <(find . -name "*.sh" -type f ! -path "./.git/*")
+        [[ $failed -eq 1 ]] && exit 1
+        echo "✅ All dependencies exist"
+
+    - name: Check run_1.sh and run_2.sh structure
       run: |
-        echo "Checking script structure..."
-        
-        # Check main scripts have proper structure
         for script in run_1.sh run_2.sh; do
-          if [ -f "$script" ]; then
-            echo "Checking structure of $script..."
-            
-            # Check for set -euo pipefail
-            if ! head -10 "$script" | grep -q "set -Eeuo pipefail"; then
-              echo "⚠️  $script doesn't use 'set -Eeuo pipefail'"
-            else
-              echo "✅ $script uses proper error handling"
-            fi
-            
-            # Check for IFS setting
-            if ! head -10 "$script" | grep -q "IFS="; then
-              echo "⚠️  $script doesn't set IFS"
-            else
-              echo "✅ $script sets IFS"
-            fi
-            
-            # Check for source statements
-            if ! grep -q "source ./exports.sh" "$script"; then
-              echo "⚠️  $script doesn't source exports.sh"
-            else
-              echo "✅ $script sources exports.sh"
-            fi
-          fi
+          [[ ! -f "$script" ]] && continue
+          head -20 "$script" | grep -q "set -Eeuo pipefail" || echo "⚠️  $script missing set -Eeuo pipefail"
+          grep -q "source.*exports.sh" "$script" || { echo "❌ $script must source exports.sh"; exit 1; }
         done
-        
-        echo "✅ Script structure check completed"
-        
-    - name: Run function tests
-      run: |
-        echo "Running function tests..."
-        
-        # Run common functions test
-        if [ -f "install/test/test_common_functions.sh" ]; then
-          echo "Running common_functions.sh tests..."
-          bash install/test/test_common_functions.sh
-          if [ $? -eq 0 ]; then
-            echo "✅ Common functions tests passed"
-          else
-            echo "❌ Common functions tests failed"
-            exit 1
-          fi
-        else
-          echo "⚠️  Common functions test not found"
-        fi
-        
-    - name: Summary
-      run: |
-        echo "=== Shell Script Linting Summary ==="
-        echo "✅ Shellcheck validation completed"
-        echo "✅ Common issues check completed"
-        echo "✅ Script dependencies validated"
-        echo "✅ Script structure checked"
-        echo "✅ Function tests passed"
-        echo ""
-        echo "All shell script linting checks passed!"
+        echo "✅ Structure check done"

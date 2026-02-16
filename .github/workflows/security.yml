@@ -1,10 +1,28 @@
 name: Security Validation
 
+concurrency:
+  group: security-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [ main, master, develop ]
+    paths:
+      - 'install/security/**'
+      - 'configs/**'
+      - 'lib/common_functions.sh'
+      - 'docs/*security*'
+      - 'docs/validate_security_safe.sh'
+      - '.github/workflows/security.yml'
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, 'cursor/**' ]
+    paths:
+      - 'install/security/**'
+      - 'configs/**'
+      - 'lib/common_functions.sh'
+      - 'docs/*security*'
+      - 'docs/validate_security_safe.sh'
+      - '.github/workflows/security.yml'
 
 jobs:
   security-validation:
@@ -14,14 +32,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Set up environment
-      run: |
-        # Make scripts executable
-        chmod +x *.sh
-        chmod +x lib/*.sh
-        chmod +x install/**/*.sh
-        chmod +x docs/*.sh
-        
     - name: Run security validation script
       run: |
         echo "Running security validation script..."
@@ -29,11 +39,11 @@ jobs:
         if [ -f "docs/validate_security_safe.sh" ]; then
           echo "✅ Security validation script found"
           # Note: We don't run the full script as it requires root privileges
-          # But we can validate its structure
+          # Check executable without modifying repo (chmod would alter working tree)
           if [ -x "docs/validate_security_safe.sh" ]; then
             echo "✅ Security validation script is executable"
           else
-            echo "⚠️  Security validation script is not executable"
+            echo "⚠️  Security validation script is not executable (run: chmod +x docs/validate_security_safe.sh)"
           fi
         else
           echo "❌ Security validation script not found"

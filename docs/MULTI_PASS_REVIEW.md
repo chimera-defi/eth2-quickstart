@@ -11,8 +11,8 @@
 
 ### Tests Not Stubbed
 - [ ] run_2.sh E2E: Runs real install scripts (--execution, --consensus, --mev flags)
-- [ ] Client matrix: 7 combos each install real clients
-- [ ] Caddy/Nginx: Installed and verified in run-2-e2e main job (skipped in matrix to save time)
+- [ ] Client matrix: 6 combos each install real clients (geth+prysm+mev-boost in run-2-e2e)
+- [ ] Caddy/Nginx: Installed and verified in run-2-web (run-2-e2e skips them for speed)
 
 ### Broken References
 - [x] Source uses $SCRIPT_DIR or $PROJECT_ROOT

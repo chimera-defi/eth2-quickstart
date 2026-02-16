@@ -1,60 +1,103 @@
 name: CI - Docker Integration Tests
 
+permissions:
+  contents: read
+  packages: write  # For pushing test image to GHCR (image reuse across jobs)
+
 on:
   push:
     branches: [ main, master, develop ]
+    paths:
+      - '**/*.sh'
+      - 'test/Dockerfile'
+      - 'test/docker-compose.yml'
+      - '.github/workflows/ci.yml'
+      - '.github/actions/**'
   pull_request:
     branches: [ main, master, develop, 'cursor/**' ]
+    paths:
+      - '**/*.sh'
+      - 'test/Dockerfile'
+      - 'test/docker-compose.yml'
+      - '.github/workflows/ci.yml'
+      - '.github/actions/**'
   workflow_dispatch:  # Allow manual trigger for testing
 
-# One run per commit: push only on main/master/develop; PR triggers for all branches
-# (Avoids 2 runs when pushing to a PR branch - push+PR both fired before)
+# Path filters: run ONLY when shell files or test infra change. Skip on doc-only, config-only, frontend-only.
+# - **/*.sh: all shell scripts (install, lib, test, docs, root)
+# - test/Dockerfile, test/docker-compose.yml: Docker build (not .sh)
+# - workflow_dispatch: always runs (manual trigger)
 concurrency:
   group: ci-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
-# All jobs run in parallel. Docker layer cache (gha) speeds rebuilds.
-# Job-level timeouts prevent runaway jobs (e.g. 10hr hangs).
+# Fail-fast: build-docker -> (docker-integration + run-* in parallel) -> e2e-client-matrix.
+# Shellcheck: run in shellcheck.yml only (avoids duplicate run with ci.yml).
+# docker-integration and run-* run in parallel (all need image only). Matrix has fail-fast.
+# Note: GitHub Actions cannot cancel sibling jobs when one fails; matrix jobs cancel each other.
 jobs:
+  # Build once, push to GHCR. Other jobs pull instead of building (saves ~5 builds).
+  # Fork PRs: push fails (no package write), jobs fall back to building.
+  build-docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        id: build
+        with:
+          context: .
+          file: test/Dockerfile
+          load: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+          push: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+          tags: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('ghcr.io/{0}/eth-node-test:{1}', github.repository, github.sha) || 'eth-node-test' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - id: meta
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: echo "image=ghcr.io/${{ github.repository }}/eth-node-test:${{ github.sha }}" >> $GITHUB_OUTPUT
+
   docker-integration:
+    needs: [build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: ./.github/actions/docker-prep
         with:
-          context: .
-          file: test/Dockerfile
-          load: true
-          tags: eth-node-test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          image: ${{ needs.build-docker.outputs.image }}
       - name: Lint and unit tests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "::group::Lint"
-          docker run --rm eth-node-test /workspace/test/run_tests.sh --lint-only
+          docker run --rm -e SKIP_SHELLCHECK=true eth-node-test /workspace/test/run_tests.sh --lint-only
+          echo "::endgroup::"
+          echo "::group::Common functions unit tests"
+          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_common_functions.sh
           echo "::endgroup::"
           echo "::group::Unit tests (Caddy validate, downloads, functions)"
-          docker run --rm --privileged -e USE_MOCKS=false -e CI=true -e GITHUB_TOKEN="$GITHUB_TOKEN" eth-node-test /workspace/test/docker_test.sh
+          docker run --rm --privileged -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true -e GITHUB_TOKEN="$GITHUB_TOKEN" eth-node-test /workspace/test/docker_test.sh
           echo "::endgroup::"
 
   run-1-structure:
+    needs: [build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: ./.github/actions/docker-prep
         with:
-          context: .
-          file: test/Dockerfile
-          load: true
-          tags: eth-node-test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          image: ${{ needs.build-docker.outputs.image }}
       - name: Run run_1 structure
         run: |
           docker run --rm --privileged --user root \
@@ -62,38 +105,28 @@ jobs:
             eth-node-test /workspace/test/ci_test_run_1.sh
 
   run-1-e2e:
+    needs: [build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: ./.github/actions/docker-prep
         with:
-          context: .
-          file: test/Dockerfile
-          load: true
-          tags: eth-node-test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          image: ${{ needs.build-docker.outputs.image }}
       - name: Run run_1 E2E
         env:
           CI: true
         run: SKIP_BUILD=true ./test/run_e2e.sh --phase=1
 
   run-2-structure:
+    needs: [build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: ./.github/actions/docker-prep
         with:
-          context: .
-          file: test/Dockerfile
-          load: true
-          tags: eth-node-test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          image: ${{ needs.build-docker.outputs.image }}
       - name: Run run_2 structure
         run: |
           docker run --rm --privileged --user testuser \
@@ -101,36 +134,54 @@ jobs:
             eth-node-test /workspace/test/ci_test_run_2.sh
 
   run-2-e2e:
+    needs: [build-docker]
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: ./.github/actions/docker-prep
         with:
-          context: .
-          file: test/Dockerfile
-          load: true
-          tags: eth-node-test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          image: ${{ needs.build-docker.outputs.image }}
       - name: Run run_2 E2E (default clients)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CI: true
-        run: SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" ./test/run_e2e.sh --phase=2
+        run: |
+          # Pass E2E_EXECUTION/E2E_CONSENSUS to skip Caddy/Nginx (saves ~1.5 min)
+          # Caddy/Nginx install tested in run-2-web
+          SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" \
+          E2E_EXECUTION=geth E2E_CONSENSUS=prysm E2E_MEV=mev-boost \
+          ./test/run_e2e.sh --phase=2
 
-  # Test all execution + consensus clients install and configure (job-level matrix)
-  e2e-client-matrix:
+  run-2-web:
+    needs: [build-docker]
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/docker-prep
+        with:
+          image: ${{ needs.build-docker.outputs.image }}
+      - name: Run run_2 E2E (Caddy + Nginx install)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI: true
+        run: |
+          # No E2E_EXECUTION/E2E_CONSENSUS = runs Caddy+Nginx install (geth+prysm defaults)
+          # Verifies install_caddy.sh, install_nginx.sh, config validity, no regressions
+          SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" ./test/run_e2e.sh --phase=2
+
+  # Matrix: 6 client combos (geth+prysm+mev-boost covered by run-2-e2e)
+  # Execution: besu, erigon, nethermind, nimbus_eth1, reth, ethrex
+  # Consensus: lighthouse, teku, nimbus, grandine, lodestar, prysm
+  e2e-client-matrix:
+    needs: [docker-integration, run-1-structure, run-1-e2e, run-2-structure, run-2-e2e, run-2-web, build-docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
-          - exec: geth
-            cons: prysm
-            mev: mev-boost
           - exec: besu
             cons: lighthouse
             mev: commit-boost
@@ -151,15 +202,9 @@ jobs:
             mev: mev-boost
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: ./.github/actions/docker-prep
         with:
-          context: .
-          file: test/Dockerfile
-          load: true
-          tags: eth-node-test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          image: ${{ needs.build-docker.outputs.image }}
       - name: "E2E ${{ matrix.exec }}+${{ matrix.cons }}+${{ matrix.mev }}"
         timeout-minutes: 25
         env:
@@ -169,25 +214,3 @@ jobs:
           SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" \
           E2E_EXECUTION=${{ matrix.exec }} E2E_CONSENSUS=${{ matrix.cons }} E2E_MEV=${{ matrix.mev }} \
           ./test/run_e2e.sh --phase=2
-
-  shellcheck:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Run shellcheck
-      run: |
-        sudo apt-get update && sudo apt-get install -y shellcheck
-        
-        echo "Running shellcheck on all shell scripts..."
-        find . -name "*.sh" -type f | while read -r script; do
-          echo "Checking $script..."
-          if ! shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 "$script"; then
-            echo "❌ Shellcheck failed for $script"
-            exit 1
-          fi
-        done
-        echo "✅ All scripts passed shellcheck!"

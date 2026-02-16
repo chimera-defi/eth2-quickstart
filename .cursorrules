@@ -595,20 +595,8 @@ if [[ ${#jwt_content} -eq 64 ]] && [[ "$jwt_content" =~ ^[a-fA-F0-9]+$ ]]; then 
 
 **Always run these checks locally before pushing:**
 ```bash
-# 1. Shellcheck all scripts
-find . -name "*.sh" -type f ! -path "./.git/*" -exec shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031 {} \;
-
-# 2. Syntax validation
-find . -name "*.sh" -type f ! -path "./.git/*" -exec bash -n {} \;
-
-# 3. Dependency validation (simulates CI)
-# Check that all 'source ./path' statements resolve correctly from script's directory
-
-# 4. Function unit tests
-bash install/test/test_common_functions.sh
-
-# 5. Full lint tests
-./test/run_tests.sh --lint-only
+./scripts/pre-commit.sh
+# Or manually: ./test/run_tests.sh --lint-only && bash install/test/test_common_functions.sh
 ```
 
 ### Shellcheck CI Exclusions (with rationale)
@@ -619,7 +607,16 @@ bash install/test/test_common_functions.sh
 --exclude=SC1090  # Non-constant source (variable paths)
 --exclude=SC2034  # Unused variables (template scripts)
 --exclude=SC2031  # Subshell variable modification (testing pattern)
+--exclude=SC2181  # Check exit code directly (whiptail/dialog pattern)
 ```
+
+### Shell Script Validation (.github/workflows/shellcheck.yml)
+Sole shell validation workflow (ci.yml has no shellcheck job). Includes:
+- **Shellcheck** (exclusions: SC2317, SC1091, SC1090, SC2034, SC2031, SC2181)
+- **Shebang**: All .sh files must have #!/bin/bash on line 1
+- **Executable**: Warning only for non-executable scripts
+- **Dependencies**: Sourced files must exist (./ and ../ from script dir, else project root)
+- **run_1/run_2 structure**: Must source exports.sh; warns if missing set -Eeuo pipefail
 
 ## Code Reuse Guidelines
 
@@ -905,9 +902,7 @@ find . -name "*.sh" -type f ! -path "./.git/*" -exec bash -n {} \;
 **When CI fails unexpectedly:**
 1. Check `gh run view <run-id> --log-failed` for actual error
 2. Compare CI shellcheck exclusions with local command
-3. Verify all shellcheck exclusions are in BOTH workflow files:
-   - `.github/workflows/shellcheck.yml`
-   - `.github/workflows/ci.yml` (has its own shellcheck step)
+3. Verify all shellcheck exclusions are in `.github/workflows/shellcheck.yml`
 
 ### Lessons Learned from Flywheel Implementation
 
@@ -921,7 +916,7 @@ find . -name "*.sh" -type f ! -path "./.git/*" -exec bash -n {} \;
 
 5. **Remove Unused Features** - Verbose flags and debug functions that aren't used are code bloat
 
-6. **Sync CI Workflow Exclusions** - Both shellcheck.yml and ci.yml need the same shellcheck exclusions
+6. **Shellcheck Exclusions** - shellcheck.yml uses centralized exclusions (SC2317, SC1091, etc.)
 
 7. **Test Generated Scripts** - Generated scripts should be tested for:
    - Correct shebang

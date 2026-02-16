@@ -38,24 +38,30 @@ done
 # =============================================================================
 log_header "Step 2: Shellcheck and Syntax Validation"
 
-# Run shellcheck on key files
-shellcheck_pass=0
-shellcheck_fail=0
-
-for script in "$PROJECT_ROOT"/*.sh "$PROJECT_ROOT"/lib/*.sh; do
-    [[ -f "$script" ]] || continue
-    if check_shellcheck "$script"; then
-        shellcheck_pass=$((shellcheck_pass + 1))
-    else
-        shellcheck_fail=$((shellcheck_fail + 1))
-        log_error "Shellcheck failed: $script"
-    fi
-done
-
-if [[ $shellcheck_fail -eq 0 ]]; then
-    record_test "Shellcheck: $shellcheck_pass scripts passed" "PASS"
+# Skip shellcheck (runs in shellcheck.yml; ci docker jobs skip to avoid duplication)
+if [[ "${SKIP_SHELLCHECK:-false}" == "true" ]]; then
+    log_info "Skipping shellcheck (already run in CI)"
+    record_test "Shellcheck" "SKIP"
 else
-    record_test "Shellcheck: $shellcheck_fail scripts failed" "FAIL"
+    # Run shellcheck on key files
+    shellcheck_pass=0
+    shellcheck_fail=0
+
+    for script in "$PROJECT_ROOT"/*.sh "$PROJECT_ROOT"/lib/*.sh; do
+        [[ -f "$script" ]] || continue
+        if check_shellcheck "$script"; then
+            shellcheck_pass=$((shellcheck_pass + 1))
+        else
+            shellcheck_fail=$((shellcheck_fail + 1))
+            log_error "Shellcheck failed: $script"
+        fi
+    done
+
+    if [[ $shellcheck_fail -eq 0 ]]; then
+        record_test "Shellcheck: $shellcheck_pass scripts passed" "PASS"
+    else
+        record_test "Shellcheck: $shellcheck_fail scripts failed" "FAIL"
+    fi
 fi
 
 # Syntax check
