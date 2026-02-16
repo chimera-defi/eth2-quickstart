@@ -24,6 +24,13 @@ cd "$SCRIPT_DIR" || exit 1
 source "$SCRIPT_DIR/exports.sh"
 source "$SCRIPT_DIR/lib/common_functions.sh"
 
+# Log to file for later review
+LOG_DIR="$SCRIPT_DIR/logs"
+LOG_FILE="$LOG_DIR/run_2_$(date +%Y%m%d_%H%M%S).log"
+mkdir -p "$LOG_DIR"
+exec > >(tee -a "$LOG_FILE") 2>&1
+log_info "Log file: $LOG_FILE"
+
 # Prevent apt/dpkg from prompting (tzdata, needrestart, etc.) - same as run_1
 export DEBIAN_FRONTEND=noninteractive
 export DEBIAN_PRIORITY=critical
@@ -400,12 +407,16 @@ EOF
 
 # Run security validation (skip in CI E2E - run_1 not executed, security_monitor absent)
 SECURITY_VALIDATION_FAILED=0
+SECURITY_VALIDATION_LOG="$LOG_DIR/security_validation_$(date +%Y%m%d_%H%M%S).log"
 if [[ "${CI_E2E:-}" != "true" ]]; then
     log_info "Running security validation..."
+
     if [[ -f "$SCRIPT_DIR/docs/validate_security_safe.sh" && -x "$SCRIPT_DIR/docs/validate_security_safe.sh" ]]; then
         log_info "Running code quality validation..."
-        if ! "$SCRIPT_DIR/docs/validate_security_safe.sh"; then
-            log_error "Security code validation failed"
+        "$SCRIPT_DIR/docs/validate_security_safe.sh" 2>&1 | tee -a "$SECURITY_VALIDATION_LOG"
+        VAL_EXIT=${PIPESTATUS[0]}
+        if [[ $VAL_EXIT -ne 0 ]]; then
+            log_error "Security code validation failed (exit $VAL_EXIT) - see output above"
             SECURITY_VALIDATION_FAILED=1
         fi
     else
@@ -414,8 +425,10 @@ if [[ "${CI_E2E:-}" != "true" ]]; then
 
     if [[ -f "$SCRIPT_DIR/docs/server_security_validation.sh" && -x "$SCRIPT_DIR/docs/server_security_validation.sh" ]]; then
         log_info "Running server security validation..."
-        if ! "$SCRIPT_DIR/docs/server_security_validation.sh"; then
-            log_error "Server security validation failed"
+        "$SCRIPT_DIR/docs/server_security_validation.sh" 2>&1 | tee -a "$SECURITY_VALIDATION_LOG"
+        VAL_EXIT=${PIPESTATUS[0]}
+        if [[ $VAL_EXIT -ne 0 ]]; then
+            log_error "Server security validation failed (exit $VAL_EXIT) - see output above"
             SECURITY_VALIDATION_FAILED=1
         fi
     else
@@ -423,10 +436,16 @@ if [[ "${CI_E2E:-}" != "true" ]]; then
     fi
 
     if [[ $SECURITY_VALIDATION_FAILED -eq 1 ]]; then
-        log_error "Security validation failed - fix errors above"
+        log_error "Security validation failed. Review the output above for specific failures."
+        log_error "Common causes: run_1 not executed on this machine, security_monitor needs root cron,"
+        log_error "or AIDE/firewall/fail2ban not fully configured."
+        log_error "Full validation log: $SECURITY_VALIDATION_LOG"
+        log_error "Re-run validation manually: ./install/security/test_security_fixes.sh"
         exit 1
     fi
     log_info "Security validation completed."
 else
     log_info "CI E2E: skipping security validation (run_1 not executed)"
 fi
+
+log_info "Full log saved to: $LOG_FILE"
