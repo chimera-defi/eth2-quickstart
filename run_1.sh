@@ -16,7 +16,7 @@ require_sudo_or_root "$@"
 
 LOG_DIR="/var/log/eth2-quickstart"
 LOG_FILE="$LOG_DIR/run_1_$(date +%Y%m%d_%H%M%S).log"
-mkdir -p "$LOG_DIR"
+ensure_directory "$LOG_DIR"
 exec > >(tee -a "$LOG_FILE") 2>&1
 log_info "Log file: $LOG_FILE"
 

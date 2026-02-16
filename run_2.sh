@@ -26,7 +26,7 @@ source "$SCRIPT_DIR/lib/common_functions.sh"
 
 LOG_DIR="$SCRIPT_DIR/logs"
 LOG_FILE="$LOG_DIR/run_2_$(date +%Y%m%d_%H%M%S).log"
-mkdir -p "$LOG_DIR"
+ensure_directory "$LOG_DIR"
 exec > >(tee -a "$LOG_FILE") 2>&1
 log_info "Log file: $LOG_FILE"
 
