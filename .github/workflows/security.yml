@@ -1,5 +1,9 @@
 name: Security Validation
 
+concurrency:
+  group: security-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [ main, master, develop ]

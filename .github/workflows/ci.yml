@@ -164,6 +164,7 @@ jobs:
         run: SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" ./test/run_e2e.sh --phase=2
 
   # Test all execution + consensus clients install and configure (job-level matrix)
+  # PRs: 2 combos (geth+prysm, besu+lighthouse) for faster feedback. Push: full 7 combos.
   e2e-client-matrix:
     needs: [run-1-structure, run-1-e2e, run-2-structure, run-2-e2e]
     runs-on: ubuntu-latest
@@ -171,28 +172,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        include:
-          - exec: geth
-            cons: prysm
-            mev: mev-boost
-          - exec: besu
-            cons: lighthouse
-            mev: commit-boost
-          - exec: erigon
-            cons: teku
-            mev: none
-          - exec: nethermind
-            cons: nimbus
-            mev: mev-boost
-          - exec: nimbus_eth1
-            cons: grandine
-            mev: none
-          - exec: reth
-            cons: lodestar
-            mev: mev-boost
-          - exec: ethrex
-            cons: prysm
-            mev: mev-boost
+        include: ${{ github.event_name == 'pull_request' && fromJSON('[{"exec":"geth","cons":"prysm","mev":"mev-boost"},{"exec":"besu","cons":"lighthouse","mev":"commit-boost"}]') || fromJSON('[{"exec":"geth","cons":"prysm","mev":"mev-boost"},{"exec":"besu","cons":"lighthouse","mev":"commit-boost"},{"exec":"erigon","cons":"teku","mev":"none"},{"exec":"nethermind","cons":"nimbus","mev":"mev-boost"},{"exec":"nimbus_eth1","cons":"grandine","mev":"none"},{"exec":"reth","cons":"lodestar","mev":"mev-boost"},{"exec":"ethrex","cons":"prysm","mev":"mev-boost"}]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
