@@ -1,7 +1,8 @@
-# Composite action: checkout, setup buildx, login to GHCR, pull or build eth-node-test.
+# Composite action: setup buildx, login to GHCR, pull or build eth-node-test.
+# Jobs must run actions/checkout before this (needed to load local action).
 # Use in jobs that need the test image. Pass image from build-docker outputs.
 name: 'Docker prep (pull or build)'
-description: 'Checkout, setup buildx, pull image from GHCR or build locally'
+description: 'Setup buildx, pull image from GHCR or build locally'
 inputs:
   image:
     description: 'GHCR image URL (e.g. ghcr.io/owner/repo/eth-node-test:sha). Empty = build locally.'
@@ -10,9 +11,6 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 

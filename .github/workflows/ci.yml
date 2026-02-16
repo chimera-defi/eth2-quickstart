@@ -31,53 +31,14 @@ concurrency:
   group: ci-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
-# Fail-fast: shellcheck -> build-docker -> (docker-integration + run-* in parallel) -> e2e-client-matrix.
+# Fail-fast: build-docker -> (docker-integration + run-* in parallel) -> e2e-client-matrix.
+# Shellcheck: run in shellcheck.yml only (avoids duplicate run with ci.yml).
 # docker-integration and run-* run in parallel (all need image only). Matrix has fail-fast.
 # Note: GitHub Actions cannot cancel sibling jobs when one fails; matrix jobs cancel each other.
 jobs:
-  shellcheck:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Cache apt packages
-      uses: actions/cache@v4
-      with:
-        path: /var/cache/apt/archives
-        key: apt-${{ runner.os }}-shellcheck
-        restore-keys: apt-${{ runner.os }}-
-
-    - name: Run shellcheck
-      run: |
-        sudo apt-get update && sudo apt-get install -y shellcheck
-
-        echo "Running shellcheck on all shell scripts..."
-        find . -name "*.sh" -type f ! -path "./.git/*" | while read -r script; do
-          echo "Checking $script..."
-          if ! shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 "$script"; then
-            echo "❌ Shellcheck failed for $script"
-            exit 1
-          fi
-        done
-        echo "✅ All scripts passed shellcheck!"
-
-    - name: Job summary
-      if: always()
-      run: |
-        if [ "${{ job.status }}" = "success" ]; then
-          echo "## ✅ shellcheck passed" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "## ❌ shellcheck failed" >> $GITHUB_STEP_SUMMARY
-          echo "One or more scripts failed shellcheck. See logs for details." >> $GITHUB_STEP_SUMMARY
-        fi
-
   # Build once, push to GHCR. Other jobs pull instead of building (saves ~5 builds).
   # Fork PRs: push fails (no package write), jobs fall back to building.
   build-docker:
-    needs: [shellcheck]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
@@ -276,20 +237,17 @@ jobs:
             echo "Caddy/Nginx E2E install failed. See logs for details." >> $GITHUB_STEP_SUMMARY
           fi
 
-  # Matrix: all 7 execution + 6 consensus clients (runs on PR and push)
-  # Execution: geth, besu, erigon, nethermind, nimbus_eth1, reth, ethrex
-  # Consensus: prysm, lighthouse, teku, nimbus, grandine, lodestar
+  # Matrix: 6 client combos (geth+prysm+mev-boost covered by run-2-e2e)
+  # Execution: besu, erigon, nethermind, nimbus_eth1, reth, ethrex
+  # Consensus: lighthouse, teku, nimbus, grandine, lodestar, prysm
   e2e-client-matrix:
     needs: [docker-integration, run-1-structure, run-1-e2e, run-2-structure, run-2-e2e, run-2-web, build-docker]
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 30
     strategy:
       fail-fast: true
       matrix:
         include:
-          - exec: geth
-            cons: prysm
-            mev: mev-boost
           - exec: besu
             cons: lighthouse
             mev: commit-boost

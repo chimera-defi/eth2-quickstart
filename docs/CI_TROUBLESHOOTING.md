@@ -24,7 +24,7 @@ Common CI failures and how to fix them.
 
 **Symptom:** `Error: Can't find 'action.yml' ... Did you forget to run actions/checkout before running your local action?`
 
-**Cause:** Local composite actions are loaded from the workspace. The workspace is empty until checkout runs. Jobs that use `./.github/actions/docker-prep` must run `actions/checkout@v4` **before** the docker-prep step so GitHub can find the action definition.
+**Cause:** Local composite actions are loaded from the workspace. The workspace is empty until checkout runs. Jobs that use `./.github/actions/docker-prep` must run `actions/checkout@v4` **before** the docker-prep step so GitHub can find the action definition. The docker-prep action no longer runs checkout itself (avoids double checkout).
 
 ## Path filters
 
@@ -68,9 +68,10 @@ Or manually: `./test/run_tests.sh --lint-only && bash install/test/test_common_f
 
 ## Workflow structure
 
-- **shellcheck** → **build-docker** → (docker-integration + run-* in parallel) → **e2e-client-matrix**
-- `docker-prep` composite action: used by all Docker jobs for pull/build
-- Matrix: 7 client combos, fail-fast (one fails → others cancelled)
+- **build-docker** → (docker-integration + run-* in parallel) → **e2e-client-matrix**
+- Shellcheck: run in shellcheck.yml only (ci.yml has no shellcheck job)
+- `docker-prep` composite action: setup buildx, pull or build (jobs run checkout first)
+- Matrix: 6 client combos (geth+prysm+mev-boost in run-2-e2e), fail-fast
 
 ## Job summaries
 
