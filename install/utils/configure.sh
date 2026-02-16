@@ -446,5 +446,7 @@ if [[ "$VIBE_MODE" != "true" ]]; then
         echo "  cd $ROOT_DIR"
         echo "  sudo ./install_phase1.sh"
         echo ""
+        echo "  Run ./help.sh for full list of tools and scripts."
+        echo ""
     fi
 fi

@@ -11,6 +11,21 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/exports.sh"
 source "$SCRIPT_DIR/lib/common_functions.sh"
 
+# Help flag (before require_root - users may run --help as non-root)
+for arg in "$@"; do
+    case "$arg" in
+        --help|-h)
+            echo "Usage: $0"
+            echo ""
+            echo "Phase 1: System hardening. Run as root, then reboot."
+            echo "  sudo ./run_1.sh"
+            echo ""
+            echo "For full tool reference: ./help.sh"
+            exit 0
+            ;;
+    esac
+done
+
 # Require root - re-exec with sudo if running as non-root (preserves SUDO_USER for key collection)
 require_sudo_or_root "$@"
 

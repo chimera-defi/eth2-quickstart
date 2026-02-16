@@ -24,6 +24,32 @@ cd "$SCRIPT_DIR" || exit 1
 source "$SCRIPT_DIR/exports.sh"
 source "$SCRIPT_DIR/lib/common_functions.sh"
 
+# Help flag (before log redirect - keep help output clean)
+for arg in "$@"; do
+    case "$arg" in
+        --help|-h)
+            echo "Usage: $0 [options]"
+            echo ""
+            echo "Phase 2: Client installation. Run as new user after Phase 1 + reboot."
+            echo ""
+            echo "Options:"
+            echo "  --execution=NAME   Install execution client (geth, besu, erigon, nethermind, nimbus_eth1, reth, ethrex)"
+            echo "  --consensus=NAME   Install consensus client (prysm, lighthouse, lodestar, teku, nimbus, grandine)"
+            echo "  --mev=NAME         Install MEV (mev-boost, commit-boost, none)"
+            echo "  --skip-deps        Skip install_dependencies.sh (for CI when deps already installed)"
+            echo "  --help             Show this help"
+            echo ""
+            echo "Examples:"
+            echo "  $0                                    # Interactive mode"
+            echo "  $0 --execution=geth --consensus=prysm --mev=mev-boost"
+            echo "  $0 --execution=besu --consensus=teku --mev=none --skip-deps"
+            echo ""
+            echo "For full tool reference: ./help.sh"
+            exit 0
+            ;;
+    esac
+done
+
 LOG_DIR="$SCRIPT_DIR/logs"
 LOG_FILE="$LOG_DIR/run_2_$(date +%Y%m%d_%H%M%S).log"
 ensure_directory "$LOG_DIR"
@@ -52,22 +78,6 @@ for arg in "$@"; do
             ;;
         --skip-deps)
             SKIP_DEPS=true
-            ;;
-        --help|-h)
-            echo "Usage: $0 [options]"
-            echo ""
-            echo "Options:"
-            echo "  --execution=NAME   Install execution client (geth, besu, erigon, nethermind, nimbus_eth1, reth, ethrex)"
-            echo "  --consensus=NAME   Install consensus client (prysm, lighthouse, lodestar, teku, nimbus, grandine)"
-            echo "  --mev=NAME         Install MEV (mev-boost, commit-boost, none)"
-            echo "  --skip-deps        Skip install_dependencies.sh (for CI when deps already installed)"
-            echo "  --help             Show this help"
-            echo ""
-            echo "Examples:"
-            echo "  $0                                    # Interactive mode"
-            echo "  $0 --execution=geth --consensus=prysm --mev=mev-boost"
-            echo "  $0 --execution=besu --consensus=teku --mev=none --skip-deps"
-            exit 0
             ;;
     esac
 done
