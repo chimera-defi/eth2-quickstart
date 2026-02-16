@@ -17,6 +17,18 @@ require_sudo_or_root "$@"
 # Docker E2E: ensure keys exist before collect (is_docker only - never production)
 ensure_docker_e2e_keys
 
+# Lockout prevention: collect BEFORE exec redirect (so $(...) captures echo)
+# exec > >(tee...) redirects stdout; command substitution would capture nothing after that
+COLLECTED_KEYS_FILE=$(collect_and_backup_authorized_keys) || true
+if [[ -z "$COLLECTED_KEYS_FILE" ]] || [[ ! -s "$COLLECTED_KEYS_FILE" ]]; then
+    log_error "CRITICAL: No SSH keys found in /root/.ssh/authorized_keys or \$SUDO_USER's ~/.ssh/authorized_keys"
+    log_error "Diagnostics: root_keys=$([[ -f /root/.ssh/authorized_keys ]] && wc -c < /root/.ssh/authorized_keys || echo 0) SUDO_USER=${SUDO_USER:-unset}"
+    log_error "Add your key first: ssh-copy-id root@<your-server-ip>"
+    log_error "Or if using sudo: ssh-copy-id <your-user>@<your-server-ip>"
+    log_error "Without this, you will be locked out after reboot."
+    exit 1
+fi
+
 LOG_DIR="/var/log/eth2-quickstart"
 LOG_FILE="$LOG_DIR/run_1_$(date +%Y%m%d_%H%M%S).log"
 ensure_directory "$LOG_DIR"
@@ -36,18 +48,6 @@ export TZ=UTC
 if [[ -f "$SCRIPT_DIR/install/utils/debconf_preseed.sh" ]]; then
     log_info "Pre-seeding debconf for non-interactive install..."
     "$SCRIPT_DIR/install/utils/debconf_preseed.sh"
-fi
-
-# Lockout prevention: collect from root and SUDO_USER (collect uses getent for SUDO_USER home)
-COLLECTED_KEYS_FILE=$(collect_and_backup_authorized_keys) || true
-
-if [[ -z "$COLLECTED_KEYS_FILE" ]] || [[ ! -s "$COLLECTED_KEYS_FILE" ]]; then
-    log_error "CRITICAL: No SSH keys found in /root/.ssh/authorized_keys or \$SUDO_USER's ~/.ssh/authorized_keys"
-    log_error "Diagnostics: root_keys=$([[ -f /root/.ssh/authorized_keys ]] && wc -c < /root/.ssh/authorized_keys || echo 0) SUDO_USER=${SUDO_USER:-unset}"
-    log_error "Add your key first: ssh-copy-id root@<your-server-ip>"
-    log_error "Or if using sudo: ssh-copy-id <your-user>@<your-server-ip>"
-    log_error "Without this, you will be locked out after reboot."
-    exit 1
 fi
 
 # Update system packages
