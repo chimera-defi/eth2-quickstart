@@ -12,7 +12,7 @@
 #       manually run: `sudo su`
 #       Followed by: 
 #       `./install/ssl/install_acme_ssl.sh`  or 
-#       `./install_certbot_ssl.sh` 
+#       `./install/ssl/install_ssl_certbot.sh` 
 #       to get SSL certs and configure NGINX properly
 #
 # Non-interactive (for CI/testing):

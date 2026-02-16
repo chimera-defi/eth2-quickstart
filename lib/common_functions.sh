@@ -9,6 +9,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
+export BLUE  # Used by doctor.sh, run_manifest.sh
 
 # =============================================================================
 # CORE UTILITY FUNCTIONS
@@ -25,10 +26,6 @@ log_warn() {
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
-}
-
-log_header() {
-    echo -e "\n${BLUE}=== $* ===${NC}\n"
 }
 
 # Check if running as correct user
