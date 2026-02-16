@@ -36,7 +36,7 @@ ssh LOGIN_UNAME@<server-ip>
 - SSH hardening: replaces `/etc/ssh/sshd_config`
 - Fail2ban: configures jails for `nginx-proxy` and `sshd`
 - User creation: creates non-root user `LOGIN_UNAME` (SSH key-only, no password)
-- Backs up and migrates authorized_keys from root and (if run via sudo) the invoking user to new user (prevents lockout)
+- Backs up and migrates authorized_keys from root, SUDO_USER, and all /home/* users to new user (prevents lockout)
 - Copies eth2-quickstart to `~/eth2-quickstart` for new user (handoff: `cd ~/eth2-quickstart && ./run_2.sh`)
 - Security: runs consolidated security script
 - NTP: installs `chrony` and enables NTP

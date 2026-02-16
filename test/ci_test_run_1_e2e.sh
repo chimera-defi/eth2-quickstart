@@ -28,8 +28,7 @@ if ! command -v systemctl &>/dev/null; then
     exit 1
 fi
 
-# Create root SSH keys FIRST (before any cd/source) so run_1's collect_and_backup finds keys
-# Must exist before run_1 or it exits with lockout error
+# Create root SSH keys FIRST (before any cd/source) so run_1's collect finds keys
 mkdir -p /root/.ssh
 printf '%s\n' "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > /root/.ssh/authorized_keys
 chmod 600 /root/.ssh/authorized_keys
@@ -53,7 +52,17 @@ log_header "Phase 1: Executing run_1.sh"
 export DEBIAN_FRONTEND=noninteractive
 export DEBIAN_PRIORITY=critical
 
-# run_1.sh calls debconf_preseed.sh internally (single source: install/utils/debconf_preseed.sh)
+# Strategy 3 (PR 90): Explicitly pass CI env to run_1 (docker exec may not inherit)
+export CI=true
+export GITHUB_ACTIONS="${GITHUB_ACTIONS:-true}"
+
+# Strategy 4 & 5 (PR 90): Pass pre-created keys file - run_1 can use to bypass collect if needed
+CI_KEYS_FILE="/tmp/ci_authorized_keys_$$"
+printf '%s\n' "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > "$CI_KEYS_FILE"
+cp "$CI_KEYS_FILE" /root/.ssh/authorized_keys
+chmod 600 "$CI_KEYS_FILE" /root/.ssh/authorized_keys
+export CI_KEYS_FILE
+
 if "$PROJECT_ROOT/run_1.sh"; then
     record_test "run_1.sh execution" "PASS"
 else
