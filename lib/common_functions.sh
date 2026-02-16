@@ -587,12 +587,83 @@ require_root() {
     fi
 }
 
+# Require root or sudo - re-exec with sudo if not root
+# Use for scripts that need root but should work when run as: sudo ./script.sh or ./script.sh (re-execs)
+require_sudo_or_root() {
+    if [[ $EUID -ne 0 ]]; then
+        if ! command -v sudo >/dev/null 2>&1; then
+            log_error "This script requires root privileges. Run as root or install sudo."
+            exit 1
+        fi
+        log_info "Re-executing with sudo to obtain root privileges..."
+        exec sudo "$0" "$@"
+    fi
+}
+
+# Collect authorized_keys from all accessible sources (root, SUDO_USER) and back up
+# Returns path to merged keys file. Caller must have root (or will get it via require_sudo_or_root)
+# Output: path to temp file with merged keys; also creates backup in /root/authorized_keys_backup_*.txt
+collect_and_backup_authorized_keys() {
+    local merged_file
+    merged_file="$(mktemp)"
+    local key_count=0
+    local sources=()
+
+    # Collect from root
+    if [[ -f /root/.ssh/authorized_keys ]] && [[ -s /root/.ssh/authorized_keys ]]; then
+        while IFS= read -r key; do
+            [[ -z "$key" || "$key" =~ ^# ]] && continue
+            if ! grep -Fqx "$key" "$merged_file" 2>/dev/null; then
+                echo "$key" >> "$merged_file"
+                key_count=$((key_count + 1))
+            fi
+        done < /root/.ssh/authorized_keys
+        sources+=("root")
+    fi
+
+    # Collect from SUDO_USER (original user who ran sudo) if different from root
+    if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
+        local sudo_user_keys="/home/$SUDO_USER/.ssh/authorized_keys"
+        if [[ -f "$sudo_user_keys" ]] && [[ -s "$sudo_user_keys" ]]; then
+            while IFS= read -r key; do
+                [[ -z "$key" || "$key" =~ ^# ]] && continue
+                if ! grep -Fqx "$key" "$merged_file" 2>/dev/null; then
+                    echo "$key" >> "$merged_file"
+                    key_count=$((key_count + 1))
+                fi
+            done < "$sudo_user_keys"
+            sources+=("$SUDO_USER")
+        fi
+    fi
+
+    # Also collect from current user's home if we're root but SUDO_USER ran from a different account
+    # (e.g. deploy key in /root, user ran sudo from their account - we already have both above)
+
+    if [[ $key_count -eq 0 ]]; then
+        rm -f "$merged_file"
+        echo ""
+        return 1
+    fi
+
+    # Backup merged keys to /root for recovery
+    local backup_dir="/root"
+    local backup_file="$backup_dir/authorized_keys_backup_$(date +%Y%m%d_%H%M%S).txt"
+    cp "$merged_file" "$backup_file"
+    chmod 600 "$backup_file"
+    log_info "Backed up authorized_keys to $backup_file (from: ${sources[*]})"
+
+    echo "$merged_file"
+    return 0
+}
+
 # =============================================================================
 # SECURITY FUNCTIONS - Required for run_1.sh and run_2.sh
 # =============================================================================
 
 # Secure user creation and setup
-# Automatically migrates root's SSH authorized_keys to the new user
+# Migrates SSH authorized_keys to the new user (from provided file or root)
+# When ssh_key_file is provided and has content, uses it (already contains root + SUDO_USER keys)
+# Otherwise falls back to root's authorized_keys for backward compatibility
 setup_secure_user() {
     local username="$1"
     local password="$2"
@@ -624,30 +695,33 @@ setup_secure_user() {
     local ssh_dir="/home/$username/.ssh"
     mkdir -p "$ssh_dir"
 
-    # Copy SSH keys if explicitly provided
-    if [[ -n "$ssh_key_file" && -f "$ssh_key_file" ]]; then
+    # Use provided merged keys file (from collect_and_backup_authorized_keys) if it has content
+    local used_provided_keys=0
+    if [[ -n "$ssh_key_file" && -f "$ssh_key_file" ]] && [[ -s "$ssh_key_file" ]]; then
         cp "$ssh_key_file" "$ssh_dir/authorized_keys"
-        log_info "SSH key copied from provided file for user: $username"
+        log_info "SSH keys copied from collected/backed-up file for user: $username"
+        used_provided_keys=1
     fi
 
-    # CRITICAL: Migrate root's SSH authorized_keys to the new user
+    # Fallback: migrate root's SSH authorized_keys when no merged file was provided
     # This prevents lockout when PermitRootLogin is later restricted
-    if [[ -f /root/.ssh/authorized_keys ]] && [[ -s /root/.ssh/authorized_keys ]]; then
-        if [[ -f "$ssh_dir/authorized_keys" ]]; then
-            # Merge: append root's keys that aren't already present
-            while IFS= read -r key; do
-                [[ -z "$key" || "$key" =~ ^# ]] && continue
-                if ! grep -Fqx "$key" "$ssh_dir/authorized_keys" 2>/dev/null; then
-                    echo "$key" >> "$ssh_dir/authorized_keys"
-                fi
-            done < /root/.ssh/authorized_keys
+    if [[ $used_provided_keys -eq 0 ]]; then
+        if [[ -f /root/.ssh/authorized_keys ]] && [[ -s /root/.ssh/authorized_keys ]]; then
+            if [[ -f "$ssh_dir/authorized_keys" ]]; then
+                while IFS= read -r key; do
+                    [[ -z "$key" || "$key" =~ ^# ]] && continue
+                    if ! grep -Fqx "$key" "$ssh_dir/authorized_keys" 2>/dev/null; then
+                        echo "$key" >> "$ssh_dir/authorized_keys"
+                    fi
+                done < /root/.ssh/authorized_keys
+            else
+                cp /root/.ssh/authorized_keys "$ssh_dir/authorized_keys"
+            fi
+            log_info "Root SSH authorized_keys migrated to user: $username"
         else
-            cp /root/.ssh/authorized_keys "$ssh_dir/authorized_keys"
+            log_warn "No root SSH keys found to migrate to $username"
+            log_warn "Ensure you can authenticate as $username before restricting root access"
         fi
-        log_info "Root SSH authorized_keys migrated to user: $username"
-    else
-        log_warn "No root SSH keys found to migrate to $username"
-        log_warn "Ensure you can authenticate as $username before restricting root access"
     fi
 
     # Set correct ownership and permissions
