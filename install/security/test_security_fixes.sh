@@ -132,6 +132,7 @@ test_rate_limiting() {
 }
 
 # Test 6: Security Monitoring
+# Script runs as root via cron; don't execute directly (permission denied as non-root)
 test_security_monitoring() {
     log_info "Testing security monitoring..."
     
@@ -144,14 +145,6 @@ test_security_monitoring() {
         # Check if it's executable
         if [[ -x "/usr/local/bin/security_monitor.sh" ]]; then
             log_info "✓ Security monitoring script is executable"
-            
-            # Test the script execution
-            if /usr/local/bin/security_monitor.sh >/dev/null 2>&1; then
-                log_info "✓ Security monitoring script executes successfully"
-            else
-                log_warn "Security monitoring script execution failed"
-                issues_found=$((issues_found + 1))
-            fi
         else
             log_error "Security monitoring script not executable"
             issues_found=$((issues_found + 1))
@@ -161,11 +154,11 @@ test_security_monitoring() {
         issues_found=$((issues_found + 1))
     fi
     
-    # Check if monitoring is in crontab
-    if grep -q "security_monitor" /etc/crontab 2>/dev/null; then
-        log_info "✓ Security monitoring scheduled in crontab"
+    # Cron jobs are in root's crontab, not /etc/crontab
+    if sudo crontab -l 2>/dev/null | grep -q "security_monitor"; then
+        log_info "✓ Security monitoring scheduled in root crontab"
     else
-        log_warn "Security monitoring not scheduled in crontab"
+        log_warn "Security monitoring not scheduled in root crontab"
         issues_found=$((issues_found + 1))
     fi
     
@@ -214,11 +207,11 @@ test_aide_intrusion_detection() {
             issues_found=$((issues_found + 1))
         fi
         
-        # Check if AIDE is scheduled in crontab
-        if grep -q "aide_check" /etc/crontab 2>/dev/null; then
-            log_info "✓ AIDE check scheduled in crontab"
+        # Cron jobs are in root's crontab, not /etc/crontab
+        if sudo crontab -l 2>/dev/null | grep -q "aide_check"; then
+            log_info "✓ AIDE check scheduled in root crontab"
         else
-            log_warn "AIDE check not scheduled in crontab"
+            log_warn "AIDE check not scheduled in root crontab"
             issues_found=$((issues_found + 1))
         fi
     else
