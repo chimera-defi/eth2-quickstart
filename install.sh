@@ -167,6 +167,11 @@ if [[ "$VIBE_MODE" == "true" ]]; then
     log_info "Running in vibe mode (non-interactive defaults)..."
     "$INSTALL_DIR/install/utils/configure.sh" --vibe
 else
+    # Redirect stdin from terminal so whiptail works when run via "curl | bash"
+    # (stdin is a pipe in that case; whiptail needs terminal input for OK/Enter)
+    if [[ -c /dev/tty ]]; then
+        exec 0</dev/tty
+    fi
     "$INSTALL_DIR/install/utils/configure.sh"
 fi
 
