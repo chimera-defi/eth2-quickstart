@@ -51,9 +51,19 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Check if running inside Docker/container
+# Check if running inside Docker/container (/.dockerenv or cgroup)
 is_docker() {
-    [[ -f /.dockerenv ]] || grep -q docker /proc/1/cgroup 2>/dev/null
+    [[ -f /.dockerenv ]] || grep -qE 'docker|containerd' /proc/1/cgroup 2>/dev/null
+}
+
+# Ensure /root/.ssh/authorized_keys exists when in Docker and empty (E2E only; is_docker guard)
+# Dockerfile/ci_test keys may not persist with systemd-as-init; run_1 creates as fallback
+ensure_docker_e2e_keys() {
+    if is_docker && [[ ! -s /root/.ssh/authorized_keys ]]; then
+        mkdir -p /root/.ssh
+        printf '%s\n' "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > /root/.ssh/authorized_keys
+        chmod 600 /root/.ssh/authorized_keys
+    fi
 }
 
 # =============================================================================
