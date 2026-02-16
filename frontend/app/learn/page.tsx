@@ -59,7 +59,7 @@ export default function LearnPage() {
             {DOCUMENTATION_LINKS.map((doc) => (
               <a
                 key={doc.path}
-                href={`${SITE_CONFIG.github}/blob/main/${doc.path}`}
+                href={`${SITE_CONFIG.github}/blob/master/${doc.path}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex items-start gap-3 sm:gap-4 rounded-xl border border-border p-3 sm:p-4 transition-colors hover:border-primary/20 hover:bg-muted/30"

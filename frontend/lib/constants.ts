@@ -155,7 +155,7 @@ cd eth2-quickstart && chmod +x run_1.sh`,
   {
     step: 5,
     title: 'Start Services',
-    description: 'Start and verify all services.',
+    description: 'Start and verify all services. Omit mev if you skipped MEV installation.',
     code: 'sudo systemctl start eth1 cl validator mev',
   },
 ]
