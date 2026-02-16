@@ -26,6 +26,7 @@ runs:
 
     - name: Pull image
       if: inputs.image != ''
+      shell: bash
       run: |
         docker pull ${{ inputs.image }}
         docker tag ${{ inputs.image }} eth-node-test
