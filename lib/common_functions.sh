@@ -908,7 +908,7 @@ Next Step (after reboot, SSH as $username):
   $next_step
 
 IMPORTANT: SSH key authentication is required.
-Root's SSH keys have been migrated to this user.
+Authorized keys (root + sudo user) have been migrated to this user.
 Delete /root/handoff_info.txt after noting this information.
 
 AIDE: After apt upgrade, update the integrity database:
