@@ -1,7 +1,8 @@
 # Eth2 Quick Start - Scripts & Tools Manifest
-# Format: path :: category :: description :: usage :: flags :: requires
+# Format: path :: category :: description :: usage :: flags :: requires [:: quick_ref]
 # Categories: core, maintenance, diagnostics, configuration, optional, ssl_web, mev, security, examples
 # requires: root, non_root, or empty
+# quick_ref: optional 7th field; if present, script appears in "Post-install: keep your node healthy" section
 
 # === CORE INSTALLATION ===
 run_1.sh :: core :: Phase 1: System hardening. Run as root, then reboot. :: sudo ./run_1.sh ::  :: root
@@ -12,16 +13,16 @@ install.sh :: core :: Bootstrap: clone repo and launch configure wizard. :: curl
 install/utils/configure.sh :: core :: TUI wizard: generates phase scripts and user config. :: ./install/utils/configure.sh :: --vibe :: 
 
 # === MAINTENANCE ===
-install/utils/update.sh :: maintenance :: Update Ethereum clients (geth, prysm, MEV-Boost). :: ./install/utils/update.sh ::  :: 
+install/utils/update.sh :: maintenance :: Update Ethereum clients (geth, prysm, MEV-Boost). :: ./install/utils/update.sh ::  ::  :: quick_ref
 install/utils/update_all.sh :: maintenance :: Update both repo and software stack. :: ./install/utils/update_all.sh :: --git-only --software-only --backup --force --rollback :: 
 install/utils/update_git.sh :: maintenance :: Update eth2-quickstart from git. :: ./install/utils/update_git.sh :: --backup --force --rollback :: 
-install/utils/refresh.sh :: maintenance :: Restart all Ethereum services. :: ./install/utils/refresh.sh ::  :: 
-install/utils/start.sh :: maintenance :: Start all Ethereum client systemd services. :: ./install/utils/start.sh ::  :: 
+install/utils/refresh.sh :: maintenance :: Restart all Ethereum services. :: ./install/utils/refresh.sh ::  ::  :: quick_ref
+install/utils/start.sh :: maintenance :: Start all Ethereum client systemd services. :: ./install/utils/start.sh ::  ::  :: quick_ref
 
 # === DIAGNOSTICS ===
-install/utils/doctor.sh :: diagnostics :: Health check: system, services, config, ports, JWT. :: ./install/utils/doctor.sh ::  :: 
-install/utils/stats.sh :: diagnostics :: Client versions, service status, error scan. :: ./install/utils/stats.sh ::  :: 
-install/utils/view_logs.sh :: diagnostics :: View run_1, run_2, security logs. :: ./install/utils/view_logs.sh :: --list --run1 --run2 --security -n N -f :: 
+install/utils/doctor.sh :: diagnostics :: Health check: system, services, config, ports, JWT. :: ./install/utils/doctor.sh ::  ::  :: quick_ref
+install/utils/stats.sh :: diagnostics :: Client versions, service status, error scan. :: ./install/utils/stats.sh ::  ::  :: quick_ref
+install/utils/view_logs.sh :: diagnostics :: View run_1, run_2, security logs. :: ./install/utils/view_logs.sh :: --list --run1 --run2 --security -n N -f ::  :: quick_ref
 install/utils/verify_client_configs.sh :: diagnostics :: Verify client config files resolve correctly. :: ./install/utils/verify_client_configs.sh ::  :: 
 
 # === CONFIGURATION ===

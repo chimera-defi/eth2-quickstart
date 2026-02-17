@@ -22,7 +22,8 @@ Output is Markdown-formatted for easy parsing. Includes:
 ### 2. Manifest (Machine-Readable)
 
 - **scripts.manifest** – Single source of truth for help output
-- Format: `path :: category :: description :: usage :: flags :: requires`
+- Format: `path :: category :: description :: usage :: flags :: requires [:: quick_ref]`
+- Optional 7th field `quick_ref` – script appears in "Post-install: keep your node healthy"
 - Add new scripts here; help.sh reads it automatically
 
 ### 3. Key Paths
@@ -137,7 +138,7 @@ These scripts users run most after install. Feature them when helping users debu
 
 ### Adding a New Script
 
-1. Add line to `scripts.manifest`: `path :: category :: description :: usage :: flags :: requires`
+1. Add line to `scripts.manifest`: `path :: category :: description :: usage :: flags :: requires [:: quick_ref]`
 2. Run `./help.sh` to verify
 3. Run `./test/validate_help.sh`
 
