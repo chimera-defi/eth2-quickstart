@@ -46,6 +46,7 @@ export GETH_CMD="/usr/bin/geth --cache=$GETH_CACHE --syncmode snap \
 
 
 ensure_directory "$HOME/secrets"
+chmod 700 "$HOME/secrets"
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create systemd service using common function

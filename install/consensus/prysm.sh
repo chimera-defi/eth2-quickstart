@@ -46,6 +46,7 @@ if [[ ! -f "prysm.sh" || ! -x "prysm.sh" ]]; then
 fi
 
 ensure_directory "$HOME/secrets"
+chmod 700 "$HOME/secrets"
 if [[ ! -s "$HOME/secrets/jwt.hex" ]]; then
     log_info "Generating JWT secret..."
     ./prysm.sh beacon-chain generate-auth-secret
