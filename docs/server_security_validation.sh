@@ -151,10 +151,10 @@ log_section "Firewall Configuration Validation"
 
 test_firewall_configuration() {
     # Check if UFW is active
-    if ufw status | grep -q "Status: active"; then
+    if sudo ufw status | grep -q "Status: active"; then
         # Check if critical ports are blocked
-        if ufw status | grep -q "8545/tcp.*DENY"; then
-            if ufw status | grep -q "8551/tcp.*DENY"; then
+        if sudo ufw status | grep -q "8545/tcp.*DENY"; then
+            if sudo ufw status | grep -q "8551/tcp.*DENY"; then
                 return 0
             else
                 log_error "Port 8551 not blocked by firewall"
@@ -179,7 +179,7 @@ test_fail2ban_configuration() {
     # Check if fail2ban is running
     if systemctl is-active --quiet fail2ban; then
         # Check if fail2ban has jails configured
-        if fail2ban-client status | grep -q "Number of jail:"; then
+        if sudo fail2ban-client status | grep -q "Number of jail:"; then
             return 0
         else
             log_error "Fail2ban has no jails configured"
@@ -197,18 +197,17 @@ run_custom_test "Fail2ban configuration is correct" test_fail2ban_configuration
 log_section "Network Binding Validation"
 
 test_network_binding() {
-    # Check if any services are binding to 0.0.0.0 (security risk)
-    if ss -tuln | grep -q "0.0.0.0"; then
-        log_error "Services found binding to 0.0.0.0 (security risk)"
+    # Check if Ethereum-specific ports are binding to 0.0.0.0 (security risk)
+    # Only flag ports that should be localhost-only (RPC, Engine API, metrics)
+    # Services like nginx (80/443) and sshd (22) legitimately bind to 0.0.0.0
+    # Note: ss -tuln shows "Local Address:Port" in column 5 - we must check only
+    # the local address, not the peer address column which always shows 0.0.0.0:*
+    local eth_ports="8545|8546|8551|5051|5052|9596|6060"
+    if ss -tuln | awk '{print $5}' | grep -qE "^0\.0\.0\.0:($eth_ports)$"; then
+        log_error "Ethereum services found binding to 0.0.0.0 (security risk)"
         return 1
     else
-        # Check if services are binding to localhost
-        if ss -tuln | grep -q "127.0.0.1"; then
-            return 0
-        else
-            log_warn "No services found binding to localhost"
-            return 0
-        fi
+        return 0
     fi
 }
 
@@ -503,12 +502,12 @@ fi
 
 # Show firewall status
 echo "Firewall status:"
-ufw status
+sudo ufw status
 echo
 
 # Show fail2ban status
 echo "Fail2ban status:"
-fail2ban-client status
+sudo fail2ban-client status
 echo
 
 # Exit with appropriate code
