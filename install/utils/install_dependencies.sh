@@ -155,7 +155,7 @@ install_production() {
     # Install Rust (for ETHGas build). In Docker, only when CI_E2E (full client testing)
     if ! is_docker || [[ "${CI_E2E:-}" == "true" ]]; then
         log_info "Installing Rust..."
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y > /dev/null 2>&1
         [[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:${PATH:-}"
     fi
 
@@ -168,7 +168,7 @@ install_production() {
     # Configure time synchronization (skip in Docker)
     if ! is_docker && command -v timedatectl &>/dev/null; then
         log_info "Configuring time synchronization..."
-        TZ=UTC timedatectl set-ntp true 2>/dev/null || log_warn "Could not enable NTP (chrony uses pool.ntp.org by default)"
+        sudo TZ=UTC timedatectl set-ntp true 2>/dev/null || log_warn "Could not enable NTP (chrony uses pool.ntp.org by default)"
     fi
     
     log_info "All production dependencies installed successfully!"
