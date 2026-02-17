@@ -134,6 +134,7 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
     if [[ -n "$EXECUTION_CLIENT" ]]; then
         if [[ ! -s "$HOME/secrets/jwt.hex" ]]; then
             ensure_directory "$HOME/secrets"
+            chmod 700 "$HOME/secrets"
             ensure_jwt_secret "$HOME/secrets/jwt.hex"
         fi
         case "$EXECUTION_CLIENT" in

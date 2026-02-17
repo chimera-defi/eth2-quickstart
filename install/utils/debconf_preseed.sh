@@ -25,8 +25,14 @@ echo "tzdata tzdata/Zones/Etc select UTC" | debconf-set-selections 2>/dev/null |
 echo "tzdata tzdata/Areas string Etc" | debconf-set-selections 2>/dev/null || true
 echo "tzdata tzdata/Zones/Etc string UTC" | debconf-set-selections 2>/dev/null || true
 
-# needrestart - which services to restart
+# needrestart - suppress interactive TUI (Ubuntu 22.04+)
+# The debconf setting alone does NOT prevent the TUI; we must also configure needrestart directly
 echo "needrestart needrestart/restart-services string" | debconf-set-selections 2>/dev/null || true
+# Set automatic restart mode in needrestart config (a=automatic, skips TUI and polkit auth)
+mkdir -p /etc/needrestart/conf.d
+cat <<'CONF' > /etc/needrestart/conf.d/50-autorestart.conf 2>/dev/null || true
+$nrconf{restart} = 'a';
+CONF
 
 # dpkg: use defaults, never prompt for config file changes
 mkdir -p /etc/apt/apt.conf.d

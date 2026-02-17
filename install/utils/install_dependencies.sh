@@ -85,9 +85,9 @@ install_packages() {
     log_info "Installing packages: ${packages[*]}"
     
     if [[ $EUID -eq 0 ]]; then
-        DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical apt-get install -y --no-install-recommends "${packages[@]}"
+        DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1 apt-get install -y --no-install-recommends "${packages[@]}"
     else
-        sudo env DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical apt-get install -y --no-install-recommends "${packages[@]}"
+        sudo env DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1 apt-get install -y --no-install-recommends "${packages[@]}"
     fi
 }
 
