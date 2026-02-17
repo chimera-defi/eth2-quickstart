@@ -59,7 +59,7 @@
 
 ## 3. Manifest Format Specification
 
-**Format**: `path :: category :: description :: usage :: flags :: requires`
+**Format**: `path :: category :: description :: usage :: flags :: requires [:: quick_ref]`
 
 **Delimiter**: ` :: ` (space-colon-colon-space) – avoids pipe in usage, unambiguous
 
@@ -67,10 +67,12 @@
 
 **Requires**: root, non_root, or empty
 
+**quick_ref**: Optional 7th field. If present, script appears in "Post-install: keep your node healthy" section.
+
 **Example**:
 ```
 run_1.sh :: core :: Phase 1: System hardening. Run as root, then reboot. :: sudo ./run_1.sh ::  :: root
-install/utils/doctor.sh :: diagnostics :: Health check: system, services, config, ports. :: ./install/utils/doctor.sh ::  :: 
+install/utils/doctor.sh :: diagnostics :: Health check: system, services, config, ports. :: ./install/utils/doctor.sh ::  ::  :: quick_ref
 ```
 
 ---
@@ -85,8 +87,8 @@ install/utils/doctor.sh :: diagnostics :: Health check: system, services, config
 ### For Implementers
 - Run `./help.sh` and `./help.sh --markdown` after any manifest/help change
 - Run `./test/validate_help.sh` before commit
-- Add new scripts to manifest with format: `path :: category :: description :: usage :: flags :: requires`
-- Post-install tools (doctor, stats, view_logs, refresh, start, update) must be easy to find
+- Add new scripts to manifest: `path :: category :: description :: usage :: flags :: requires [:: quick_ref]`
+- For post-install section: add ` :: quick_ref` as 7th field
 
 ### For Agents
 - **Entry point:** `docs/AGENT_GUIDE.md` – consolidated agent guide (install, tooling, docs map)
@@ -151,12 +153,18 @@ When handing off to another agent or developer:
 
 ## 8. Success Criteria
 
-- [ ] help.sh runs without error
-- [ ] help.sh --markdown produces valid Markdown
-- [ ] Manifest is single source of truth
-- [ ] validate_help.sh passes in CI
-- [ ] Post-install tools prominently featured
-- [ ] Best practices and usage guidance visible
+- [x] help.sh runs without error
+- [x] help.sh --markdown produces valid Markdown
+- [x] Manifest is single source of truth (no hardcoded script lists in help.sh; post-install derived from manifest quick_ref)
+- [x] validate_help.sh passes in CI
+- [x] Post-install tools prominently featured (via manifest quick_ref field)
+- [x] Best practices and usage guidance visible
+
+## Single Point of Entry
+
+- **Tool discovery**: `./help.sh` (or `./help.sh --markdown` for agents) – single entry point for discovering all scripts
+- **Agent docs**: `docs/AGENT_GUIDE.md` – single entry point for agent documentation
+- **No ./eth2 dispatcher**: Phase 4 (optional) was not implemented; users run scripts directly (e.g. `./install/utils/doctor.sh`)
 
 ---
 
@@ -164,3 +172,13 @@ When handing off to another agent or developer:
 
 1. Snapshot testing for help output?
 2. install_phase1/2 – note as "generated" in manifest?
+
+---
+
+## 10. Multi-Pass Review Summary (Latest)
+
+| Pass | Focus | Result |
+|------|-------|--------|
+| 1 | Functionality | All tests pass; help.sh, validate_help.sh, shellcheck |
+| 2 | Architecture | Manifest single source of truth; post-install from quick_ref field |
+| 3 | Code quality | No hardcoded lists; docs consistent; AGENT_GUIDE.md updated |

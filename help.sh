@@ -46,10 +46,10 @@ for arg in "$@"; do
 done
 
 # -----------------------------------------------------------------------------
-# Parse manifest into arrays: PATHS, CATEGORIES, DESCS, USAGES, FLAGS, REQUIRES
-# Format: path :: category :: description :: usage :: flags :: requires
+# Parse manifest into arrays: PATHS, CATEGORIES, DESCS, USAGES, FLAGS, REQUIRES, QUICK_REF
+# Format: path :: category :: description :: usage :: flags :: requires [:: quick_ref]
 # -----------------------------------------------------------------------------
-declare -a PATHS CATEGORIES DESCS USAGES FLAGS REQUIRES
+declare -a PATHS CATEGORIES DESCS USAGES FLAGS REQUIRES QUICK_REF
 
 parse_manifest() {
     while IFS= read -r line || [[ -n "$line" ]]; do
@@ -58,13 +58,14 @@ parse_manifest() {
         line="${line%"${line##*[![:space:]]}"}"
         [[ -z "$line" ]] && continue
         [[ "$line" =~ ^\[ ]] && continue
-        # Parse with :: delimiter (exactly 6 fields)
         path=$(echo "$line" | awk -F' :: ' '{print $1}')
         category=$(echo "$line" | awk -F' :: ' '{print $2}')
         desc=$(echo "$line" | awk -F' :: ' '{print $3}')
         usage=$(echo "$line" | awk -F' :: ' '{print $4}')
         flags=$(echo "$line" | awk -F' :: ' '{print $5}')
         requires=$(echo "$line" | awk -F' :: ' '{print $6}')
+        quick_ref=$(echo "$line" | awk -F' :: ' '{print $7}')
+        quick_ref="${quick_ref// /}"  # trim whitespace
         [[ -z "$path" ]] && continue
         PATHS+=("$path")
         CATEGORIES+=("${category:-}")
@@ -72,6 +73,7 @@ parse_manifest() {
         USAGES+=("${usage:-}")
         FLAGS+=("${flags:-}")
         REQUIRES+=("${requires:-}")
+        QUICK_REF+=("${quick_ref:-}")
     done < "$MANIFEST"
 }
 
@@ -105,23 +107,22 @@ output_markdown() {
     echo ""
     echo "**Paths:** One-liner: \`install.sh\` → \`install_phase1.sh\` → reboot → \`install_phase2.sh\`. Direct: \`run_1.sh\` → reboot → \`run_2.sh\`."
     echo ""
+
+    parse_manifest
+
     echo "## Post-Install: Keep Your Node Healthy"
     echo ""
     echo "These are the scripts you'll use most after install:"
     echo ""
     echo "| Script | Purpose |"
     echo "|--------|---------|"
-    echo "| \`./install/utils/doctor.sh\` | Health check: is everything OK? |"
-    echo "| \`./install/utils/stats.sh\` | Client versions, service status, errors |"
-    echo "| \`./install/utils/view_logs.sh\` | Inspect logs (\`--run2 -f\` to follow) |"
-    echo "| \`./install/utils/refresh.sh\` | Restart all services |"
-    echo "| \`./install/utils/start.sh\` | Start services after reboot |"
-    echo "| \`./install/utils/update.sh\` | Update Ethereum clients |"
+    for i in "${!PATHS[@]}"; do
+        [[ "${QUICK_REF[$i]}" != "quick_ref" ]] && continue
+        echo "| \`./${PATHS[$i]}\` | ${DESCS[$i]} |"
+    done
     echo ""
     echo "---"
     echo ""
-
-    parse_manifest
 
     for cat in "${CAT_ORDER[@]}"; do
         [[ -z "${CAT_LABELS[$cat]:-}" ]] && continue
@@ -201,19 +202,17 @@ output_human() {
     echo "    B) Direct:     git clone  →  run_1.sh  →  reboot  →  run_2.sh"
     echo ""
 
+    parse_manifest
+
     echo -e "${BOLD}${GREEN}▼ POST-INSTALL: KEEP YOUR NODE HEALTHY${NC}"
     echo ""
     echo "  These are the scripts you'll use most after install:"
     echo ""
-    echo "    ./install/utils/doctor.sh     Is everything OK? (health check)"
-    echo "    ./install/utils/stats.sh     What's the status? (versions, errors)"
-    echo "    ./install/utils/view_logs.sh Something wrong? Show me logs (--run2 -f)"
-    echo "    ./install/utils/refresh.sh   Restart all services"
-    echo "    ./install/utils/start.sh     Start services after reboot"
-    echo "    ./install/utils/update.sh    Update clients"
+    for i in "${!PATHS[@]}"; do
+        [[ "${QUICK_REF[$i]}" != "quick_ref" ]] && continue
+        printf "    %-35s %s\n" "./${PATHS[$i]}" "${DESCS[$i]}"
+    done
     echo ""
-
-    parse_manifest
 
     for cat in "${CAT_ORDER[@]}"; do
         [[ -z "${CAT_LABELS[$cat]:-}" ]] && continue
@@ -230,7 +229,7 @@ output_human() {
     echo ""
     echo "  Service control:  sudo systemctl [start|stop|restart|status] eth1 cl validator mev"
     echo "  Config file:      exports.sh (and config/user_config.env after configure)"
-    echo "  Docs:             docs/README.md, docs/SCRIPTS.md, docs/WORKFLOW.md"
+    echo "  Docs:             docs/README.md, docs/AGENT_GUIDE.md, docs/SCRIPTS.md, docs/WORKFLOW.md"
     echo ""
     echo -e "${BOLD}${YELLOW}▼ BEST PRACTICES${NC}"
     echo ""
