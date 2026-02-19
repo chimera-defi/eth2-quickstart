@@ -28,13 +28,17 @@ check_system_requirements 16 2000
 # Setup firewall rules for Geth
 setup_firewall_rules 30303 8545 8546 8551
 
-# Add Ethereum PPA and install
+# Add Ethereum PPA and install geth
 log_info "Adding Ethereum PPA repository..."
 if ! add_ppa_repository "ppa:ethereum/ethereum"; then
     log_error "Failed to add Ethereum PPA repository"
     exit 1
 fi
 
+if ! command -v geth &>/dev/null; then
+    log_info "Installing geth..."
+    install_dependencies ethereum
+fi
 
 export GETH_CMD="/usr/bin/geth --cache=$GETH_CACHE --syncmode snap \
 --http --http.addr $LH --http.corsdomain \"*\" --http.vhosts=* --http.api=\"admin, eth, net, web3, engine\" \

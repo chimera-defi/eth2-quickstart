@@ -33,7 +33,12 @@ fi
 sudo mv bazel-archive-keyring.gpg /usr/share/keyrings
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
 
-# Bazel is installed centrally via install_dependencies.sh
+# Install Bazel (required for building Flashbots Prysm)
+if ! command -v bazel &>/dev/null; then
+    log_info "Installing Bazel..."
+    sudo env DEBIAN_FRONTEND=noninteractive apt-get update
+    sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y bazel
+fi
 
 # Create build directory
 PRYSM_SRC_DIR="$HOME/prysm-src"

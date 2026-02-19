@@ -27,16 +27,17 @@ if ! ./install_nginx.sh; then
     exit 1
 fi
 
-# Configure certbot
-log_info "Configuring certbot..."
-if ! sudo snap refresh core; then
-    log_error "Failed to refresh snap core"
-    exit 1
-fi
-
-if ! sudo ln -s /snap/bin/certbot /usr/bin/certbot; then
-    log_error "Failed to create certbot symlink"
-    exit 1
+# Install certbot if missing (used only when user runs SSL setup)
+if ! command -v certbot &>/dev/null; then
+    log_info "Installing certbot..."
+    if command -v snap &>/dev/null; then
+        sudo snap refresh core
+        sudo snap install --classic certbot
+        sudo ln -sf /snap/bin/certbot /usr/bin/certbot
+    else
+        log_error "snap not available. Install certbot manually: https://certbot.eff.org"
+        exit 1
+    fi
 fi
 
 # Display important information

@@ -177,7 +177,8 @@ install_production() {
 }
 
 # Install production dependencies as root (no sudo). Used by run_1.sh.
-# Requires: root, LOGIN_UNAME for Rust install.
+# Only system-wide deps; client-specific deps (geth, Node, Rust, Bazel, certbot) are
+# installed by the respective client/SSL scripts when the user selects them.
 install_production_root() {
     log_info "Installing production packages (root mode)..."
 
@@ -191,116 +192,39 @@ install_production_root() {
     install_base
     install_packages "${PRODUCTION_PACKAGES[@]}"
 
-    # Add Ethereum PPA and install ethereum package (geth). Skip if geth already present.
-    if ! command -v geth &>/dev/null; then
-        if command -v add_ppa_repository &>/dev/null; then
-            add_ppa_repository "ppa:ethereum/ethereum"
-            install_packages "ethereum"
-        fi
-    else
-        log_info "geth already installed, skipping"
-    fi
-
-    # Node.js LTS (for Lodestar). Skip if already installed.
-    if ! command -v node &>/dev/null; then
-        log_info "Installing Node.js LTS..."
-        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-        install_packages "nodejs"
-    else
-        log_info "Node.js already installed ($(node --version 2>/dev/null || echo 'unknown')), skipping"
-    fi
-
-    # Go: snap in production, apt fallback in Docker/CI (snap doesn't work in containers). Skip if present.
-    if ! command -v go &>/dev/null; then
-        if ! is_docker && [[ "${CI_E2E:-}" != "true" ]] && command -v snap &>/dev/null; then
-            log_info "Installing Go via snap..."
-            snap install --classic go
-            ln -sf /snap/bin/go /usr/bin/go
-            log_info "Installing certbot via snap..."
-            snap install core
-            snap install --classic certbot
-            ln -sf /snap/bin/certbot /usr/bin/certbot
-        else
-            log_warn "Skipping snap (Docker or unavailable). Installing Go from apt..."
-            install_packages "golang-go"
-        fi
-    else
-        log_info "Go already installed ($(go version 2>/dev/null | grep -oE 'go[0-9.]+' || echo 'unknown')), skipping"
-    fi
-
-    # Rust for LOGIN_UNAME (ethrex, ethgas). Installs to ~/.cargo. Skip if cargo present.
-    local rust_user="${LOGIN_UNAME:-eth}"
-    local rust_cargo="/home/$rust_user/.cargo/bin/cargo"
-    if id -u "$rust_user" &>/dev/null; then
-        if [[ -x "${rust_cargo}" ]]; then
-            log_info "Rust already installed for $rust_user, skipping"
-        else
-            log_info "Installing Rust for user $rust_user..."
-            sudo -u "$rust_user" bash -c 'curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y'
-            # Ensure cargo in PATH for future logins
-            local bashrc="/home/$rust_user/.bashrc"
-            if [[ -f "$bashrc" ]] && ! grep -qF '.cargo/bin' "$bashrc" 2>/dev/null; then
-                # shellcheck disable=SC2016
-                echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "$bashrc"
-            fi
-        fi
-    else
-        log_warn "User $rust_user not found, skipping Rust install (needed for ethrex/ethgas)"
-    fi
-
-    # Bazel (optional, for fb_mev_prysm). Skip if already installed.
-    if command -v bazel &>/dev/null; then
-        log_info "Bazel already installed, skipping"
-    elif apt-cache show bazel &>/dev/null; then
-        log_info "Installing Bazel..."
-        install_packages "bazel"
-    fi
-
-    # Time sync (skip in Docker)
-    if ! is_docker && command -v timedatectl &>/dev/null; then
-        log_info "Configuring time synchronization..."
-        TZ=UTC timedatectl set-ntp true 2>/dev/null || log_warn "Could not enable NTP (chrony uses pool.ntp.org by default)"
+    # Time sync: chrony (in PRODUCTION_PACKAGES) handles NTP. Enable and start it.
+    # Do NOT use timedatectl set-ntp - it enables systemd-timesyncd which can conflict with chrony.
+    if ! is_docker && command -v systemctl &>/dev/null; then
+        log_info "Enabling chrony for time synchronization..."
+        systemctl enable chrony 2>/dev/null || true
+        systemctl start chrony 2>/dev/null || log_warn "Could not start chrony (may already be running)"
     fi
 
     log_info "All production dependencies installed successfully!"
 }
 
 # Verify required dependencies exist. No install. Used by run_2.sh.
-# Fails with clear message if any required tool is missing.
+# Only checks what run_1 installs (system-wide). Client-specific deps (geth, node, etc.)
+# are installed by client scripts when the user selects those clients.
 verify_dependencies() {
     log_info "Verifying dependencies..."
 
     local missing=()
 
-    # Base commands
+    # Base commands (from BASE_PACKAGES)
     for cmd in curl wget git jq openssl; do
         command -v "$cmd" &>/dev/null || missing+=("$cmd")
     done
 
-    # Production tools
-    for cmd in node nginx; do
-        command -v "$cmd" &>/dev/null || missing+=("$cmd")
-    done
-
-    # Go (golang-go or snap)
-    if ! command -v go &>/dev/null; then
-        missing+=("go")
-    fi
-
-    # Geth (ethereum package)
-    if ! command -v geth &>/dev/null; then
-        missing+=("geth")
-    fi
+    # Production tools (from PRODUCTION_PACKAGES)
+    command -v nginx &>/dev/null || missing+=("nginx")
+    command -v gcc &>/dev/null || command -v make &>/dev/null || missing+=("build-essential")
+    command -v chronyc &>/dev/null || command -v chronyd &>/dev/null || missing+=("chrony")
 
     if [[ ${#missing[@]} -gt 0 ]]; then
         log_error "Missing dependencies: ${missing[*]}"
         log_error "Run Phase 1 (run_1.sh) first to install dependencies."
         exit 1
-    fi
-
-    # Optional: cargo for ethrex/ethgas (warn only)
-    if ! command -v cargo &>/dev/null && [[ ! -x "${HOME}/.cargo/bin/cargo" ]]; then
-        log_warn "cargo not found (optional for ethrex/ethgas)"
     fi
 
     log_info "All required dependencies verified."
