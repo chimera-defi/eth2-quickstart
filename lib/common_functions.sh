@@ -450,10 +450,10 @@ setup_firewall_rules() {
     if ! command_exists ufw; then
         log_info "Installing UFW..."
         if [[ $EUID -eq 0 ]]; then
-            apt-get update -y
+            DEBIAN_FRONTEND=noninteractive apt-get update -y
             DEBIAN_FRONTEND=noninteractive apt-get install -y ufw
         else
-            sudo apt-get update -y
+            sudo env DEBIAN_FRONTEND=noninteractive apt-get update -y
             sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y ufw
         fi
     fi
