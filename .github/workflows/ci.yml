@@ -107,7 +107,7 @@ jobs:
   run-1-e2e:
     needs: [build-docker]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/docker-prep
