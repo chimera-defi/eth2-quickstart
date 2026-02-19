@@ -441,11 +441,17 @@ install_dependencies() {
 }
 
 # Setup firewall rules
-# Runs in Docker E2E (--privileged) and production. No skip.
-# Caller must have UFW installed (consolidated_security installs it before calling).
+# Runs in Docker E2E (--privileged) and production.
+# Skip UFW when CI_E2E and non-root: run-2-web (install_caddy/nginx) runs as testuser; enabling
+# UFW in that context breaks Caddy restart. run_1 E2E runs consolidated_security as root, so
+# UFW is enabled there.
 setup_firewall_rules() {
     local ports=("$@")
     log_info "Setting up firewall rules for ports: ${ports[*]}"
+    if [[ "${CI_E2E:-}" == "true" && $EUID -ne 0 ]]; then
+        log_warn "CI E2E (non-root): skipping UFW to avoid breaking Caddy/Nginx restart in container"
+        return 0
+    fi
     # Install UFW if not present (defensive; consolidated_security installs before first use)
     if ! command_exists ufw; then
         log_info "Installing UFW..."
