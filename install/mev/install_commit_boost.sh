@@ -18,8 +18,8 @@ log_installation_start "Commit-Boost"
 # Check system requirements
 check_system_requirements 8 1000
 
-# Setup firewall rules for Commit-Boost
-setup_firewall_rules "$COMMIT_BOOST_PORT"
+# Setup firewall rules for Commit-Boost (PBS, Signer, Metrics)
+setup_firewall_rules "$COMMIT_BOOST_PORT" "$((COMMIT_BOOST_PORT + 1))" "$((COMMIT_BOOST_PORT + 2))"
 
 # Create Commit-Boost directory
 COMMIT_BOOST_DIR="$HOME/commit-boost"
@@ -81,33 +81,53 @@ ensure_jwt_secret "$HOME/secrets/jwt.hex"
 CONFIG_DIR="$COMMIT_BOOST_DIR/config"
 ensure_directory "$CONFIG_DIR"
 
-# Create Commit-Boost configuration file
+# Create Commit-Boost configuration file (per official docs: https://commit-boost.github.io/commit-boost-client/get_started/configuration)
 log_info "Creating Commit-Boost configuration..."
-cat > "$CONFIG_DIR/cb-config.toml" << EOF
-# Commit-Boost Configuration File
-# Generated on $(date)
-
-[chain]
-chain = "mainnet"
-beacon_node_url = "http://$CONSENSUS_HOST:5051"
-
-[pbs]
-port = $COMMIT_BOOST_PORT
-relays = [
-$(echo "$MEV_RELAYS" | tr ',' '\n' | sed 's/^/    "/' | sed 's/$/",/' | sed '$ s/,$//')
-]
-
-[pbs.config]
-timeout_get_header_ms = $MEVGETHEADERT
-timeout_get_payload_ms = $MEVGETPAYLOADT
-timeout_register_validator_ms = $MEVREGVALT
-
-[signer]
-port = $((COMMIT_BOOST_PORT + 1))
-
-[metrics]
-prometheus_port = $((COMMIT_BOOST_PORT + 2))
-EOF
+{
+    echo "# Commit-Boost Configuration File"
+    echo "# Generated on $(date)"
+    echo "# Config format per: https://github.com/Commit-Boost/commit-boost-client/blob/main/config.example.toml"
+    echo ""
+    echo "chain = \"$COMMIT_BOOST_CHAIN\""
+    echo ""
+    echo "[pbs]"
+    echo "host = \"$COMMIT_BOOST_HOST\""
+    echo "port = $COMMIT_BOOST_PORT"
+    echo "timeout_get_header_ms = $MEVGETHEADERT"
+    echo "timeout_get_payload_ms = $MEVGETPAYLOADT"
+    echo "timeout_register_validator_ms = $MEVREGVALT"
+    echo "min_bid_eth = $MIN_BID"
+    echo ""
+    # Generate [[relays]] entries from MEV_RELAYS (comma-separated URLs)
+    relay_num=1
+    old_ifs="$IFS"
+    IFS=',' read -ra RELAY_ARRAY <<< "$MEV_RELAYS"
+    IFS="$old_ifs"
+    for relay_url in "${RELAY_ARRAY[@]}"; do
+        relay_url="${relay_url#"${relay_url%%[![:space:]]*}"}"
+        relay_url="${relay_url%"${relay_url##*[![:space:]]}"}"
+        [[ -z "$relay_url" ]] && continue
+        # Derive id from hostname (part after @) or use relay-N
+        if [[ "$relay_url" =~ @([^/]+) ]]; then
+            relay_id="${BASH_REMATCH[1]}"
+        else
+            relay_id="relay-$relay_num"
+        fi
+        echo "[[relays]]"
+        echo "id = \"$relay_id\""
+        echo "url = \"$relay_url\""
+        echo ""
+        ((relay_num++)) || true
+    done
+    echo "[signer]"
+    echo "host = \"$COMMIT_BOOST_HOST\""
+    echo "port = $((COMMIT_BOOST_PORT + 1))"
+    echo ""
+    echo "[metrics]"
+    echo "enabled = true"
+    echo "host = \"$COMMIT_BOOST_HOST\""
+    echo "start_port = $((COMMIT_BOOST_PORT + 2))"
+} > "$CONFIG_DIR/cb-config.toml"
 
 log_info "Configuration file created at: $CONFIG_DIR/cb-config.toml"
 
