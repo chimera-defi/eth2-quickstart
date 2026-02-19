@@ -4,7 +4,7 @@ This directory contains all project documentation organized by category.
 
 ## Core Documentation
 - **[README.md](../README.md)** - Main project overview and quickstart guide
-- **[SCRIPTS.md](SCRIPTS.md)** - Detailed script reference and usage
+- **[SCRIPTS.md](SCRIPTS.md)** - Detailed script reference and usage (use pre-existing `run_1.sh` and `run_2.sh`)
 - **[WORKFLOW.md](WORKFLOW.md)** - Setup workflow and process documentation
 - **[GLOSSARY.md](GLOSSARY.md)** - Technical terminology and definitions
 

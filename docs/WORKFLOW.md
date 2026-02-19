@@ -1,5 +1,7 @@
 ### End-to-end workflow
 
+Use the **pre-existing `run_1.sh` and `run_2.sh` scripts** for the standard setup.
+
 1) Provision and access the host
 - Ubuntu 20.04+ with a public SSH key
 - SSH as root
