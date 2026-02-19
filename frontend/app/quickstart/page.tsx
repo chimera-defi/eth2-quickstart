@@ -139,12 +139,12 @@ export default function QuickstartPage() {
         </section>
         
         {/* Installation - Manual */}
-        <section className="mt-10 sm:mt-16">
+        <section id="manual" className="mt-10 sm:mt-16">
           <h2 className="text-lg sm:text-xl font-semibold text-foreground">
-            Option B: Manual (git clone)
+            Option B: Manual (run_1.sh and run_2.sh)
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Clone the repo, run run_1.sh, reboot, then run_2.sh. Matches the README. Scripts exist in the repo.
+            Clone the repo and use the pre-existing <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_1.sh</code> and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_2.sh</code> scripts. No wizard—these scripts are included in the repository.
           </p>
           
           <InstallationStepsList steps={INSTALLATION_STEPS_MANUAL} idPrefix="manual" />

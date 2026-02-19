@@ -158,19 +158,19 @@ export const INSTALLATION_STEPS_ONELINER = [
   },
 ]
 
-/** Manual flow - matches README (run_1.sh, run_2.sh exist in repo) */
+/** Manual flow - uses pre-existing run_1.sh and run_2.sh from the repo */
 export const INSTALLATION_STEPS_MANUAL = [
   {
     step: 1,
     title: 'Clone Repository',
-    description: 'Download the scripts and make run_1.sh executable.',
+    description: 'Download the repo. run_1.sh and run_2.sh are included—make run_1.sh executable.',
     code: `git clone https://github.com/chimera-defi/eth2-quickstart
 cd eth2-quickstart && chmod +x run_1.sh`,
   },
   {
     step: 2,
-    title: 'Add SSH key, then run Phase 1 (as root)',
-    description: 'Add your SSH key first to prevent lockout. run_1.sh hardens firewall, SSH, creates non-root user, copies repo to ~/eth2-quickstart for the new user.',
+    title: 'Add SSH key, then run run_1.sh (as root)',
+    description: 'Add your SSH key first to prevent lockout. The run_1.sh script hardens firewall, SSH, creates non-root user, copies repo to ~/eth2-quickstart for the new user.',
     code: `ssh-copy-id root@<your-server-ip>
 ./run_1.sh   # or: sudo ./run_1.sh if not root`,
   },
@@ -182,8 +182,8 @@ cd eth2-quickstart && chmod +x run_1.sh`,
   },
   {
     step: 4,
-    title: 'Install Clients (as new user)',
-    description: 'Edit exports.sh with your settings, then run run_2.sh. Use ./select_clients.sh for recommendations.',
+    title: 'Install Clients with run_2.sh (as new user)',
+    description: 'Edit exports.sh with your settings, then run the run_2.sh script. Use ./select_clients.sh for client recommendations.',
     code: `nano exports.sh  # Edit settings
 ./select_clients.sh  # Optional: get recommendations
 ./run_2.sh           # Install clients`,
