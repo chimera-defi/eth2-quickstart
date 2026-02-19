@@ -470,7 +470,7 @@ run_script() {
     local script="$1"
     local name="${2:-$(basename "$script" .sh)}"
     shift 2
-    local log_file exit_code
+    local log_file="" exit_code
     if [[ ! -f "$script" ]]; then
         log_error "Script not found: $script"
         return 1
@@ -481,7 +481,7 @@ run_script() {
         log_info "Installing $name..."
     fi
     log_file=$(mktemp)
-    trap 'rm -f "$log_file"' RETURN
+    trap '[[ -n "${log_file:-}" ]] && rm -f "$log_file"' RETURN
     set +e
     "$script" "$@" 2>&1 | tee "$log_file"
     exit_code=$?
