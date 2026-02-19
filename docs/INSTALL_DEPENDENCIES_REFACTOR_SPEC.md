@@ -1,5 +1,7 @@
 # Install Dependencies Refactor Spec
 
+**Status: IMPLEMENTED.** This spec describes the refactor that was completed.
+
 ## Quick Reference
 
 | Path | Script | Mode | Sudo for apt? |
@@ -17,37 +19,30 @@ This removes the security risk of the eth user needing sudo for package installa
 
 ---
 
-## Current State (Trace)
+## Current State (Implemented)
 
 ### Call Sites
 
 | Caller | What | User | Sudo? |
 |--------|------|------|-------|
-| **run_2.sh** | `install_dependencies.sh` (no args = production) | eth user | Yes (apt, snap, nodesource) |
-| **test/ci_test_e2e.sh** (PHASE=2) | `install_dependencies.sh --production` | testuser | Yes |
-| **test/Dockerfile** | `install_dependencies.sh --test` | root | No (already root) |
-| **consolidated_security.sh** | `install_dependencies aide cron fail2ban` | root | Uses common_functions `install_dependencies()` (function, not script) |
+| **run_1.sh** | `install_dependencies.sh --production-root` (before consolidated_security) | root | No |
+| **run_2.sh** | `install_dependencies.sh --verify` | eth user | No |
+| **test/Dockerfile** | `install_dependencies.sh --test` | root | No |
 
-### Two Different "install_dependencies"
-
-1. **Script**: `install/utils/install_dependencies.sh` — modes: `--test`, `--base`, `--production`
-2. **Function**: `lib/common_functions.sh` `install_dependencies()` — takes package names, uses `sudo apt-get`
-
-### run_1 Flow (current)
+### run_1 Flow (implemented)
 
 ```
 apt update/upgrade → debconf_preseed → setup_secure_user → 99-noninteractive sudoers →
-configure_ssh → consolidated_security (calls install_dependencies aide cron fail2ban) →
+install_dependencies.sh --production-root (installs aide, cron, fail2ban, nginx, chrony, etc.) →
+configure_ssh → consolidated_security (configures only; packages already installed) →
 apply_network_security → setup_security_monitoring → copy repo → handoff
 ```
 
-run_1 does **not** call `install_dependencies.sh`. It only gets aide/cron/fail2ban via consolidated_security.
-
-### run_2 Flow (current)
+### run_2 Flow (implemented)
 
 ```
-debconf_preseed (sudo) → install_dependencies.sh (production, uses sudo) → verify_client_configs →
-client install (uses sudo for systemd, ufw, PPA)
+verify_dependencies (install_dependencies.sh --verify) → verify_client_configs →
+client install (client scripts use sudo for systemd, ufw, PPA when needed)
 ```
 
 ### What Needs Root vs User-Space

@@ -61,6 +61,8 @@ This guide provides comprehensive security information for the Ethereum node set
 
 ### Installation Security
 1. **Initial Setup** (`run_1.sh`):
+   - Installs production dependencies (aide, cron, fail2ban, nginx, chrony) via `install_dependencies.sh --production-root`
+   - Runs `consolidated_security.sh` to configure firewall, fail2ban, AIDE (packages must be installed first)
    - Network security configuration
    - File permission securing
    - Security monitoring setup

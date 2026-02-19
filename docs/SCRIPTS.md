@@ -35,13 +35,13 @@ ssh LOGIN_UNAME@<server-ip>
 
 **Actions:**
 - System updates: `apt update/upgrade/full-upgrade/autoremove`
-- SSH hardening: replaces `/etc/ssh/sshd_config`
-- Fail2ban: configures jails for `nginx-proxy` and `sshd`
 - User creation: creates non-root user `LOGIN_UNAME` (SSH key-only, no password)
 - Backs up and migrates authorized_keys from root, SUDO_USER, and all /home/* users to new user (prevents lockout)
+- Installs production dependencies (aide, cron, fail2ban, nginx, chrony, build-essential, etc.) via `install_dependencies.sh --production-root`
+- SSH hardening: replaces `/etc/ssh/sshd_config`
+- Security: runs consolidated security script (firewall, fail2ban, AIDE — configures packages installed above)
+- NTP: enables and starts `chrony` service
 - Copies eth2-quickstart to `~/eth2-quickstart` for new user (handoff: `cd ~/eth2-quickstart && ./run_2.sh`)
-- Security: runs consolidated security script
-- NTP: installs `chrony` and enables NTP
 - Security: mounts `/run/shm` as `tmpfs` with `ro,noexec,nosuid`
 
 **Prerequisite:** Add your SSH key before running: `ssh-copy-id root@<server>` or `ssh-copy-id <your-user>@<server>` (if using sudo)
@@ -54,8 +54,9 @@ ssh LOGIN_UNAME@<server-ip>
 ```
 
 **Actions:**
-- Installs `snapd`
-- Runs installers: `./geth.sh`, `./prysm.sh`, `./install_mev_boost.sh`
+- Verifies dependencies (installed by run_1); no package install, no sudo for apt
+- Runs client installers based on user selection (flags or interactive via `select_clients.sh`)
+- Client-specific deps (geth, Node, Rust, Bazel, certbot) installed by respective scripts when selected
 - Echoes next steps for Nginx + SSL
 
 **Start services:**

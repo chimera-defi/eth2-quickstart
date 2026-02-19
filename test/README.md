@@ -131,7 +131,7 @@ docker run --rm --privileged eth-node-test /workspace/test/ci_test_run_2.sh
 
 ### Full End-to-End Testing
 
-For complete E2E testing on a real server (not Docker):
+For complete E2E testing on a real server (not Docker), use the pre-existing `run_1.sh` and `run_2.sh`:
 
 ```bash
 # On a fresh Ubuntu 22.04 server:

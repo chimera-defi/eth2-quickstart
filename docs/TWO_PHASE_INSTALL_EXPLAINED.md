@@ -1,5 +1,7 @@
 # Two-Phase Install: Why and What Goes Where
 
+**Use the pre-existing `run_1.sh` and `run_2.sh` scripts** for the standard two-phase installation.
+
 ## Why Two Phases?
 
 **Security.** The project handles real money (ETH validators). The two-phase model prevents lockout and enforces privilege separation.
@@ -45,11 +47,8 @@ If phases were combined, a failure after SSH hardening could lock the user out. 
 
 ---
 
-## Current Mistakes (to fix)
+## Current Architecture (Implemented)
 
-1. **geth in run_1** — Only needed when user selects geth. Should be in geth.sh.
-2. **Rust in run_1** — Only needed for ethrex/ethgas. Should be in those scripts (rustup, no sudo).
-3. **Bazel in run_1** — Only needed for fb_mev_prysm. Should be in that script.
-4. **Node in run_1** — Only needed for Lodestar. Should be in lodestar.sh.
-5. **certbot in run_1** — Only needed when user runs SSL script. Should be in install_ssl_certbot.sh.
-6. **timedatectl** — We install chrony; timedatectl set-ntp enables systemd-timesyncd. Can conflict. Use chrony only.
+- **run_1** installs system-wide base + production packages (aide, cron, fail2ban, nginx, chrony, etc.) before `consolidated_security.sh` configures them. Client-specific deps (geth, Node, Rust, Bazel, certbot) are **not** in run_1.
+- **run_2** verifies dependencies exist; no install. Client scripts install their deps when selected.
+- **chrony** only — `timedatectl set-ntp` would enable systemd-timesyncd and conflict; not used.
