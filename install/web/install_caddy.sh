@@ -40,10 +40,6 @@ fi
 sudo chown caddy:caddy /etc/caddy/Caddyfile
 sudo chmod 644 /etc/caddy/Caddyfile
 
-# Setup firewall rules
-log_info "Configuring firewall..."
-setup_firewall_rules 80 443
-
 # Validate Caddy configuration
 validate_caddy_config "/etc/caddy/Caddyfile"
 
@@ -53,6 +49,10 @@ if ! sudo -E "$SCRIPT_DIR/../security/caddy_harden.sh"; then
     log_error "Caddy hardening failed"
     exit 1
 fi
+
+# Configure firewall AFTER service is fully started (enabling UFW before restart causes failure)
+log_info "Configuring firewall..."
+setup_firewall_rules 80 443
 
 # Verify Caddy is running
 log_info "Verifying Caddy installation..."
