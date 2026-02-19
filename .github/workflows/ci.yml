@@ -45,6 +45,8 @@ jobs:
       image: ${{ steps.meta.outputs.image }}
     steps:
       - uses: actions/checkout@v4
+      - name: Set lowercase image tag
+        run: echo "DOCKER_IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}/eth-node-test:${GITHUB_SHA}" >> $GITHUB_ENV
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -59,12 +61,12 @@ jobs:
           file: test/Dockerfile
           load: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
           push: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-          tags: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('ghcr.io/{0}/eth-node-test:{1}', github.repository, github.sha) || 'eth-node-test' }}
+          tags: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && env.DOCKER_IMAGE || 'eth-node-test' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - id: meta
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        run: echo "image=ghcr.io/${{ github.repository }}/eth-node-test:${{ github.sha }}" >> $GITHUB_OUTPUT
+        run: echo "image=${{ env.DOCKER_IMAGE }}" >> $GITHUB_OUTPUT
 
   docker-integration:
     needs: [build-docker]
