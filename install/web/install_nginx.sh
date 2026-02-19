@@ -48,10 +48,6 @@ fi
 sudo chown root:root /etc/nginx/sites-enabled/default
 sudo chmod 644 /etc/nginx/sites-enabled/default
 
-# Setup firewall rules
-log_info "Configuring firewall..."
-setup_firewall_rules 80 443
-
 # Validate Nginx configuration
 validate_nginx_config
 
@@ -60,6 +56,10 @@ log_info "Running Nginx security hardening..."
 if ! sudo "$SCRIPT_DIR/../security/nginx_harden.sh"; then
     log_warn "Nginx hardening script failed, but continuing..."
 fi
+
+# Configure firewall AFTER service is fully started (enabling UFW before restart causes failure)
+log_info "Configuring firewall..."
+setup_firewall_rules 80 443
 
 # Verify Nginx is running
 log_info "Verifying Nginx installation..."
