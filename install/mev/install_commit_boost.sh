@@ -44,38 +44,21 @@ if ! download_file "$PBS_URL" "commit-boost-pbs.tar.gz"; then
     exit 1
 fi
 
-# Download Commit-Boost Signer binary
-log_info "Downloading Commit-Boost Signer binary..."
-SIGNER_URL="https://github.com/Commit-Boost/commit-boost-client/releases/download/${LATEST_VERSION}/commit-boost-signer-${LATEST_VERSION}-linux_x86-64.tar.gz"
-if ! download_file "$SIGNER_URL" "commit-boost-signer.tar.gz"; then
-    log_error "Failed to download Commit-Boost Signer binary"
-    exit 1
-fi
-
-# Extract binaries
-log_info "Extracting Commit-Boost binaries..."
+# Extract binary
+log_info "Extracting Commit-Boost binary..."
 tar -xzf commit-boost-pbs.tar.gz
-tar -xzf commit-boost-signer.tar.gz
 
-# Clean up archives
-rm -f commit-boost-pbs.tar.gz commit-boost-signer.tar.gz
+# Clean up archive
+rm -f commit-boost-pbs.tar.gz
 
-# Make binaries executable
-chmod +x commit-boost-pbs commit-boost-signer
+# Make binary executable
+chmod +x commit-boost-pbs
 
-# Verify binaries exist
+# Verify binary exists
 if [[ ! -f "$COMMIT_BOOST_DIR/commit-boost-pbs" ]]; then
     log_error "commit-boost-pbs binary not found after extraction"
     exit 1
 fi
-
-if [[ ! -f "$COMMIT_BOOST_DIR/commit-boost-signer" ]]; then
-    log_error "commit-boost-signer binary not found after extraction"
-    exit 1
-fi
-
-# Ensure JWT secret exists
-ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create configuration directory
 CONFIG_DIR="$COMMIT_BOOST_DIR/config"
@@ -87,47 +70,30 @@ cat > "$CONFIG_DIR/cb-config.toml" << EOF
 # Commit-Boost Configuration File
 # Generated on $(date)
 
-[chain]
-chain = "mainnet"
-beacon_node_url = "http://$CONSENSUS_HOST:5051"
+chain = "Mainnet"
 
 [pbs]
 port = $COMMIT_BOOST_PORT
-relays = [
-$(echo "$MEV_RELAYS" | tr ',' '\n' | sed 's/^/    "/' | sed 's/$/",/' | sed '$ s/,$//')
-]
-
-[pbs.config]
 timeout_get_header_ms = $MEVGETHEADERT
 timeout_get_payload_ms = $MEVGETPAYLOADT
 timeout_register_validator_ms = $MEVREGVALT
 
-[signer]
-port = $((COMMIT_BOOST_PORT + 1))
+$(echo "$MEV_RELAYS" | tr ',' '\n' | sed 's|.*|[[relays]]\nurl = "&"|')
 
 [metrics]
-prometheus_port = $((COMMIT_BOOST_PORT + 2))
+start_port = $((COMMIT_BOOST_PORT + 1))
 EOF
 
 log_info "Configuration file created at: $CONFIG_DIR/cb-config.toml"
 
 # Create systemd service for Commit-Boost PBS
 log_info "Creating systemd service for Commit-Boost PBS..."
-PBS_EXEC_START="$COMMIT_BOOST_DIR/commit-boost-pbs --config $CONFIG_DIR/cb-config.toml"
+PBS_EXEC_START="/usr/bin/env CB_CONFIG=$CONFIG_DIR/cb-config.toml $COMMIT_BOOST_DIR/commit-boost-pbs"
 
 create_systemd_service "commit-boost-pbs" "Commit-Boost PBS (MEV Sidecar)" "$PBS_EXEC_START" "$(whoami)" "always" "600" "5" "300"
 
-# Create systemd service for Commit-Boost Signer
-log_info "Creating systemd service for Commit-Boost Signer..."
-SIGNER_EXEC_START="$COMMIT_BOOST_DIR/commit-boost-signer --config $CONFIG_DIR/cb-config.toml --jwt-secret $HOME/secrets/jwt.hex"
-
-create_systemd_service "commit-boost-signer" "Commit-Boost Signer" "$SIGNER_EXEC_START" "$(whoami)" "always" "600" "5" "300" "network-online.target" "network-online.target"
-
 # Enable and start PBS service
 enable_and_start_systemd_service "commit-boost-pbs"
-
-# Enable and start Signer service
-enable_and_start_systemd_service "commit-boost-signer"
 
 # Show completion information
 log_installation_complete "Commit-Boost" "commit-boost-pbs" "$CONFIG_DIR/cb-config.toml" "$COMMIT_BOOST_DIR"
@@ -139,14 +105,11 @@ cat << EOF
 
 Commit-Boost has been installed with the following components:
 1. PBS Module (MEV-Boost compatible) - Port $COMMIT_BOOST_PORT
-2. Signer Module - Port $((COMMIT_BOOST_PORT + 1))
-3. Metrics Endpoint - Port $((COMMIT_BOOST_PORT + 2))
+2. Metrics Endpoint - Port $((COMMIT_BOOST_PORT + 1))
 
 Installation Directory: $COMMIT_BOOST_DIR
 Configuration File: $CONFIG_DIR/cb-config.toml
-Binaries:
-  - commit-boost-pbs: $COMMIT_BOOST_DIR/commit-boost-pbs
-  - commit-boost-signer: $COMMIT_BOOST_DIR/commit-boost-signer
+Binary: $COMMIT_BOOST_DIR/commit-boost-pbs
 
 Key Features:
 - MEV-Boost relay compatibility
@@ -156,16 +119,12 @@ Key Features:
 - Audited by Sigma Prime
 
 Service Management:
-- PBS:    sudo systemctl {start|stop|status} commit-boost-pbs
-- Signer: sudo systemctl {start|stop|status} commit-boost-signer
-- Logs PBS:    journalctl -u commit-boost-pbs -f
-- Logs Signer: journalctl -u commit-boost-signer -f
+- PBS: sudo systemctl {start|stop|status} commit-boost-pbs
+- Logs: journalctl -u commit-boost-pbs -f
 
 Verification:
 - Check PBS service: sudo systemctl status commit-boost-pbs
-- Check Signer service: sudo systemctl status commit-boost-signer
 - Check MEV-Boost compatibility: curl http://$COMMIT_BOOST_HOST:$COMMIT_BOOST_PORT/eth/v1/builder/status
-- Check metrics: curl http://$COMMIT_BOOST_HOST:$((COMMIT_BOOST_PORT + 2))/metrics
 
 ⚠️  IMPORTANT: Commit-Boost vs MEV-Boost
 Commit-Boost is an ALTERNATIVE to MEV-Boost, not an addition.
