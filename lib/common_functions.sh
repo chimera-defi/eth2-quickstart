@@ -441,14 +441,10 @@ install_dependencies() {
 }
 
 # Setup firewall rules
-# When CI_E2E=true (Docker E2E test): skip UFW - container lacks kernel modules for iptables/nftables
+# Runs in Docker E2E (--privileged) and production. No skip.
 setup_firewall_rules() {
     local ports=("$@")
     log_info "Setting up firewall rules for ports: ${ports[*]}"
-    if [[ "${CI_E2E:-}" == "true" ]]; then
-        log_warn "CI E2E: skipping UFW (container lacks kernel modules)"
-        return 0
-    fi
     # Install UFW if not present
     if ! command_exists ufw; then
         sudo apt-get update
