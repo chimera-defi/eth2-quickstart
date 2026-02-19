@@ -7,6 +7,11 @@ const nextConfig = {
   },
   // Enable static export for deployment flexibility
   output: 'standalone',
+  async redirects() {
+    return [
+      { source: '/learn', destination: '/quickstart', permanent: true },
+    ]
+  },
 }
 
 module.exports = nextConfig

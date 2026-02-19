@@ -37,7 +37,8 @@ export function Workflow() {
           </div>
 
           <div className="relative space-y-3 sm:space-y-4">
-            <div className="absolute left-[1.75rem] sm:left-[2rem] top-8 hidden h-[calc(100%-2rem)] w-px bg-border/60 sm:block" />
+            {/* Vertical connector line - positioned to the right of number circles */}
+            <div className="absolute left-[3rem] sm:left-[3.25rem] top-12 bottom-4 hidden w-px bg-border/60 sm:block" />
             {WORKFLOW_STEPS.map((step, index) => (
               <motion.div
                 key={step.title}
@@ -48,10 +49,10 @@ export function Workflow() {
               >
                 <Card padding="sm" className="bg-muted/40">
                   <div className="flex items-start gap-3 sm:gap-4">
-                    <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full border border-border bg-background font-mono text-xs text-muted-foreground">
+                    <div className="relative z-10 flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full border border-border bg-background font-mono text-xs font-medium text-foreground">
                       0{index + 1}
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <h3 className="font-medium text-foreground">{step.title}</h3>
                       <p className="mt-1 text-sm text-muted-foreground">{step.description}</p>
                       <p className="mt-2 text-xs text-muted-foreground">{step.detail}</p>
