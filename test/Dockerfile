@@ -1,7 +1,7 @@
 # Test Environment Dockerfile
 #
-# Uses Ubuntu 24.04 - production target. E2E runs install_dependencies --production
-# at runtime (ci_test_e2e.sh), validating PRODUCTION_PACKAGES on Ubuntu 24.
+# Uses Ubuntu 24.04 - production target. E2E runs install_dependencies --phase1
+# (as root) + --phase2 (as testuser) at runtime, validating the two-phase model.
 
 FROM ubuntu:24.04
 

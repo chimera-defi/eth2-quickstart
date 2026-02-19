@@ -21,7 +21,13 @@ log_installation_start "Lodestar"
 # Check system requirements
 check_system_requirements 16 1000
 
-# Node.js and build tools are already available
+# Lodestar requires Node.js -- install if not present
+if ! command -v node &>/dev/null; then
+    log_info "Node.js not found, installing Node.js LTS..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nodejs
+fi
+log_info "Using Node.js $(node --version)"
 
 # Setup firewall rules for Lodestar
 setup_firewall_rules 9000 9596

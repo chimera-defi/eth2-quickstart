@@ -96,15 +96,12 @@ log_info "This script will install Ethereum clients and services"
 # cd prysm
 # screen -d -m ./prysm.sh beacon-chain --p2p-host-ip=$(curl -s v4.ident.me) --config-file=./prysm_conf_beacon_sync.yaml
 #  ./prysm.sh beacon-chain --checkpoint-block=$PWD/block_mainnet_altair_4620512-0xef9957e6a709223202ab00f4ee2435e1d42042ad35e160563015340df677feb0.ssz --checkpoint-state=$PWD/state_mainnet_altair_4620512-0xc1397f57149c99b3a2166d422a2ee50602e2a2c7da2e31d7ea740216b8fd99ab.ssz --genesis-state=$PWD/genesis.ssz --config-file=$PWD/prysm_beacon_conf.yaml --p2p-host-ip=88.99.65.230
-# Install all dependencies centrally (unless --skip-deps)
+# Install user-level dependencies (Phase 2 -- no sudo apt-get)
+# System packages were installed by run_1.sh (Phase 1) as root.
 if [[ "$SKIP_DEPS" != "true" ]]; then
-    if [[ -f "$SCRIPT_DIR/install/utils/debconf_preseed.sh" ]]; then
-        log_info "Pre-seeding debconf for non-interactive install..."
-        sudo bash "$SCRIPT_DIR/install/utils/debconf_preseed.sh"
-    fi
-    log_info "Installing all system dependencies..."
-    if ! "$SCRIPT_DIR/install/utils/install_dependencies.sh"; then
-        log_error "Failed to install dependencies"
+    log_info "Installing user-level dependencies (Phase 2)..."
+    if ! "$SCRIPT_DIR/install/utils/install_dependencies.sh" --phase2; then
+        log_error "Failed to install user-level dependencies"
         exit 1
     fi
 fi
