@@ -83,16 +83,14 @@ setup_firewall() {
         ufw deny out on any to "$network" || log_warn "Failed to block outbound to $network"
     done
 
-    # Block problematic subnets (public IPs that cause abuse reports)
-    if ! is_docker; then
-        log_info "Blocking problematic subnets that trigger abuse reports..."
-        problematic_subnets=(
-            "212.192.16.0/22"      # Vultr Frankfurt - triggers Hetzner netscan detection (Nov 2025)
-        )
-        for subnet in "${problematic_subnets[@]}"; do
-            ufw deny out on any to "$subnet" proto udp || log_warn "Failed to block outbound UDP to $subnet"
-        done
-    fi
+    # Block problematic subnets (public IPs that cause abuse reports) - no Docker skip
+    log_info "Blocking problematic subnets that trigger abuse reports..."
+    problematic_subnets=(
+        "212.192.16.0/22"      # Vultr Frankfurt - triggers Hetzner netscan detection (Nov 2025)
+    )
+    for subnet in "${problematic_subnets[@]}"; do
+        ufw deny out on any to "$subnet" proto udp || log_warn "Failed to block outbound UDP to $subnet"
+    done
 
     # Block specific ports (updates from Prysm docs Feb '23)
     log_info "Blocking specific ports for security..."
@@ -105,7 +103,7 @@ setup_firewall() {
     log_info "UFW firewall is now enabled with Ethereum client and security rules"
     log_info "Allowed ports: $SSH_PORT (SSH), 443 (HTTPS), 30303 (Ethereum P2P), 12000/13000 (Prysm)"
     if is_docker; then
-        log_info "Blocked: Private networks (excl. 172.16/12 for bridge), specific ports (4000, 3500, 8551, 8545)"
+        log_info "Blocked: Private networks (excl. 172.16/12 for bridge), problematic subnets (UDP), specific ports (4000, 3500, 8551, 8545)"
     else
         log_info "Blocked: Private networks, problematic subnets (UDP), specific ports (4000, 3500, 8551, 8545)"
     fi
