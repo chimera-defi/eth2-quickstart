@@ -490,6 +490,21 @@ run_unit_tests() {
     else
         log_test "FAIL" "command_exists(nonexistent) should return false"
     fi
+
+    # Test install_dependencies.sh modes (--help, --verify)
+    log_subheader "install_dependencies.sh modes"
+    if "$PROJECT_ROOT/install/utils/install_dependencies.sh" --help 2>&1 | grep -q "production-root"; then
+        log_test "PASS" "install_dependencies.sh --help shows production-root"
+    else
+        log_test "FAIL" "install_dependencies.sh --help missing production-root"
+    fi
+    local verify_out
+    verify_out=$("$PROJECT_ROOT/install/utils/install_dependencies.sh" --verify 2>&1) || true
+    if echo "$verify_out" | grep -q "Run Phase 1" || echo "$verify_out" | grep -q "All required dependencies verified"; then
+        log_test "PASS" "install_dependencies.sh --verify works (fails or passes with expected output)"
+    else
+        log_test "FAIL" "install_dependencies.sh --verify unexpected output"
+    fi
     
     # Test get_script_directories (if we can)
     if [[ "$USE_MOCKS" != "true" ]]; then
