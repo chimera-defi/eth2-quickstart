@@ -86,6 +86,13 @@ if [[ ! -f /etc/sudoers.d/99-noninteractive ]]; then
     log_info "Sudo configured for non-interactive apt"
 fi
 
+# Install all production dependencies (root, no sudo for eth user)
+log_info "Installing production dependencies..."
+if ! "$SCRIPT_DIR/install/utils/install_dependencies.sh" --production-root; then
+    log_error "Failed to install production dependencies"
+    exit 1
+fi
+
 # Harden SSH (after user exists with keys)
 configure_ssh "$YourSSHPortNumber" "$SCRIPT_DIR"
 
