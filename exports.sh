@@ -125,6 +125,7 @@ export MEVREGVALT=6000              # Timeout for registerValidator (millisecond
 # Choose ONE: Either MEV-Boost OR Commit-Boost, not both
 export COMMIT_BOOST_PORT=18551
 export COMMIT_BOOST_HOST='127.0.0.1'
+export COMMIT_BOOST_CHAIN='mainnet'   # Chain: mainnet, holesky, sepolia
 
 # ----------------------------------------------------------------------------
 # ETHGas Configuration (Requires Commit-Boost)
