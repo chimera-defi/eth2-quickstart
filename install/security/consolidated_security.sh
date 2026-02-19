@@ -293,8 +293,8 @@ verify_security_setup() {
 
 # Main execution
 main() {
-    # Install aide, cron, fail2ban - apt handles duplicates (no reinstall if already present)
-    install_dependencies aide cron fail2ban
+    # aide, cron, fail2ban installed by run_1's install_dependencies.sh --production-root
+    # No install here - run_1 must run before consolidated_security
 
     # Run all security setup functions
     setup_firewall

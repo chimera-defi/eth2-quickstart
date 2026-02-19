@@ -33,6 +33,8 @@ log_info "Log file: $LOG_FILE"
 export DEBIAN_FRONTEND=noninteractive
 export DEBIAN_PRIORITY=critical
 export TZ=UTC
+# Ensure cargo in PATH (installed by run_1 for LOGIN_UNAME)
+export PATH="${HOME}/.cargo/bin:${PATH:-}"
 
 # Parse flags for non-interactive mode
 EXECUTION_CLIENT=""
@@ -60,7 +62,7 @@ for arg in "$@"; do
             echo "  --execution=NAME   Install execution client (geth, besu, erigon, nethermind, nimbus_eth1, reth, ethrex)"
             echo "  --consensus=NAME   Install consensus client (prysm, lighthouse, lodestar, teku, nimbus, grandine)"
             echo "  --mev=NAME         Install MEV (mev-boost, commit-boost, none)"
-            echo "  --skip-deps        Skip install_dependencies.sh (for CI when deps already installed)"
+            echo "  --skip-deps        Skip dependency verification (for CI when deps already installed)"
             echo "  --help             Show this help"
             echo ""
             echo "Examples:"
@@ -96,15 +98,11 @@ log_info "This script will install Ethereum clients and services"
 # cd prysm
 # screen -d -m ./prysm.sh beacon-chain --p2p-host-ip=$(curl -s v4.ident.me) --config-file=./prysm_conf_beacon_sync.yaml
 #  ./prysm.sh beacon-chain --checkpoint-block=$PWD/block_mainnet_altair_4620512-0xef9957e6a709223202ab00f4ee2435e1d42042ad35e160563015340df677feb0.ssz --checkpoint-state=$PWD/state_mainnet_altair_4620512-0xc1397f57149c99b3a2166d422a2ee50602e2a2c7da2e31d7ea740216b8fd99ab.ssz --genesis-state=$PWD/genesis.ssz --config-file=$PWD/prysm_beacon_conf.yaml --p2p-host-ip=88.99.65.230
-# Install all dependencies centrally (unless --skip-deps)
+# Verify dependencies (installed by run_1). No package install, no sudo for apt.
 if [[ "$SKIP_DEPS" != "true" ]]; then
-    if [[ -f "$SCRIPT_DIR/install/utils/debconf_preseed.sh" ]]; then
-        log_info "Pre-seeding debconf for non-interactive install..."
-        sudo bash "$SCRIPT_DIR/install/utils/debconf_preseed.sh"
-    fi
-    log_info "Installing all system dependencies..."
-    if ! "$SCRIPT_DIR/install/utils/install_dependencies.sh"; then
-        log_error "Failed to install dependencies"
+    log_info "Verifying dependencies..."
+    if ! "$SCRIPT_DIR/install/utils/install_dependencies.sh" --verify; then
+        log_error "Dependency verification failed. Run Phase 1 (run_1.sh) first."
         exit 1
     fi
 fi
