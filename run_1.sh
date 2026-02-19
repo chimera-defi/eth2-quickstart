@@ -73,6 +73,12 @@ apt full-upgrade -y
 apt autoremove -y || log_warn "Some packages could not be removed"
 log_info "System packages updated"
 
+# Install all system-level dependencies as root (Phase 1)
+# This avoids giving the eth user blanket sudo for apt-get
+log_info "Installing system dependencies (Phase 1)..."
+chmod +x "$SCRIPT_DIR/install/utils/install_dependencies.sh"
+"$SCRIPT_DIR/install/utils/install_dependencies.sh" --phase1
+
 # Create user with sudo + SSH key migration BEFORE hardening SSH
 # SSH key-only auth (no password) - more secure
 log_info "Setting up user: $LOGIN_UNAME"

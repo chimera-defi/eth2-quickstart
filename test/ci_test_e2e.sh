@@ -54,14 +54,24 @@ if [[ "$PHASE" == "2" ]]; then
     log_header "Pre-seeding debconf (prevent tty hangs)"
     sudo bash "$PROJECT_ROOT/install/utils/debconf_preseed.sh"
 
-    # Step 1: Install dependencies (like run_2.sh when not --skip-deps)
-    log_header "Installing dependencies"
-    if ! "$PROJECT_ROOT/install/utils/install_dependencies.sh" --production; then
-        record_test "install_dependencies" "FAIL"
+    # Step 1a: Install system dependencies (Phase 1 equivalent -- runs as root in Docker)
+    # In production, run_1.sh does this as root. In Docker E2E, testuser has sudo.
+    log_header "Installing system dependencies (Phase 1)"
+    if ! sudo bash "$PROJECT_ROOT/install/utils/install_dependencies.sh" --phase1; then
+        record_test "install_dependencies (phase1)" "FAIL"
         print_test_summary
         exit 1
     fi
-    record_test "install_dependencies" "PASS"
+    record_test "install_dependencies (phase1)" "PASS"
+
+    # Step 1b: Install user-level tools (Phase 2)
+    log_header "Installing user-level tools (Phase 2)"
+    if ! "$PROJECT_ROOT/install/utils/install_dependencies.sh" --phase2; then
+        record_test "install_dependencies (phase2)" "FAIL"
+        print_test_summary
+        exit 1
+    fi
+    record_test "install_dependencies (phase2)" "PASS"
 
     # Step 2: Run run_2.sh (client selection via E2E_* env or defaults)
     E2E_EXEC="${E2E_EXECUTION:-geth}"
