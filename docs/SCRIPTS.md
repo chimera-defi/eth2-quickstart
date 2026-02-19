@@ -4,6 +4,8 @@
 
 Bash scripts to harden Ubuntu server and install Ethereum node stack: execution client, consensus client, validator, MEV-Boost, and optional Nginx reverse proxy with SSL.
 
+**Use the pre-existing `run_1.sh` and `run_2.sh` scripts** for the standard two-phase installation. These are the primary entry points for manual setup (clone → run_1 → reboot → run_2).
+
 - **OS**: Ubuntu 20.04+
 - **Order**: `run_1.sh` → reboot → login as `LOGIN_UNAME` → update `exports.sh` → `run_2.sh`
 - **Config**: `exports.sh` (email, domain, fee recipient, graffiti, peers, relay list, ports)

@@ -42,11 +42,13 @@ Additionally, by using a VPS, they can more easily offer a censorship resistant 
 
 ### Installation
 
+Use the **pre-existing `run_1.sh` and `run_2.sh` scripts** for the standard two-phase setup:
+
 1. **Download and prepare**:
    ```bash
    git clone https://github.com/chimera-defi/eth2-quickstart
    cd eth2-quickstart
-   chmod +x run_1.sh
+   chmod +x run_1.sh run_2.sh
    ```
 
 2. **Run server setup** (as root):
