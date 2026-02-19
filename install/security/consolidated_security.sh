@@ -25,7 +25,7 @@ setup_firewall() {
     # also installs it, but this guarantees it for Docker/CI and any alternate call paths)
     if ! command -v ufw &>/dev/null; then
         log_info "Installing UFW..."
-        apt-get update -y
+        DEBIAN_FRONTEND=noninteractive apt-get update -y
         DEBIAN_FRONTEND=noninteractive apt-get install -y ufw
     fi
 
