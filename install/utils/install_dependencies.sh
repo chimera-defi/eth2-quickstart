@@ -4,9 +4,11 @@
 # Single source of truth for all apt packages
 #
 # Usage:
-#   ./install_dependencies.sh          # Full production install
-#   ./install_dependencies.sh --test   # Test env (shellcheck, systemd, aide, cron, fail2ban)
-#   ./install_dependencies.sh --base  # Base packages only
+#   ./install_dependencies.sh --production-root  # Run from run_1 (root, no sudo)
+#   ./install_dependencies.sh --verify           # Run from run_2 (check only, no install)
+#   ./install_dependencies.sh --production       # Legacy: full production (non-root, uses sudo)
+#   ./install_dependencies.sh --test             # Test env (shellcheck, systemd, aide, cron, fail2ban)
+#   ./install_dependencies.sh --base            # Base packages only
 
 set -Eeuo pipefail
 
@@ -174,6 +176,116 @@ install_production() {
     log_info "All production dependencies installed successfully!"
 }
 
+# Install production dependencies as root (no sudo). Used by run_1.sh.
+# Requires: root, LOGIN_UNAME for Rust install.
+install_production_root() {
+    log_info "Installing production packages (root mode)..."
+
+    if [[ $EUID -ne 0 ]]; then
+        log_error "install_production_root must run as root. Use from run_1.sh."
+        exit 1
+    fi
+
+    DEBIAN_FRONTEND=noninteractive apt-get update -y
+
+    install_base
+    install_packages "${PRODUCTION_PACKAGES[@]}"
+
+    # Add Ethereum PPA and install ethereum package (geth)
+    if command -v add_ppa_repository &>/dev/null; then
+        add_ppa_repository "ppa:ethereum/ethereum"
+        install_packages "ethereum"
+    fi
+
+    # Node.js LTS (for Lodestar). Always install in root mode.
+    log_info "Installing Node.js LTS..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    install_packages "nodejs"
+
+    # Go: snap in production, apt fallback in Docker (snap doesn't work)
+    if ! is_docker && command -v snap &>/dev/null; then
+        log_info "Installing Go via snap..."
+        snap install --classic go
+        ln -sf /snap/bin/go /usr/bin/go
+        log_info "Installing certbot via snap..."
+        snap install core
+        snap install --classic certbot
+        ln -sf /snap/bin/certbot /usr/bin/certbot
+    else
+        log_warn "Skipping snap (Docker or unavailable). Installing Go from apt..."
+        install_packages "golang-go"
+    fi
+
+    # Rust for LOGIN_UNAME (ethrex, ethgas). Installs to ~/.cargo.
+    local rust_user="${LOGIN_UNAME:-eth}"
+    if id -u "$rust_user" &>/dev/null; then
+        log_info "Installing Rust for user $rust_user..."
+        sudo -u "$rust_user" bash -c 'curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y'
+        # Ensure cargo in PATH for future logins
+        local bashrc="/home/$rust_user/.bashrc"
+        if [[ -f "$bashrc" ]] && ! grep -qF '.cargo/bin' "$bashrc" 2>/dev/null; then
+            echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "$bashrc"
+        fi
+    else
+        log_warn "User $rust_user not found, skipping Rust install (needed for ethrex/ethgas)"
+    fi
+
+    # Bazel (optional, for fb_mev_prysm)
+    if apt-cache show bazel &>/dev/null; then
+        log_info "Installing Bazel..."
+        install_packages "bazel"
+    fi
+
+    # Time sync (skip in Docker)
+    if ! is_docker && command -v timedatectl &>/dev/null; then
+        log_info "Configuring time synchronization..."
+        TZ=UTC timedatectl set-ntp true 2>/dev/null || log_warn "Could not enable NTP (chrony uses pool.ntp.org by default)"
+    fi
+
+    log_info "All production dependencies installed successfully!"
+}
+
+# Verify required dependencies exist. No install. Used by run_2.sh.
+# Fails with clear message if any required tool is missing.
+verify_dependencies() {
+    log_info "Verifying dependencies..."
+
+    local missing=()
+
+    # Base commands
+    for cmd in curl wget git jq openssl; do
+        command -v "$cmd" &>/dev/null || missing+=("$cmd")
+    done
+
+    # Production tools
+    for cmd in node nginx; do
+        command -v "$cmd" &>/dev/null || missing+=("$cmd")
+    done
+
+    # Go (golang-go or snap)
+    if ! command -v go &>/dev/null; then
+        missing+=("go")
+    fi
+
+    # Geth (ethereum package)
+    if ! command -v geth &>/dev/null; then
+        missing+=("geth")
+    fi
+
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        log_error "Missing dependencies: ${missing[*]}"
+        log_error "Run Phase 1 (run_1.sh) first to install dependencies."
+        exit 1
+    fi
+
+    # Optional: cargo for ethrex/ethgas (warn only)
+    if ! command -v cargo &>/dev/null && [[ ! -x "${HOME}/.cargo/bin/cargo" ]]; then
+        log_warn "cargo not found (optional for ethrex/ethgas)"
+    fi
+
+    log_info "All required dependencies verified."
+}
+
 # =============================================================================
 # MAIN
 # =============================================================================
@@ -188,16 +300,24 @@ main() {
         --base|-b)
             install_base
             ;;
+        --production-root)
+            install_production_root
+            ;;
+        --verify|-v)
+            verify_dependencies
+            ;;
         --production|-p|production|"")
             install_production
             ;;
         --help|-h)
-            echo "Usage: $0 [--test|--base|--production]"
+            echo "Usage: $0 [--production-root|--verify|--test|--base|--production]"
             echo ""
             echo "Modes:"
-            echo "  --test, -t       Install test dependencies"
-            echo "  --base, -b       Install base packages only"
-            echo "  --production, -p Install full production dependencies (default)"
+            echo "  --production-root  Install as root (run_1.sh). No sudo."
+            echo "  --verify, -v        Verify dependencies exist (run_2.sh). No install."
+            echo "  --test, -t         Install test dependencies"
+            echo "  --base, -b         Install base packages only"
+            echo "  --production, -p   Install full production (legacy, non-root with sudo)"
             ;;
         *)
             log_error "Unknown mode: $mode"
