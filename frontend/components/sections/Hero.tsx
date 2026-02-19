@@ -4,8 +4,25 @@ import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { SITE_CONFIG, STATS } from '@/lib/constants'
+import { Terminal } from '@/components/ui/Terminal'
+import { SITE_CONFIG, STATS, INSTALL_COMMAND } from '@/lib/constants'
 import { ArrowRight, CheckCircle2 } from 'lucide-react'
+
+const TERMINAL_OUTPUT = `$ ${INSTALL_COMMAND}
+
+==================================================
+       Eth2 Quick Start - One-Liner Setup         
+==================================================
+
+[INFO] Checking system requirements...
+[INFO] Cloning repository to ~/.eth2-quickstart...
+[INFO] Repository ready at ~/.eth2-quickstart
+[INFO] Starting configuration wizard...
+
+  Phase 1: System hardening
+  Phase 2: Client installation (after reboot)
+
+Configuration complete. Run Phase 1 from the path shown above.`
 
 export function Hero() {
   return (
@@ -116,24 +133,19 @@ export function Hero() {
 
           </div>
           
-          {/* Right column - Stats emphasis (desktop) / CTA card (mobile) */}
+          {/* Right column - Terminal with simulated install output */}
           <motion.div
             initial={{ opacity: 0, x: 24 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="hidden lg:flex flex-col justify-center"
+            className="hidden lg:block"
           >
-            <Card className="border-border/60 bg-muted/40 p-5">
-              <p className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
-                One command
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Scroll down to copy the install command.
-              </p>
-              <Button href="#install" variant="secondary" size="sm" className="mt-4 w-fit">
-                View Install Command
-              </Button>
-            </Card>
+            <Terminal
+              code={TERMINAL_OUTPUT}
+              language="bash"
+              title="terminal"
+              className="border-border/60"
+            />
           </motion.div>
         </div>
       </div>

@@ -10,8 +10,8 @@ export const SITE_CONFIG = {
 }
 
 export const NAV_LINKS = [
-  { label: 'Install', href: '#install' },
-  { label: 'Learn', href: '/learn' },
+  { label: 'Install', href: '/#install' },
+  { label: 'Get Started', href: '/quickstart' },
   { label: 'GitHub', href: SITE_CONFIG.github, external: true },
 ]
 
@@ -124,7 +124,7 @@ export const DOCUMENTATION_LINKS = [
   { title: 'Security', description: 'Security documentation', path: 'docs/SECURITY_GUIDE.md' },
 ]
 
-/** One-liner flow - curl runs install.sh, wizard generates phase scripts */
+/** One-liner flow - curl runs install.sh, wizard generates install_phase1.sh and install_phase2.sh */
 export const INSTALLATION_STEPS_ONELINER = [
   {
     step: 1,
@@ -135,7 +135,7 @@ export const INSTALLATION_STEPS_ONELINER = [
   {
     step: 2,
     title: 'Run Phase 1 (as root)',
-    description: 'Use the path from step 1. Hardens firewall, SSH, creates non-root user.',
+    description: 'Use the path shown when the wizard completes (typically ~/.eth2-quickstart). Hardens firewall, SSH, creates non-root user.',
     code: 'cd ~/.eth2-quickstart && ./install_phase1.sh',
   },
   {
@@ -147,8 +147,8 @@ export const INSTALLATION_STEPS_ONELINER = [
   {
     step: 4,
     title: 'Run Phase 2 (as new user)',
-    description: 'Use the path from step 1 (default: /root/.eth2-quickstart when run as root).',
-    code: 'cd /root/.eth2-quickstart && ./install_phase2.sh',
+    description: 'run_1.sh copies the repo to ~/eth2-quickstart for the new user. Run from there.',
+    code: 'cd ~/eth2-quickstart && ./install_phase2.sh',
   },
   {
     step: 5,
@@ -158,33 +158,35 @@ export const INSTALLATION_STEPS_ONELINER = [
   },
 ]
 
-/** Manual flow - matches README (run_1.sh, run_2.sh) */
+/** Manual flow - uses pre-existing run_1.sh and run_2.sh from the repo */
 export const INSTALLATION_STEPS_MANUAL = [
   {
     step: 1,
     title: 'Clone Repository',
-    description: 'Download the scripts and make them executable.',
+    description: 'Download the repo. run_1.sh and run_2.sh are included—make run_1.sh executable.',
     code: `git clone https://github.com/chimera-defi/eth2-quickstart
 cd eth2-quickstart && chmod +x run_1.sh`,
   },
   {
     step: 2,
-    title: 'Run Phase 1 (as root)',
-    description: 'Add SSH key first (ssh-copy-id root@<server-ip>), then run. Hardens firewall, SSH, creates non-root user.',
-    code: 'sudo ./run_1.sh',
+    title: 'Add SSH key, then run run_1.sh (as root)',
+    description: 'Add your SSH key first to prevent lockout. The run_1.sh script hardens firewall, SSH, creates non-root user, copies repo to ~/eth2-quickstart for the new user.',
+    code: `ssh-copy-id root@<your-server-ip>
+./run_1.sh   # or: sudo ./run_1.sh if not root`,
   },
   {
     step: 3,
     title: 'Reboot',
-    description: 'Reboot and login as the new user.',
+    description: 'Reboot and SSH back in as the new user (e.g. eth@ip).',
     code: 'sudo reboot',
   },
   {
     step: 4,
-    title: 'Install Clients (as new user)',
-    description: 'Configure your settings and run the installation.',
+    title: 'Install Clients with run_2.sh (as new user)',
+    description: 'Edit exports.sh with your settings, then run the run_2.sh script. Use ./select_clients.sh for client recommendations.',
     code: `nano exports.sh  # Edit settings
-./run_2.sh       # Install clients`,
+./select_clients.sh  # Optional: get recommendations
+./run_2.sh           # Install clients`,
   },
   {
     step: 5,

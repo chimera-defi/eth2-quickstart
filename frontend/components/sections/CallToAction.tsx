@@ -4,8 +4,9 @@ import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { SITE_CONFIG } from '@/lib/constants'
-import { ArrowRight, Terminal } from 'lucide-react'
+import { CodeBlock } from '@/components/ui/CodeBlock'
+import { SITE_CONFIG, INSTALL_COMMAND } from '@/lib/constants'
+import { ArrowRight } from 'lucide-react'
 
 export function CallToAction() {
   return (
@@ -40,14 +41,16 @@ export function CallToAction() {
                   Get Started
                   <ArrowRight className="ml-2 h-4 w-4 shrink-0" />
                 </Button>
-                <Button href="#install" variant="secondary" size="lg" className="justify-center shrink-0">
-                  <Terminal className="mr-2 h-4 w-4 shrink-0" />
-                  Copy Install Command
-                </Button>
                 <Button variant="ghost" href={SITE_CONFIG.github} external size="lg" className="justify-center shrink-0">
                   View Source
                 </Button>
               </div>
+            </div>
+            <div className="mt-4 pt-6 border-t border-border/60">
+              <p className="text-xs font-mono uppercase tracking-wide text-muted-foreground mb-3">
+                Bootstrap command
+              </p>
+              <CodeBlock code={INSTALL_COMMAND} language="bash" />
             </div>
           </div>
         </Card>
