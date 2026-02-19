@@ -78,6 +78,22 @@ fi
 CONFIG_DIR="$COMMIT_BOOST_DIR/config"
 ensure_directory "$CONFIG_DIR"
 
+# Generate module JWT secret for inter-module authentication
+# CB_JWTS is required by commit-boost-signer for module auth (v0.9.3+)
+MODULE_JWT_FILE="$CONFIG_DIR/module_jwt.hex"
+if [[ ! -f "$MODULE_JWT_FILE" ]]; then
+    log_info "Generating module JWT secret for signer authentication..."
+    openssl rand -hex 32 > "$MODULE_JWT_FILE"
+    chmod 600 "$MODULE_JWT_FILE"
+fi
+MODULE_JWT=$(cat "$MODULE_JWT_FILE")
+
+# Create signer environment file (CB_JWTS for module authentication)
+SIGNER_ENV_FILE="$CONFIG_DIR/signer.env"
+echo "CB_JWTS=commit_boost_pbs=${MODULE_JWT}" > "$SIGNER_ENV_FILE"
+chmod 600 "$SIGNER_ENV_FILE"
+log_info "Signer environment file created at: $SIGNER_ENV_FILE"
+
 # Create Commit-Boost configuration file
 log_info "Creating Commit-Boost configuration..."
 cat > "$CONFIG_DIR/cb-config.toml" << EOF
@@ -119,6 +135,10 @@ log_info "Creating systemd service for Commit-Boost Signer..."
 SIGNER_EXEC_START="/usr/bin/env CB_CONFIG=$CONFIG_DIR/cb-config.toml $COMMIT_BOOST_DIR/commit-boost-signer"
 
 create_systemd_service "commit-boost-signer" "Commit-Boost Signer" "$SIGNER_EXEC_START" "$(whoami)" "always" "600" "5" "300" "network-online.target" "network-online.target"
+
+# Add EnvironmentFile for CB_JWTS (module JWT authentication)
+sudo sed -i '/\[Service\]/a EnvironmentFile='"$SIGNER_ENV_FILE" /etc/systemd/system/commit-boost-signer.service
+sudo systemctl daemon-reload
 
 # Enable and start PBS service
 enable_and_start_systemd_service "commit-boost-pbs"

@@ -111,8 +111,29 @@ chmod +x "$ETHGAS_DIR/target/release/ethgas_commit"
 # CONFIGURATION
 # ============================================================================
 
-# Ensure JWT secret exists
-ensure_jwt_secret "$HOME/secrets/jwt.hex"
+# Setup ETHGas module JWT for Commit-Boost signer authentication
+CB_CONFIG_DIR="$HOME/commit-boost/config"
+SIGNER_ENV_FILE="$CB_CONFIG_DIR/signer.env"
+ETHGAS_JWT_FILE="$CB_CONFIG_DIR/ethgas_jwt.hex"
+
+if [[ ! -f "$ETHGAS_JWT_FILE" ]]; then
+    log_info "Generating ETHGas module JWT secret..."
+    openssl rand -hex 32 > "$ETHGAS_JWT_FILE"
+    chmod 600 "$ETHGAS_JWT_FILE"
+fi
+ETHGAS_JWT=$(cat "$ETHGAS_JWT_FILE")
+
+# Register ETHGas module JWT with the signer
+if [[ -f "$SIGNER_ENV_FILE" ]]; then
+    CURRENT_JWTS=$(grep '^CB_JWTS=' "$SIGNER_ENV_FILE" | sed 's/^CB_JWTS=//')
+    if ! echo "$CURRENT_JWTS" | grep -q "ethgas="; then
+        echo "CB_JWTS=${CURRENT_JWTS},ethgas=${ETHGAS_JWT}" > "$SIGNER_ENV_FILE"
+        sudo systemctl daemon-reload
+        log_info "Registered ETHGas module JWT with Commit-Boost signer"
+    fi
+else
+    log_warn "Signer env file not found at $SIGNER_ENV_FILE - ETHGas may not authenticate with signer"
+fi
 
 # Create configuration directory
 CONFIG_DIR="$ETHGAS_DIR/config"
@@ -197,6 +218,8 @@ sudo tee -a /etc/systemd/system/ethgas.service > /dev/null << EOF
 
 # ETHGas environment variables
 Environment="CB_SIGNER_URL=http://$COMMIT_BOOST_HOST:$((COMMIT_BOOST_PORT + 1))"
+Environment="CB_SIGNER_JWT=$ETHGAS_JWT"
+Environment="CB_MODULE_ID=ethgas"
 Environment="CB_CONFIG=$CONFIG_DIR/ethgas.toml"
 Environment="RUST_LOG=info"
 EOF
