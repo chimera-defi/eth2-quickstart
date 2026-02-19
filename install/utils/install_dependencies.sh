@@ -202,8 +202,8 @@ install_production_root() {
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
     install_packages "nodejs"
 
-    # Go: snap in production, apt fallback in Docker (snap doesn't work)
-    if ! is_docker && command -v snap &>/dev/null; then
+    # Go: snap in production, apt fallback in Docker/CI (snap doesn't work in containers)
+    if ! is_docker && [[ "${CI_E2E:-}" != "true" ]] && command -v snap &>/dev/null; then
         log_info "Installing Go via snap..."
         snap install --classic go
         ln -sf /snap/bin/go /usr/bin/go
@@ -224,6 +224,7 @@ install_production_root() {
         # Ensure cargo in PATH for future logins
         local bashrc="/home/$rust_user/.bashrc"
         if [[ -f "$bashrc" ]] && ! grep -qF '.cargo/bin' "$bashrc" 2>/dev/null; then
+            # shellcheck disable=SC2016
             echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "$bashrc"
         fi
     else
