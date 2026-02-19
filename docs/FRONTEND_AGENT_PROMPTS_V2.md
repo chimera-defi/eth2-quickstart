@@ -366,7 +366,7 @@ YOUR TASKS:
    - Step 1: Download and Prepare
      * Code: git clone https://github.com/chimera-defi/eth2-quickstart
      * Code: cd eth2-quickstart
-     * Code: chmod +x run_1.sh
+     * Code: chmod +x run_1.sh run_2.sh
    - Step 2: Run Server Setup (as root)
      * Code: sudo ./run_1.sh
      * Description: What the script does

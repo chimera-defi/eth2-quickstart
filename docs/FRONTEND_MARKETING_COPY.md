@@ -265,7 +265,7 @@ Before you begin, ensure you have:
 ```bash
 git clone https://github.com/chimera-defi/eth2-quickstart
 cd eth2-quickstart
-chmod +x run_1.sh
+chmod +x run_1.sh run_2.sh
 ```
 
 **Step 2: Run Server Setup (as root)**
