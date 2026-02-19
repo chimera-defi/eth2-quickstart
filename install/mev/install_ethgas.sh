@@ -31,7 +31,7 @@ if [[ ! -d "$HOME/commit-boost" ]]; then
 fi
 
 # Verify Commit-Boost services exist
-if ! systemctl list-unit-files | grep -q "commit-boost-pbs.service"; then
+if [[ ! -f "/etc/systemd/system/commit-boost-pbs.service" ]]; then
     log_error "Commit-Boost PBS service not found. Please install Commit-Boost first."
     exit 1
 fi
