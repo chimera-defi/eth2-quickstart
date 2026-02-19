@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { CodeBlock } from '@/components/ui/CodeBlock'
 import { Badge } from '@/components/ui/Badge'
@@ -73,6 +74,9 @@ export function Install() {
                   <p className="mt-1">
                     Phase one runs as root to harden the host. After reboot, phase two
                     completes client installs as the new operator.
+                  </p>
+                  <p className="mt-2 text-xs">
+                    Prefer manual? Use the pre-existing <code className="rounded bg-muted px-1 py-0.5 font-mono">run_1.sh</code> and <code className="rounded bg-muted px-1 py-0.5 font-mono">run_2.sh</code> scripts—see <Link href="/quickstart#manual" className="text-primary underline-offset-2 hover:underline">Get Started</Link>.
                   </p>
                 </div>
               </div>
