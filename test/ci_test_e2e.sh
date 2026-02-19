@@ -50,26 +50,14 @@ if [[ "$PHASE" == "2" ]]; then
     export DEBIAN_FRONTEND=noninteractive
     export DEBIAN_PRIORITY=critical
 
-    # Re-apply debconf preseed (like Phase 1) to prevent tzdata/postfix/cron hangs
-    log_header "Pre-seeding debconf (prevent tty hangs)"
-    sudo bash "$PROJECT_ROOT/install/utils/debconf_preseed.sh"
-
-    # Step 1: Install dependencies (like run_2.sh when not --skip-deps)
-    log_header "Installing dependencies"
-    if ! "$PROJECT_ROOT/install/utils/install_dependencies.sh" --production; then
-        record_test "install_dependencies" "FAIL"
-        print_test_summary
-        exit 1
-    fi
-    record_test "install_dependencies" "PASS"
-
-    # Step 2: Run run_2.sh (client selection via E2E_* env or defaults)
+    # Dependencies installed by Dockerfile (--production-root). run_2 verifies only.
+    log_header "Executing run_2.sh (verify + client install)"
     E2E_EXEC="${E2E_EXECUTION:-geth}"
     E2E_CONS="${E2E_CONSENSUS:-prysm}"
     E2E_MEV="${E2E_MEV:-mev-boost}"
     log_header "Executing run_2.sh ($E2E_EXEC + $E2E_CONS + $E2E_MEV)"
     run2_log="/tmp/run2_e2e_$$.log"
-    if ! run_script_with_log "$run2_log" "$PROJECT_ROOT/run_2.sh" --execution="$E2E_EXEC" --consensus="$E2E_CONS" --mev="$E2E_MEV" --skip-deps; then
+    if ! run_script_with_log "$run2_log" "$PROJECT_ROOT/run_2.sh" --execution="$E2E_EXEC" --consensus="$E2E_CONS" --mev="$E2E_MEV"; then
         record_test "run_2.sh execution" "FAIL"
         dump_log_tail "$run2_log" 50 "  "
         rm -f "$run2_log"

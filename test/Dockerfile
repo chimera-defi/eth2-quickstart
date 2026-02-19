@@ -1,7 +1,7 @@
 # Test Environment Dockerfile
 #
-# Uses Ubuntu 24.04 - production target. E2E runs install_dependencies --production
-# at runtime (ci_test_e2e.sh), validating PRODUCTION_PACKAGES on Ubuntu 24.
+# Uses Ubuntu 24.04 - production target. Installs --test + --production-root at build.
+# Phase 2 E2E runs run_2 (verify only, no package install).
 
 FROM ubuntu:24.04
 
@@ -43,6 +43,13 @@ RUN useradd -m -s /bin/bash testuser \
     && echo "testuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
     && echo 'Defaults env_keep += "DEBIAN_FRONTEND DEBIAN_PRIORITY TZ"' > /etc/sudoers.d/99-noninteractive \
     && chmod 440 /etc/sudoers.d/99-noninteractive
+
+# Install production dependencies (for Phase 2 E2E - run_2 verify only, no install)
+ENV LOGIN_UNAME=testuser
+ENV CI_E2E=true
+RUN apt-get update && \
+    bash /workspace/install/utils/install_dependencies.sh --production-root && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set ownership
 RUN chown -R testuser:testuser /workspace
