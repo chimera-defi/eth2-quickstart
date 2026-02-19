@@ -21,6 +21,14 @@ log_installation_start "Consolidated Security Suite"
 setup_firewall() {
     log_info "Setting up UFW firewall with comprehensive rules..."
 
+    # Ensure UFW is installed before any ufw commands (self-contained; run_1 install_dependencies
+    # also installs it, but this guarantees it for Docker/CI and any alternate call paths)
+    if ! command -v ufw &>/dev/null; then
+        log_info "Installing UFW..."
+        apt-get update -y
+        DEBIAN_FRONTEND=noninteractive apt-get install -y ufw
+    fi
+
     # Set default policies with error handling
     log_info "Setting default firewall policies..."
     if ! ufw default deny incoming; then

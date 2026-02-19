@@ -442,24 +442,38 @@ install_dependencies() {
 
 # Setup firewall rules
 # Runs in Docker E2E (--privileged) and production. No skip.
+# Caller must have UFW installed (consolidated_security installs it before calling).
 setup_firewall_rules() {
     local ports=("$@")
     log_info "Setting up firewall rules for ports: ${ports[*]}"
-    # Install UFW if not present
+    # Install UFW if not present (defensive; consolidated_security installs before first use)
     if ! command_exists ufw; then
-        sudo apt-get update
-        sudo apt-get install -y ufw
+        log_info "Installing UFW..."
+        if [[ $EUID -eq 0 ]]; then
+            apt-get update -y
+            DEBIAN_FRONTEND=noninteractive apt-get install -y ufw
+        else
+            sudo apt-get update -y
+            sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y ufw
+        fi
     fi
-    
+
     # Enable UFW if not already enabled
-    if ! sudo ufw status | grep -q "Status: active"; then
-        sudo ufw --force enable
+    if ! sudo ufw status 2>/dev/null | grep -q "Status: active"; then
+        log_info "Enabling UFW firewall..."
+        if ! sudo ufw --force enable; then
+            log_error "Failed to enable UFW. Check iptables/nftables availability (Docker needs --privileged)."
+            return 1
+        fi
     fi
-    
+
     # Add rules for each port
     for port in "${ports[@]}"; do
-        sudo ufw allow "$port"
-        log_info "Added firewall rule for port $port"
+        if sudo ufw allow "$port"; then
+            log_info "Added firewall rule for port $port"
+        else
+            log_warn "Failed to allow port $port"
+        fi
     done
 }
 
