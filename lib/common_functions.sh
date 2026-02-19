@@ -467,31 +467,47 @@ setup_firewall_rules() {
     done
 }
 
-# Run install script (used by run_2.sh flag mode)
-run_install_script() {
+# Run script with log capture. Used by run_2.sh for verify and install scripts.
+# Usage: run_script script_path display_name [args...]
+# When args include --verify, logs "Verifying..."; otherwise "Installing..."
+run_script() {
     local script="$1"
     local name="${2:-$(basename "$script" .sh)}"
+    shift 2
     local log_file exit_code
     if [[ ! -f "$script" ]]; then
         log_error "Script not found: $script"
         return 1
     fi
-    log_info "Installing $name..."
+    if [[ " $* " == *" --verify "* ]] || [[ " $* " == *" -v "* ]]; then
+        log_info "Verifying $name..."
+    else
+        log_info "Installing $name..."
+    fi
     log_file=$(mktemp)
     trap 'rm -f "$log_file"' RETURN
     set +e
-    "$script" 2>&1 | tee "$log_file"
+    "$script" "$@" 2>&1 | tee "$log_file"
     exit_code=$?
     set -e
     if [[ $exit_code -eq 0 ]]; then
-        log_info "✓ $name installed"
+        if [[ " $* " == *" --verify "* ]] || [[ " $* " == *" -v "* ]]; then
+            log_info "✓ $name verified"
+        else
+            log_info "✓ $name installed"
+        fi
         return 0
     else
-        log_error "Failed to install $name (exit=$exit_code)"
+        log_error "Failed: $name (exit=$exit_code)"
         log_error "Last 15 lines of output:"
         tail -15 "$log_file" | while IFS= read -r line; do log_error "  $line"; done
         return 1
     fi
+}
+
+# Run install script (used by run_2.sh flag mode). Wraps run_script.
+run_install_script() {
+    run_script "$@"
 }
 
 # Ensure JWT secret exists

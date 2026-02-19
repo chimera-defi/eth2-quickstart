@@ -191,48 +191,67 @@ install_production_root() {
     install_base
     install_packages "${PRODUCTION_PACKAGES[@]}"
 
-    # Add Ethereum PPA and install ethereum package (geth)
-    if command -v add_ppa_repository &>/dev/null; then
-        add_ppa_repository "ppa:ethereum/ethereum"
-        install_packages "ethereum"
-    fi
-
-    # Node.js LTS (for Lodestar). Always install in root mode.
-    log_info "Installing Node.js LTS..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-    install_packages "nodejs"
-
-    # Go: snap in production, apt fallback in Docker/CI (snap doesn't work in containers)
-    if ! is_docker && [[ "${CI_E2E:-}" != "true" ]] && command -v snap &>/dev/null; then
-        log_info "Installing Go via snap..."
-        snap install --classic go
-        ln -sf /snap/bin/go /usr/bin/go
-        log_info "Installing certbot via snap..."
-        snap install core
-        snap install --classic certbot
-        ln -sf /snap/bin/certbot /usr/bin/certbot
+    # Add Ethereum PPA and install ethereum package (geth). Skip if geth already present.
+    if ! command -v geth &>/dev/null; then
+        if command -v add_ppa_repository &>/dev/null; then
+            add_ppa_repository "ppa:ethereum/ethereum"
+            install_packages "ethereum"
+        fi
     else
-        log_warn "Skipping snap (Docker or unavailable). Installing Go from apt..."
-        install_packages "golang-go"
+        log_info "geth already installed, skipping"
     fi
 
-    # Rust for LOGIN_UNAME (ethrex, ethgas). Installs to ~/.cargo.
+    # Node.js LTS (for Lodestar). Skip if already installed.
+    if ! command -v node &>/dev/null; then
+        log_info "Installing Node.js LTS..."
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+        install_packages "nodejs"
+    else
+        log_info "Node.js already installed ($(node --version 2>/dev/null || echo 'unknown')), skipping"
+    fi
+
+    # Go: snap in production, apt fallback in Docker/CI (snap doesn't work in containers). Skip if present.
+    if ! command -v go &>/dev/null; then
+        if ! is_docker && [[ "${CI_E2E:-}" != "true" ]] && command -v snap &>/dev/null; then
+            log_info "Installing Go via snap..."
+            snap install --classic go
+            ln -sf /snap/bin/go /usr/bin/go
+            log_info "Installing certbot via snap..."
+            snap install core
+            snap install --classic certbot
+            ln -sf /snap/bin/certbot /usr/bin/certbot
+        else
+            log_warn "Skipping snap (Docker or unavailable). Installing Go from apt..."
+            install_packages "golang-go"
+        fi
+    else
+        log_info "Go already installed ($(go version 2>/dev/null | grep -oE 'go[0-9.]+' || echo 'unknown')), skipping"
+    fi
+
+    # Rust for LOGIN_UNAME (ethrex, ethgas). Installs to ~/.cargo. Skip if cargo present.
     local rust_user="${LOGIN_UNAME:-eth}"
+    local rust_cargo="/home/$rust_user/.cargo/bin/cargo"
     if id -u "$rust_user" &>/dev/null; then
-        log_info "Installing Rust for user $rust_user..."
-        sudo -u "$rust_user" bash -c 'curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y'
-        # Ensure cargo in PATH for future logins
-        local bashrc="/home/$rust_user/.bashrc"
-        if [[ -f "$bashrc" ]] && ! grep -qF '.cargo/bin' "$bashrc" 2>/dev/null; then
-            # shellcheck disable=SC2016
-            echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "$bashrc"
+        if [[ -x "${rust_cargo}" ]]; then
+            log_info "Rust already installed for $rust_user, skipping"
+        else
+            log_info "Installing Rust for user $rust_user..."
+            sudo -u "$rust_user" bash -c 'curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y'
+            # Ensure cargo in PATH for future logins
+            local bashrc="/home/$rust_user/.bashrc"
+            if [[ -f "$bashrc" ]] && ! grep -qF '.cargo/bin' "$bashrc" 2>/dev/null; then
+                # shellcheck disable=SC2016
+                echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "$bashrc"
+            fi
         fi
     else
         log_warn "User $rust_user not found, skipping Rust install (needed for ethrex/ethgas)"
     fi
 
-    # Bazel (optional, for fb_mev_prysm)
-    if apt-cache show bazel &>/dev/null; then
+    # Bazel (optional, for fb_mev_prysm). Skip if already installed.
+    if command -v bazel &>/dev/null; then
+        log_info "Bazel already installed, skipping"
+    elif apt-cache show bazel &>/dev/null; then
         log_info "Installing Bazel..."
         install_packages "bazel"
     fi

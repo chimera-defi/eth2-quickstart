@@ -100,8 +100,7 @@ log_info "This script will install Ethereum clients and services"
 #  ./prysm.sh beacon-chain --checkpoint-block=$PWD/block_mainnet_altair_4620512-0xef9957e6a709223202ab00f4ee2435e1d42042ad35e160563015340df677feb0.ssz --checkpoint-state=$PWD/state_mainnet_altair_4620512-0xc1397f57149c99b3a2166d422a2ee50602e2a2c7da2e31d7ea740216b8fd99ab.ssz --genesis-state=$PWD/genesis.ssz --config-file=$PWD/prysm_beacon_conf.yaml --p2p-host-ip=88.99.65.230
 # Verify dependencies (installed by run_1). No package install, no sudo for apt.
 if [[ "$SKIP_DEPS" != "true" ]]; then
-    log_info "Verifying dependencies..."
-    if ! "$SCRIPT_DIR/install/utils/install_dependencies.sh" --verify; then
+    if ! run_script "$SCRIPT_DIR/install/utils/install_dependencies.sh" "Dependencies" --verify; then
         log_error "Dependency verification failed. Run Phase 1 (run_1.sh) first."
         exit 1
     fi
