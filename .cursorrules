@@ -447,6 +447,7 @@ When implementing new MEV solutions:
 17. **Systemd Environment= placement**: `create_systemd_service()` doesn't support `Environment=` directives. Use `sudo sed -i '/^\[Service\]/a Environment="KEY=value"'` to insert into the correct section. Do NOT use `sudo tee -a` which appends after `[Install]` (wrong section)
 18. **Drop-in replacement pattern**: When two solutions are mutually exclusive and speak the same protocol (e.g. MEV-Boost vs Commit-Boost), use the same port/host so existing client configs work unchanged. Stop the old service automatically
 19. **Auto-detect installed clients**: The `cl.service` ExecStart line reveals which consensus client is installed. Use this to auto-configure dependent components (e.g. Commit-Boost signer key paths). Map client → keystore format: prysm→prysm, lighthouse→lighthouse, teku→teku, nimbus→nimbus, lodestar→lodestar. Key paths follow each client's install script conventions
+20. **`$SCRIPT_DIR` vs `$PROJECT_ROOT` in `install/**` scripts**: After `get_script_directories()`, `$SCRIPT_DIR` is the calling script's directory (e.g. `install/mev/`), NOT the project root. Use `$PROJECT_ROOT` when referencing `exports.sh`, `lib/common_functions.sh`, or `configs/`. Only scripts at the repo root (`run_1.sh`, `run_2.sh`) can use `$SCRIPT_DIR/exports.sh`
 
 ## Testing Framework Guidelines
 
