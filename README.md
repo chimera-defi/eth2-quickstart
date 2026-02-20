@@ -138,7 +138,7 @@ sudo systemctl start ethgas  # If installed
 | Service | Port |
 |---------|------|
 | MEV-Boost | 18550 |
-| Commit-Boost PBS | 18551 |
+| Commit-Boost PBS | 18550 (drop-in) |
 | Commit-Boost Signer | 20000 |
 | ETHGas | 18552 |
 

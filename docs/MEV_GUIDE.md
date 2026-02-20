@@ -113,17 +113,19 @@ cd install/mev
 **Installation Script**: `install/mev/install_commit_boost.sh`  
 **Services**: `commit-boost-pbs.service`, `commit-boost-signer.service`  
 **Ports**: 
-- PBS: `18551` (configurable via `COMMIT_BOOST_PORT`)
+- PBS: `18550` (same as MEV-Boost — drop-in replacement via `$MEV_PORT`)
 - Signer: `20000` (configurable via `COMMIT_BOOST_SIGNER_PORT`)
 - Metrics: `10000+` (configurable via `COMMIT_BOOST_METRICS_PORT`)
 
 **Configuration** (`exports.sh`):
 ```bash
-COMMIT_BOOST_HOST='127.0.0.1'
-COMMIT_BOOST_PORT=18551
+COMMIT_BOOST_PORT=$MEV_PORT    # Same port as MEV-Boost (drop-in)
+COMMIT_BOOST_HOST=$MEV_HOST    # Same host
 COMMIT_BOOST_SIGNER_PORT=20000
 COMMIT_BOOST_METRICS_PORT=10000
 ```
+
+Consensus client configs already point to `$MEV_HOST:$MEV_PORT` — no changes needed when switching.
 
 **Service Management**:
 ```bash
@@ -342,7 +344,7 @@ The test suite checks:
 | Service | Port | Description |
 |---------|------|-------------|
 | MEV-Boost | 18550 | Builder API endpoint |
-| Commit-Boost PBS | 18551 | Builder API endpoint |
+| Commit-Boost PBS | 18550 | Same port (drop-in replacement) |
 | Commit-Boost Signer | 20000 | Signing service |
 | Commit-Boost Metrics | 10000+ | Prometheus metrics |
 | ETHGas | 18552 | Preconfirmation service |

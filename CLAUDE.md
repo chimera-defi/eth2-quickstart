@@ -270,7 +270,7 @@ log_installation_complete "ComponentName" "service_name"
 | Solution | Scripts | Port | Notes |
 |----------|---------|------|-------|
 | MEV-Boost | `install_mev_boost.sh` | 18550 | Recommended, stable |
-| Commit-Boost | `install_commit_boost.sh` | 18551 (PBS), 20000 (Signer) | Advanced/experimental |
+| Commit-Boost | `install_commit_boost.sh` | 18550 (PBS, same port), 20000 (Signer) | Drop-in MEV-Boost replacement |
 | ETHGas | `install_ethgas.sh` | 18552 | Add-on, requires Commit-Boost |
 
 **Never install both MEV-Boost and Commit-Boost.** All MEV solutions install as native binaries — no Docker.
@@ -453,7 +453,7 @@ This project handles **real ETH validator funds**. Never weaken the security mod
 
 - All MEV solutions install as **native binaries** (git clone → build, or download → extract)
 - **No Docker** for MEV solutions — the project doesn't use Docker for clients
-- Port allocation: MEV-Boost=18550, Commit-Boost PBS=18551, Signer=20000, Metrics=10000+
+- Port allocation: MEV-Boost=18550, Commit-Boost PBS=18550 (same, drop-in), Signer=20000, Metrics=10000+
 - All MEV variables centralized in `exports.sh`
 - Builder endpoints in consensus client configs default to **disabled** (`enable-builder: false`)
 - Use `setup_firewall_rules()` for all MEV port rules
