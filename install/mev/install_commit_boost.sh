@@ -87,47 +87,55 @@ cat > "$CONFIG_DIR/cb-config.toml" << EOF
 # Commit-Boost Configuration File
 # Generated on $(date)
 
-[chain]
-chain = "mainnet"
-beacon_node_url = "http://$CONSENSUS_HOST:5051"
+chain = "Mainnet"
 
 [pbs]
 port = $COMMIT_BOOST_PORT
-relays = [
-$(echo "$MEV_RELAYS" | tr ',' '\n' | sed 's/^/    "/' | sed 's/$/",/' | sed '$ s/,$//')
-]
-
-[pbs.config]
 timeout_get_header_ms = $MEVGETHEADERT
 timeout_get_payload_ms = $MEVGETPAYLOADT
 timeout_register_validator_ms = $MEVREGVALT
 
-[signer]
-port = $((COMMIT_BOOST_PORT + 1))
-
 [metrics]
-prometheus_port = $((COMMIT_BOOST_PORT + 2))
+start_port = $((COMMIT_BOOST_PORT + 2))
 EOF
+
+# Append relay entries in [[relays]] block format (required by v0.9.x)
+IFS=',' read -ra RELAY_LIST <<< "$MEV_RELAYS"
+for relay_url in "${RELAY_LIST[@]}"; do
+    relay_url="${relay_url// /}"  # trim any whitespace
+    cat >> "$CONFIG_DIR/cb-config.toml" << EOF
+
+[[relays]]
+url = "$relay_url"
+EOF
+done
 
 log_info "Configuration file created at: $CONFIG_DIR/cb-config.toml"
 
 # Create systemd service for Commit-Boost PBS
+# Note: binary reads config from CB_CONFIG env var, not --config CLI flag
 log_info "Creating systemd service for Commit-Boost PBS..."
-PBS_EXEC_START="$COMMIT_BOOST_DIR/commit-boost-pbs --config $CONFIG_DIR/cb-config.toml"
-
-create_systemd_service "commit-boost-pbs" "Commit-Boost PBS (MEV Sidecar)" "$PBS_EXEC_START" "$(whoami)" "always" "600" "5" "300"
+create_systemd_service "commit-boost-pbs" "Commit-Boost PBS (MEV Sidecar)" "$COMMIT_BOOST_DIR/commit-boost-pbs" "$(whoami)" "always" "600" "5" "300"
+sudo sed -i "/^\[Service\]/a Environment=CB_CONFIG=$CONFIG_DIR/cb-config.toml" "/etc/systemd/system/commit-boost-pbs.service"
 
 # Create systemd service for Commit-Boost Signer
+# Note: binary reads config from CB_CONFIG env var, not --config CLI flag
 log_info "Creating systemd service for Commit-Boost Signer..."
-SIGNER_EXEC_START="$COMMIT_BOOST_DIR/commit-boost-signer --config $CONFIG_DIR/cb-config.toml --jwt-secret $HOME/secrets/jwt.hex"
-
-create_systemd_service "commit-boost-signer" "Commit-Boost Signer" "$SIGNER_EXEC_START" "$(whoami)" "always" "600" "5" "300" "network-online.target" "network-online.target"
+create_systemd_service "commit-boost-signer" "Commit-Boost Signer" "$COMMIT_BOOST_DIR/commit-boost-signer" "$(whoami)" "always" "600" "5" "300" "network-online.target" "network-online.target"
+sudo sed -i "/^\[Service\]/a Environment=CB_CONFIG=$CONFIG_DIR/cb-config.toml" "/etc/systemd/system/commit-boost-signer.service"
 
 # Enable and start PBS service
 enable_and_start_systemd_service "commit-boost-pbs"
 
 # Enable and start Signer service
-enable_and_start_systemd_service "commit-boost-signer"
+# Note: requires CB_JWTS (module JWTs, generated at ETHGas/module install time) and
+# a [signer] key loader section in cb-config.toml. Neither exists until a module is
+# configured. The service is enabled now; Restart=always means it will come up
+# automatically once that configuration is in place.
+if ! enable_and_start_systemd_service "commit-boost-signer"; then
+    log_warn "Signer service needs module configuration before it can start (CB_JWTS not set)."
+    log_warn "It will start automatically once a module (e.g. ETHGas) is installed."
+fi
 
 # Show completion information
 log_installation_complete "Commit-Boost" "commit-boost-pbs" "$CONFIG_DIR/cb-config.toml" "$COMMIT_BOOST_DIR"
