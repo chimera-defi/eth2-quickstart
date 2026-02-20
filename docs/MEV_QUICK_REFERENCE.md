@@ -30,9 +30,13 @@ cd install/mev
 
 ### Option B: Commit-Boost + ETHGas
 ```bash
+# Manual installation
 cd install/mev
 ./install_commit_boost.sh
 ./install_ethgas.sh  # Optional: requires Commit-Boost
+
+# Or via run_2.sh flags
+./run_2.sh --execution=geth --consensus=prysm --mev=commit-boost --ethgas
 ```
 
 ---
@@ -43,8 +47,8 @@ cd install/mev
 |---------|------|--------|
 | MEV-Boost | 18550 | ✅ Active |
 | Commit-Boost PBS | 18551 | ✅ Active |
-| Commit-Boost Signer | 18552 | ✅ Active |
-| Commit-Boost Metrics | 18553 | ✅ Active |
+| Commit-Boost Signer | 20000 | ✅ Active |
+| Commit-Boost Metrics | 10000+ | ✅ Active |
 | ETHGas | 18552 | ✅ Active |
 | ETHGas Metrics | 18553 | ✅ Active |
 
@@ -85,7 +89,7 @@ curl http://127.0.0.1:18550/eth/v1/builder/status
 ### Commit-Boost
 ```bash
 curl http://127.0.0.1:18551/eth/v1/builder/status
-curl http://127.0.0.1:18553/metrics
+curl http://127.0.0.1:10000/metrics
 ```
 
 ### ETHGas
@@ -132,6 +136,8 @@ MEVREGVALT=6000
 ```bash
 COMMIT_BOOST_HOST='127.0.0.1'
 COMMIT_BOOST_PORT=18551
+COMMIT_BOOST_SIGNER_PORT=20000
+COMMIT_BOOST_METRICS_PORT=10000
 ```
 
 ### ETHGas
@@ -163,7 +169,7 @@ journalctl -u <service_name> -n 100
 
 ### Check Ports
 ```bash
-ss -tuln | grep -E "18550|18551|18552|18553"
+ss -tuln | grep -E "18550|18551|18552|18553|20000|10000"
 ```
 
 ### Both Running (Should Not Happen)
@@ -207,5 +213,5 @@ sudo systemctl stop commit-boost-pbs commit-boost-signer
 
 ---
 
-*Last Updated: November 2025*  
-*Version: 3.0*
+*Last Updated: February 2026*  
+*Version: 3.1*
