@@ -30,10 +30,7 @@ COMMIT_BOOST_DIR="$HOME/commit-boost"
 ensure_directory "$COMMIT_BOOST_DIR"
 cd "$COMMIT_BOOST_DIR" || exit
 
-# =============================================================================
-# DOWNLOAD
-# =============================================================================
-
+# Get latest release
 log_info "Fetching latest Commit-Boost release..."
 LATEST_VERSION=$(get_latest_release "Commit-Boost/commit-boost-client")
 if [[ -z "$LATEST_VERSION" ]]; then
@@ -42,8 +39,7 @@ if [[ -z "$LATEST_VERSION" ]]; then
 fi
 log_info "Latest version: $LATEST_VERSION"
 
-# Asset pattern: commit-boost-{component}-{version}-linux_x86-64.tar.gz
-# Each tarball contains a single binary named commit-boost-{component}
+# Download binaries — asset pattern: commit-boost-{component}-{version}-linux_x86-64.tar.gz
 for component in pbs signer cli; do
     url="https://github.com/Commit-Boost/commit-boost-client/releases/download/${LATEST_VERSION}/commit-boost-${component}-${LATEST_VERSION}-linux_x86-64.tar.gz"
     archive="commit-boost-${component}.tar.gz"
@@ -60,6 +56,7 @@ for component in pbs signer cli; do
     rm -f "$archive"
 done
 
+# Verify required binaries
 for bin in commit-boost-pbs commit-boost-signer; do
     if [[ ! -f "$COMMIT_BOOST_DIR/$bin" ]]; then
         log_error "$bin binary not found after extraction"
@@ -69,17 +66,14 @@ for bin in commit-boost-pbs commit-boost-signer; do
 done
 [[ -f "commit-boost-cli" ]] && chmod +x commit-boost-cli
 
+# Ensure JWT secret exists
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
-# =============================================================================
-# CONFIGURATION
-# =============================================================================
-
+# Generate configuration
 CONFIG_DIR="$COMMIT_BOOST_DIR/config"
 ensure_directory "$CONFIG_DIR"
 ensure_directory "$COMMIT_BOOST_DIR/logs"
 
-# Build [[relays]] TOML from MEV_RELAYS (same relays used by MEV-Boost)
 RELAY_TOML=""
 IFS=',' read -ra RELAY_ARRAY <<< "$MEV_RELAYS"
 for relay in "${RELAY_ARRAY[@]}"; do
@@ -137,52 +131,27 @@ EOF
 
 log_info "Configuration: $CONFIG_DIR/cb-config.toml"
 
-# =============================================================================
-# SYSTEMD SERVICES
-# =============================================================================
-# CB_CONFIG env var is required for binary mode (not --config flag)
+# Create systemd services (CB_CONFIG env var required for binary mode)
+PBS_EXEC_START="$COMMIT_BOOST_DIR/commit-boost-pbs"
+create_systemd_service "commit-boost-pbs" "Commit-Boost PBS (MEV Sidecar)" "$PBS_EXEC_START" "$(whoami)" "always" "600" "5" "300"
+sudo sed -i '/^\[Service\]/a Environment="CB_CONFIG='"$CONFIG_DIR"'/cb-config.toml"' /etc/systemd/system/commit-boost-pbs.service
 
-for svc in commit-boost-pbs commit-boost-signer; do
-    desc="Commit-Boost PBS (MEV Sidecar)"
-    [[ "$svc" == "commit-boost-signer" ]] && desc="Commit-Boost Signer"
+SIGNER_EXEC_START="$COMMIT_BOOST_DIR/commit-boost-signer"
+create_systemd_service "commit-boost-signer" "Commit-Boost Signer" "$SIGNER_EXEC_START" "$(whoami)" "always" "600" "5" "300"
+sudo sed -i '/^\[Service\]/a Environment="CB_CONFIG='"$CONFIG_DIR"'/cb-config.toml"' /etc/systemd/system/commit-boost-signer.service
 
-    tmpfile="$HOME/${svc}.service"
-    cat > "$tmpfile" << EOF
-[Unit]
-Description=$desc
-Wants=network-online.target
-After=network-online.target
-
-[Service]
-User=$(whoami)
-Environment="CB_CONFIG=$CONFIG_DIR/cb-config.toml"
-ExecStart=$COMMIT_BOOST_DIR/$svc
-Restart=always
-TimeoutStopSec=600
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-    sudo mv "$tmpfile" "/etc/systemd/system/${svc}.service"
-    sudo chmod 644 "/etc/systemd/system/${svc}.service"
-done
-
-# PBS: start immediately — drop-in replacement for MEV-Boost
+# PBS: start immediately (drop-in replacement for MEV-Boost)
 enable_and_start_systemd_service "commit-boost-pbs"
 
-# Signer: install only — needs validator key config first
+# Signer: service file only — needs validator key config in cb-config.toml first
 sudo systemctl daemon-reload 2>/dev/null || true
 
-# =============================================================================
-# COMPLETION
-# =============================================================================
-
+# Show completion information
 log_installation_complete "Commit-Boost" "commit-boost-pbs" "$CONFIG_DIR/cb-config.toml" "$COMMIT_BOOST_DIR"
 
 echo ""
 log_info "Commit-Boost ${LATEST_VERSION} is running on $COMMIT_BOOST_HOST:$COMMIT_BOOST_PORT"
-log_info "Your consensus client already points to this port via \$MEV_HOST:\$MEV_PORT — no config changes needed."
+log_info "Your consensus client already points here via \$MEV_HOST:\$MEV_PORT — no config changes needed."
 echo ""
 log_warn "Signer is installed but NOT started (needs validator keys)."
 log_warn "To enable: edit $CONFIG_DIR/cb-config.toml, uncomment [signer], then:"
