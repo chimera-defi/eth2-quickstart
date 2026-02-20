@@ -139,7 +139,7 @@ sudo systemctl start ethgas  # If installed
 |---------|------|
 | MEV-Boost | 18550 |
 | Commit-Boost PBS | 18551 |
-| Commit-Boost Signer | 18552 |
+| Commit-Boost Signer | 20000 |
 | ETHGas | 18552 |
 
 For detailed MEV setup, see [docs/MEV_GUIDE.md](docs/MEV_GUIDE.md).

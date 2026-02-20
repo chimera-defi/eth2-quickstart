@@ -440,6 +440,10 @@ When implementing new MEV solutions:
 10. **Simplicity**: Remove experimental/niche features that break project consistency
 11. **Configuration Clarity**: Use TOML for Rust, YAML for Java, maintain variable substitution
 12. **Backward Compatibility**: Ensure new MEV options don't break existing MEV-Boost setups
+13. **Read upstream docs before implementation**: Verify actual binary invocation method (CLI flags vs env vars), config schema, and default ports by reading the official docs -- don't guess
+14. **Verify release asset URLs from GitHub API**: Asset naming varies per project (version prefix, platform suffix). Always check the actual `/releases/latest` API response before hardcoding download URL patterns
+15. **Don't start services that need configuration**: If a component (like Commit-Boost signer) requires user-specific config (validator keys), install the binary and create the service file, but don't enable/start it. Document what the user needs to configure first
+16. **Commit-Boost specifics**: Binary mode requires `CB_CONFIG` env var (not `--config` flag); signer default port is 20000; metrics start_port is 10000; `[[relays]]` are top-level TOML array-of-tables, not arrays inside `[pbs]`
 
 ## Testing Framework Guidelines
 
