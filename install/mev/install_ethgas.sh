@@ -134,7 +134,7 @@ beacon_node_url = "http://$COMMIT_BOOST_HOST:$COMMIT_BOOST_PORT"
 [signer]
 # Signer configuration
 # ETHGas uses Commit-Boost's signer module
-signer_url = "http://$COMMIT_BOOST_HOST:$((COMMIT_BOOST_PORT + 1))"
+signer_url = "http://$COMMIT_BOOST_HOST:$COMMIT_BOOST_SIGNER_PORT"
 jwt_secret = "$HOME/secrets/jwt.hex"
 
 [ethgas]
@@ -196,7 +196,7 @@ create_systemd_service "ethgas" "ETHGas Preconfirmation Protocol" "$ETHGAS_EXEC_
 sudo tee -a /etc/systemd/system/ethgas.service > /dev/null << EOF
 
 # ETHGas environment variables
-Environment="CB_SIGNER_URL=http://$COMMIT_BOOST_HOST:$((COMMIT_BOOST_PORT + 1))"
+Environment="CB_SIGNER_URL=http://$COMMIT_BOOST_HOST:$COMMIT_BOOST_SIGNER_PORT"
 Environment="CB_CONFIG=$CONFIG_DIR/ethgas.toml"
 Environment="RUST_LOG=info"
 EOF

@@ -102,6 +102,7 @@ else
     [[ -n "${E2E_EXECUTION:-}" ]] && DOCKER_E2E+=(-e "E2E_EXECUTION=$E2E_EXECUTION")
     [[ -n "${E2E_CONSENSUS:-}" ]] && DOCKER_E2E+=(-e "E2E_CONSENSUS=$E2E_CONSENSUS")
     [[ -n "${E2E_MEV:-}" ]] && DOCKER_E2E+=(-e "E2E_MEV=$E2E_MEV")
+    [[ -n "${E2E_ETHGAS:-}" ]] && DOCKER_E2E+=(-e "E2E_ETHGAS=$E2E_ETHGAS")
     [[ -n "${GITHUB_TOKEN:-}" ]] && DOCKER_E2E+=(-e "GITHUB_TOKEN=$GITHUB_TOKEN")
     [[ -n "${CI:-}" ]] && DOCKER_E2E+=(-e "CI=$CI")
     [[ -n "${GITHUB_ACTIONS:-}" ]] && DOCKER_E2E+=(-e "GITHUB_ACTIONS=$GITHUB_ACTIONS")

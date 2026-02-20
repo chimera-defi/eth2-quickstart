@@ -382,8 +382,8 @@ check_port_in_use() {
 
 check_port_in_use "$MEV_PORT" "MEV-Boost"
 check_port_in_use "$COMMIT_BOOST_PORT" "Commit-Boost PBS"
-check_port_in_use "$((COMMIT_BOOST_PORT + 1))" "Commit-Boost Signer"
-check_port_in_use "$((COMMIT_BOOST_PORT + 2))" "Commit-Boost Metrics"
+check_port_in_use "$COMMIT_BOOST_SIGNER_PORT" "Commit-Boost Signer"
+check_port_in_use "$COMMIT_BOOST_METRICS_PORT" "Commit-Boost Metrics"
 check_port_in_use "$ETHGAS_PORT" "ETHGas"
 check_port_in_use "$ETHGAS_METRICS_PORT" "ETHGas Metrics"
 

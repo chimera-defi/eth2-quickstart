@@ -77,9 +77,17 @@ if [[ "$PHASE" == "2" ]]; then
     E2E_EXEC="${E2E_EXECUTION:-geth}"
     E2E_CONS="${E2E_CONSENSUS:-prysm}"
     E2E_MEV="${E2E_MEV:-mev-boost}"
-    log_header "Executing run_2.sh ($E2E_EXEC + $E2E_CONS + $E2E_MEV)"
+    E2E_ETHGAS_FLAG="${E2E_ETHGAS:-false}"
+
+    # Build run_2.sh command with optional flags
+    RUN2_CMD=("$PROJECT_ROOT/run_2.sh" --execution="$E2E_EXEC" --consensus="$E2E_CONS" --mev="$E2E_MEV" --skip-deps)
+    [[ "$E2E_ETHGAS_FLAG" == "true" ]] && RUN2_CMD+=(--ethgas)
+
+    ETHGAS_LABEL=""
+    [[ "$E2E_ETHGAS_FLAG" == "true" ]] && ETHGAS_LABEL=" + ethgas"
+    log_header "Executing run_2.sh ($E2E_EXEC + $E2E_CONS + $E2E_MEV${ETHGAS_LABEL})"
     run2_log="/tmp/run2_e2e_$$.log"
-    if ! run_script_with_log "$run2_log" "$PROJECT_ROOT/run_2.sh" --execution="$E2E_EXEC" --consensus="$E2E_CONS" --mev="$E2E_MEV" --skip-deps; then
+    if ! run_script_with_log "$run2_log" "${RUN2_CMD[@]}"; then
         record_test "run_2.sh execution" "FAIL"
         dump_log_tail "$run2_log" 50 "  "
         rm -f "$run2_log"
@@ -118,9 +126,23 @@ if [[ "$PHASE" == "2" ]]; then
     if [[ "$E2E_MEV" != "none" ]]; then
         case "$E2E_MEV" in
             mev-boost) verify_installed "MEV-Boost" test -f "$HOME/mev-boost/mev-boost" ;;
-            commit-boost) verify_installed "Commit-Boost" test -f "$HOME/commit-boost/commit-boost-pbs" ;;
+            commit-boost)
+                verify_installed "Commit-Boost PBS" test -f "$HOME/commit-boost/commit-boost-pbs"
+                verify_installed "Commit-Boost Signer" test -f "$HOME/commit-boost/commit-boost-signer"
+                verify_installed "Commit-Boost config" test -f "$HOME/commit-boost/config/cb-config.toml"
+                verify_installed "Commit-Boost PBS service" bash -c 'systemctl list-unit-files 2>/dev/null | grep -q "commit-boost-pbs.service"'
+                ;;
             *) verify_installed "MEV" test -f "$HOME/mev-boost/mev-boost" ;;
         esac
+    fi
+
+    # Verify ETHGas (if enabled)
+    if [[ "$E2E_ETHGAS_FLAG" == "true" ]]; then
+        verify_installed "ETHGas binary" test -f "$HOME/ethgas/target/release/ethgas_commit"
+        verify_installed "ETHGas config" test -f "$HOME/ethgas/config/ethgas.toml"
+        verify_installed "ETHGas service" bash -c 'systemctl list-unit-files 2>/dev/null | grep -q "ethgas.service"'
+        verify_installed "Commit-Boost PBS (ETHGas dep)" test -f "$HOME/commit-boost/commit-boost-pbs"
+        verify_installed "Rust/Cargo (ETHGas build)" bash -c 'command -v cargo &>/dev/null'
     fi
 
     verify_installed "JWT secret" test -f "$HOME/secrets/jwt.hex"
