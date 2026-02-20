@@ -123,8 +123,11 @@ export MEVREGVALT=6000              # Timeout for registerValidator (millisecond
 # Commit-Boost is a modular sidecar that replaces MEV-Boost
 # It supports MEV-Boost relays PLUS additional protocols (preconfirmations, inclusion lists)
 # Choose ONE: Either MEV-Boost OR Commit-Boost, not both
-export COMMIT_BOOST_PORT=18551
+# Docs: https://commit-boost.github.io/commit-boost-client/
+export COMMIT_BOOST_PORT=18551               # PBS module port (beacon node connects here)
 export COMMIT_BOOST_HOST='127.0.0.1'
+export COMMIT_BOOST_SIGNER_PORT=20000        # Signer module port (default per upstream docs)
+export COMMIT_BOOST_METRICS_PORT=10000       # Metrics start port (services use start_port, +1, +2, ...)
 
 # ----------------------------------------------------------------------------
 # ETHGas Configuration (Requires Commit-Boost)
