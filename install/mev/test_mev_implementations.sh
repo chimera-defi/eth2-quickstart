@@ -317,25 +317,25 @@ echo -e "${BLUE}=== Configuration Tests ===${NC}"
 echo ""
 
 # Test 18: Check exports.sh configuration
-if [[ -f "$SCRIPT_DIR/exports.sh" ]]; then
+if [[ -f "$PROJECT_ROOT/exports.sh" ]]; then
     record_test "Config: exports.sh Exists" "PASS" "Configuration file exists"
     
     # Check MEV-Boost variables
-    if grep -q "MEV_PORT" "$SCRIPT_DIR/exports.sh"; then
+    if grep -q "MEV_PORT" "$PROJECT_ROOT/exports.sh"; then
         record_test "Config: MEV-Boost Variables" "PASS" "MEV-Boost variables configured"
     else
         record_test "Config: MEV-Boost Variables" "FAIL" "MEV-Boost variables missing"
     fi
     
     # Check Commit-Boost variables
-    if grep -q "COMMIT_BOOST_PORT" "$SCRIPT_DIR/exports.sh"; then
+    if grep -q "COMMIT_BOOST_PORT" "$PROJECT_ROOT/exports.sh"; then
         record_test "Config: Commit-Boost Variables" "PASS" "Commit-Boost variables configured"
     else
         record_test "Config: Commit-Boost Variables" "FAIL" "Commit-Boost variables missing"
     fi
     
     # Check ETHGas variables
-    if grep -q "ETHGAS_PORT" "$SCRIPT_DIR/exports.sh"; then
+    if grep -q "ETHGAS_PORT" "$PROJECT_ROOT/exports.sh"; then
         record_test "Config: ETHGas Variables" "PASS" "ETHGas variables configured"
     else
         record_test "Config: ETHGas Variables" "FAIL" "ETHGas variables missing"
