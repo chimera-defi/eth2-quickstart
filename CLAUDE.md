@@ -458,6 +458,10 @@ This project handles **real ETH validator funds**. Never weaken the security mod
 - Builder endpoints in consensus client configs default to **disabled** (`enable-builder: false`)
 - Use `setup_firewall_rules()` for all MEV port rules
 - Use `ensure_jwt_secret()` to verify JWT secrets exist before starting services
+- **Commit-Boost binary mode**: requires `CB_CONFIG` env var in systemd service (not `--config` CLI flag)
+- **Commit-Boost signer**: needs `[signer.local.loader]` config with validator keys before starting — install binary but don't start service by default
+- **Commit-Boost TOML**: `[[relays]]` are top-level array-of-tables, `chain = "Mainnet"` at top level (not inside `[chain]` section)
+- Always verify actual release asset URLs from GitHub API before hardcoding download patterns
 
 ---
 

@@ -134,6 +134,22 @@ min_bid_eth = $MIN_BID
 late_in_slot_time_ms = 2000
 skip_sigverify = false
 ${RELAY_TOML}
+# Signer module: only needed for commitment protocols (preconfirmations, etc.)
+# Uncomment and configure when you want to enable the signer with your validator keys.
+# See: https://commit-boost.github.io/commit-boost-client/get_started/configuration/#signer-module
+# [signer]
+# port = $COMMIT_BOOST_SIGNER_PORT
+# host = "$COMMIT_BOOST_HOST"
+#
+# For local keys (example for Lighthouse keystore format):
+# [signer.local.loader]
+# format = "lighthouse"
+# keys_path = "/path/to/validator/keys"
+# secrets_path = "/path/to/validator/secrets"
+#
+# [signer.local.store]
+# proxy_dir = "$COMMIT_BOOST_DIR/proxies"
+
 [metrics]
 enabled = true
 host = "$COMMIT_BOOST_HOST"
@@ -217,9 +233,15 @@ sudo mv "$SIGNER_SERVICE_FILE" /etc/systemd/system/commit-boost-signer.service
 sudo chmod 644 /etc/systemd/system/commit-boost-signer.service
 log_info "Created systemd service: commit-boost-signer.service"
 
-# Enable and start services
+# Enable and start PBS (the MEV relay proxy - works immediately)
 enable_and_start_systemd_service "commit-boost-pbs"
-enable_and_start_systemd_service "commit-boost-signer"
+
+# Signer service is installed but NOT started by default.
+# It requires validator key configuration in cb-config.toml first.
+# Enable it after configuring [signer] section:
+#   sudo systemctl enable --now commit-boost-signer
+sudo systemctl daemon-reload 2>/dev/null || true
+log_info "Signer service installed (disabled - configure validator keys in cb-config.toml first)"
 
 # =============================================================================
 # COMPLETION
@@ -231,9 +253,10 @@ cat << EOF
 
 === Commit-Boost Setup Information ===
 
-Commit-Boost ${LATEST_VERSION} has been installed with the following components:
-1. PBS Module (MEV-Boost compatible) - Port $COMMIT_BOOST_PORT
-2. Signer Module - Port $COMMIT_BOOST_SIGNER_PORT
+Commit-Boost ${LATEST_VERSION} has been installed:
+1. PBS Module (MEV-Boost compatible) - Port $COMMIT_BOOST_PORT [RUNNING]
+2. Signer Module - Port $COMMIT_BOOST_SIGNER_PORT [INSTALLED, NOT STARTED]
+   (Requires validator key configuration - see cb-config.toml)
 3. Metrics - Port $COMMIT_BOOST_METRICS_PORT+
 
 Installation Directory: $COMMIT_BOOST_DIR
@@ -276,7 +299,10 @@ Next Steps:
    - Nimbus: payload-builder-url = "http://$COMMIT_BOOST_HOST:$COMMIT_BOOST_PORT"
    - Grandine: builder_endpoint = "http://$COMMIT_BOOST_HOST:$COMMIT_BOOST_PORT"
 3. Enable builder/MEV in your consensus client configuration
-4. (Optional) Configure signer with your validator keys in cb-config.toml
+4. To enable signer (for preconfirmations/commitment protocols):
+   a. Edit $CONFIG_DIR/cb-config.toml - uncomment [signer] section
+   b. Configure your validator keys (Lighthouse/Prysm/Teku/Lodestar/Nimbus format)
+   c. Start signer: sudo systemctl enable --now commit-boost-signer
 
 Documentation: https://commit-boost.github.io/commit-boost-client/
 Repository: https://github.com/Commit-Boost/commit-boost-client
