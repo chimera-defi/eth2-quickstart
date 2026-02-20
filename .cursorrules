@@ -443,7 +443,9 @@ When implementing new MEV solutions:
 13. **Read upstream docs before implementation**: Verify actual binary invocation method (CLI flags vs env vars), config schema, and default ports by reading the official docs -- don't guess
 14. **Verify release asset URLs from GitHub API**: Asset naming varies per project (version prefix, platform suffix). Always check the actual `/releases/latest` API response before hardcoding download URL patterns
 15. **Don't start services that need configuration**: If a component (like Commit-Boost signer) requires user-specific config (validator keys), install the binary and create the service file, but don't enable/start it. Document what the user needs to configure first
-16. **Commit-Boost specifics**: Binary mode requires `CB_CONFIG` env var (not `--config` flag); signer default port is 20000; metrics start_port is 10000; `[[relays]]` are top-level TOML array-of-tables, not arrays inside `[pbs]`
+16. **Commit-Boost specifics**: Binary mode requires `CB_CONFIG` env var (not `--config` flag); signer default port is 20000; metrics start_port is 10000; `[[relays]]` are top-level TOML array-of-tables, not arrays inside `[pbs]`; PBS port should be `$MEV_PORT` (drop-in replacement — consensus configs already point there)
+17. **Systemd Environment= placement**: `create_systemd_service()` doesn't support `Environment=` directives. Use `sudo sed -i '/^\[Service\]/a Environment="KEY=value"'` to insert into the correct section. Do NOT use `sudo tee -a` which appends after `[Install]` (wrong section)
+18. **Drop-in replacement pattern**: When two solutions are mutually exclusive and speak the same protocol (e.g. MEV-Boost vs Commit-Boost), use the same port/host so existing client configs work unchanged. Stop the old service automatically
 
 ## Testing Framework Guidelines
 

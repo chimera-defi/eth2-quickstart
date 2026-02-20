@@ -462,6 +462,8 @@ This project handles **real ETH validator funds**. Never weaken the security mod
 - **Commit-Boost signer**: needs `[signer.local.loader]` config with validator keys before starting — install binary but don't start service by default
 - **Commit-Boost TOML**: `[[relays]]` are top-level array-of-tables, `chain = "Mainnet"` at top level (not inside `[chain]` section)
 - Always verify actual release asset URLs from GitHub API before hardcoding download patterns
+- **Systemd `Environment=` placement**: `create_systemd_service()` doesn't support it — use `sudo sed -i '/^\[Service\]/a Environment="KEY=value"'` to insert into the correct section (not `tee -a` which appends after `[Install]`)
+- **Drop-in replacement pattern**: mutually exclusive solutions that speak the same protocol should use the same port (e.g. Commit-Boost PBS uses `$MEV_PORT`) so client configs work unchanged
 
 ---
 

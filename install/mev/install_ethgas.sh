@@ -192,16 +192,8 @@ ETHGAS_EXEC_START="$ETHGAS_DIR/target/release/ethgas_commit --config $CONFIG_DIR
 # Create service with dependency on Commit-Boost
 create_systemd_service "ethgas" "ETHGas Preconfirmation Protocol" "$ETHGAS_EXEC_START" "$(whoami)" "always" "600" "5" "300" "network-online.target commit-boost-pbs.service commit-boost-signer.service" "network-online.target commit-boost-pbs.service commit-boost-signer.service"
 
-# Add environment variables to service file
-sudo tee -a /etc/systemd/system/ethgas.service > /dev/null << EOF
-
-# ETHGas environment variables
-Environment="CB_SIGNER_URL=http://$COMMIT_BOOST_HOST:$COMMIT_BOOST_SIGNER_PORT"
-Environment="CB_CONFIG=$CONFIG_DIR/ethgas.toml"
-Environment="RUST_LOG=info"
-EOF
-
-# Reload systemd to pick up environment changes
+# Add environment variables to [Service] section
+sudo sed -i '/^\[Service\]/a Environment="CB_SIGNER_URL=http://'"$COMMIT_BOOST_HOST"':'"$COMMIT_BOOST_SIGNER_PORT"'"\nEnvironment="CB_CONFIG='"$CONFIG_DIR"'/ethgas.toml"\nEnvironment="RUST_LOG=info"' /etc/systemd/system/ethgas.service
 sudo systemctl daemon-reload
 
 # Enable and start the service
