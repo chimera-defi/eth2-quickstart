@@ -270,7 +270,7 @@ log_installation_complete "ComponentName" "service_name"
 | Solution | Scripts | Port | Notes |
 |----------|---------|------|-------|
 | MEV-Boost | `install_mev_boost.sh` | 18550 | Recommended, stable |
-| Commit-Boost | `install_commit_boost.sh` | 18551 (PBS), 18552 (Signer) | Advanced/experimental |
+| Commit-Boost | `install_commit_boost.sh` | 18550 (PBS, same port), 20000 (Signer) | Drop-in MEV-Boost replacement |
 | ETHGas | `install_ethgas.sh` | 18552 | Add-on, requires Commit-Boost |
 
 **Never install both MEV-Boost and Commit-Boost.** All MEV solutions install as native binaries — no Docker.
@@ -453,11 +453,17 @@ This project handles **real ETH validator funds**. Never weaken the security mod
 
 - All MEV solutions install as **native binaries** (git clone → build, or download → extract)
 - **No Docker** for MEV solutions — the project doesn't use Docker for clients
-- Port allocation: MEV-Boost=18550, Commit-Boost PBS=18551, Signer=18552
+- Port allocation: MEV-Boost=18550, Commit-Boost PBS=18550 (same, drop-in), Signer=20000, Metrics=10000+
 - All MEV variables centralized in `exports.sh`
 - Builder endpoints in consensus client configs default to **disabled** (`enable-builder: false`)
 - Use `setup_firewall_rules()` for all MEV port rules
 - Use `ensure_jwt_secret()` to verify JWT secrets exist before starting services
+- **Commit-Boost binary mode**: requires `CB_CONFIG` env var in systemd service (not `--config` CLI flag)
+- **Commit-Boost signer**: needs `[signer.local.loader]` config with validator keys before starting — install binary but don't start service by default
+- **Commit-Boost TOML**: `[[relays]]` are top-level array-of-tables, `chain = "Mainnet"` at top level (not inside `[chain]` section)
+- Always verify actual release asset URLs from GitHub API before hardcoding download patterns
+- **Systemd `Environment=` placement**: `create_systemd_service()` doesn't support it — use `sudo sed -i '/^\[Service\]/a Environment="KEY=value"'` to insert into the correct section (not `tee -a` which appends after `[Install]`)
+- **Drop-in replacement pattern**: mutually exclusive solutions that speak the same protocol should use the same port (e.g. Commit-Boost PBS uses `$MEV_PORT`) so client configs work unchanged
 
 ---
 

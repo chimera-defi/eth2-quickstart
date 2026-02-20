@@ -180,7 +180,7 @@ run_1.sh and run_2.sh write logs to disk. View them with:
 - Modular sidecar with MEV-Boost relay compatibility
 - Supports preconfirmations and inclusion lists
 - Creates systemd units: `commit-boost-pbs.service`, `commit-boost-signer.service`
-- Ports: PBS (18551), Signer (18552), Metrics (18553)
+- Ports: PBS (18550, same as MEV-Boost), Signer (20000), Metrics (10000+)
 
 #### install_ethgas.sh
 - Clones and builds ETHGas preconfirmation module

@@ -30,23 +30,27 @@ cd install/mev
 
 ### Option B: Commit-Boost + ETHGas
 ```bash
+# Manual installation
 cd install/mev
 ./install_commit_boost.sh
 ./install_ethgas.sh  # Optional: requires Commit-Boost
+
+# Or via run_2.sh flags
+./run_2.sh --execution=geth --consensus=prysm --mev=commit-boost --ethgas
 ```
 
 ---
 
 ## Port Reference
 
-| Service | Port | Status |
-|---------|------|--------|
-| MEV-Boost | 18550 | ✅ Active |
-| Commit-Boost PBS | 18551 | ✅ Active |
-| Commit-Boost Signer | 18552 | ✅ Active |
-| Commit-Boost Metrics | 18553 | ✅ Active |
-| ETHGas | 18552 | ✅ Active |
-| ETHGas Metrics | 18553 | ✅ Active |
+| Service | Port | Notes |
+|---------|------|-------|
+| MEV-Boost | 18550 | Standard BuilderAPI |
+| Commit-Boost PBS | 18550 | Same port (drop-in replacement) |
+| Commit-Boost Signer | 20000 | Commitment protocol signing |
+| Commit-Boost Metrics | 10000+ | Prometheus metrics |
+| ETHGas | 18552 | Preconfirmation service |
+| ETHGas Metrics | 18553 | Prometheus metrics |
 
 ---
 
@@ -84,8 +88,8 @@ curl http://127.0.0.1:18550/eth/v1/builder/status
 
 ### Commit-Boost
 ```bash
-curl http://127.0.0.1:18551/eth/v1/builder/status
-curl http://127.0.0.1:18553/metrics
+curl http://127.0.0.1:18550/eth/v1/builder/status  # Same endpoint as MEV-Boost
+curl http://127.0.0.1:10000/metrics
 ```
 
 ### ETHGas
@@ -105,13 +109,9 @@ curl http://127.0.0.1:18553/metrics
 - **Nimbus**: `payload-builder-url = "http://127.0.0.1:18550"`
 - **Grandine**: `builder_endpoint = "http://127.0.0.1:18550"`
 
-### Commit-Boost (Port 18551)
-- **Prysm**: `http-mev-relay: http://127.0.0.1:18551`
-- **Teku**: `builder-endpoint: "http://127.0.0.1:18551"`
-- **Lighthouse**: `--builder http://127.0.0.1:18551`
-- **Lodestar**: `builder.urls: ["http://127.0.0.1:18551"]`
-- **Nimbus**: `payload-builder-url = "http://127.0.0.1:18551"`
-- **Grandine**: `builder_endpoint = "http://127.0.0.1:18551"`
+### Commit-Boost (Port 18550 — same as MEV-Boost)
+Consensus client configs use `$MEV_HOST:$MEV_PORT` which works for both.
+No config changes needed when switching between MEV-Boost and Commit-Boost.
 
 ---
 
@@ -130,8 +130,10 @@ MEVREGVALT=6000
 
 ### Commit-Boost
 ```bash
-COMMIT_BOOST_HOST='127.0.0.1'
-COMMIT_BOOST_PORT=18551
+COMMIT_BOOST_HOST=$MEV_HOST   # Same as MEV-Boost (drop-in)
+COMMIT_BOOST_PORT=$MEV_PORT   # Same as MEV-Boost (drop-in)
+COMMIT_BOOST_SIGNER_PORT=20000
+COMMIT_BOOST_METRICS_PORT=10000
 ```
 
 ### ETHGas
@@ -163,7 +165,7 @@ journalctl -u <service_name> -n 100
 
 ### Check Ports
 ```bash
-ss -tuln | grep -E "18550|18551|18552|18553"
+ss -tuln | grep -E "18550|18551|18552|18553|20000|10000"
 ```
 
 ### Both Running (Should Not Happen)
@@ -207,5 +209,5 @@ sudo systemctl stop commit-boost-pbs commit-boost-signer
 
 ---
 
-*Last Updated: November 2025*  
-*Version: 3.0*
+*Last Updated: February 2026*  
+*Version: 3.1*

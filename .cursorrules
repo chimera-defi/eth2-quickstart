@@ -286,7 +286,7 @@ This project supports TWO mutually exclusive MEV (Maximal Extractable Value) sol
 
 **Port Allocation:**
 - MEV-Boost: Port 18550
-- Commit-Boost: Port 18551 (PBS), 18552 (Signer), 18553 (Metrics)
+- Commit-Boost: Port 18550 (PBS, same as MEV-Boost — drop-in), 20000 (Signer), 10000+ (Metrics)
 
 **Configuration Variables (exports.sh):**
 ```bash
@@ -440,6 +440,14 @@ When implementing new MEV solutions:
 10. **Simplicity**: Remove experimental/niche features that break project consistency
 11. **Configuration Clarity**: Use TOML for Rust, YAML for Java, maintain variable substitution
 12. **Backward Compatibility**: Ensure new MEV options don't break existing MEV-Boost setups
+13. **Read upstream docs before implementation**: Verify actual binary invocation method (CLI flags vs env vars), config schema, and default ports by reading the official docs -- don't guess
+14. **Verify release asset URLs from GitHub API**: Asset naming varies per project (version prefix, platform suffix). Always check the actual `/releases/latest` API response before hardcoding download URL patterns
+15. **Don't start services that need configuration**: If a component (like Commit-Boost signer) requires user-specific config (validator keys), install the binary and create the service file, but don't enable/start it. Document what the user needs to configure first
+16. **Commit-Boost specifics**: Binary mode requires `CB_CONFIG` env var (not `--config` flag); signer default port is 20000; metrics start_port is 10000; `[[relays]]` are top-level TOML array-of-tables, not arrays inside `[pbs]`; PBS port should be `$MEV_PORT` (drop-in replacement — consensus configs already point there)
+17. **Systemd Environment= placement**: `create_systemd_service()` doesn't support `Environment=` directives. Use `sudo sed -i '/^\[Service\]/a Environment="KEY=value"'` to insert into the correct section. Do NOT use `sudo tee -a` which appends after `[Install]` (wrong section)
+18. **Drop-in replacement pattern**: When two solutions are mutually exclusive and speak the same protocol (e.g. MEV-Boost vs Commit-Boost), use the same port/host so existing client configs work unchanged. Stop the old service automatically
+19. **Auto-detect installed clients**: The `cl.service` ExecStart line reveals which consensus client is installed. Use this to auto-configure dependent components (e.g. Commit-Boost signer key paths). Map client → keystore format: prysm→prysm, lighthouse→lighthouse, teku→teku, nimbus→nimbus, lodestar→lodestar. Key paths follow each client's install script conventions
+20. **`$SCRIPT_DIR` vs `$PROJECT_ROOT` in `install/**` scripts**: After `get_script_directories()`, `$SCRIPT_DIR` is the calling script's directory (e.g. `install/mev/`), NOT the project root. Use `$PROJECT_ROOT` when referencing `exports.sh`, `lib/common_functions.sh`, or `configs/`. Only scripts at the repo root (`run_1.sh`, `run_2.sh`) can use `$SCRIPT_DIR/exports.sh`
 
 ## Testing Framework Guidelines
 
