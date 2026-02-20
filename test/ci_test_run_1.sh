@@ -304,9 +304,34 @@ else
     exit 1
 fi
 
+# Test 24: Verify run_1.sh installs system dependencies (Phase 1)
+log_info "Test 24: Verify run_1.sh calls install_dependencies.sh --phase1..."
+if grep -q "install_dependencies.sh.*--phase1" "$PROJECT_ROOT/run_1.sh"; then
+    log_info "  run_1.sh installs system deps as root (--phase1)"
+else
+    log_error "  run_1.sh must call install_dependencies.sh --phase1 for system packages!"
+    exit 1
+fi
+
+# Test 25: Verify run_2.sh does NOT call sudo apt-get or --production
+log_info "Test 25: Verify run_2.sh uses --phase2 (no sudo apt-get)..."
+if grep -q "install_dependencies.sh.*--phase2\|--skip-deps" "$PROJECT_ROOT/run_2.sh"; then
+    log_info "  run_2.sh uses --phase2 for user-level deps only"
+else
+    log_error "  run_2.sh should use --phase2 (not --production) for privilege separation!"
+    exit 1
+fi
+if grep -q 'install_dependencies.sh.*--production' "$PROJECT_ROOT/run_2.sh"; then
+    log_error "  run_2.sh still calls --production mode - should use --phase2!"
+    exit 1
+else
+    log_info "  run_2.sh does not call --production mode (correct)"
+fi
+
 log_info "╔════════════════════════════════════════════════════════════════╗"
 log_info "║  run_1.sh CI Test PASSED                                      ║"
 log_info "║  Validated: Structure, syntax, functions, SSH safety,         ║"
-log_info "║  lockout prevention, idempotency, no duplicates, firewall     ║"
+log_info "║  lockout prevention, idempotency, no duplicates, firewall,   ║"
+log_info "║  two-phase dependency installation                            ║"
 log_info "╚════════════════════════════════════════════════════════════════╝"
 exit 0

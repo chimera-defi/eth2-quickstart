@@ -3,10 +3,16 @@
 # Centralized Dependency Installation Script
 # Single source of truth for all apt packages
 #
+# Two-phase architecture (security model):
+#   Phase 1 (root, run_1.sh):  System packages, snap, time sync -- no sudo needed
+#   Phase 2 (eth user, run_2.sh): User-level tools only (Rust) -- no sudo apt-get
+#
 # Usage:
-#   ./install_dependencies.sh          # Full production install
-#   ./install_dependencies.sh --test   # Test env (shellcheck, systemd, aide, cron, fail2ban)
-#   ./install_dependencies.sh --base  # Base packages only
+#   ./install_dependencies.sh --phase1     # Root: system packages, snap, time sync
+#   ./install_dependencies.sh --phase2     # Non-root: user-level tools (Rust)
+#   ./install_dependencies.sh --test       # Test env (shellcheck, systemd, aide, cron, fail2ban)
+#   ./install_dependencies.sh --base       # Base packages only
+#   ./install_dependencies.sh --production # Legacy alias (same as --phase1, for Docker/CI)
 
 set -Eeuo pipefail
 
@@ -47,7 +53,10 @@ TEST_PACKAGES=(
     fail2ban
 )
 
-PRODUCTION_PACKAGES=(
+# System-level packages installed as root in Phase 1.
+# Client-specific deps (Ethereum PPA, Node.js, Bazel) are installed
+# by individual client scripts so we only pull what's actually needed.
+PHASE1_PACKAGES=(
     unzip
     build-essential
     python3
@@ -61,7 +70,7 @@ PRODUCTION_PACKAGES=(
     cmake
     libssl-dev
     libgmp-dev
-    libtinfo6  # Terminal info (ncurses) - LLVM/clang, Rust, build tools. libtinfo5 removed in Ubuntu 24.04.
+    libtinfo6
     libprotobuf-dev
     pkg-config
     openjdk-17-jdk
@@ -81,13 +90,21 @@ install_packages() {
     if [[ ${#packages[@]} -eq 0 ]]; then
         return 0
     fi
-    
+
     log_info "Installing packages: ${packages[*]}"
-    
+
     if [[ $EUID -eq 0 ]]; then
         DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1 apt-get install -y --no-install-recommends "${packages[@]}"
     else
         sudo env DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1 apt-get install -y --no-install-recommends "${packages[@]}"
+    fi
+}
+
+apt_update() {
+    if [[ $EUID -eq 0 ]]; then
+        DEBIAN_FRONTEND=noninteractive apt-get update -y
+    else
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get update -y
     fi
 }
 
@@ -107,70 +124,113 @@ install_test() {
     log_info "Test dependencies installed successfully!"
 }
 
-install_production() {
-    log_info "Installing production packages..."
-    
-    # Check we're not root (production should run as regular user)
-    if [[ $EUID -eq 0 ]] && ! is_docker; then
-        log_error "Production install should not run as root. Use a regular user with sudo."
+# Phase 1: System-level packages (runs as root from run_1.sh)
+# Installs all apt packages, snap tools (Go, certbot), and configures time sync.
+# Client-specific repos (Ethereum PPA, Node.js, Bazel) are deferred to client scripts.
+install_phase1() {
+    log_info "Installing Phase 1 system packages (root)..."
+
+    if [[ $EUID -ne 0 ]] && ! is_docker; then
+        log_error "Phase 1 must run as root (called from run_1.sh)"
         exit 1
     fi
-    
-    if [[ $EUID -eq 0 ]]; then
-        DEBIAN_FRONTEND=noninteractive apt-get update -y
-    else
-        sudo env DEBIAN_FRONTEND=noninteractive apt-get update -y
-    fi
-    
-    # Install all packages
-    install_base
-    install_packages "${PRODUCTION_PACKAGES[@]}"
-    
-    # Add Ethereum PPA and install ethereum package
-    if command -v add_ppa_repository &>/dev/null; then
-        add_ppa_repository "ppa:ethereum/ethereum"
-        install_packages "ethereum"
-    fi
-    
-    # Install Node.js LTS (for Lodestar). In Docker, only when CI_E2E (full client testing)
-    if ! is_docker || [[ "${CI_E2E:-}" == "true" ]]; then
-        log_info "Installing Node.js LTS..."
-        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-        install_packages "nodejs"
-    fi
 
-    # Snap installs: Go and certbot (skip in Docker - snap doesn't work)
+    apt_update
+
+    install_base
+    install_packages "${PHASE1_PACKAGES[@]}"
+
+    # Snap installs: Go and certbot (skip in Docker -- snap doesn't work in containers)
     if ! is_docker && command -v snap &>/dev/null; then
         log_info "Installing Go via snap..."
-        sudo snap install --classic go
-        sudo ln -sf /snap/bin/go /usr/bin/go
+        snap install --classic go
+        ln -sf /snap/bin/go /usr/bin/go
         log_info "Installing certbot via snap..."
-        sudo snap install core
-        sudo snap install --classic certbot
-        sudo ln -sf /snap/bin/certbot /usr/bin/certbot
+        snap install core
+        snap install --classic certbot
+        ln -sf /snap/bin/certbot /usr/bin/certbot
     else
         log_warn "Skipping snap installs (Docker or snap unavailable)"
     fi
 
-    # Install Rust (for ETHGas build). In Docker, only when CI_E2E (full client testing)
+    # Configure time synchronization (skip in Docker -- no timedatectl)
+    if ! is_docker && command -v timedatectl &>/dev/null; then
+        log_info "Configuring time synchronization..."
+        TZ=UTC timedatectl set-ntp true 2>/dev/null || log_warn "Could not enable NTP (chrony uses pool.ntp.org by default)"
+    fi
+
+    log_info "Phase 1 system dependencies installed successfully!"
+}
+
+# Phase 2: User-level tools only (runs as eth user from run_2.sh)
+# Installs Rust (per-user, in $HOME/.cargo). No sudo apt-get calls.
+install_phase2() {
+    log_info "Installing Phase 2 user-level tools..."
+
+    if [[ $EUID -eq 0 ]] && ! is_docker; then
+        log_error "Phase 2 should run as non-root user (called from run_2.sh)"
+        exit 1
+    fi
+
+    # Rust (user-level install in $HOME/.cargo -- needed for ETHGas build)
+    if command -v cargo &>/dev/null; then
+        log_info "Rust already installed: $(rustc --version 2>/dev/null || echo 'unknown')"
+    elif ! is_docker || [[ "${CI_E2E:-}" == "true" ]]; then
+        log_info "Installing Rust (user-level, $HOME/.cargo)..."
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y > /dev/null 2>&1
+        [[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:${PATH:-}"
+    fi
+
+    log_info "Phase 2 user-level tools installed successfully!"
+}
+
+# Legacy --production mode: installs everything (Phase 1 + Phase 2).
+# Used in Docker/CI where a single root user runs the full stack.
+install_production() {
+    log_info "Installing all production dependencies (Docker/CI combined mode)..."
+
+    apt_update
+
+    install_base
+    install_packages "${PHASE1_PACKAGES[@]}"
+
+    # Snap installs (skip in Docker)
+    if ! is_docker && command -v snap &>/dev/null; then
+        log_info "Installing Go via snap..."
+        if [[ $EUID -eq 0 ]]; then
+            snap install --classic go
+            ln -sf /snap/bin/go /usr/bin/go
+            snap install core
+            snap install --classic certbot
+            ln -sf /snap/bin/certbot /usr/bin/certbot
+        else
+            sudo snap install --classic go
+            sudo ln -sf /snap/bin/go /usr/bin/go
+            sudo snap install core
+            sudo snap install --classic certbot
+            sudo ln -sf /snap/bin/certbot /usr/bin/certbot
+        fi
+    else
+        log_warn "Skipping snap installs (Docker or snap unavailable)"
+    fi
+
+    # Rust (user-level)
     if ! is_docker || [[ "${CI_E2E:-}" == "true" ]]; then
         log_info "Installing Rust..."
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y > /dev/null 2>&1
         [[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:${PATH:-}"
     fi
 
-    # Install Bazel (may not be available in all repos)
-    if apt-cache show bazel &>/dev/null; then
-        log_info "Installing Bazel..."
-        install_packages "bazel"
-    fi
-    
-    # Configure time synchronization (skip in Docker)
+    # Time sync (skip in Docker)
     if ! is_docker && command -v timedatectl &>/dev/null; then
         log_info "Configuring time synchronization..."
-        sudo TZ=UTC timedatectl set-ntp true 2>/dev/null || log_warn "Could not enable NTP (chrony uses pool.ntp.org by default)"
+        if [[ $EUID -eq 0 ]]; then
+            TZ=UTC timedatectl set-ntp true 2>/dev/null || log_warn "Could not enable NTP"
+        else
+            sudo TZ=UTC timedatectl set-ntp true 2>/dev/null || log_warn "Could not enable NTP"
+        fi
     fi
-    
+
     log_info "All production dependencies installed successfully!"
 }
 
@@ -180,8 +240,14 @@ install_production() {
 
 main() {
     local mode="${1:-production}"
-    
+
     case "$mode" in
+        --phase1)
+            install_phase1
+            ;;
+        --phase2)
+            install_phase2
+            ;;
         --test|-t)
             install_test
             ;;
@@ -192,12 +258,14 @@ main() {
             install_production
             ;;
         --help|-h)
-            echo "Usage: $0 [--test|--base|--production]"
+            echo "Usage: $0 [--phase1|--phase2|--test|--base|--production]"
             echo ""
             echo "Modes:"
+            echo "  --phase1         Phase 1 (root): system packages, snap, time sync"
+            echo "  --phase2         Phase 2 (non-root): user-level tools (Rust)"
             echo "  --test, -t       Install test dependencies"
             echo "  --base, -b       Install base packages only"
-            echo "  --production, -p Install full production dependencies (default)"
+            echo "  --production, -p All dependencies (Docker/CI combined mode)"
             ;;
         *)
             log_error "Unknown mode: $mode"
