@@ -286,7 +286,7 @@ This project supports TWO mutually exclusive MEV (Maximal Extractable Value) sol
 
 **Port Allocation:**
 - MEV-Boost: Port 18550
-- Commit-Boost: Port 18551 (PBS), 20000 (Signer), 10000+ (Metrics)
+- Commit-Boost: Port 18550 (PBS, same as MEV-Boost — drop-in), 20000 (Signer), 10000+ (Metrics)
 
 **Configuration Variables (exports.sh):**
 ```bash
