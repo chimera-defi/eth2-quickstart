@@ -114,13 +114,15 @@ cd install/mev
 **Services**: `commit-boost-pbs.service`, `commit-boost-signer.service`  
 **Ports**: 
 - PBS: `18551` (configurable via `COMMIT_BOOST_PORT`)
-- Signer: `18552`
-- Metrics: `18553`
+- Signer: `20000` (configurable via `COMMIT_BOOST_SIGNER_PORT`)
+- Metrics: `10000+` (configurable via `COMMIT_BOOST_METRICS_PORT`)
 
 **Configuration** (`exports.sh`):
 ```bash
 COMMIT_BOOST_HOST='127.0.0.1'
 COMMIT_BOOST_PORT=18551
+COMMIT_BOOST_SIGNER_PORT=20000
+COMMIT_BOOST_METRICS_PORT=10000
 ```
 
 **Service Management**:
@@ -141,7 +143,7 @@ sudo systemctl status commit-boost-signer
 curl http://127.0.0.1:18551/eth/v1/builder/status
 
 # Check metrics
-curl http://127.0.0.1:18553/metrics
+curl http://127.0.0.1:10000/metrics
 ```
 
 **Client Integration** (use Commit-Boost port instead of MEV-Boost):
@@ -341,8 +343,8 @@ The test suite checks:
 |---------|------|-------------|
 | MEV-Boost | 18550 | Builder API endpoint |
 | Commit-Boost PBS | 18551 | Builder API endpoint |
-| Commit-Boost Signer | 18552 | Signing service |
-| Commit-Boost Metrics | 18553 | Prometheus metrics |
+| Commit-Boost Signer | 20000 | Signing service |
+| Commit-Boost Metrics | 10000+ | Prometheus metrics |
 | ETHGas | 18552 | Preconfirmation service |
 | ETHGas Metrics | 18553 | Prometheus metrics |
 
@@ -471,7 +473,7 @@ sudo systemctl disable commit-boost-pbs commit-boost-signer
 
 **Port conflicts**:
 ```bash
-ss -tuln | grep -E "18550|18551|18552|18553"
+ss -tuln | grep -E "18550|18551|18552|18553|20000|10000"
 ```
 
 ---
