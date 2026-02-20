@@ -3,6 +3,7 @@
 # Commit-Boost Installation Script
 # Drop-in replacement for MEV-Boost with modular architecture.
 # Speaks the same BuilderAPI on the same port — consensus client configs work unchanged.
+# Auto-detects installed consensus client and configures signer with correct key paths.
 # Ref: https://commit-boost.github.io/commit-boost-client/
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -66,8 +67,66 @@ for bin in commit-boost-pbs commit-boost-signer; do
 done
 [[ -f "commit-boost-cli" ]] && chmod +x commit-boost-cli
 
-# Ensure JWT secret exists
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
+
+# Detect consensus client and validator key paths for signer auto-configuration.
+# Checks the cl.service ExecStart to determine which client is installed, then
+# maps to the correct Commit-Boost keystore format and paths.
+detect_signer_config() {
+    local cl_exec=""
+    if [[ -f /etc/systemd/system/cl.service ]]; then
+        cl_exec=$(grep '^ExecStart=' /etc/systemd/system/cl.service | sed 's/^ExecStart=//' || true)
+    fi
+
+    local format="" keys_path="" secrets_path=""
+
+    if echo "$cl_exec" | grep -q "prysm" || [[ -d "$HOME/prysm" ]]; then
+        format="prysm"
+        keys_path="$HOME/.eth2validators/prysm-wallet-v2/direct/accounts/all-accounts.keystore.json"
+        secrets_path="$HOME/secrets/pass.txt"
+    elif echo "$cl_exec" | grep -q "lighthouse" || [[ -d "$HOME/lighthouse" ]]; then
+        format="lighthouse"
+        keys_path="$HOME/.lighthouse/mainnet/validators"
+        secrets_path="$HOME/.lighthouse/mainnet/secrets"
+    elif echo "$cl_exec" | grep -q "teku" || [[ -d "$HOME/teku" ]]; then
+        format="teku"
+        keys_path="$HOME/.local/share/teku/validator/keys"
+        secrets_path="$HOME/.local/share/teku/validator/passwords"
+    elif echo "$cl_exec" | grep -q "nimbus" || [[ -d "$HOME/nimbus" ]]; then
+        format="nimbus"
+        keys_path="$HOME/.local/share/nimbus/validators"
+        secrets_path="$HOME/.local/share/nimbus/validators/secrets"
+    elif echo "$cl_exec" | grep -q "lodestar" || [[ -d "$HOME/lodestar" ]]; then
+        format="lodestar"
+        keys_path="$HOME/.local/share/lodestar/validators/keystores"
+        secrets_path="$HOME/.local/share/lodestar/validators/secrets"
+    elif echo "$cl_exec" | grep -q "grandine" || [[ -d "$HOME/grandine" ]]; then
+        format="lighthouse"
+        keys_path="$HOME/.local/share/grandine/validators"
+        secrets_path="$HOME/.local/share/grandine/validators/secrets"
+    fi
+
+    if [[ -n "$format" ]]; then
+        echo "$format|$keys_path|$secrets_path"
+    fi
+}
+
+SIGNER_DETECTED=$(detect_signer_config)
+SIGNER_FORMAT="" SIGNER_KEYS="" SIGNER_SECRETS="" SIGNER_READY=false
+if [[ -n "$SIGNER_DETECTED" ]]; then
+    IFS='|' read -r SIGNER_FORMAT SIGNER_KEYS SIGNER_SECRETS <<< "$SIGNER_DETECTED"
+    log_info "Detected consensus client: $SIGNER_FORMAT"
+    log_info "Validator keys path: $SIGNER_KEYS"
+    if [[ -e "$SIGNER_KEYS" ]]; then
+        SIGNER_READY=true
+        log_info "Validator keys found — signer will be auto-configured"
+    else
+        log_warn "Validator keys not yet imported at $SIGNER_KEYS"
+        log_warn "Signer is pre-configured but will start after you import keys"
+    fi
+else
+    log_warn "No consensus client detected — signer config requires manual setup"
+fi
 
 # Generate configuration
 CONFIG_DIR="$COMMIT_BOOST_DIR/config"
@@ -81,6 +140,35 @@ for relay in "${RELAY_ARRAY[@]}"; do
     [[ -z "$relay" ]] && continue
     RELAY_TOML+=$'\n'"[[relays]]"$'\n'"url = \"$relay\""$'\n'
 done
+
+# Build signer TOML block — active if client detected, commented-out otherwise
+SIGNER_TOML=""
+if [[ -n "$SIGNER_FORMAT" ]]; then
+    SIGNER_TOML="
+[signer]
+port = $COMMIT_BOOST_SIGNER_PORT
+host = \"$COMMIT_BOOST_HOST\"
+
+[signer.local.loader]
+format = \"$SIGNER_FORMAT\"
+keys_path = \"$SIGNER_KEYS\"
+secrets_path = \"$SIGNER_SECRETS\"
+"
+else
+    SIGNER_TOML="
+# Signer module — configure after installing a consensus client and importing validator keys.
+# Supported keystore formats: lighthouse, prysm, teku, lodestar, nimbus
+# See: https://commit-boost.github.io/commit-boost-client/get_started/configuration/#signer-module
+#
+# [signer]
+# port = $COMMIT_BOOST_SIGNER_PORT
+# host = \"$COMMIT_BOOST_HOST\"
+# [signer.local.loader]
+# format = \"lighthouse\"
+# keys_path = \"/path/to/validator/keys\"
+# secrets_path = \"/path/to/validator/secrets\"
+"
+fi
 
 cat > "$CONFIG_DIR/cb-config.toml" << EOF
 # Commit-Boost Configuration — generated $(date +%Y-%m-%d)
@@ -98,20 +186,7 @@ timeout_register_validator_ms = $MEVREGVALT
 min_bid_eth = $MIN_BID
 late_in_slot_time_ms = 2000
 skip_sigverify = false
-${RELAY_TOML}
-# Signer module — uncomment after configuring your validator keys.
-# Required for commitment protocols (preconfirmations, etc.) and for ETHGas.
-# Supported keystore formats: lighthouse, prysm, teku, lodestar, nimbus
-# See: https://commit-boost.github.io/commit-boost-client/get_started/configuration/#signer-module
-#
-# [signer]
-# port = $COMMIT_BOOST_SIGNER_PORT
-# host = "$COMMIT_BOOST_HOST"
-# [signer.local.loader]
-# format = "lighthouse"
-# keys_path = "/path/to/validator/keys"
-# secrets_path = "/path/to/validator/secrets"
-
+${RELAY_TOML}${SIGNER_TOML}
 [metrics]
 enabled = true
 host = "$COMMIT_BOOST_HOST"
@@ -143,8 +218,12 @@ sudo sed -i '/^\[Service\]/a Environment="CB_CONFIG='"$CONFIG_DIR"'/cb-config.to
 # PBS: start immediately (drop-in replacement for MEV-Boost)
 enable_and_start_systemd_service "commit-boost-pbs"
 
-# Signer: service file only — needs validator key config in cb-config.toml first
-sudo systemctl daemon-reload 2>/dev/null || true
+# Signer: start if client detected AND keys exist; otherwise just install the service file
+if [[ "$SIGNER_READY" == "true" ]]; then
+    enable_and_start_systemd_service "commit-boost-signer"
+else
+    sudo systemctl daemon-reload 2>/dev/null || true
+fi
 
 # Show completion information
 log_installation_complete "Commit-Boost" "commit-boost-pbs" "$CONFIG_DIR/cb-config.toml" "$COMMIT_BOOST_DIR"
@@ -152,7 +231,17 @@ log_installation_complete "Commit-Boost" "commit-boost-pbs" "$CONFIG_DIR/cb-conf
 echo ""
 log_info "Commit-Boost ${LATEST_VERSION} is running on $COMMIT_BOOST_HOST:$COMMIT_BOOST_PORT"
 log_info "Your consensus client already points here via \$MEV_HOST:\$MEV_PORT — no config changes needed."
-echo ""
-log_warn "Signer is installed but NOT started (needs validator keys)."
-log_warn "To enable: edit $CONFIG_DIR/cb-config.toml, uncomment [signer], then:"
-log_warn "  sudo systemctl enable --now commit-boost-signer"
+
+if [[ "$SIGNER_READY" == "true" ]]; then
+    log_info "Signer auto-configured for $SIGNER_FORMAT and started."
+elif [[ -n "$SIGNER_FORMAT" ]]; then
+    echo ""
+    log_warn "Signer pre-configured for $SIGNER_FORMAT but NOT started (keys not found at $SIGNER_KEYS)."
+    log_warn "After importing validator keys, start signer with:"
+    log_warn "  sudo systemctl enable --now commit-boost-signer"
+else
+    echo ""
+    log_warn "Signer requires manual configuration (no consensus client detected)."
+    log_warn "Edit $CONFIG_DIR/cb-config.toml, add [signer] section, then:"
+    log_warn "  sudo systemctl enable --now commit-boost-signer"
+fi

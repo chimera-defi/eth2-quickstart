@@ -446,6 +446,7 @@ When implementing new MEV solutions:
 16. **Commit-Boost specifics**: Binary mode requires `CB_CONFIG` env var (not `--config` flag); signer default port is 20000; metrics start_port is 10000; `[[relays]]` are top-level TOML array-of-tables, not arrays inside `[pbs]`; PBS port should be `$MEV_PORT` (drop-in replacement — consensus configs already point there)
 17. **Systemd Environment= placement**: `create_systemd_service()` doesn't support `Environment=` directives. Use `sudo sed -i '/^\[Service\]/a Environment="KEY=value"'` to insert into the correct section. Do NOT use `sudo tee -a` which appends after `[Install]` (wrong section)
 18. **Drop-in replacement pattern**: When two solutions are mutually exclusive and speak the same protocol (e.g. MEV-Boost vs Commit-Boost), use the same port/host so existing client configs work unchanged. Stop the old service automatically
+19. **Auto-detect installed clients**: The `cl.service` ExecStart line reveals which consensus client is installed. Use this to auto-configure dependent components (e.g. Commit-Boost signer key paths). Map client → keystore format: prysm→prysm, lighthouse→lighthouse, teku→teku, nimbus→nimbus, lodestar→lodestar. Key paths follow each client's install script conventions
 
 ## Testing Framework Guidelines
 
