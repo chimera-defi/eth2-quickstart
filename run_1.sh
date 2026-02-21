@@ -50,6 +50,7 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 log_info "Log file: $LOG_FILE"
 
 log_info "Starting system setup - Phase 1..."
+# shellcheck disable=SC2154  # exported in exports.sh
 log_info "Using configuration: user=$LOGIN_UNAME, ssh_port=$YourSSHPortNumber, max_retry=$maxretry"
 
 check_system_compatibility
