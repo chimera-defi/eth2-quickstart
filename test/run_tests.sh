@@ -159,7 +159,7 @@ run_lint_tests() {
                 log_test "FAIL" "shellcheck: $script_name" "Has shellcheck warnings"
                 scripts_failed=$((scripts_failed + 1))
             fi
-        done < <(find "$PROJECT_ROOT" -name "*.sh" -type f ! -path "*/test/*")
+        done < <(find "$PROJECT_ROOT" -name "*.sh" -type f ! -path "*/test/*" ! -path "*/node_modules/*")
     
         log_info "Shellcheck: $scripts_passed/$scripts_checked scripts passed"
     fi
@@ -174,7 +174,7 @@ run_lint_tests() {
         else
             log_test "FAIL" "syntax: $script_name" "Syntax error"
         fi
-    done < <(find "$PROJECT_ROOT" -name "*.sh" -type f ! -path "*/test/*")
+    done < <(find "$PROJECT_ROOT" -name "*.sh" -type f ! -path "*/test/*" ! -path "*/node_modules/*")
     
     log_subheader "Checking for shebangs"
     
@@ -186,7 +186,7 @@ run_lint_tests() {
         else
             log_test "FAIL" "shebang: $script_name" "Missing shebang"
         fi
-    done < <(find "$PROJECT_ROOT" -name "*.sh" -type f ! -path "*/test/*")
+    done < <(find "$PROJECT_ROOT" -name "*.sh" -type f ! -path "*/test/*" ! -path "*/node_modules/*")
 }
 
 # =============================================================================
