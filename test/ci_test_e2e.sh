@@ -97,6 +97,19 @@ if [[ "$PHASE" == "2" ]]; then
     rm -f "$run2_log"
     record_test "run_2.sh execution" "PASS"
 
+    # Create dummy validator keys for Commit-Boost signer when needed (CI E2E)
+    # Without keys, signer shows "pre-configured but will start after you import keys" and may not be fully active
+    if [[ "$E2E_MEV" == "commit-boost" ]] && [[ -f "$SCRIPT_DIR/lib/e2e_dummy_validator_keys.sh" ]]; then
+        log_header "Creating dummy validator keys for Commit-Boost signer"
+        if source "$SCRIPT_DIR/lib/e2e_dummy_validator_keys.sh" && create_dummy_validator_keys "$E2E_CONS"; then
+            record_test "Dummy validator keys created" "PASS"
+            sudo systemctl restart commit-boost-signer 2>/dev/null || true
+            sleep 3
+        else
+            record_test "Dummy validator keys created" "SKIP"
+        fi
+    fi
+
     log_header "Verifying run_2.sh Results"
 
     # Verify execution client
