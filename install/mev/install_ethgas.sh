@@ -243,7 +243,7 @@ log_info "Creating systemd service..."
 
 # Set runtime command for systemd
 if [[ "$ETHGAS_RUNTIME_MODE" == "docker" ]]; then
-    ETHGAS_EXEC_START="docker run --rm --name ethgas --network host -e CB_MODULE_ID=ETHGAS_COMMIT -e CB_CONFIG=/etc/ethgas/ethgas.toml -e CB_SIGNER_URL=http://$COMMIT_BOOST_HOST:$((COMMIT_BOOST_PORT + 1)) -e CB_METRICS_PORT=$ETHGAS_METRICS_PORT -e CB_LOGS_DIR=/var/log/ethgas -v $CONFIG_DIR/ethgas.toml:/etc/ethgas/ethgas.toml:ro -v $ETHGAS_DIR/logs:/var/log/ethgas -v $ETHGAS_DIR/records:/app $ETHGAS_DOCKER_IMAGE"
+    ETHGAS_EXEC_START="docker run --rm --name ethgas --network host -e CB_MODULE_ID=ETHGAS_COMMIT -e CB_CONFIG=/etc/ethgas/ethgas.toml -e CB_SIGNER_URL=http://$COMMIT_BOOST_HOST:$COMMIT_BOOST_SIGNER_PORT -e CB_METRICS_PORT=$ETHGAS_METRICS_PORT -e CB_LOGS_DIR=/var/log/ethgas -v $CONFIG_DIR/ethgas.toml:/etc/ethgas/ethgas.toml:ro -v $ETHGAS_DIR/logs:/var/log/ethgas -v $ETHGAS_DIR/records:/app $ETHGAS_DOCKER_IMAGE"
 else
     ETHGAS_EXEC_START="$ETHGAS_DIR/target/release/ethgas_commit --config $CONFIG_DIR/ethgas.toml"
 fi
