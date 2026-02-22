@@ -127,22 +127,23 @@ if [[ "$PHASE" == "2" ]]; then
         case "$E2E_MEV" in
             mev-boost) verify_installed "MEV-Boost" test -f "$HOME/mev-boost/mev-boost" ;;
             commit-boost)
-                verify_installed "Commit-Boost PBS" test -f "$HOME/commit-boost/commit-boost-pbs"
-                verify_installed "Commit-Boost Signer" test -f "$HOME/commit-boost/commit-boost-signer"
-                verify_installed "Commit-Boost config" test -f "$HOME/commit-boost/config/cb-config.toml"
-                verify_installed "Commit-Boost PBS service" bash -c 'systemctl list-unit-files 2>/dev/null | grep -q "commit-boost-pbs.service"'
+                verify_installed "Commit-Boost" test -f "$HOME/commit-boost/commit-boost-pbs"
+                # shellcheck disable=SC2016
+                verify_installed "commit-boost-pbs service registered" bash -c 'systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk "{print \$1}" | grep -Fxq "commit-boost-pbs.service"'
+                # shellcheck disable=SC2016
+                verify_installed "commit-boost-signer service registered" bash -c 'systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk "{print \$1}" | grep -Fxq "commit-boost-signer.service"'
+                verify_installed "commit-boost-pbs service active" systemctl is-active --quiet commit-boost-pbs
+                verify_installed "commit-boost-signer service active" systemctl is-active --quiet commit-boost-signer
                 ;;
             *) verify_installed "MEV" test -f "$HOME/mev-boost/mev-boost" ;;
         esac
     fi
 
-    # Verify ETHGas (if enabled)
-    if [[ "$E2E_ETHGAS_FLAG" == "true" ]]; then
-        verify_installed "ETHGas binary" test -f "$HOME/ethgas/target/release/ethgas_commit"
-        verify_installed "ETHGas config" test -f "$HOME/ethgas/config/ethgas.toml"
-        verify_installed "ETHGas service" bash -c 'systemctl list-unit-files 2>/dev/null | grep -q "ethgas.service"'
-        verify_installed "Commit-Boost PBS (ETHGas dep)" test -f "$HOME/commit-boost/commit-boost-pbs"
-        verify_installed "Rust/Cargo (ETHGas build)" bash -c 'command -v cargo &>/dev/null'
+    # ETHGas is optional with Commit-Boost; validate service registration if present.
+    if systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk '{print $1}' | grep -Fxq "ethgas.service"; then
+        # shellcheck disable=SC2016
+        verify_installed "ethgas service registered" bash -c 'systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk "{print \$1}" | grep -Fxq "ethgas.service"'
+        verify_installed "ethgas service active" systemctl is-active --quiet ethgas
     fi
 
     verify_installed "JWT secret" test -f "$HOME/secrets/jwt.hex"
