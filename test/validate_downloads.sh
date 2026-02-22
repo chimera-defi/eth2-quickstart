@@ -36,6 +36,7 @@ run_test "paradigmxyz/reth" get_latest_release "paradigmxyz/reth"
 
 echo ""
 echo "=== get_github_release_asset_url ==="
+run_test "Commit-Boost PBS linux_x86-64" get_github_release_asset_url "Commit-Boost/commit-boost-client" "commit-boost-pbs-.*-linux_x86-64\.tar\.gz"
 run_test "Lighthouse x86_64 linux" get_github_release_asset_url "sigp/lighthouse" "lighthouse-.*-x86_64-unknown-linux-gnu\.tar\.gz"
 run_test "Nimbus-eth1 linux-amd64" get_github_release_asset_url "status-im/nimbus-eth1" "linux-amd64-nightly-latest"
 run_test "Nethermind linux-x64" get_github_release_asset_url "NethermindEth/nethermind" "nethermind-.*-linux-x64\.zip"

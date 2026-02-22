@@ -227,6 +227,23 @@ assert_valid_syntax() {
     fi
 }
 
+# Wait for systemd service to become active (for E2E verification)
+# Usage: _wait_for_service "service-name" [timeout_seconds]
+# Returns 0 if active within timeout, 1 otherwise
+_wait_for_service() {
+    local svc="$1"
+    local timeout="${2:-30}"
+    local elapsed=0
+    while [[ $elapsed -lt $timeout ]]; do
+        if sudo systemctl is-active --quiet "$svc" 2>/dev/null; then
+            return 0
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+    return 1
+}
+
 # Verify client/component installed (for E2E verification)
 # Usage: verify_installed "Name" command args...
 # Example: verify_installed "Geth" command -v geth

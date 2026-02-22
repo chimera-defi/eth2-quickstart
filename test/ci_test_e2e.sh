@@ -132,8 +132,19 @@ if [[ "$PHASE" == "2" ]]; then
                 verify_installed "commit-boost-pbs service registered" bash -c 'systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk "{print \$1}" | grep -Fxq "commit-boost-pbs.service"'
                 # shellcheck disable=SC2016
                 verify_installed "commit-boost-signer service registered" bash -c 'systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk "{print \$1}" | grep -Fxq "commit-boost-signer.service"'
-                verify_installed "commit-boost-pbs service active" systemctl is-active --quiet commit-boost-pbs
-                verify_installed "commit-boost-signer service active" systemctl is-active --quiet commit-boost-signer
+                # Wait for services to become active (relay_check/signer startup may take a few seconds)
+                if _wait_for_service "commit-boost-pbs" 30; then
+                    record_test "commit-boost-pbs service active" "PASS"
+                else
+                    record_test "commit-boost-pbs service active" "FAIL"
+                    log_error "PBS failed to start - check: sudo journalctl -u commit-boost-pbs -n 50"
+                fi
+                if _wait_for_service "commit-boost-signer" 30; then
+                    record_test "commit-boost-signer service active" "PASS"
+                else
+                    record_test "commit-boost-signer service active" "FAIL"
+                    log_error "Signer failed to start - check: sudo journalctl -u commit-boost-signer -n 50"
+                fi
                 ;;
             *) verify_installed "MEV" test -f "$HOME/mev-boost/mev-boost" ;;
         esac
