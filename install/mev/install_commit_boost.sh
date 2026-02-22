@@ -73,6 +73,23 @@ if ! download_file "$SIGNER_URL" "commit-boost-signer.tar.gz"; then
     exit 1
 fi
 
+# Extract binaries from tarballs
+log_info "Extracting Commit-Boost binaries..."
+tar -xzf commit-boost-pbs.tar.gz
+tar -xzf commit-boost-signer.tar.gz
+rm -f commit-boost-pbs.tar.gz commit-boost-signer.tar.gz
+chmod +x commit-boost-pbs commit-boost-signer
+
+# Verify binaries exist
+if [[ ! -f "$COMMIT_BOOST_DIR/commit-boost-pbs" ]]; then
+    log_error "commit-boost-pbs binary not found after extraction"
+    exit 1
+fi
+if [[ ! -f "$COMMIT_BOOST_DIR/commit-boost-signer" ]]; then
+    log_error "commit-boost-signer binary not found after extraction"
+    exit 1
+fi
+
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Detect consensus client and validator key paths for signer auto-configuration.
@@ -224,8 +241,8 @@ sudo sed -i '/^\[Service\]/a Environment="CB_CONFIG='"$CONFIG_DIR"'/cb-config.to
 # PBS: start immediately (drop-in replacement for MEV-Boost)
 enable_and_start_systemd_service "commit-boost-pbs"
 
-# Signer: start if client detected AND keys exist; otherwise just install the service file
-if [[ "$SIGNER_READY" == "true" ]]; then
+# Signer: start if client detected AND keys exist; in CI/E2E, always start for testing
+if [[ "$SIGNER_READY" == "true" ]] || [[ "${CI_E2E:-false}" == "true" ]]; then
     enable_and_start_systemd_service "commit-boost-signer"
 else
     sudo systemctl daemon-reload 2>/dev/null || true
@@ -238,7 +255,7 @@ echo ""
 log_info "Commit-Boost ${LATEST_VERSION} is running on $COMMIT_BOOST_HOST:$COMMIT_BOOST_PORT"
 log_info "Your consensus client already points here via \$MEV_HOST:\$MEV_PORT — no config changes needed."
 
-if [[ "$SIGNER_READY" == "true" ]]; then
+if [[ "$SIGNER_READY" == "true" ]] || [[ "${CI_E2E:-false}" == "true" ]]; then
     log_info "Signer auto-configured for $SIGNER_FORMAT and started."
 elif [[ -n "$SIGNER_FORMAT" ]]; then
     echo ""
