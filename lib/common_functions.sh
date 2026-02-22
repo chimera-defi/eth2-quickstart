@@ -341,15 +341,42 @@ EOF
     log_info "Created systemd service: ${service_name}.service"
 }
 
+# Reload systemd manager configuration
+daemon_reload_systemd() {
+    if ! sudo systemctl daemon-reload; then
+        if [[ "${CI_E2E:-}" == "true" ]]; then
+            log_warn "CI E2E: systemctl unavailable (not in systemd), skipping daemon-reload"
+            return 0
+        fi
+        log_error "Failed to reload systemd daemon"
+        return 1
+    fi
+    return 0
+}
+
+# Check whether a service unit is registered in systemd
+is_systemd_unit_registered() {
+    local service_name="$1"
+    local unit_name="${service_name%.service}.service"
+
+    systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk '{print $1}' | grep -Fxq "$unit_name"
+}
+
+# Require a registered systemd unit
+require_systemd_unit_registered() {
+    local service_name="$1"
+    if is_systemd_unit_registered "$service_name"; then
+        return 0
+    fi
+    log_error "Required systemd unit is not registered: ${service_name%.service}.service"
+    return 1
+}
+
 # Enable systemd service
 enable_systemd_service() {
     local service_name="$1"
     
-    if ! sudo systemctl daemon-reload; then
-        if [[ "${CI_E2E:-}" == "true" ]]; then
-            log_warn "CI E2E: systemctl unavailable (not in systemd), skipping enable for $service_name"
-            return 0
-        fi
+    if ! daemon_reload_systemd; then
         return 1
     fi
     if ! sudo systemctl enable "$service_name"; then

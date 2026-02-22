@@ -26,15 +26,10 @@ if [[ ! -d "$HOME/commit-boost" ]]; then
     exit 1
 fi
 
-# Verify Commit-Boost services exist
-if [[ ! -f /etc/systemd/system/commit-boost-pbs.service ]]; then
-    log_error "Commit-Boost PBS service not found. Please install Commit-Boost first."
-    exit 1
-fi
-if [[ ! -f /etc/systemd/system/commit-boost-signer.service ]]; then
-    log_error "Commit-Boost Signer service not found. Please install Commit-Boost first."
-    exit 1
-fi
+# Verify Commit-Boost services are registered in systemd
+daemon_reload_systemd || exit 1
+require_systemd_unit_registered "commit-boost-pbs" || exit 1
+require_systemd_unit_registered "commit-boost-signer" || exit 1
 
 # ETHGas requires the signer — ensure it's enabled and started
 if [[ -f /etc/systemd/system/commit-boost-signer.service ]]; then
