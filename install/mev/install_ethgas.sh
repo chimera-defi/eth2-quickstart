@@ -31,23 +31,127 @@ if [[ ! -d "$HOME/commit-boost" ]]; then
 fi
 
 # Verify Commit-Boost services exist
-if ! systemctl list-unit-files | grep -q "commit-boost-pbs.service"; then
+if [[ ! -f /etc/systemd/system/commit-boost-pbs.service ]]; then
     log_error "Commit-Boost PBS service not found. Please install Commit-Boost first."
+    exit 1
+fi
+if [[ ! -f /etc/systemd/system/commit-boost-signer.service ]]; then
+    log_error "Commit-Boost Signer service not found. Please install Commit-Boost first."
     exit 1
 fi
 
 log_info "✓ Commit-Boost dependency verified"
 
-# Verify Rust is available (installed centrally via install_dependencies.sh)
-[[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:${PATH:-}"
+# ETHGas installation method:
+# - auto   (default): Docker image first, source build fallback
+# - docker: force Docker image
+# - source: force source build
+ETHGAS_INSTALL_METHOD="${ETHGAS_INSTALL_METHOD:-auto}"
+ETHGAS_INSTALL_METHOD="${ETHGAS_INSTALL_METHOD,,}"
+case "$ETHGAS_INSTALL_METHOD" in
+    auto|docker|source) ;;
+    *)
+        log_error "Invalid ETHGAS_INSTALL_METHOD: $ETHGAS_INSTALL_METHOD"
+        log_error "Valid values: auto, docker, source"
+        exit 1
+        ;;
+esac
 
-if ! command -v cargo &> /dev/null; then
-    log_error "Rust/Cargo not found. Please run install_dependencies.sh first."
-    log_error "Or run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
-    exit 1
-fi
+detect_latest_ethgas_tag() {
+    local tag
+    tag=$(get_latest_release "ethgas-developer/ethgas-preconf-commit-boost-module")
+    if [[ -n "$tag" ]]; then
+        echo "$tag"
+        return 0
+    fi
+    return 1
+}
 
-log_info "✓ Using Rust: $(rustc --version)"
+can_use_docker() {
+    command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1
+}
+
+install_ethgas_source() {
+    # Verify Rust is available (installed centrally via install_dependencies.sh)
+    [[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:${PATH:-}"
+    if ! command -v cargo &> /dev/null; then
+        log_error "Rust/Cargo not found. Please run install_dependencies.sh first."
+        log_error "Or set ETHGAS_INSTALL_METHOD=auto/docker and install Docker."
+        return 1
+    fi
+    log_info "✓ Using Rust: $(rustc --version)"
+
+    # Clone ETHGas repository
+    log_info "Cloning ETHGas repository..."
+    if [[ -d ".git" ]]; then
+        log_info "Updating existing ETHGas repository..."
+        git fetch origin
+        git checkout main
+        git pull origin main
+    else
+        if ! git clone https://github.com/ethgas-developer/ethgas-preconf-commit-boost-module.git .; then
+            log_error "Failed to clone ETHGas repository"
+            return 1
+        fi
+    fi
+
+    # Get the latest stable release tag
+    log_info "Fetching latest ETHGas release..."
+    LATEST_TAG=$(git describe --tags "$(git rev-list --tags --max-count=1)" 2>/dev/null || echo "main")
+    if [[ "$LATEST_TAG" != "main" ]]; then
+        log_info "Checking out version: $LATEST_TAG"
+        git checkout "$LATEST_TAG"
+    else
+        log_warn "No stable release tag found, using main branch"
+    fi
+
+    # Build ETHGas binary
+    log_info "Building ETHGas binary... This may take 2-5 minutes."
+    if ! cargo build --release --bin ethgas_commit; then
+        log_error "Failed to build ETHGas binary"
+        return 1
+    fi
+
+    if [[ ! -f "$ETHGAS_DIR/target/release/ethgas_commit" ]]; then
+        log_error "ETHGas binary not found at $ETHGAS_DIR/target/release/ethgas_commit"
+        return 1
+    fi
+    chmod +x "$ETHGAS_DIR/target/release/ethgas_commit"
+    ETHGAS_RUNTIME_MODE="source"
+    log_info "✓ ETHGas source build completed"
+    return 0
+}
+
+install_ethgas_docker() {
+    local latest_tag image repo
+    repo="ghcr.io/ethgas-developer/commitboost_ethgas_commit"
+    latest_tag=""
+    if latest_tag=$(detect_latest_ethgas_tag); then
+        :
+    fi
+
+    # Try official release tag first, then "latest" for forward compatibility.
+    ETHGAS_IMAGE_TAG=""
+    for candidate in "${latest_tag:-}" latest; do
+        [[ -z "$candidate" ]] && continue
+        image="${repo}:${candidate}"
+        log_info "Trying ETHGas Docker image: $image"
+        if docker pull "$image" >/dev/null 2>&1; then
+            ETHGAS_IMAGE_TAG="$candidate"
+            break
+        fi
+    done
+
+    if [[ -z "$ETHGAS_IMAGE_TAG" ]]; then
+        log_error "Could not pull ETHGas Docker image from $repo"
+        return 1
+    fi
+
+    ETHGAS_RUNTIME_MODE="docker"
+    ETHGAS_DOCKER_IMAGE="${repo}:${ETHGAS_IMAGE_TAG}"
+    log_info "✓ ETHGas Docker image ready: $ETHGAS_DOCKER_IMAGE"
+    return 0
+}
 
 # ============================================================================
 # INSTALLATION
@@ -59,53 +163,32 @@ setup_firewall_rules "$ETHGAS_PORT"
 # Create ETHGas directory
 ETHGAS_DIR="$HOME/ethgas"
 ensure_directory "$ETHGAS_DIR"
+ensure_directory "$ETHGAS_DIR/logs"
+ensure_directory "$ETHGAS_DIR/records"
 
 cd "$ETHGAS_DIR" || exit
 
-# Clone ETHGas repository
-log_info "Cloning ETHGas repository..."
-if [[ -d ".git" ]]; then
-    log_info "Updating existing ETHGas repository..."
-    git fetch origin
-    git checkout main
-    git pull origin main
-else
-    if ! git clone https://github.com/ethgas-developer/ethgas-preconf-commit-boost-module.git .; then
-        log_error "Failed to clone ETHGas repository"
+# Resolve runtime mode
+ETHGAS_RUNTIME_MODE=""
+if [[ "$ETHGAS_INSTALL_METHOD" == "docker" ]]; then
+    if ! can_use_docker; then
+        log_error "ETHGAS_INSTALL_METHOD=docker but Docker daemon is not available."
         exit 1
     fi
-fi
-
-# Get the latest stable release tag
-log_info "Fetching latest ETHGas release..."
-LATEST_TAG=$(git describe --tags "$(git rev-list --tags --max-count=1)" 2>/dev/null || echo "main")
-if [[ "$LATEST_TAG" != "main" ]]; then
-    log_info "Checking out version: $LATEST_TAG"
-    git checkout "$LATEST_TAG"
+    install_ethgas_docker || exit 1
+elif [[ "$ETHGAS_INSTALL_METHOD" == "source" ]]; then
+    install_ethgas_source || exit 1
 else
-    log_warn "No stable release tag found, using main branch"
+    if can_use_docker; then
+        if ! install_ethgas_docker; then
+            log_warn "Docker image install failed, falling back to source build."
+            install_ethgas_source || exit 1
+        fi
+    else
+        log_info "Docker not available; using source build for ETHGas."
+        install_ethgas_source || exit 1
+    fi
 fi
-
-# Build ETHGas binary
-log_info "Building ETHGas binary... This may take 2-5 minutes."
-log_info "Building: ethgas_commit"
-
-if ! cargo build --release --bin ethgas_commit; then
-    log_error "Failed to build ETHGas binary"
-    log_error "Please check your Rust installation and build logs above"
-    exit 1
-fi
-
-# Verify binary was created
-if [[ ! -f "$ETHGAS_DIR/target/release/ethgas_commit" ]]; then
-    log_error "ETHGas binary not found at $ETHGAS_DIR/target/release/ethgas_commit"
-    exit 1
-fi
-
-log_info "✓ ETHGas binary built successfully"
-
-# Make binary executable (should already be, but explicit is better)
-chmod +x "$ETHGAS_DIR/target/release/ethgas_commit"
 
 # ============================================================================
 # CONFIGURATION
@@ -186,23 +269,15 @@ log_info "Configuration file created at: $CONFIG_DIR/ethgas.toml"
 # Create systemd service for ETHGas
 log_info "Creating systemd service..."
 
-# Set environment variables for the service
-ETHGAS_EXEC_START="$ETHGAS_DIR/target/release/ethgas_commit --config $CONFIG_DIR/ethgas.toml"
+# Set runtime command for systemd
+if [[ "$ETHGAS_RUNTIME_MODE" == "docker" ]]; then
+    ETHGAS_EXEC_START="docker run --rm --name ethgas --network host -e CB_MODULE_ID=ETHGAS_COMMIT -e CB_CONFIG=/etc/ethgas/ethgas.toml -e CB_SIGNER_URL=http://$COMMIT_BOOST_HOST:$((COMMIT_BOOST_PORT + 1)) -e CB_METRICS_PORT=$ETHGAS_METRICS_PORT -e CB_LOGS_DIR=/var/log/ethgas -v $CONFIG_DIR/ethgas.toml:/etc/ethgas/ethgas.toml:ro -v $ETHGAS_DIR/logs:/var/log/ethgas -v $ETHGAS_DIR/records:/app $ETHGAS_DOCKER_IMAGE"
+else
+    ETHGAS_EXEC_START="$ETHGAS_DIR/target/release/ethgas_commit --config $CONFIG_DIR/ethgas.toml"
+fi
 
 # Create service with dependency on Commit-Boost
 create_systemd_service "ethgas" "ETHGas Preconfirmation Protocol" "$ETHGAS_EXEC_START" "$(whoami)" "always" "600" "5" "300" "network-online.target commit-boost-pbs.service commit-boost-signer.service" "network-online.target commit-boost-pbs.service commit-boost-signer.service"
-
-# Add environment variables to service file
-sudo tee -a /etc/systemd/system/ethgas.service > /dev/null << EOF
-
-# ETHGas environment variables
-Environment="CB_SIGNER_URL=http://$COMMIT_BOOST_HOST:$((COMMIT_BOOST_PORT + 1))"
-Environment="CB_CONFIG=$CONFIG_DIR/ethgas.toml"
-Environment="RUST_LOG=info"
-EOF
-
-# Reload systemd to pick up environment changes
-sudo systemctl daemon-reload
 
 # Enable and start the service
 enable_and_start_systemd_service "ethgas"
@@ -221,7 +296,9 @@ cat << EOF
 ETHGas has been installed with the following configuration:
 
 Installation Directory: $ETHGAS_DIR
-Binary: $ETHGAS_DIR/target/release/ethgas_commit
+Runtime Mode: $ETHGAS_RUNTIME_MODE
+Binary (source mode): $ETHGAS_DIR/target/release/ethgas_commit
+Docker image (docker mode): ${ETHGAS_DOCKER_IMAGE:-N/A}
 Configuration: $CONFIG_DIR/ethgas.toml
 Network: $ETHGAS_NETWORK
 Collateral Contract: $ETHGAS_COLLATERAL_CONTRACT

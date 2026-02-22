@@ -36,9 +36,26 @@ if [[ -z "$LATEST_VERSION" ]]; then
 fi
 log_info "Latest version: $LATEST_VERSION"
 
+# Detect architecture used by upstream release artifacts
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64|amd64)
+        COMMIT_BOOST_ARCH="linux_x86-64"
+        ;;
+    aarch64|arm64)
+        COMMIT_BOOST_ARCH="linux_arm64"
+        ;;
+    *)
+        log_error "Unsupported architecture for Commit-Boost prebuilt binaries: $ARCH"
+        log_error "Supported architectures: x86_64, arm64"
+        exit 1
+        ;;
+esac
+log_info "Using Commit-Boost artifact architecture: $COMMIT_BOOST_ARCH"
+
 # Download Commit-Boost PBS binary
 log_info "Downloading Commit-Boost PBS binary..."
-PBS_URL="https://github.com/Commit-Boost/commit-boost-client/releases/download/${LATEST_VERSION}/commit-boost-pbs-${LATEST_VERSION}-linux_x86-64.tar.gz"
+PBS_URL="https://github.com/Commit-Boost/commit-boost-client/releases/download/${LATEST_VERSION}/commit-boost-pbs-${LATEST_VERSION}-${COMMIT_BOOST_ARCH}.tar.gz"
 if ! download_file "$PBS_URL" "commit-boost-pbs.tar.gz"; then
     log_error "Failed to download Commit-Boost PBS binary"
     exit 1
@@ -46,7 +63,7 @@ fi
 
 # Download Commit-Boost Signer binary
 log_info "Downloading Commit-Boost Signer binary..."
-SIGNER_URL="https://github.com/Commit-Boost/commit-boost-client/releases/download/${LATEST_VERSION}/commit-boost-signer-${LATEST_VERSION}-linux_x86-64.tar.gz"
+SIGNER_URL="https://github.com/Commit-Boost/commit-boost-client/releases/download/${LATEST_VERSION}/commit-boost-signer-${LATEST_VERSION}-${COMMIT_BOOST_ARCH}.tar.gz"
 if ! download_file "$SIGNER_URL" "commit-boost-signer.tar.gz"; then
     log_error "Failed to download Commit-Boost Signer binary"
     exit 1

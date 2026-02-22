@@ -241,7 +241,7 @@ else
     record_test "ETHGas: Installation Directory" "SKIP" "Not installed"
 fi
 
-# Test 13: Check ETHGas binary
+# Test 13: Check ETHGas runtime (source binary or Docker)
 if [[ -f "$HOME/ethgas/target/release/ethgas_commit" ]]; then
     record_test "ETHGas: Binary Exists" "PASS" "Binary found"
     
@@ -250,6 +250,8 @@ if [[ -f "$HOME/ethgas/target/release/ethgas_commit" ]]; then
     else
         record_test "ETHGas: Binary Executable" "FAIL" "Binary not executable"
     fi
+elif [[ -f "/etc/systemd/system/ethgas.service" ]] && grep -q "docker run .*commitboost_ethgas_commit" "/etc/systemd/system/ethgas.service"; then
+    record_test "ETHGas: Docker Runtime" "PASS" "Service configured with ETHGas Docker image"
 else
     record_test "ETHGas: Binary Exists" "SKIP" "Not installed"
 fi
@@ -298,9 +300,11 @@ if [[ -d "$HOME/ethgas" ]]; then
     fi
 fi
 
-# Test 17: Check Rust availability (needed for ETHGas build)
+# Test 17: Check Rust availability (needed only for source-build ETHGas)
 if [[ -d "$HOME/ethgas" ]]; then
-    if command -v cargo &> /dev/null; then
+    if [[ -f "/etc/systemd/system/ethgas.service" ]] && grep -q "docker run .*commitboost_ethgas_commit" "/etc/systemd/system/ethgas.service"; then
+        record_test "ETHGas: Rust Available" "SKIP" "Not required (Docker runtime mode)"
+    elif command -v cargo &> /dev/null; then
         record_test "ETHGas: Rust Available" "PASS" "Rust/Cargo is available"
     else
         record_test "ETHGas: Rust Available" "FAIL" "Rust/Cargo not found (required for building)"
