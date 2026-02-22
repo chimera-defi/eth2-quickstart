@@ -40,32 +40,38 @@ if [[ -z "$LATEST_VERSION" ]]; then
 fi
 log_info "Latest version: $LATEST_VERSION"
 
-# Download binaries — asset pattern: commit-boost-{component}-{version}-linux_x86-64.tar.gz
-for component in pbs signer cli; do
-    url="https://github.com/Commit-Boost/commit-boost-client/releases/download/${LATEST_VERSION}/commit-boost-${component}-${LATEST_VERSION}-linux_x86-64.tar.gz"
-    archive="commit-boost-${component}.tar.gz"
-    log_info "Downloading commit-boost-${component}..."
-    if ! download_file "$url" "$archive"; then
-        if [[ "$component" == "cli" ]]; then
-            log_warn "CLI download failed (optional, continuing)"
-            continue
-        fi
-        log_error "Failed to download commit-boost-${component}"
+# Detect architecture used by upstream release artifacts
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64|amd64)
+        COMMIT_BOOST_ARCH="linux_x86-64"
+        ;;
+    aarch64|arm64)
+        COMMIT_BOOST_ARCH="linux_arm64"
+        ;;
+    *)
+        log_error "Unsupported architecture for Commit-Boost prebuilt binaries: $ARCH"
+        log_error "Supported architectures: x86_64, arm64"
         exit 1
-    fi
-    tar -xzf "$archive"
-    rm -f "$archive"
-done
+        ;;
+esac
+log_info "Using Commit-Boost artifact architecture: $COMMIT_BOOST_ARCH"
 
-# Verify required binaries
-for bin in commit-boost-pbs commit-boost-signer; do
-    if [[ ! -f "$COMMIT_BOOST_DIR/$bin" ]]; then
-        log_error "$bin binary not found after extraction"
-        exit 1
-    fi
-    chmod +x "$bin"
-done
-[[ -f "commit-boost-cli" ]] && chmod +x commit-boost-cli
+# Download Commit-Boost PBS binary
+log_info "Downloading Commit-Boost PBS binary..."
+PBS_URL="https://github.com/Commit-Boost/commit-boost-client/releases/download/${LATEST_VERSION}/commit-boost-pbs-${LATEST_VERSION}-${COMMIT_BOOST_ARCH}.tar.gz"
+if ! download_file "$PBS_URL" "commit-boost-pbs.tar.gz"; then
+    log_error "Failed to download Commit-Boost PBS binary"
+    exit 1
+fi
+
+# Download Commit-Boost Signer binary
+log_info "Downloading Commit-Boost Signer binary..."
+SIGNER_URL="https://github.com/Commit-Boost/commit-boost-client/releases/download/${LATEST_VERSION}/commit-boost-signer-${LATEST_VERSION}-${COMMIT_BOOST_ARCH}.tar.gz"
+if ! download_file "$SIGNER_URL" "commit-boost-signer.tar.gz"; then
+    log_error "Failed to download Commit-Boost Signer binary"
+    exit 1
+fi
 
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
