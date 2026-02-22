@@ -154,7 +154,12 @@ if [[ "$PHASE" == "2" ]]; then
     if systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk '{print $1}' | grep -Fxq "ethgas.service"; then
         # shellcheck disable=SC2016
         verify_installed "ethgas service registered" bash -c 'systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk "{print \$1}" | grep -Fxq "ethgas.service"'
-        verify_installed "ethgas service active" systemctl is-active --quiet ethgas
+        if _wait_for_service "ethgas" 30; then
+            record_test "ethgas service active" "PASS"
+        else
+            record_test "ethgas service active" "FAIL"
+            log_error "ETHGas failed to start - check: sudo journalctl -u ethgas -n 50"
+        fi
     fi
 
     verify_installed "JWT secret" test -f "$HOME/secrets/jwt.hex"
