@@ -103,9 +103,9 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 6. **run_2.sh E2E** - Runs run_2.sh with default clients, verifies installs
 7. **e2e-client-matrix** - 6 client combos (besu+lighthouse+commit-boost, erigon+teku, etc.; geth+prysm in run-2-e2e)
 
-### E2E Verification (No Tests Skipped)
+### E2E Verification
 
-- **relay_check**: Always `true` in Commit-Boost config — no CI bypass
+- **relay_check**: `true` in production; `false` in CI_E2E (infra: Docker cannot reach mainnet relays; PBS would exit)
 - **Commit-Boost signer**: No bypass in install. In CI, install enables signer but does not start it (keys not yet present). ci_test_e2e adds dummy keys, then enables and starts signer. Root cause fix, not skip.
 - **Dummy validator keys** (besu+lighthouse+commit-boost): Required for signer; failure = FAIL (not SKIP)
 - **Service active checks**: PBS, signer, ETHGas use `_verify_service_active` — fail if not active
@@ -121,6 +121,7 @@ These are not test bypasses — they reflect Docker/container limits:
 | Security validation (run_2) | Phase 2 E2E does not run run_1; security_monitor absent |
 | Snap/timedatectl (install_dependencies) | Snap and timedatectl do not work in Docker |
 | Caddy minimal config | Default Caddy has no plugins; production uses dns/rate_limit |
+| Commit-Boost relay_check | Docker cannot reach mainnet relays; PBS would exit on startup |
 
 ### CI Test Scripts
 
@@ -172,3 +173,10 @@ The run_1 E2E test executes `apt upgrade` which can pull in packages (postfix, c
 - **CI**: 5min timeout, `continue-on-error: true` so E2E failures don't block other tests
 
 If E2E hangs, run locally with `./test/run_e2e.sh --phase=1` or `--phase=2` to debug.
+
+### Test besu+lighthouse+commit-boost locally (CI matrix combo)
+
+```bash
+docker build -t eth-node-test -f test/Dockerfile .
+SKIP_BUILD=true E2E_EXECUTION=besu E2E_CONSENSUS=lighthouse E2E_MEV=commit-boost ./test/run_e2e.sh --phase=2
+```
