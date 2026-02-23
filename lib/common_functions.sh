@@ -1224,17 +1224,11 @@ get_script_directories() {
     log_info "Project root: $project_root"
 }
 
-
-
-
-
 # Expand $VAR placeholders in config files (from exports.sh)
 _expand_config_vars() {
     local file="$1"
     [[ ! -f "$file" ]] && return 1
-    # Expand common variables; use | as delimiter to avoid escaping /
     sed -i "s|\\\$LH|${LH:-127.0.0.1}|g; s|\\\$ENGINE_PORT|${ENGINE_PORT:-8551}|g; s|\\\$CONSENSUS_HOST|${CONSENSUS_HOST:-127.0.0.1}|g; s|\\\$MEV_HOST|${MEV_HOST:-127.0.0.1}|g; s|\\\$MEV_PORT|${MEV_PORT:-18550}|g" "$file"
-    return 0
 }
 
 # 6. Configuration Merging - merge_client_config()

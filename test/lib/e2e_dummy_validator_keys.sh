@@ -62,7 +62,7 @@ create_dummy_validator_keys() {
     done
     if [[ ! -f "$vc_token" ]]; then
         log_warn "VC api-token not found after 90s (validator may still be initializing)"
-        log_warn "Diagnostics: ls -la $(dirname "$vc_token") 2>/dev/null"
+        log_warn "Diagnostics: ls -la $(dirname "$vc_token")"
         ls -la "$(dirname "$vc_token")" 2>/dev/null || true
         return 1
     fi
