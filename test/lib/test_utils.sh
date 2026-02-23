@@ -244,6 +244,21 @@ _wait_for_service() {
     return 1
 }
 
+# Verify service is active and record result (uses _wait_for_service)
+# Usage: _verify_service_active "service-name" [timeout_seconds]
+_verify_service_active() {
+    local svc="$1"
+    local timeout="${2:-30}"
+    if _wait_for_service "$svc" "$timeout"; then
+        record_test "$svc service active" "PASS"
+        return 0
+    else
+        record_test "$svc service active" "FAIL"
+        log_error "$svc failed to start - check: sudo journalctl -u $svc -n 50"
+        return 1
+    fi
+}
+
 # Verify client/component installed (for E2E verification)
 # Usage: verify_installed "Name" command args...
 # Example: verify_installed "Geth" command -v geth
