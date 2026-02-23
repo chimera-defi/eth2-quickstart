@@ -1,4 +1,5 @@
 # Besu Base Configuration File
+# Current as of Besu 24.x — BONSAI + SNAP are default (24.3+)
 
 # Network settings
 network="mainnet"
@@ -7,7 +8,7 @@ p2p-host="127.0.0.1"
 discovery-enabled=true
 max-peers=50
 
-# Data storage
+# Data storage (BONSAI default since 24.3; Forest deprecated)
 data-storage-format="BONSAI"
 
 # JSON-RPC settings
