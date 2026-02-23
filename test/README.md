@@ -101,7 +101,14 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 4. **run_1.sh E2E** - Actually runs run_1.sh and verifies results (systemd + openssh)
 5. **run_2.sh Structure** - Validates run_2.sh structure, configs
 6. **run_2.sh E2E** - Runs run_2.sh with default clients, verifies installs
-7. **e2e-client-matrix** - 6 client combos (besu+lighthouse, erigon+teku, etc.; geth+prysm in run-2-e2e)
+7. **e2e-client-matrix** - 6 client combos (besu+lighthouse+commit-boost, erigon+teku, etc.; geth+prysm in run-2-e2e)
+
+### E2E Verification (No Tests Skipped)
+
+- **relay_check**: Always `true` in Commit-Boost config — no CI bypass
+- **Dummy validator keys** (besu+lighthouse+commit-boost): Required for signer; failure = FAIL (not SKIP)
+- **Service active checks**: PBS, signer, ETHGas use `_verify_service_active` — fail if not active
+- **Caddy/Nginx**: Tested in run-2-web job; matrix jobs skip to save time (not a test skip)
 
 ### CI Test Scripts
 
