@@ -93,9 +93,7 @@ VALIDATOR_EXEC_START="$PRYSM_DIR/prysm.sh validator --config-file=$PRYSM_DIR/pry
 
 create_systemd_service "validator" "Prysm Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target cl.service"
 
-# Enable and start services (validator needs beacon REST API ready)
 enable_and_start_systemd_service "cl"
-sleep 10
 enable_and_start_systemd_service "validator"
 
 # Show completion information

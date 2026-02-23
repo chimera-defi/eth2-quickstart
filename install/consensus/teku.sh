@@ -147,9 +147,7 @@ create_systemd_service "validator" "Teku Ethereum Validator Client" "$VALIDATOR_
 # Add Java options to validator service file
 sudo sed -i "/\\[Service\\]/a Environment=JAVA_OPTS=\"$JAVA_OPTS\"" /etc/systemd/system/validator.service
 
-# Enable and start services (validator needs beacon REST API ready)
 enable_and_start_systemd_service "cl"
-sleep 10
 enable_and_start_systemd_service "validator"
 
 # Show completion information
