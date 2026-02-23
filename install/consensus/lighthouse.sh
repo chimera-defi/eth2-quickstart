@@ -70,17 +70,19 @@ rm -f "$ARCHIVE_FILE"
 # Ensure JWT secret exists (creates dir and file if missing)
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
-# Create systemd service for beacon node
-BEACON_EXEC_START="RUST_LOG=info $LIGHTHOUSE_BIN bn --checkpoint-sync-url $LIGHTHOUSE_CHECKPOINT_URL --execution-endpoint http://$LH:$ENGINE_PORT --execution-jwt $HOME/secrets/jwt.hex --disable-deposit-contract-sync"
+# Create systemd service for beacon node (Environment= for RUST_LOG; ExecStart must be executable path only)
+BEACON_EXEC_START="$LIGHTHOUSE_BIN bn --checkpoint-sync-url $LIGHTHOUSE_CHECKPOINT_URL --execution-endpoint http://$LH:$ENGINE_PORT --execution-jwt $HOME/secrets/jwt.hex --disable-deposit-contract-sync"
 
 create_systemd_service "cl" "Lighthouse Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target eth1.service" "network-online.target eth1.service"
 sudo sed -i "/^\[Service\]/a WorkingDirectory=$LIGHTHOUSE_DIR" /etc/systemd/system/cl.service
+sudo sed -i "/^\[Service\]/a Environment=\"RUST_LOG=info\"" /etc/systemd/system/cl.service
 
 # Create systemd service for validator
-VALIDATOR_EXEC_START="RUST_LOG=info $LIGHTHOUSE_BIN vc --beacon-nodes http://$CONSENSUS_HOST:5052"
+VALIDATOR_EXEC_START="$LIGHTHOUSE_BIN vc --beacon-nodes http://$CONSENSUS_HOST:5052"
 
 create_systemd_service "validator" "Lighthouse Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target cl.service"
 sudo sed -i "/^\[Service\]/a WorkingDirectory=$LIGHTHOUSE_DIR" /etc/systemd/system/validator.service
+sudo sed -i "/^\[Service\]/a Environment=\"RUST_LOG=info\"" /etc/systemd/system/validator.service
 
 enable_and_start_systemd_service "cl"
 enable_and_start_systemd_service "validator"
