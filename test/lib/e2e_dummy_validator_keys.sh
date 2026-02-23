@@ -29,18 +29,26 @@ create_dummy_validator_keys() {
     fi
 
     # Beacon REST must be responding before VC can connect; poll up to 90s
-    # Note: /eth/v1/node/health returns 503 during sync — omit -f so 5xx counts as "API up"
-    log_info "Waiting for beacon REST API on :5052 (up to 90s)..."
-    local i
+    # Note: /eth/v1/node/health returns 503 during sync — 200/206/503 all mean "API up"
+    log_info "Waiting for beacon REST API on 127.0.0.1:5052 (up to 90s)..."
+    local i code exitcode beacon_ok=false
     for i in $(seq 1 45); do
-        if curl -sS -o /dev/null --connect-timeout 2 "http://127.0.0.1:5052/eth/v1/node/health" 2>/dev/null; then
+        set +e
+        code=$(curl -sS -o /dev/null --connect-timeout 2 -w "%{http_code}" "http://127.0.0.1:5052/eth/v1/node/health" 2>/dev/null)
+        exitcode=$?
+        set -e
+        if [[ -n "$code" && "$code" =~ ^(200|206|503)$ ]]; then
+            log_info "Beacon REST API ready after $(( (i - 1) * 2 ))s (HTTP $code)"
+            beacon_ok=true
             break
         fi
+        [[ $(( i % 5 )) -eq 0 ]] && log_info "  attempt $i/45 (curl exit=$exitcode, http=${code:-none})..."
         sleep 2
     done
-    if ! curl -sS -o /dev/null --connect-timeout 2 "http://127.0.0.1:5052/eth/v1/node/health" 2>/dev/null; then
-        log_warn "Beacon REST API not responding on :5052"
-        sudo journalctl -u cl -n 15 --no-pager 2>/dev/null || true
+    if [[ "$beacon_ok" != "true" ]]; then
+        log_warn "Beacon REST API not responding on :5052 (curl exit=$exitcode, http_code=${code:-none})"
+        log_warn "Last cl.service journal:"
+        sudo journalctl -u cl -n 20 --no-pager 2>/dev/null || true
         return 1
     fi
 
