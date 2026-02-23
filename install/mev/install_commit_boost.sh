@@ -140,7 +140,11 @@ if [[ -n "$SIGNER_DETECTED" ]]; then
     IFS='|' read -r SIGNER_FORMAT SIGNER_KEYS SIGNER_SECRETS <<< "$SIGNER_DETECTED"
     log_info "Detected consensus client: $SIGNER_FORMAT"
     log_info "Validator keys path: $SIGNER_KEYS"
-    if [[ -e "$SIGNER_KEYS" ]]; then
+    # For file-based keystores (prysm: single keystore file), check file existence.
+    # For directory-based keystores (lighthouse, teku, lodestar, nimbus), check for
+    # actual *.json keystore files — the directory is created by the VC at startup
+    # even when no keys have been imported, so -e on a directory gives a false positive.
+    if [[ -f "$SIGNER_KEYS" ]] || { [[ -d "$SIGNER_KEYS" ]] && find "$SIGNER_KEYS" -name "*.json" -maxdepth 3 2>/dev/null | grep -q .; }; then
         SIGNER_READY=true
         log_info "Validator keys found — signer will be auto-configured"
     else
@@ -241,12 +245,14 @@ sudo sed -i '/^\[Service\]/a Environment="CB_CONFIG='"$CONFIG_DIR"'/cb-config.to
 # PBS: start immediately (drop-in replacement for MEV-Boost)
 enable_and_start_systemd_service "commit-boost-pbs"
 
-# Signer: start if client detected AND keys exist. In CI/E2E, defer start until keys added (ci_test_e2e)
-# — no bypass: we never start signer without keys
-if [[ "$SIGNER_READY" == "true" ]]; then
-    enable_and_start_systemd_service "commit-boost-signer"
-elif [[ "${CI_E2E:-false}" == "true" ]]; then
+# Signer: in CI/E2E always defer (ci_test_e2e creates dummy keys then starts).
+# In production: start if keys exist (SIGNER_READY), otherwise just register the unit.
+# CI_E2E check is first — SIGNER_READY may be false even with an empty validators dir,
+# but guard order prevents any accidental start-without-keys regression.
+if [[ "${CI_E2E:-false}" == "true" ]]; then
     enable_systemd_service "commit-boost-signer"  # Enable only; ci_test_e2e adds keys then starts
+elif [[ "$SIGNER_READY" == "true" ]]; then
+    enable_and_start_systemd_service "commit-boost-signer"
 else
     sudo systemctl daemon-reload 2>/dev/null || true
 fi
