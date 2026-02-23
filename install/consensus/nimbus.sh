@@ -147,10 +147,11 @@ create_systemd_service "cl" "Nimbus Ethereum Consensus Client (Beacon Node)" "$B
 # Create systemd service for validator
 VALIDATOR_EXEC_START="$NIMBUS_DIR/build/nimbus_validator_client --config-file=$NIMBUS_DIR/validator.toml"
 
-create_systemd_service "validator" "Nimbus Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target"
+create_systemd_service "validator" "Nimbus Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target cl.service"
 
-# Enable and start services
+# Enable and start services (validator needs beacon REST API ready)
 enable_and_start_systemd_service "cl"
+sleep 10
 enable_and_start_systemd_service "validator"
 
 log_installation_complete "Nimbus" "nimbus"
