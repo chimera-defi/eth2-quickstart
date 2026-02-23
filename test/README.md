@@ -105,6 +105,7 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 
 ### E2E Verification (No Tests Skipped)
 
+- **Install order**: run_2 installs execution before consensus (eth1 ready when beacon starts)
 - **relay_check**: Always `true` in Commit-Boost config — no CI bypass
 - **Commit-Boost signer**: No bypass in install. In CI, install enables signer but does not start it (keys not yet present). ci_test_e2e adds dummy keys, then enables and starts signer. Root cause fix, not skip.
 - **Dummy validator keys** (besu+lighthouse+commit-boost): Required for signer; failure = FAIL (not SKIP)
