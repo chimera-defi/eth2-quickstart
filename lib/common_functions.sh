@@ -380,8 +380,8 @@ enable_systemd_service() {
         return 1
     fi
     if ! sudo systemctl enable "$service_name"; then
-        if [[ "${CI_E2E:-}" == "true" ]]; then
-            log_warn "CI E2E: systemctl enable failed, skipping for $service_name"
+        if [[ "${CI_E2E:-}" == "true" ]] && [[ "$service_name" == "commit-boost-signer" ]]; then
+            log_warn "CI E2E: systemctl enable failed for $service_name (may need keys first)"
             return 0
         fi
         return 1
@@ -390,6 +390,7 @@ enable_systemd_service() {
 }
 
 # Enable and start systemd service
+# CI_E2E bypass: only for commit-boost-signer when it can't start without keys (we add keys after install)
 enable_and_start_systemd_service() {
     local service_name="$1"
     
@@ -397,8 +398,8 @@ enable_and_start_systemd_service() {
         return 1
     fi
     if ! sudo systemctl start "$service_name"; then
-        if [[ "${CI_E2E:-}" == "true" ]]; then
-            log_warn "CI E2E: systemctl start failed (not in systemd), service file created for $service_name"
+        if [[ "${CI_E2E:-}" == "true" ]] && [[ "$service_name" == "commit-boost-signer" ]]; then
+            log_warn "CI E2E: commit-boost-signer start failed (no keys yet — will restart after import)"
             return 0
         fi
         log_error "Failed to start systemd service: $service_name"
@@ -407,10 +408,20 @@ enable_and_start_systemd_service() {
     if sudo systemctl is-active --quiet "$service_name"; then
         log_info "Started systemd service: $service_name"
     else
-        if [[ "${CI_E2E:-}" == "true" ]]; then
-            log_warn "CI E2E: service $service_name not active (expected when not in systemd)"
+        if [[ "${CI_E2E:-}" == "true" ]] && [[ "$service_name" == "commit-boost-signer" ]]; then
+            log_warn "CI E2E: commit-boost-signer not active (no keys yet — will restart after import)"
             return 0
         fi
+        # Services like cl/validator may take a few seconds to become active
+        local elapsed=0
+        while [[ $elapsed -lt 30 ]]; do
+            sleep 2
+            elapsed=$((elapsed + 2))
+            if sudo systemctl is-active --quiet "$service_name"; then
+                log_info "Started systemd service: $service_name"
+                return 0
+            fi
+        done
         log_error "Failed to start systemd service: $service_name"
         return 1
     fi

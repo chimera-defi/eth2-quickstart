@@ -106,6 +106,7 @@ if [[ "$PHASE" == "2" ]]; then
             sudo systemctl restart commit-boost-signer 2>/dev/null || true
             sleep 3
         else
+            log_error "Dummy validator keys failed — signer will not start without keys"
             record_test "Dummy validator keys created" "FAIL"
         fi
     fi
