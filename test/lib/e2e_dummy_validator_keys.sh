@@ -4,7 +4,7 @@
 # Supports: lighthouse (via validator-manager create + import to running VC)
 #
 # Root cause (VC api-token): Lighthouse VC creates api-token.txt on startup. In CI/Docker the VC
-# can take 30-90s to initialize (beacon sync, HTTP server). We wait for validator service active
+# can take 30-90s to initialize (beacon sync, HTTP server). We wait for cl (beacon) then validator,
 # then poll for api-token up to 90s.
 
 create_dummy_validator_keys() {
@@ -22,10 +22,22 @@ create_dummy_validator_keys() {
         return 1
     fi
 
-    # Ensure VC is running before we create keys (VC creates api-token on startup)
+    # Wait for beacon (cl) then validator — validator depends on cl; CI can take 60-90s
     if declare -f _wait_for_service &>/dev/null; then
-        if ! _wait_for_service "validator" 30; then
-            log_warn "Lighthouse validator service not active"
+        log_info "Waiting for Lighthouse beacon (cl) service (up to 60s)..."
+        if ! _wait_for_service "cl" 60; then
+            log_warn "Lighthouse beacon (cl) not active"
+            log_warn "Diagnostics: sudo systemctl status cl"
+            sudo systemctl status cl 2>/dev/null || true
+            return 1
+        fi
+        log_info "Waiting for Lighthouse validator (VC) service (up to 60s)..."
+        if ! _wait_for_service "validator" 60; then
+            log_warn "Lighthouse validator not active"
+            log_warn "Diagnostics: sudo systemctl status validator"
+            sudo systemctl status validator 2>/dev/null || true
+            log_warn "Beacon logs: sudo journalctl -u cl -n 20 --no-pager"
+            sudo journalctl -u cl -n 20 --no-pager 2>/dev/null || true
             return 1
         fi
     fi
@@ -42,7 +54,7 @@ create_dummy_validator_keys() {
     [[ ! -f "$tmp_keys/validators.json" ]] && log_warn "validators.json not created" && return 1
 
     # VC creates api-token on startup; in CI can take 30-90s (beacon sync, init)
-    log_info "Waiting for VC api-token (up to 90s)..."
+    log_info "Waiting for VC api-token at $vc_token (up to 90s)..."
     local i
     for i in $(seq 1 45); do
         [[ -f "$vc_token" ]] && break
@@ -50,6 +62,8 @@ create_dummy_validator_keys() {
     done
     if [[ ! -f "$vc_token" ]]; then
         log_warn "VC api-token not found after 90s (validator may still be initializing)"
+        log_warn "Diagnostics: ls -la $(dirname "$vc_token") 2>/dev/null"
+        ls -la "$(dirname "$vc_token")" 2>/dev/null || true
         return 1
     fi
 
