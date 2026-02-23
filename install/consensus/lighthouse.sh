@@ -80,10 +80,7 @@ VALIDATOR_EXEC_START="RUST_LOG=info $LIGHTHOUSE_BIN vc --beacon-nodes http://$CO
 
 create_systemd_service "validator" "Lighthouse Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target cl.service"
 
-# Enable and start services (cl first; validator needs beacon REST API ready)
 enable_and_start_systemd_service "cl"
-# Give beacon REST API time to come up before validator connects
-sleep 10
 enable_and_start_systemd_service "validator"
 
 # Show completion information
