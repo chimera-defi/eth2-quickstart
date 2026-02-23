@@ -140,7 +140,11 @@ if [[ -n "$SIGNER_DETECTED" ]]; then
     IFS='|' read -r SIGNER_FORMAT SIGNER_KEYS SIGNER_SECRETS <<< "$SIGNER_DETECTED"
     log_info "Detected consensus client: $SIGNER_FORMAT"
     log_info "Validator keys path: $SIGNER_KEYS"
-    if [[ -e "$SIGNER_KEYS" ]]; then
+    # For file-based keystores (prysm: single keystore file), check file existence.
+    # For directory-based keystores (lighthouse, teku, lodestar, nimbus), check for
+    # actual *.json keystore files — the directory is created by the VC at startup
+    # even when no keys have been imported, so -e on a directory gives a false positive.
+    if [[ -f "$SIGNER_KEYS" ]] || { [[ -d "$SIGNER_KEYS" ]] && find "$SIGNER_KEYS" -name "*.json" -maxdepth 3 2>/dev/null | grep -q .; }; then
         SIGNER_READY=true
         log_info "Validator keys found — signer will be auto-configured"
     else
@@ -155,6 +159,12 @@ fi
 CONFIG_DIR="$COMMIT_BOOST_DIR/config"
 ensure_directory "$CONFIG_DIR"
 ensure_directory "$COMMIT_BOOST_DIR/logs"
+
+# In CI/E2E skip relay_check — PBS tries to reach real mainnet relays on startup;
+# if they reject/timeout the process exits and enable_and_start_systemd_service fails.
+# relay_check = true is correct for production (verifies relays are live before validators connect).
+RELAY_CHECK="true"
+[[ "${CI_E2E:-false}" == "true" ]] && RELAY_CHECK="false"
 
 RELAY_TOML=""
 IFS=',' read -ra RELAY_ARRAY <<< "$MEV_RELAYS"
@@ -203,7 +213,7 @@ chain = "Mainnet"
 [pbs]
 port = $COMMIT_BOOST_PORT
 host = "$COMMIT_BOOST_HOST"
-relay_check = true
+relay_check = $RELAY_CHECK
 timeout_get_header_ms = $MEVGETHEADERT
 timeout_get_payload_ms = $MEVGETPAYLOADT
 timeout_register_validator_ms = $MEVREGVALT
