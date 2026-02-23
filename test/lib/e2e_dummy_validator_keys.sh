@@ -11,10 +11,10 @@ create_dummy_validator_keys() {
     local vc_token="$HOME/.lighthouse/mainnet/validators/api-token.txt"
     local tmp_keys
     tmp_keys=$(mktemp -d)
+    trap 'rm -rf "$tmp_keys"' EXIT
 
     if [[ ! -f "$lh_bin" ]]; then
         log_warn "Lighthouse binary not found at $lh_bin"
-        rm -rf "$tmp_keys"
         return 1
     fi
 
@@ -24,11 +24,10 @@ create_dummy_validator_keys() {
         --eth1-withdrawal-address 0x0000000000000000000000000000000000000001 \
         --output-path "$tmp_keys"; then
         log_warn "lighthouse validator-manager create failed"
-        rm -rf "$tmp_keys"
         return 1
     fi
 
-    [[ ! -f "$tmp_keys/validators.json" ]] && log_warn "validators.json not created" && rm -rf "$tmp_keys" && return 1
+    [[ ! -f "$tmp_keys/validators.json" ]] && log_warn "validators.json not created" && return 1
 
     local i
     for i in $(seq 1 10); do
@@ -37,17 +36,14 @@ create_dummy_validator_keys() {
     done
     if [[ ! -f "$vc_token" ]]; then
         log_warn "VC api-token not found (validator may not have created it yet)"
-        rm -rf "$tmp_keys"
         return 1
     fi
 
     if ! "$lh_bin" validator-manager import --network mainnet --vc-token "$vc_token" \
         --validators-file "$tmp_keys/validators.json"; then
         log_warn "lighthouse validator-manager import failed"
-        rm -rf "$tmp_keys"
         return 1
     fi
 
-    rm -rf "$tmp_keys"
     return 0
 }
