@@ -28,6 +28,13 @@ create_dummy_validator_keys() {
         return 1
     fi
 
+    # Verify cl.service has --http (required for REST API on :5052)
+    if ! grep -q '--http' /etc/systemd/system/cl.service 2>/dev/null; then
+        log_warn "cl.service ExecStart missing --http flag (REST API disabled)"
+        grep '^ExecStart=' /etc/systemd/system/cl.service 2>/dev/null || true
+        return 1
+    fi
+
     # Beacon REST must be responding before VC can connect; poll up to 90s
     # Note: /eth/v1/node/health returns 503 during sync — 200/206/503 all mean "API up"
     log_info "Waiting for beacon REST API on 127.0.0.1:5052 (up to 90s)..."
@@ -47,8 +54,10 @@ create_dummy_validator_keys() {
     done
     if [[ "$beacon_ok" != "true" ]]; then
         log_warn "Beacon REST API not responding on :5052 (curl exit=$exitcode, http_code=${code:-none})"
+        log_warn "cl.service ExecStart (verify --http present):"
+        grep '^ExecStart=' /etc/systemd/system/cl.service 2>/dev/null || true
         log_warn "Last cl.service journal:"
-        sudo journalctl -u cl -n 20 --no-pager 2>/dev/null || true
+        sudo journalctl -u cl -n 25 --no-pager 2>/dev/null || true
         return 1
     fi
 
