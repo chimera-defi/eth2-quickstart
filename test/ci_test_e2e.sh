@@ -97,16 +97,17 @@ if [[ "$PHASE" == "2" ]]; then
     rm -f "$run2_log"
     record_test "run_2.sh execution" "PASS"
 
-    # Create dummy validator keys for Commit-Boost signer when needed (CI E2E)
-    # Without keys, signer shows "pre-configured but will start after you import keys" and may not be fully active
-    if [[ "$E2E_MEV" == "commit-boost" ]] && [[ -f "$SCRIPT_DIR/lib/e2e_dummy_validator_keys.sh" ]]; then
+    # Create dummy validator keys for Commit-Boost signer (lighthouse only)
+    # Required: signer needs keys to start; without them _verify_service_active will fail
+    if [[ "$E2E_MEV" == "commit-boost" && "$E2E_CONS" == "lighthouse" ]]; then
         log_header "Creating dummy validator keys for Commit-Boost signer"
         if source "$SCRIPT_DIR/lib/e2e_dummy_validator_keys.sh" && create_dummy_validator_keys "$E2E_CONS"; then
             record_test "Dummy validator keys created" "PASS"
             sudo systemctl restart commit-boost-signer 2>/dev/null || true
             sleep 3
         else
-            record_test "Dummy validator keys created" "SKIP"
+            log_error "Dummy validator keys failed — signer will not start without keys"
+            record_test "Dummy validator keys created" "FAIL"
         fi
     fi
 
@@ -145,34 +146,17 @@ if [[ "$PHASE" == "2" ]]; then
                 verify_installed "commit-boost-pbs service registered" bash -c 'systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk "{print \$1}" | grep -Fxq "commit-boost-pbs.service"'
                 # shellcheck disable=SC2016
                 verify_installed "commit-boost-signer service registered" bash -c 'systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk "{print \$1}" | grep -Fxq "commit-boost-signer.service"'
-                # Wait for services to become active (relay_check/signer startup may take a few seconds)
-                if _wait_for_service "commit-boost-pbs" 30; then
-                    record_test "commit-boost-pbs service active" "PASS"
-                else
-                    record_test "commit-boost-pbs service active" "FAIL"
-                    log_error "PBS failed to start - check: sudo journalctl -u commit-boost-pbs -n 50"
-                fi
-                if _wait_for_service "commit-boost-signer" 30; then
-                    record_test "commit-boost-signer service active" "PASS"
-                else
-                    record_test "commit-boost-signer service active" "FAIL"
-                    log_error "Signer failed to start - check: sudo journalctl -u commit-boost-signer -n 50"
-                fi
+                for svc in commit-boost-pbs commit-boost-signer; do
+                    _verify_service_active "$svc" 30
+                done
                 ;;
             *) verify_installed "MEV" test -f "$HOME/mev-boost/mev-boost" ;;
         esac
     fi
 
-    # ETHGas is optional with Commit-Boost; validate service registration if present.
+    # ETHGas is optional with Commit-Boost; validate if present
     if systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk '{print $1}' | grep -Fxq "ethgas.service"; then
-        # shellcheck disable=SC2016
-        verify_installed "ethgas service registered" bash -c 'systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk "{print \$1}" | grep -Fxq "ethgas.service"'
-        if _wait_for_service "ethgas" 30; then
-            record_test "ethgas service active" "PASS"
-        else
-            record_test "ethgas service active" "FAIL"
-            log_error "ETHGas failed to start - check: sudo journalctl -u ethgas -n 50"
-        fi
+        _verify_service_active "ethgas" 30
     fi
 
     verify_installed "JWT secret" test -f "$HOME/secrets/jwt.hex"
