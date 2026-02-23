@@ -71,7 +71,7 @@ rm -f "$ARCHIVE_FILE"
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create systemd service for beacon node (Environment= for RUST_LOG; ExecStart must be executable path only)
-BEACON_EXEC_START="$LIGHTHOUSE_BIN bn --checkpoint-sync-url $LIGHTHOUSE_CHECKPOINT_URL --execution-endpoint http://$LH:$ENGINE_PORT --execution-jwt $HOME/secrets/jwt.hex"
+BEACON_EXEC_START="$LIGHTHOUSE_BIN bn --checkpoint-sync-url $LIGHTHOUSE_CHECKPOINT_URL --execution-endpoint http://$LH:$ENGINE_PORT --execution-jwt $HOME/secrets/jwt.hex --http"
 
 create_systemd_service "cl" "Lighthouse Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target eth1.service" "network-online.target eth1.service"
 sudo sed -i "/^\[Service\]/a WorkingDirectory=$LIGHTHOUSE_DIR" /etc/systemd/system/cl.service
