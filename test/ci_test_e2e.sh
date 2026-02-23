@@ -98,6 +98,7 @@ if [[ "$PHASE" == "2" ]]; then
     record_test "run_2.sh execution" "PASS"
 
     # Create dummy validator keys for Commit-Boost signer (lighthouse only)
+    # Required: signer needs keys to start; without them _verify_service_active will fail
     if [[ "$E2E_MEV" == "commit-boost" && "$E2E_CONS" == "lighthouse" ]]; then
         log_header "Creating dummy validator keys for Commit-Boost signer"
         if source "$SCRIPT_DIR/lib/e2e_dummy_validator_keys.sh" && create_dummy_validator_keys "$E2E_CONS"; then
@@ -105,7 +106,7 @@ if [[ "$PHASE" == "2" ]]; then
             sudo systemctl restart commit-boost-signer 2>/dev/null || true
             sleep 3
         else
-            record_test "Dummy validator keys created" "SKIP"
+            record_test "Dummy validator keys created" "FAIL"
         fi
     fi
 
