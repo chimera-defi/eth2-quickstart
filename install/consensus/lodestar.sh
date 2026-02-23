@@ -121,15 +121,16 @@ rm -rf ./tmp/
 # Create systemd service for beacon node
 BEACON_EXEC_START="$LODESTAR_BIN beacon --paramsFile $LODESTAR_DIR/beacon.config.json"
 
-create_systemd_service "cl" "Lodestar Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
+create_systemd_service "cl" "Lodestar Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target eth1.service" "network-online.target eth1.service"
 
 # Create systemd service for validator
 VALIDATOR_EXEC_START="$LODESTAR_BIN validator --paramsFile $LODESTAR_DIR/validator.config.json"
 
-create_systemd_service "validator" "Lodestar Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target"
+create_systemd_service "validator" "Lodestar Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target cl.service"
 
-# Enable and start services
+# Enable and start services (validator needs beacon REST API ready)
 enable_and_start_systemd_service "cl"
+sleep 10
 enable_and_start_systemd_service "validator"
 
 log_installation_complete "Lodestar" "lodestar"
