@@ -103,7 +103,6 @@ if [[ "$PHASE" == "2" ]]; then
             record_test "Dummy validator keys created" "PASS"
             # Install defers signer start until keys exist; enable and start now
             sudo systemctl enable --now commit-boost-signer 2>/dev/null || true
-            sleep 3
         else
             log_error "Dummy validator keys failed — signer will not start without keys"
             record_test "Dummy validator keys created" "FAIL"
