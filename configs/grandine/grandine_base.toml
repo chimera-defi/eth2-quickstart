@@ -1,4 +1,5 @@
 # Grandine Base Configuration File
+# Current as of Grandine 2.x — TOML config via --config
 
 # Network settings
 network = "mainnet"

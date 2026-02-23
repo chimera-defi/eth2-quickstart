@@ -120,7 +120,7 @@ if ! "$SCRIPT_DIR/install/utils/verify_client_configs.sh"; then
 fi
 
 # Non-interactive path: install specified clients via flags
-# Consensus before execution (Prysm generates JWT; beacon starts, connects to eth1 once it exists)
+# Execution before consensus so beacon can connect to eth1 immediately (no connection-refused retries)
 if [[ "$FLAGS_MODE" == "true" ]]; then
     # Validate ETHGas flag constraints
     if [[ "$ETHGAS_FLAG" == "true" && "$MEV_FLAG" != "commit-boost" ]]; then
@@ -129,17 +129,6 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
     fi
 
     FAILED=0
-    if [[ -n "$CONSENSUS_CLIENT" ]]; then
-        case "$CONSENSUS_CLIENT" in
-            prysm|lighthouse|lodestar|teku|nimbus|grandine)
-                run_install_script "$SCRIPT_DIR/install/consensus/${CONSENSUS_CLIENT}.sh" "$CONSENSUS_CLIENT" || FAILED=1
-                ;;
-            *)
-                log_error "Unknown consensus client: $CONSENSUS_CLIENT"
-                exit 1
-                ;;
-        esac
-    fi
     if [[ -n "$EXECUTION_CLIENT" ]]; then
         if [[ ! -s "$HOME/secrets/jwt.hex" ]]; then
             ensure_directory "$HOME/secrets"
@@ -152,6 +141,17 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
                 ;;
             *)
                 log_error "Unknown execution client: $EXECUTION_CLIENT"
+                exit 1
+                ;;
+        esac
+    fi
+    if [[ -n "$CONSENSUS_CLIENT" ]]; then
+        case "$CONSENSUS_CLIENT" in
+            prysm|lighthouse|lodestar|teku|nimbus|grandine)
+                run_install_script "$SCRIPT_DIR/install/consensus/${CONSENSUS_CLIENT}.sh" "$CONSENSUS_CLIENT" || FAILED=1
+                ;;
+            *)
+                log_error "Unknown consensus client: $CONSENSUS_CLIENT"
                 exit 1
                 ;;
         esac

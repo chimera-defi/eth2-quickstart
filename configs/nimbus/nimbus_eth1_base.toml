@@ -1,4 +1,5 @@
 # Nimbus-eth1 Base Configuration File
+# Current as of Nimbus-eth1 24.x — sync-mode: snap
 
 # Network settings
 network = "mainnet"
