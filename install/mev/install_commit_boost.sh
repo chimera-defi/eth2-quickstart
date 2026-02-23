@@ -160,11 +160,8 @@ CONFIG_DIR="$COMMIT_BOOST_DIR/config"
 ensure_directory "$CONFIG_DIR"
 ensure_directory "$COMMIT_BOOST_DIR/logs"
 
-# In CI/E2E skip relay_check — PBS tries to reach real mainnet relays on startup;
-# if they reject/timeout the process exits and enable_and_start_systemd_service fails.
-# relay_check = true is correct for production (verifies relays are live before validators connect).
+# relay_check = true — verify relays are live before validators connect (no skip in Docker)
 RELAY_CHECK="true"
-[[ "${CI_E2E:-false}" == "true" ]] && RELAY_CHECK="false"
 
 RELAY_TOML=""
 IFS=',' read -ra RELAY_ARRAY <<< "$MEV_RELAYS"

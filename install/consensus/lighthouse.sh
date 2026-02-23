@@ -72,8 +72,8 @@ ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create systemd service for beacon node (Environment= for RUST_LOG; ExecStart must be executable path only)
 # --http enables REST API on :5052 (required for VC, MEV, E2E health checks)
-# Explicit --http-address/--http-port for clarity and validation
-BEACON_EXEC_START="$LIGHTHOUSE_BIN bn --checkpoint-sync-url $LIGHTHOUSE_CHECKPOINT_URL --execution-endpoint http://$LH:$ENGINE_PORT --execution-jwt $HOME/secrets/jwt.hex --http --http-address 127.0.0.1 --http-port 5052"
+# --http-address 0.0.0.0: works in Docker (127.0.0.1 can have connect-refused in some container setups)
+BEACON_EXEC_START="$LIGHTHOUSE_BIN bn --checkpoint-sync-url $LIGHTHOUSE_CHECKPOINT_URL --execution-endpoint http://$LH:$ENGINE_PORT --execution-jwt $HOME/secrets/jwt.hex --http --http-address 0.0.0.0 --http-port 5052"
 
 create_systemd_service "cl" "Lighthouse Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target eth1.service" "network-online.target eth1.service"
 sudo sed -i "/^\[Service\]/a WorkingDirectory=$LIGHTHOUSE_DIR" /etc/systemd/system/cl.service
