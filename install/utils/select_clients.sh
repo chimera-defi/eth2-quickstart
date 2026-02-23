@@ -272,7 +272,8 @@ interactive_selection() {
     esac
     
     echo
-    echo "Run the corresponding install scripts to set up your chosen clients."
+    echo "Run the corresponding install scripts (execution first, then consensus):"
+    echo "  ./install/execution/<client>.sh && ./install/consensus/<client>.sh"
 }
 
 main_menu() {

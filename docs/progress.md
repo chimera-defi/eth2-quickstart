@@ -28,7 +28,7 @@
 | Pass | Status | Notes |
 |------|--------|-------|
 | Pass 1: Functionality | Done | 258 lint tests pass, syntax valid, shellcheck key files pass |
-| Pass 2: Architecture | Done | run_1 require_sudo_or_root→reboot; run_2 check_user non-root; consensus before execution |
+| Pass 2: Architecture | Done | run_1 require_sudo_or_root→reboot; run_2 check_user non-root; execution before consensus |
 | Pass 3: Code quality | Done | Key collect: root, SUDO_USER, whoami, /home/*; dedupe; collect before exec |
 
 ## Honest Self Assessment
@@ -42,7 +42,7 @@
 
 ## Regressions to Watch
 
-- JWT: Prysm must generate; consensus before execution
+- JWT: execution client creates; execution before consensus
 - E2E: Multi-strategy (Dockerfile, ci_test CI_KEYS_FILE, ensure_docker_e2e_keys, Strategy 1/2)
 - Phase 2: Must run as non-root (LOGIN_UNAME)
 - Security validation: runs as eth user; check existence/cron, don't execute root scripts

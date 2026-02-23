@@ -268,19 +268,19 @@ if ! validate_menu_choice "$client_choice" 2; then
 fi
 
 # Function to install default clients (reduces code duplication)
-# Prysm before Geth so Prysm generates JWT (execution clients need it)
+# Execution before consensus so beacon can connect immediately (eth1 ready)
 install_default_clients() {
     log_info "Installing default clients (Geth + Prysm + Selected MEV)..."
     
-    log_info "Installing Prysm..."
-    if ! "$SCRIPT_DIR/install/consensus/prysm.sh"; then
-        log_error "Failed to install Prysm"
-        return 1
-    fi
-
     log_info "Installing Geth..."
     if ! "$SCRIPT_DIR/install/execution/geth.sh"; then
         log_error "Failed to install Geth"
+        return 1
+    fi
+
+    log_info "Installing Prysm..."
+    if ! "$SCRIPT_DIR/install/consensus/prysm.sh"; then
+        log_error "Failed to install Prysm"
         return 1
     fi
 
@@ -371,7 +371,7 @@ case "$client_choice" in
         fi
         
         log_info "Please run the recommended install scripts from the client selection tool"
-        log_info "Example: ./install/consensus/prysm.sh && ./install/execution/geth.sh"
+        log_info "Example: ./install/execution/geth.sh && ./install/consensus/prysm.sh"
         ;;
     2)
         if ! install_default_clients; then
