@@ -11,7 +11,7 @@
 5. **Whiptail**: OK button works when run via curl | bash
 6. **New user repo access**: Copy eth2-quickstart to new user home
 7. **E2E test**: run_1 E2E passes (authorized_keys present)
-8. **Idempotency**: JWT generation, client install order (execution before consensus)
+8. **Idempotency**: JWT generation, client install order (consensus before execution)
 9. **NTP/tzdata**: No prompts, use defaults (UTC)
 10. **Logging**: run_1/run_2 log to disk, security validation debug output
 11. **view_logs.sh**: Helper to view logs
@@ -20,6 +20,6 @@
 
 - run_1.sh runs as root or sudo, migrates keys, no lockout
 - run_2.sh non-interactive, no NTP prompts
-- JWT created by execution client; execution before consensus
+- Prysm generates JWT; consensus before execution
 - E2E tests pass
 - Lint/shellcheck pass
