@@ -102,7 +102,7 @@ rm -rf ./tmp/
 # Create systemd service for beacon node
 BEACON_EXEC_START="$GRANDINE_DIR/grandine --config $GRANDINE_DIR/grandine.toml"
 
-create_systemd_service "cl" "Grandine Ethereum Consensus Client" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
+create_systemd_service "cl" "Grandine Ethereum Consensus Client" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target eth1.service" "network-online.target eth1.service"
 
 # Enable and start service
 enable_and_start_systemd_service "cl"

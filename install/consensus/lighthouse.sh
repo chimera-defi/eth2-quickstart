@@ -73,15 +73,17 @@ ensure_jwt_secret "$HOME/secrets/jwt.hex"
 # Create systemd service for beacon node
 BEACON_EXEC_START="RUST_LOG=info $LIGHTHOUSE_BIN bn --checkpoint-sync-url $LIGHTHOUSE_CHECKPOINT_URL --execution-endpoint http://$LH:$ENGINE_PORT --execution-jwt $HOME/secrets/jwt.hex --disable-deposit-contract-sync"
 
-create_systemd_service "cl" "Lighthouse Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
+create_systemd_service "cl" "Lighthouse Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target eth1.service" "network-online.target eth1.service"
 
 # Create systemd service for validator
 VALIDATOR_EXEC_START="RUST_LOG=info $LIGHTHOUSE_BIN vc --beacon-nodes http://$CONSENSUS_HOST:5052"
 
-create_systemd_service "validator" "Lighthouse Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target"
+create_systemd_service "validator" "Lighthouse Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target cl.service"
 
-# Enable and start services
+# Enable and start services (cl first; validator needs beacon REST API ready)
 enable_and_start_systemd_service "cl"
+# Give beacon REST API time to come up before validator connects
+sleep 10
 enable_and_start_systemd_service "validator"
 
 # Show completion information
