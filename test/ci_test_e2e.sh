@@ -137,7 +137,10 @@ if [[ "$PHASE" == "2" ]]; then
     # Verify MEV (if not none)
     if [[ "$E2E_MEV" != "none" ]]; then
         case "$E2E_MEV" in
-            mev-boost) verify_installed "MEV-Boost" test -f "$HOME/mev-boost/mev-boost" ;;
+            mev-boost)
+                verify_installed "MEV-Boost" test -f "$HOME/mev-boost/mev-boost"
+                _verify_service_active "mev" 30
+                ;;
             commit-boost)
                 verify_installed "Commit-Boost" test -f "$HOME/commit-boost/commit-boost-pbs"
                 # shellcheck disable=SC2016
@@ -159,6 +162,13 @@ if [[ "$PHASE" == "2" ]]; then
 
     verify_installed "JWT secret" test -f "$HOME/secrets/jwt.hex"
     verify_installed "eth1 systemd service" bash -c 'systemctl list-unit-files 2>/dev/null | grep -q "eth1.service"'
+
+    # Block: verify core services are actually running (not just installed)
+    _verify_service_active "eth1" 60
+    _verify_service_active "cl" 60
+    if systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk '{print $1}' | grep -Fxq "validator.service"; then
+        _verify_service_active "validator" 60
+    fi
 
     # Caddy and Nginx (main job only - skip in client matrix to save time)
     if [[ -z "${E2E_EXECUTION:-}" && -z "${E2E_CONSENSUS:-}" ]]; then
