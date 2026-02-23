@@ -2,6 +2,10 @@
 # Creates dummy validator keys for Commit-Boost signer in E2E (CI_E2E=true, E2E_MEV=commit-boost).
 # Signer needs keys to be fully active; without them it shows "pre-configured but will start after you import keys".
 # Supports: lighthouse (via validator-manager create + import to running VC)
+#
+# Root cause (VC api-token): Lighthouse VC creates api-token.txt on startup. In CI/Docker the VC
+# can take 30-90s to initialize (beacon sync, HTTP server). We wait for validator service active
+# then poll for api-token up to 90s.
 
 create_dummy_validator_keys() {
     local cons="$1"
@@ -18,6 +22,14 @@ create_dummy_validator_keys() {
         return 1
     fi
 
+    # Ensure VC is running before we create keys (VC creates api-token on startup)
+    if declare -f _wait_for_service &>/dev/null; then
+        if ! _wait_for_service "validator" 30; then
+            log_warn "Lighthouse validator service not active"
+            return 1
+        fi
+    fi
+
     local mnemonic="abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
     if ! echo "$mnemonic" | "$lh_bin" validator-manager create \
         --stdin-inputs --network mainnet --first-index 0 --count 1 \
@@ -29,13 +41,15 @@ create_dummy_validator_keys() {
 
     [[ ! -f "$tmp_keys/validators.json" ]] && log_warn "validators.json not created" && return 1
 
+    # VC creates api-token on startup; in CI can take 30-90s (beacon sync, init)
+    log_info "Waiting for VC api-token (up to 90s)..."
     local i
-    for i in $(seq 1 10); do
+    for i in $(seq 1 45); do
         [[ -f "$vc_token" ]] && break
         sleep 2
     done
     if [[ ! -f "$vc_token" ]]; then
-        log_warn "VC api-token not found (validator may not have created it yet)"
+        log_warn "VC api-token not found after 90s (validator may still be initializing)"
         return 1
     fi
 
