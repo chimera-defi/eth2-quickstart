@@ -53,11 +53,22 @@ create_dummy_validator_keys() {
         sleep 2
     done
     if [[ "$beacon_ok" != "true" ]]; then
-        log_warn "Beacon REST API not responding on :5052 (curl exit=$exitcode, http_code=${code:-none})"
-        log_warn "cl.service ExecStart (verify --http present):"
-        grep '^ExecStart=' /etc/systemd/system/cl.service 2>/dev/null || true
-        log_warn "Last cl.service journal:"
-        sudo journalctl -u cl -n 25 --no-pager 2>/dev/null || true
+        # Curl exit codes: 7=connection refused, 28=timeout, 6=could not resolve
+        local curl_hint=""
+        case "${exitcode:-0}" in
+            7) curl_hint=" (connection refused — nothing listening on :5052 or firewall blocking)" ;;
+            28) curl_hint=" (timeout — beacon may be slow to start)" ;;
+            6) curl_hint=" (could not resolve host)" ;;
+        esac
+        log_warn "Beacon REST API not responding on :5052 (curl exit=$exitcode, http_code=${code:-none})$curl_hint"
+        log_warn "Diagnostics:"
+        log_warn "  Port 5052 listening: $(ss -tlnp 2>/dev/null | grep 5052 || echo 'none')"
+        log_warn "  cl.service active: $(sudo systemctl is-active cl 2>/dev/null || echo 'unknown')"
+        log_warn "  eth1.service active: $(sudo systemctl is-active eth1 2>/dev/null || echo 'unknown') (beacon depends on eth1)"
+        log_warn "  cl.service ExecStart (verify --http present):"
+        grep '^ExecStart=' /etc/systemd/system/cl.service 2>/dev/null | sed 's/^/    /' || true
+        log_warn "  Last cl.service journal:"
+        sudo journalctl -u cl -n 25 --no-pager 2>/dev/null | sed 's/^/    /' || true
         return 1
     fi
 

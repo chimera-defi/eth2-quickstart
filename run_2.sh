@@ -157,9 +157,11 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
         esac
     fi
     # Create dummy keys before Commit-Boost so signer can start during install (keys already in place)
+    # Requires: beacon (cl) running with --http on :5052, validator running — lighthouse.sh provides this
     if [[ "${CI_E2E:-false}" == "true" && "$CONSENSUS_CLIENT" == "lighthouse" && "$MEV_FLAG" == "commit-boost" ]]; then
         log_info "Creating dummy validator keys for Commit-Boost signer (before MEV install)"
         if [[ -f "$SCRIPT_DIR/test/lib/test_utils.sh" && -f "$SCRIPT_DIR/test/lib/e2e_dummy_validator_keys.sh" ]]; then
+            LOG_PREFIX="E2E"
             # shellcheck source=test/lib/test_utils.sh
             source "$SCRIPT_DIR/test/lib/test_utils.sh"
             # shellcheck source=test/lib/e2e_dummy_validator_keys.sh
