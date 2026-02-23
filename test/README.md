@@ -106,9 +106,21 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 ### E2E Verification (No Tests Skipped)
 
 - **relay_check**: Always `true` in Commit-Boost config — no CI bypass
+- **Commit-Boost signer**: No bypass in install. In CI, install enables signer but does not start it (keys not yet present). ci_test_e2e adds dummy keys, then enables and starts signer. Root cause fix, not skip.
 - **Dummy validator keys** (besu+lighthouse+commit-boost): Required for signer; failure = FAIL (not SKIP)
 - **Service active checks**: PBS, signer, ETHGas use `_verify_service_active` — fail if not active
 - **Caddy/Nginx**: Tested in run-2-web job; matrix jobs skip to save time (not a test skip)
+
+### CI_E2E Skips (Infrastructure-Required Only)
+
+These are not test bypasses — they reflect Docker/container limits:
+
+| Skip | Reason |
+|------|--------|
+| UFW | Container lacks kernel modules for iptables/nftables |
+| Security validation (run_2) | Phase 2 E2E does not run run_1; security_monitor absent |
+| Snap/timedatectl (install_dependencies) | Snap and timedatectl do not work in Docker |
+| Caddy minimal config | Default Caddy has no plugins; production uses dns/rate_limit |
 
 ### CI Test Scripts
 
