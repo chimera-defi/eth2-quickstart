@@ -241,9 +241,12 @@ sudo sed -i '/^\[Service\]/a Environment="CB_CONFIG='"$CONFIG_DIR"'/cb-config.to
 # PBS: start immediately (drop-in replacement for MEV-Boost)
 enable_and_start_systemd_service "commit-boost-pbs"
 
-# Signer: start if client detected AND keys exist; in CI/E2E, always start for testing
-if [[ "$SIGNER_READY" == "true" ]] || [[ "${CI_E2E:-false}" == "true" ]]; then
+# Signer: start if client detected AND keys exist. In CI/E2E, defer start until keys added (ci_test_e2e)
+# — no bypass: we never start signer without keys
+if [[ "$SIGNER_READY" == "true" ]]; then
     enable_and_start_systemd_service "commit-boost-signer"
+elif [[ "${CI_E2E:-false}" == "true" ]]; then
+    enable_systemd_service "commit-boost-signer"  # Enable only; ci_test_e2e adds keys then starts
 else
     sudo systemctl daemon-reload 2>/dev/null || true
 fi
@@ -255,8 +258,10 @@ echo ""
 log_info "Commit-Boost ${LATEST_VERSION} is running on $COMMIT_BOOST_HOST:$COMMIT_BOOST_PORT"
 log_info "Your consensus client already points here via \$MEV_HOST:\$MEV_PORT — no config changes needed."
 
-if [[ "$SIGNER_READY" == "true" ]] || [[ "${CI_E2E:-false}" == "true" ]]; then
+if [[ "$SIGNER_READY" == "true" ]]; then
     log_info "Signer auto-configured for $SIGNER_FORMAT and started."
+elif [[ "${CI_E2E:-false}" == "true" ]]; then
+    log_info "Signer enabled (CI E2E: keys added by ci_test_e2e, then started)."
 elif [[ -n "$SIGNER_FORMAT" ]]; then
     echo ""
     log_warn "Signer pre-configured for $SIGNER_FORMAT but NOT started (keys not found at $SIGNER_KEYS)."

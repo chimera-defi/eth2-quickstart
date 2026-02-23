@@ -83,9 +83,7 @@ if [[ "$PHASE" == "2" ]]; then
     RUN2_CMD=("$PROJECT_ROOT/run_2.sh" --execution="$E2E_EXEC" --consensus="$E2E_CONS" --mev="$E2E_MEV" --skip-deps)
     [[ "$E2E_ETHGAS_FLAG" == "true" ]] && RUN2_CMD+=(--ethgas)
 
-    ETHGAS_LABEL=""
-    [[ "$E2E_ETHGAS_FLAG" == "true" ]] && ETHGAS_LABEL=" + ethgas"
-    log_header "Executing run_2.sh ($E2E_EXEC + $E2E_CONS + $E2E_MEV${ETHGAS_LABEL})"
+    log_header "Executing run_2.sh ($E2E_EXEC + $E2E_CONS + $E2E_MEV${E2E_ETHGAS_FLAG:+ + ethgas})"
     run2_log="/tmp/run2_e2e_$$.log"
     if ! run_script_with_log "$run2_log" "${RUN2_CMD[@]}"; then
         record_test "run_2.sh execution" "FAIL"
@@ -103,7 +101,8 @@ if [[ "$PHASE" == "2" ]]; then
         log_header "Creating dummy validator keys for Commit-Boost signer"
         if source "$SCRIPT_DIR/lib/e2e_dummy_validator_keys.sh" && create_dummy_validator_keys "$E2E_CONS"; then
             record_test "Dummy validator keys created" "PASS"
-            sudo systemctl restart commit-boost-signer 2>/dev/null || true
+            # Install defers signer start until keys exist; enable and start now
+            sudo systemctl enable --now commit-boost-signer 2>/dev/null || true
             sleep 3
         else
             log_error "Dummy validator keys failed — signer will not start without keys"
