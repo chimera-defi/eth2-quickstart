@@ -412,9 +412,9 @@ enable_and_start_systemd_service() {
             log_warn "CI E2E: commit-boost-signer not active (no keys yet — will restart after import)"
             return 0
         fi
-        # Services like cl/validator may take a few seconds to become active
+        # Services like cl/validator may take 30-60s in CI (execution client init, checkpoint sync)
         local elapsed=0
-        while [[ $elapsed -lt 30 ]]; do
+        while [[ $elapsed -lt 60 ]]; do
             sleep 2
             elapsed=$((elapsed + 2))
             if sudo systemctl is-active --quiet "$service_name"; then
@@ -422,7 +422,7 @@ enable_and_start_systemd_service() {
                 return 0
             fi
         done
-        log_error "Failed to start systemd service: $service_name"
+        log_error "Failed to start systemd service: $service_name (waited 60s)"
         return 1
     fi
 }
@@ -1228,6 +1228,15 @@ get_script_directories() {
 
 
 
+# Expand $VAR placeholders in config files (from exports.sh)
+_expand_config_vars() {
+    local file="$1"
+    [[ ! -f "$file" ]] && return 1
+    # Expand common variables; use | as delimiter to avoid escaping /
+    sed -i "s|\\\$LH|${LH:-127.0.0.1}|g; s|\\\$ENGINE_PORT|${ENGINE_PORT:-8551}|g; s|\\\$CONSENSUS_HOST|${CONSENSUS_HOST:-127.0.0.1}|g; s|\\\$MEV_HOST|${MEV_HOST:-127.0.0.1}|g; s|\\\$MEV_PORT|${MEV_PORT:-18550}|g" "$file"
+    return 0
+}
+
 # 6. Configuration Merging - merge_client_config()
 merge_client_config() {
     local client_name="$1"
@@ -1272,10 +1281,12 @@ merge_client_config() {
                     cat "$custom_config"
                 } >> "$output_config"
             fi
+            _expand_config_vars "$output_config"
             ;;
         *.toml)
-            # For TOML, we'll do a simple concatenation (custom overrides base)
+            # For TOML, concatenate then expand variables from exports.sh
             cat "$base_config" "$custom_config" > "$output_config"
+            _expand_config_vars "$output_config"
             ;;
         *)
             log_error "Unsupported config format: $base_config"
