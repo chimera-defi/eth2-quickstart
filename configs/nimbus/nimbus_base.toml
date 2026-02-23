@@ -1,4 +1,5 @@
 # Nimbus Base Configuration File
+# Current as of Nimbus 24.x — use REST API (JSON-RPC removed v22.6+)
 
 # Network settings
 network = "mainnet"
@@ -8,7 +9,7 @@ udp-port = 9000
 # Execution layer
 web3-url = "http://$LH:$ENGINE_PORT"
 
-# REST API
+# REST API (required; JSON-RPC deprecated and removed)
 rest = true
 rest-address = "$CONSENSUS_HOST"
 rest-allow-origin = "*"

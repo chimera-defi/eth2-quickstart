@@ -1,6 +1,7 @@
 # Prysm Beacon Node Configuration
 # Base configuration - custom settings are merged during installation
 # See docs/PRYSM_FLAGS_ANALYSIS.md for flag documentation
+# Current as of Prysm v6.x — min-builder-bid in Gwei (2e6 = 0.002 ETH)
 #
 # Philosophy: Only set flags that differ from Prysm defaults or are required.
 # This allows Prysm to improve defaults without our config overriding them.

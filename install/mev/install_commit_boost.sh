@@ -196,6 +196,7 @@ fi
 cat > "$CONFIG_DIR/cb-config.toml" << EOF
 # Commit-Boost Configuration — generated $(date +%Y-%m-%d)
 # Docs: https://commit-boost.github.io/commit-boost-client/get_started/configuration/
+# Schema: chain, [pbs], [[relays]], [signer], [metrics], [logs.*]
 
 chain = "Mainnet"
 
