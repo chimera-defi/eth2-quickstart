@@ -105,10 +105,13 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 
 ### E2E Verification (No Tests Skipped)
 
-- **relay_check**: Always `true` in Commit-Boost config — no CI bypass
+- **relay_check**: `true` in production; `false` in CI_E2E only (Docker cannot reach mainnet relays — infra limit)
 - **Commit-Boost signer**: No bypass in install. In CI, install enables signer but does not start it (keys not yet present). ci_test_e2e adds dummy keys, then enables and starts signer. Root cause fix, not skip.
 - **Dummy validator keys** (besu+lighthouse+commit-boost): Required for signer; failure = FAIL (not SKIP)
-- **Service active checks**: PBS, signer, ETHGas use `_verify_service_active` — fail if not active
+- **Service active checks** (block on failure):
+  - eth1, cl, validator (when present): `_verify_service_active` — fail if not running
+  - MEV-Boost: `_verify_service_active "mev"` when E2E_MEV=mev-boost
+  - Commit-Boost: PBS, signer, ETHGas (if present)
 - **Caddy/Nginx**: Tested in run-2-web job; matrix jobs skip to save time (not a test skip)
 
 ### CI_E2E Skips (Infrastructure-Required Only)
@@ -121,6 +124,13 @@ These are not test bypasses — they reflect Docker/container limits:
 | Security validation (run_2) | Phase 2 E2E does not run run_1; security_monitor absent |
 | Snap/timedatectl (install_dependencies) | Snap and timedatectl do not work in Docker |
 | Caddy minimal config | Default Caddy has no plugins; production uses dns/rate_limit |
+| Commit-Boost relay_check | Docker cannot reach mainnet relays; PBS would exit on startup |
+
+### Gaps Addressed (2025-02)
+
+Previously we only verified binaries installed and MEV services active. We now **block** on:
+- **eth1, cl, validator** — must be running (not just registered)
+- **MEV-Boost** — `mev` service must be active when E2E_MEV=mev-boost
 
 ### CI Test Scripts
 
