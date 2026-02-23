@@ -1,138 +1,77 @@
 #!/bin/bash
-# Creates dummy validator keys for E2E testing of Commit-Boost signer
-# Used when CI_E2E=true and E2E_MEV=commit-boost - signer needs keys to be fully active
-# Supports: lighthouse, prysm (via lighthouse validator-manager + client-specific import)
+# Creates dummy validator keys for Commit-Boost signer in E2E (CI_E2E=true, E2E_MEV=commit-boost).
+# Signer needs keys to be fully active; without them it shows "pre-configured but will start after you import keys".
+# Supports: lighthouse (via validator-manager create + import to running VC)
+#
+# Root cause (VC api-token): Lighthouse VC creates api-token.txt on startup. In CI/Docker the VC
+# can take 30-90s to initialize (beacon sync, HTTP server). We wait for cl (beacon) then validator,
+# then poll for api-token up to 90s.
 
 create_dummy_validator_keys() {
     local cons="$1"
-    case "$cons" in
-        lighthouse)
-            create_lighthouse_dummy_keys
-            ;;
-        prysm)
-            create_prysm_dummy_keys
-            ;;
-        *)
-            log_info "Dummy keys not implemented for $cons (signer may run without keys)"
-            return 1
-            ;;
-    esac
-}
+    [[ "$cons" != "lighthouse" ]] && return 1
 
-create_lighthouse_dummy_keys() {
     local lh_bin="$HOME/lighthouse/lighthouse"
     local vc_token="$HOME/.lighthouse/mainnet/validators/api-token.txt"
     local tmp_keys
     tmp_keys=$(mktemp -d)
+    trap 'rm -rf "$tmp_keys"' EXIT
 
     if [[ ! -f "$lh_bin" ]]; then
         log_warn "Lighthouse binary not found at $lh_bin"
-        rm -rf "$tmp_keys"
         return 1
     fi
 
-    # Create 1 validator with dummy withdrawal address
-    # Use standard test mnemonic; --stdin-inputs reads mnemonic from stdin
+    # Wait for beacon (cl) then validator — validator depends on cl; CI can take 60-90s
+    if declare -f _wait_for_service &>/dev/null; then
+        log_info "Waiting for Lighthouse beacon (cl) service (up to 60s)..."
+        if ! _wait_for_service "cl" 60; then
+            log_warn "Lighthouse beacon (cl) not active"
+            log_warn "Diagnostics: sudo systemctl status cl"
+            sudo systemctl status cl 2>/dev/null || true
+            return 1
+        fi
+        log_info "Waiting for Lighthouse validator (VC) service (up to 60s)..."
+        if ! _wait_for_service "validator" 60; then
+            log_warn "Lighthouse validator not active"
+            log_warn "Diagnostics: sudo systemctl status validator"
+            sudo systemctl status validator 2>/dev/null || true
+            log_warn "Beacon logs: sudo journalctl -u cl -n 20 --no-pager"
+            sudo journalctl -u cl -n 20 --no-pager 2>/dev/null || true
+            return 1
+        fi
+    fi
+
     local mnemonic="abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
     if ! echo "$mnemonic" | "$lh_bin" validator-manager create \
-        --stdin-inputs \
-        --network mainnet \
-        --first-index 0 \
-        --count 1 \
+        --stdin-inputs --network mainnet --first-index 0 --count 1 \
         --eth1-withdrawal-address 0x0000000000000000000000000000000000000001 \
         --output-path "$tmp_keys"; then
         log_warn "lighthouse validator-manager create failed"
-        rm -rf "$tmp_keys"
         return 1
     fi
 
-    if [[ ! -f "$tmp_keys/validators.json" ]]; then
-        log_warn "validators.json not created"
-        rm -rf "$tmp_keys"
-        return 1
-    fi
+    [[ ! -f "$tmp_keys/validators.json" ]] && log_warn "validators.json not created" && return 1
 
-    # Import to VC (must be running). VC creates api-token on first start
+    # VC creates api-token on startup; in CI can take 30-90s (beacon sync, init)
+    log_info "Waiting for VC api-token at $vc_token (up to 90s)..."
     local i
-    for i in $(seq 1 10); do
+    for i in $(seq 1 45); do
         [[ -f "$vc_token" ]] && break
         sleep 2
     done
     if [[ ! -f "$vc_token" ]]; then
-        log_warn "VC api-token not found at $vc_token (validator service may not have created it yet)"
-        rm -rf "$tmp_keys"
+        log_warn "VC api-token not found after 90s (validator may still be initializing)"
+        log_warn "Diagnostics: ls -la $(dirname "$vc_token")"
+        ls -la "$(dirname "$vc_token")" 2>/dev/null || true
         return 1
     fi
 
-    if ! "$lh_bin" validator-manager import \
-        --network mainnet \
-        --vc-token "$vc_token" \
+    if ! "$lh_bin" validator-manager import --network mainnet --vc-token "$vc_token" \
         --validators-file "$tmp_keys/validators.json"; then
         log_warn "lighthouse validator-manager import failed"
-        rm -rf "$tmp_keys"
         return 1
     fi
 
-    rm -rf "$tmp_keys"
-    return 0
-}
-
-create_prysm_dummy_keys() {
-    local lh_bin="$HOME/lighthouse/lighthouse"
-    local wallet_dir="$HOME/.eth2validators/prysm-wallet-v2/direct"
-    local accounts_dir="$wallet_dir/accounts"
-    local pass_file="$HOME/secrets/pass.txt"
-    local tmp_keys
-    tmp_keys=$(mktemp -d)
-
-    if [[ ! -f "$lh_bin" ]] || ! command -v jq &>/dev/null; then
-        log_warn "Lighthouse or jq not found (needed for Prysm key generation)"
-        rm -rf "$tmp_keys"
-        return 1
-    fi
-
-    local mnemonic="abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
-    if ! echo "$mnemonic" | "$lh_bin" validator-manager create \
-        --stdin-inputs \
-        --network mainnet \
-        --first-index 0 \
-        --count 1 \
-        --eth1-withdrawal-address 0x0000000000000000000000000000000000000001 \
-        --output-path "$tmp_keys"; then
-        log_warn "lighthouse validator-manager create failed (Prysm keys)"
-        rm -rf "$tmp_keys"
-        return 1
-    fi
-
-    if [[ ! -f "$tmp_keys/validators.json" ]]; then
-        log_warn "validators.json not created"
-        rm -rf "$tmp_keys"
-        return 1
-    fi
-
-    local keystore_json password
-    keystore_json=$(jq -r '.[0].voting_keystore' "$tmp_keys/validators.json")
-    password=$(jq -r '.[0].voting_keystore_password' "$tmp_keys/validators.json")
-    [[ -z "$keystore_json" || "$keystore_json" == "null" ]] && log_warn "Failed to extract keystore" && rm -rf "$tmp_keys" && return 1
-
-    mkdir -p "$accounts_dir"
-    mkdir -p "$HOME/secrets"
-    chmod 700 "$HOME/secrets" 2>/dev/null || true
-
-    local uuid
-    uuid=$(echo "$keystore_json" | jq -r '.uuid')
-    echo "$keystore_json" > "$accounts_dir/keystore-m_12381_3600_0_0_0-${uuid}.json"
-    echo "$password" > "$accounts_dir/keystore-m_12381_3600_0_0_0-${uuid}.txt"
-
-    echo "$keystore_json" | jq -s '.' > "$accounts_dir/all-accounts.keystore.json" 2>/dev/null || {
-        log_warn "Failed to create all-accounts.keystore.json"
-        rm -rf "$tmp_keys"
-        return 1
-    }
-
-    echo "$password" > "$pass_file"
-    chmod 600 "$pass_file"
-
-    rm -rf "$tmp_keys"
     return 0
 }

@@ -380,8 +380,8 @@ enable_systemd_service() {
         return 1
     fi
     if ! sudo systemctl enable "$service_name"; then
-        if [[ "${CI_E2E:-}" == "true" ]]; then
-            log_warn "CI E2E: systemctl enable failed, skipping for $service_name"
+        if [[ "${CI_E2E:-}" == "true" ]] && [[ "$service_name" == "commit-boost-signer" ]]; then
+            log_warn "CI E2E: systemctl enable failed for $service_name (may need keys first)"
             return 0
         fi
         return 1
@@ -390,6 +390,7 @@ enable_systemd_service() {
 }
 
 # Enable and start systemd service
+# CI_E2E bypass: only for commit-boost-signer when it can't start without keys (we add keys after install)
 enable_and_start_systemd_service() {
     local service_name="$1"
     
@@ -397,8 +398,8 @@ enable_and_start_systemd_service() {
         return 1
     fi
     if ! sudo systemctl start "$service_name"; then
-        if [[ "${CI_E2E:-}" == "true" ]]; then
-            log_warn "CI E2E: systemctl start failed (not in systemd), service file created for $service_name"
+        if [[ "${CI_E2E:-}" == "true" ]] && [[ "$service_name" == "commit-boost-signer" ]]; then
+            log_warn "CI E2E: commit-boost-signer start failed (no keys yet — will restart after import)"
             return 0
         fi
         log_error "Failed to start systemd service: $service_name"
@@ -407,11 +408,21 @@ enable_and_start_systemd_service() {
     if sudo systemctl is-active --quiet "$service_name"; then
         log_info "Started systemd service: $service_name"
     else
-        if [[ "${CI_E2E:-}" == "true" ]]; then
-            log_warn "CI E2E: service $service_name not active (expected when not in systemd)"
+        if [[ "${CI_E2E:-}" == "true" ]] && [[ "$service_name" == "commit-boost-signer" ]]; then
+            log_warn "CI E2E: commit-boost-signer not active (no keys yet — will restart after import)"
             return 0
         fi
-        log_error "Failed to start systemd service: $service_name"
+        # Services like cl/validator may take 30-60s in CI (execution client init, checkpoint sync)
+        local elapsed=0
+        while [[ $elapsed -lt 60 ]]; do
+            sleep 2
+            elapsed=$((elapsed + 2))
+            if sudo systemctl is-active --quiet "$service_name"; then
+                log_info "Started systemd service: $service_name"
+                return 0
+            fi
+        done
+        log_error "Failed to start systemd service: $service_name (waited 60s)"
         return 1
     fi
 }
@@ -1213,9 +1224,12 @@ get_script_directories() {
     log_info "Project root: $project_root"
 }
 
-
-
-
+# Expand $VAR placeholders in config files (from exports.sh)
+_expand_config_vars() {
+    local file="$1"
+    [[ ! -f "$file" ]] && return 1
+    sed -i "s|\\\$LH|${LH:-127.0.0.1}|g; s|\\\$ENGINE_PORT|${ENGINE_PORT:-8551}|g; s|\\\$CONSENSUS_HOST|${CONSENSUS_HOST:-127.0.0.1}|g; s|\\\$MEV_HOST|${MEV_HOST:-127.0.0.1}|g; s|\\\$MEV_PORT|${MEV_PORT:-18550}|g" "$file"
+}
 
 # 6. Configuration Merging - merge_client_config()
 merge_client_config() {
@@ -1261,10 +1275,12 @@ merge_client_config() {
                     cat "$custom_config"
                 } >> "$output_config"
             fi
+            _expand_config_vars "$output_config"
             ;;
         *.toml)
-            # For TOML, we'll do a simple concatenation (custom overrides base)
+            # For TOML, concatenate then expand variables from exports.sh
             cat "$base_config" "$custom_config" > "$output_config"
+            _expand_config_vars "$output_config"
             ;;
         *)
             log_error "Unsupported config format: $base_config"
