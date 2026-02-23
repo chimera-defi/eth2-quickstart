@@ -28,16 +28,17 @@ create_dummy_validator_keys() {
         return 1
     fi
 
-    # Beacon REST must be responding before VC can connect; poll up to 60s
-    log_info "Waiting for beacon REST API on :5052 (up to 60s)..."
+    # Beacon REST must be responding before VC can connect; poll up to 90s
+    # Note: /eth/v1/node/health returns 503 during sync — omit -f so 5xx counts as "API up"
+    log_info "Waiting for beacon REST API on :5052 (up to 90s)..."
     local i
-    for i in $(seq 1 30); do
-        if curl -sSf -o /dev/null --connect-timeout 2 "http://127.0.0.1:5052/eth/v1/node/health" 2>/dev/null; then
+    for i in $(seq 1 45); do
+        if curl -sS -o /dev/null --connect-timeout 2 "http://127.0.0.1:5052/eth/v1/node/health" 2>/dev/null; then
             break
         fi
         sleep 2
     done
-    if ! curl -sSf -o /dev/null --connect-timeout 2 "http://127.0.0.1:5052/eth/v1/node/health" 2>/dev/null; then
+    if ! curl -sS -o /dev/null --connect-timeout 2 "http://127.0.0.1:5052/eth/v1/node/health" 2>/dev/null; then
         log_warn "Beacon REST API not responding on :5052"
         sudo journalctl -u cl -n 15 --no-pager 2>/dev/null || true
         return 1
