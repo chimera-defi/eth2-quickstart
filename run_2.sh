@@ -120,7 +120,7 @@ if ! "$SCRIPT_DIR/install/utils/verify_client_configs.sh"; then
 fi
 
 # Non-interactive path: install specified clients via flags
-# Execution before consensus so beacon can connect immediately (eth1 ready)
+# Consensus before execution (Prysm generates JWT; beacon starts, connects to eth1 once it exists)
 if [[ "$FLAGS_MODE" == "true" ]]; then
     # Validate ETHGas flag constraints
     if [[ "$ETHGAS_FLAG" == "true" && "$MEV_FLAG" != "commit-boost" ]]; then
@@ -129,6 +129,17 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
     fi
 
     FAILED=0
+    if [[ -n "$CONSENSUS_CLIENT" ]]; then
+        case "$CONSENSUS_CLIENT" in
+            prysm|lighthouse|lodestar|teku|nimbus|grandine)
+                run_install_script "$SCRIPT_DIR/install/consensus/${CONSENSUS_CLIENT}.sh" "$CONSENSUS_CLIENT" || FAILED=1
+                ;;
+            *)
+                log_error "Unknown consensus client: $CONSENSUS_CLIENT"
+                exit 1
+                ;;
+        esac
+    fi
     if [[ -n "$EXECUTION_CLIENT" ]]; then
         if [[ ! -s "$HOME/secrets/jwt.hex" ]]; then
             ensure_directory "$HOME/secrets"
@@ -141,17 +152,6 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
                 ;;
             *)
                 log_error "Unknown execution client: $EXECUTION_CLIENT"
-                exit 1
-                ;;
-        esac
-    fi
-    if [[ -n "$CONSENSUS_CLIENT" ]]; then
-        case "$CONSENSUS_CLIENT" in
-            prysm|lighthouse|lodestar|teku|nimbus|grandine)
-                run_install_script "$SCRIPT_DIR/install/consensus/${CONSENSUS_CLIENT}.sh" "$CONSENSUS_CLIENT" || FAILED=1
-                ;;
-            *)
-                log_error "Unknown consensus client: $CONSENSUS_CLIENT"
                 exit 1
                 ;;
         esac
@@ -268,19 +268,19 @@ if ! validate_menu_choice "$client_choice" 2; then
 fi
 
 # Function to install default clients (reduces code duplication)
-# Execution before consensus so beacon can connect immediately (eth1 ready)
+# Consensus before execution (Prysm generates JWT)
 install_default_clients() {
     log_info "Installing default clients (Geth + Prysm + Selected MEV)..."
     
-    log_info "Installing Geth..."
-    if ! "$SCRIPT_DIR/install/execution/geth.sh"; then
-        log_error "Failed to install Geth"
-        return 1
-    fi
-
     log_info "Installing Prysm..."
     if ! "$SCRIPT_DIR/install/consensus/prysm.sh"; then
         log_error "Failed to install Prysm"
+        return 1
+    fi
+
+    log_info "Installing Geth..."
+    if ! "$SCRIPT_DIR/install/execution/geth.sh"; then
+        log_error "Failed to install Geth"
         return 1
     fi
 
@@ -371,7 +371,7 @@ case "$client_choice" in
         fi
         
         log_info "Please run the recommended install scripts from the client selection tool"
-        log_info "Example: ./install/execution/geth.sh && ./install/consensus/prysm.sh"
+        log_info "Example: ./install/consensus/prysm.sh && ./install/execution/geth.sh"
         ;;
     2)
         if ! install_default_clients; then

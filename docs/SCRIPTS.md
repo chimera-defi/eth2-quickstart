@@ -53,7 +53,7 @@ ssh LOGIN_UNAME@<server-ip>
 
 **Actions:**
 - Installs `snapd`
-- Runs installers in order: execution first (`./geth.sh`), then consensus (`./prysm.sh`), then MEV (`./install_mev_boost.sh`) — beacon needs eth1 ready
+- Runs installers: `./geth.sh`, `./prysm.sh`, `./install_mev_boost.sh`
 - Echoes next steps for Nginx + SSL
 
 **Start services:**
