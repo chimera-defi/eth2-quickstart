@@ -89,6 +89,13 @@ sudo sed -i "/^\[Service\]/a Environment=\"RUST_LOG=info\"" /etc/systemd/system/
 enable_and_start_systemd_service "cl"
 enable_and_start_systemd_service "validator"
 
+# Verify beacon REST API is enabled (required for VC, MEV, E2E health checks)
+if ! grep -q '--http' /etc/systemd/system/cl.service 2>/dev/null; then
+    log_error "cl.service missing --http flag (REST API disabled) — check ExecStart"
+    grep '^ExecStart=' /etc/systemd/system/cl.service 2>/dev/null || true
+    exit 1
+fi
+
 # Show completion information
 log_installation_complete "Lighthouse" "cl"
 
