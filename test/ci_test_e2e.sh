@@ -95,19 +95,8 @@ if [[ "$PHASE" == "2" ]]; then
     rm -f "$run2_log"
     record_test "run_2.sh execution" "PASS"
 
-    # Create dummy validator keys for Commit-Boost signer (lighthouse only)
-    # Required: signer needs keys to start; without them _verify_service_active will fail
-    if [[ "$E2E_MEV" == "commit-boost" && "$E2E_CONS" == "lighthouse" ]]; then
-        log_header "Creating dummy validator keys for Commit-Boost signer"
-        if source "$SCRIPT_DIR/lib/e2e_dummy_validator_keys.sh" && create_dummy_validator_keys "$E2E_CONS"; then
-            record_test "Dummy validator keys created" "PASS"
-            # Install defers signer start until keys exist; enable and start now
-            sudo systemctl enable --now commit-boost-signer 2>/dev/null || true
-        else
-            log_error "Dummy validator keys failed — signer will not start without keys"
-            record_test "Dummy validator keys created" "FAIL"
-        fi
-    fi
+    # Dummy keys (lighthouse+commit-boost): created by run_2.sh before Commit-Boost install
+    # so signer starts during install — no post-install step needed
 
     log_header "Verifying run_2.sh Results"
 
@@ -150,6 +139,13 @@ if [[ "$PHASE" == "2" ]]; then
                 for svc in commit-boost-pbs commit-boost-signer; do
                     _verify_service_active "$svc" 30
                 done
+                if [[ "$E2E_CONS" == "lighthouse" ]]; then
+                    if [[ -n "$(find "$HOME/.lighthouse/mainnet/validators" -name "*.json" -maxdepth 3 2>/dev/null | head -1)" ]]; then
+                        record_test "Dummy validator keys (run_2 created before Commit-Boost)" "PASS"
+                    else
+                        record_test "Dummy validator keys (run_2 created before Commit-Boost)" "FAIL"
+                    fi
+                fi
                 ;;
             *) verify_installed "MEV" test -f "$HOME/mev-boost/mev-boost" ;;
         esac

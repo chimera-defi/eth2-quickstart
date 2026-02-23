@@ -107,7 +107,7 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 
 - **relay_check**: Always `true` (no skip in Docker)
 - **Commit-Boost signer**: No bypass in install. In CI, install enables signer but does not start it (keys not yet present). ci_test_e2e adds dummy keys, then enables and starts signer. Root cause fix, not skip.
-- **Dummy validator keys** (besu+lighthouse+commit-boost): Required for signer; failure = FAIL (not SKIP)
+- **Dummy validator keys** (lighthouse+commit-boost): Created by run_2 before Commit-Boost install so signer starts during install; failure = FAIL
 - **Service active checks** (block on failure):
   - eth1, cl, validator (when present): `_verify_service_active` — fail if not running
   - MEV-Boost: `_verify_service_active "mev"` when E2E_MEV=mev-boost
