@@ -414,6 +414,25 @@ enable_and_start_systemd_service() {
     fi
 }
 
+# Wait for Engine API port to be listening (eth1.service active != Engine API ready)
+# Java clients (Besu, Teku) and Erigon can take 30-90s to open 8551 after process start
+# Usage: wait_for_engine_api [timeout_seconds]
+# Returns 0 when port is listening, 1 on timeout
+wait_for_engine_api() {
+    local timeout="${1:-90}"
+    local port="${ENGINE_PORT:-8551}"
+    local elapsed=0
+    while [[ $elapsed -lt $timeout ]]; do
+        if ss -tlnp 2>/dev/null | grep -q ":$port "; then
+            log_info "Engine API port $port listening (after ${elapsed}s)"
+            return 0
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+    log_error "Engine API port $port not listening after ${timeout}s (eth1 may still be initializing)"
+    return 1
+}
 
 # =============================================================================
 # SYSTEM MANAGEMENT FUNCTIONS

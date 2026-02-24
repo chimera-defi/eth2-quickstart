@@ -49,17 +49,14 @@
 
 ## Potential Fixes (Not Implemented — RCA Only)
 
-1. **Wait for Engine API port before starting beacon**  
-   After `enable_and_start_systemd_service "eth1"`, add a poll for `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8551` or `ss -tlnp | grep 8551` (with timeout 90–120s) before installing the consensus client.
-
-2. **Increase beacon REST poll**  
+1. **Increase beacon REST poll**  
    Extend the 90s poll in `create_dummy_validator_keys` — mitigates symptom but does not fix the underlying race.
 
-3. **Systemd socket activation**  
+2. **Systemd socket activation**  
    Use a socket unit for 8551 so systemd only starts the beacon when the socket is ready — more invasive.
 
-4. **Pre-flight in lighthouse.sh**  
-   Before `enable_and_start_systemd_service "cl"`, poll for Engine API readiness (port 8551 or health endpoint) with a timeout.
+3. **Pre-flight in consensus scripts**  
+   Before `enable_and_start_systemd_service "cl"`, poll for Engine API readiness (port 8551) — now done centrally in run_2.sh via `wait_for_engine_api`.
 
 ---
 
@@ -67,6 +64,8 @@
 
 1. **Removed --http grep verification**: The check was a false positive (ExecStart has --http; grep failed in CI). We control the template in lighthouse.sh — no runtime verification needed.
 2. **run_install_script trap**: Use global `_run_install_log_file` so `trap 'rm -f "$_run_install_log_file"' RETURN` works with single quotes (SC2064 compliant). Local vars are out of scope when RETURN trap runs; global avoids unbound variable with `set -u`.
+3. **Engine API readiness** (fix for erigon+teku cl failure): Added `wait_for_engine_api` in `lib/common_functions.sh`. `run_2.sh` now waits for port 8551 to be listening (up to 90s) before installing the consensus client. Fixes CI E2E failures where cl (Teku beacon) crashed because it couldn't connect to Erigon's Engine API — eth1.service active ≠ Engine API ready.
+4. **Diagnostics on failure**: `_verify_service_active` now dumps `systemctl status` and `journalctl -n 80` when a service fails, so CI logs show the actual error for RCA.
 
 ---
 
