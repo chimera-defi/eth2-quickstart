@@ -503,7 +503,8 @@ run_install_script() {
     fi
     log_info "Installing $name..."
     log_file=$(mktemp)
-    trap 'rm -f "$log_file"' RETURN
+    # Expand log_file when setting trap so RETURN trap runs without unbound variable (set -u)
+    trap "rm -f '$log_file'" RETURN
     set +e
     "$script" 2>&1 | tee "$log_file"
     exit_code=$?
