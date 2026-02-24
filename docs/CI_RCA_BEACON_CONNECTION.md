@@ -65,8 +65,8 @@
 
 ## Fixes Applied (2025-02)
 
-1. **Lighthouse --http verification**: Use `sudo grep` so testuser can read `/etc/systemd/system/cl.service` in Docker (permission denied caused false "missing --http").
-2. **run_install_script trap**: Change `trap 'rm -f "$log_file"' RETURN` to `trap "rm -f '$log_file'" RETURN` so `$log_file` is expanded when the trap is set, avoiding "log_file: unbound variable" when the RETURN trap runs with `set -u`.
+1. **Removed --http grep verification**: The check was a false positive (ExecStart has --http; grep failed in CI). We control the template in lighthouse.sh — no runtime verification needed.
+2. **run_install_script trap**: `trap "rm -f '$log_file'" RETURN` so `$log_file` expands when trap is set, avoiding "log_file: unbound variable" with `set -u`.
 
 ---
 
