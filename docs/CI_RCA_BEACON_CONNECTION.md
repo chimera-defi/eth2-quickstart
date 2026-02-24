@@ -66,7 +66,7 @@
 ## Fixes Applied (2025-02)
 
 1. **Removed --http grep verification**: The check was a false positive (ExecStart has --http; grep failed in CI). We control the template in lighthouse.sh — no runtime verification needed.
-2. **run_install_script trap**: `trap "rm -f '$log_file'" RETURN` so `$log_file` expands when trap is set, avoiding "log_file: unbound variable" with `set -u`.
+2. **run_install_script trap**: Use global `_run_install_log_file` so `trap 'rm -f "$_run_install_log_file"' RETURN` works with single quotes (SC2064 compliant). Local vars are out of scope when RETURN trap runs; global avoids unbound variable with `set -u`.
 
 ---
 
