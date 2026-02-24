@@ -246,6 +246,7 @@ _wait_for_service() {
 
 # Verify service is active and record result (uses _wait_for_service)
 # Usage: _verify_service_active "service-name" [timeout_seconds]
+# On failure: dumps journalctl to CI logs for RCA
 _verify_service_active() {
     local svc="$1"
     local timeout="${2:-30}"
@@ -254,7 +255,11 @@ _verify_service_active() {
         return 0
     else
         record_test "$svc service active" "FAIL"
-        log_error "$svc failed to start - check: sudo journalctl -u $svc -n 50"
+        log_error "$svc failed to start - dumping journal for RCA:"
+        log_error "  systemctl status $svc:"
+        sudo systemctl status "$svc" --no-pager 2>/dev/null | sed 's/^/    /' || true
+        log_error "  journalctl -u $svc -n 80:"
+        sudo journalctl -u "$svc" -n 80 --no-pager 2>/dev/null | sed 's/^/    /' || true
         return 1
     fi
 }

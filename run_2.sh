@@ -146,6 +146,15 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
         esac
     fi
     if [[ -n "$CONSENSUS_CLIENT" ]]; then
+        # eth1.service active != Engine API ready; consensus clients need 8551 listening
+        # Java (Besu, Teku) and Erigon can take 30-90s to open Engine API after process start
+        if [[ -n "$EXECUTION_CLIENT" ]]; then
+            log_info "Waiting for Engine API (port ${ENGINE_PORT:-8551}) before consensus install..."
+            if ! wait_for_engine_api 90; then
+                log_error "Engine API not ready — consensus client may fail to connect"
+                FAILED=1
+            fi
+        fi
         case "$CONSENSUS_CLIENT" in
             prysm|lighthouse|lodestar|teku|nimbus|grandine)
                 run_install_script "$SCRIPT_DIR/install/consensus/${CONSENSUS_CLIENT}.sh" "$CONSENSUS_CLIENT" || FAILED=1
