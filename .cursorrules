@@ -616,6 +616,7 @@ if [[ ${#jwt_content} -eq 64 ]] && [[ "$jwt_content" =~ ^[a-fA-F0-9]+$ ]]; then 
 --exclude=SC2034  # Unused variables (template scripts)
 --exclude=SC2031  # Subshell variable modification (testing pattern)
 --exclude=SC2181  # Check exit code directly (whiptail/dialog pattern)
+--exclude=SC2064  # Trap: we expand at set-time so RETURN trap avoids unbound variable (set -u)
 ```
 
 ### Shell Script Validation (.github/workflows/shellcheck.yml)
@@ -898,7 +899,7 @@ This allows the TUI wizard to save settings without modifying `exports.sh` direc
 ```bash
 # 1. Shellcheck with project exclusions
 find . -name "*.sh" -type f ! -path "./.git/*" \
-    -exec shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 {} \;
+    -exec shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181,SC2064 {} \;
 
 # 2. Syntax validation
 find . -name "*.sh" -type f ! -path "./.git/*" -exec bash -n {} \;

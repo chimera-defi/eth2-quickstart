@@ -249,8 +249,8 @@ sudo sed -i '/^\[Service\]/a Environment="CB_CONFIG='"$CONFIG_DIR"'/cb-config.to
 # PBS: start immediately (drop-in replacement for MEV-Boost)
 enable_and_start_systemd_service "commit-boost-pbs"
 
-# Signer: start if client detected AND keys exist. In CI/E2E, defer start until keys added (ci_test_e2e)
-# — no bypass: we never start signer without keys
+# Signer: start if client detected AND keys exist. In CI/E2E lighthouse+commit-boost, run_2 creates
+# dummy keys before this script runs, so SIGNER_READY is typically true here.
 if [[ "$SIGNER_READY" == "true" ]]; then
     enable_and_start_systemd_service "commit-boost-signer"
 elif [[ "${CI_E2E:-false}" == "true" ]]; then
