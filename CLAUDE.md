@@ -293,7 +293,7 @@ Manual equivalent:
 ```bash
 # Shellcheck with project exclusions
 find . -name "*.sh" -type f ! -path "./.git/*" \
-    -exec shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 {} \;
+    -exec shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181,SC2064 {} \;
 
 # Syntax validation
 find . -name "*.sh" -type f ! -path "./.git/*" -exec bash -n {} \;

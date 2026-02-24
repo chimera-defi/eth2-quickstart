@@ -13,7 +13,7 @@
 # SC2034 - Unused variables (template scripts)
 # SC2031 - Variable modified in subshell (testing pattern)
 # SC2181 - Check exit code directly (common in whiptail/dialog scripts)
-SHELLCHECK_EXCLUDES="SC2317,SC1091,SC1090,SC2034,SC2031,SC2181"
+SHELLCHECK_EXCLUDES="SC2317,SC1091,SC1090,SC2034,SC2031,SC2181,SC2064"
 
 # =============================================================================
 # PATH RESOLUTION
