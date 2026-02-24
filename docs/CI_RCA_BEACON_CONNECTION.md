@@ -63,6 +63,13 @@
 
 ---
 
+## Fixes Applied (2025-02)
+
+1. **Lighthouse --http verification**: Use `sudo grep` so testuser can read `/etc/systemd/system/cl.service` in Docker (permission denied caused false "missing --http").
+2. **run_install_script trap**: Change `trap 'rm -f "$log_file"' RETURN` to `trap "rm -f '$log_file'" RETURN` so `$log_file` is expanded when the trap is set, avoiding "log_file: unbound variable" when the RETURN trap runs with `set -u`.
+
+---
+
 ## Diagnostic Logs (Kept)
 
 On beacon REST failure, we now log:
