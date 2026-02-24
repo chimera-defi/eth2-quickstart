@@ -86,7 +86,8 @@ EOF
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create systemd service
-EXEC_START="$ERIGON_DIR/erigon --config $ERIGON_DIR/config.yaml --externalcl"
+# Explicit authrpc flags ensure Engine API listens on 8551 (config file may not enable it in all Erigon versions)
+EXEC_START="$ERIGON_DIR/erigon --config $ERIGON_DIR/config.yaml --externalcl --authrpc.addr ${LH:-127.0.0.1} --authrpc.port ${ENGINE_PORT:-8551} --authrpc.jwtsecret $HOME/secrets/jwt.hex"
 
 create_systemd_service "eth1" "Erigon Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 

@@ -423,7 +423,7 @@ wait_for_engine_api() {
     local port="${ENGINE_PORT:-8551}"
     local elapsed=0
     while [[ $elapsed -lt $timeout ]]; do
-        if ss -tlnp 2>/dev/null | grep -q ":$port "; then
+        if ss -tln 2>/dev/null | grep -qE ":$port\b"; then
             log_info "Engine API port $port listening (after ${elapsed}s)"
             return 0
         fi
@@ -431,6 +431,11 @@ wait_for_engine_api() {
         elapsed=$((elapsed + 2))
     done
     log_error "Engine API port $port not listening after ${timeout}s (eth1 may still be initializing)"
+    log_error "Diagnostics: eth1 status=$(sudo systemctl is-active eth1 2>/dev/null || echo 'unknown')"
+    log_error "Listening ports (ss -tln):"
+    ss -tln 2>/dev/null | sed 's/^/  /' || true
+    log_error "eth1 journal (last 30 lines):"
+    sudo journalctl -u eth1 -n 30 --no-pager 2>/dev/null | sed 's/^/  /' || true
     return 1
 }
 
