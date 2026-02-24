@@ -493,20 +493,20 @@ setup_firewall_rules() {
 }
 
 # Run install script (used by run_2.sh flag mode)
+# Uses global _run_install_log_file so RETURN trap can reference it (local vars out of scope at trap time)
 run_install_script() {
     local script="$1"
     local name="${2:-$(basename "$script" .sh)}"
-    local log_file exit_code
+    local exit_code
     if [[ ! -f "$script" ]]; then
         log_error "Script not found: $script"
         return 1
     fi
     log_info "Installing $name..."
-    log_file=$(mktemp)
-    # Expand log_file when setting trap so RETURN trap runs without unbound variable (set -u)
-    trap "rm -f '$log_file'" RETURN
+    _run_install_log_file=$(mktemp)
+    trap 'rm -f "$_run_install_log_file"' RETURN
     set +e
-    "$script" 2>&1 | tee "$log_file"
+    "$script" 2>&1 | tee "$_run_install_log_file"
     exit_code=$?
     set -e
     if [[ $exit_code -eq 0 ]]; then
@@ -515,7 +515,7 @@ run_install_script() {
     else
         log_error "Failed to install $name (exit=$exit_code)"
         log_error "Last 15 lines of output:"
-        tail -15 "$log_file" | while IFS= read -r line; do log_error "  $line"; done
+        tail -15 "$_run_install_log_file" | while IFS= read -r line; do log_error "  $line"; done
         return 1
     fi
 }
