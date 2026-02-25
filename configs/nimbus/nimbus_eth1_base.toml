@@ -15,8 +15,7 @@ udp-port = 30303
 # Engine API (engine-api-port/engine-api-address/jwt-secret in custom config)
 # engine-api-enabled deprecated
 
-# Mining settings (disabled for staking)
-miner-enabled = false
+# miner-enabled deprecated in NimbusConf (mining disabled by default for staking)
 
 # Performance
 max-peers = 100

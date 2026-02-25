@@ -113,10 +113,7 @@ engine-api-port = ${NIMBUS_ETH1_ENGINE_PORT:-8551}
 engine-api-address = "$LH"
 jwt-secret = "$HOME/secrets/jwt.hex"
 
-# Mining settings (disabled for staking)
-miner-enabled = false
-miner-coinbase = "$FEE_RECIPIENT"
-miner-extra-data = "$GRAFITTI"
+# miner-enabled/miner-coinbase/miner-extra-data deprecated in NimbusConf (mining off by default)
 
 # Performance
 max-peers = $MAX_PEERS
