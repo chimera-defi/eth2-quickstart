@@ -67,19 +67,18 @@ fi
 
 chmod +x "$ERIGON_DIR/erigon"
 
-# Create Erigon configuration
+# Create Erigon configuration (Erigon 3 — snapshots/prune flags changed)
+# snapshots removed (no such flag in Erigon 3; snapshot sync is default)
+# prune: hrtc -> prune.mode: full (hrtc was Erigon 2 format)
 log_info "Creating Erigon configuration..."
 cat > "$ERIGON_DIR/config.yaml" << EOF
-chain : "mainnet"
-http : true
-http.api : ["admin","engine","eth","erigon","web3","net","debug","db","trace","txpool","personal"]
+chain: "mainnet"
+http: true
+http.api: ["admin","engine","eth","erigon","web3","net","debug","db","trace","txpool","personal"]
 authrpc.jwtsecret: '$HOME/secrets/jwt.hex'
 externalcl: true
-snapshots: true
 nat: any
-rpc.batch.limit: 1000
-torrent.download.rate: 512mb
-prune: hrtc
+prune.mode: "full"
 EOF
 
 # Ensure JWT secret exists
