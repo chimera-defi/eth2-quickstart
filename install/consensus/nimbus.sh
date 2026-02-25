@@ -142,14 +142,13 @@ EOF
 # Create systemd service for beacon node
 BEACON_EXEC_START="$NIMBUS_DIR/build/nimbus_beacon_node --config-file=$NIMBUS_DIR/nimbus.toml"
 
-create_systemd_service "cl" "Nimbus Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
+create_systemd_service "cl" "Nimbus Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target eth1.service" "network-online.target eth1.service"
 
 # Create systemd service for validator
 VALIDATOR_EXEC_START="$NIMBUS_DIR/build/nimbus_validator_client --config-file=$NIMBUS_DIR/validator.toml"
 
-create_systemd_service "validator" "Nimbus Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target"
+create_systemd_service "validator" "Nimbus Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target cl.service"
 
-# Enable and start services
 enable_and_start_systemd_service "cl"
 enable_and_start_systemd_service "validator"
 

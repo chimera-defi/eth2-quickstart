@@ -227,6 +227,43 @@ assert_valid_syntax() {
     fi
 }
 
+# Wait for systemd service to become active (for E2E verification)
+# Usage: _wait_for_service "service-name" [timeout_seconds]
+# Returns 0 if active within timeout, 1 otherwise
+_wait_for_service() {
+    local svc="$1"
+    local timeout="${2:-30}"
+    local elapsed=0
+    while [[ $elapsed -lt $timeout ]]; do
+        if sudo systemctl is-active --quiet "$svc" 2>/dev/null; then
+            return 0
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+    return 1
+}
+
+# Verify service is active and record result (uses _wait_for_service)
+# Usage: _verify_service_active "service-name" [timeout_seconds]
+# On failure: dumps journalctl to CI logs for RCA
+_verify_service_active() {
+    local svc="$1"
+    local timeout="${2:-30}"
+    if _wait_for_service "$svc" "$timeout"; then
+        record_test "$svc service active" "PASS"
+        return 0
+    else
+        record_test "$svc service active" "FAIL"
+        log_error "$svc failed to start - dumping journal for RCA:"
+        log_error "  systemctl status $svc:"
+        sudo systemctl status "$svc" --no-pager 2>/dev/null | sed 's/^/    /' || true
+        log_error "  journalctl -u $svc -n 80:"
+        sudo journalctl -u "$svc" -n 80 --no-pager 2>/dev/null | sed 's/^/    /' || true
+        return 1
+    fi
+}
+
 # Verify client/component installed (for E2E verification)
 # Usage: verify_installed "Name" command args...
 # Example: verify_installed "Geth" command -v geth

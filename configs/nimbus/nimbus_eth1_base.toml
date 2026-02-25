@@ -1,27 +1,21 @@
 # Nimbus-eth1 Base Configuration File
+# Current as of Nimbus-eth1 nightly — rpc-enabled/ws-enabled/engine-api-enabled removed (deprecated in NimbusConf)
 
 # Network settings
 network = "mainnet"
 tcp-port = 30303
 udp-port = 30303
 
-# JSON-RPC settings
-rpc-enabled = true
-rpc-address = "$LH"
-rpc-api = ["eth", "net", "web3", "engine", "admin"]
+# JSON-RPC settings (rpc-port/rpc-address in custom config)
+# rpc-enabled deprecated — presence of rpc-port enables RPC
 
-# WebSocket settings
-ws-enabled = true
-ws-address = "$LH"
-ws-api = ["eth", "net", "web3", "engine"]
+# WebSocket settings (ws-port/ws-address in custom config)
+# ws-enabled deprecated
 
-# Engine API (JWT-secured)
-engine-api-enabled = true
-engine-api-address = "$LH"
-jwt-secret = "$HOME/secrets/jwt.hex"
+# Engine API (engine-api-port/engine-api-address/jwt-secret in custom config)
+# engine-api-enabled deprecated
 
-# Mining settings (disabled for staking)
-miner-enabled = false
+# miner-enabled deprecated in NimbusConf (mining disabled by default for staking)
 
 # Performance
 max-peers = 100

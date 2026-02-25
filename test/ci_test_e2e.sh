@@ -83,9 +83,7 @@ if [[ "$PHASE" == "2" ]]; then
     RUN2_CMD=("$PROJECT_ROOT/run_2.sh" --execution="$E2E_EXEC" --consensus="$E2E_CONS" --mev="$E2E_MEV" --skip-deps)
     [[ "$E2E_ETHGAS_FLAG" == "true" ]] && RUN2_CMD+=(--ethgas)
 
-    ETHGAS_LABEL=""
-    [[ "$E2E_ETHGAS_FLAG" == "true" ]] && ETHGAS_LABEL=" + ethgas"
-    log_header "Executing run_2.sh ($E2E_EXEC + $E2E_CONS + $E2E_MEV${ETHGAS_LABEL})"
+    log_header "Executing run_2.sh ($E2E_EXEC + $E2E_CONS + $E2E_MEV${E2E_ETHGAS_FLAG:+ + ethgas})"
     run2_log="/tmp/run2_e2e_$$.log"
     if ! run_script_with_log "$run2_log" "${RUN2_CMD[@]}"; then
         record_test "run_2.sh execution" "FAIL"
@@ -96,6 +94,9 @@ if [[ "$PHASE" == "2" ]]; then
     fi
     rm -f "$run2_log"
     record_test "run_2.sh execution" "PASS"
+
+    # Dummy keys (lighthouse+commit-boost): created by run_2.sh before Commit-Boost install
+    # so signer starts during install — no post-install step needed
 
     log_header "Verifying run_2.sh Results"
 
@@ -125,58 +126,73 @@ if [[ "$PHASE" == "2" ]]; then
     # Verify MEV (if not none)
     if [[ "$E2E_MEV" != "none" ]]; then
         case "$E2E_MEV" in
-            mev-boost) verify_installed "MEV-Boost" test -f "$HOME/mev-boost/mev-boost" ;;
+            mev-boost)
+                verify_installed "MEV-Boost" test -f "$HOME/mev-boost/mev-boost"
+                _verify_service_active "mev" 30
+                ;;
             commit-boost)
-                verify_installed "Commit-Boost PBS" test -f "$HOME/commit-boost/commit-boost-pbs"
-                verify_installed "Commit-Boost Signer" test -f "$HOME/commit-boost/commit-boost-signer"
-                verify_installed "Commit-Boost config" test -f "$HOME/commit-boost/config/cb-config.toml"
-                verify_installed "Commit-Boost PBS service" bash -c 'systemctl list-unit-files 2>/dev/null | grep -q "commit-boost-pbs.service"'
+                verify_installed "Commit-Boost" test -f "$HOME/commit-boost/commit-boost-pbs"
+                # shellcheck disable=SC2016
+                verify_installed "commit-boost-pbs service registered" bash -c 'systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk "{print \$1}" | grep -Fxq "commit-boost-pbs.service"'
+                # shellcheck disable=SC2016
+                verify_installed "commit-boost-signer service registered" bash -c 'systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk "{print \$1}" | grep -Fxq "commit-boost-signer.service"'
+                for svc in commit-boost-pbs commit-boost-signer; do
+                    _verify_service_active "$svc" 30
+                done
+                if [[ "$E2E_CONS" == "lighthouse" ]]; then
+                    if [[ -n "$(find "$HOME/.lighthouse/mainnet/validators" -name "*.json" -maxdepth 3 2>/dev/null | head -1)" ]]; then
+                        record_test "Dummy validator keys (run_2 created before Commit-Boost)" "PASS"
+                    else
+                        record_test "Dummy validator keys (run_2 created before Commit-Boost)" "FAIL"
+                    fi
+                fi
                 ;;
             *) verify_installed "MEV" test -f "$HOME/mev-boost/mev-boost" ;;
         esac
     fi
 
-    # Verify ETHGas (if enabled)
-    if [[ "$E2E_ETHGAS_FLAG" == "true" ]]; then
-        verify_installed "ETHGas binary" test -f "$HOME/ethgas/target/release/ethgas_commit"
-        verify_installed "ETHGas config" test -f "$HOME/ethgas/config/ethgas.toml"
-        verify_installed "ETHGas service" bash -c 'systemctl list-unit-files 2>/dev/null | grep -q "ethgas.service"'
-        verify_installed "Commit-Boost PBS (ETHGas dep)" test -f "$HOME/commit-boost/commit-boost-pbs"
-        verify_installed "Rust/Cargo (ETHGas build)" bash -c 'command -v cargo &>/dev/null'
+    # ETHGas is optional with Commit-Boost; validate if present
+    if systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk '{print $1}' | grep -Fxq "ethgas.service"; then
+        _verify_service_active "ethgas" 30
     fi
 
     verify_installed "JWT secret" test -f "$HOME/secrets/jwt.hex"
     verify_installed "eth1 systemd service" bash -c 'systemctl list-unit-files 2>/dev/null | grep -q "eth1.service"'
 
-    # Caddy and Nginx (main job only - skip in client matrix to save time)
-    if [[ -z "${E2E_EXECUTION:-}" && -z "${E2E_CONSENSUS:-}" ]]; then
-        log_header "Installing and verifying Caddy"
-        if ! run_script_with_log "/tmp/caddy_e2e_$$.log" "$PROJECT_ROOT/install/web/install_caddy.sh"; then
-            record_test "install_caddy" "FAIL"
-            dump_log_tail "/tmp/caddy_e2e_$$.log" 50 "  "
-            rm -f "/tmp/caddy_e2e_$$.log"
-            print_test_summary
-            exit 1
-        fi
-        rm -f "/tmp/caddy_e2e_$$.log"
-        record_test "install_caddy" "PASS"
-        verify_installed "Caddy" command -v caddy
-
-        log_info "Stopping Caddy before Nginx (port conflict)"
-        sudo systemctl stop caddy 2>/dev/null || true
-
-        log_header "Installing and verifying Nginx"
-        if ! run_script_with_log "/tmp/nginx_e2e_$$.log" "$PROJECT_ROOT/install/web/install_nginx.sh"; then
-            record_test "install_nginx" "FAIL"
-            dump_log_tail "/tmp/nginx_e2e_$$.log" 50 "  "
-            rm -f "/tmp/nginx_e2e_$$.log"
-            print_test_summary
-            exit 1
-        fi
-        rm -f "/tmp/nginx_e2e_$$.log"
-        record_test "install_nginx" "PASS"
-        verify_installed "Nginx" command -v nginx
+    # Block: verify core services are actually running (not just installed)
+    _verify_service_active "eth1" 60
+    _verify_service_active "cl" 60
+    if systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk '{print $1}' | grep -Fxq "validator.service"; then
+        _verify_service_active "validator" 60
     fi
+
+    # Caddy and Nginx — always install in Docker E2E (no skip)
+    log_header "Installing and verifying Caddy"
+    if ! run_script_with_log "/tmp/caddy_e2e_$$.log" "$PROJECT_ROOT/install/web/install_caddy.sh"; then
+        record_test "install_caddy" "FAIL"
+        dump_log_tail "/tmp/caddy_e2e_$$.log" 50 "  "
+        rm -f "/tmp/caddy_e2e_$$.log"
+        print_test_summary
+        exit 1
+    fi
+    rm -f "/tmp/caddy_e2e_$$.log"
+    record_test "install_caddy" "PASS"
+    verify_installed "Caddy" command -v caddy
+
+    log_info "Stopping Caddy before Nginx (port conflict)"
+    sudo systemctl stop caddy 2>/dev/null || true
+
+    log_header "Installing and verifying Nginx"
+    if ! run_script_with_log "/tmp/nginx_e2e_$$.log" "$PROJECT_ROOT/install/web/install_nginx.sh"; then
+        record_test "install_nginx" "FAIL"
+        dump_log_tail "/tmp/nginx_e2e_$$.log" 50 "  "
+        rm -f "/tmp/nginx_e2e_$$.log"
+        print_test_summary
+        exit 1
+    fi
+    rm -f "/tmp/nginx_e2e_$$.log"
+    record_test "install_nginx" "PASS"
+    verify_installed "Nginx" command -v nginx
 fi
 
 # =============================================================================

@@ -1,4 +1,5 @@
 # Teku Beacon Node Base Configuration
+# Current as of Teku 25.x — data-storage-mode: prune
 
 # Network
 network: "mainnet"

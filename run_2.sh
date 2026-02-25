@@ -120,7 +120,7 @@ if ! "$SCRIPT_DIR/install/utils/verify_client_configs.sh"; then
 fi
 
 # Non-interactive path: install specified clients via flags
-# Consensus before execution so Prysm can generate JWT (execution clients need it)
+# Execution before consensus so beacon can connect to eth1 immediately (no connection-refused retries)
 if [[ "$FLAGS_MODE" == "true" ]]; then
     # Validate ETHGas flag constraints
     if [[ "$ETHGAS_FLAG" == "true" && "$MEV_FLAG" != "commit-boost" ]]; then
@@ -129,17 +129,6 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
     fi
 
     FAILED=0
-    if [[ -n "$CONSENSUS_CLIENT" ]]; then
-        case "$CONSENSUS_CLIENT" in
-            prysm|lighthouse|lodestar|teku|nimbus|grandine)
-                run_install_script "$SCRIPT_DIR/install/consensus/${CONSENSUS_CLIENT}.sh" "$CONSENSUS_CLIENT" || FAILED=1
-                ;;
-            *)
-                log_error "Unknown consensus client: $CONSENSUS_CLIENT"
-                exit 1
-                ;;
-        esac
-    fi
     if [[ -n "$EXECUTION_CLIENT" ]]; then
         if [[ ! -s "$HOME/secrets/jwt.hex" ]]; then
             ensure_directory "$HOME/secrets"
@@ -155,6 +144,47 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
                 exit 1
                 ;;
         esac
+    fi
+    if [[ -n "$CONSENSUS_CLIENT" ]]; then
+        # eth1.service active != Engine API ready; consensus clients need 8551 listening
+        # Java (Besu, Teku) and Erigon can take 30-90s to open Engine API after process start
+        if [[ -n "$EXECUTION_CLIENT" ]]; then
+            log_info "Waiting for Engine API (port ${ENGINE_PORT:-8551}) before consensus install..."
+            if ! wait_for_engine_api 90; then
+                log_error "Engine API not ready — consensus client may fail to connect"
+                FAILED=1
+            fi
+        fi
+        case "$CONSENSUS_CLIENT" in
+            prysm|lighthouse|lodestar|teku|nimbus|grandine)
+                run_install_script "$SCRIPT_DIR/install/consensus/${CONSENSUS_CLIENT}.sh" "$CONSENSUS_CLIENT" || FAILED=1
+                ;;
+            *)
+                log_error "Unknown consensus client: $CONSENSUS_CLIENT"
+                exit 1
+                ;;
+        esac
+    fi
+    # Create dummy keys before Commit-Boost so signer can start during install (keys already in place)
+    # Requires: beacon (cl) running with --http on :5052, validator running — lighthouse.sh provides this
+    if [[ "${CI_E2E:-false}" == "true" && "$CONSENSUS_CLIENT" == "lighthouse" && "$MEV_FLAG" == "commit-boost" ]]; then
+        log_info "Creating dummy validator keys for Commit-Boost signer (before MEV install)"
+        if [[ -f "$SCRIPT_DIR/test/lib/test_utils.sh" && -f "$SCRIPT_DIR/test/lib/e2e_dummy_validator_keys.sh" ]]; then
+            LOG_PREFIX="E2E"
+            # shellcheck source=test/lib/test_utils.sh
+            source "$SCRIPT_DIR/test/lib/test_utils.sh"
+            # shellcheck source=test/lib/e2e_dummy_validator_keys.sh
+            source "$SCRIPT_DIR/test/lib/e2e_dummy_validator_keys.sh"
+            if create_dummy_validator_keys "lighthouse"; then
+                log_info "Dummy validator keys created — signer will start during Commit-Boost install"
+            else
+                log_error "Dummy validator keys failed — Commit-Boost signer will not start"
+                FAILED=1
+            fi
+        else
+            log_error "E2E dummy key scripts not found"
+            FAILED=1
+        fi
     fi
     if [[ -n "$MEV_FLAG" && "$MEV_FLAG" != "none" ]]; then
         case "$MEV_FLAG" in
@@ -268,7 +298,7 @@ if ! validate_menu_choice "$client_choice" 2; then
 fi
 
 # Function to install default clients (reduces code duplication)
-# Prysm before Geth so Prysm generates JWT (execution clients need it)
+# Consensus before execution (Prysm generates JWT)
 install_default_clients() {
     log_info "Installing default clients (Geth + Prysm + Selected MEV)..."
     

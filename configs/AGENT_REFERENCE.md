@@ -45,4 +45,25 @@ Key variables are defined in `exports.sh`:
 - **Performance**: Added `max-goroutines`, `block-batch-limit`, and `slots-per-archive-point` flags
 - **MEV Boost**: Configured to use external MEV-Boost (local builder disabled)
 
+### Config Maintenance (Last Verified: 2025-02)
+
+When updating configs, verify against current client docs and remove deprecated options:
+
+| Client | Config Format | Key Docs |
+|--------|---------------|----------|
+| Besu | TOML | [besu.hyperledger.org](https://besu.hyperledger.org/stable/public-networks/how-to/configuration-file) |
+| Nethermind | JSON (.cfg) | [docs.nethermind.io](https://docs.nethermind.io/fundamentals/configuration) |
+| Nimbus | TOML | [nimbus.guide](https://nimbus.guide/) — REST API (JSON-RPC deprecated v22.6+) |
+| Prysm | YAML | [docs.prylabs.network](https://docs.prylabs.network/docs/configure-prysm/) |
+| Teku | YAML | [docs.teku.consensys.io](https://docs.teku.consensys.io/reference/cli) |
+| Lodestar | JSON | [chainsafe.github.io/lodestar](https://chainsafe.github.io/lodestar/) |
+| Grandine | TOML | [docs.grandine.io](https://docs.grandine.io/cli_options.html) |
+| Commit-Boost | TOML | [commit-boost.github.io](https://commit-boost.github.io/commit-boost-client/get_started/configuration/) |
+
+**Current standards:**
+- **Besu**: BONSAI + SNAP default (24.3+); Forest deprecated path
+- **Nimbus**: Use REST API (`rest = true`); JSON-RPC removed v22.6+
+- **Prysm**: `min-builder-bid` in Gwei (2e6 = 0.002 ETH)
+- **Nethermind**: SnapSync enabled by default; Merge.TerminalTotalDifficulty kept for config compatibility
+
 Refer to `docs/CONFIGURATION_GUIDE.md` for complete configuration architecture details.

@@ -101,7 +101,35 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 4. **run_1.sh E2E** - Actually runs run_1.sh and verifies results (systemd + openssh)
 5. **run_2.sh Structure** - Validates run_2.sh structure, configs
 6. **run_2.sh E2E** - Runs run_2.sh with default clients, verifies installs
-7. **e2e-client-matrix** - 6 client combos (besu+lighthouse, erigon+teku, etc.; geth+prysm in run-2-e2e)
+7. **e2e-client-matrix** - 6 client combos (besu+lighthouse+commit-boost, erigon+teku, etc.; geth+prysm in run-2-e2e)
+
+### E2E Verification (No Tests Skipped)
+
+- **relay_check**: Always `true` (no skip in Docker)
+- **Commit-Boost signer**: No bypass in install. In CI, install enables signer but does not start it (keys not yet present). ci_test_e2e adds dummy keys, then enables and starts signer. Root cause fix, not skip.
+- **Dummy validator keys** (lighthouse+commit-boost): Created by run_2 before Commit-Boost install so signer starts during install; failure = FAIL
+- **Service active checks** (block on failure):
+  - eth1, cl, validator (when present): `_verify_service_active` — fail if not running
+  - MEV-Boost: `_verify_service_active "mev"` when E2E_MEV=mev-boost
+  - Commit-Boost: PBS, signer, ETHGas (if present)
+- **Caddy/Nginx**: Always installed and verified in Docker E2E (no skip)
+
+### CI_E2E Skips (Infrastructure-Required Only)
+
+These are not test bypasses — they reflect Docker/container limits:
+
+| Skip | Reason |
+|------|--------|
+| UFW | Container lacks kernel modules for iptables/nftables |
+| Security validation (run_2) | Phase 2 E2E does not run run_1; security_monitor absent |
+| Snap/timedatectl (install_dependencies) | Snap and timedatectl do not work in Docker |
+| Caddy minimal config | Default Caddy has no plugins; production uses dns/rate_limit |
+
+### Gaps Addressed (2025-02)
+
+Previously we only verified binaries installed and MEV services active. We now **block** on:
+- **eth1, cl, validator** — must be running (not just registered)
+- **MEV-Boost** — `mev` service must be active when E2E_MEV=mev-boost
 
 ### CI Test Scripts
 

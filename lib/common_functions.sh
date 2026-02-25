@@ -341,22 +341,45 @@ EOF
     log_info "Created systemd service: ${service_name}.service"
 }
 
+# Reload systemd manager configuration
+daemon_reload_systemd() {
+    if ! sudo systemctl daemon-reload; then
+        if [[ "${CI_E2E:-}" == "true" ]]; then
+            log_warn "CI E2E: systemctl unavailable (not in systemd), skipping daemon-reload"
+            return 0
+        fi
+        log_error "Failed to reload systemd daemon"
+        return 1
+    fi
+    return 0
+}
+
+# Check whether a service unit is registered in systemd
+is_systemd_unit_registered() {
+    local service_name="$1"
+    local unit_name="${service_name%.service}.service"
+
+    systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk '{print $1}' | grep -Fxq "$unit_name"
+}
+
+# Require a registered systemd unit
+require_systemd_unit_registered() {
+    local service_name="$1"
+    if is_systemd_unit_registered "$service_name"; then
+        return 0
+    fi
+    log_error "Required systemd unit is not registered: ${service_name%.service}.service"
+    return 1
+}
+
 # Enable systemd service
 enable_systemd_service() {
     local service_name="$1"
     
-    if ! sudo systemctl daemon-reload; then
-        if [[ "${CI_E2E:-}" == "true" ]]; then
-            log_warn "CI E2E: systemctl unavailable (not in systemd), skipping enable for $service_name"
-            return 0
-        fi
+    if ! daemon_reload_systemd; then
         return 1
     fi
     if ! sudo systemctl enable "$service_name"; then
-        if [[ "${CI_E2E:-}" == "true" ]]; then
-            log_warn "CI E2E: systemctl enable failed, skipping for $service_name"
-            return 0
-        fi
         return 1
     fi
     log_info "Enabled systemd service: $service_name"
@@ -370,25 +393,51 @@ enable_and_start_systemd_service() {
         return 1
     fi
     if ! sudo systemctl start "$service_name"; then
-        if [[ "${CI_E2E:-}" == "true" ]]; then
-            log_warn "CI E2E: systemctl start failed (not in systemd), service file created for $service_name"
-            return 0
-        fi
         log_error "Failed to start systemd service: $service_name"
         return 1
     fi
     if sudo systemctl is-active --quiet "$service_name"; then
         log_info "Started systemd service: $service_name"
     else
-        if [[ "${CI_E2E:-}" == "true" ]]; then
-            log_warn "CI E2E: service $service_name not active (expected when not in systemd)"
-            return 0
-        fi
-        log_error "Failed to start systemd service: $service_name"
+        # Services like cl/validator may take 30-60s in CI (execution client init, checkpoint sync)
+        local elapsed=0
+        while [[ $elapsed -lt 60 ]]; do
+            sleep 2
+            elapsed=$((elapsed + 2))
+            if sudo systemctl is-active --quiet "$service_name"; then
+                log_info "Started systemd service: $service_name"
+                return 0
+            fi
+        done
+        log_error "Failed to start systemd service: $service_name (waited 60s)"
         return 1
     fi
 }
 
+# Wait for Engine API port to be listening (eth1.service active != Engine API ready)
+# Java clients (Besu, Teku) and Erigon can take 30-90s to open 8551 after process start
+# Usage: wait_for_engine_api [timeout_seconds]
+# Returns 0 when port is listening, 1 on timeout
+wait_for_engine_api() {
+    local timeout="${1:-90}"
+    local port="${ENGINE_PORT:-8551}"
+    local elapsed=0
+    while [[ $elapsed -lt $timeout ]]; do
+        if ss -tln 2>/dev/null | grep -qE ":$port\b"; then
+            log_info "Engine API port $port listening (after ${elapsed}s)"
+            return 0
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+    log_error "Engine API port $port not listening after ${timeout}s (eth1 may still be initializing)"
+    log_error "Diagnostics: eth1 status=$(sudo systemctl is-active eth1 2>/dev/null || echo 'unknown')"
+    log_error "Listening ports (ss -tln):"
+    ss -tln 2>/dev/null | sed 's/^/  /' || true
+    log_error "eth1 journal (last 30 lines):"
+    sudo journalctl -u eth1 -n 30 --no-pager 2>/dev/null | sed 's/^/  /' || true
+    return 1
+}
 
 # =============================================================================
 # SYSTEM MANAGEMENT FUNCTIONS
@@ -468,19 +517,20 @@ setup_firewall_rules() {
 }
 
 # Run install script (used by run_2.sh flag mode)
+# Uses global _run_install_log_file so RETURN trap can reference it (local vars out of scope at trap time)
 run_install_script() {
     local script="$1"
     local name="${2:-$(basename "$script" .sh)}"
-    local log_file exit_code
+    local exit_code
     if [[ ! -f "$script" ]]; then
         log_error "Script not found: $script"
         return 1
     fi
     log_info "Installing $name..."
-    log_file=$(mktemp)
-    trap 'rm -f "$log_file"' RETURN
+    _run_install_log_file=$(mktemp)
+    trap 'rm -f "$_run_install_log_file"' RETURN
     set +e
-    "$script" 2>&1 | tee "$log_file"
+    "$script" 2>&1 | tee "$_run_install_log_file"
     exit_code=$?
     set -e
     if [[ $exit_code -eq 0 ]]; then
@@ -489,7 +539,7 @@ run_install_script() {
     else
         log_error "Failed to install $name (exit=$exit_code)"
         log_error "Last 15 lines of output:"
-        tail -15 "$log_file" | while IFS= read -r line; do log_error "  $line"; done
+        tail -15 "$_run_install_log_file" | while IFS= read -r line; do log_error "  $line"; done
         return 1
     fi
 }
@@ -1186,9 +1236,12 @@ get_script_directories() {
     log_info "Project root: $project_root"
 }
 
-
-
-
+# Expand $VAR placeholders in config files (from exports.sh)
+_expand_config_vars() {
+    local file="$1"
+    [[ ! -f "$file" ]] && return 1
+    sed -i "s|\\\$LH|${LH:-127.0.0.1}|g; s|\\\$ENGINE_PORT|${ENGINE_PORT:-8551}|g; s|\\\$CONSENSUS_HOST|${CONSENSUS_HOST:-127.0.0.1}|g; s|\\\$MEV_HOST|${MEV_HOST:-127.0.0.1}|g; s|\\\$MEV_PORT|${MEV_PORT:-18550}|g" "$file"
+}
 
 # 6. Configuration Merging - merge_client_config()
 merge_client_config() {
@@ -1234,10 +1287,12 @@ merge_client_config() {
                     cat "$custom_config"
                 } >> "$output_config"
             fi
+            _expand_config_vars "$output_config"
             ;;
         *.toml)
-            # For TOML, we'll do a simple concatenation (custom overrides base)
+            # For TOML, concatenate then expand variables from exports.sh
             cat "$base_config" "$custom_config" > "$output_config"
+            _expand_config_vars "$output_config"
             ;;
         *)
             log_error "Unsupported config format: $base_config"

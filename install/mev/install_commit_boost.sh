@@ -40,32 +40,55 @@ if [[ -z "$LATEST_VERSION" ]]; then
 fi
 log_info "Latest version: $LATEST_VERSION"
 
-# Download binaries — asset pattern: commit-boost-{component}-{version}-linux_x86-64.tar.gz
-for component in pbs signer cli; do
-    url="https://github.com/Commit-Boost/commit-boost-client/releases/download/${LATEST_VERSION}/commit-boost-${component}-${LATEST_VERSION}-linux_x86-64.tar.gz"
-    archive="commit-boost-${component}.tar.gz"
-    log_info "Downloading commit-boost-${component}..."
-    if ! download_file "$url" "$archive"; then
-        if [[ "$component" == "cli" ]]; then
-            log_warn "CLI download failed (optional, continuing)"
-            continue
-        fi
-        log_error "Failed to download commit-boost-${component}"
+# Detect architecture used by upstream release artifacts
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64|amd64)
+        COMMIT_BOOST_ARCH="linux_x86-64"
+        ;;
+    aarch64|arm64)
+        COMMIT_BOOST_ARCH="linux_arm64"
+        ;;
+    *)
+        log_error "Unsupported architecture for Commit-Boost prebuilt binaries: $ARCH"
+        log_error "Supported architectures: x86_64, arm64"
         exit 1
-    fi
-    tar -xzf "$archive"
-    rm -f "$archive"
-done
+        ;;
+esac
+log_info "Using Commit-Boost artifact architecture: $COMMIT_BOOST_ARCH"
 
-# Verify required binaries
-for bin in commit-boost-pbs commit-boost-signer; do
-    if [[ ! -f "$COMMIT_BOOST_DIR/$bin" ]]; then
-        log_error "$bin binary not found after extraction"
-        exit 1
-    fi
-    chmod +x "$bin"
-done
-[[ -f "commit-boost-cli" ]] && chmod +x commit-boost-cli
+# Download Commit-Boost PBS binary
+log_info "Downloading Commit-Boost PBS binary..."
+PBS_URL="https://github.com/Commit-Boost/commit-boost-client/releases/download/${LATEST_VERSION}/commit-boost-pbs-${LATEST_VERSION}-${COMMIT_BOOST_ARCH}.tar.gz"
+if ! download_file "$PBS_URL" "commit-boost-pbs.tar.gz"; then
+    log_error "Failed to download Commit-Boost PBS binary"
+    exit 1
+fi
+
+# Download Commit-Boost Signer binary
+log_info "Downloading Commit-Boost Signer binary..."
+SIGNER_URL="https://github.com/Commit-Boost/commit-boost-client/releases/download/${LATEST_VERSION}/commit-boost-signer-${LATEST_VERSION}-${COMMIT_BOOST_ARCH}.tar.gz"
+if ! download_file "$SIGNER_URL" "commit-boost-signer.tar.gz"; then
+    log_error "Failed to download Commit-Boost Signer binary"
+    exit 1
+fi
+
+# Extract binaries from tarballs
+log_info "Extracting Commit-Boost binaries..."
+tar -xzf commit-boost-pbs.tar.gz
+tar -xzf commit-boost-signer.tar.gz
+rm -f commit-boost-pbs.tar.gz commit-boost-signer.tar.gz
+chmod +x commit-boost-pbs commit-boost-signer
+
+# Verify binaries exist
+if [[ ! -f "$COMMIT_BOOST_DIR/commit-boost-pbs" ]]; then
+    log_error "commit-boost-pbs binary not found after extraction"
+    exit 1
+fi
+if [[ ! -f "$COMMIT_BOOST_DIR/commit-boost-signer" ]]; then
+    log_error "commit-boost-signer binary not found after extraction"
+    exit 1
+fi
 
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
@@ -117,7 +140,11 @@ if [[ -n "$SIGNER_DETECTED" ]]; then
     IFS='|' read -r SIGNER_FORMAT SIGNER_KEYS SIGNER_SECRETS <<< "$SIGNER_DETECTED"
     log_info "Detected consensus client: $SIGNER_FORMAT"
     log_info "Validator keys path: $SIGNER_KEYS"
-    if [[ -e "$SIGNER_KEYS" ]]; then
+    # For file-based keystores (prysm: single keystore file), check file existence.
+    # For directory-based keystores (lighthouse, teku, lodestar, nimbus), check for
+    # actual *.json keystore files — the directory is created by the VC at startup
+    # even when no keys have been imported, so -e on a directory gives a false positive.
+    if [[ -f "$SIGNER_KEYS" ]] || { [[ -d "$SIGNER_KEYS" ]] && find "$SIGNER_KEYS" -name "*.json" -maxdepth 3 2>/dev/null | grep -q .; }; then
         SIGNER_READY=true
         log_info "Validator keys found — signer will be auto-configured"
     else
@@ -132,6 +159,9 @@ fi
 CONFIG_DIR="$COMMIT_BOOST_DIR/config"
 ensure_directory "$CONFIG_DIR"
 ensure_directory "$COMMIT_BOOST_DIR/logs"
+
+# relay_check = true — verify relays are live before validators connect (no skip in Docker)
+RELAY_CHECK="true"
 
 RELAY_TOML=""
 IFS=',' read -ra RELAY_ARRAY <<< "$MEV_RELAYS"
@@ -173,13 +203,14 @@ fi
 cat > "$CONFIG_DIR/cb-config.toml" << EOF
 # Commit-Boost Configuration — generated $(date +%Y-%m-%d)
 # Docs: https://commit-boost.github.io/commit-boost-client/get_started/configuration/
+# Schema: chain, [pbs], [[relays]], [signer], [metrics], [logs.*]
 
 chain = "Mainnet"
 
 [pbs]
 port = $COMMIT_BOOST_PORT
 host = "$COMMIT_BOOST_HOST"
-relay_check = true
+relay_check = $RELAY_CHECK
 timeout_get_header_ms = $MEVGETHEADERT
 timeout_get_payload_ms = $MEVGETPAYLOADT
 timeout_register_validator_ms = $MEVREGVALT
@@ -218,9 +249,12 @@ sudo sed -i '/^\[Service\]/a Environment="CB_CONFIG='"$CONFIG_DIR"'/cb-config.to
 # PBS: start immediately (drop-in replacement for MEV-Boost)
 enable_and_start_systemd_service "commit-boost-pbs"
 
-# Signer: start if client detected AND keys exist; otherwise just install the service file
+# Signer: start if client detected AND keys exist. In CI/E2E lighthouse+commit-boost, run_2 creates
+# dummy keys before this script runs, so SIGNER_READY is typically true here.
 if [[ "$SIGNER_READY" == "true" ]]; then
     enable_and_start_systemd_service "commit-boost-signer"
+elif [[ "${CI_E2E:-false}" == "true" ]]; then
+    enable_systemd_service "commit-boost-signer"  # Enable only; ci_test_e2e adds keys then starts
 else
     sudo systemctl daemon-reload 2>/dev/null || true
 fi
@@ -234,6 +268,8 @@ log_info "Your consensus client already points here via \$MEV_HOST:\$MEV_PORT �
 
 if [[ "$SIGNER_READY" == "true" ]]; then
     log_info "Signer auto-configured for $SIGNER_FORMAT and started."
+elif [[ "${CI_E2E:-false}" == "true" ]]; then
+    log_info "Signer enabled (CI E2E: keys added by ci_test_e2e, then started)."
 elif [[ -n "$SIGNER_FORMAT" ]]; then
     echo ""
     log_warn "Signer pre-configured for $SIGNER_FORMAT but NOT started (keys not found at $SIGNER_KEYS)."

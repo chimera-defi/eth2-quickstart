@@ -67,26 +67,26 @@ fi
 
 chmod +x "$ERIGON_DIR/erigon"
 
-# Create Erigon configuration
+# Create Erigon configuration (Erigon 3 — snapshots/prune flags changed)
+# snapshots removed (no such flag in Erigon 3; snapshot sync is default)
+# prune: hrtc -> prune.mode: full (hrtc was Erigon 2 format)
 log_info "Creating Erigon configuration..."
 cat > "$ERIGON_DIR/config.yaml" << EOF
-chain : "mainnet"
-http : true
-http.api : ["admin","engine","eth","erigon","web3","net","debug","db","trace","txpool","personal"]
+chain: "mainnet"
+http: true
+http.api: ["admin","engine","eth","erigon","web3","net","debug","db","trace","txpool","personal"]
 authrpc.jwtsecret: '$HOME/secrets/jwt.hex'
 externalcl: true
-snapshots: true
 nat: any
-rpc.batch.limit: 1000
-torrent.download.rate: 512mb
-prune: hrtc
+prune.mode: "full"
 EOF
 
 # Ensure JWT secret exists
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create systemd service
-EXEC_START="$ERIGON_DIR/erigon --config $ERIGON_DIR/config.yaml --externalcl"
+# Explicit authrpc flags ensure Engine API listens on 8551 (config file may not enable it in all Erigon versions)
+EXEC_START="$ERIGON_DIR/erigon --config $ERIGON_DIR/config.yaml --externalcl --authrpc.addr ${LH:-127.0.0.1} --authrpc.port ${ENGINE_PORT:-8551} --authrpc.jwtsecret $HOME/secrets/jwt.hex"
 
 create_systemd_service "eth1" "Erigon Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
