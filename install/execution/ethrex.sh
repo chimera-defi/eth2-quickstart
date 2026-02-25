@@ -120,7 +120,7 @@ ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Build the ethrex command with all necessary options
 # Using variables from exports.sh for consistency with other clients
-# Note: ethrex CLI verified against v7.0.0 --help output
+# Note: --target.peers renamed to --p2p.target-peers in newer ethrex
 ETHREX_CMD="$ETHREX_DIR/ethrex \
 --network mainnet \
 --datadir $ETHREX_DIR/data \
@@ -134,7 +134,7 @@ ETHREX_CMD="$ETHREX_DIR/ethrex \
 --authrpc.port $ETHREX_ENGINE_PORT \
 --authrpc.jwtsecret $HOME/secrets/jwt.hex \
 --p2p.port $ETHREX_P2P_PORT \
---target.peers $MAX_PEERS \
+--p2p.target-peers $MAX_PEERS \
 --metrics \
 --metrics.addr $LH \
 --metrics.port $ETHREX_METRICS_PORT \
