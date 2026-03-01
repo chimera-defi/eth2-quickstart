@@ -24,7 +24,8 @@ RUN find /workspace -name "*.sh" -exec chmod +x {} \;
 RUN apt-get update && \
     bash /workspace/install/utils/install_dependencies.sh --test && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    touch /etc/ethqs-phase1-deps-ready
 
 # Install Caddy for config validation (validate_caddy_config.sh)
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg && \
@@ -46,6 +47,12 @@ RUN useradd -m -s /bin/bash testuser \
 
 # Set ownership
 RUN chown -R testuser:testuser /workspace
+
+# Pre-install phase2 user tools once per image so matrix lanes avoid repeated setup cost
+RUN su - testuser -c "cd /workspace && ./install/utils/install_dependencies.sh --phase2"
+
+# Marker consumed by ci_test_e2e.sh to avoid redundant dependency re-install in each lane
+RUN touch /etc/ethqs-phase2-deps-ready
 
 # Default to running as testuser (non-root, like real usage)
 USER testuser

@@ -17,20 +17,5 @@ udp-port = 30303
 
 # miner-enabled deprecated in NimbusConf (mining disabled by default for staking)
 
-# Performance
-max-peers = 100
-cache-size = 4096
-
-# Sync settings
-sync-mode = "snap"
-
-# Metrics
-metrics-enabled = true
-metrics-address = "$LH"
-metrics-port = 6060
-
 # Logging
 log-level = "INFO"
-
-# Safety
-prune-mode = false
