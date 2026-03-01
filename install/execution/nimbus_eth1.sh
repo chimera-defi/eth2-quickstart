@@ -85,58 +85,24 @@ ensure_jwt_secret "$HOME/secrets/jwt.hex"
 NIMBUS_ETH1_DATA_DIR="$HOME/.local/share/nimbus-eth1"
 ensure_directory "$NIMBUS_ETH1_DATA_DIR"
 
-# Create temporary directory for custom configuration
-create_temp_config_dir
-
-# Create custom configuration variables file
-cat > ./tmp/nimbus_eth1_custom.toml << EOF
-# Nimbus-eth1 Custom Configuration Variables
-
-# Network settings
-network = "mainnet"
-tcp-port = 30303
-udp-port = 30303
-
-# Data directory
-data-dir = "$NIMBUS_ETH1_DATA_DIR"
-
-# JSON-RPC settings
-rpc-port = ${NIMBUS_ETH1_HTTP_PORT:-8545}
-rpc-address = "$LH"
-
-# WebSocket settings
-ws-port = ${NIMBUS_ETH1_WS_PORT:-8546}
-ws-address = "$LH"
-
-# Engine API (JWT-secured)
-engine-api-port = ${NIMBUS_ETH1_ENGINE_PORT:-8551}
-engine-api-address = "$LH"
-jwt-secret = "$HOME/secrets/jwt.hex"
-
-# miner-enabled/miner-coinbase/miner-extra-data deprecated in NimbusConf (mining off by default)
-
-# Performance
-max-peers = $MAX_PEERS
-cache-size = ${NIMBUS_ETH1_CACHE:-4096}
-
-# Metrics
-metrics-enabled = true
-metrics-address = "$LH"
-metrics-port = ${METRICS_PORT:-6060}
-
-# Logging
-log-level = "INFO"
-log-file = "$NIMBUS_ETH1_DATA_DIR/nimbus-eth1.log"
-EOF
-
-# Merge base configuration with custom settings
-merge_client_config "Nimbus-eth1" "main" "$PROJECT_ROOT/configs/nimbus/nimbus_eth1_base.toml" "./tmp/nimbus_eth1_custom.toml" "$NIMBUS_ETH1_DIR/nimbus-eth1.toml"
-
-# Clean up temporary files
-rm -rf ./tmp/
-
 # Create systemd service
-EXEC_START="$NIMBUS_EXEC --config-file=$NIMBUS_ETH1_DIR/nimbus-eth1.toml"
+EXEC_START="$NIMBUS_EXEC executionClient \
+--network=mainnet \
+--data-dir=$NIMBUS_ETH1_DATA_DIR \
+--tcp-port=30303 \
+--udp-port=30303 \
+--http-address=$LH \
+--http-port=${NIMBUS_ETH1_HTTP_PORT:-8545} \
+--rpc \
+--ws \
+--engine-api \
+--engine-api-address=$LH \
+--engine-api-port=${NIMBUS_ETH1_ENGINE_PORT:-8551} \
+--jwt-secret=$HOME/secrets/jwt.hex \
+--metrics \
+--metrics-address=$LH \
+--metrics-port=${METRICS_PORT:-6060} \
+--log-level=INFO"
 
 create_systemd_service "eth1" "Nimbus Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
@@ -144,7 +110,6 @@ create_systemd_service "eth1" "Nimbus Ethereum Execution Client" "$EXEC_START" "
 enable_and_start_systemd_service "eth1"
 
 log_installation_complete "Nimbus-eth1" "nimbus-eth1"
-log_info "Configuration file: $NIMBUS_ETH1_DIR/nimbus-eth1.toml"
 log_info "Data directory: $NIMBUS_ETH1_DATA_DIR"
 log_info "To check status: sudo systemctl status eth1"
 log_info "To view logs: journalctl -fu eth1"
