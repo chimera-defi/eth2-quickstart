@@ -62,6 +62,8 @@ if [[ "$PHASE" == "2" ]]; then
 
     if [[ "${E2E_FORCE_DEPS_INSTALL:-false}" != "true" ]] && [[ -f /etc/ethqs-phase1-deps-ready ]] && [[ -f /etc/ethqs-phase2-deps-ready ]]; then
         log_header "Dependency install fast path (pre-baked image markers found)"
+        # Rust tools are installed in user space; ensure non-login shell resolves them.
+        export PATH="$HOME/.cargo/bin:$PATH"
         verify_installed "phase1 deps marker" test -f /etc/ethqs-phase1-deps-ready
         verify_installed "phase2 deps marker" test -f /etc/ethqs-phase2-deps-ready
         verify_installed "base tool: curl" command -v curl
