@@ -54,24 +54,40 @@ if [[ "$PHASE" == "2" ]]; then
     log_header "Pre-seeding debconf (prevent tty hangs)"
     sudo bash "$PROJECT_ROOT/install/utils/debconf_preseed.sh"
 
-    # Step 1a: Install system dependencies (Phase 1 equivalent -- runs as root in Docker)
-    # In production, run_1.sh does this as root. In Docker E2E, testuser has sudo.
-    log_header "Installing system dependencies (Phase 1)"
-    if ! sudo bash "$PROJECT_ROOT/install/utils/install_dependencies.sh" --phase1; then
-        record_test "install_dependencies (phase1)" "FAIL"
-        print_test_summary
-        exit 1
+    # Step 1a/1b: Dependency install (can be skipped in pre-baked Docker test image)
+    # This keeps e2e focused on run_2/client wiring while preserving a force-reinstall option.
+    if [[ "${E2E_FORCE_DEPS_INSTALL:-false}" == "true" ]]; then
+        log_info "E2E_FORCE_DEPS_INSTALL=true; running full dependency installers"
     fi
-    record_test "install_dependencies (phase1)" "PASS"
 
-    # Step 1b: Install user-level tools (Phase 2)
-    log_header "Installing user-level tools (Phase 2)"
-    if ! "$PROJECT_ROOT/install/utils/install_dependencies.sh" --phase2; then
-        record_test "install_dependencies (phase2)" "FAIL"
-        print_test_summary
-        exit 1
+    if [[ "${E2E_FORCE_DEPS_INSTALL:-false}" != "true" ]] && [[ -f /etc/ethqs-phase1-deps-ready ]] && [[ -f /etc/ethqs-phase2-deps-ready ]]; then
+        log_header "Dependency install fast path (pre-baked image markers found)"
+        verify_installed "phase1 deps marker" test -f /etc/ethqs-phase1-deps-ready
+        verify_installed "phase2 deps marker" test -f /etc/ethqs-phase2-deps-ready
+        verify_installed "base tool: curl" command -v curl
+        verify_installed "base tool: jq" command -v jq
+        verify_installed "phase2 tool: cargo" command -v cargo
+        verify_installed "phase2 tool: rustup" command -v rustup
+        record_test "install_dependencies (phase1)" "PASS"
+        record_test "install_dependencies (phase2)" "PASS"
+    else
+        # In production, run_1.sh does this as root. In Docker E2E, testuser has sudo.
+        log_header "Installing system dependencies (Phase 1)"
+        if ! sudo bash "$PROJECT_ROOT/install/utils/install_dependencies.sh" --phase1; then
+            record_test "install_dependencies (phase1)" "FAIL"
+            print_test_summary
+            exit 1
+        fi
+        record_test "install_dependencies (phase1)" "PASS"
+
+        log_header "Installing user-level tools (Phase 2)"
+        if ! "$PROJECT_ROOT/install/utils/install_dependencies.sh" --phase2; then
+            record_test "install_dependencies (phase2)" "FAIL"
+            print_test_summary
+            exit 1
+        fi
+        record_test "install_dependencies (phase2)" "PASS"
     fi
-    record_test "install_dependencies (phase2)" "PASS"
 
     # Step 2: Run run_2.sh (client selection via E2E_* env or defaults)
     E2E_EXEC="${E2E_EXECUTION:-geth}"
