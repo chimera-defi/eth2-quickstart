@@ -30,25 +30,38 @@ ensure_directory "$GRANDINE_DIR"
 
 cd "$GRANDINE_DIR" || exit
 
-# Get latest release (pre-built binary, no tarball - raw binary)
-log_info "Fetching latest Grandine release..."
-LATEST_VERSION=$(get_latest_release "grandinetech/grandine")
-if [[ -z "$LATEST_VERSION" ]]; then
-    log_error "Could not fetch latest Grandine version from GitHub"
-    exit 1
+log_info "Resolving Grandine prebuilt binary URL..."
+case "$(uname -m)" in
+    x86_64|amd64) GRANDINE_ARCH="x64" ;;
+    aarch64|arm64) GRANDINE_ARCH="arm64" ;;
+    *)
+        log_error "Unsupported architecture for Grandine prebuilt binary: $(uname -m)"
+        exit 1
+        ;;
+esac
+
+# Resolve asset via releases API with jq (most reliable for current Grandine naming).
+DOWNLOAD_URL=$(
+    curl -fsSL "https://api.github.com/repos/grandinetech/grandine/releases/latest" 2>/dev/null \
+    | jq -r --arg arch "$GRANDINE_ARCH" '.assets[] | select(.name | test("grandine-.*-linux-" + $arch + "$")) | .browser_download_url' \
+    | head -1
+)
+if [[ -z "$DOWNLOAD_URL" ]]; then
+    log_warn "GitHub API jq lookup returned no asset, trying common helper..."
+    DOWNLOAD_URL=$(get_github_release_asset_url "grandinetech/grandine" "grandine-.*-linux-${GRANDINE_ARCH}")
+    if [[ -z "$DOWNLOAD_URL" ]]; then
+        log_error "Could not fetch Grandine linux-${GRANDINE_ARCH} release asset URL"
+        exit 1
+    fi
 fi
+BINARY_FILE="grandine"
 
-# Grandine releases: grandine-2.0.1-amd64 (raw binary, no extension)
-DOWNLOAD_URL="https://github.com/grandinetech/grandine/releases/download/${LATEST_VERSION}/grandine-${LATEST_VERSION}-amd64"
-BINARY_FILE="grandine-${LATEST_VERSION}-amd64"
-
-log_info "Downloading Grandine ${LATEST_VERSION}..."
+log_info "Downloading Grandine (${GRANDINE_ARCH})..."
 if ! download_file "$DOWNLOAD_URL" "$BINARY_FILE"; then
     log_error "Failed to download Grandine"
     exit 1
 fi
 
-mv "$BINARY_FILE" "$GRANDINE_DIR/grandine"
 chmod +x "$GRANDINE_DIR/grandine"
 
 # Ensure JWT secret exists
