@@ -64,7 +64,6 @@ cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
     "WebSocketsEnabled": true,
     "StoreReceipts": true,
     "IsMining": false,
-    "ChainSpecPath": "chainspec/mainnet.json",
     "BaseDbPath": "nethermind_db/mainnet",
     "LogFileName": "mainnet.logs.txt",
     "MemoryHint": ${NETHERMIND_CACHE}000000
