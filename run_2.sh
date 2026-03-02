@@ -208,7 +208,7 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
                 if [[ "$ETHGAS_FLAG" == "true" ]]; then
                     echo ""
                     log_info "Installing ETHGas add-on..."
-                    log_warn "Building from Rust source (5-10 minutes)..."
+                    log_info "Using prebuilt ETHGas image when Docker is available (source build only if explicitly requested)."
                     if ! run_install_script "$SCRIPT_DIR/install/mev/install_ethgas.sh" "ETHGas"; then
                         log_warn "Commit-Boost is still installed and functional without ETHGas"
                         FAILED=1
