@@ -388,6 +388,7 @@ enable_systemd_service() {
 # Enable and start systemd service
 enable_and_start_systemd_service() {
     local service_name="$1"
+    local start_timeout="${SYSTEMD_START_TIMEOUT_SEC:-120}"
     
     if ! enable_systemd_service "$service_name"; then
         return 1
@@ -399,9 +400,9 @@ enable_and_start_systemd_service() {
     if sudo systemctl is-active --quiet "$service_name"; then
         log_info "Started systemd service: $service_name"
     else
-        # Services like cl/validator may take 30-60s in CI (execution client init, checkpoint sync)
+        # Services like cl/validator can take longer in CI while execution/beacon dependencies settle.
         local elapsed=0
-        while [[ $elapsed -lt 60 ]]; do
+        while [[ $elapsed -lt "$start_timeout" ]]; do
             sleep 2
             elapsed=$((elapsed + 2))
             if sudo systemctl is-active --quiet "$service_name"; then
@@ -409,7 +410,11 @@ enable_and_start_systemd_service() {
                 return 0
             fi
         done
-        log_error "Failed to start systemd service: $service_name (waited 60s)"
+        log_error "Failed to start systemd service: $service_name (waited ${start_timeout}s)"
+        log_error "systemctl status ${service_name}:"
+        sudo systemctl status "$service_name" --no-pager -l 2>/dev/null | sed 's/^/  /' || true
+        log_error "Recent journalctl for ${service_name}:"
+        sudo journalctl -u "$service_name" -n 80 --no-pager 2>/dev/null | sed 's/^/  /' || true
         return 1
     fi
 }
@@ -421,22 +426,42 @@ enable_and_start_systemd_service() {
 wait_for_engine_api() {
     local timeout="${1:-90}"
     local port="${ENGINE_PORT:-8551}"
+    local host="${LH:-127.0.0.1}"
     local elapsed=0
     while [[ $elapsed -lt $timeout ]]; do
-        if ss -tln 2>/dev/null | grep -qE ":$port\b"; then
-            log_info "Engine API port $port listening (after ${elapsed}s)"
+        if _check_tcp_port_listening "$host" "$port"; then
+            log_info "Engine API listening on ${host}:${port} (after ${elapsed}s)"
             return 0
         fi
         sleep 2
         elapsed=$((elapsed + 2))
     done
-    log_error "Engine API port $port not listening after ${timeout}s (eth1 may still be initializing)"
+    log_error "Engine API ${host}:${port} not listening after ${timeout}s (eth1 may still be initializing)"
     log_error "Diagnostics: eth1 status=$(sudo systemctl is-active eth1 2>/dev/null || echo 'unknown')"
     log_error "Listening ports (ss -tln):"
     ss -tln 2>/dev/null | sed 's/^/  /' || true
     log_error "eth1 journal (last 30 lines):"
     sudo journalctl -u eth1 -n 30 --no-pager 2>/dev/null | sed 's/^/  /' || true
     return 1
+}
+
+# Check whether a local TCP endpoint is accepting connections.
+# Uses ss when available; falls back to bash /dev/tcp probe for minimal images.
+_check_tcp_port_listening() {
+    local host="$1"
+    local port="$2"
+    if command -v ss >/dev/null 2>&1; then
+        if ss -tln 2>/dev/null | grep -qE "[[:space:]]${host}:${port}[[:space:]]"; then
+            return 0
+        fi
+        if [[ "$host" == "127.0.0.1" || "$host" == "localhost" ]]; then
+            if ss -tln 2>/dev/null | grep -qE ":${port}[[:space:]]"; then
+                return 0
+            fi
+        fi
+    fi
+
+    timeout 1 bash -c "</dev/tcp/${host}/${port}" >/dev/null 2>&1
 }
 
 # =============================================================================

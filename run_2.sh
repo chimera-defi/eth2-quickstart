@@ -146,13 +146,24 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
         esac
     fi
     if [[ -n "$CONSENSUS_CLIENT" ]]; then
-        # eth1.service active != Engine API ready; consensus clients need 8551 listening
-        # Java (Besu, Teku) and Erigon can take 30-90s to open Engine API after process start
+        # eth1.service active != Engine API ready; consensus clients need 8551 listening.
+        # Some clients/environments can exceed 90s before authrpc binds, especially in CI.
         if [[ -n "$EXECUTION_CLIENT" ]]; then
-            log_info "Waiting for Engine API (port ${ENGINE_PORT:-8551}) before consensus install..."
-            if ! wait_for_engine_api 90; then
-                log_error "Engine API not ready — consensus client may fail to connect"
-                FAILED=1
+            ENGINE_WAIT_TIMEOUT="${ENGINE_API_WAIT_TIMEOUT:-90}"
+            if [[ "${CI_E2E:-false}" == "true" && "${ENGINE_API_WAIT_TIMEOUT:-}" == "" ]]; then
+                ENGINE_WAIT_TIMEOUT=180
+            fi
+
+            log_info "Waiting for Engine API (port ${ENGINE_PORT:-8551}, timeout ${ENGINE_WAIT_TIMEOUT}s) before consensus install..."
+            if ! wait_for_engine_api "$ENGINE_WAIT_TIMEOUT"; then
+                eth1_state="$(sudo systemctl is-active eth1 2>/dev/null || true)"
+                eth1_failed="$(sudo systemctl is-failed eth1 2>/dev/null || true)"
+                if [[ "$eth1_state" == "active" && "$eth1_failed" != "failed" ]]; then
+                    log_warn "Engine API not ready yet, but eth1 is active; continuing with consensus install (startup may complete during client setup)"
+                else
+                    log_error "Engine API not ready and eth1 unhealthy (state=${eth1_state:-unknown}, failed=${eth1_failed:-unknown})"
+                    FAILED=1
+                fi
             fi
         fi
         case "$CONSENSUS_CLIENT" in
@@ -197,7 +208,7 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
                 if [[ "$ETHGAS_FLAG" == "true" ]]; then
                     echo ""
                     log_info "Installing ETHGas add-on..."
-                    log_warn "Building from Rust source (5-10 minutes)..."
+                    log_info "Using prebuilt ETHGas image when Docker is available (source build only if explicitly requested)."
                     if ! run_install_script "$SCRIPT_DIR/install/mev/install_ethgas.sh" "ETHGas"; then
                         log_warn "Commit-Boost is still installed and functional without ETHGas"
                         FAILED=1

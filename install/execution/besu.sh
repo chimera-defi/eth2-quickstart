@@ -28,9 +28,9 @@ ensure_java21() {
     fi
 
     if [[ "$java_major" -lt 21 ]]; then
-        log_info "Installing Java 21 (required for current Besu releases)..."
-        sudo apt-get update -qq
-        sudo apt-get install -y openjdk-21-jdk
+        log_info "Installing Java 21 runtime (required for current Besu releases)..."
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get update -y
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openjdk-21-jre-headless
     fi
 
     java_major=$(java -version 2>&1 | awk -F '"' '/version/ {split($2, v, "."); print v[1]; exit}' || echo 0)
@@ -92,15 +92,10 @@ ensure_directory "$BESU_DATA_DIR"
 # Create temporary directory for custom configuration
 create_temp_config_dir
 
-# Besu expects miner-extra-data as bytes (hex), not raw text.
-GRAFITTI_HEX=$(printf '%s' "$GRAFITTI" | od -An -tx1 | tr -d ' \n')
-if [[ -n "$GRAFITTI_HEX" ]]; then
-    GRAFITTI_HEX="0x${GRAFITTI_HEX}"
-else
-    GRAFITTI_HEX="0x"
-fi
+# Besu expects miner-extra-data as bytes (hex), max 32 bytes.
+GRAFFITI_TRUNC="${GRAFITTI:0:32}"
+GRAFFITI_HEX="$(printf '%s' "$GRAFFITI_TRUNC" | od -An -tx1 | tr -d ' \n')"
 
-# Create custom configuration variables file
 cat > ./tmp/besu_custom.toml << EOF
 # Besu Custom Configuration Variables
 
@@ -117,8 +112,7 @@ rpc-ws-port=${BESU_WS_PORT}
 engine-rpc-port=${BESU_ENGINE_PORT}
 engine-jwt-secret="$HOME/secrets/jwt.hex"
 
-# Extra data shown in execution payloads (hex bytes).
-miner-extra-data="$GRAFITTI_HEX"
+miner-extra-data="0x${GRAFFITI_HEX}"
 EOF
 
 # Merge base configuration with custom settings
@@ -139,13 +133,18 @@ sudo sed -i "/\\[Service\\]/a Environment=JAVA_OPTS=\"$JAVA_OPTS\"" /etc/systemd
 # Enable and start the service
 enable_and_start_systemd_service "eth1"
 
-log_installation_complete "Besu" "besu"
+log_installation_complete "Besu" "eth1"
 log_info "Configuration file: $BESU_DIR/besu.toml"
 log_info "Data directory: $BESU_DATA_DIR"
 log_info "To check status: sudo systemctl status eth1"
 log_info "To view logs: journalctl -fu eth1"
 
 # Display sync information
+JAVA_VERSION_STR="not available in PATH"
+if command -v java >/dev/null 2>&1; then
+    JAVA_VERSION_STR="$(java -version 2>&1 | head -n1)"
+fi
+
 cat << EOF
 
 === Besu Sync Information ===
@@ -161,6 +160,6 @@ Key features:
 - Engine API for consensus client communication on port 8551
 - P2P networking on port 30303
 
-Java version: $(java -version 2>&1 | head -n1)
+Java version: $JAVA_VERSION_STR
 
 EOF

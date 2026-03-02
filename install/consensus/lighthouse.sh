@@ -80,7 +80,9 @@ sudo sed -i "/^\[Service\]/a WorkingDirectory=$LIGHTHOUSE_DIR" /etc/systemd/syst
 sudo sed -i "/^\[Service\]/a Environment=\"RUST_LOG=info\"" /etc/systemd/system/cl.service
 
 # Create systemd service for validator
-VALIDATOR_EXEC_START="$LIGHTHOUSE_BIN vc --beacon-nodes http://$CONSENSUS_HOST:5052"
+# --http is required for validator-manager import (VC API on :5062).
+# Lighthouse requires explicit opt-in for HTTP over plain transport.
+VALIDATOR_EXEC_START="$LIGHTHOUSE_BIN vc --beacon-nodes http://$CONSENSUS_HOST:5052 --http --http-address 127.0.0.1 --http-port 5062 --unencrypted-http-transport"
 
 create_systemd_service "validator" "Lighthouse Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target cl.service"
 sudo sed -i "/^\[Service\]/a WorkingDirectory=$LIGHTHOUSE_DIR" /etc/systemd/system/validator.service

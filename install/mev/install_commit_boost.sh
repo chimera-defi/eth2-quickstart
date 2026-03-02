@@ -245,6 +245,7 @@ sudo sed -i '/^\[Service\]/a Environment="CB_CONFIG='"$CONFIG_DIR"'/cb-config.to
 SIGNER_EXEC_START="$COMMIT_BOOST_DIR/commit-boost-signer"
 create_systemd_service "commit-boost-signer" "Commit-Boost Signer" "$SIGNER_EXEC_START" "$(whoami)" "always" "600" "5" "300"
 sudo sed -i '/^\[Service\]/a Environment="CB_CONFIG='"$CONFIG_DIR"'/cb-config.toml"' /etc/systemd/system/commit-boost-signer.service
+sudo sed -i '/^\[Service\]/a Environment="CB_JWTS=ETHGAS_COMMIT='"$HOME"'/secrets/jwt.hex"' /etc/systemd/system/commit-boost-signer.service
 
 # PBS: start immediately (drop-in replacement for MEV-Boost)
 enable_and_start_systemd_service "commit-boost-pbs"
