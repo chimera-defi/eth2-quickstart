@@ -22,7 +22,7 @@ RUN find /workspace -name "*.sh" -exec chmod +x {} \;
 # Install full phase1 dependencies in-image so phase1 marker truthfully represents
 # runtime readiness for matrix lanes (including Java-based clients).
 RUN apt-get update && \
-    bash /workspace/install/utils/install_dependencies.sh --phase1 && \
+    CI_E2E=true bash /workspace/install/utils/install_dependencies.sh --phase1 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     touch /etc/ethqs-phase1-deps-ready
