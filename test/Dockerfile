@@ -48,8 +48,9 @@ RUN useradd -m -s /bin/bash testuser \
 # Set ownership
 RUN chown -R testuser:testuser /workspace
 
-# Pre-install phase2 user tools once per image so matrix lanes avoid repeated setup cost
-RUN su - testuser -c "cd /workspace && ./install/utils/install_dependencies.sh --phase2"
+# Pre-install phase2 user tools once per image so matrix lanes avoid repeated setup cost.
+# CI_E2E=true is required because phase2 intentionally skips Rust installs in generic Docker.
+RUN su - testuser -c "cd /workspace && CI_E2E=true ./install/utils/install_dependencies.sh --phase2"
 
 # Marker consumed by ci_test_e2e.sh to avoid redundant dependency re-install in each lane
 RUN touch /etc/ethqs-phase2-deps-ready
