@@ -66,6 +66,7 @@ PHASE1_PACKAGES=(
     aide
     cron
     fail2ban
+    openssh-server
     snapd
     cmake
     libssl-dev
