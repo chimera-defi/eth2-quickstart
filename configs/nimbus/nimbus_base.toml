@@ -25,7 +25,6 @@ log-level = "INFO"
 # Performance
 in-process-validators = false
 max-peers = 100
-sync-committee-message-aggregation-enabled = true
 
 # Builder/MEV
 payload-builder = false
