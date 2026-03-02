@@ -19,10 +19,10 @@ RUN bash /workspace/install/utils/debconf_preseed.sh
 # Make scripts executable
 RUN find /workspace -name "*.sh" -exec chmod +x {} \;
 
-# Install test dependencies using the centralized script
-# This runs as root in Docker, which the script now handles
+# Install full phase1 dependencies in-image so phase1 marker truthfully represents
+# runtime readiness for matrix lanes (including Java-based clients).
 RUN apt-get update && \
-    bash /workspace/install/utils/install_dependencies.sh --test && \
+    bash /workspace/install/utils/install_dependencies.sh --phase1 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     touch /etc/ethqs-phase1-deps-ready

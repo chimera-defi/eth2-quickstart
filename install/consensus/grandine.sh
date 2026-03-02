@@ -40,25 +40,51 @@ case "$(uname -m)" in
         ;;
 esac
 
-# Use token-aware helper first to avoid unauthenticated API rate-limit failures in CI matrix.
-# Keep a secondary pattern for potential future filename extensions.
+# Prefer deterministic release URL first (one API call for tag); this avoids
+# regex asset lookup fragility and reduces rate-limit pressure in matrix runs.
 DOWNLOAD_URL=""
-for pattern in "grandine-.*-linux-${GRANDINE_ARCH}" "grandine-.*-linux-${GRANDINE_ARCH}(\\.tar\\.gz)?"; do
-    DOWNLOAD_URL="$(get_github_release_asset_url "grandinetech/grandine" "$pattern" || true)"
-    [[ -n "$DOWNLOAD_URL" ]] && break
-done
+LATEST_VERSION="$(get_latest_release "grandinetech/grandine" || true)"
+if [[ -n "$LATEST_VERSION" ]]; then
+    DOWNLOAD_URL="https://github.com/grandinetech/grandine/releases/download/${LATEST_VERSION}/grandine-${LATEST_VERSION}-linux-${GRANDINE_ARCH}"
+fi
+
+# Fallback: token-aware asset lookup for archive-style release artifacts.
+if [[ -z "$DOWNLOAD_URL" ]]; then
+    for pattern in "grandine-.*-linux-${GRANDINE_ARCH}" "grandine-.*-linux-${GRANDINE_ARCH}\\.tar\\.gz"; do
+        DOWNLOAD_URL="$(get_github_release_asset_url "grandinetech/grandine" "$pattern" || true)"
+        [[ -n "$DOWNLOAD_URL" ]] && break
+    done
+fi
 
 if [[ -z "$DOWNLOAD_URL" ]]; then
     log_error "Could not fetch Grandine linux-${GRANDINE_ARCH} release asset URL from GitHub releases API"
     exit 1
 fi
 
-BINARY_FILE="grandine"
+ASSET_FILE="$(basename "${DOWNLOAD_URL%%\?*}")"
+[[ -z "$ASSET_FILE" ]] && ASSET_FILE="grandine"
 
 log_info "Downloading Grandine (${GRANDINE_ARCH})..."
-if ! download_file "$DOWNLOAD_URL" "$BINARY_FILE"; then
+if ! download_file "$DOWNLOAD_URL" "$ASSET_FILE"; then
     log_error "Failed to download Grandine"
     exit 1
+fi
+
+if [[ "$ASSET_FILE" == *.tar.gz ]]; then
+    if ! extract_archive "$ASSET_FILE" "$GRANDINE_DIR" 0; then
+        log_error "Failed to extract Grandine archive"
+        exit 1
+    fi
+
+    GRANDINE_BIN="$(find "$GRANDINE_DIR" -maxdepth 2 -type f -name "grandine" | head -1)"
+    if [[ -z "$GRANDINE_BIN" ]]; then
+        log_error "Grandine binary not found after extracting archive"
+        exit 1
+    fi
+    cp "$GRANDINE_BIN" "$GRANDINE_DIR/grandine"
+    rm -f "$ASSET_FILE"
+else
+    mv "$ASSET_FILE" "$GRANDINE_DIR/grandine"
 fi
 
 chmod +x "$GRANDINE_DIR/grandine"
