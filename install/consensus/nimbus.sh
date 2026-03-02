@@ -94,9 +94,6 @@ jwt-secret = "$HOME/secrets/jwt.hex"
 # REST API
 rest-port = ${NIMBUS_REST_PORT}
 
-# Checkpoint sync
-trusted-node-url = "$NIMBUS_CHECKPOINT_URL"
-
 # Metrics
 metrics-port = 8008
 
