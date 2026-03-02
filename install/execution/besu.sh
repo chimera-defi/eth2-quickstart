@@ -20,6 +20,27 @@ log_installation_start "Besu"
 # Check system requirements
 check_system_requirements 8 1000
 
+# Besu 26.x requires Java 21+.
+ensure_java21() {
+    local java_major=0
+    if command -v java >/dev/null 2>&1; then
+        java_major=$(java -version 2>&1 | awk -F '"' '/version/ {split($2, v, "."); print v[1]; exit}' || echo 0)
+    fi
+
+    if [[ "$java_major" -lt 21 ]]; then
+        log_info "Installing Java 21 (required for current Besu releases)..."
+        sudo apt-get update -qq
+        sudo apt-get install -y openjdk-21-jdk
+    fi
+
+    java_major=$(java -version 2>&1 | awk -F '"' '/version/ {split($2, v, "."); print v[1]; exit}' || echo 0)
+    if [[ "$java_major" -lt 21 ]]; then
+        log_error "Java 21+ is required for Besu. Detected Java major version: $java_major"
+        exit 1
+    fi
+}
+ensure_java21
+
 
 # Setup firewall rules for Besu
 setup_firewall_rules 30303 8545 8546 8551
@@ -71,6 +92,14 @@ ensure_directory "$BESU_DATA_DIR"
 # Create temporary directory for custom configuration
 create_temp_config_dir
 
+# Besu expects miner-extra-data as bytes (hex), not raw text.
+GRAFITTI_HEX=$(printf '%s' "$GRAFITTI" | od -An -tx1 | tr -d ' \n')
+if [[ -n "$GRAFITTI_HEX" ]]; then
+    GRAFITTI_HEX="0x${GRAFITTI_HEX}"
+else
+    GRAFITTI_HEX="0x"
+fi
+
 # Create custom configuration variables file
 cat > ./tmp/besu_custom.toml << EOF
 # Besu Custom Configuration Variables
@@ -88,9 +117,8 @@ rpc-ws-port=${BESU_WS_PORT}
 engine-rpc-port=${BESU_ENGINE_PORT}
 engine-jwt-secret="$HOME/secrets/jwt.hex"
 
-# Mining settings (disabled for staking)
-miner-coinbase="$FEE_RECIPIENT"
-miner-extra-data="$GRAFITTI"
+# Extra data shown in execution payloads (hex bytes).
+miner-extra-data="$GRAFITTI_HEX"
 EOF
 
 # Merge base configuration with custom settings

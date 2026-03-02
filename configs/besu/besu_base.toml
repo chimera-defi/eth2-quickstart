@@ -1,5 +1,5 @@
 # Besu Base Configuration File
-# Current as of Besu 24.x — BONSAI + SNAP are default (24.3+)
+# Current as of Besu 26.x — BONSAI + SNAP are default
 
 # Network settings
 network="mainnet"
@@ -29,14 +29,6 @@ engine-host-allowlist=["localhost","$LH"]
 # Sync settings
 sync-mode="SNAP"
 fast-sync-min-peers=5
-
-# Mining settings (disabled for staking)
-miner-enabled=false
-
-# Performance optimizations
-tx-pool-max-size=10000
-tx-pool-hash-limit=1000000
-tx-pool-retention-hours=13
 
 # Metrics and monitoring
 metrics-enabled=true
