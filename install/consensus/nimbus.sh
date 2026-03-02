@@ -152,7 +152,7 @@ create_systemd_service "validator" "Nimbus Ethereum Validator Client" "$VALIDATO
 enable_and_start_systemd_service "cl"
 enable_and_start_systemd_service "validator"
 
-log_installation_complete "Nimbus" "nimbus"
+log_installation_complete "Nimbus" "cl"
 log_info "Beacon node configuration: $NIMBUS_DIR/nimbus.toml"
 log_info "Validator configuration: $NIMBUS_DIR/validator.toml"
 log_info "Data directory: $NIMBUS_DATA_DIR"
