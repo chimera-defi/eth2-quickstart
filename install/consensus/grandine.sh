@@ -40,20 +40,19 @@ case "$(uname -m)" in
         ;;
 esac
 
-# Resolve asset via releases API with jq (most reliable for current Grandine naming).
-DOWNLOAD_URL=$(
-    curl -fsSL "https://api.github.com/repos/grandinetech/grandine/releases/latest" 2>/dev/null \
-    | jq -r --arg arch "$GRANDINE_ARCH" '.assets[] | select(.name | test("grandine-.*-linux-" + $arch + "$")) | .browser_download_url' \
-    | head -1
-)
+# Use token-aware helper first to avoid unauthenticated API rate-limit failures in CI matrix.
+# Keep a secondary pattern for potential future filename extensions.
+DOWNLOAD_URL=""
+for pattern in "grandine-.*-linux-${GRANDINE_ARCH}" "grandine-.*-linux-${GRANDINE_ARCH}(\\.tar\\.gz)?"; do
+    DOWNLOAD_URL="$(get_github_release_asset_url "grandinetech/grandine" "$pattern" || true)"
+    [[ -n "$DOWNLOAD_URL" ]] && break
+done
+
 if [[ -z "$DOWNLOAD_URL" ]]; then
-    log_warn "GitHub API jq lookup returned no asset, trying common helper..."
-    DOWNLOAD_URL=$(get_github_release_asset_url "grandinetech/grandine" "grandine-.*-linux-${GRANDINE_ARCH}")
-    if [[ -z "$DOWNLOAD_URL" ]]; then
-        log_error "Could not fetch Grandine linux-${GRANDINE_ARCH} release asset URL"
-        exit 1
-    fi
+    log_error "Could not fetch Grandine linux-${GRANDINE_ARCH} release asset URL from GitHub releases API"
+    exit 1
 fi
+
 BINARY_FILE="grandine"
 
 log_info "Downloading Grandine (${GRANDINE_ARCH})..."
