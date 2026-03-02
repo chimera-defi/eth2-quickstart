@@ -20,7 +20,6 @@ log_installation_start "Besu"
 # Check system requirements
 check_system_requirements 8 1000
 
-<<<<<<< HEAD
 # Besu 26.x requires Java 21+.
 ensure_java21() {
     local java_major=0
@@ -93,15 +92,10 @@ ensure_directory "$BESU_DATA_DIR"
 # Create temporary directory for custom configuration
 create_temp_config_dir
 
-# Besu expects miner-extra-data as bytes (hex), not raw text.
-GRAFITTI_HEX=$(printf '%s' "$GRAFITTI" | od -An -tx1 | tr -d ' \n')
-if [[ -n "$GRAFITTI_HEX" ]]; then
-    GRAFITTI_HEX="0x${GRAFITTI_HEX}"
-else
-    GRAFITTI_HEX="0x"
-fi
+# Besu expects miner-extra-data as bytes (hex), max 32 bytes.
+GRAFFITI_TRUNC="${GRAFITTI:0:32}"
+GRAFFITI_HEX="$(printf '%s' "$GRAFFITI_TRUNC" | od -An -tx1 | tr -d ' \n')"
 
-# Create custom configuration variables file
 cat > ./tmp/besu_custom.toml << EOF
 # Besu Custom Configuration Variables
 
@@ -118,8 +112,7 @@ rpc-ws-port=${BESU_WS_PORT}
 engine-rpc-port=${BESU_ENGINE_PORT}
 engine-jwt-secret="$HOME/secrets/jwt.hex"
 
-# Extra data shown in execution payloads (hex bytes).
-miner-extra-data="$GRAFITTI_HEX"
+miner-extra-data="0x${GRAFFITI_HEX}"
 EOF
 
 # Merge base configuration with custom settings

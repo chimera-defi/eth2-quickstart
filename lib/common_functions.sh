@@ -388,6 +388,7 @@ enable_systemd_service() {
 # Enable and start systemd service
 enable_and_start_systemd_service() {
     local service_name="$1"
+    local start_timeout="${SYSTEMD_START_TIMEOUT_SEC:-120}"
     
     if ! enable_systemd_service "$service_name"; then
         return 1
@@ -399,9 +400,9 @@ enable_and_start_systemd_service() {
     if sudo systemctl is-active --quiet "$service_name"; then
         log_info "Started systemd service: $service_name"
     else
-        # Services like cl/validator may take 30-60s in CI (execution client init, checkpoint sync)
+        # Services like cl/validator can take longer in CI while execution/beacon dependencies settle.
         local elapsed=0
-        while [[ $elapsed -lt 60 ]]; do
+        while [[ $elapsed -lt "$start_timeout" ]]; do
             sleep 2
             elapsed=$((elapsed + 2))
             if sudo systemctl is-active --quiet "$service_name"; then
@@ -409,7 +410,11 @@ enable_and_start_systemd_service() {
                 return 0
             fi
         done
-        log_error "Failed to start systemd service: $service_name (waited 60s)"
+        log_error "Failed to start systemd service: $service_name (waited ${start_timeout}s)"
+        log_error "systemctl status ${service_name}:"
+        sudo systemctl status "$service_name" --no-pager -l 2>/dev/null | sed 's/^/  /' || true
+        log_error "Recent journalctl for ${service_name}:"
+        sudo journalctl -u "$service_name" -n 80 --no-pager 2>/dev/null | sed 's/^/  /' || true
         return 1
     fi
 }
