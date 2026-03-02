@@ -43,9 +43,9 @@ setup_caddy_service() {
     sudo mkdir -p /var/log/caddy
     sudo chown caddy:caddy /var/log/caddy
     
-    # Enable and start Caddy service
-    if ! enable_and_start_systemd_service caddy; then
-        log_error "Failed to start Caddy service"
+    # Enable only; start after config is installed/validated
+    if ! enable_systemd_service caddy; then
+        log_error "Failed to enable Caddy service"
         return 1
     fi
     

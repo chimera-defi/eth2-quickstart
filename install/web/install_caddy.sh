@@ -54,6 +54,13 @@ if ! sudo -E "$SCRIPT_DIR/../security/caddy_harden.sh"; then
     exit 1
 fi
 
+# Start/restart Caddy only after final config + hardening are in place
+log_info "Restarting Caddy with final configuration..."
+if ! enable_and_start_systemd_service caddy; then
+    log_error "Failed to start Caddy service after configuration"
+    exit 1
+fi
+
 # Verify Caddy is running
 log_info "Verifying Caddy installation..."
 if sudo systemctl is-active --quiet caddy; then
