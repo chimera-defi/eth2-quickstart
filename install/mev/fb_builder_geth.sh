@@ -59,7 +59,9 @@ if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     export PATH="$HOME/.local/bin:$PATH"
 fi
 
-log_installation_complete "Flashbots Builder Geth" "mev-geth"
+log_info "Flashbots Builder Geth installation completed!"
+log_info "No systemd service is created by this script."
+log_info "Binary location: $HOME/.local/bin/geth"
 log_info "Geth binary installed to: $HOME/.local/bin/geth"
 log_info "This is a custom Geth build with Flashbots builder support"
 log_info "NOTE: You may need to restart your shell or run: source ~/.bashrc"

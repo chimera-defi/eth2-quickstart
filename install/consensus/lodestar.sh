@@ -131,7 +131,7 @@ create_systemd_service "validator" "Lodestar Ethereum Validator Client" "$VALIDA
 enable_and_start_systemd_service "cl"
 enable_and_start_systemd_service "validator"
 
-log_installation_complete "Lodestar" "lodestar"
+log_installation_complete "Lodestar" "cl"
 log_info "Beacon node configuration: $LODESTAR_DIR/beacon.config.json"
 log_info "Validator configuration: $LODESTAR_DIR/validator.config.json"
 log_info "Data directory: $LODESTAR_DATA_DIR"
