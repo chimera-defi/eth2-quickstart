@@ -50,13 +50,6 @@ else
     exit 1
 fi
 
-# Find the extracted directory and move contents to nimbus-eth1 directory
-EXTRACTED_DIR=$(find "$NIMBUS_ETH1_DIR" -maxdepth 1 -type d -name "nimbus-eth1*" | head -1)
-if [[ -n "$EXTRACTED_DIR" && "$EXTRACTED_DIR" != "$NIMBUS_ETH1_DIR" ]]; then
-    mv "$EXTRACTED_DIR"/* "$NIMBUS_ETH1_DIR/" 2>/dev/null || true
-    rmdir "$EXTRACTED_DIR" 2>/dev/null || true
-fi
-
 # Find and make Nimbus executable (could be nimbus, nimbus-eth1, or in build/ subdirectory)
 if [[ -f "$NIMBUS_ETH1_DIR/nimbus" ]]; then
     chmod +x "$NIMBUS_ETH1_DIR/nimbus"
@@ -109,7 +102,7 @@ create_systemd_service "eth1" "Nimbus Ethereum Execution Client" "$EXEC_START" "
 # Enable and start the service
 enable_and_start_systemd_service "eth1"
 
-log_installation_complete "Nimbus-eth1" "nimbus-eth1"
+log_installation_complete "Nimbus-eth1" "eth1"
 log_info "Data directory: $NIMBUS_ETH1_DATA_DIR"
 log_info "To check status: sudo systemctl status eth1"
 log_info "To view logs: journalctl -fu eth1"
