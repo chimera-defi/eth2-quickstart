@@ -143,7 +143,7 @@ create_systemd_service "eth1" "Nethermind Ethereum Execution Client" "$EXEC_STAR
 # Enable and start the service
 enable_and_start_systemd_service "eth1"
 
-log_installation_complete "Nethermind" "nethermind"
+log_installation_complete "Nethermind" "eth1"
 log_info "Configuration file: $NETHERMIND_DIR/nethermind.cfg"
 log_info "To check status: sudo systemctl status eth1"
 log_info "To view logs: journalctl -fu eth1"
