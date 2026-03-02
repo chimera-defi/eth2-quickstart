@@ -421,22 +421,42 @@ enable_and_start_systemd_service() {
 wait_for_engine_api() {
     local timeout="${1:-90}"
     local port="${ENGINE_PORT:-8551}"
+    local host="${LH:-127.0.0.1}"
     local elapsed=0
     while [[ $elapsed -lt $timeout ]]; do
-        if ss -tln 2>/dev/null | grep -qE ":$port\b"; then
-            log_info "Engine API port $port listening (after ${elapsed}s)"
+        if _check_tcp_port_listening "$host" "$port"; then
+            log_info "Engine API listening on ${host}:${port} (after ${elapsed}s)"
             return 0
         fi
         sleep 2
         elapsed=$((elapsed + 2))
     done
-    log_error "Engine API port $port not listening after ${timeout}s (eth1 may still be initializing)"
+    log_error "Engine API ${host}:${port} not listening after ${timeout}s (eth1 may still be initializing)"
     log_error "Diagnostics: eth1 status=$(sudo systemctl is-active eth1 2>/dev/null || echo 'unknown')"
     log_error "Listening ports (ss -tln):"
     ss -tln 2>/dev/null | sed 's/^/  /' || true
     log_error "eth1 journal (last 30 lines):"
     sudo journalctl -u eth1 -n 30 --no-pager 2>/dev/null | sed 's/^/  /' || true
     return 1
+}
+
+# Check whether a local TCP endpoint is accepting connections.
+# Uses ss when available; falls back to bash /dev/tcp probe for minimal images.
+_check_tcp_port_listening() {
+    local host="$1"
+    local port="$2"
+    if command -v ss >/dev/null 2>&1; then
+        if ss -tln 2>/dev/null | grep -qE "[[:space:]]${host}:${port}[[:space:]]"; then
+            return 0
+        fi
+        if [[ "$host" == "127.0.0.1" || "$host" == "localhost" ]]; then
+            if ss -tln 2>/dev/null | grep -qE ":${port}[[:space:]]"; then
+                return 0
+            fi
+        fi
+    fi
+
+    timeout 1 bash -c "</dev/tcp/${host}/${port}" >/dev/null 2>&1
 }
 
 # =============================================================================
