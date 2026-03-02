@@ -24,6 +24,13 @@ check_system_requirements 16 1000
 # Setup firewall rules for Teku
 setup_firewall_rules 9000 5051
 
+# Teku requires Java runtime.
+if ! command -v java >/dev/null 2>&1; then
+    log_info "Java runtime not found, installing OpenJDK 21..."
+    sudo env DEBIAN_FRONTEND=noninteractive apt-get update -y
+    sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openjdk-21-jre-headless
+fi
+
 # Create Teku directory
 TEKU_DIR="$HOME/teku"
 ensure_directory "$TEKU_DIR"
