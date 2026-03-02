@@ -19,6 +19,14 @@ log_installation_start "Caddy"
 log_info "Server name: $SERVER_NAME"
 log_info "Login username: $LOGIN_UNAME"
 
+# Stop conflicting web services so Caddy can bind :80/:443 deterministically.
+for svc in nginx apache2; do
+    if sudo systemctl is-active --quiet "$svc" 2>/dev/null; then
+        log_info "Stopping conflicting service: $svc"
+        sudo systemctl stop "$svc" || true
+    fi
+done
+
 # Install Caddy
 install_caddy
 
