@@ -20,6 +20,7 @@ log_installation_start "Besu"
 # Check system requirements
 check_system_requirements 8 1000
 
+<<<<<<< HEAD
 # Besu 26.x requires Java 21+.
 ensure_java21() {
     local java_major=0
@@ -28,9 +29,9 @@ ensure_java21() {
     fi
 
     if [[ "$java_major" -lt 21 ]]; then
-        log_info "Installing Java 21 (required for current Besu releases)..."
-        sudo apt-get update -qq
-        sudo apt-get install -y openjdk-21-jdk
+        log_info "Installing Java 21 runtime (required for current Besu releases)..."
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get update -y
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openjdk-21-jre-headless
     fi
 
     java_major=$(java -version 2>&1 | awk -F '"' '/version/ {split($2, v, "."); print v[1]; exit}' || echo 0)
