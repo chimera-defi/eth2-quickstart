@@ -27,21 +27,38 @@ ensure_directory "$MEV_BOOST_DIR"
 
 cd "$MEV_BOOST_DIR" || exit
 
-# Get latest release (pre-built binaries, same pattern as install_commit_boost.sh, besu.sh)
+# Resolve prebuilt release URL with fallbacks:
+# 1) latest tag API
+# 2) latest asset URL API
+# 3) pinned stable fallback (for transient API/rate-limit failures in CI)
 log_info "Fetching latest MEV-Boost release..."
-LATEST_VERSION=$(get_latest_release "flashbots/mev-boost")
-if [[ -z "$LATEST_VERSION" ]]; then
-    log_error "Could not fetch latest MEV-Boost version from GitHub"
-    exit 1
+LATEST_VERSION="$(get_latest_release "flashbots/mev-boost" || true)"
+DOWNLOAD_URL=""
+ARCHIVE_FILE=""
+
+if [[ -n "$LATEST_VERSION" ]]; then
+    log_info "Latest version: $LATEST_VERSION"
+    VERSION_NUM="${LATEST_VERSION#v}"
+    ARCHIVE_FILE="mev-boost_${VERSION_NUM}_linux_amd64.tar.gz"
+    DOWNLOAD_URL="https://github.com/flashbots/mev-boost/releases/download/${LATEST_VERSION}/${ARCHIVE_FILE}"
+else
+    log_warn "Latest release tag lookup failed; trying latest asset URL lookup"
+    DOWNLOAD_URL="$(get_github_release_asset_url "flashbots/mev-boost" "mev-boost_.*_linux_amd64\\.tar\\.gz" || true)"
+    if [[ -n "$DOWNLOAD_URL" ]]; then
+        ARCHIVE_FILE="${DOWNLOAD_URL##*/}"
+        log_info "Resolved latest MEV-Boost asset URL: $ARCHIVE_FILE"
+    fi
 fi
-log_info "Latest version: $LATEST_VERSION"
 
-# Parse version for download URL (v1.9 -> 1.9, v1.11 -> 1.11)
-VERSION_NUM="${LATEST_VERSION#v}"
-DOWNLOAD_URL="https://github.com/flashbots/mev-boost/releases/download/${LATEST_VERSION}/mev-boost_${VERSION_NUM}_linux_amd64.tar.gz"
-ARCHIVE_FILE="mev-boost_${VERSION_NUM}_linux_amd64.tar.gz"
+if [[ -z "$DOWNLOAD_URL" ]]; then
+    FALLBACK_VERSION="${MEV_BOOST_FALLBACK_VERSION:-v1.12}"
+    FALLBACK_VERSION_NUM="${FALLBACK_VERSION#v}"
+    ARCHIVE_FILE="mev-boost_${FALLBACK_VERSION_NUM}_linux_amd64.tar.gz"
+    DOWNLOAD_URL="https://github.com/flashbots/mev-boost/releases/download/${FALLBACK_VERSION}/${ARCHIVE_FILE}"
+    log_warn "Using fallback MEV-Boost version: $FALLBACK_VERSION"
+fi
 
-log_info "Downloading MEV-Boost ${LATEST_VERSION}..."
+log_info "Downloading MEV-Boost archive: ${ARCHIVE_FILE}..."
 if ! download_file "$DOWNLOAD_URL" "$ARCHIVE_FILE"; then
     log_error "Failed to download MEV-Boost"
     exit 1
