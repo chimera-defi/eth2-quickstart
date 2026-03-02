@@ -28,18 +28,18 @@ ensure_directory "$NIMBUS_ETH1_DIR"
 
 cd "$NIMBUS_ETH1_DIR" || exit
 
-# Nimbus-eth1 uses nightly builds - fetch latest from GitHub API
-log_info "Fetching latest Nimbus-eth1 nightly release..."
-NIGHTLY_URL=$(get_github_release_asset_url "status-im/nimbus-eth1" "linux-amd64-nightly-latest")
-if [[ -z "$NIGHTLY_URL" ]]; then
-    log_error "Could not fetch Nimbus-eth1 nightly release URL from GitHub"
+# Nimbus-eth1 ships prebuilt release archives via GitHub Releases
+log_info "Fetching latest Nimbus-eth1 release..."
+NIMBUS_URL=$(get_github_release_asset_url "status-im/nimbus-eth1" "nimbus-linux-amd64-.*\\.tar\\.gz")
+if [[ -z "$NIMBUS_URL" ]]; then
+    log_error "Could not fetch Nimbus-eth1 release URL from GitHub"
     exit 1
 fi
 
-ARCHIVE_FILE="${NIGHTLY_URL##*/}"
+ARCHIVE_FILE="${NIMBUS_URL##*/}"
 
-log_info "Downloading Nimbus-eth1 nightly build..."
-if download_file "$NIGHTLY_URL" "$ARCHIVE_FILE"; then
+log_info "Downloading Nimbus-eth1 release build..."
+if download_file "$NIMBUS_URL" "$ARCHIVE_FILE"; then
     if ! extract_archive "$ARCHIVE_FILE" "$NIMBUS_ETH1_DIR" 1; then
         log_error "Failed to extract Nimbus-eth1 archive"
         exit 1
@@ -135,6 +135,6 @@ Nimbus-eth1 is particularly suitable for:
 - VPS instances with limited resources
 - Home stakers with bandwidth constraints
 
-Note: Nimbus-eth1 uses nightly builds for the latest features and improvements.
+Note: Nimbus-eth1 is installed from the latest GitHub release archive.
 
 EOF
