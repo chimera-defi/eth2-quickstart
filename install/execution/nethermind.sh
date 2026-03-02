@@ -53,6 +53,7 @@ chmod +x "$NETHERMIND_DIR/Nethermind.Runner"
 
 # Ensure JWT secret exists
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
+ensure_directory "$HOME/.local/share/nethermind/nethermind_db"
 
 # Create temporary directory for custom configuration
 create_temp_config_dir
@@ -64,7 +65,7 @@ cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
     "WebSocketsEnabled": true,
     "StoreReceipts": true,
     "IsMining": false,
-    "BaseDbPath": "nethermind_db/mainnet",
+    "BaseDbPath": "$HOME/.local/share/nethermind/nethermind_db/mainnet",
     "LogFileName": "mainnet.logs.txt",
     "MemoryHint": ${NETHERMIND_CACHE}000000
   },
@@ -112,14 +113,14 @@ cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
     "Coinbase": "${FEE_RECIPIENT}",
     "ExtraData": "${GRAFITTI}"
   },
-  "KeyStore": {
-    "TestNodeKey": "0x7a28b5ba57c53603b0b07b56bba752f7784bf506fa95edc395f5cf6c7514fe9d"
-  },
   "Db": {
     "CacheIndexAndFilterBlocks": false
   },
   "TxPool": {
     "Size": 2048
+  },
+  "KeyStore": {
+    "KeyStoreDirectory": "$HOME/nethermind/keystore"
   },
   "Merge": {
     "Enabled": true,
@@ -135,7 +136,7 @@ merge_client_config "Nethermind" "main" "$PROJECT_ROOT/configs/nethermind/nether
 rm -rf ./tmp/
 
 # Create systemd service
-EXEC_START="$NETHERMIND_DIR/Nethermind.Runner --config $NETHERMIND_DIR/nethermind.cfg --JsonRpc.JwtSecretFile $HOME/secrets/jwt.hex --JsonRpc.EngineHost $LH --JsonRpc.EnginePort 8551"
+EXEC_START="/usr/bin/env HOME=$HOME XDG_DATA_HOME=$HOME/.local/share $NETHERMIND_DIR/Nethermind.Runner --config $NETHERMIND_DIR/nethermind.cfg --KeyStore.KeyStoreDirectory $HOME/nethermind/keystore --JsonRpc.JwtSecretFile $HOME/secrets/jwt.hex --JsonRpc.EngineHost $LH --JsonRpc.EnginePort 8551"
 
 create_systemd_service "eth1" "Nethermind Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
