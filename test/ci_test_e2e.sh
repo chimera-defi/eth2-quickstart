@@ -97,6 +97,14 @@ if [[ "$PHASE" == "2" ]]; then
     E2E_MEV="${E2E_MEV:-mev-boost}"
     E2E_ETHGAS_FLAG="${E2E_ETHGAS:-false}"
 
+    # Docker E2E runs inside a systemd container without a nested Docker daemon.
+    # Production/install defaults still prefer prebuilt images; this explicit test-only
+    # override ensures ETHGas can be exercised end-to-end in CI when requested.
+    if [[ "$E2E_ETHGAS_FLAG" == "true" && "${CI_E2E:-false}" == "true" ]]; then
+        export ETHGAS_INSTALL_METHOD="${ETHGAS_INSTALL_METHOD:-source}"
+        log_info "CI_E2E ETHGas: using ETHGAS_INSTALL_METHOD=$ETHGAS_INSTALL_METHOD"
+    fi
+
     # Build run_2.sh command with optional flags
     RUN2_CMD=("$PROJECT_ROOT/run_2.sh" --execution="$E2E_EXEC" --consensus="$E2E_CONS" --mev="$E2E_MEV" --skip-deps)
     [[ "$E2E_ETHGAS_FLAG" == "true" ]] && RUN2_CMD+=(--ethgas)
