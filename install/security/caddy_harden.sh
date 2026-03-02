@@ -14,12 +14,14 @@ source "$PROJECT_ROOT/install/web/caddy_helpers.sh"
 require_root
 
 log_info "Starting Caddy security hardening..."
+backup_file=""
 
 # Backup original Caddyfile
 log_info "Creating backup of original Caddyfile..."
 if [[ -f /etc/caddy/Caddyfile ]]; then
-    sudo cp /etc/caddy/Caddyfile "/etc/caddy/Caddyfile.backup.$(date +%Y%m%d_%H%M%S)"
-    log_info "Backup created: /etc/caddy/Caddyfile.backup.$(date +%Y%m%d_%H%M%S)"
+    backup_file="/etc/caddy/Caddyfile.backup.$(date +%Y%m%d_%H%M%S)"
+    sudo cp /etc/caddy/Caddyfile "$backup_file"
+    log_info "Backup created: $backup_file"
 else
     log_error "Caddyfile not found at /etc/caddy/Caddyfile"
     exit 1
@@ -285,17 +287,17 @@ sudo chmod 644 /etc/caddy/Caddyfile
 if ! validate_caddy_config "/etc/caddy/Caddyfile"; then
     log_error "Hardened Caddyfile validation failed"
     log_info "Restoring backup..."
-    sudo cp /etc/caddy/Caddyfile.backup.* /etc/caddy/Caddyfile
+    [[ -n "$backup_file" ]] && sudo cp "$backup_file" /etc/caddy/Caddyfile
     exit 1
 fi
 
 # Restart Caddy with hardened configuration
 log_info "Restarting Caddy with hardened configuration..."
-if ! sudo systemctl restart caddy; then
+if ! enable_and_start_systemd_service caddy; then
     log_error "Failed to restart Caddy with hardened configuration"
     log_info "Restoring backup..."
-    sudo cp /etc/caddy/Caddyfile.backup.* /etc/caddy/Caddyfile
-    sudo systemctl restart caddy
+    [[ -n "$backup_file" ]] && sudo cp "$backup_file" /etc/caddy/Caddyfile
+    enable_and_start_systemd_service caddy || true
     exit 1
 fi
 
