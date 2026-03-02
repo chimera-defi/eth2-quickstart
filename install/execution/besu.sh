@@ -20,6 +20,13 @@ log_installation_start "Besu"
 # Check system requirements
 check_system_requirements 8 1000
 
+# Besu requires Java 21+. Ensure a runtime is available in phase-2/docker paths.
+if ! command -v java >/dev/null 2>&1; then
+    log_info "Java runtime not found, installing OpenJDK 21..."
+    sudo env DEBIAN_FRONTEND=noninteractive apt-get update -y
+    sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openjdk-21-jre-headless
+fi
+
 
 # Setup firewall rules for Besu
 setup_firewall_rules 30303 8545 8546 8551
