@@ -189,7 +189,12 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
             if create_dummy_validator_keys "$CONSENSUS_CLIENT"; then
                 log_info "Dummy validator keys created — signer will start during Commit-Boost install"
             else
-                log_warn "Dummy validator key generation not available/failed for $CONSENSUS_CLIENT — signer may remain deferred"
+                if [[ "$CONSENSUS_CLIENT" == "lighthouse" || "$CONSENSUS_CLIENT" == "prysm" ]]; then
+                    log_error "Dummy validator key generation failed for $CONSENSUS_CLIENT (required for Commit-Boost signer E2E coverage)"
+                    FAILED=1
+                else
+                    log_warn "Dummy validator key generation not available/failed for $CONSENSUS_CLIENT — signer may remain deferred"
+                fi
             fi
         else
             log_error "E2E dummy key scripts not found"

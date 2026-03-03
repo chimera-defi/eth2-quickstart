@@ -163,17 +163,29 @@ if [[ "$PHASE" == "2" ]]; then
                 # shellcheck disable=SC2016
                 verify_installed "commit-boost-signer service registered" bash -c 'systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk "{print \$1}" | grep -Fxq "commit-boost-signer.service"'
                 _verify_service_active "commit-boost-pbs" 30
-                # Signer should be active only when validator keys are present.
-                if systemctl is-enabled --quiet commit-boost-signer 2>/dev/null; then
+                # For clients with dummy key generation support, signer must be active.
+                if [[ "$E2E_CONS" == "lighthouse" || "$E2E_CONS" == "prysm" ]]; then
                     _verify_service_active "commit-boost-signer" 30
+                    if [[ "$E2E_CONS" == "lighthouse" ]]; then
+                        if [[ -n "$(find "$HOME/.lighthouse/mainnet/validators" -name "*.json" -maxdepth 3 2>/dev/null | head -1)" ]]; then
+                            record_test "Dummy validator keys (run_2 created before Commit-Boost)" "PASS"
+                        else
+                            record_test "Dummy validator keys (run_2 created before Commit-Boost)" "FAIL"
+                        fi
+                    fi
+                    if [[ "$E2E_CONS" == "prysm" ]]; then
+                        if [[ -s "$HOME/.eth2validators/prysm-wallet-v2/direct/accounts/all-accounts.keystore.json" ]]; then
+                            record_test "Dummy validator keys (prysm wallet keystore created)" "PASS"
+                        else
+                            record_test "Dummy validator keys (prysm wallet keystore created)" "FAIL"
+                        fi
+                    fi
                 else
-                    record_test "commit-boost-signer deferred (no validator keys yet)" "PASS"
-                fi
-                if [[ "$E2E_CONS" == "lighthouse" ]]; then
-                    if [[ -n "$(find "$HOME/.lighthouse/mainnet/validators" -name "*.json" -maxdepth 3 2>/dev/null | head -1)" ]]; then
-                        record_test "Dummy validator keys (run_2 created before Commit-Boost)" "PASS"
+                    # Other clients may not have non-interactive key import in CI yet.
+                    if systemctl is-enabled --quiet commit-boost-signer 2>/dev/null; then
+                        _verify_service_active "commit-boost-signer" 30
                     else
-                        record_test "Dummy validator keys (run_2 created before Commit-Boost)" "FAIL"
+                        record_test "commit-boost-signer deferred (no validator keys yet)" "PASS"
                     fi
                 fi
                 ;;
