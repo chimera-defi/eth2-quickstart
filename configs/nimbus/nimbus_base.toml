@@ -7,7 +7,7 @@ tcp-port = 9000
 udp-port = 9000
 
 # Execution layer
-web3-url = "http://$LH:$ENGINE_PORT"
+web3-url = ["http://$LH:$ENGINE_PORT"]
 
 # REST API (required; JSON-RPC deprecated and removed)
 rest = true
@@ -25,7 +25,6 @@ log-level = "INFO"
 # Performance
 in-process-validators = false
 max-peers = 100
-sync-committee-message-aggregation-enabled = true
 
 # Builder/MEV
 payload-builder = false

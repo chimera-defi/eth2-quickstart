@@ -28,18 +28,18 @@ ensure_directory "$NIMBUS_ETH1_DIR"
 
 cd "$NIMBUS_ETH1_DIR" || exit
 
-# Nimbus-eth1 uses nightly builds - fetch latest from GitHub API
-log_info "Fetching latest Nimbus-eth1 nightly release..."
-NIGHTLY_URL=$(get_github_release_asset_url "status-im/nimbus-eth1" "linux-amd64-nightly-latest")
-if [[ -z "$NIGHTLY_URL" ]]; then
-    log_error "Could not fetch Nimbus-eth1 nightly release URL from GitHub"
+# Nimbus-eth1 ships prebuilt release archives via GitHub Releases
+log_info "Fetching latest Nimbus-eth1 release..."
+NIMBUS_URL=$(get_github_release_asset_url "status-im/nimbus-eth1" "nimbus-linux-amd64-.*\\.tar\\.gz")
+if [[ -z "$NIMBUS_URL" ]]; then
+    log_error "Could not fetch Nimbus-eth1 release URL from GitHub"
     exit 1
 fi
 
-ARCHIVE_FILE="${NIGHTLY_URL##*/}"
+ARCHIVE_FILE="${NIMBUS_URL##*/}"
 
-log_info "Downloading Nimbus-eth1 nightly build..."
-if download_file "$NIGHTLY_URL" "$ARCHIVE_FILE"; then
+log_info "Downloading Nimbus-eth1 release build..."
+if download_file "$NIMBUS_URL" "$ARCHIVE_FILE"; then
     if ! extract_archive "$ARCHIVE_FILE" "$NIMBUS_ETH1_DIR" 1; then
         log_error "Failed to extract Nimbus-eth1 archive"
         exit 1
@@ -48,13 +48,6 @@ if download_file "$NIGHTLY_URL" "$ARCHIVE_FILE"; then
 else
     log_error "Failed to download Nimbus-eth1"
     exit 1
-fi
-
-# Find the extracted directory and move contents to nimbus-eth1 directory
-EXTRACTED_DIR=$(find "$NIMBUS_ETH1_DIR" -maxdepth 1 -type d -name "nimbus-eth1*" | head -1)
-if [[ -n "$EXTRACTED_DIR" && "$EXTRACTED_DIR" != "$NIMBUS_ETH1_DIR" ]]; then
-    mv "$EXTRACTED_DIR"/* "$NIMBUS_ETH1_DIR/" 2>/dev/null || true
-    rmdir "$EXTRACTED_DIR" 2>/dev/null || true
 fi
 
 # Find and make Nimbus executable (could be nimbus, nimbus-eth1, or in build/ subdirectory)
@@ -85,66 +78,42 @@ ensure_jwt_secret "$HOME/secrets/jwt.hex"
 NIMBUS_ETH1_DATA_DIR="$HOME/.local/share/nimbus-eth1"
 ensure_directory "$NIMBUS_ETH1_DATA_DIR"
 
-# Create temporary directory for custom configuration
+# Merge base + custom config so user-selected values and defaults are captured
 create_temp_config_dir
-
-# Create custom configuration variables file
 cat > ./tmp/nimbus_eth1_custom.toml << EOF
-# Nimbus-eth1 Custom Configuration Variables
-
-# Network settings
-network = "mainnet"
-tcp-port = 30303
-udp-port = 30303
-
-# Data directory
 data-dir = "$NIMBUS_ETH1_DATA_DIR"
 
-# JSON-RPC settings
-rpc-port = ${NIMBUS_ETH1_HTTP_PORT:-8545}
-rpc-address = "$LH"
+# Shared HTTP listener for JSON-RPC + WS in current Nimbus-eth1
+http-address = "$LH"
+http-port = ${NIMBUS_ETH1_HTTP_PORT:-8545}
+rpc = true
+ws = true
 
-# WebSocket settings
-ws-port = ${NIMBUS_ETH1_WS_PORT:-8546}
-ws-address = "$LH"
-
-# Engine API (JWT-secured)
-engine-api-port = ${NIMBUS_ETH1_ENGINE_PORT:-8551}
+engine-api = true
 engine-api-address = "$LH"
+engine-api-port = ${NIMBUS_ETH1_ENGINE_PORT:-8551}
 jwt-secret = "$HOME/secrets/jwt.hex"
 
-# miner-enabled/miner-coinbase/miner-extra-data deprecated in NimbusConf (mining off by default)
-
-# Performance
-max-peers = $MAX_PEERS
-cache-size = ${NIMBUS_ETH1_CACHE:-4096}
-
-# Metrics
-metrics-enabled = true
+metrics = true
 metrics-address = "$LH"
 metrics-port = ${METRICS_PORT:-6060}
-
-# Logging
-log-level = "INFO"
-log-file = "$NIMBUS_ETH1_DATA_DIR/nimbus-eth1.log"
 EOF
 
-# Merge base configuration with custom settings
-merge_client_config "Nimbus-eth1" "main" "$PROJECT_ROOT/configs/nimbus/nimbus_eth1_base.toml" "./tmp/nimbus_eth1_custom.toml" "$NIMBUS_ETH1_DIR/nimbus-eth1.toml"
-
-# Clean up temporary files
+merge_client_config "Nimbus-eth1" "execution" \
+    "$PROJECT_ROOT/configs/nimbus/nimbus_eth1_base.toml" \
+    "./tmp/nimbus_eth1_custom.toml" \
+    "$NIMBUS_ETH1_DIR/nimbus_eth1.toml"
 rm -rf ./tmp/
 
 # Create systemd service
-EXEC_START="$NIMBUS_EXEC --config-file=$NIMBUS_ETH1_DIR/nimbus-eth1.toml"
+EXEC_START="$NIMBUS_EXEC executionClient --config-file=$NIMBUS_ETH1_DIR/nimbus_eth1.toml"
 
 create_systemd_service "eth1" "Nimbus Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
 # Enable and start the service
 enable_and_start_systemd_service "eth1"
 
-log_installation_complete "Nimbus-eth1" "nimbus-eth1"
-log_info "Configuration file: $NIMBUS_ETH1_DIR/nimbus-eth1.toml"
+log_installation_complete "Nimbus-eth1" "eth1"
 log_info "Data directory: $NIMBUS_ETH1_DATA_DIR"
 log_info "To check status: sudo systemctl status eth1"
 log_info "To view logs: journalctl -fu eth1"
@@ -156,7 +125,7 @@ cat << EOF
 Nimbus-eth1 has been installed with the following features:
 - Lightweight, resource-efficient execution client
 - JSON-RPC API available on port ${NIMBUS_ETH1_HTTP_PORT:-8545}
-- WebSocket API available on port ${NIMBUS_ETH1_WS_PORT:-8546}
+- WebSocket API available on port ${NIMBUS_ETH1_HTTP_PORT:-8545}
 - Engine API for consensus client communication on port ${NIMBUS_ETH1_ENGINE_PORT:-8551}
 - P2P networking on port 30303
 - Metrics available on port ${METRICS_PORT:-6060}
@@ -177,6 +146,7 @@ Nimbus-eth1 is particularly suitable for:
 - VPS instances with limited resources
 - Home stakers with bandwidth constraints
 
-Note: Nimbus-eth1 uses nightly builds for the latest features and improvements.
+Note: Nimbus-eth1 is installed from the latest GitHub release archive.
+Configuration: $NIMBUS_ETH1_DIR/nimbus_eth1.toml
 
 EOF

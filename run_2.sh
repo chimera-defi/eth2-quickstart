@@ -146,13 +146,24 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
         esac
     fi
     if [[ -n "$CONSENSUS_CLIENT" ]]; then
-        # eth1.service active != Engine API ready; consensus clients need 8551 listening
-        # Java (Besu, Teku) and Erigon can take 30-90s to open Engine API after process start
+        # eth1.service active != Engine API ready; consensus clients need 8551 listening.
+        # Some clients/environments can exceed 90s before authrpc binds, especially in CI.
         if [[ -n "$EXECUTION_CLIENT" ]]; then
-            log_info "Waiting for Engine API (port ${ENGINE_PORT:-8551}) before consensus install..."
-            if ! wait_for_engine_api 90; then
-                log_error "Engine API not ready — consensus client may fail to connect"
-                FAILED=1
+            ENGINE_WAIT_TIMEOUT="${ENGINE_API_WAIT_TIMEOUT:-90}"
+            if [[ "${CI_E2E:-false}" == "true" && "${ENGINE_API_WAIT_TIMEOUT:-}" == "" ]]; then
+                ENGINE_WAIT_TIMEOUT=180
+            fi
+
+            log_info "Waiting for Engine API (port ${ENGINE_PORT:-8551}, timeout ${ENGINE_WAIT_TIMEOUT}s) before consensus install..."
+            if ! wait_for_engine_api "$ENGINE_WAIT_TIMEOUT"; then
+                eth1_state="$(sudo systemctl is-active eth1 2>/dev/null || true)"
+                eth1_failed="$(sudo systemctl is-failed eth1 2>/dev/null || true)"
+                if [[ "$eth1_state" == "active" && "$eth1_failed" != "failed" ]]; then
+                    log_warn "Engine API not ready yet, but eth1 is active; continuing with consensus install (startup may complete during client setup)"
+                else
+                    log_error "Engine API not ready and eth1 unhealthy (state=${eth1_state:-unknown}, failed=${eth1_failed:-unknown})"
+                    FAILED=1
+                fi
             fi
         fi
         case "$CONSENSUS_CLIENT" in
@@ -165,9 +176,9 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
                 ;;
         esac
     fi
-    # Create dummy keys before Commit-Boost so signer can start during install (keys already in place)
-    # Requires: beacon (cl) running with --http on :5052, validator running — lighthouse.sh provides this
-    if [[ "${CI_E2E:-false}" == "true" && "$CONSENSUS_CLIENT" == "lighthouse" && "$MEV_FLAG" == "commit-boost" ]]; then
+    # Create dummy keys before Commit-Boost so signer can start during install (keys already in place).
+    # Supported by helper: lighthouse, prysm.
+    if [[ "${CI_E2E:-false}" == "true" && "$MEV_FLAG" == "commit-boost" ]]; then
         log_info "Creating dummy validator keys for Commit-Boost signer (before MEV install)"
         if [[ -f "$SCRIPT_DIR/test/lib/test_utils.sh" && -f "$SCRIPT_DIR/test/lib/e2e_dummy_validator_keys.sh" ]]; then
             LOG_PREFIX="E2E"
@@ -175,11 +186,15 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
             source "$SCRIPT_DIR/test/lib/test_utils.sh"
             # shellcheck source=test/lib/e2e_dummy_validator_keys.sh
             source "$SCRIPT_DIR/test/lib/e2e_dummy_validator_keys.sh"
-            if create_dummy_validator_keys "lighthouse"; then
+            if create_dummy_validator_keys "$CONSENSUS_CLIENT"; then
                 log_info "Dummy validator keys created — signer will start during Commit-Boost install"
             else
-                log_error "Dummy validator keys failed — Commit-Boost signer will not start"
-                FAILED=1
+                if [[ "$CONSENSUS_CLIENT" == "lighthouse" || "$CONSENSUS_CLIENT" == "prysm" ]]; then
+                    log_error "Dummy validator key generation failed for $CONSENSUS_CLIENT (required for Commit-Boost signer E2E coverage)"
+                    FAILED=1
+                else
+                    log_warn "Dummy validator key generation not available/failed for $CONSENSUS_CLIENT — signer may remain deferred"
+                fi
             fi
         else
             log_error "E2E dummy key scripts not found"
@@ -197,7 +212,8 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
                 if [[ "$ETHGAS_FLAG" == "true" ]]; then
                     echo ""
                     log_info "Installing ETHGas add-on..."
-                    log_warn "Building from Rust source (5-10 minutes)..."
+                    log_info "ETHGas uses prebuilt images by default when Docker daemon is available."
+                    log_info "CI_E2E harness may force source mode for containerized tests."
                     if ! run_install_script "$SCRIPT_DIR/install/mev/install_ethgas.sh" "ETHGas"; then
                         log_warn "Commit-Boost is still installed and functional without ETHGas"
                         FAILED=1

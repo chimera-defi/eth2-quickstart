@@ -19,6 +19,14 @@ log_installation_start "Caddy"
 log_info "Server name: $SERVER_NAME"
 log_info "Login username: $LOGIN_UNAME"
 
+# Stop conflicting web services so Caddy can bind :80/:443 deterministically.
+for svc in nginx apache2; do
+    if sudo systemctl is-active --quiet "$svc" 2>/dev/null; then
+        log_info "Stopping conflicting service: $svc"
+        sudo systemctl stop "$svc" || true
+    fi
+done
+
 # Install Caddy
 install_caddy
 
@@ -51,6 +59,13 @@ validate_caddy_config "/etc/caddy/Caddyfile"
 log_info "Running Caddy security hardening..."
 if ! sudo -E "$SCRIPT_DIR/../security/caddy_harden.sh"; then
     log_error "Caddy hardening failed"
+    exit 1
+fi
+
+# Start/restart Caddy only after final config + hardening are in place
+log_info "Restarting Caddy with final configuration..."
+if ! enable_and_start_systemd_service caddy; then
+    log_error "Failed to start Caddy service after configuration"
     exit 1
 fi
 

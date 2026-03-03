@@ -19,12 +19,13 @@ RUN bash /workspace/install/utils/debconf_preseed.sh
 # Make scripts executable
 RUN find /workspace -name "*.sh" -exec chmod +x {} \;
 
-# Install test dependencies using the centralized script
-# This runs as root in Docker, which the script now handles
+# Install full phase1 dependencies in-image so phase1 marker truthfully represents
+# runtime readiness for matrix lanes (including Java-based clients).
 RUN apt-get update && \
-    bash /workspace/install/utils/install_dependencies.sh --test && \
+    CI_E2E=true bash /workspace/install/utils/install_dependencies.sh --phase1 && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    touch /etc/ethqs-phase1-deps-ready
 
 # Install Caddy for config validation (validate_caddy_config.sh)
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg && \
@@ -46,6 +47,13 @@ RUN useradd -m -s /bin/bash testuser \
 
 # Set ownership
 RUN chown -R testuser:testuser /workspace
+
+# Pre-install phase2 user tools once per image so matrix lanes avoid repeated setup cost.
+# CI_E2E=true is required because phase2 intentionally skips Rust installs in generic Docker.
+RUN su - testuser -c "cd /workspace && CI_E2E=true ./install/utils/install_dependencies.sh --phase2"
+
+# Marker consumed by ci_test_e2e.sh to avoid redundant dependency re-install in each lane
+RUN touch /etc/ethqs-phase2-deps-ready
 
 # Default to running as testuser (non-root, like real usage)
 USER testuser

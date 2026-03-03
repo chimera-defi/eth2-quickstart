@@ -97,7 +97,10 @@ ensure_jwt_secret "$HOME/secrets/jwt.hex"
 # maps to the correct Commit-Boost keystore format and paths.
 detect_signer_config() {
     local cl_exec=""
-    if [[ -f /etc/systemd/system/cl.service ]]; then
+    # Prefer querying systemd for the live unit command to avoid brittle path checks.
+    cl_exec=$(systemctl show -p ExecStart --value cl 2>/dev/null || true)
+    if [[ -z "$cl_exec" ]] && [[ -f /etc/systemd/system/cl.service ]]; then
+        # Fallback for environments where systemctl metadata is unavailable.
         cl_exec=$(grep '^ExecStart=' /etc/systemd/system/cl.service | sed 's/^ExecStart=//' || true)
     fi
 
@@ -140,15 +143,25 @@ if [[ -n "$SIGNER_DETECTED" ]]; then
     IFS='|' read -r SIGNER_FORMAT SIGNER_KEYS SIGNER_SECRETS <<< "$SIGNER_DETECTED"
     log_info "Detected consensus client: $SIGNER_FORMAT"
     log_info "Validator keys path: $SIGNER_KEYS"
+    keys_ready=false
+    secrets_ready=false
     # For file-based keystores (prysm: single keystore file), check file existence.
     # For directory-based keystores (lighthouse, teku, lodestar, nimbus), check for
     # actual *.json keystore files — the directory is created by the VC at startup
     # even when no keys have been imported, so -e on a directory gives a false positive.
     if [[ -f "$SIGNER_KEYS" ]] || { [[ -d "$SIGNER_KEYS" ]] && find "$SIGNER_KEYS" -name "*.json" -maxdepth 3 2>/dev/null | grep -q .; }; then
+        keys_ready=true
+    fi
+    # Secrets path can be a single file (e.g. prysm pass.txt) or a directory.
+    if [[ -f "$SIGNER_SECRETS" ]] || [[ -d "$SIGNER_SECRETS" ]]; then
+        secrets_ready=true
+    fi
+    if [[ "$keys_ready" == "true" && "$secrets_ready" == "true" ]]; then
         SIGNER_READY=true
-        log_info "Validator keys found — signer will be auto-configured"
+        log_info "Validator keys and secrets found — signer will be auto-configured"
     else
-        log_warn "Validator keys not yet imported at $SIGNER_KEYS"
+        [[ "$keys_ready" != "true" ]] && log_warn "Validator keys not yet imported at $SIGNER_KEYS"
+        [[ "$secrets_ready" != "true" ]] && log_warn "Validator secrets not found at $SIGNER_SECRETS"
         log_warn "Signer is pre-configured but will start after you import keys"
     fi
 else
@@ -245,17 +258,20 @@ sudo sed -i '/^\[Service\]/a Environment="CB_CONFIG='"$CONFIG_DIR"'/cb-config.to
 SIGNER_EXEC_START="$COMMIT_BOOST_DIR/commit-boost-signer"
 create_systemd_service "commit-boost-signer" "Commit-Boost Signer" "$SIGNER_EXEC_START" "$(whoami)" "always" "600" "5" "300"
 sudo sed -i '/^\[Service\]/a Environment="CB_CONFIG='"$CONFIG_DIR"'/cb-config.toml"' /etc/systemd/system/commit-boost-signer.service
+sudo sed -i '/^\[Service\]/a Environment="CB_JWTS=ETHGAS_COMMIT='"$HOME"'/secrets/jwt.hex"' /etc/systemd/system/commit-boost-signer.service
 
 # PBS: start immediately (drop-in replacement for MEV-Boost)
 enable_and_start_systemd_service "commit-boost-pbs"
 
-# Signer: start if client detected AND keys exist. In CI/E2E lighthouse+commit-boost, run_2 creates
-# dummy keys before this script runs, so SIGNER_READY is typically true here.
+# Signer: start only when key material exists.
+# If keys are absent, keep signer registered but stopped to avoid restart loops.
 if [[ "$SIGNER_READY" == "true" ]]; then
     enable_and_start_systemd_service "commit-boost-signer"
-elif [[ "${CI_E2E:-false}" == "true" ]]; then
-    enable_systemd_service "commit-boost-signer"  # Enable only; ci_test_e2e adds keys then starts
 else
+    # Keep unit installed but not running until validator keys are present.
+    sudo systemctl stop commit-boost-signer 2>/dev/null || true
+    sudo systemctl disable commit-boost-signer 2>/dev/null || true
+    sudo systemctl reset-failed commit-boost-signer 2>/dev/null || true
     sudo systemctl daemon-reload 2>/dev/null || true
 fi
 
@@ -268,8 +284,6 @@ log_info "Your consensus client already points here via \$MEV_HOST:\$MEV_PORT �
 
 if [[ "$SIGNER_READY" == "true" ]]; then
     log_info "Signer auto-configured for $SIGNER_FORMAT and started."
-elif [[ "${CI_E2E:-false}" == "true" ]]; then
-    log_info "Signer enabled (CI E2E: keys added by ci_test_e2e, then started)."
 elif [[ -n "$SIGNER_FORMAT" ]]; then
     echo ""
     log_warn "Signer pre-configured for $SIGNER_FORMAT but NOT started (keys not found at $SIGNER_KEYS)."
