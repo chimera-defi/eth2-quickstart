@@ -78,24 +78,35 @@ ensure_jwt_secret "$HOME/secrets/jwt.hex"
 NIMBUS_ETH1_DATA_DIR="$HOME/.local/share/nimbus-eth1"
 ensure_directory "$NIMBUS_ETH1_DATA_DIR"
 
+# Merge base + custom config so user-selected values and defaults are captured
+create_temp_config_dir
+cat > ./tmp/nimbus_eth1_custom.toml << EOF
+data-dir = "$NIMBUS_ETH1_DATA_DIR"
+
+# Shared HTTP listener for JSON-RPC + WS in current Nimbus-eth1
+http-address = "$LH"
+http-port = ${NIMBUS_ETH1_HTTP_PORT:-8545}
+rpc = true
+ws = true
+
+engine-api = true
+engine-api-address = "$LH"
+engine-api-port = ${NIMBUS_ETH1_ENGINE_PORT:-8551}
+jwt-secret = "$HOME/secrets/jwt.hex"
+
+metrics = true
+metrics-address = "$LH"
+metrics-port = ${METRICS_PORT:-6060}
+EOF
+
+merge_client_config "Nimbus-eth1" "execution" \
+    "$PROJECT_ROOT/configs/nimbus/nimbus_eth1_base.toml" \
+    "./tmp/nimbus_eth1_custom.toml" \
+    "$NIMBUS_ETH1_DIR/nimbus_eth1.toml"
+rm -rf ./tmp/
+
 # Create systemd service
-EXEC_START="$NIMBUS_EXEC executionClient \
---network=mainnet \
---data-dir=$NIMBUS_ETH1_DATA_DIR \
---tcp-port=30303 \
---udp-port=30303 \
---http-address=$LH \
---http-port=${NIMBUS_ETH1_HTTP_PORT:-8545} \
---rpc \
---ws \
---engine-api \
---engine-api-address=$LH \
---engine-api-port=${NIMBUS_ETH1_ENGINE_PORT:-8551} \
---jwt-secret=$HOME/secrets/jwt.hex \
---metrics \
---metrics-address=$LH \
---metrics-port=${METRICS_PORT:-6060} \
---log-level=INFO"
+EXEC_START="$NIMBUS_EXEC executionClient --config-file=$NIMBUS_ETH1_DIR/nimbus_eth1.toml"
 
 create_systemd_service "eth1" "Nimbus Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
@@ -136,5 +147,6 @@ Nimbus-eth1 is particularly suitable for:
 - Home stakers with bandwidth constraints
 
 Note: Nimbus-eth1 is installed from the latest GitHub release archive.
+Configuration: $NIMBUS_ETH1_DIR/nimbus_eth1.toml
 
 EOF

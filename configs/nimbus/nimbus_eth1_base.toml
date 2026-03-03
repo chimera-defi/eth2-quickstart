@@ -2,7 +2,8 @@
 # Current as of Nimbus-eth1 nightly — rpc-enabled/ws-enabled/engine-api-enabled removed (deprecated in NimbusConf)
 
 # Network settings
-network = "mainnet"
+# Nimbus-eth1 expects network as an array in config-file mode.
+network = ["mainnet"]
 tcp-port = 30303
 udp-port = 30303
 
