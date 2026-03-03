@@ -50,6 +50,8 @@ create_dummy_validator_keys() {
 
     local lh_bin="$HOME/lighthouse/lighthouse"
     local vc_token="$HOME/.lighthouse/mainnet/validators/api-token.txt"
+    local lh_keys_dir="$HOME/.lighthouse/mainnet/validators"
+    local lh_secrets_dir="$HOME/.lighthouse/mainnet/secrets"
     # Must persist for EXIT trap (local would be unbound when trap runs with set -u)
     _e2e_tmp_keys=$(mktemp -d)
     trap '[[ -n "${_e2e_tmp_keys:-}" ]] && rm -rf "$_e2e_tmp_keys"' EXIT
@@ -122,6 +124,17 @@ create_dummy_validator_keys() {
 
     [[ ! -f "$_e2e_tmp_keys/validators.json" ]] && log_warn "validators.json not created" && return 1
 
+    # Commit-Boost signer expects file-based Lighthouse key/secrets paths.
+    # Seed canonical Lighthouse directories from generated artifacts so signer
+    # can start during E2E before/alongside VC import path usage.
+    mkdir -p "$lh_keys_dir" "$lh_secrets_dir"
+    find "$_e2e_tmp_keys" -type f -name "*keystore*.json" 2>/dev/null | while IFS= read -r f; do
+        cp -f "$f" "$lh_keys_dir/"
+    done
+    find "$_e2e_tmp_keys" -type f -name "*.txt" 2>/dev/null | while IFS= read -r f; do
+        cp -f "$f" "$lh_secrets_dir/"
+    done
+
     # VC creates api-token when HTTP server starts (after beacon connection); poll up to 120s
     log_info "Waiting for VC api-token at $vc_token (up to 120s)..."
     for i in $(seq 1 60); do
@@ -140,5 +153,13 @@ create_dummy_validator_keys() {
         --validators-file "$_e2e_tmp_keys/validators.json"; then
         log_warn "lighthouse validator-manager import failed"
         return 1
+    fi
+
+    if [[ -z "$(find "$lh_keys_dir" -name "*.json" -maxdepth 3 2>/dev/null | head -1)" ]]; then
+        log_warn "No Lighthouse keystore JSON copied to $lh_keys_dir"
+        return 1
+    fi
+    if [[ -z "$(find "$lh_secrets_dir" -type f -maxdepth 2 2>/dev/null | head -1)" ]]; then
+        log_warn "No Lighthouse secret file copied to $lh_secrets_dir (validator may create it shortly)"
     fi
 }
