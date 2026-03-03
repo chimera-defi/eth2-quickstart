@@ -80,7 +80,6 @@ export GRANDINE_REST_PORT=5052
 
 # Client-specific checkpoint URLs (fallbacks if main fails)
 export TEKU_CHECKPOINT_URL="https://mainnet.checkpoint.sigp.io"
-export NIMBUS_CHECKPOINT_URL="https://mainnet.checkpoint.sigp.io"
 export LODESTAR_CHECKPOINT_URL="https://mainnet.checkpoint.sigp.io"
 export LIGHTHOUSE_CHECKPOINT_URL="https://mainnet.checkpoint.sigp.io"
 export GRANDINE_CHECKPOINT_URL="https://mainnet.checkpoint.sigp.io"

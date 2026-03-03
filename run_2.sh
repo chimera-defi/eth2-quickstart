@@ -208,7 +208,8 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
                 if [[ "$ETHGAS_FLAG" == "true" ]]; then
                     echo ""
                     log_info "Installing ETHGas add-on..."
-                    log_info "Using prebuilt ETHGas image when Docker is available (source build only if explicitly requested)."
+                    log_info "ETHGas uses prebuilt images by default when Docker daemon is available."
+                    log_info "CI_E2E harness may force source mode for containerized tests."
                     if ! run_install_script "$SCRIPT_DIR/install/mev/install_ethgas.sh" "ETHGas"; then
                         log_warn "Commit-Boost is still installed and functional without ETHGas"
                         FAILED=1
