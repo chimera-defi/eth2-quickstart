@@ -88,6 +88,8 @@ EXEC_START="$NIMBUS_EXEC executionClient \
 --http-port=${NIMBUS_ETH1_HTTP_PORT:-8545} \
 --rpc \
 --ws \
+--ws-address=$LH \
+--ws-port=${NIMBUS_ETH1_WS_PORT:-8546} \
 --engine-api \
 --engine-api-address=$LH \
 --engine-api-port=${NIMBUS_ETH1_ENGINE_PORT:-8551} \
