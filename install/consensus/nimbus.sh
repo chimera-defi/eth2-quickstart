@@ -132,8 +132,9 @@ BEACON_EXEC_START="$NIMBUS_DIR/build/nimbus_beacon_node --config-file=$NIMBUS_DI
 
 create_systemd_service "cl" "Nimbus Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target eth1.service" "network-online.target eth1.service"
 
-# Create systemd service for validator
-VALIDATOR_EXEC_START="$NIMBUS_DIR/build/nimbus_validator_client --beacon-node=http://127.0.0.1:5052 --validators-dir=$VALIDATOR_DATA_DIR --secrets-dir=$VALIDATOR_DATA_DIR/secrets --suggested-fee-recipient=$FEE_RECIPIENT --graffiti=$GRAFITTI --metrics=true --metrics-port=8009 --metrics-address=$CONSENSUS_HOST --doppelganger-detection=true"
+# Create systemd service for validator.
+# Use config file so custom values (for example graffiti with spaces) are parsed safely.
+VALIDATOR_EXEC_START="$NIMBUS_DIR/build/nimbus_validator_client --config-file=$NIMBUS_DIR/validator.toml"
 
 create_systemd_service "validator" "Nimbus Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target cl.service"
 
