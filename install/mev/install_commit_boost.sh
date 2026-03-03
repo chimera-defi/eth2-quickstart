@@ -97,7 +97,10 @@ ensure_jwt_secret "$HOME/secrets/jwt.hex"
 # maps to the correct Commit-Boost keystore format and paths.
 detect_signer_config() {
     local cl_exec=""
-    if [[ -f /etc/systemd/system/cl.service ]]; then
+    # Prefer querying systemd for the live unit command to avoid brittle path checks.
+    cl_exec=$(systemctl show -p ExecStart --value cl 2>/dev/null || true)
+    if [[ -z "$cl_exec" ]] && [[ -f /etc/systemd/system/cl.service ]]; then
+        # Fallback for environments where systemctl metadata is unavailable.
         cl_exec=$(grep '^ExecStart=' /etc/systemd/system/cl.service | sed 's/^ExecStart=//' || true)
     fi
 
