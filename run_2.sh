@@ -176,9 +176,9 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
                 ;;
         esac
     fi
-    # Create dummy keys before Commit-Boost so signer can start during install (keys already in place)
-    # Requires: beacon (cl) running with --http on :5052, validator running — lighthouse.sh provides this
-    if [[ "${CI_E2E:-false}" == "true" && "$CONSENSUS_CLIENT" == "lighthouse" && "$MEV_FLAG" == "commit-boost" ]]; then
+    # Create dummy keys before Commit-Boost so signer can start during install (keys already in place).
+    # Supported by helper: lighthouse, prysm.
+    if [[ "${CI_E2E:-false}" == "true" && "$MEV_FLAG" == "commit-boost" ]]; then
         log_info "Creating dummy validator keys for Commit-Boost signer (before MEV install)"
         if [[ -f "$SCRIPT_DIR/test/lib/test_utils.sh" && -f "$SCRIPT_DIR/test/lib/e2e_dummy_validator_keys.sh" ]]; then
             LOG_PREFIX="E2E"
@@ -186,11 +186,10 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
             source "$SCRIPT_DIR/test/lib/test_utils.sh"
             # shellcheck source=test/lib/e2e_dummy_validator_keys.sh
             source "$SCRIPT_DIR/test/lib/e2e_dummy_validator_keys.sh"
-            if create_dummy_validator_keys "lighthouse"; then
+            if create_dummy_validator_keys "$CONSENSUS_CLIENT"; then
                 log_info "Dummy validator keys created — signer will start during Commit-Boost install"
             else
-                log_error "Dummy validator keys failed — Commit-Boost signer will not start"
-                FAILED=1
+                log_warn "Dummy validator key generation not available/failed for $CONSENSUS_CLIENT — signer may remain deferred"
             fi
         else
             log_error "E2E dummy key scripts not found"

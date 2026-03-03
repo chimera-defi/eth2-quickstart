@@ -140,15 +140,25 @@ if [[ -n "$SIGNER_DETECTED" ]]; then
     IFS='|' read -r SIGNER_FORMAT SIGNER_KEYS SIGNER_SECRETS <<< "$SIGNER_DETECTED"
     log_info "Detected consensus client: $SIGNER_FORMAT"
     log_info "Validator keys path: $SIGNER_KEYS"
+    keys_ready=false
+    secrets_ready=false
     # For file-based keystores (prysm: single keystore file), check file existence.
     # For directory-based keystores (lighthouse, teku, lodestar, nimbus), check for
     # actual *.json keystore files — the directory is created by the VC at startup
     # even when no keys have been imported, so -e on a directory gives a false positive.
     if [[ -f "$SIGNER_KEYS" ]] || { [[ -d "$SIGNER_KEYS" ]] && find "$SIGNER_KEYS" -name "*.json" -maxdepth 3 2>/dev/null | grep -q .; }; then
+        keys_ready=true
+    fi
+    # Secrets path can be a single file (e.g. prysm pass.txt) or a directory.
+    if [[ -f "$SIGNER_SECRETS" ]] || [[ -d "$SIGNER_SECRETS" ]]; then
+        secrets_ready=true
+    fi
+    if [[ "$keys_ready" == "true" && "$secrets_ready" == "true" ]]; then
         SIGNER_READY=true
-        log_info "Validator keys found — signer will be auto-configured"
+        log_info "Validator keys and secrets found — signer will be auto-configured"
     else
-        log_warn "Validator keys not yet imported at $SIGNER_KEYS"
+        [[ "$keys_ready" != "true" ]] && log_warn "Validator keys not yet imported at $SIGNER_KEYS"
+        [[ "$secrets_ready" != "true" ]] && log_warn "Validator secrets not found at $SIGNER_SECRETS"
         log_warn "Signer is pre-configured but will start after you import keys"
     fi
 else
