@@ -162,9 +162,13 @@ if [[ "$PHASE" == "2" ]]; then
                 verify_installed "commit-boost-pbs service registered" bash -c 'systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk "{print \$1}" | grep -Fxq "commit-boost-pbs.service"'
                 # shellcheck disable=SC2016
                 verify_installed "commit-boost-signer service registered" bash -c 'systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk "{print \$1}" | grep -Fxq "commit-boost-signer.service"'
-                for svc in commit-boost-pbs commit-boost-signer; do
-                    _verify_service_active "$svc" 30
-                done
+                _verify_service_active "commit-boost-pbs" 30
+                # Signer should be active only when validator keys are present.
+                if systemctl is-enabled --quiet commit-boost-signer 2>/dev/null; then
+                    _verify_service_active "commit-boost-signer" 30
+                else
+                    record_test "commit-boost-signer deferred (no validator keys yet)" "PASS"
+                fi
                 if [[ "$E2E_CONS" == "lighthouse" ]]; then
                     if [[ -n "$(find "$HOME/.lighthouse/mainnet/validators" -name "*.json" -maxdepth 3 2>/dev/null | head -1)" ]]; then
                         record_test "Dummy validator keys (run_2 created before Commit-Boost)" "PASS"
