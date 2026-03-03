@@ -88,8 +88,6 @@ EXEC_START="$NIMBUS_EXEC executionClient \
 --http-port=${NIMBUS_ETH1_HTTP_PORT:-8545} \
 --rpc \
 --ws \
---ws-address=$LH \
---ws-port=${NIMBUS_ETH1_WS_PORT:-8546} \
 --engine-api \
 --engine-api-address=$LH \
 --engine-api-port=${NIMBUS_ETH1_ENGINE_PORT:-8551} \
@@ -116,7 +114,7 @@ cat << EOF
 Nimbus-eth1 has been installed with the following features:
 - Lightweight, resource-efficient execution client
 - JSON-RPC API available on port ${NIMBUS_ETH1_HTTP_PORT:-8545}
-- WebSocket API available on port ${NIMBUS_ETH1_WS_PORT:-8546}
+- WebSocket API available on port ${NIMBUS_ETH1_HTTP_PORT:-8545}
 - Engine API for consensus client communication on port ${NIMBUS_ETH1_ENGINE_PORT:-8551}
 - P2P networking on port 30303
 - Metrics available on port ${METRICS_PORT:-6060}
