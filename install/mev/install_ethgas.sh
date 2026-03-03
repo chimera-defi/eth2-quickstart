@@ -31,20 +31,15 @@ daemon_reload_systemd || exit 1
 require_systemd_unit_registered "commit-boost-pbs" || exit 1
 require_systemd_unit_registered "commit-boost-signer" || exit 1
 
-# ETHGas requires the signer — ensure it's enabled and started
-if [[ -f /etc/systemd/system/commit-boost-signer.service ]]; then
-    if ! systemctl is-active --quiet commit-boost-signer 2>/dev/null; then
-        log_info "Starting Commit-Boost Signer (required by ETHGas)..."
-        sudo systemctl enable --now commit-boost-signer 2>/dev/null || true
-    fi
-    if ! systemctl is-active --quiet commit-boost-signer 2>/dev/null; then
-        log_warn "Commit-Boost Signer not running. ETHGas needs it for validator key operations."
-        log_warn "Configure [signer] in ~/commit-boost/config/cb-config.toml, then:"
-        log_warn "  sudo systemctl enable --now commit-boost-signer"
-    fi
-else
-    log_error "Commit-Boost Signer service not found. Please install Commit-Boost first."
-    exit 1
+# ETHGas requires the signer — ensure it's enabled and started.
+if ! systemctl is-active --quiet commit-boost-signer 2>/dev/null; then
+    log_info "Starting Commit-Boost Signer (required by ETHGas)..."
+    sudo systemctl enable --now commit-boost-signer 2>/dev/null || true
+fi
+if ! systemctl is-active --quiet commit-boost-signer 2>/dev/null; then
+    log_warn "Commit-Boost Signer not running. ETHGas needs it for validator key operations."
+    log_warn "Configure [signer] in ~/commit-boost/config/cb-config.toml, then:"
+    log_warn "  sudo systemctl enable --now commit-boost-signer"
 fi
 
 log_info "Commit-Boost dependency verified"
