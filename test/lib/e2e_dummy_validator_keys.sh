@@ -1,13 +1,51 @@
 #!/bin/bash
 # Creates dummy validator keys for Commit-Boost signer in E2E (CI_E2E=true, E2E_MEV=commit-boost).
 # Signer needs keys to be fully active; without them it shows "pre-configured but will start after you import keys".
-# Supports: lighthouse (via validator-manager create + import to running VC)
+# Supports:
+# - lighthouse (via validator-manager create + import to running VC)
+# - prysm (creates a valid Prysm wallet keystore with Prysm CLI)
 #
 # VC api-token: Lighthouse VC creates api-token.txt when its HTTP server starts (after connecting to beacon).
 # We wait for beacon REST API to respond, then validator, then poll for api-token.
 
 create_dummy_validator_keys() {
     local cons="$1"
+    if [[ "$cons" == "prysm" ]]; then
+        local prysm_wallet_dir="$HOME/.eth2validators/prysm-wallet-v2"
+        local prysm_keys_dir="$prysm_wallet_dir/direct/accounts"
+        local prysm_keys_file="$prysm_keys_dir/all-accounts.keystore.json"
+        local prysm_pass_file="$HOME/secrets/pass.txt"
+        local prysm_cli="$HOME/prysm/prysm.sh"
+        mkdir -p "$HOME/secrets"
+        printf '%s\n' "insecure-e2e-passphrase" > "$prysm_pass_file"
+        chmod 600 "$prysm_pass_file"
+
+        if [[ ! -x "$prysm_cli" ]]; then
+            log_warn "Prysm CLI not found at $prysm_cli"
+            return 1
+        fi
+
+        # Create a valid wallet file using Prysm's own command so both Prysm VC and
+        # Commit-Boost signer can parse the keystore format.
+        if [[ ! -f "$prysm_keys_file" ]]; then
+            if ! "$prysm_cli" validator wallet create \
+                --wallet-dir "$prysm_wallet_dir" \
+                --keymanager-kind imported \
+                --wallet-password-file "$prysm_pass_file" \
+                --accept-terms-of-use; then
+                log_warn "Failed to create Prysm wallet keystore"
+                return 1
+            fi
+        fi
+
+        if [[ ! -s "$prysm_keys_file" ]]; then
+            log_warn "Prysm wallet keystore not created at $prysm_keys_file"
+            return 1
+        fi
+        log_info "Created Prysm wallet keystore for Commit-Boost signer: $prysm_keys_file"
+        return 0
+    fi
+
     [[ "$cons" != "lighthouse" ]] && return 1
 
     local lh_bin="$HOME/lighthouse/lighthouse"
