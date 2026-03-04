@@ -222,7 +222,8 @@ run_1.sh and run_2.sh write logs to disk. View them with:
 - Updates `exports.sh` with selected clients
 
 ### purge_ethereum_data.sh
-- Safely removes Ethereum data directories
+- Safely removes default Ethereum data directories
+- Preserves keys/secrets (including `~/secrets`) by design
 - Useful for fresh starts or troubleshooting
 
 ## Security Utilities
@@ -300,20 +301,24 @@ run_1.sh and run_2.sh write logs to disk. View them with:
 ## Data Management
 
 ### purge_ethereum_data.sh
-- Removes Ethereum data directories
-- Preserves configuration files
+- Removes default Ethereum data/state directories
+- Preserves key/secret paths (including `~/secrets` and validator keystores)
+- Does not touch custom non-default datadirs
 - Useful for fresh starts
 
 ### Data Directories
 - **Geth**: `~/.ethereum`
 - **Erigon**: `~/.local/share/erigon`
 - **Reth**: `~/.local/share/reth`
-- **Prysm**: `~/prysm`
+- **Ethrex**: `~/ethrex/data`
+- **Prysm**: `~/.local/share/prysm`
 - **Lighthouse**: `~/.lighthouse`
 - **Teku**: `~/.local/share/teku`
-- **Nimbus**: `~/.cache/nimbus`
+- **Nimbus**: `~/.local/share/nimbus`
 - **Lodestar**: `~/.local/share/lodestar`
 - **Grandine**: `~/.local/share/grandine`
+- **Commit-Boost**: `~/commit-boost`
+- **ETHGas**: `~/ethgas`
 
 ## Troubleshooting
 
