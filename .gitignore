@@ -10,3 +10,5 @@ logs/
 
 # Package artifacts (chrony, etc.)
 *.deb
+
+.DS_store
