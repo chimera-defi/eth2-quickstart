@@ -24,6 +24,23 @@ run_test() {
     fi
 }
 
+run_test_any_pattern() {
+    local name="$1"
+    local repo="$2"
+    shift 2
+
+    local pattern
+    for pattern in "$@"; do
+        if result=$(get_github_release_asset_url "$repo" "$pattern") && [[ -n "$result" ]]; then
+            echo "PASS: $name"
+            return 0
+        fi
+    done
+
+    echo "FAIL: $name"
+    exit 1
+}
+
 echo "=== get_latest_release ==="
 run_test "flashbots/mev-boost" get_latest_release "flashbots/mev-boost"
 run_test "Commit-Boost/commit-boost-client" get_latest_release "Commit-Boost/commit-boost-client"
@@ -38,7 +55,9 @@ echo ""
 echo "=== get_github_release_asset_url ==="
 run_test "Commit-Boost PBS linux_x86-64" get_github_release_asset_url "Commit-Boost/commit-boost-client" "commit-boost-pbs-.*-linux_x86-64\.tar\.gz"
 run_test "Lighthouse x86_64 linux" get_github_release_asset_url "sigp/lighthouse" "lighthouse-.*-x86_64-unknown-linux-gnu\.tar\.gz"
-run_test "Nimbus-eth1 linux-amd64" get_github_release_asset_url "status-im/nimbus-eth1" "nimbus-linux-amd64-.*\\.tar\\.gz"
+run_test_any_pattern "Nimbus-eth1 linux-amd64" "status-im/nimbus-eth1" \
+    "nimbus-eth1-linux-amd64-.*\\.tar\\.gz" \
+    "nimbus-linux-amd64-.*\\.tar\\.gz"
 run_test "Nethermind linux-x64" get_github_release_asset_url "NethermindEth/nethermind" "nethermind-.*-linux-x64\.zip"
 run_test "Nimbus-eth2 Linux amd64" get_github_release_asset_url "status-im/nimbus-eth2" "nimbus-eth2_Linux_amd64"
 
