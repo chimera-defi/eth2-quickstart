@@ -30,9 +30,13 @@ cd "$NIMBUS_ETH1_DIR" || exit
 
 # Nimbus-eth1 ships prebuilt release archives via GitHub Releases
 log_info "Fetching latest Nimbus-eth1 release..."
-NIMBUS_URL=$(get_github_release_asset_url "status-im/nimbus-eth1" "nimbus-linux-amd64-.*\\.tar\\.gz")
+# Nimbus release asset names have changed over time; try current and legacy patterns.
+NIMBUS_URL=$(get_github_release_asset_url "status-im/nimbus-eth1" "nimbus-eth1-linux-amd64-.*\\.tar\\.gz")
 if [[ -z "$NIMBUS_URL" ]]; then
-    log_error "Could not fetch Nimbus-eth1 release URL from GitHub"
+    NIMBUS_URL=$(get_github_release_asset_url "status-im/nimbus-eth1" "nimbus-linux-amd64-.*\\.tar\\.gz")
+fi
+if [[ -z "$NIMBUS_URL" ]]; then
+    log_error "Could not fetch Nimbus-eth1 release URL from GitHub (no matching amd64 asset)"
     exit 1
 fi
 
