@@ -14,6 +14,18 @@ export EMAIL="chimera_defi@protonmail.com"
 
 export LOGIN_UNAME='eth'
 export YourSSHPortNumber='22'
+
+# Chain selection: which blockchain node to install in Phase 2
+# Valid values: 'ethereum' | 'monad'
+# Default is ethereum to preserve existing behaviour.
+export CHAIN='ethereum'
+
+# Path to a dedicated NVMe device for Monad TrieDB state storage.
+# WARNING: THIS DEVICE WILL BE COMPLETELY REFORMATTED. ALL DATA ON IT WILL BE DESTROYED.
+# Do NOT set this to your OS drive. No default is provided because a wrong value is destructive.
+# Set in config/user_config.env when CHAIN='monad'. Use 'lsblk' to identify the correct device.
+# export MONAD_TRIEDB_DRIVE='/dev/nvme1n1'
+
 export maxretry='3'
 export REPO_NAME="eth2-quickstart"
 

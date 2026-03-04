@@ -36,10 +36,42 @@ setup_firewall() {
     # Open essential ports using common function
     # Use the configured SSH port (not hardcoded 22) to match sshd_config
     local SSH_PORT="${YourSSHPortNumber:-22}"
-    log_info "Opening ports for Ethereum clients and SSH (port $SSH_PORT)..."
-    setup_firewall_rules 30303 13000/tcp 12000/udp "$SSH_PORT/tcp" 443/tcp
 
-    # Block outbound connections to private/reserved networks to prevent netscan abuse
+    # TODO: firewall setup is no longer chain-agnostic now that multiple chains are
+    # supported. Consider extracting into a separate parameterized firewall phase
+    # (requiring sudo) in a future refactor, so Phase 1 can remain chain-agnostic.
+    local CHAIN_VAR="${CHAIN:-ethereum}"
+
+    if [[ "$CHAIN_VAR" == "monad" ]]; then
+        log_info "Opening SSH port $SSH_PORT for Monad operator access..."
+        # Monad P2P ports (8000/tcp, 8000/udp, 8001/tcp) and the iptables anti-spam rule
+        # are applied in monad_install.sh (Phase 2), where iptables-persistent is available
+        # to make the iptables rule persistent across reboots.
+        setup_firewall_rules "$SSH_PORT/tcp"
+        log_info "Monad firewall: SSH ($SSH_PORT) opened. P2P ports configured in monad_install.sh."
+
+    elif [[ "$CHAIN_VAR" == "ethereum" ]]; then
+        log_info "Opening ports for Ethereum clients and SSH (port $SSH_PORT)..."
+        setup_firewall_rules 30303 13000/tcp 12000/udp "$SSH_PORT/tcp" 443/tcp
+
+        # Block specific ports (updates from Prysm docs Feb '23)
+        log_info "Blocking specific ports for security..."
+        ufw deny in 4000/tcp || log_warn "Failed to deny port 4000/tcp"
+        ufw deny in 3500/tcp || log_warn "Failed to deny port 3500/tcp"
+        ufw deny in 8551/tcp || log_warn "Failed to deny port 8551/tcp"
+        ufw deny in 8545/tcp || log_warn "Failed to deny port 8545/tcp"
+
+        log_info "✓ Ethereum firewall ports configured!"
+        log_info "Allowed ports: $SSH_PORT (SSH), 443 (HTTPS), 30303 (Ethereum P2P), 12000/13000 (Prysm)"
+        log_info "Blocked inbound: 4000, 3500, 8551, 8545"
+
+    else
+        log_error "Unknown CHAIN value: '$CHAIN_VAR'. Valid values: ethereum, monad"
+        exit 1
+    fi
+
+    # Block outbound connections to private/reserved networks — universal for all chains.
+    # Prevents netscan abuse warnings regardless of whether running Ethereum or Monad.
     # Skip in Docker only: container gateway (172.17.0.1) is in 172.16.0.0/12; blocking would
     # break connectivity. On real servers we apply full rules. Docker E2E tests the rest.
     if ! is_docker; then
@@ -67,7 +99,7 @@ setup_firewall() {
             "240.0.0.0/4"          # Reserved for Future Use
             "255.255.255.255/32"   # Limited Broadcast
         )
-        
+
         # Known problematic subnets that trigger Hetzner abuse reports
         # These are public IP ranges where aggressive P2P discovery causes issues
         # Add subnets here as needed based on abuse reports
@@ -78,7 +110,7 @@ setup_firewall() {
         for network in "${private_networks[@]}"; do
             ufw deny out on any to "$network" || log_warn "Failed to block outbound to $network"
         done
-        
+
         # Block problematic subnets (public IPs that cause abuse reports)
         log_info "Blocking problematic subnets that trigger abuse reports..."
         for subnet in "${problematic_subnets[@]}"; do
@@ -88,21 +120,7 @@ setup_firewall() {
         log_info "Skipping private network blocks in container (would break Docker networking)"
     fi
 
-    # Block specific ports (updates from Prysm docs Feb '23)
-    log_info "Blocking specific ports for security..."
-    ufw deny in 4000/tcp || log_warn "Failed to deny port 4000/tcp"
-    ufw deny in 3500/tcp || log_warn "Failed to deny port 3500/tcp"
-    ufw deny in 8551/tcp || log_warn "Failed to deny port 8551/tcp"
-    ufw deny in 8545/tcp || log_warn "Failed to deny port 8545/tcp"
-
     log_info "✓ Firewall configuration completed!"
-    log_info "UFW firewall is now enabled with Ethereum client and security rules"
-    log_info "Allowed ports: $SSH_PORT (SSH), 443 (HTTPS), 30303 (Ethereum P2P), 12000/13000 (Prysm)"
-    if is_docker; then
-        log_info "Blocked: Specific ports (4000, 3500, 8551, 8545)"
-    else
-        log_info "Blocked: Private networks, problematic subnets (UDP), specific ports (4000, 3500, 8551, 8545)"
-    fi
 }
 
 # Function 2: Setup Fail2ban
