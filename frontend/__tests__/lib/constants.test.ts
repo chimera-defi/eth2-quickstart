@@ -19,7 +19,7 @@ describe('constants', () => {
   it('arrays are not empty', () => {
     expect(NAV_LINKS.length).toBeGreaterThan(0)
     expect(STATS.length).toBeGreaterThan(0)
-    expect(EXECUTION_CLIENTS).toHaveLength(6)
+    expect(EXECUTION_CLIENTS).toHaveLength(7)
     expect(CONSENSUS_CLIENTS).toHaveLength(6)
     expect(FEATURES).toHaveLength(5)
     expect(DOCUMENTATION_LINKS.length).toBeGreaterThan(0)
@@ -37,6 +37,14 @@ describe('constants', () => {
       expect(c).toHaveProperty('name')
       expect(c).toHaveProperty('language')
     })
+  })
+
+  it('stats stay aligned with supported client matrix', () => {
+    const clientsStat = STATS.find(s => s.label === 'Clients')
+    const combosStat = STATS.find(s => s.label === 'Combinations')
+
+    expect(clientsStat?.value).toBe(String(EXECUTION_CLIENTS.length + CONSENSUS_CLIENTS.length))
+    expect(combosStat?.value).toBe(String(EXECUTION_CLIENTS.length * CONSENSUS_CLIENTS.length))
   })
 
   it('installation steps are sequential', () => {

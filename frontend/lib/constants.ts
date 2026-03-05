@@ -15,9 +15,31 @@ export const NAV_LINKS = [
   { label: 'GitHub', href: SITE_CONFIG.github, external: true },
 ]
 
+export const EXECUTION_CLIENTS = [
+  { name: 'Geth', language: 'Go', bestFor: 'Beginners, stability' },
+  { name: 'Erigon', language: 'Go', bestFor: 'Performance, fast sync' },
+  { name: 'Reth', language: 'Rust', bestFor: 'Performance, modularity' },
+  { name: 'Nethermind', language: 'C#', bestFor: 'Enterprise, advanced features' },
+  { name: 'Besu', language: 'Java', bestFor: 'Private networks, compliance' },
+  { name: 'Nimbus-eth1', language: 'Nim', bestFor: 'Low resources' },
+  { name: 'Ethrex', language: 'Rust', bestFor: 'Early adopters, modular L1/L2 support' },
+]
+
+export const CONSENSUS_CLIENTS = [
+  { name: 'Prysm', language: 'Go', bestFor: 'Beginners, documentation' },
+  { name: 'Lighthouse', language: 'Rust', bestFor: 'Performance, security' },
+  { name: 'Teku', language: 'Java', bestFor: 'Institutional, monitoring' },
+  { name: 'Nimbus', language: 'Nim', bestFor: 'Low resources' },
+  { name: 'Lodestar', language: 'TypeScript', bestFor: 'Development' },
+  { name: 'Grandine', language: 'Rust', bestFor: 'Advanced users' },
+]
+
+const TOTAL_CLIENTS = EXECUTION_CLIENTS.length + CONSENSUS_CLIENTS.length
+const TOTAL_COMBINATIONS = EXECUTION_CLIENTS.length * CONSENSUS_CLIENTS.length
+
 export const STATS = [
-  { value: '12', label: 'Clients' },
-  { value: '36', label: 'Combinations' },
+  { value: String(TOTAL_CLIENTS), label: 'Clients' },
+  { value: String(TOTAL_COMBINATIONS), label: 'Combinations' },
   { value: '~30m', label: 'Setup Time' },
   { value: '2-step', label: 'Hardened Flow' },
 ]
@@ -33,7 +55,7 @@ export const INSTALL_HIGHLIGHTS = [
   },
   {
     title: 'Configurable wizard',
-    description: 'Launches a guided TUI to select clients, MEV options, and network presets.',
+    description: 'Supports guided TUI on a real TTY and auto-falls back to non-interactive defaults for one-line piped installs.',
     icon: 'Terminal',
   },
   {
@@ -66,24 +88,6 @@ export const WORKFLOW_STEPS = [
   },
 ]
 
-export const EXECUTION_CLIENTS = [
-  { name: 'Geth', language: 'Go', bestFor: 'Beginners, stability' },
-  { name: 'Erigon', language: 'Go', bestFor: 'Performance, fast sync' },
-  { name: 'Reth', language: 'Rust', bestFor: 'Performance, modularity' },
-  { name: 'Nethermind', language: 'C#', bestFor: 'Enterprise, advanced features' },
-  { name: 'Besu', language: 'Java', bestFor: 'Private networks, compliance' },
-  { name: 'Nimbus-eth1', language: 'Nim', bestFor: 'Low resources' },
-]
-
-export const CONSENSUS_CLIENTS = [
-  { name: 'Prysm', language: 'Go', bestFor: 'Beginners, documentation' },
-  { name: 'Lighthouse', language: 'Rust', bestFor: 'Performance, security' },
-  { name: 'Teku', language: 'Java', bestFor: 'Institutional, monitoring' },
-  { name: 'Nimbus', language: 'Nim', bestFor: 'Low resources' },
-  { name: 'Lodestar', language: 'TypeScript', bestFor: 'Development' },
-  { name: 'Grandine', language: 'Rust', bestFor: 'Advanced users' },
-]
-
 export const FEATURES = [
   {
     id: 'client-diversity',
@@ -106,7 +110,7 @@ export const FEATURES = [
   {
     id: 'mev',
     title: 'Maximize Rewards',
-    description: 'Built-in MEV-Boost support. Connect to multiple relays and optimize validator rewards.',
+    description: 'Built-in MEV-Boost, Commit-Boost, and optional ETHGas support.',
     icon: 'TrendingUp',
   },
   {
@@ -129,7 +133,7 @@ export const INSTALLATION_STEPS_ONELINER = [
   {
     step: 1,
     title: 'Run the one-line installer',
-    description: 'Clones the repo, runs the configuration wizard, generates phase scripts. Path shown when complete.',
+    description: 'Clones the repo and generates phase scripts. Defaults to non-interactive in piped mode; use --interactive when running from a real TTY.',
     code: 'curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash',
   },
   {
@@ -183,9 +187,9 @@ cd eth2-quickstart && chmod +x run_1.sh`,
   {
     step: 4,
     title: 'Install Clients with run_2.sh (as new user)',
-    description: 'Edit exports.sh with your settings, then run the run_2.sh script. Use ./select_clients.sh for client recommendations.',
+    description: 'Edit exports.sh with your settings, then run run_2.sh. Use install/utils/select_clients.sh for client recommendations.',
     code: `nano exports.sh  # Edit settings
-./select_clients.sh  # Optional: get recommendations
+./install/utils/select_clients.sh  # Optional: get recommendations
 ./run_2.sh           # Install clients`,
   },
   {
