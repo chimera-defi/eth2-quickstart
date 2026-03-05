@@ -59,3 +59,19 @@ Use this file to preserve context across sessions.
   - `./test/run_tests.sh --full` passed (`Total: 279, Passed: 279, Failed: 0`).
 - Follow-ups:
   - If we later retire interactive TUI entirely, replace whiptail flow with a first-class pure-CLI flag-driven configurator.
+
+## Update: 2026-03-05 (CI RCA + Flake Hardening)
+- Author: codex
+- Summary:
+  - Investigated reported CI failures after PR130 updates.
+  - Confirmed `run-2-structure` is green in CI and passes locally as non-root.
+  - RCA: observed flaky CI behavior in Docker/E2E path (transient GHCR pull timeout and matrix cancellations obscuring root cause).
+  - Hardened `.github/actions/docker-prep/action.yml` with pull retry/backoff (3 attempts) before failing.
+  - Hardened `.github/workflows/ci.yml` matrix behavior:
+    - switched `e2e-client-matrix.strategy.fail-fast` to `false` so one flake does not cancel sibling client combinations.
+    - added one retry with backoff around matrix E2E command execution.
+- Validation:
+  - YAML parsing passed for `.github/workflows/ci.yml` and `.github/actions/docker-prep/action.yml`.
+  - `bash test/ci_test_run_2.sh` passed as non-root user in `/tmp` repo copy.
+- Follow-ups:
+  - If matrix failures persist after hardening, add per-client targeted readiness diagnostics in `test/ci_test_e2e.sh` (service status + recent journal excerpts before fail).

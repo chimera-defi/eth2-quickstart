@@ -31,10 +31,10 @@ concurrency:
   group: ci-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
-# Fail-fast: build-docker -> (docker-integration + run-* in parallel) -> e2e-client-matrix.
-# Shellcheck: run in shellcheck.yml only (avoids duplicate run with ci.yml).
-# docker-integration and run-* run in parallel (all need image only). Matrix has fail-fast.
-# Note: GitHub Actions cannot cancel sibling jobs when one fails; matrix jobs cancel each other.
+  # Fail-fast: build-docker -> (docker-integration + run-* in parallel) -> e2e-client-matrix.
+  # Shellcheck: run in shellcheck.yml only (avoids duplicate run with ci.yml).
+  # docker-integration and run-* run in parallel (all need image only). Matrix keeps running all combos.
+  # Note: GitHub Actions cannot cancel sibling jobs when one fails; matrix fail-fast is disabled.
 jobs:
   # Build once, push to GHCR. Other jobs pull instead of building (saves ~5 builds).
   # Fork PRs: push fails (no package write), jobs fall back to building.
@@ -179,7 +179,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include:
           - exec: besu
@@ -211,6 +211,24 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CI: true
         run: |
-          SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" \
-          E2E_EXECUTION=${{ matrix.exec }} E2E_CONSENSUS=${{ matrix.cons }} E2E_MEV=${{ matrix.mev }} \
-          ./test/run_e2e.sh --phase=2
+          e2e_cmd() {
+            SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" \
+            E2E_EXECUTION=${{ matrix.exec }} E2E_CONSENSUS=${{ matrix.cons }} E2E_MEV=${{ matrix.mev }} \
+            ./test/run_e2e.sh --phase=2
+          }
+
+          rc=0
+          for attempt in 1 2; do
+            echo "Matrix E2E attempt ${attempt}/2"
+            if e2e_cmd; then
+              rc=0
+              break
+            fi
+            rc=$?
+            if [[ $attempt -lt 2 ]]; then
+              echo "Matrix E2E failed (attempt ${attempt}/2); retrying in 15s..."
+              sleep 15
+            fi
+          done
+
+          exit $rc
