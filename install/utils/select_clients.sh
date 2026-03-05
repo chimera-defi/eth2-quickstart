@@ -21,13 +21,12 @@ display_header() {
 }
 
 display_client_info() {
-    # client_type="$1"  # Currently unused but kept for future use
-    local client_name="$2"
-    local language="$3"
-    local description="$4"
-    local pros="$5"
-    local cons="$6"
-    local install_script="$7"
+    local client_name="$1"
+    local language="$2"
+    local description="$3"
+    local pros="$4"
+    local cons="$5"
+    local install_script="$6"
     
     echo -e "${BOLD}${YELLOW}$client_name${NC} (${language})"
     echo -e "${description}"
@@ -48,43 +47,43 @@ show_execution_clients() {
     echo -e "${BOLD}${UNDERLINE}EXECUTION CLIENTS${NC}"
     echo
     
-    display_client_info "execution" "Geth" "Go" \
+    display_client_info "Geth" "Go" \
         "The original Go implementation of Ethereum. Most widely used and battle-tested." \
         "• Most stable and mature\n• Extensive documentation\n• Wide community support\n• Proven track record" \
         "• Higher resource usage\n• Slower sync compared to newer clients" \
         "../execution/geth.sh"
     
-    display_client_info "execution" "Erigon" "Go" \
+    display_client_info "Erigon" "Go" \
         "Re-architected Geth focusing on efficiency and performance." \
         "• Faster sync times\n• Lower disk space usage\n• Better performance\n• Modular architecture" \
         "• More complex setup\n• Less mature than Geth\n• Higher memory usage during sync" \
         "../execution/erigon.sh"
     
-    display_client_info "execution" "Reth" "Rust" \
+    display_client_info "Reth" "Rust" \
         "Modern Rust implementation focusing on performance and modularity." \
         "• Excellent performance\n• Modern codebase\n• Active development\n• Modular design" \
         "• Newer and less battle-tested\n• Rust compilation takes time\n• Still in development" \
         "../execution/reth.sh"
     
-    display_client_info "execution" "Nethermind" ".NET/C#" \
+    display_client_info "Nethermind" ".NET/C#" \
         "Enterprise-focused .NET implementation with advanced features." \
         "• Enterprise features\n• Good performance\n• Active development\n• JSON-RPC compatibility" \
         "• Requires .NET runtime\n• Less common in home staking\n• Complex configuration" \
         "../execution/nethermind.sh"
     
-    display_client_info "execution" "Besu" "Java" \
+    display_client_info "Besu" "Java" \
         "Apache 2.0 licensed Java client suitable for both public and private networks." \
         "• Permissive license\n• Enterprise support\n• Good for private networks\n• Hyperledger project" \
         "• Requires Java runtime\n• Higher resource usage\n• Less optimized for home staking" \
         "../execution/besu.sh"
     
-    display_client_info "execution" "Nimbus-eth1" "Nim" \
+    display_client_info "Nimbus-eth1" "Nim" \
         "Status-developed execution client optimized for resource efficiency." \
         "• Very lightweight\n• Perfect for Raspberry Pi\n• Low bandwidth usage\n• Low memory footprint" \
         "• Uses nightly builds\n• Smaller community\n• Less battle-tested\n• Nim language less common" \
         "../execution/nimbus_eth1.sh"
     
-    display_client_info "execution" "Ethrex" "Rust" \
+    display_client_info "Ethrex" "Rust" \
         "Lambda Class minimalist, fast and modular Ethereum client. Supports L1 and L2." \
         "• Minimalist codebase\n• Fast and modular\n• Pre-built binaries available\n• L2/ZK-Rollup support\n• Active development" \
         "• Very new client (2024)\n• Less battle-tested\n• Smaller community\n• Early adopter risk" \
@@ -95,37 +94,37 @@ show_consensus_clients() {
     echo -e "${BOLD}${UNDERLINE}CONSENSUS CLIENTS${NC}"
     echo
     
-    display_client_info "consensus" "Prysm" "Go" \
+    display_client_info "Prysm" "Go" \
         "Developed by Prysmatic Labs, known for reliability and documentation." \
         "• Excellent documentation\n• Stable and reliable\n• Good community support\n• Easy to use" \
         "• Higher resource usage\n• Less client diversity benefit" \
         "../consensus/prysm.sh"
     
-    display_client_info "consensus" "Lighthouse" "Rust" \
+    display_client_info "Lighthouse" "Rust" \
         "Rust implementation by Sigma Prime, focusing on security and performance." \
         "• Excellent performance\n• Security focused\n• Good documentation\n• Active development" \
         "• Rust compilation required\n• Less beginner-friendly setup" \
         "../consensus/lighthouse.sh"
     
-    display_client_info "consensus" "Teku" "Java" \
+    display_client_info "Teku" "Java" \
         "ConsenSys-developed client designed for institutional staking." \
         "• Enterprise features\n• Institutional support\n• Good for large operations\n• Comprehensive monitoring" \
         "• Higher resource usage\n• Requires Java runtime\n• Complex for home stakers" \
         "../consensus/teku.sh"
     
-    display_client_info "consensus" "Nimbus" "Nim" \
+    display_client_info "Nimbus" "Nim" \
         "Status-developed client optimized for resource efficiency." \
         "• Very lightweight\n• Perfect for Raspberry Pi\n• Low bandwidth usage\n• Easy to run" \
         "• Smaller community\n• Less feature-rich\n• Nim language less common" \
         "../consensus/nimbus.sh"
     
-    display_client_info "consensus" "Lodestar" "TypeScript" \
+    display_client_info "Lodestar" "TypeScript" \
         "ChainSafe-developed client written in TypeScript." \
         "• Developer-friendly (TypeScript)\n• Good for development\n• Active development\n• Modern architecture" \
         "• Higher resource usage\n• Less battle-tested\n• Node.js dependency" \
         "../consensus/lodestar.sh"
     
-    display_client_info "consensus" "Grandine" "Rust" \
+    display_client_info "Grandine" "Rust" \
         "High-performance Rust client focused on correctness and efficiency." \
         "• High performance\n• Modern Rust implementation\n• Performance optimized\n• Advanced features" \
         "• Very new client\n• Less documentation\n• Advanced users only\n• Still in development" \

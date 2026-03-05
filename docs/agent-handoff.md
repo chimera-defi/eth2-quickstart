@@ -44,6 +44,24 @@ Use this file to preserve context across sessions.
   - Track Besu release note changes for config schema removals/additions and update `configs/besu/besu_base.toml` proactively.
   - Consider adding per-client config smoke tests (invoke client binary with config-only parse) in CI to catch deprecated keys earlier.
 
+## Update: 2026-03-05 (Docs Consolidation + Adversarial Cleanup Pass)
+- Author: codex
+- Summary:
+  - Consolidated active docs by archiving one-off frontend and report docs into `docs/archive/frontend/` and `docs/archive/reports/`.
+  - Added canonical frontend doc: `docs/FRONTEND.md`.
+  - Updated documentation indexes and references in `README.md`, `docs/README.md`, `.cursorrules`, and `docs/archive/README.md` to remove stale/nonexistent paths.
+  - Archived stale task-progress doc (`docs/progress.md` -> `docs/archive/reports/progress_2026-02-16.md`) and repointed active project-management references to `docs/agent-handoff.md`.
+  - Fixed archived relative link after move (`docs/archive/reports/LOCAL_VERIFICATION_CHECKLIST.md` -> `../../CI_WORKFLOWS.md`).
+  - Cleaned one leftover code smell in active scripts:
+    - Replaced lingering TODO marker in `install/security/consolidated_security.sh` with an explicit design note.
+    - Refactored `install/utils/select_clients.sh` to remove unused `client_type` parameter and simplify all call sites.
+- Validation:
+  - Active-doc link integrity sweep passed (`TOTAL_BROKEN=0` for `README.md`, `docs/**/*.md`, `.cursorrules`).
+  - `./scripts/pre-commit.sh` passed.
+  - `./test/run_tests.sh --full` passed (`Total: 279, Passed: 279, Failed: 0`).
+- Follow-ups:
+  - Optional: add a lightweight CI docs-link checker for active docs to prevent stale references from reappearing.
+
 ## Update: 2026-03-05 (PR130 Cleanup Iteration)
 - Author: codex
 - Summary:
