@@ -346,6 +346,14 @@ else
     exit 1
 fi
 
+# Keep interactive path simple: avoid script(1) PTY wrapper complexity.
+if grep -q "script -q -c" "$PROJECT_ROOT/install.sh"; then
+    log_error "  install.sh should not depend on script(1) PTY wrapper in interactive path"
+    exit 1
+else
+    log_info "  install.sh interactive path does not use script(1) PTY wrapper"
+fi
+
 # Test 28: Verify configure.sh supports fallback and explicit mode controls
 log_info "Test 28: Verify configure.sh mode controls..."
 if grep -qE -- "--non-interactive|--interactive" "$PROJECT_ROOT/install/utils/configure.sh" && \
@@ -354,6 +362,37 @@ if grep -qE -- "--non-interactive|--interactive" "$PROJECT_ROOT/install/utils/co
     log_info "  configure.sh has explicit mode flags, env override, and auto-fallback"
 else
     log_error "  configure.sh mode handling incomplete (flags/env/auto-fallback required)!"
+    exit 1
+fi
+
+# Test 29: Verify unified wrapper entrypoint exists and is valid
+log_info "Test 29: Verify unified wrapper (scripts/eth2qs.sh)..."
+if [[ -f "$PROJECT_ROOT/scripts/eth2qs.sh" ]] && bash -n "$PROJECT_ROOT/scripts/eth2qs.sh"; then
+    log_info "  scripts/eth2qs.sh exists and syntax is valid"
+else
+    log_error "  scripts/eth2qs.sh missing or invalid"
+    exit 1
+fi
+if grep -q "doctor --json" "$PROJECT_ROOT/scripts/eth2qs.sh"; then
+    log_info "  unified wrapper documents machine-readable doctor output"
+else
+    log_error "  scripts/eth2qs.sh should expose doctor --json workflow"
+    exit 1
+fi
+
+# Test 30: Verify doctor supports JSON mode for agent consumption
+log_info "Test 30: Verify doctor --json output..."
+if grep -q -- "--json" "$PROJECT_ROOT/install/utils/doctor.sh"; then
+    log_info "  doctor.sh supports --json flag"
+else
+    log_error "  doctor.sh must support --json output mode"
+    exit 1
+fi
+doctor_json_output="$("$PROJECT_ROOT/install/utils/doctor.sh" --json || true)"
+if python3 -m json.tool >/dev/null 2>&1 <<<"$doctor_json_output"; then
+    log_info "  doctor --json emits valid JSON"
+else
+    log_error "  doctor --json output is not valid JSON"
     exit 1
 fi
 
