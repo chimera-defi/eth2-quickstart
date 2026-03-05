@@ -75,3 +75,28 @@ Use this file to preserve context across sessions.
   - `bash test/ci_test_run_2.sh` passed as non-root user in `/tmp` repo copy.
 - Follow-ups:
   - If matrix failures persist after hardening, add per-client targeted readiness diagnostics in `test/ci_test_e2e.sh` (service status + recent journal excerpts before fail).
+
+## Update: 2026-03-05 (State Audit + TUI/Website Consistency)
+- Author: codex
+- Summary:
+  - Audited install flow, docs, and frontend copy against actual script behavior and supported client matrix.
+  - Fixed website/data drift in `frontend/lib/constants.ts`:
+    - execution clients updated to include `Ethrex` (7 execution clients total),
+    - stats now derive from client arrays (prevents stale hardcoded counts),
+    - MEV feature copy now reflects MEV-Boost + Commit-Boost + optional ETHGas,
+    - one-line flow copy now reflects default non-interactive fallback for piped installs.
+  - Updated quickstart page wording in `frontend/app/quickstart/page.tsx` to match one-line installer behavior.
+  - Added frontend regression coverage in `frontend/__tests__/lib/constants.test.ts` to enforce stats/client-matrix consistency.
+  - Fixed stale active docs references to `./select_clients.sh`:
+    - `README.md` and `docs/CONFIGURATION_GUIDE.md` now point to `./install/utils/select_clients.sh`.
+  - Fixed `scripts/pre-commit.sh` to ignore dependency/build directories (`frontend/node_modules`, `frontend/.next`) during shebang/dependency scans.
+    - This prevents false CI/local failures after `bun install` while preserving validation behavior for repo scripts.
+- Validation:
+  - `./scripts/pre-commit.sh` passed.
+  - `./test/run_tests.sh --full` passed (`Total: 279, Passed: 279, Failed: 0`).
+  - `cd frontend && bun run lint` passed.
+  - `cd frontend && bun run test` passed (`30/30`).
+  - `cd frontend && bun run build` passed.
+- Follow-ups:
+  - Decide whether to keep legacy frontend planning docs (`docs/FRONTEND_TASKS.md`, `docs/FRONTEND_REVIEW.md`, `docs/FRONTEND_AGENT_HANDOFF.md`) in active docs or archive them to reduce context noise.
+  - Consider adding a dedicated non-interactive smoke test that executes `install.sh` in a piped stdin simulation (beyond grep-based structure checks).

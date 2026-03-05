@@ -98,7 +98,7 @@ Use one stable entrypoint for common workflows:
 
 4. **Configure and install clients**:
    - Edit `exports.sh` with your settings
-   - Run `./select_clients.sh` for recommendations
+   - Run `./install/utils/select_clients.sh` for recommendations
    - Run `./run_2.sh` or install clients manually
 
 5. **Start services**:

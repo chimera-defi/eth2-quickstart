@@ -132,7 +132,7 @@ export default function QuickstartPage() {
             Option A: One-Line Installer
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Same command as the homepage. Runs the wizard, generates install_phase1.sh and install_phase2.sh.
+            Same command as the homepage. Generates install_phase1.sh and install_phase2.sh, with auto non-interactive fallback for piped installs.
           </p>
           
           <InstallationStepsList steps={INSTALLATION_STEPS_ONELINER} idPrefix="oneline" />

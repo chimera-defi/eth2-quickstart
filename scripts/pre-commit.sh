@@ -10,9 +10,16 @@ echo "=== Shellcheck + syntax ==="
 
 echo "=== Shebang check ==="
 failed=0
+find_sh_files() {
+  find . -name "*.sh" -type f \
+    ! -path "./.git/*" \
+    ! -path "./frontend/node_modules/*" \
+    ! -path "./frontend/.next/*"
+}
+
 while IFS= read -r f; do
   head -1 "$f" | grep -q "^#!/" || { echo "❌ $f lacks shebang"; failed=1; }
-done < <(find . -name "*.sh" -type f ! -path "./.git/*")
+done < <(find_sh_files)
 [[ $failed -eq 1 ]] && exit 1
 
 echo "=== Dependency validation ==="
@@ -32,7 +39,7 @@ while IFS= read -r script; do
       echo "❌ $script sources missing: $sf"; failed=1
     fi
   done < <(grep -n '^[[:space:]]*source[[:space:]]' "$script" 2>/dev/null || true)
-done < <(find . -name "*.sh" -type f ! -path "./.git/*")
+done < <(find_sh_files)
 [[ $failed -eq 1 ]] && exit 1
 
 echo "=== run_1/run_2 structure ==="
