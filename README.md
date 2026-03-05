@@ -56,6 +56,18 @@ curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master
 curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash -s -- --interactive
 ```
 
+### Unified Command Wrapper (Human + Agent Friendly)
+
+Use one stable entrypoint for common workflows:
+
+```bash
+./scripts/eth2qs.sh help
+./scripts/eth2qs.sh configure --non-interactive
+./scripts/eth2qs.sh phase1
+./scripts/eth2qs.sh phase2
+./scripts/eth2qs.sh doctor --json
+```
+
 ### Installation
 
 1. **Download and prepare**:
