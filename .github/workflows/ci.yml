@@ -23,18 +23,11 @@ on:
       - '.github/actions/**'
   workflow_dispatch:  # Allow manual trigger for testing
 
-# Path filters: run ONLY when shell files or test infra change. Skip on doc-only, config-only, frontend-only.
-# - **/*.sh: all shell scripts (install, lib, test, docs, root)
-# - test/Dockerfile, test/docker-compose.yml: Docker build (not .sh)
-# - workflow_dispatch: always runs (manual trigger)
+# Path filters run CI only for shell/test-infra changes; docs/frontend-only changes are skipped.
 concurrency:
   group: ci-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
-# Fail-fast: build-docker -> (docker-integration + run-* in parallel) -> e2e-client-matrix.
-# Shellcheck: run in shellcheck.yml only (avoids duplicate run with ci.yml).
-# docker-integration and run-* run in parallel (all need image only). Matrix keeps running all combos.
-# Note: GitHub Actions cannot cancel sibling jobs when one fails; matrix fail-fast is disabled.
 jobs:
   # Build once, push to GHCR. Other jobs pull instead of building (saves ~5 builds).
   # Fork PRs: push fails (no package write), jobs fall back to building.
