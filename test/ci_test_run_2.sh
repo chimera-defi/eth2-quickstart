@@ -140,6 +140,15 @@ for config in "${config_files[@]}"; do
     assert_file_exists "$PROJECT_ROOT/$config" "$config" || exit 1
 done
 
+# Test 8: Besu config should not include deprecated/removed options
+log_info "Test 8: Verify Besu config compatibility..."
+if grep -q "fast-sync-min-peers" "$PROJECT_ROOT/configs/besu/besu_base.toml"; then
+    log_error "  ✗ configs/besu/besu_base.toml contains deprecated key: fast-sync-min-peers"
+    exit 1
+else
+    log_info "  ✓ Besu config does not include deprecated fast-sync-min-peers"
+fi
+
 log_info "╔════════════════════════════════════════════════════════════════╗"
 log_info "║  run_2.sh - Structure PASSED                                  ║"
 log_info "║  Full E2E: ./test/run_e2e.sh --phase=2                        ║"
