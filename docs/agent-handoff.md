@@ -18,11 +18,18 @@ Use this file to preserve context across sessions.
   - Reworked `install/utils/update.sh` path handling and version reporting to use correct repo/home paths.
   - Expanded purge service coverage by using canonical service list in `install/utils/purge_ethereum_data.sh`.
   - Updated docs (`README.md`, `docs/SCRIPTS.md`, `install/utils/README_UPDATE_SCRIPTS.md`) with canonical service references and helper usage.
+  - Added regression tests for service consistency:
+    - `install/test/test_common_functions.sh` now validates service registry contents, helper existence, MEV stack precedence, and doctor unit-name checks.
+    - `test/ci_test_run_2.sh` now verifies newly added service helpers and MEV service naming consistency.
 - Validation:
   - `bash -n` passed for all touched utility/core scripts.
   - `install/utils/start.sh` runs successfully.
   - `install/utils/refresh.sh` runs successfully.
   - `install/utils/stats.sh` runs successfully.
+  - `./test/run_tests.sh --full` passed (276/276).
+  - `USE_MOCKS=true bash install/test/test_common_functions.sh` passed.
+  - `bash test/ci_test_run_1.sh` passed.
+  - `bash test/ci_test_run_2.sh` passed as non-root user in a writable copy under `/tmp`.
 - Follow-ups:
-  - Consider adding lightweight tests for service helper behavior in `lib/common_functions.sh`.
+  - Add a dedicated helper script to run `ci_test_run_2.sh` non-root in environments where repo is under `/root` (permission boundary).
   - Optionally add a machine-readable service manifest for CI drift checks between code and docs.
