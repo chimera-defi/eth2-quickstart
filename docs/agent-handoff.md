@@ -75,3 +75,51 @@ Use this file to preserve context across sessions.
   - `bash test/ci_test_run_2.sh` passed as non-root user in `/tmp` repo copy.
 - Follow-ups:
   - If matrix failures persist after hardening, add per-client targeted readiness diagnostics in `test/ci_test_e2e.sh` (service status + recent journal excerpts before fail).
+
+## Update: 2026-03-05 (Stale Docs Closure + TUI E2E Enforcement)
+- Author: codex
+- Summary:
+  - Performed a focused stale-doc review and closed out old planning/review artifacts that were still active on `master`.
+  - Moved historical frontend planning/prompt/review docs to `docs/archive/frontend/`.
+  - Moved one-off RCA/review/progress/task docs to `docs/archive/reports/`.
+  - Added `docs/FRONTEND.md` as the single active frontend documentation entrypoint.
+  - Updated active indexes/references in:
+    - `docs/README.md`
+    - `README.md`
+    - `.cursorrules`
+    - `docs/archive/README.md`
+  - Fixed moved-archive link path in `docs/archive/reports/LOCAL_VERIFICATION_CHECKLIST.md`.
+  - Hardened TUI verification:
+    - `test/whiptail_pipe_test.sh` now supports `REQUIRE_WHIPTAIL_PIPE_TEST=1` to fail instead of skip when dependencies are missing.
+    - Added CI job `tui-whiptail-pipe` in `.github/workflows/ci.yml` that installs `expect` + `whiptail` and runs the enforced test.
+  - Fixed local validation ergonomics:
+    - `scripts/pre-commit.sh` now ignores `frontend/node_modules/` and `frontend/.next/` in shebang/dependency scans to avoid false failures from third-party files.
+- Validation:
+  - `sudo apt-get install -y expect whiptail` completed.
+  - `REQUIRE_WHIPTAIL_PIPE_TEST=1 ./test/whiptail_pipe_test.sh` passed.
+  - `./scripts/pre-commit.sh` passed.
+  - `./test/run_tests.sh --full` passed (`Total: 279, Passed: 279, Failed: 0`).
+  - Active-doc link integrity sweep passed (`TOTAL_BROKEN=0` for `README.md` and `docs/**/*.md`).
+- Follow-ups:
+  - If desired, add one more explicit CI assertion that fails when `whiptail_pipe_test.sh` records `SKIP` in any shell-test context outside the dedicated TUI job.
+
+## Update: 2026-03-05 (Final Pass: Status Snapshot + Docs Consistency)
+- Author: codex
+- Summary:
+  - Cherry-picked two pending cleanup branches onto latest `origin/master` and rebased cleanly:
+    - docs/frontend alignment + stale-doc archiving
+    - strict TUI pipe verification in CI
+  - Added `docs/STATUS.md` as a concise current-state snapshot (capabilities, validation coverage, optional follow-ups, canonical doc pointers).
+  - Linked `docs/STATUS.md` from:
+    - `README.md` (Additional Documentation)
+    - `docs/README.md` (Core Documentation)
+  - Opened PR #135 for this final-pass consolidation.
+- Validation:
+  - `./test/run_tests.sh --full` passed (`279 passed, 0 failed`).
+  - `./scripts/pre-commit.sh` passed.
+  - `REQUIRE_WHIPTAIL_PIPE_TEST=1 ./test/whiptail_pipe_test.sh` passed.
+  - `cd frontend && bun run lint` passed.
+  - `cd frontend && bun run test` passed (`30 passed, 0 failed`).
+  - `cd frontend && bun run build` passed.
+- Follow-ups:
+  - Optional: add installer end-to-end smoke execution in CI (beyond current structure and interaction checks).
