@@ -42,6 +42,53 @@ REPO_URL="https://github.com/chimera-defi/eth2-quickstart.git"
 INSTALL_DIR="${ETH2_INSTALL_DIR:-$HOME/.eth2-quickstart}"
 BRANCH="${ETH2_BRANCH:-master}"
 
+print_help() {
+    echo ""
+    echo "Eth2 Quick Start - One-Liner Installer"
+    echo ""
+    echo "Usage:"
+    echo "  curl -fsSL https://.../install.sh | sudo bash"
+    echo "  curl -fsSL https://.../install.sh | sudo bash -s -- --non-interactive"
+    echo "  curl -fsSL https://.../install.sh | sudo bash -s -- --interactive"
+    echo ""
+    echo "Options:"
+    echo "  --vibe, --non-interactive  Non-interactive mode with sensible defaults"
+    echo "  --interactive              Force whiptail TUI mode (requires a TTY)"
+    echo "  --help                     Show this help message"
+    echo ""
+    echo "Environment Variables:"
+    echo "  ETH2_INSTALL_DIR      Installation directory (default: \$HOME/.eth2-quickstart)"
+    echo "  ETH2_BRANCH           Git branch to use (default: master)"
+    echo "  ETH2_NON_INTERACTIVE  Force non-interactive mode (1/true/yes)"
+    echo ""
+}
+
+NON_INTERACTIVE=false
+FORCE_INTERACTIVE=false
+for arg in "$@"; do
+    case "$arg" in
+        --vibe|--non-interactive)
+            NON_INTERACTIVE=true
+            ;;
+        --interactive)
+            FORCE_INTERACTIVE=true
+            ;;
+        --help|-h)
+            print_help
+            exit 0
+            ;;
+    esac
+done
+
+if [[ "$NON_INTERACTIVE" == "true" && "$FORCE_INTERACTIVE" == "true" ]]; then
+    bootstrap_log_error "Choose only one mode: --non-interactive/--vibe OR --interactive"
+    exit 1
+fi
+
+if [[ "${ETH2_NON_INTERACTIVE:-}" =~ ^(1|true|TRUE|yes|YES)$ ]]; then
+    NON_INTERACTIVE=true
+fi
+
 # =============================================================================
 # MAIN BOOTSTRAP LOGIC
 # =============================================================================
@@ -97,12 +144,6 @@ if ! command -v git &>/dev/null; then
     apt-get update && apt-get install -y git
 fi
 
-# Install whiptail for TUI wizard
-if ! command -v whiptail &>/dev/null; then
-    bootstrap_log_info "Installing whiptail for configuration wizard..."
-    apt-get update && apt-get install -y whiptail
-fi
-
 # Clone or update repository
 if [[ -d "$INSTALL_DIR" ]]; then
     bootstrap_log_info "Updating existing repository at $INSTALL_DIR..."
@@ -129,8 +170,9 @@ fi
 
 log_info "Starting configuration wizard..."
 echo ""
-echo -e "${YELLOW}Tip: If the OK button doesn't respond, press Ctrl+C and run with --vibe:${NC}"
-echo -e "  ${BLUE}curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash -s -- --vibe${NC}"
+echo -e "${YELLOW}Tip: one-liner install now auto-falls back to non-interactive mode when stdin is a pipe.${NC}"
+echo -e "  ${BLUE}curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash -s -- --interactive${NC}"
+echo -e "  ${BLUE}curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash -s -- --non-interactive${NC}"
 echo ""
 
 # Make scripts executable
@@ -138,49 +180,39 @@ chmod +x "$INSTALL_DIR/install/utils/configure.sh"
 chmod +x "$INSTALL_DIR/run_1.sh"
 chmod +x "$INSTALL_DIR/run_2.sh"
 
-# Check for vibe mode (non-interactive)
-VIBE_MODE=false
-for arg in "$@"; do
-    case "$arg" in
-        --vibe)
-            VIBE_MODE=true
-            ;;
-        --help|-h)
-            echo ""
-            echo "Eth2 Quick Start - One-Liner Installer"
-            echo ""
-            echo "Usage:"
-            echo "  curl -fsSL https://.../install.sh | sudo bash"
-            echo "  curl -fsSL https://.../install.sh | sudo bash -s -- --vibe"
-            echo ""
-            echo "Options:"
-            echo "  --vibe    Non-interactive mode with sensible defaults"
-            echo "  --help    Show this help message"
-            echo ""
-            echo "Environment Variables:"
-            echo "  ETH2_INSTALL_DIR    Installation directory (default: \$HOME/.eth2-quickstart)"
-            echo "  ETH2_BRANCH         Git branch to use (default: master)"
-            echo ""
-            exit 0
-            ;;
-    esac
-done
-
 # Launch the configuration wizard
-# When run via "curl | bash", stdin is a pipe - whiptail can't read keyboard input.
-# Use 'script' to create a PTY so the wizard gets proper terminal I/O.
-if [[ "$VIBE_MODE" == "true" ]]; then
-    log_info "Running in vibe mode (non-interactive defaults)..."
-    "$INSTALL_DIR/install/utils/configure.sh" --vibe
+# Auto-fallback: one-liner usage usually has stdin piped; avoid blocked TUI interactions.
+if [[ "$NON_INTERACTIVE" == "false" && "$FORCE_INTERACTIVE" == "false" && ! -t 0 ]]; then
+    log_warn "Installer stdin is a pipe; using non-interactive mode to avoid blocked TUI input."
+    NON_INTERACTIVE=true
+fi
+
+if [[ "$FORCE_INTERACTIVE" == "true" && ! -c /dev/tty ]]; then
+    log_error "Interactive mode requested, but /dev/tty is unavailable."
+    log_error "Re-run with --non-interactive."
+    exit 1
+fi
+
+if [[ "$NON_INTERACTIVE" == "true" ]]; then
+    log_info "Running in non-interactive mode (sensible defaults)..."
+    "$INSTALL_DIR/install/utils/configure.sh" --non-interactive
 else
+    # Install whiptail only when interactive mode is used
+    if ! command -v whiptail &>/dev/null; then
+        bootstrap_log_info "Installing whiptail for configuration wizard..."
+        apt-get update && apt-get install -y whiptail
+    fi
+
+    # When run via "curl | bash", stdin is a pipe - whiptail can't read keyboard input.
+    # Use 'script' to create a PTY so the wizard gets proper terminal I/O.
     if [[ -c /dev/tty ]] && command -v script &>/dev/null && ! [[ -t 0 ]]; then
-        script -q -c "$INSTALL_DIR/install/utils/configure.sh" /dev/null
+        script -q -c "$INSTALL_DIR/install/utils/configure.sh --interactive" /dev/null
     else
         # Fallback: redirect stdin from terminal
         if [[ -c /dev/tty ]] && ! [[ -t 0 ]]; then
             exec 0</dev/tty
         fi
-        "$INSTALL_DIR/install/utils/configure.sh"
+        "$INSTALL_DIR/install/utils/configure.sh" --interactive
     fi
 fi
 

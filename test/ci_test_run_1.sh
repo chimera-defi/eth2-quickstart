@@ -328,6 +328,35 @@ else
     log_info "  run_2.sh does not call --production mode (correct)"
 fi
 
+# Test 26: Verify install.sh supports explicit interactive/non-interactive modes
+log_info "Test 26: Verify install.sh mode flags..."
+if grep -qE -- "--non-interactive|--interactive" "$PROJECT_ROOT/install.sh"; then
+    log_info "  install.sh exposes --non-interactive and --interactive flags"
+else
+    log_error "  install.sh must support explicit non-interactive/interactive mode flags!"
+    exit 1
+fi
+
+# Test 27: Verify install.sh auto-fallbacks to non-interactive for piped stdin
+log_info "Test 27: Verify install.sh auto-fallback for curl|bash..."
+if grep -qE -- '!\s*-t 0' "$PROJECT_ROOT/install.sh" && grep -q "NON_INTERACTIVE=true" "$PROJECT_ROOT/install.sh"; then
+    log_info "  install.sh auto-fallbacks to non-interactive mode when stdin is piped"
+else
+    log_error "  install.sh must auto-fallback to non-interactive mode for piped stdin!"
+    exit 1
+fi
+
+# Test 28: Verify configure.sh supports fallback and explicit mode controls
+log_info "Test 28: Verify configure.sh mode controls..."
+if grep -qE -- "--non-interactive|--interactive" "$PROJECT_ROOT/install/utils/configure.sh" && \
+   grep -q "ETH2_NON_INTERACTIVE" "$PROJECT_ROOT/install/utils/configure.sh" && \
+   grep -q "auto-falling back to non-interactive mode" "$PROJECT_ROOT/install/utils/configure.sh"; then
+    log_info "  configure.sh has explicit mode flags, env override, and auto-fallback"
+else
+    log_error "  configure.sh mode handling incomplete (flags/env/auto-fallback required)!"
+    exit 1
+fi
+
 log_info "╔════════════════════════════════════════════════════════════════╗"
 log_info "║  run_1.sh CI Test PASSED                                      ║"
 log_info "║  Validated: Structure, syntax, functions, SSH safety,         ║"
