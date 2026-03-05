@@ -28,7 +28,6 @@ engine-host-allowlist=["localhost","$LH"]
 
 # Sync settings
 sync-mode="SNAP"
-fast-sync-min-peers=5
 
 # Metrics and monitoring
 metrics-enabled=true
