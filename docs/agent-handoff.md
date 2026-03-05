@@ -8,16 +8,28 @@ Use this file to preserve context across sessions.
 - Use a fresh branch + fresh PR for each new task.
 
 ## Latest Update
-- Date: 2026-03-04
+- Date: 2026-03-05
 - Author: codex
 - Summary:
-  - Updated `install/utils/purge_ethereum_data.sh` to purge only default node data/state directories.
-  - Preserved keys/secrets by default and removed the `--include-secrets` destructive path.
-  - Added default coverage for Ethrex (`~/ethrex/data`), Commit-Boost (`~/commit-boost`), and ETHGas (`~/ethgas`).
-  - Added preservation rules for validator/keystore/secrets paths in consensus client data trees.
-  - Updated `docs/SCRIPTS.md` to match new purge behavior and directory coverage.
+  - Added a canonical systemd service registry and service lifecycle helpers in `lib/common_functions.sh`.
+  - Restored missing utility behavior by implementing `start_all_services`, `restart_all_services`, and `show_service_status`.
+  - Fixed service-name consistency: standardized runtime checks on `mev` unit name (not `mev-boost`).
+  - Improved `install/utils/doctor.sh` to report both MEV-Boost (`mev`) and Commit-Boost services.
+  - Reworked `install/utils/update.sh` path handling and version reporting to use correct repo/home paths.
+  - Expanded purge service coverage by using canonical service list in `install/utils/purge_ethereum_data.sh`.
+  - Updated docs (`README.md`, `docs/SCRIPTS.md`, `install/utils/README_UPDATE_SCRIPTS.md`) with canonical service references and helper usage.
+  - Added regression tests for service consistency:
+    - `install/test/test_common_functions.sh` now validates service registry contents, helper existence, MEV stack precedence, and doctor unit-name checks.
+    - `test/ci_test_run_2.sh` now verifies newly added service helpers and MEV service naming consistency.
 - Validation:
-  - `bash -n install/utils/purge_ethereum_data.sh` passed.
+  - `bash -n` passed for all touched utility/core scripts.
+  - `install/utils/start.sh` runs successfully.
+  - `install/utils/refresh.sh` runs successfully.
+  - `install/utils/stats.sh` runs successfully.
+  - `./test/run_tests.sh --full` passed (276/276).
+  - `USE_MOCKS=true bash install/test/test_common_functions.sh` passed.
+  - `bash test/ci_test_run_1.sh` passed.
+  - `bash test/ci_test_run_2.sh` passed as non-root user in a writable copy under `/tmp`.
 - Follow-ups:
-  - If new clients are added, extend `DATA_DIRS` and preservation paths in purge script.
-  - Consider adding unit tests for safe path preservation logic.
+  - Add a dedicated helper script to run `ci_test_run_2.sh` non-root in environments where repo is under `/root` (permission boundary).
+  - Optionally add a machine-readable service manifest for CI drift checks between code and docs.
