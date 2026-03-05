@@ -466,16 +466,16 @@ Additionally, the beacon checkpoint states have been made available by Sharedsta
 
 ### Marketing Website (Frontend)
 - Frontend quick start: [frontend/README.md](frontend/README.md) - Uses **Bun** for fast installs
-- Bun migration guide: [docs/FRONTEND_BUN_MIGRATION.md](docs/FRONTEND_BUN_MIGRATION.md)
+- Frontend documentation: [docs/FRONTEND.md](docs/FRONTEND.md)
 
 ### Testing & Validation
 - **Pre-commit**: `./scripts/pre-commit.sh` — local CI simulation before pushing
 - CI path filtering: [docs/CI_WORKFLOWS.md](docs/CI_WORKFLOWS.md) — when each workflow runs
-- Shell script test results: [docs/SHELL_SCRIPT_TEST_RESULTS.md](docs/SHELL_SCRIPT_TEST_RESULTS.md)
+- Full local suite: `./test/run_tests.sh --full`
 
 ### Project Management
 - Commit message conventions: [docs/COMMIT_MESSAGES.md](docs/COMMIT_MESSAGES.md)
-- Development progress: [docs/progress.md](docs/progress.md)
+- Agent handoff and follow-ups: [docs/agent-handoff.md](docs/agent-handoff.md)
 ## 📚 **Common Functions Library**
 
 The project includes a comprehensive common functions library (`lib/common_functions.sh`) with 35 centralized functions for:
