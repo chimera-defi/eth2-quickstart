@@ -451,6 +451,7 @@ Additionally, the beacon checkpoint states have been made available by Sharedsta
 ## Additional Documentation
 
 ### Core Documentation
+- Project status snapshot: [docs/STATUS.md](docs/STATUS.md)
 - Scripts reference: [docs/SCRIPTS.md](docs/SCRIPTS.md)
 - Setup workflow: [docs/WORKFLOW.md](docs/WORKFLOW.md)
 - Terminology: [docs/GLOSSARY.md](docs/GLOSSARY.md)
