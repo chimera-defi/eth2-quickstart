@@ -16,8 +16,8 @@ These documents were created during specific development phases and have served 
 | `PRYSM_FLAGS_ANALYSIS.md` | Prysm configuration analysis - findings applied |
 | `AGENT_CONTEXT.md` | Agent guidelines - merged into `.cursorrules` |
 | `SHELL_SCRIPT_TEST_RESULTS.md` | One-time test report - issues fixed |
-| `frontend/` | Historical frontend planning, prompt, migration, and review docs |
-| `reports/` | One-off CI/RCA/review checklists and task reports |
+| `frontend/` | Pruned frontend archive index (`frontend/README.md`) with history preserved in git |
+| `reports/` | Small set of retained one-off CI/RCA checklists |
 
 ## Current Documentation
 
@@ -31,4 +31,4 @@ For current documentation, see the parent `docs/` folder:
 
 ## Note
 
-These archived files may contain outdated information. Always refer to the active documentation and source code for current behavior.
+These archived files may contain outdated information. Always refer to active documentation and source code for current behavior.

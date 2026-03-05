@@ -123,3 +123,26 @@ Use this file to preserve context across sessions.
   - `cd frontend && bun run build` passed.
 - Follow-ups:
   - Optional: add installer end-to-end smoke execution in CI (beyond current structure and interaction checks).
+
+## Update: 2026-03-05 (Lean Pass: Archive Bloat Prune)
+- Author: codex
+- Why:
+  - User requested a new audit pass to reduce repository code/docs/artifacts without changing functionality.
+  - Archived frontend prompt/task/review artifacts and stale report files were dominating context with low current value.
+- Changes:
+  - Pruned stale archive artifacts:
+    - removed large historical files under `docs/archive/frontend/` (prompt packs, task trackers, review/progress/marketing/spec docs).
+    - removed stale one-off reports under `docs/archive/reports/` (`CI_RCA_BEACON_CONNECTION.md`, `CI_TROUBLESHOOTING.md`, `MULTI_PASS_REVIEW.md`, `PR_86_DESCRIPTION.md`, `progress_2026-02-16.md`, `task.md`).
+  - Added concise replacement index: `docs/archive/frontend/README.md`.
+  - Updated `docs/archive/README.md` wording to reflect pruned archive structure.
+  - Reduced CI workflow comment noise in `.github/workflows/ci.yml` without changing behavior.
+- Size impact:
+  - Net reduction: `-5520` lines (`4` added, `5524` deleted).
+- Validation:
+  - `./test/run_tests.sh --full` passed (`279 passed, 0 failed`).
+  - `./scripts/pre-commit.sh` passed.
+  - `cd frontend && bun run lint` passed.
+  - `cd frontend && bun run test` passed (`30 passed`).
+  - `cd frontend && bun run build` passed.
+- Follow-ups:
+  - Optional: prune additional archive files with the same rule (keep active docs + concise archive indexes, rely on git history for deep historical artifacts).
