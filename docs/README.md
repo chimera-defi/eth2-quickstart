@@ -14,7 +14,6 @@ This directory contains all project documentation organized by category.
 
 ## Development & Testing
 - **[CI_WORKFLOWS.md](CI_WORKFLOWS.md)** - CI path filtering (when each workflow runs)
-- **[CI_TROUBLESHOOTING.md](CI_TROUBLESHOOTING.md)** - Common CI failures and fixes
 - **[SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md](SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md)** - Shell scripting standards
 - **[COMMIT_MESSAGES.md](COMMIT_MESSAGES.md)** - Commit message conventions
 
@@ -30,20 +29,14 @@ This directory contains all project documentation organized by category.
 - **[CADDY_INSTALLATION.md](CADDY_INSTALLATION.md)** - Caddy web server installation guide
 
 ## Front-End Development
-- **[FRONTEND_SUMMARY.md](FRONTEND_SUMMARY.md)** - Front-end project overview and quick reference (START HERE)
-- **[FRONTEND_BUN_MIGRATION.md](FRONTEND_BUN_MIGRATION.md)** - Bun package manager setup (required: use Bun, not npm)
-- **[FRONTEND_COMPONENT_SPECS.md](FRONTEND_COMPONENT_SPECS.md)** - ⭐ Detailed component specifications (11 components, minimal and properly spec'd)
-- **[FRONTEND_AGENT_PROMPTS_V2.md](FRONTEND_AGENT_PROMPTS_V2.md)** - ⭐ Copy-paste ready prompts for each agent (RECOMMENDED)
-- **[FRONTEND_AGENT_HANDOFF.md](FRONTEND_AGENT_HANDOFF.md)** - Comprehensive handoff documentation for front-end development
-- **[FRONTEND_TASKS.md](FRONTEND_TASKS.md)** - Detailed task lists for each development phase
-- **[FRONTEND_PROGRESS.md](FRONTEND_PROGRESS.md)** - Progress tracker and coordination tool
-- **[FRONTEND_MARKETING_COPY.md](FRONTEND_MARKETING_COPY.md)** - All marketing copy and content for the website
-- **[FRONTEND_AGENT_PROMPTS.md](FRONTEND_AGENT_PROMPTS.md)** - Original prompts (use V2 instead)
-- **[FRONTEND_REVIEW.md](FRONTEND_REVIEW.md)** - Multi-pass review results and quality assurance
+- **[FRONTEND.md](FRONTEND.md)** - Canonical frontend guide (active)
+- **[../frontend/README.md](../frontend/README.md)** - Frontend setup and local development commands
 
 ## Quick Reference
 - **[../.cursorrules](../.cursorrules)** - Agent rules and development guidelines
 - **[../configs/AGENT_REFERENCE.md](../configs/AGENT_REFERENCE.md)** - Configuration agent reference
 
 ## Archive
-Historical documentation that has served its purpose is preserved in [archive/](archive/).
+Historical documentation that has served its purpose is preserved in [archive/](archive/),
+including old frontend planning/prompt docs under `archive/frontend/` and one-off reports
+under `archive/reports/`.
