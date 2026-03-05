@@ -37,7 +37,9 @@ runs:
         done
         if [[ "$pulled" != "true" ]]; then
           echo "Failed to pull image after 3 attempts: ${{ inputs.image }}" >&2
-          exit 1
+          echo "Falling back to local build from test/Dockerfile..."
+          docker build -t eth-node-test -f test/Dockerfile .
+          exit 0
         fi
         docker tag ${{ inputs.image }} eth-node-test
 

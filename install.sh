@@ -130,13 +130,21 @@ if [[ "$(id -u)" -ne 0 ]]; then
     exit 1
 fi
 
-# Check for required commands
+# Check for required download command
+download_cmd=""
 for cmd in curl wget; do
     if command -v "$cmd" &>/dev/null; then
-        bootstrap_log_info "Found $cmd"
+        download_cmd="$cmd"
         break
     fi
 done
+
+if [[ -z "$download_cmd" ]]; then
+    bootstrap_log_error "Neither curl nor wget is installed."
+    bootstrap_log_error "Install one of them and re-run the installer."
+    exit 1
+fi
+bootstrap_log_info "Found $download_cmd"
 
 # Install git if not present
 if ! command -v git &>/dev/null; then
