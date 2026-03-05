@@ -75,3 +75,30 @@ Use this file to preserve context across sessions.
   - `bash test/ci_test_run_2.sh` passed as non-root user in `/tmp` repo copy.
 - Follow-ups:
   - If matrix failures persist after hardening, add per-client targeted readiness diagnostics in `test/ci_test_e2e.sh` (service status + recent journal excerpts before fail).
+
+## Update: 2026-03-05 (Master Audit + Consistency Refactor)
+- Author: codex
+- Scope:
+  - Audited latest `origin/master` after merges through PR #130 (`0a429a9`) for failed attempts, inconsistent patterns, and dead/hallucinated code.
+  - Reviewed merged files from #130 and adjacent installer/CI/test surfaces.
+- Findings:
+  - No conflict markers, placeholder code, or hallucinated file references were found in active code paths.
+  - `run_2` structure behavior is consistent and green (local + CI expectations).
+  - CI reliability was improved but installer prerequisite checks were still permissive and workflow comments had minor consistency drift.
+- Refactors applied:
+  - `install.sh`: fail fast with explicit error when neither `curl` nor `wget` exists (instead of silent pass-through).
+  - `.github/actions/docker-prep/action.yml`: keep pull retry/backoff, and when pull still fails, fall back to local Docker build for deterministic job progression.
+  - `.github/workflows/ci.yml`: normalized top-level comments for readability/consistency.
+  - `scripts/eth2qs.sh`: clearer error when target script is missing/non-executable.
+  - `test/ci_test_run_1.sh`: added regression guard asserting installer has explicit missing-curl/wget prerequisite check.
+- Validation:
+  - `bash -n install.sh scripts/eth2qs.sh test/ci_test_run_1.sh` passed.
+  - YAML parsing passed for `.github/workflows/ci.yml` and `.github/actions/docker-prep/action.yml`.
+  - `bash test/ci_test_run_1.sh` passed.
+  - `bash test/ci_test_run_2.sh` passed as non-root user in `/tmp` repo copy.
+  - `./test/run_tests.sh --full` passed (`Total: 279, Passed: 279, Failed: 0`).
+- Guiding philosophy (propagated):
+  - Security and correctness over convenience: fail fast on missing prerequisites.
+  - Deterministic automation over brittle optimism: retry/backoff with bounded fallback.
+  - One canonical interface per concern: use stable wrapper/service naming, avoid parallel ad-hoc paths.
+  - CI as regression net, not noise source: guard against flakes while preserving real failure signals.

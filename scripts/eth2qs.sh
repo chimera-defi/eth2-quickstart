@@ -42,6 +42,11 @@ run_cmd() {
     local cmd="$1"
     shift
     cd "$ROOT_DIR"
+    if [[ ! -x "$cmd" ]]; then
+        echo "Command target is missing or not executable: $cmd" >&2
+        echo "Run from repo root and ensure scripts have execute permissions." >&2
+        exit 1
+    fi
     "$cmd" "$@"
 }
 
