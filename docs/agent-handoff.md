@@ -43,3 +43,19 @@ Use this file to preserve context across sessions.
   - Optionally add a machine-readable service manifest for CI drift checks between code and docs.
   - Track Besu release note changes for config schema removals/additions and update `configs/besu/besu_base.toml` proactively.
   - Consider adding per-client config smoke tests (invoke client binary with config-only parse) in CI to catch deprecated keys earlier.
+
+## Update: 2026-03-05 (PR130 Cleanup Iteration)
+- Author: codex
+- Summary:
+  - Reviewed PR #130 for dead code and TUI fallback complexity.
+  - Removed unused `show_msg` alias from `install/utils/configure.sh`.
+  - Simplified `install.sh` interactive path by removing `script -q -c` PTY wrapper logic and keeping direct `/dev/tty` stdin redirect.
+  - Added regression guard in `test/ci_test_run_1.sh` to prevent reintroducing `script(1)` wrapper dependency.
+  - Preserved non-interactive auto-fallback behavior and explicit `--interactive`/`--non-interactive` controls.
+- Validation:
+  - `bash -n install.sh install/utils/configure.sh test/ci_test_run_1.sh scripts/eth2qs.sh install/utils/doctor.sh` passed.
+  - `bash test/ci_test_run_1.sh` passed.
+  - `bash test/ci_test_run_2.sh` passed as non-root user in `/tmp` repo copy.
+  - `./test/run_tests.sh --full` passed (`Total: 279, Passed: 279, Failed: 0`).
+- Follow-ups:
+  - If we later retire interactive TUI entirely, replace whiptail flow with a first-class pure-CLI flag-driven configurator.

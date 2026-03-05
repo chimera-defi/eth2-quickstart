@@ -346,6 +346,14 @@ else
     exit 1
 fi
 
+# Keep interactive path simple: avoid script(1) PTY wrapper complexity.
+if grep -q "script -q -c" "$PROJECT_ROOT/install.sh"; then
+    log_error "  install.sh should not depend on script(1) PTY wrapper in interactive path"
+    exit 1
+else
+    log_info "  install.sh interactive path does not use script(1) PTY wrapper"
+fi
+
 # Test 28: Verify configure.sh supports fallback and explicit mode controls
 log_info "Test 28: Verify configure.sh mode controls..."
 if grep -qE -- "--non-interactive|--interactive" "$PROJECT_ROOT/install/utils/configure.sh" && \
