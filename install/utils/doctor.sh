@@ -37,6 +37,26 @@ if [[ -f "$ROOT_DIR/config/user_config.env" ]]; then
     source "$ROOT_DIR/config/user_config.env" 2>/dev/null || true
 fi
 
+JSON_OUTPUT=false
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --json)
+            JSON_OUTPUT=true
+            ;;
+        --help|-h)
+            echo "Usage: ./install/utils/doctor.sh [--json]"
+            echo "  --json    Output machine-readable JSON summary"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            echo "Usage: ./install/utils/doctor.sh [--json]" >&2
+            exit 1
+            ;;
+    esac
+    shift
+done
+
 # =============================================================================
 # TEST TRACKING
 # =============================================================================
@@ -44,27 +64,57 @@ fi
 TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_WARNED=0
+CHECK_NAMES=()
+CHECK_STATUSES=()
+CHECK_DETAILS=()
+
+json_escape() {
+    local s="$1"
+    s=${s//\\/\\\\}
+    s=${s//\"/\\\"}
+    s=${s//$'\n'/\\n}
+    s=${s//$'\r'/}
+    printf '%s' "$s"
+}
+
+record_result() {
+    local status="$1"
+    local test_name="$2"
+    local details="${3:-}"
+    CHECK_STATUSES+=("$status")
+    CHECK_NAMES+=("$test_name")
+    CHECK_DETAILS+=("$details")
+}
 
 record_pass() {
     local test_name="$1"
-    echo -e "  ${GREEN}✓${NC} $test_name"
-    ((TESTS_PASSED++))
+    record_result "pass" "$test_name"
+    if [[ "$JSON_OUTPUT" == "false" ]]; then
+        echo -e "  ${GREEN}✓${NC} $test_name"
+    fi
+    ((TESTS_PASSED+=1))
 }
 
 record_fail() {
     local test_name="$1"
     local details="${2:-}"
-    echo -e "  ${RED}✗${NC} $test_name"
-    [[ -n "$details" ]] && echo -e "    ${RED}→ $details${NC}"
-    ((TESTS_FAILED++))
+    record_result "fail" "$test_name" "$details"
+    if [[ "$JSON_OUTPUT" == "false" ]]; then
+        echo -e "  ${RED}✗${NC} $test_name"
+        [[ -n "$details" ]] && echo -e "    ${RED}→ $details${NC}"
+    fi
+    ((TESTS_FAILED+=1))
 }
 
 record_warn() {
     local test_name="$1"
     local details="${2:-}"
-    echo -e "  ${YELLOW}⚠${NC} $test_name"
-    [[ -n "$details" ]] && echo -e "    ${YELLOW}→ $details${NC}"
-    ((TESTS_WARNED++))
+    record_result "warn" "$test_name" "$details"
+    if [[ "$JSON_OUTPUT" == "false" ]]; then
+        echo -e "  ${YELLOW}⚠${NC} $test_name"
+        [[ -n "$details" ]] && echo -e "    ${YELLOW}→ $details${NC}"
+    fi
+    ((TESTS_WARNED+=1))
 }
 
 # =============================================================================
@@ -80,16 +130,20 @@ check_service() {
 # HEALTH CHECKS
 # =============================================================================
 
-echo ""
-echo -e "${BLUE}==================================================${NC}"
-echo -e "${BLUE}  Eth2 Quick Start - Health Check (Doctor)${NC}"
-echo -e "${BLUE}==================================================${NC}"
-echo ""
+if [[ "$JSON_OUTPUT" == "false" ]]; then
+    echo ""
+    echo -e "${BLUE}==================================================${NC}"
+    echo -e "${BLUE}  Eth2 Quick Start - Health Check (Doctor)${NC}"
+    echo -e "${BLUE}==================================================${NC}"
+    echo ""
+fi
 
 # -----------------------------------------------------------------------------
 # 1. System Requirements
 # -----------------------------------------------------------------------------
-echo -e "${BLUE}[1/7] System Requirements${NC}"
+if [[ "$JSON_OUTPUT" == "false" ]]; then
+    echo -e "${BLUE}[1/7] System Requirements${NC}"
+fi
 
 # Check RAM
 total_ram_gb=$(free -g | awk 'NR==2{print $2}')
@@ -130,12 +184,16 @@ if [[ -f /etc/os-release ]]; then
     fi
 fi
 
-echo ""
+if [[ "$JSON_OUTPUT" == "false" ]]; then
+    echo ""
+fi
 
 # -----------------------------------------------------------------------------
 # 2. Network Connectivity
 # -----------------------------------------------------------------------------
-echo -e "${BLUE}[2/7] Network Connectivity${NC}"
+if [[ "$JSON_OUTPUT" == "false" ]]; then
+    echo -e "${BLUE}[2/7] Network Connectivity${NC}"
+fi
 
 # Check internet connectivity
 if curl -sf --connect-timeout 5 https://api.github.com >/dev/null 2>&1; then
@@ -160,12 +218,16 @@ else
     record_warn "DNS resolution" "Could not verify DNS"
 fi
 
-echo ""
+if [[ "$JSON_OUTPUT" == "false" ]]; then
+    echo ""
+fi
 
 # -----------------------------------------------------------------------------
 # 3. Service Status
 # -----------------------------------------------------------------------------
-echo -e "${BLUE}[3/7] Service Status${NC}"
+if [[ "$JSON_OUTPUT" == "false" ]]; then
+    echo -e "${BLUE}[3/7] Service Status${NC}"
+fi
 
 # Check execution client service
 eth1_status=$(check_service "eth1")
@@ -211,10 +273,14 @@ case "$validator_status" in
         record_warn "Validator: Stopped but enabled"
         ;;
     "disabled")
-        log_info "  - Validator: Not configured (optional)"
+        if [[ "$JSON_OUTPUT" == "false" ]]; then
+            log_info "  - Validator: Not configured (optional)"
+        fi
         ;;
     "not_installed")
-        log_info "  - Validator: Not installed (optional)"
+        if [[ "$JSON_OUTPUT" == "false" ]]; then
+            log_info "  - Validator: Not installed (optional)"
+        fi
         ;;
 esac
 
@@ -231,7 +297,9 @@ case "$mev_status" in
         record_warn "MEV-Boost (mev): Stopped but enabled"
         ;;
     "disabled"|"not_installed")
-        log_info "  - MEV-Boost (mev): Not configured (optional)"
+        if [[ "$JSON_OUTPUT" == "false" ]]; then
+            log_info "  - MEV-Boost (mev): Not configured (optional)"
+        fi
         ;;
 esac
 
@@ -243,7 +311,9 @@ case "$commit_pbs_status" in
         record_warn "Commit-Boost PBS: Stopped but enabled"
         ;;
     "disabled"|"not_installed")
-        log_info "  - Commit-Boost PBS: Not configured (optional)"
+        if [[ "$JSON_OUTPUT" == "false" ]]; then
+            log_info "  - Commit-Boost PBS: Not configured (optional)"
+        fi
         ;;
 esac
 
@@ -255,16 +325,22 @@ case "$commit_signer_status" in
         record_warn "Commit-Boost Signer: Stopped but enabled"
         ;;
     "disabled"|"not_installed")
-        log_info "  - Commit-Boost Signer: Not configured (optional)"
+        if [[ "$JSON_OUTPUT" == "false" ]]; then
+            log_info "  - Commit-Boost Signer: Not configured (optional)"
+        fi
         ;;
 esac
 
-echo ""
+if [[ "$JSON_OUTPUT" == "false" ]]; then
+    echo ""
+fi
 
 # -----------------------------------------------------------------------------
 # 4. Configuration Files
 # -----------------------------------------------------------------------------
-echo -e "${BLUE}[4/7] Configuration${NC}"
+if [[ "$JSON_OUTPUT" == "false" ]]; then
+    echo -e "${BLUE}[4/7] Configuration${NC}"
+fi
 
 # Check exports.sh
 if [[ -f "$ROOT_DIR/exports.sh" ]]; then
@@ -287,58 +363,78 @@ else
     record_warn "Fee recipient not configured" "Set in config/user_config.env for validator rewards"
 fi
 
-echo ""
+if [[ "$JSON_OUTPUT" == "false" ]]; then
+    echo ""
+fi
 
 # -----------------------------------------------------------------------------
 # 5. Port Availability
 # -----------------------------------------------------------------------------
-echo -e "${BLUE}[5/7] Port Status${NC}"
+if [[ "$JSON_OUTPUT" == "false" ]]; then
+    echo -e "${BLUE}[5/7] Port Status${NC}"
+fi
 
 # Execution client ports
 if check_port 30303; then
     record_pass "P2P port 30303: In use (expected if eth1 running)"
 else
-    log_info "  - P2P port 30303: Available"
+    if [[ "$JSON_OUTPUT" == "false" ]]; then
+        log_info "  - P2P port 30303: Available"
+    fi
 fi
 
 if check_port 8545; then
     record_pass "HTTP RPC port 8545: In use"
 else
-    log_info "  - HTTP RPC port 8545: Available"
+    if [[ "$JSON_OUTPUT" == "false" ]]; then
+        log_info "  - HTTP RPC port 8545: Available"
+    fi
 fi
 
 if check_port 8551; then
     record_pass "Engine API port 8551: In use (expected if eth1 running)"
 else
-    log_info "  - Engine API port 8551: Available"
+    if [[ "$JSON_OUTPUT" == "false" ]]; then
+        log_info "  - Engine API port 8551: Available"
+    fi
 fi
 
 # Consensus client ports
 if check_port 9000; then
     record_pass "Beacon P2P port 9000: In use (expected if cl running)"
 else
-    log_info "  - Beacon P2P port 9000: Available"
+    if [[ "$JSON_OUTPUT" == "false" ]]; then
+        log_info "  - Beacon P2P port 9000: Available"
+    fi
 fi
 
 if check_port 5052; then
     record_pass "Beacon API port 5052: In use"
 else
-    log_info "  - Beacon API port 5052: Available"
+    if [[ "$JSON_OUTPUT" == "false" ]]; then
+        log_info "  - Beacon API port 5052: Available"
+    fi
 fi
 
 # MEV-Boost port
 if check_port 18550; then
     record_pass "MEV-Boost port 18550: In use"
 else
-    log_info "  - MEV-Boost port 18550: Available"
+    if [[ "$JSON_OUTPUT" == "false" ]]; then
+        log_info "  - MEV service port 18550: Available"
+    fi
 fi
 
-echo ""
+if [[ "$JSON_OUTPUT" == "false" ]]; then
+    echo ""
+fi
 
 # -----------------------------------------------------------------------------
 # 6. JWT Secret
 # -----------------------------------------------------------------------------
-echo -e "${BLUE}[6/7] JWT Authentication${NC}"
+if [[ "$JSON_OUTPUT" == "false" ]]; then
+    echo -e "${BLUE}[6/7] JWT Authentication${NC}"
+fi
 
 jwt_locations=(
     "$HOME/secrets/jwt.hex"
@@ -365,12 +461,16 @@ if [[ "$jwt_found" == "false" ]]; then
     record_warn "JWT secret not found" "Will be created during client installation"
 fi
 
-echo ""
+if [[ "$JSON_OUTPUT" == "false" ]]; then
+    echo ""
+fi
 
 # -----------------------------------------------------------------------------
 # 7. Security Status
 # -----------------------------------------------------------------------------
-echo -e "${BLUE}[7/7] Security Status${NC}"
+if [[ "$JSON_OUTPUT" == "false" ]]; then
+    echo -e "${BLUE}[7/7] Security Status${NC}"
+fi
 
 # Check firewall
 if command -v ufw &>/dev/null; then
@@ -409,29 +509,65 @@ else
     record_warn "Root SSH login: Default (may be enabled)"
 fi
 
-echo ""
+if [[ "$JSON_OUTPUT" == "false" ]]; then
+    echo ""
+fi
 
 # =============================================================================
 # SUMMARY
 # =============================================================================
 
-echo -e "${BLUE}==================================================${NC}"
-echo -e "${BLUE}  Health Check Summary${NC}"
-echo -e "${BLUE}==================================================${NC}"
-echo ""
-echo -e "  ${GREEN}Passed:${NC}  $TESTS_PASSED"
-echo -e "  ${YELLOW}Warnings:${NC} $TESTS_WARNED"
-echo -e "  ${RED}Failed:${NC}  $TESTS_FAILED"
-echo ""
+if [[ "$JSON_OUTPUT" == "true" ]]; then
+    overall_status="pass"
+    if [[ $TESTS_FAILED -gt 0 ]]; then
+        overall_status="fail"
+    elif [[ $TESTS_WARNED -gt 0 ]]; then
+        overall_status="warn"
+    fi
+
+    echo "{"
+    echo "  \"summary\": {"
+    echo "    \"passed\": $TESTS_PASSED,"
+    echo "    \"warnings\": $TESTS_WARNED,"
+    echo "    \"failed\": $TESTS_FAILED,"
+    echo "    \"status\": \"${overall_status}\""
+    echo "  },"
+    echo "  \"checks\": ["
+    for i in "${!CHECK_NAMES[@]}"; do
+        name_escaped=$(json_escape "${CHECK_NAMES[$i]}")
+        details_escaped=$(json_escape "${CHECK_DETAILS[$i]}")
+        echo -n "    {\"status\":\"${CHECK_STATUSES[$i]}\",\"name\":\"${name_escaped}\",\"details\":\"${details_escaped}\"}"
+        if [[ $i -lt $((${#CHECK_NAMES[@]} - 1)) ]]; then
+            echo ","
+        else
+            echo
+        fi
+    done
+    echo "  ]"
+    echo "}"
+else
+    echo -e "${BLUE}==================================================${NC}"
+    echo -e "${BLUE}  Health Check Summary${NC}"
+    echo -e "${BLUE}==================================================${NC}"
+    echo ""
+    echo -e "  ${GREEN}Passed:${NC}  $TESTS_PASSED"
+    echo -e "  ${YELLOW}Warnings:${NC} $TESTS_WARNED"
+    echo -e "  ${RED}Failed:${NC}  $TESTS_FAILED"
+    echo ""
+
+    if [[ $TESTS_FAILED -eq 0 ]]; then
+        if [[ $TESTS_WARNED -eq 0 ]]; then
+            echo -e "${GREEN}✓ All checks passed! Your system is ready.${NC}"
+        else
+            echo -e "${YELLOW}⚠ System is functional but has warnings to review.${NC}"
+        fi
+    else
+        echo -e "${RED}✗ Some checks failed. Please address the issues above.${NC}"
+    fi
+fi
 
 if [[ $TESTS_FAILED -eq 0 ]]; then
-    if [[ $TESTS_WARNED -eq 0 ]]; then
-        echo -e "${GREEN}✓ All checks passed! Your system is ready.${NC}"
-    else
-        echo -e "${YELLOW}⚠ System is functional but has warnings to review.${NC}"
-    fi
     exit 0
 else
-    echo -e "${RED}✗ Some checks failed. Please address the issues above.${NC}"
     exit 1
 fi
