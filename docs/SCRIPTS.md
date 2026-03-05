@@ -58,7 +58,8 @@ ssh LOGIN_UNAME@<server-ip>
 
 **Start services:**
 ```bash
-sudo systemctl start eth1 cl validator mev
+./install/utils/start.sh
+./install/utils/stats.sh
 ```
 
 ## Logs
@@ -281,6 +282,16 @@ run_1.sh and run_2.sh write logs to disk. View them with:
 - ETHGas preconfirmation service
 - Requires Commit-Boost services
 - Port 18552 (metrics 18553)
+- Restart on failure
+
+### nginx.service
+- Nginx reverse proxy service
+- Optional (web RPC/SSL setup)
+- Restart on failure
+
+### caddy.service
+- Caddy reverse proxy service
+- Optional alternative to Nginx
 - Restart on failure
 
 ## Networking and Ports

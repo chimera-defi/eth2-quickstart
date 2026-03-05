@@ -11,23 +11,25 @@ cd "$PROJECT_ROOT" || exit 1
 source "$PROJECT_ROOT/lib/common_functions.sh"
 
 echo "=== Error Scan ==="
-journalctl -u cl -n 200 | grep error
-journalctl -u eth1 -n 200 | grep error
-journalctl -u validator -n 200 | grep error
-journalctl -u mev -n 200 | grep error
+for service in "${ETH_ALL_SERVICES[@]}"; do
+    if service_exists "$service"; then
+        echo "-- $service --"
+        journalctl -u "$service" -n 200 --no-pager 2>/dev/null | grep -i error || true
+    fi
+done
 echo "End error scan output --"
 
 echo "=== Time Till Duty Check ==="
-journalctl -u validator -n 1000 | grep timeTillDuty
+journalctl -u validator -n 1000 --no-pager 2>/dev/null | grep timeTillDuty || true
 echo ''
 
 echo "=== Client Versions ==="
-if command -v mev-boost >/dev/null 2>&1; then
-    mev-boost -version
+if [[ -x "$HOME/mev-boost/mev-boost" ]]; then
+    "$HOME/mev-boost/mev-boost" -version
 fi
-if [[ -f "../prysm/prysm.sh" ]]; then
-    ../prysm/prysm.sh beacon-chain -version
-    ../prysm/prysm.sh validator -version
+if [[ -x "$HOME/prysm/prysm.sh" ]]; then
+    "$HOME/prysm/prysm.sh" beacon-chain -version
+    "$HOME/prysm/prysm.sh" validator -version
 fi
 if command -v geth >/dev/null 2>&1; then
     geth version

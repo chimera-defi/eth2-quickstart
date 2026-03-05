@@ -282,7 +282,7 @@ show_update_summary() {
     echo "1. Review any changes to configuration files"
     echo "2. Update your exports.sh if needed"
     echo "3. Restart services if necessary:"
-    echo "   sudo systemctl restart eth1 cl validator mev nginx"
+    echo "   ./install/utils/refresh.sh"
     echo "4. Check service status:"
     echo "   ./install/utils/stats.sh"
     echo ""
