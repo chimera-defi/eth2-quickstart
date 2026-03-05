@@ -40,6 +40,22 @@ Additionally, by using a VPS, they can more easily offer a censorship resistant 
 
 ## Quickstart
 
+### One-Liner Bootstrap (Recommended for fresh hosts)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash
+```
+
+- The bootstrap installer now auto-falls back to non-interactive defaults when run via a pipe.
+- Force non-interactive explicitly:
+```bash
+curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash -s -- --non-interactive
+```
+- Force interactive TUI explicitly (requires a usable TTY):
+```bash
+curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash -s -- --interactive
+```
+
 ### Installation
 
 1. **Download and prepare**:
