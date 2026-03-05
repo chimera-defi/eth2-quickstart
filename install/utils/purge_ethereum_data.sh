@@ -62,7 +62,7 @@ PRESERVE_PATHS=(
 )
 
 # Services to manage
-SERVICES=(eth1 cl validator mev nginx)
+SERVICES=("${ETH_ALL_SERVICES[@]}")
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
