@@ -124,31 +124,22 @@ Use this file to preserve context across sessions.
 - Follow-ups:
   - Optional: add installer end-to-end smoke execution in CI (beyond current structure and interaction checks).
 
-## Update: 2026-03-06 (Local Prysm Checkpoint Smoke Validation + Fixes)
+## Update: 2026-03-05 (Recreated PR: Installer/CI Hardening)
 - Author: codex
-- Summary:
-  - Performed live local validation of Prysm checkpoint smoke behavior inside systemd Docker E2E containers using current workspace bind mounts.
-  - Found and fixed smoke execution privilege issue in `test/ci_test_e2e.sh`:
-    - smoke hook now runs via `sudo` and preserves caller `HOME` to avoid looking under `/root` for Prysm config.
-  - Found and fixed wrapper env propagation gap in `test/run_e2e.sh`:
-    - now forwards `E2E_PRYSM_CHECKPOINT_SMOKE`,
-    - `PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG`,
-    - `PRYSM_CHECKPOINT_REQUIRE_FALLBACK_LOG`.
-  - Improved `test/prysm_checkpoint_smoke.sh` behavior for fresh-node timing:
-    - added `PRYSM_CHECKPOINT_REQUIRE_FALLBACK_LOG` (default `false`),
-    - allows pass when checkpoint bootstrap evidence exists even if fallback log has not appeared yet.
-  - Executed explicit cleanup after runs:
-    - removed temporary E2E containers,
-    - pruned dangling Docker build layers (~2.56GB reclaimed),
-    - removed generated temporary `run_2` logs from validation loops.
+- Why:
+  - Recreated previously stale PR #131 as a clean branch on latest `origin/master` after superseded PR cleanup.
+  - Preserved only the unique hardening changes that were not yet merged.
+- Changes:
+  - `install.sh`: fail fast with explicit error if neither `curl` nor `wget` is installed.
+  - `.github/actions/docker-prep/action.yml`: if GHCR pull retries all fail, fallback to local build from `test/Dockerfile`.
+  - `.github/workflows/ci.yml`: normalized top-level comments for consistency/readability.
+  - `scripts/eth2qs.sh`: clearer error when command target is missing or not executable.
+  - `test/ci_test_run_1.sh`: regression guard for explicit missing `curl/wget` check in installer.
 - Validation:
-  - Focused live run succeeded with patched flow:
-    - `/workspace/run_2.sh --execution=geth --consensus=prysm --mev=mev-boost --skip-deps`
-    - `sudo HOME=\"$HOME\" ENABLE_PRYSM_CHECKPOINT_SMOKE=true PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG=false /workspace/test/prysm_checkpoint_smoke.sh`
-    - output included: `Prysm checkpoint-sync smoke passed`.
-  - `bash -n test/ci_test_e2e.sh test/prysm_checkpoint_smoke.sh test/run_e2e.sh` passed.
+  - `./test/run_tests.sh --full` passed (`279 passed, 0 failed`).
+  - `./scripts/pre-commit.sh` passed.
 - Follow-ups:
-  - Optional: add a lightweight CI path that mounts workspace into the E2E container for faster script-iteration validation without full image rebuild.
+  - Monitor CI runtime impact from docker-prep local-build fallback on GHCR outage scenarios.
 
 ## Update: 2026-03-06 (Prysm Checkpoint Live Smoke Test)
 - Author: codex
@@ -171,3 +162,29 @@ Use this file to preserve context across sessions.
 - Follow-ups:
   - Optional: enable `E2E_PRYSM_CHECKPOINT_SMOKE=true` in one CI matrix Prysm job once runtime stability is confirmed.
   - Optional: tighten to `PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG=true` in CI if log-window reliability is acceptable.
+
+## Update: 2026-03-06 (Local Prysm Checkpoint Smoke Validation + Fixes)
+- Author: codex
+- Summary:
+  - Performed live local validation of Prysm checkpoint smoke behavior inside systemd Docker E2E containers using current workspace bind mounts.
+  - Found and fixed smoke execution privilege issue in `test/ci_test_e2e.sh`:
+    - smoke hook now runs via `sudo` and preserves caller `HOME` to avoid looking under `/root` for Prysm config.
+  - Found and fixed wrapper env propagation gap in `test/run_e2e.sh`:
+    - now forwards `E2E_PRYSM_CHECKPOINT_SMOKE`,
+    - `PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG`,
+    - `PRYSM_CHECKPOINT_REQUIRE_FALLBACK_LOG`.
+  - Improved `test/prysm_checkpoint_smoke.sh` behavior for fresh-node timing:
+    - added `PRYSM_CHECKPOINT_REQUIRE_FALLBACK_LOG` (default `false`),
+    - allows pass when checkpoint bootstrap evidence exists even if fallback log has not appeared yet.
+  - Executed explicit cleanup after runs:
+    - removed temporary E2E containers,
+    - pruned dangling Docker build layers (~2.56GB reclaimed),
+    - removed generated temporary `run_2` logs from validation loops.
+- Validation:
+  - Focused live run succeeded with patched flow:
+    - `/workspace/run_2.sh --execution=geth --consensus=prysm --mev=mev-boost --skip-deps`
+    - `sudo HOME="$HOME" ENABLE_PRYSM_CHECKPOINT_SMOKE=true PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG=false /workspace/test/prysm_checkpoint_smoke.sh`
+    - output included: `Prysm checkpoint-sync smoke passed`.
+  - `bash -n test/ci_test_e2e.sh test/prysm_checkpoint_smoke.sh test/run_e2e.sh` passed.
+- Follow-ups:
+  - Optional: add a lightweight CI path that mounts workspace into the E2E container for faster script-iteration validation without full image rebuild.
