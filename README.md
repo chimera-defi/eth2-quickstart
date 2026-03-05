@@ -75,9 +75,26 @@ Additionally, by using a VPS, they can more easily offer a censorship resistant 
 
 5. **Start services**:
    ```bash
-   sudo systemctl start eth1 cl validator mev
-   sudo systemctl status eth1 cl validator mev
+   ./install/utils/start.sh
+   ./install/utils/stats.sh
    ```
+
+### Service Unit Names (Canonical)
+
+Core units (installed by execution/consensus scripts):
+- `eth1.service` (execution client)
+- `cl.service` (consensus beacon node)
+- `validator.service` (validator client)
+
+MEV units (installed based on selection):
+- `mev.service` (MEV-Boost)
+- `commit-boost-pbs.service` (Commit-Boost PBS)
+- `commit-boost-signer.service` (Commit-Boost signer)
+- `ethgas.service` (optional, requires Commit-Boost)
+
+Web units (optional):
+- `nginx.service` (Nginx reverse proxy)
+- `caddy.service` (Caddy reverse proxy)
 
 ## Sync and Configure
 
