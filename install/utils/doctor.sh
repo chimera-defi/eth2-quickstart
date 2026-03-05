@@ -218,17 +218,44 @@ case "$validator_status" in
         ;;
 esac
 
-# Check MEV-Boost service
-mevboost_status=$(check_service "mev-boost")
-case "$mevboost_status" in
+# Check MEV services (MEV-Boost and/or Commit-Boost stack)
+mev_status=$(check_service "mev")
+commit_pbs_status=$(check_service "commit-boost-pbs")
+commit_signer_status=$(check_service "commit-boost-signer")
+
+case "$mev_status" in
     "running")
-        record_pass "MEV-Boost: Running"
+        record_pass "MEV-Boost (mev): Running"
         ;;
     "stopped")
-        record_warn "MEV-Boost: Stopped but enabled"
+        record_warn "MEV-Boost (mev): Stopped but enabled"
         ;;
     "disabled"|"not_installed")
-        log_info "  - MEV-Boost: Not configured (optional)"
+        log_info "  - MEV-Boost (mev): Not configured (optional)"
+        ;;
+esac
+
+case "$commit_pbs_status" in
+    "running")
+        record_pass "Commit-Boost PBS: Running"
+        ;;
+    "stopped")
+        record_warn "Commit-Boost PBS: Stopped but enabled"
+        ;;
+    "disabled"|"not_installed")
+        log_info "  - Commit-Boost PBS: Not configured (optional)"
+        ;;
+esac
+
+case "$commit_signer_status" in
+    "running")
+        record_pass "Commit-Boost Signer: Running"
+        ;;
+    "stopped")
+        record_warn "Commit-Boost Signer: Stopped but enabled"
+        ;;
+    "disabled"|"not_installed")
+        log_info "  - Commit-Boost Signer: Not configured (optional)"
         ;;
 esac
 

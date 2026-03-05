@@ -157,6 +157,19 @@ docker run --rm --privileged --user root eth-node-test /workspace/test/ci_test_r
 docker run --rm --privileged eth-node-test /workspace/test/ci_test_run_2.sh
 ```
 
+### Local non-root note for `ci_test_run_2.sh`
+
+`ci_test_run_2.sh` must run as a non-root user. If your repo is under `/root`, non-root users cannot access it directly.
+
+```bash
+# Example workaround: run from a temp copy owned by a non-root user
+TMP_REPO=/tmp/eth2-quickstart-ci-run2
+rm -rf "$TMP_REPO"
+cp -a /root/.openclaw/workspace/dev/eth2-quickstart/.worktrees/master "$TMP_REPO"
+chown -R abhishek:abhishek "$TMP_REPO"
+su -s /bin/bash abhishek -c "cd $TMP_REPO && bash test/ci_test_run_2.sh"
+```
+
 ### Full End-to-End Testing
 
 For complete E2E testing on a real server (not Docker):
