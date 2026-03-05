@@ -16,4 +16,4 @@ SKIP_BUILD=true ./test/run_e2e.sh --phase=2
 ```
 
 ## CI path filtering
-See [docs/CI_WORKFLOWS.md](CI_WORKFLOWS.md) for when each workflow runs.
+See [docs/CI_WORKFLOWS.md](../../CI_WORKFLOWS.md) for when each workflow runs.

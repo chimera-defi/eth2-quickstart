@@ -8,7 +8,7 @@ These documents were created during specific development phases and have served 
 
 | File | Reason for Archive |
 |------|-------------------|
-| `AGENT_HANDOFF.md` | Flywheel implementation planning - work completed, learnings in `.cursorrules` |
+| `AGENT_HANDOFF.md` | Flywheel implementation planning - work completed, learnings in `.cursorrules` and `docs/agent-handoff.md` |
 | `progress.md` | Refactoring progress tracking - work completed |
 | `DOCUMENTATION_CONSOLIDATION_SUMMARY.md` | One-time consolidation summary - completed |
 | `REFACTORING_AUDIT_REPORT.md` | Refactoring audit - all tasks completed |
@@ -16,6 +16,8 @@ These documents were created during specific development phases and have served 
 | `PRYSM_FLAGS_ANALYSIS.md` | Prysm configuration analysis - findings applied |
 | `AGENT_CONTEXT.md` | Agent guidelines - merged into `.cursorrules` |
 | `SHELL_SCRIPT_TEST_RESULTS.md` | One-time test report - issues fixed |
+| `frontend/` | Historical frontend planning, prompt, migration, and review docs |
+| `reports/` | One-off CI/RCA/review checklists and task reports |
 
 ## Current Documentation
 
