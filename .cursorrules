@@ -61,7 +61,7 @@ sudo reboot
 1. Read `run_1.sh` AND `run_2.sh` to understand the security boundary
 2. Verify your changes preserve Phase 1 → REBOOT → Phase 2
 3. Test that generated scripts refuse wrong user context
-4. See `docs/AGENT_HANDOFF.md` for full documentation
+4. See `docs/agent-handoff.md` for full documentation
 
 ---
 
@@ -76,19 +76,15 @@ This project contains comprehensive documentation organized in the `docs/` folde
 
 ### Configuration & Architecture
 - `docs/CONFIGURATION_GUIDE.md` - Configuration architecture and conventions
-- `docs/REFACTORING_CONFIGS.md` - Configuration refactoring details
-- `docs/REFACTORING_SUMMARY.md` - Overall refactoring summary and changes
+- `docs/COMMON_FUNCTIONS_REFERENCE.md` - Common functions usage and signatures
 
 ### Development & Testing
 - `docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md` - Shell scripting standards
-- `docs/SHELL_SCRIPT_TEST_RESULTS.md` - Test results and validation
-- `docs/COMPREHENSIVE_SCRIPT_TESTING_REPORT.md` - Comprehensive testing documentation
+- `docs/CI_WORKFLOWS.md` - CI path filtering and workflow triggers
 
 ### Project Management
-- `docs/CONSOLIDATED_PR.md` - Pull request consolidation details
-- `docs/FINAL_VERIFICATION.md` - Final verification and validation
 - `docs/COMMIT_MESSAGES.md` - Commit message conventions
-- `docs/progress.md` - Development progress tracking
+- `docs/agent-handoff.md` - Current implementation handoff and follow-ups
 
 ## Key Architecture Patterns
 - **Centralized Configuration**: All variables in `exports.sh`
@@ -1041,7 +1037,7 @@ Before committing frontend changes:
 
 ### Documentation
 
-- Migration guide: `docs/FRONTEND_BUN_MIGRATION.md`
+- Frontend guide: `docs/FRONTEND.md`
 - Frontend README: `frontend/README.md` (updated with Bun commands)
 
 ### Regression Prevention
