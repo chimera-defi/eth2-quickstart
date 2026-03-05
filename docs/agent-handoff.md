@@ -123,3 +123,20 @@ Use this file to preserve context across sessions.
   - `cd frontend && bun run build` passed.
 - Follow-ups:
   - Optional: add installer end-to-end smoke execution in CI (beyond current structure and interaction checks).
+
+## Update: 2026-03-05 (Recreated PR: Installer/CI Hardening)
+- Author: codex
+- Why:
+  - Recreated previously stale PR #131 as a clean branch on latest `origin/master` after superseded PR cleanup.
+  - Preserved only the unique hardening changes that were not yet merged.
+- Changes:
+  - `install.sh`: fail fast with explicit error if neither `curl` nor `wget` is installed.
+  - `.github/actions/docker-prep/action.yml`: if GHCR pull retries all fail, fallback to local build from `test/Dockerfile`.
+  - `.github/workflows/ci.yml`: normalized top-level comments for consistency/readability.
+  - `scripts/eth2qs.sh`: clearer error when command target is missing or not executable.
+  - `test/ci_test_run_1.sh`: regression guard for explicit missing `curl/wget` check in installer.
+- Validation:
+  - `./test/run_tests.sh --full` passed (`279 passed, 0 failed`).
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - Monitor CI runtime impact from docker-prep local-build fallback on GHCR outage scenarios.
