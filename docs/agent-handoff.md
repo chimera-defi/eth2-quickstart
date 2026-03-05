@@ -8,16 +8,20 @@ Use this file to preserve context across sessions.
 - Use a fresh branch + fresh PR for each new task.
 
 ## Latest Update
-- Date: 2026-03-04
+- Date: 2026-03-05
 - Author: codex
 - Summary:
-  - Updated `install/utils/purge_ethereum_data.sh` to purge only default node data/state directories.
-  - Preserved keys/secrets by default and removed the `--include-secrets` destructive path.
-  - Added default coverage for Ethrex (`~/ethrex/data`), Commit-Boost (`~/commit-boost`), and ETHGas (`~/ethgas`).
-  - Added preservation rules for validator/keystore/secrets paths in consensus client data trees.
-  - Updated `docs/SCRIPTS.md` to match new purge behavior and directory coverage.
+  - Added unified wrapper `scripts/eth2qs.sh` as a stable command entrypoint for humans and AI agents.
+  - Added machine-readable health output in `install/utils/doctor.sh --json`.
+  - Kept human-readable doctor output as default; `--json` returns summary + check list.
+  - Aligned doctor MEV service status check to `mev` service name.
+  - Updated `README.md` and `docs/SCRIPTS.md` with wrapper usage.
+  - Added CI regression checks in `test/ci_test_run_1.sh` for wrapper presence and valid `doctor --json` output.
 - Validation:
-  - `bash -n install/utils/purge_ethereum_data.sh` passed.
+  - `bash -n scripts/eth2qs.sh install/utils/doctor.sh test/ci_test_run_1.sh README.md docs/SCRIPTS.md` passed.
+  - `bash test/ci_test_run_1.sh` passed.
+  - `./test/run_tests.sh --full` passed (`Total: 279, Passed: 279, Failed: 0`).
+  - `bash test/ci_test_run_2.sh` passed as non-root user in `/tmp` repo copy.
 - Follow-ups:
-  - If new clients are added, extend `DATA_DIRS` and preservation paths in purge script.
-  - Consider adding unit tests for safe path preservation logic.
+  - Consider exposing `scripts/eth2qs.sh` as `eth2qs` in release artifacts for global PATH usage.
+  - If more scripts gain machine interfaces, keep JSON output contracts backward-compatible.

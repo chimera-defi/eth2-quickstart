@@ -8,6 +8,18 @@ Bash scripts to harden Ubuntu server and install Ethereum node stack: execution 
 - **Order**: `run_1.sh` → reboot → login as `LOGIN_UNAME` → update `exports.sh` → `run_2.sh`
 - **Config**: `exports.sh` (email, domain, fee recipient, graffiti, peers, relay list, ports)
 
+## Unified Wrapper (Recommended)
+
+Use `scripts/eth2qs.sh` as a stable command entrypoint for both humans and AI agents.
+
+```bash
+./scripts/eth2qs.sh help
+./scripts/eth2qs.sh configure --non-interactive
+./scripts/eth2qs.sh phase1
+./scripts/eth2qs.sh phase2
+./scripts/eth2qs.sh doctor --json
+```
+
 ## Environment Configuration (exports.sh)
 
 Key variables:
