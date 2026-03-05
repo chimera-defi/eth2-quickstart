@@ -93,12 +93,7 @@ fi
 # HARDWARE & WHIPTAIL HELPERS (from common_functions.sh)
 # =============================================================================
 # Uses: detect_hardware_profile(), get_recommended_clients() from common_functions.sh
-# Uses: whiptail_msg(), whiptail_yesno() from common_functions.sh
-
-# Convenience aliases for backward compatibility
-show_msg() {
-    whiptail_msg "Eth2 Quick Start" "$1"
-}
+# Uses: whiptail_yesno() from common_functions.sh
 
 show_yesno() {
     whiptail_yesno "Eth2 Quick Start" "$1"

@@ -26,7 +26,19 @@ runs:
       if: inputs.image != ''
       shell: bash
       run: |
-        docker pull ${{ inputs.image }}
+        pulled=false
+        for attempt in 1 2 3; do
+          if docker pull ${{ inputs.image }}; then
+            pulled=true
+            break
+          fi
+          echo "docker pull failed (attempt ${attempt}/3); retrying..."
+          sleep $((attempt * 5))
+        done
+        if [[ "$pulled" != "true" ]]; then
+          echo "Failed to pull image after 3 attempts: ${{ inputs.image }}" >&2
+          exit 1
+        fi
         docker tag ${{ inputs.image }} eth-node-test
 
     - name: Build image (fallback for fork PRs)
