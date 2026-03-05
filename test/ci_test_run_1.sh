@@ -328,6 +328,37 @@ else
     log_info "  run_2.sh does not call --production mode (correct)"
 fi
 
+# Test 26: Verify unified wrapper entrypoint exists and is valid
+log_info "Test 26: Verify unified wrapper (scripts/eth2qs.sh)..."
+if [[ -f "$PROJECT_ROOT/scripts/eth2qs.sh" ]] && bash -n "$PROJECT_ROOT/scripts/eth2qs.sh"; then
+    log_info "  scripts/eth2qs.sh exists and syntax is valid"
+else
+    log_error "  scripts/eth2qs.sh missing or invalid"
+    exit 1
+fi
+if grep -q "doctor --json" "$PROJECT_ROOT/scripts/eth2qs.sh"; then
+    log_info "  unified wrapper documents machine-readable doctor output"
+else
+    log_error "  scripts/eth2qs.sh should expose doctor --json workflow"
+    exit 1
+fi
+
+# Test 27: Verify doctor supports JSON mode for agent consumption
+log_info "Test 27: Verify doctor --json output..."
+if grep -q -- "--json" "$PROJECT_ROOT/install/utils/doctor.sh"; then
+    log_info "  doctor.sh supports --json flag"
+else
+    log_error "  doctor.sh must support --json output mode"
+    exit 1
+fi
+doctor_json_output="$("$PROJECT_ROOT/install/utils/doctor.sh" --json || true)"
+if python3 -m json.tool >/dev/null 2>&1 <<<"$doctor_json_output"; then
+    log_info "  doctor --json emits valid JSON"
+else
+    log_error "  doctor --json output is not valid JSON"
+    exit 1
+fi
+
 log_info "╔════════════════════════════════════════════════════════════════╗"
 log_info "║  run_1.sh CI Test PASSED                                      ║"
 log_info "║  Validated: Structure, syntax, functions, SSH safety,         ║"
