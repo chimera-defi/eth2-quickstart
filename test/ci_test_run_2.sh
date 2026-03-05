@@ -80,6 +80,16 @@ fi
 # Test 5: Test key functions work
 log_info "Test 5: Test key functions..."
 
+# Service helper regressions (must exist for install/utils/*.sh commands)
+for fn in start_all_services restart_all_services show_service_status choose_mev_stack; do
+    if declare -f "$fn" >/dev/null 2>&1; then
+        log_info "  ✓ $fn exists"
+    else
+        log_error "  ✗ Missing function: $fn"
+        exit 1
+    fi
+done
+
 # Test validate_menu_choice
 if validate_menu_choice "1" 3; then
     log_info "  ✓ validate_menu_choice works"
@@ -95,6 +105,16 @@ if ensure_directory "$test_dir" && [[ -d "$test_dir" ]]; then
     rm -rf "$test_dir"
 else
     log_error "  ✗ ensure_directory failed"
+    exit 1
+fi
+
+# Test 5b: MEV service naming consistency in doctor utility
+log_info "Test 5b: Verify doctor MEV service naming..."
+if grep -q 'check_service "mev"' "$PROJECT_ROOT/install/utils/doctor.sh" && \
+   ! grep -q 'check_service "mev-boost"' "$PROJECT_ROOT/install/utils/doctor.sh"; then
+    log_info "  ✓ doctor.sh checks mev unit name"
+else
+    log_error "  ✗ doctor.sh MEV service name mismatch"
     exit 1
 fi
 
