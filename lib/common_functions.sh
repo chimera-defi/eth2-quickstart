@@ -468,19 +468,149 @@ _check_tcp_port_listening() {
 # SYSTEM MANAGEMENT FUNCTIONS
 # =============================================================================
 
+# Canonical service names used across install/update/maintenance scripts.
+ETH_CORE_SERVICES=("eth1" "cl" "validator")
+ETH_MEV_SERVICES=("mev" "commit-boost-pbs" "commit-boost-signer" "ethgas")
+ETH_WEB_SERVICES=("nginx" "caddy")
+ETH_ALL_SERVICES=("${ETH_CORE_SERVICES[@]}" "${ETH_MEV_SERVICES[@]}" "${ETH_WEB_SERVICES[@]}")
+
+service_exists() {
+    local service="$1"
+    systemctl list-unit-files 2>/dev/null | grep -q "^${service}\.service"
+}
+
+service_enabled() {
+    local service="$1"
+    systemctl is-enabled --quiet "$service" 2>/dev/null
+}
+
+service_active() {
+    local service="$1"
+    systemctl is-active --quiet "$service" 2>/dev/null
+}
+
+show_service_status() {
+    log_info "Service status summary:"
+    local service
+    for service in "${ETH_ALL_SERVICES[@]}"; do
+        local status
+        status=$(check_service_status "$service")
+        case "$status" in
+            running)   echo "  - $service: running" ;;
+            stopped)   echo "  - $service: stopped (enabled)" ;;
+            disabled)  echo "  - $service: disabled" ;;
+            *)         echo "  - $service: not installed" ;;
+        esac
+    done
+}
+
+start_service_if_installed() {
+    local service="$1"
+    if service_exists "$service"; then
+        log_info "Starting $service..."
+        sudo systemctl start "$service" || log_warn "Failed to start $service"
+    fi
+}
+
+restart_service_if_installed() {
+    local service="$1"
+    if service_exists "$service"; then
+        log_info "Restarting $service..."
+        sudo systemctl restart "$service" || log_warn "Failed to restart $service"
+    fi
+}
+
+stop_service_if_active() {
+    local service="$1"
+    if service_active "$service"; then
+        log_info "Stopping $service..."
+        sudo systemctl stop "$service" || log_warn "Failed to stop $service"
+    fi
+}
+
+choose_mev_stack() {
+    # Commit-Boost stack takes precedence when installed/enabled as it replaces mev.
+    if service_exists "commit-boost-pbs" && service_enabled "commit-boost-pbs"; then
+        local stack=("commit-boost-pbs")
+        if service_exists "commit-boost-signer" && service_enabled "commit-boost-signer"; then
+            stack+=("commit-boost-signer")
+        fi
+        if service_exists "ethgas" && service_enabled "ethgas"; then
+            stack+=("ethgas")
+        fi
+        echo "${stack[*]}"
+        return 0
+    fi
+
+    if service_exists "mev" && service_enabled "mev"; then
+        echo "mev"
+        return 0
+    fi
+
+    echo ""
+}
+
+start_all_services() {
+    log_info "Starting Ethereum services..."
+    local service
+
+    for service in "${ETH_CORE_SERVICES[@]}"; do
+        start_service_if_installed "$service"
+    done
+
+    local mev_stack
+    mev_stack=$(choose_mev_stack)
+    if [[ -n "$mev_stack" ]]; then
+        for service in $mev_stack; do
+            start_service_if_installed "$service"
+        done
+    fi
+
+    for service in "${ETH_WEB_SERVICES[@]}"; do
+        if service_exists "$service" && service_enabled "$service"; then
+            start_service_if_installed "$service"
+        fi
+    done
+
+    log_info "Service start sequence complete"
+}
+
+restart_all_services() {
+    log_info "Restarting Ethereum services..."
+    local service
+
+    for service in "${ETH_CORE_SERVICES[@]}"; do
+        restart_service_if_installed "$service"
+    done
+
+    local mev_stack
+    mev_stack=$(choose_mev_stack)
+    if [[ -n "$mev_stack" ]]; then
+        for service in $mev_stack; do
+            restart_service_if_installed "$service"
+        done
+    fi
+
+    for service in "${ETH_WEB_SERVICES[@]}"; do
+        if service_exists "$service"; then
+            restart_service_if_installed "$service"
+        fi
+    done
+
+    log_info "Service restart sequence complete"
+}
+
 # Stop all Ethereum services
 stop_all_services() {
     log_info "Stopping all Ethereum services..."
-    
-    local services=("eth1" "cl" "validator" "mev-boost" "nginx" "caddy")
-    
-    for service in "${services[@]}"; do
-        if systemctl is-active --quiet "$service" 2>/dev/null; then
-            log_info "Stopping $service..."
-            sudo systemctl stop "$service" || log_warn "Failed to stop $service"
+
+    local service
+    for service in "${ETH_ALL_SERVICES[@]}"; do
+        if service_exists "$service"; then
+            stop_service_if_active "$service"
         fi
     done
-    
+
     log_info "All services stopped"
 }
 
