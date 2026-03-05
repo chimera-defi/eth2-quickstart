@@ -216,7 +216,7 @@ rm -rf ./tmp/
 
 ### For New Installations
 1. **Configure `exports.sh`**: Set all required variables before installation
-2. **Choose Clients**: Use `./select_clients.sh` for recommendations
+2. **Choose Clients**: Use `./install/utils/select_clients.sh` for recommendations
 3. **Run Install Scripts**: Execute client-specific installation scripts
 4. **Verify Configuration**: Check generated config files match expectations
 
