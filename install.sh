@@ -203,17 +203,11 @@ else
         apt-get update && apt-get install -y whiptail
     fi
 
-    # When run via "curl | bash", stdin is a pipe - whiptail can't read keyboard input.
-    # Use 'script' to create a PTY so the wizard gets proper terminal I/O.
-    if [[ -c /dev/tty ]] && command -v script &>/dev/null && ! [[ -t 0 ]]; then
-        script -q -c "$INSTALL_DIR/install/utils/configure.sh --interactive" /dev/null
-    else
-        # Fallback: redirect stdin from terminal
-        if [[ -c /dev/tty ]] && ! [[ -t 0 ]]; then
-            exec 0</dev/tty
-        fi
-        "$INSTALL_DIR/install/utils/configure.sh" --interactive
+    # If stdin is a pipe, redirect from terminal so whiptail can receive key input.
+    if [[ -c /dev/tty ]] && ! [[ -t 0 ]]; then
+        exec 0</dev/tty
     fi
+    "$INSTALL_DIR/install/utils/configure.sh" --interactive
 fi
 
 # Display next steps
