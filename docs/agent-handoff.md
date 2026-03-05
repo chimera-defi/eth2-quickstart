@@ -102,3 +102,24 @@ Use this file to preserve context across sessions.
   - Active-doc link integrity sweep passed (`TOTAL_BROKEN=0` for `README.md` and `docs/**/*.md`).
 - Follow-ups:
   - If desired, add one more explicit CI assertion that fails when `whiptail_pipe_test.sh` records `SKIP` in any shell-test context outside the dedicated TUI job.
+
+## Update: 2026-03-05 (Final Pass: Status Snapshot + Docs Consistency)
+- Author: codex
+- Summary:
+  - Cherry-picked two pending cleanup branches onto latest `origin/master` and rebased cleanly:
+    - docs/frontend alignment + stale-doc archiving
+    - strict TUI pipe verification in CI
+  - Added `docs/STATUS.md` as a concise current-state snapshot (capabilities, validation coverage, optional follow-ups, canonical doc pointers).
+  - Linked `docs/STATUS.md` from:
+    - `README.md` (Additional Documentation)
+    - `docs/README.md` (Core Documentation)
+  - Opened PR #135 for this final-pass consolidation.
+- Validation:
+  - `./test/run_tests.sh --full` passed (`279 passed, 0 failed`).
+  - `./scripts/pre-commit.sh` passed.
+  - `REQUIRE_WHIPTAIL_PIPE_TEST=1 ./test/whiptail_pipe_test.sh` passed.
+  - `cd frontend && bun run lint` passed.
+  - `cd frontend && bun run test` passed (`30 passed, 0 failed`).
+  - `cd frontend && bun run build` passed.
+- Follow-ups:
+  - Optional: add installer end-to-end smoke execution in CI (beyond current structure and interaction checks).
