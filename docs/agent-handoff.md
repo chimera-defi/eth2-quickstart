@@ -11,19 +11,25 @@ Use this file to preserve context across sessions.
 - Date: 2026-03-05
 - Author: codex
 - Summary:
-  - Fixed installer UX for one-liner + TUI by adding explicit mode controls:
-    - `--non-interactive` (alias `--vibe`)
-    - `--interactive` (force whiptail, requires TTY)
-    - `ETH2_NON_INTERACTIVE=1` env override
-  - Added automatic non-interactive fallback when installer stdin is piped (common `curl | bash` case) to avoid blocked whiptail `OK` interactions.
-  - Updated `install/utils/configure.sh` with TTY detection and automatic fallback to non-interactive mode when TUI is unavailable.
-  - Updated README one-liner guidance with both explicit interactive and non-interactive usage.
-  - Added CI regression checks in `test/ci_test_run_1.sh` to enforce installer mode flags and fallback behavior.
+  - Added a canonical systemd service registry and service lifecycle helpers in `lib/common_functions.sh`.
+  - Restored missing utility behavior by implementing `start_all_services`, `restart_all_services`, and `show_service_status`.
+  - Fixed service-name consistency: standardized runtime checks on `mev` unit name (not `mev-boost`).
+  - Improved `install/utils/doctor.sh` to report both MEV-Boost (`mev`) and Commit-Boost services.
+  - Reworked `install/utils/update.sh` path handling and version reporting to use correct repo/home paths.
+  - Expanded purge service coverage by using canonical service list in `install/utils/purge_ethereum_data.sh`.
+  - Updated docs (`README.md`, `docs/SCRIPTS.md`, `install/utils/README_UPDATE_SCRIPTS.md`) with canonical service references and helper usage.
+  - Added regression tests for service consistency:
+    - `install/test/test_common_functions.sh` now validates service registry contents, helper existence, MEV stack precedence, and doctor unit-name checks.
+    - `test/ci_test_run_2.sh` now verifies newly added service helpers and MEV service naming consistency.
 - Validation:
-  - `bash -n install.sh install/utils/configure.sh test/ci_test_run_1.sh` passed.
+  - `bash -n` passed for all touched utility/core scripts.
+  - `install/utils/start.sh` runs successfully.
+  - `install/utils/refresh.sh` runs successfully.
+  - `install/utils/stats.sh` runs successfully.
+  - `./test/run_tests.sh --full` passed (276/276).
+  - `USE_MOCKS=true bash install/test/test_common_functions.sh` passed.
   - `bash test/ci_test_run_1.sh` passed.
-  - `./test/run_tests.sh --full` passed (`Total: 276, Passed: 276, Failed: 0`).
-  - `bash test/ci_test_run_2.sh` passed as non-root user in `/tmp` repo copy.
+  - `bash test/ci_test_run_2.sh` passed as non-root user in a writable copy under `/tmp`.
 - Follow-ups:
-  - Consider adding an integration test that executes `install.sh` in a pseudo-TTY and piped-stdin harness to validate mode switching behavior end-to-end (not just static checks).
-  - If additional installer flags are added, keep `install.sh` and `install/utils/configure.sh` mode semantics in sync.
+  - Add a dedicated helper script to run `ci_test_run_2.sh` non-root in environments where repo is under `/root` (permission boundary).
+  - Optionally add a machine-readable service manifest for CI drift checks between code and docs.

@@ -142,7 +142,7 @@ cp ~/eth2-quickstart-backups/eth2-quickstart-YYYYMMDD-HHMMSS/exports.sh ./export
 After updates, check service status:
 ```bash
 ./install/utils/stats.sh
-sudo systemctl status eth1 cl validator mev nginx
+./install/utils/refresh.sh
 ```
 
 ## Best Practices
