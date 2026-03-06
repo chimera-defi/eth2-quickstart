@@ -6,7 +6,7 @@
 [![Security Validation](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/security.yml/badge.svg)](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/security.yml)
 
 Get an ETH2 compatible RPC node setup in seconds!   
-Save at least 2 days compared to CoinCashew and Somersats guides using the automated scripts and included Prysm checkpoint state here!!   
+Save at least 2 days compared to CoinCashew and Somersats guides using the automated scripts and built-in checkpoint-sync configuration support.   
 With your own uncensored & unmetered RPC node!   
 And get ready for the ETH2 merge!
 
@@ -126,20 +126,11 @@ Web units (optional):
 
 ## Sync and Configure
 
-**Note: You may be able to skip this step now with checkpoint URLs added**
-
-1. **Sync Prysm instantly** using provided checkpoint files:
-   ```bash
-   sudo systemctl stop cl
-   sudo systemctl stop validator
-   $(echo $HOME)/prysm/prysm.sh cl --checkpoint-block=$PWD/prysm/block_mainnet_altair_4620512-0xef9957e6a709223202ab00f4ee2435e1d42042ad35e160563015340df677feb0.ssz --checkpoint-state=$PWD/prysm/state_mainnet_altair_4620512-0xc1397f57149c99b3a2166d422a2ee50602e2a2c7da2e31d7ea740216b8fd99ab.ssz --genesis-state=$PWD/prysm/genesis.ssz --config-file=$PWD/prysm/prysm_beacon_conf.yaml --p2p-host-ip=$(curl -s v4.ident.me)
-   ```
-   
-   **Restart services after sync:**
-   ```bash
-   sudo systemctl restart cl
-   sudo systemctl restart validator
-   ```
+1. **Prysm checkpoint sync is configured by default in this repo**:
+   - `install/consensus/prysm.sh` writes both:
+     - `checkpoint-sync-url: $PRYSM_CPURL`
+     - `genesis-beacon-api-url: $PRYSM_CPURL`
+   - This means initial beacon sync starts from a trusted checkpoint URL instead of syncing from genesis.
 
 2. **Set up validator** using Prysm documentation:
    - Create a `pass.txt` file in `~/prysm` with your wallet password
@@ -283,8 +274,8 @@ Setup a secure uncensored outward facing Ethereum RPC for you and your friends! 
 
 ### Basic Setup
 ```bash
-./install_nginx.sh
-./install_ssl.sh
+./install/web/install_nginx.sh
+./install/ssl/install_acme_ssl.sh
 ```
 
 ### Verify RPC Endpoint
@@ -302,8 +293,8 @@ curl -X POST https://yourdomain.com/rpc --data '{"jsonrpc":"2.0","method":"eth_c
 3. **Configure Nginx**: Handle requests and provide RPC
 
 ### SSL Options
-- **ACME.sh**: `./install_acme_ssl.sh` (recommended)
-- **Certbot**: `./install_ssl_certbot.sh`
+- **ACME.sh**: `./install/ssl/install_acme_ssl.sh` (recommended)
+- **Certbot**: `./install/ssl/install_ssl_certbot.sh`
 
 ## Caddy Web Server (Alternative to Nginx)
 
