@@ -222,8 +222,8 @@ run_1.sh and run_2.sh write logs to disk. View them with:
 - Configures reverse proxy for RPC/WS endpoints
 - Sets up rate limiting and security headers
 
-### install_ssl.sh
-- Installs SSL certificates using ACME
+### install_acme_ssl.sh / install_ssl_certbot.sh
+- Installs SSL certificates (ACME.sh or Certbot flow)
 - Configures HTTPS redirect
 - Sets up certificate renewal
 
