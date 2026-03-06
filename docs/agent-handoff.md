@@ -270,3 +270,24 @@ Use this file to preserve context across sessions.
   - Active-repo stale reference sweep passed (legacy mentions only remain under `docs/archive/`).
 - Follow-ups:
   - Optional: add an explicit CI assertion that no active docs outside `docs/archive/` reference removed legacy scripts/files.
+
+## Update: 2026-03-06 (Consolidated PR for #136/#139/#140)
+- Author: codex
+- Why:
+  - User requested merging the remaining open cleanup/refactor PRs into a single, up-to-date PR on latest `master`.
+- Changes:
+  - Created consolidation branch from latest `origin/master`:
+    - `chore/consolidate-136-139-140-20260306`
+  - Cherry-picked and conflict-resolved validated commits from:
+    - PR `#136` (installer prereq/docker prep hardening)
+    - PR `#139` (multi-pass archive/code reduction)
+    - PR `#140` (Prysm checkpoint legacy cleanup and related docs/tests)
+  - Opened consolidated PR:
+    - `#143` `chore: consolidate #136, #139, #140 on latest master`
+  - Closed superseded PRs:
+    - `#136`, `#139`, `#140`
+- Validation:
+  - `./test/run_tests.sh --full` passed (`270 passed, 0 failed, 1 skipped`).
+  - `./scripts/pre-commit.sh` passed (`257 passed, 0 failed` in its suite).
+- Follow-ups:
+  - Merge `#143` as the single replacement for the three superseded open PRs.
