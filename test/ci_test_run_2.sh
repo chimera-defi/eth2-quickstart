@@ -197,9 +197,9 @@ fi
 
 # Test 9: Prysm install script must configure checkpoint URL-based sync
 log_info "Test 9: Verify Prysm checkpoint-sync URL configuration..."
-if grep -Fq 'checkpoint-sync-url: $PRYSM_CPURL' "$PROJECT_ROOT/install/consensus/prysm.sh" && \
-   grep -Fq 'genesis-beacon-api-url: $PRYSM_CPURL' "$PROJECT_ROOT/install/consensus/prysm.sh" && \
-   ! grep -Fq "checkpoint-block" "$PROJECT_ROOT/install/consensus/prysm.sh"; then
+if grep -q "checkpoint-sync-url: \$PRYSM_CPURL" "$PROJECT_ROOT/install/consensus/prysm.sh" && \
+   grep -q "genesis-beacon-api-url: \$PRYSM_CPURL" "$PROJECT_ROOT/install/consensus/prysm.sh" && \
+   ! grep -q "checkpoint-block" "$PROJECT_ROOT/install/consensus/prysm.sh"; then
     log_info "  ✓ Prysm script uses checkpoint URL config and no legacy SSZ checkpoint flags"
 else
     log_error "  ✗ Prysm script checkpoint sync config is missing or contains legacy SSZ flag usage"
