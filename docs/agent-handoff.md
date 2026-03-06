@@ -322,3 +322,18 @@ Use this file to preserve context across sessions.
   - `./scripts/pre-commit.sh` passed (includes run_1/run_2 structure gates).
 - Follow-ups:
   - Monitor fresh CI run on `#144`; close superseded legacy PRs after `#144` merges.
+
+## Update: 2026-03-06 (PR #144 CI Fix: run-2-structure)
+- Author: codex
+- Summary:
+  - Investigated failing CI job `run-2-structure` on PR `#144`.
+  - RCA: `test/ci_test_run_2.sh` used a double-quoted grep pattern intended to match the literal `$PRYSM_CPURL`, but CI env expansion turned it into a concrete URL pattern that cannot match the script source.
+  - Fixed test assertion to use literal fixed-string matches:
+    - `grep -Fq 'checkpoint-sync-url: $PRYSM_CPURL'`
+    - `grep -Fq 'genesis-beacon-api-url: $PRYSM_CPURL'`
+    - and retained legacy guard `! grep -Fq "checkpoint-block"`.
+- Validation:
+  - `./test/run_tests.sh --full` passed (`270 total, 269 passed, 0 failed, 1 skipped`).
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - Re-run PR `#144` CI and confirm `run-2-structure` now passes.
