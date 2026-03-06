@@ -47,6 +47,32 @@ else
     exit 1
 fi
 
+# Test 2b: Verify --help exits before log side effects
+log_info "Test 2b: Verify run_2.sh --help is clean..."
+log_dir="$PROJECT_ROOT/logs"
+before_count=0
+if [[ -d "$log_dir" ]]; then
+    before_count=$(find "$log_dir" -maxdepth 1 -type f -name 'run_2_*.log' | wc -l)
+fi
+
+if bash "$PROJECT_ROOT/run_2.sh" --help | grep -q "Phase 2: client installation"; then
+    log_info "  ✓ --help output is available"
+else
+    log_error "  ✗ run_2.sh --help missing expected output"
+    exit 1
+fi
+
+after_count=0
+if [[ -d "$log_dir" ]]; then
+    after_count=$(find "$log_dir" -maxdepth 1 -type f -name 'run_2_*.log' | wc -l)
+fi
+if [[ "$after_count" -eq "$before_count" ]]; then
+    log_info "  ✓ --help does not create run_2 logs"
+else
+    log_error "  ✗ --help created a run_2 log file"
+    exit 1
+fi
+
 # Test 3: Verify ALL install scripts exist and have valid syntax
 # Covers: execution (7), consensus (6), MEV (3), web (caddy, nginx), utils
 log_info "Test 3: Verify all install scripts (syntax)..."
@@ -171,8 +197,8 @@ fi
 
 # Test 9: Prysm install script must configure checkpoint URL-based sync
 log_info "Test 9: Verify Prysm checkpoint-sync URL configuration..."
-if grep -q "checkpoint-sync-url: \\$PRYSM_CPURL" "$PROJECT_ROOT/install/consensus/prysm.sh" && \
-   grep -q "genesis-beacon-api-url: \\$PRYSM_CPURL" "$PROJECT_ROOT/install/consensus/prysm.sh" && \
+if grep -q "checkpoint-sync-url: \$PRYSM_CPURL" "$PROJECT_ROOT/install/consensus/prysm.sh" && \
+   grep -q "genesis-beacon-api-url: \$PRYSM_CPURL" "$PROJECT_ROOT/install/consensus/prysm.sh" && \
    ! grep -q "checkpoint-block" "$PROJECT_ROOT/install/consensus/prysm.sh"; then
     log_info "  ✓ Prysm script uses checkpoint URL config and no legacy SSZ checkpoint flags"
 else
