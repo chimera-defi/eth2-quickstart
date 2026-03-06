@@ -163,6 +163,24 @@ Use this file to preserve context across sessions.
   - Optional: enable `E2E_PRYSM_CHECKPOINT_SMOKE=true` in one CI matrix Prysm job once runtime stability is confirmed.
   - Optional: tighten to `PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG=true` in CI if log-window reliability is acceptable.
 
+## Update: 2026-03-06 (Lean Recovery of #93/#141 Intent)
+- Author: codex
+- Summary:
+  - Reopened closed PRs `#93` and `#141` so their branches remain active/reviewable while recovering intent in a cleaner implementation.
+  - Implemented a leaner help-flow evolution directly in core scripts:
+    - `run_1.sh`: added early `--help` path before privilege checks.
+    - `run_2.sh`: moved arg/help parsing before log setup to avoid side effects on help calls.
+    - `run_2.sh`: removed stale legacy bootstrap comments and centralized usage text in `print_usage`.
+  - Added regression coverage:
+    - `test/ci_test_run_1.sh` validates `run_1.sh --help` output.
+    - `test/ci_test_run_2.sh` validates `run_2.sh --help` output and asserts no `run_2` log file is created by help.
+  - Kept existing Prysm checkpoint smoke coverage and integrations unchanged.
+- Validation:
+  - `./test/ci_test_run_1.sh` passed.
+  - `./test/run_tests.sh --full` passed (`Total: 280, Passed: 279, Failed: 0, Skipped: 1`).
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - After merging this lean replacement, close `#93`/`#141` again with a superseded-by comment pointing to the replacement PR.
 ## Update: 2026-03-06 (Local Prysm Checkpoint Smoke Validation + Fixes)
 - Author: codex
 - Summary:
@@ -291,3 +309,45 @@ Use this file to preserve context across sessions.
   - `./scripts/pre-commit.sh` passed (`257 passed, 0 failed` in its suite).
 - Follow-ups:
   - Merge `#143` as the single replacement for the three superseded open PRs.
+
+## Update: 2026-03-06 (PR #144 Post-#143 Merge Refresh)
+- Author: codex
+- Summary:
+  - Updated `#144` branch by merging latest `origin/master` after `#143` merged, to avoid stale-base CI and integration/structure drift.
+  - Resolved merge conflict in `docs/agent-handoff.md` while preserving both relevant update entries.
+  - Verified `#144` scoped diff remains limited to:
+    - `run_1.sh`, `run_2.sh`, `test/ci_test_run_1.sh`, `test/ci_test_run_2.sh`, `docs/agent-handoff.md`.
+- Validation:
+  - `./test/run_tests.sh --full` passed (`270 total, 269 passed, 0 failed, 1 skipped`).
+  - `./scripts/pre-commit.sh` passed (includes run_1/run_2 structure gates).
+- Follow-ups:
+  - Monitor fresh CI run on `#144`; close superseded legacy PRs after `#144` merges.
+
+## Update: 2026-03-06 (PR #144 CI Fix: run-2-structure)
+- Author: codex
+- Summary:
+  - Investigated failing CI job `run-2-structure` on PR `#144`.
+  - RCA: `test/ci_test_run_2.sh` used a double-quoted grep pattern intended to match the literal `$PRYSM_CPURL`, but CI env expansion turned it into a concrete URL pattern that cannot match the script source.
+  - Fixed test assertion to use literal fixed-string matches:
+    - `grep -Fq 'checkpoint-sync-url: $PRYSM_CPURL'`
+    - `grep -Fq 'genesis-beacon-api-url: $PRYSM_CPURL'`
+    - and retained legacy guard `! grep -Fq "checkpoint-block"`.
+- Validation:
+  - `./test/run_tests.sh --full` passed (`270 total, 269 passed, 0 failed, 1 skipped`).
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - Re-run PR `#144` CI and confirm `run-2-structure` now passes.
+
+## Update: 2026-03-06 (PR #144 CI Fixes: run-2-structure + shellcheck-extended)
+- Author: codex
+- Summary:
+  - Investigated failing PR `#144` jobs while monitoring CI.
+  - Fixed `run-2-structure` failure root cause in `test/ci_test_run_2.sh`:
+    - assertion now correctly matches literal Prysm config variable references in `install/consensus/prysm.sh`.
+  - Fixed follow-up `shellcheck-extended` failure (`SC2016`) on the same assertions:
+    - switched to double-quoted patterns with escaped `$` for literal matching that passes shellcheck.
+- Validation:
+  - `shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 test/ci_test_run_2.sh` passed.
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - Keep watching `#144` CI and patch quickly if any additional regressions surface.

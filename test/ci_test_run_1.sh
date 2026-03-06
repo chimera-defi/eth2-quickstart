@@ -56,6 +56,15 @@ else
     exit 1
 fi
 
+# Test 3b: Verify --help is accessible without root side effects
+log_info "Test 3b: Verify run_1.sh --help output..."
+if bash "$PROJECT_ROOT/run_1.sh" --help | grep -q "Phase 1: system hardening"; then
+    log_info "  ✓ --help output is available"
+else
+    log_error "  ✗ run_1.sh --help missing expected output"
+    exit 1
+fi
+
 # Test 4: Source common functions and verify they load
 log_info "Test 4: Verify common functions..."
 source_common_functions
