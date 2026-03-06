@@ -1,40 +1,37 @@
 #!/bin/bash
 
 # System Setup Script - Phase 2
-# This script should be run as the non-root user
-# It will install:
-# 1. Geth
-# 2. Prysm
-# 3. Flashbots mev boost builder
-# 4. Nginx without SSL, exposing the geth RPC route. 
-#    (You can run `service nginx stop` to disable this)
-# Note: External ETH1 RPC calls expect SSL so you will have to 
-#       manually run: `sudo su`
-#       Followed by: 
-#       `./install/ssl/install_acme_ssl.sh`  or 
-#       `./install/ssl/install_ssl_certbot.sh` 
-#       to get SSL certs and configure NGINX properly
-#
-# Non-interactive (for CI/testing):
-#   ./run_2.sh --execution=geth --consensus=prysm --mev=mev-boost
-#   ./run_2.sh --execution=besu --consensus=lighthouse --mev=none --skip-deps
+# This script should be run as the non-root user.
+# It installs execution/consensus clients and optional MEV tooling.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 source "$SCRIPT_DIR/exports.sh"
 source "$SCRIPT_DIR/lib/common_functions.sh"
 
-LOG_DIR="$SCRIPT_DIR/logs"
-LOG_FILE="$LOG_DIR/run_2_$(date +%Y%m%d_%H%M%S).log"
-ensure_directory "$LOG_DIR"
-exec > >(tee -a "$LOG_FILE") 2>&1
-log_info "Log file: $LOG_FILE"
+print_usage() {
+    cat <<'EOF'
+Usage: ./run_2.sh [options]
 
-export DEBIAN_FRONTEND=noninteractive
-export DEBIAN_PRIORITY=critical
-export TZ=UTC
+Phase 2: client installation. Run as the configured non-root user after Phase 1 + reboot.
 
-# Parse flags for non-interactive mode
+Options:
+  --execution=NAME   Install execution client (geth, besu, erigon, nethermind, nimbus_eth1, reth, ethrex)
+  --consensus=NAME   Install consensus client (prysm, lighthouse, lodestar, teku, nimbus, grandine)
+  --mev=NAME         Install MEV (mev-boost, commit-boost, none)
+  --ethgas           Install ETHGas with Commit-Boost (requires --mev=commit-boost)
+  --skip-deps        Skip install_dependencies.sh (for CI when deps already installed)
+  --help             Show this help
+
+Examples:
+  ./run_2.sh
+  ./run_2.sh --execution=geth --consensus=prysm --mev=mev-boost
+  ./run_2.sh --execution=besu --consensus=teku --mev=none --skip-deps
+  ./run_2.sh --execution=geth --consensus=prysm --mev=commit-boost --ethgas
+EOF
+}
+
+# Parse flags for non-interactive mode and help before any side effects.
 EXECUTION_CLIENT=""
 CONSENSUS_CLIENT=""
 MEV_FLAG=""
@@ -58,27 +55,23 @@ for arg in "$@"; do
             SKIP_DEPS=true
             ;;
         --help|-h)
-            echo "Usage: $0 [options]"
-            echo ""
-            echo "Options:"
-            echo "  --execution=NAME   Install execution client (geth, besu, erigon, nethermind, nimbus_eth1, reth, ethrex)"
-            echo "  --consensus=NAME   Install consensus client (prysm, lighthouse, lodestar, teku, nimbus, grandine)"
-            echo "  --mev=NAME         Install MEV (mev-boost, commit-boost, none)"
-            echo "  --ethgas           Install ETHGas with Commit-Boost (requires --mev=commit-boost)"
-            echo "  --skip-deps        Skip install_dependencies.sh (for CI when deps already installed)"
-            echo "  --help             Show this help"
-            echo ""
-            echo "Examples:"
-            echo "  $0                                    # Interactive mode"
-            echo "  $0 --execution=geth --consensus=prysm --mev=mev-boost"
-            echo "  $0 --execution=besu --consensus=teku --mev=none --skip-deps"
-            echo "  $0 --execution=geth --consensus=prysm --mev=commit-boost --ethgas"
+            print_usage
             exit 0
             ;;
     esac
 done
 FLAGS_MODE=false
 [[ -n "$EXECUTION_CLIENT" || -n "$CONSENSUS_CLIENT" || -n "$MEV_FLAG" ]] && FLAGS_MODE=true
+
+LOG_DIR="$SCRIPT_DIR/logs"
+LOG_FILE="$LOG_DIR/run_2_$(date +%Y%m%d_%H%M%S).log"
+ensure_directory "$LOG_DIR"
+exec > >(tee -a "$LOG_FILE") 2>&1
+log_info "Log file: $LOG_FILE"
+
+export DEBIAN_FRONTEND=noninteractive
+export DEBIAN_PRIORITY=critical
+export TZ=UTC
 
 # Check if running as correct user (non-root)
 check_user "$LOGIN_UNAME"
@@ -92,16 +85,6 @@ if ! check_system_compatibility; then
 fi
 log_info "This script will install Ethereum clients and services"
 
-# Start syncing prysm and geth
-# Geth takes a day
-# prysm takes 3-5. few hrs w/ the checkpt
-# Slightly faster via the screen cmds
-
-# You may want to run a different cmd via screen for more flexibility and faster sync
-# screen -d -m  geth --syncmode snap --http --http.addr 127.0.0.1 --cache=16384 --ipcdisable --maxpeers 500 --lightkdf --v5disc
-# cd prysm
-# screen -d -m ./prysm.sh beacon-chain --p2p-host-ip=$(curl -s v4.ident.me) --config-file=./prysm_conf_beacon_sync.yaml
-#  ./prysm.sh beacon-chain --checkpoint-block=$PWD/block_mainnet_altair_4620512-0xef9957e6a709223202ab00f4ee2435e1d42042ad35e160563015340df677feb0.ssz --checkpoint-state=$PWD/state_mainnet_altair_4620512-0xc1397f57149c99b3a2166d422a2ee50602e2a2c7da2e31d7ea740216b8fd99ab.ssz --genesis-state=$PWD/genesis.ssz --config-file=$PWD/prysm_beacon_conf.yaml --p2p-host-ip=88.99.65.230
 # Install user-level dependencies (Phase 2 -- no sudo apt-get)
 # System packages were installed by run_1.sh (Phase 1) as root.
 if [[ "$SKIP_DEPS" != "true" ]]; then
