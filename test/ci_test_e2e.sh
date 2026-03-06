@@ -211,7 +211,7 @@ if [[ "$PHASE" == "2" ]]; then
     # Optional live Prysm checkpoint-sync smoke (opt-in).
     if [[ "$E2E_CONS" == "prysm" && "${E2E_PRYSM_CHECKPOINT_SMOKE:-false}" == "true" ]]; then
         log_header "Running Prysm checkpoint-sync smoke test"
-        if ENABLE_PRYSM_CHECKPOINT_SMOKE=true \
+        if sudo HOME="$HOME" ENABLE_PRYSM_CHECKPOINT_SMOKE=true \
             PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG="${PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG:-false}" \
             bash "$PROJECT_ROOT/test/prysm_checkpoint_smoke.sh"; then
             record_test "prysm checkpoint-sync smoke" "PASS"

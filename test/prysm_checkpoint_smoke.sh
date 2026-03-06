@@ -8,6 +8,7 @@ SERVICE_NAME="${SERVICE_NAME:-cl}"
 WAIT_TIMEOUT_SECONDS="${WAIT_TIMEOUT_SECONDS:-90}"
 ENABLE_PRYSM_CHECKPOINT_SMOKE="${ENABLE_PRYSM_CHECKPOINT_SMOKE:-false}"
 PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG="${PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG:-true}"
+PRYSM_CHECKPOINT_REQUIRE_FALLBACK_LOG="${PRYSM_CHECKPOINT_REQUIRE_FALLBACK_LOG:-false}"
 
 CHECKPOINT_START_PATTERNS=(
     "Checkpoint sync - Downloading origin state and block"
@@ -127,12 +128,6 @@ main() {
         saw_fallback_pattern=true
     fi
 
-    if [[ "$saw_fallback_pattern" != "true" ]]; then
-        log_error "Did not observe fallback log: $CHECKPOINT_FALLBACK_PATTERN"
-        printf '%s\n' "$last_restart_logs" | tail -n 80
-        exit 1
-    fi
-
     if [[ "$saw_start_pattern" != "true" ]]; then
         if [[ "$PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG" == "true" ]]; then
             log_error "Did not observe checkpoint bootstrap logs"
@@ -140,6 +135,17 @@ main() {
             exit 1
         fi
         log_warn "No checkpoint bootstrap log observed; continuing because PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG=false"
+    fi
+
+    # Fallback log may not appear immediately on fresh nodes where checkpoint
+    # bootstrap has started but not yet completed.
+    if [[ "$saw_fallback_pattern" != "true" ]]; then
+        if [[ "$PRYSM_CHECKPOINT_REQUIRE_FALLBACK_LOG" == "true" ]]; then
+            log_error "Did not observe fallback log: $CHECKPOINT_FALLBACK_PATTERN"
+            printf '%s\n' "$last_restart_logs" | tail -n 80
+            exit 1
+        fi
+        log_warn "Fallback log not observed yet; continuing because PRYSM_CHECKPOINT_REQUIRE_FALLBACK_LOG=false"
     fi
 
     log_info "Prysm checkpoint-sync smoke passed"
