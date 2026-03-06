@@ -337,3 +337,17 @@ Use this file to preserve context across sessions.
   - `./scripts/pre-commit.sh` passed.
 - Follow-ups:
   - Re-run PR `#144` CI and confirm `run-2-structure` now passes.
+
+## Update: 2026-03-06 (PR #144 CI Fixes: run-2-structure + shellcheck-extended)
+- Author: codex
+- Summary:
+  - Investigated failing PR `#144` jobs while monitoring CI.
+  - Fixed `run-2-structure` failure root cause in `test/ci_test_run_2.sh`:
+    - assertion now correctly matches literal Prysm config variable references in `install/consensus/prysm.sh`.
+  - Fixed follow-up `shellcheck-extended` failure (`SC2016`) on the same assertions:
+    - switched to double-quoted patterns with escaped `$` for literal matching that passes shellcheck.
+- Validation:
+  - `shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 test/ci_test_run_2.sh` passed.
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - Keep watching `#144` CI and patch quickly if any additional regressions surface.
