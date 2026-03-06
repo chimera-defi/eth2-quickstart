@@ -208,6 +208,20 @@ if [[ "$PHASE" == "2" ]]; then
         _verify_service_active "validator" 60
     fi
 
+    # Optional live Prysm checkpoint-sync smoke (opt-in).
+    if [[ "$E2E_CONS" == "prysm" && "${E2E_PRYSM_CHECKPOINT_SMOKE:-false}" == "true" ]]; then
+        log_header "Running Prysm checkpoint-sync smoke test"
+        if sudo HOME="$HOME" ENABLE_PRYSM_CHECKPOINT_SMOKE=true \
+            PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG="${PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG:-false}" \
+            bash "$PROJECT_ROOT/test/prysm_checkpoint_smoke.sh"; then
+            record_test "prysm checkpoint-sync smoke" "PASS"
+        else
+            record_test "prysm checkpoint-sync smoke" "FAIL"
+            print_test_summary
+            exit 1
+        fi
+    fi
+
     # Caddy and Nginx — always install in Docker E2E (no skip)
     log_header "Installing and verifying Caddy"
     if ! run_script_with_log "/tmp/caddy_e2e_$$.log" "$PROJECT_ROOT/install/web/install_caddy.sh"; then

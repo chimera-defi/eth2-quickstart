@@ -123,3 +123,51 @@ Use this file to preserve context across sessions.
   - `cd frontend && bun run build` passed.
 - Follow-ups:
   - Optional: add installer end-to-end smoke execution in CI (beyond current structure and interaction checks).
+
+## Update: 2026-03-06 (Local Prysm Checkpoint Smoke Validation + Fixes)
+- Author: codex
+- Summary:
+  - Performed live local validation of Prysm checkpoint smoke behavior inside systemd Docker E2E containers using current workspace bind mounts.
+  - Found and fixed smoke execution privilege issue in `test/ci_test_e2e.sh`:
+    - smoke hook now runs via `sudo` and preserves caller `HOME` to avoid looking under `/root` for Prysm config.
+  - Found and fixed wrapper env propagation gap in `test/run_e2e.sh`:
+    - now forwards `E2E_PRYSM_CHECKPOINT_SMOKE`,
+    - `PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG`,
+    - `PRYSM_CHECKPOINT_REQUIRE_FALLBACK_LOG`.
+  - Improved `test/prysm_checkpoint_smoke.sh` behavior for fresh-node timing:
+    - added `PRYSM_CHECKPOINT_REQUIRE_FALLBACK_LOG` (default `false`),
+    - allows pass when checkpoint bootstrap evidence exists even if fallback log has not appeared yet.
+  - Executed explicit cleanup after runs:
+    - removed temporary E2E containers,
+    - pruned dangling Docker build layers (~2.56GB reclaimed),
+    - removed generated temporary `run_2` logs from validation loops.
+- Validation:
+  - Focused live run succeeded with patched flow:
+    - `/workspace/run_2.sh --execution=geth --consensus=prysm --mev=mev-boost --skip-deps`
+    - `sudo HOME=\"$HOME\" ENABLE_PRYSM_CHECKPOINT_SMOKE=true PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG=false /workspace/test/prysm_checkpoint_smoke.sh`
+    - output included: `Prysm checkpoint-sync smoke passed`.
+  - `bash -n test/ci_test_e2e.sh test/prysm_checkpoint_smoke.sh test/run_e2e.sh` passed.
+- Follow-ups:
+  - Optional: add a lightweight CI path that mounts workspace into the E2E container for faster script-iteration validation without full image rebuild.
+
+## Update: 2026-03-06 (Prysm Checkpoint Live Smoke Test)
+- Author: codex
+- Summary:
+  - Added `test/prysm_checkpoint_smoke.sh`, an opt-in live smoke test for Prysm checkpoint-sync behavior that:
+    - verifies `checkpoint-sync-url` and `genesis-beacon-api-url` are configured,
+    - restarts `cl.service` and inspects journal logs for checkpoint bootstrap indicators,
+    - verifies fallback behavior via: `Origin checkpoint found in the database, ignoring checkpoint sync flags`.
+  - Integrated the smoke into phase-2 E2E as an explicit opt-in path for Prysm:
+    - `test/ci_test_e2e.sh` now runs the smoke when `E2E_CONS=prysm` and `E2E_PRYSM_CHECKPOINT_SMOKE=true`.
+    - default E2E wiring sets `PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG=false` for resilience in short CI log windows.
+  - Integrated the smoke into local full test runner as optional:
+    - `test/run_tests.sh` reports PASS/SKIP/FAIL for `prysm_checkpoint_smoke.sh` based on env and prerequisites.
+  - Updated testing docs in `test/README.md` with usage and env flags for the new smoke test.
+- Validation:
+  - `bash -n test/prysm_checkpoint_smoke.sh test/ci_test_e2e.sh test/run_tests.sh` passed.
+  - `ENABLE_PRYSM_CHECKPOINT_SMOKE=true bash test/prysm_checkpoint_smoke.sh` returned expected `SKIP` in this workspace (`cl.service` not installed).
+  - `./test/run_tests.sh --full` passed (`Total: 280, Passed: 279, Failed: 0, Skipped: 1`).
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - Optional: enable `E2E_PRYSM_CHECKPOINT_SMOKE=true` in one CI matrix Prysm job once runtime stability is confirmed.
+  - Optional: tighten to `PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG=true` in CI if log-window reliability is acceptable.

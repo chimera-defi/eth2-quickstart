@@ -72,6 +72,7 @@ test/
 ├── run_tests.sh            # Test runner for local (supports mocks)
 ├── ci_test_run_1.sh        # run_1 structure validation
 ├── ci_test_run_1_e2e.sh    # run_1 E2E (executes run_1.sh, verifies results)
+├── prysm_checkpoint_smoke.sh # Optional live Prysm checkpoint-sync smoke
 ├── run_e2e.sh             # Wrapper: Docker + systemd + ci_test_e2e.sh (--phase=1|2)
 ├── lib/
 │   ├── mock_functions.sh   # Mock implementations for safe local testing
@@ -90,6 +91,7 @@ test/
 6. **System integration** - Real apt, ufw, systemctl calls (Docker only)
 7. **Install script structure** - Proper shebang, sources, patterns
 8. **run_1 E2E** - Actually executes run_1.sh and verifies user creation, SSH, firewall, handoff file, etc.
+9. **Optional Prysm checkpoint smoke** - Verifies checkpoint bootstrap/fallback log behavior for Prysm (`test/prysm_checkpoint_smoke.sh`)
 
 ## CI Integration
 
@@ -113,6 +115,10 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
   - MEV-Boost: `_verify_service_active "mev"` when E2E_MEV=mev-boost
   - Commit-Boost: PBS, signer, ETHGas (if present)
 - **Caddy/Nginx**: Always installed and verified in Docker E2E (no skip)
+- **Prysm checkpoint smoke (optional)**:
+  - enable with `E2E_PRYSM_CHECKPOINT_SMOKE=true` when `E2E_CONS=prysm`
+  - strict mode (`PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG=true`) requires explicit checkpoint bootstrap log evidence
+  - default E2E smoke mode uses `PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG=false` to reduce false negatives from short log windows
 
 ### CI_E2E Skips (Infrastructure-Required Only)
 
@@ -155,6 +161,9 @@ docker run --rm --privileged --user root eth-node-test /workspace/test/ci_test_r
 
 # Test run_2.sh (as testuser)
 docker run --rm --privileged eth-node-test /workspace/test/ci_test_run_2.sh
+
+# Optional: run phase-2 E2E with Prysm checkpoint smoke enabled
+E2E_CONSENSUS=prysm E2E_PRYSM_CHECKPOINT_SMOKE=true ./test/run_e2e.sh --phase=2
 ```
 
 ### Local non-root note for `ci_test_run_2.sh`
