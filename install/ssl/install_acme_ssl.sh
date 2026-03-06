@@ -29,7 +29,7 @@ fi
 
 # Install NGINX first
 log_info "Installing NGINX..."
-if ! ./install_nginx.sh; then
+if ! ./install/web/install_nginx.sh; then
     log_error "Failed to install NGINX"
     exit 1
 fi
@@ -79,7 +79,7 @@ fi
 
 # Configure NGINX with SSL
 log_info "Configuring NGINX with SSL..."
-if ! ./install_nginx_ssl.sh; then
+if ! ./install/web/install_nginx_ssl.sh; then
     log_error "Failed to configure NGINX with SSL"
     exit 1
 fi

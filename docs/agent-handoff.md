@@ -240,3 +240,33 @@ Use this file to preserve context across sessions.
   - `./scripts/pre-commit.sh` passed.
 - Follow-ups:
   - `install/examples/run_prysm_checkpt_sync.sh` appears unreferenced by repo call-sites but was retained as a user-facing example script.
+
+## Update: 2026-03-06 (Prysm Checkpoint Sync Audit + Legacy Cleanup)
+- Author: codex
+- Summary:
+  - Audited current Prysm checkpoint-sync behavior against upstream source and confirmed checkpoint sync is URL-flag driven (`--checkpoint-sync-url`), not an always-on mode.
+  - Confirmed expected startup behavior in Prysm code paths:
+    - checkpoint initializer runs when checkpoint URL is configured,
+    - on subsequent runs with origin already present, Prysm ignores checkpoint bootstrap flags and continues normal sync flow.
+  - Removed obsolete legacy helper script:
+    - deleted `install/examples/run_prysm_checkpt_sync.sh` (old checkpoint SSZ flow).
+  - Cleaned stale docs and script references to match current repo behavior:
+    - refreshed Prysm checkpoint wording and script paths in `README.md`.
+    - updated old utility/web/ssl script paths and checkpoint wording in `docs/WORKFLOW.md`.
+    - removed stale `checkpoint_ssz` and obsolete Prysm sync config references in `docs/CONFIGURATION_GUIDE.md`.
+    - updated SSL script references in `docs/SCRIPTS.md`.
+  - Fixed broken internal script calls in:
+    - `install/ssl/install_acme_ssl.sh`
+    - `install/ssl/install_ssl_certbot.sh`
+    so they call canonical `install/web/*` scripts.
+  - Removed stale historical comment block from `run_2.sh` (old manual checkpoint SSZ usage notes).
+  - Added regression tests in `test/ci_test_run_2.sh`:
+    - verify Prysm uses `checkpoint-sync-url` + `genesis-beacon-api-url` from `PRYSM_CPURL`.
+    - verify no legacy `checkpoint-block` reference remains.
+    - verify SSL scripts reference canonical `install/web/*` paths.
+- Validation:
+  - `./test/run_tests.sh --full` passed (`Total tests run: 276, Passed: 276, Failed: 0`).
+  - `./scripts/pre-commit.sh` passed.
+  - Active-repo stale reference sweep passed (legacy mentions only remain under `docs/archive/`).
+- Follow-ups:
+  - Optional: add an explicit CI assertion that no active docs outside `docs/archive/` reference removed legacy scripts/files.
