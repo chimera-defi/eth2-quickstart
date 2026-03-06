@@ -92,16 +92,6 @@ if ! check_system_compatibility; then
 fi
 log_info "This script will install Ethereum clients and services"
 
-# Start syncing prysm and geth
-# Geth takes a day
-# prysm takes 3-5. few hrs w/ the checkpt
-# Slightly faster via the screen cmds
-
-# You may want to run a different cmd via screen for more flexibility and faster sync
-# screen -d -m  geth --syncmode snap --http --http.addr 127.0.0.1 --cache=16384 --ipcdisable --maxpeers 500 --lightkdf --v5disc
-# cd prysm
-# screen -d -m ./prysm.sh beacon-chain --p2p-host-ip=$(curl -s v4.ident.me) --config-file=./prysm_conf_beacon_sync.yaml
-#  ./prysm.sh beacon-chain --checkpoint-block=$PWD/block_mainnet_altair_4620512-0xef9957e6a709223202ab00f4ee2435e1d42042ad35e160563015340df677feb0.ssz --checkpoint-state=$PWD/state_mainnet_altair_4620512-0xc1397f57149c99b3a2166d422a2ee50602e2a2c7da2e31d7ea740216b8fd99ab.ssz --genesis-state=$PWD/genesis.ssz --config-file=$PWD/prysm_beacon_conf.yaml --p2p-host-ip=88.99.65.230
 # Install user-level dependencies (Phase 2 -- no sudo apt-get)
 # System packages were installed by run_1.sh (Phase 1) as root.
 if [[ "$SKIP_DEPS" != "true" ]]; then
