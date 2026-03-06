@@ -309,3 +309,16 @@ Use this file to preserve context across sessions.
   - `./scripts/pre-commit.sh` passed (`257 passed, 0 failed` in its suite).
 - Follow-ups:
   - Merge `#143` as the single replacement for the three superseded open PRs.
+
+## Update: 2026-03-06 (PR #144 Post-#143 Merge Refresh)
+- Author: codex
+- Summary:
+  - Updated `#144` branch by merging latest `origin/master` after `#143` merged, to avoid stale-base CI and integration/structure drift.
+  - Resolved merge conflict in `docs/agent-handoff.md` while preserving both relevant update entries.
+  - Verified `#144` scoped diff remains limited to:
+    - `run_1.sh`, `run_2.sh`, `test/ci_test_run_1.sh`, `test/ci_test_run_2.sh`, `docs/agent-handoff.md`.
+- Validation:
+  - `./test/run_tests.sh --full` passed (`270 total, 269 passed, 0 failed, 1 skipped`).
+  - `./scripts/pre-commit.sh` passed (includes run_1/run_2 structure gates).
+- Follow-ups:
+  - Monitor fresh CI run on `#144`; close superseded legacy PRs after `#144` merges.
