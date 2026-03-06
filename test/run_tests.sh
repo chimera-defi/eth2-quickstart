@@ -564,6 +564,23 @@ run_integration_tests() {
             log_test "FAIL" "test_mev_implementations.sh: syntax error"
         fi
     fi
+
+    log_subheader "Optional live smoke tests"
+    if [[ -f "$SCRIPT_DIR/prysm_checkpoint_smoke.sh" ]]; then
+        if [[ "${ENABLE_PRYSM_CHECKPOINT_SMOKE:-false}" != "true" ]]; then
+            log_test "SKIP" "prysm_checkpoint_smoke.sh: set ENABLE_PRYSM_CHECKPOINT_SMOKE=true"
+        else
+            set +e
+            ENABLE_PRYSM_CHECKPOINT_SMOKE=true bash "$SCRIPT_DIR/prysm_checkpoint_smoke.sh"
+            local smoke_rc=$?
+            set -e
+            case "$smoke_rc" in
+                0) log_test "PASS" "prysm_checkpoint_smoke.sh: checkpoint behavior verified" ;;
+                2) log_test "SKIP" "prysm_checkpoint_smoke.sh: prerequisites not met" ;;
+                *) log_test "FAIL" "prysm_checkpoint_smoke.sh: failed" ;;
+            esac
+        fi
+    fi
     
     # Print mock summary
     print_mock_summary
