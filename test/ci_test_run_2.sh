@@ -195,6 +195,29 @@ else
     log_info "  ✓ Besu config does not include deprecated fast-sync-min-peers"
 fi
 
+# Test 9: Prysm install script must configure checkpoint URL-based sync
+log_info "Test 9: Verify Prysm checkpoint-sync URL configuration..."
+if grep -q "checkpoint-sync-url: \\$PRYSM_CPURL" "$PROJECT_ROOT/install/consensus/prysm.sh" && \
+   grep -q "genesis-beacon-api-url: \\$PRYSM_CPURL" "$PROJECT_ROOT/install/consensus/prysm.sh" && \
+   ! grep -q "checkpoint-block" "$PROJECT_ROOT/install/consensus/prysm.sh"; then
+    log_info "  ✓ Prysm script uses checkpoint URL config and no legacy SSZ checkpoint flags"
+else
+    log_error "  ✗ Prysm script checkpoint sync config is missing or contains legacy SSZ flag usage"
+    exit 1
+fi
+
+# Test 10: SSL scripts should call canonical install/web paths
+log_info "Test 10: Verify SSL script path correctness..."
+if grep -q "./install/web/install_nginx.sh" "$PROJECT_ROOT/install/ssl/install_acme_ssl.sh" && \
+   grep -q "./install/web/install_nginx_ssl.sh" "$PROJECT_ROOT/install/ssl/install_acme_ssl.sh" && \
+   grep -q "./install/web/install_nginx.sh" "$PROJECT_ROOT/install/ssl/install_ssl_certbot.sh" && \
+   grep -q "./install/web/install_nginx_ssl.sh" "$PROJECT_ROOT/install/ssl/install_ssl_certbot.sh"; then
+    log_info "  ✓ SSL scripts use canonical install/web script paths"
+else
+    log_error "  ✗ SSL scripts contain stale nginx script paths"
+    exit 1
+fi
+
 log_info "╔════════════════════════════════════════════════════════════════╗"
 log_info "║  run_2.sh - Structure PASSED                                  ║"
 log_info "║  Full E2E: ./test/run_e2e.sh --phase=2                        ║"

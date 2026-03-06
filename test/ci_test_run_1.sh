@@ -346,6 +346,14 @@ else
     exit 1
 fi
 
+# Verify installer explicitly guards missing download tools.
+if grep -q "Neither curl nor wget is installed" "$PROJECT_ROOT/install.sh"; then
+    log_info "  install.sh fails fast when neither curl nor wget is available"
+else
+    log_error "  install.sh must guard for missing curl/wget prerequisites!"
+    exit 1
+fi
+
 # Test 27: Verify install.sh auto-fallbacks to non-interactive for piped stdin
 log_info "Test 27: Verify install.sh auto-fallback for curl|bash..."
 if grep -qE -- '!\s*-t 0' "$PROJECT_ROOT/install.sh" && grep -q "NON_INTERACTIVE=true" "$PROJECT_ROOT/install.sh"; then

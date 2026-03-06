@@ -36,16 +36,16 @@ nano exports.sh
 ```bash
 sudo systemctl start eth1 cl validator mev
 sudo systemctl status eth1 cl validator mev --no-pager
-./extra_utils/stats.sh
+./install/utils/stats.sh
 ```
 
 7) Optional: Public RPC with Nginx + SSL
 ```bash
-./install_nginx.sh                  # HTTP only, local testing
+./install/web/install_nginx.sh                  # HTTP only, local testing
 # or, with SSL (run as root via sudo su):
-./install_acme_ssl.sh               # Preferred (acme.sh)
+./install/ssl/install_acme_ssl.sh               # Preferred (acme.sh)
 # or
-./install_ssl_certbot.sh            # Certbot manual DNS
+./install/ssl/install_ssl_certbot.sh            # Certbot manual DNS
 ```
 Test locally:
 ```bash
@@ -55,13 +55,13 @@ curl -X POST http://$(curl -s v4.ident.me)/rpc \
 ```
 
 8) Sync tips
-- Prysm supports checkpoint sync via `prysm_beacon_conf.yaml` (already set from `PRYSM_CPURL`)
-- To resync from included SSZ files (optional), stop CL/validator, run one-time `prysm.sh beacon-chain` with the provided `--checkpoint-*` flags, then `systemctl restart cl validator`
+- Prysm checkpoint sync is configured via `prysm_beacon_conf.yaml` from `PRYSM_CPURL`
+- On first boot, Prysm uses checkpoint sync origin data, then continues normal sync/backfill behavior
 
 9) Routine operations
 - Start/stop: `sudo systemctl [start|stop|restart|status] eth1 cl validator mev`
-- Refresh all: `./extra_utils/refresh.sh`
-- Update stack: `./extra_utils/update.sh`
+- Refresh all: `./install/utils/refresh.sh`
+- Update stack: `./install/utils/update.sh`
 
 10) Security verification
 - Run security verification: `./docs/verify_security.sh`
@@ -74,4 +74,3 @@ curl -X POST http://$(curl -s v4.ident.me)/rpc \
 - UFW denies inbound 8545/8551 by default; expose RPC only via Nginx if needed
 - Consider disabling root SSH login after confirming stability
 - All services bind to localhost only for security
-

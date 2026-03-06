@@ -124,31 +124,22 @@ Use this file to preserve context across sessions.
 - Follow-ups:
   - Optional: add installer end-to-end smoke execution in CI (beyond current structure and interaction checks).
 
-## Update: 2026-03-06 (Local Prysm Checkpoint Smoke Validation + Fixes)
+## Update: 2026-03-05 (Recreated PR: Installer/CI Hardening)
 - Author: codex
-- Summary:
-  - Performed live local validation of Prysm checkpoint smoke behavior inside systemd Docker E2E containers using current workspace bind mounts.
-  - Found and fixed smoke execution privilege issue in `test/ci_test_e2e.sh`:
-    - smoke hook now runs via `sudo` and preserves caller `HOME` to avoid looking under `/root` for Prysm config.
-  - Found and fixed wrapper env propagation gap in `test/run_e2e.sh`:
-    - now forwards `E2E_PRYSM_CHECKPOINT_SMOKE`,
-    - `PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG`,
-    - `PRYSM_CHECKPOINT_REQUIRE_FALLBACK_LOG`.
-  - Improved `test/prysm_checkpoint_smoke.sh` behavior for fresh-node timing:
-    - added `PRYSM_CHECKPOINT_REQUIRE_FALLBACK_LOG` (default `false`),
-    - allows pass when checkpoint bootstrap evidence exists even if fallback log has not appeared yet.
-  - Executed explicit cleanup after runs:
-    - removed temporary E2E containers,
-    - pruned dangling Docker build layers (~2.56GB reclaimed),
-    - removed generated temporary `run_2` logs from validation loops.
+- Why:
+  - Recreated previously stale PR #131 as a clean branch on latest `origin/master` after superseded PR cleanup.
+  - Preserved only the unique hardening changes that were not yet merged.
+- Changes:
+  - `install.sh`: fail fast with explicit error if neither `curl` nor `wget` is installed.
+  - `.github/actions/docker-prep/action.yml`: if GHCR pull retries all fail, fallback to local build from `test/Dockerfile`.
+  - `.github/workflows/ci.yml`: normalized top-level comments for consistency/readability.
+  - `scripts/eth2qs.sh`: clearer error when command target is missing or not executable.
+  - `test/ci_test_run_1.sh`: regression guard for explicit missing `curl/wget` check in installer.
 - Validation:
-  - Focused live run succeeded with patched flow:
-    - `/workspace/run_2.sh --execution=geth --consensus=prysm --mev=mev-boost --skip-deps`
-    - `sudo HOME=\"$HOME\" ENABLE_PRYSM_CHECKPOINT_SMOKE=true PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG=false /workspace/test/prysm_checkpoint_smoke.sh`
-    - output included: `Prysm checkpoint-sync smoke passed`.
-  - `bash -n test/ci_test_e2e.sh test/prysm_checkpoint_smoke.sh test/run_e2e.sh` passed.
+  - `./test/run_tests.sh --full` passed (`279 passed, 0 failed`).
+  - `./scripts/pre-commit.sh` passed.
 - Follow-ups:
-  - Optional: add a lightweight CI path that mounts workspace into the E2E container for faster script-iteration validation without full image rebuild.
+  - Monitor CI runtime impact from docker-prep local-build fallback on GHCR outage scenarios.
 
 ## Update: 2026-03-06 (Prysm Checkpoint Live Smoke Test)
 - Author: codex
@@ -190,3 +181,131 @@ Use this file to preserve context across sessions.
   - `./scripts/pre-commit.sh` passed.
 - Follow-ups:
   - After merging this lean replacement, close `#93`/`#141` again with a superseded-by comment pointing to the replacement PR.
+## Update: 2026-03-06 (Local Prysm Checkpoint Smoke Validation + Fixes)
+- Author: codex
+- Summary:
+  - Performed live local validation of Prysm checkpoint smoke behavior inside systemd Docker E2E containers using current workspace bind mounts.
+  - Found and fixed smoke execution privilege issue in `test/ci_test_e2e.sh`:
+    - smoke hook now runs via `sudo` and preserves caller `HOME` to avoid looking under `/root` for Prysm config.
+  - Found and fixed wrapper env propagation gap in `test/run_e2e.sh`:
+    - now forwards `E2E_PRYSM_CHECKPOINT_SMOKE`,
+    - `PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG`,
+    - `PRYSM_CHECKPOINT_REQUIRE_FALLBACK_LOG`.
+  - Improved `test/prysm_checkpoint_smoke.sh` behavior for fresh-node timing:
+    - added `PRYSM_CHECKPOINT_REQUIRE_FALLBACK_LOG` (default `false`),
+    - allows pass when checkpoint bootstrap evidence exists even if fallback log has not appeared yet.
+  - Executed explicit cleanup after runs:
+    - removed temporary E2E containers,
+    - pruned dangling Docker build layers (~2.56GB reclaimed),
+    - removed generated temporary `run_2` logs from validation loops.
+- Validation:
+  - Focused live run succeeded with patched flow:
+    - `/workspace/run_2.sh --execution=geth --consensus=prysm --mev=mev-boost --skip-deps`
+    - `sudo HOME="$HOME" ENABLE_PRYSM_CHECKPOINT_SMOKE=true PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG=false /workspace/test/prysm_checkpoint_smoke.sh`
+    - output included: `Prysm checkpoint-sync smoke passed`.
+  - `bash -n test/ci_test_e2e.sh test/prysm_checkpoint_smoke.sh test/run_e2e.sh` passed.
+- Follow-ups:
+  - Optional: add a lightweight CI path that mounts workspace into the E2E container for faster script-iteration validation without full image rebuild.
+
+## Update: 2026-03-05 (Lean Pass: Archive Bloat Prune)
+- Author: codex
+- Why:
+  - User requested a new audit pass to reduce repository code/docs/artifacts without changing functionality.
+  - Archived frontend prompt/task/review artifacts and stale report files were dominating context with low current value.
+- Changes:
+  - Pruned stale archive artifacts:
+    - removed large historical files under `docs/archive/frontend/` (prompt packs, task trackers, review/progress/marketing/spec docs).
+    - removed stale one-off reports under `docs/archive/reports/` (`CI_RCA_BEACON_CONNECTION.md`, `CI_TROUBLESHOOTING.md`, `MULTI_PASS_REVIEW.md`, `PR_86_DESCRIPTION.md`, `progress_2026-02-16.md`, `task.md`).
+  - Added concise replacement index: `docs/archive/frontend/README.md`.
+  - Updated `docs/archive/README.md` wording to reflect pruned archive structure.
+  - Reduced CI workflow comment noise in `.github/workflows/ci.yml` without changing behavior.
+- Size impact:
+  - Net reduction: `-5520` lines (`4` added, `5524` deleted).
+- Validation:
+  - `./test/run_tests.sh --full` passed (`279 passed, 0 failed`).
+  - `./scripts/pre-commit.sh` passed.
+  - `cd frontend && bun run lint` passed.
+  - `cd frontend && bun run test` passed (`30 passed`).
+  - `cd frontend && bun run build` passed.
+- Follow-ups:
+  - Optional: prune additional archive files with the same rule (keep active docs + concise archive indexes, rely on git history for deep historical artifacts).
+
+## Update: 2026-03-06 (Multipass Consolidated Reduction)
+- Author: codex
+- Why:
+  - User requested additional multi-pass reduction and an explicit merge/close recommendation.
+  - `master` had not yet merged PRs #137/#138, and archive context bloat remained high.
+- Passes applied:
+  - Pass 1: consolidated already-validated reductions from #137/#138 (archive/frontend and reports pruning + dead script/template removals).
+  - Pass 2: pruned remaining unreferenced root archive artifacts and retained compact indexes only.
+  - Pass 3: re-ran dead-code scan for shell surfaces and validated behavior remains unchanged.
+- Changes:
+  - Added compact archive indexes:
+    - `docs/archive/README.md` (rewritten as minimal index)
+    - `docs/archive/reports/README.md` (new)
+  - Removed stale root archive artifacts:
+    - `docs/archive/AGENT_CONTEXT.md`
+    - `docs/archive/AGENT_HANDOFF.md`
+    - `docs/archive/DOCUMENTATION_CONSOLIDATION_SUMMARY.md`
+    - `docs/archive/INSTALL_SCRIPTS_REVIEW.md`
+    - `docs/archive/PRYSM_FLAGS_ANALYSIS.md`
+    - `docs/archive/REFACTORING_AUDIT_REPORT.md`
+    - `docs/archive/SHELL_SCRIPT_TEST_RESULTS.md`
+    - `docs/archive/progress.md`
+    - `docs/archive/reports/LOCAL_VERIFICATION_CHECKLIST.md`
+- Validation:
+  - `./test/run_tests.sh --full` passed (`272 passed, 0 failed`).
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - `install/examples/run_prysm_checkpt_sync.sh` appears unreferenced by repo call-sites but was retained as a user-facing example script.
+
+## Update: 2026-03-06 (Prysm Checkpoint Sync Audit + Legacy Cleanup)
+- Author: codex
+- Summary:
+  - Audited current Prysm checkpoint-sync behavior against upstream source and confirmed checkpoint sync is URL-flag driven (`--checkpoint-sync-url`), not an always-on mode.
+  - Confirmed expected startup behavior in Prysm code paths:
+    - checkpoint initializer runs when checkpoint URL is configured,
+    - on subsequent runs with origin already present, Prysm ignores checkpoint bootstrap flags and continues normal sync flow.
+  - Removed obsolete legacy helper script:
+    - deleted `install/examples/run_prysm_checkpt_sync.sh` (old checkpoint SSZ flow).
+  - Cleaned stale docs and script references to match current repo behavior:
+    - refreshed Prysm checkpoint wording and script paths in `README.md`.
+    - updated old utility/web/ssl script paths and checkpoint wording in `docs/WORKFLOW.md`.
+    - removed stale `checkpoint_ssz` and obsolete Prysm sync config references in `docs/CONFIGURATION_GUIDE.md`.
+    - updated SSL script references in `docs/SCRIPTS.md`.
+  - Fixed broken internal script calls in:
+    - `install/ssl/install_acme_ssl.sh`
+    - `install/ssl/install_ssl_certbot.sh`
+    so they call canonical `install/web/*` scripts.
+  - Removed stale historical comment block from `run_2.sh` (old manual checkpoint SSZ usage notes).
+  - Added regression tests in `test/ci_test_run_2.sh`:
+    - verify Prysm uses `checkpoint-sync-url` + `genesis-beacon-api-url` from `PRYSM_CPURL`.
+    - verify no legacy `checkpoint-block` reference remains.
+    - verify SSL scripts reference canonical `install/web/*` paths.
+- Validation:
+  - `./test/run_tests.sh --full` passed (`Total tests run: 276, Passed: 276, Failed: 0`).
+  - `./scripts/pre-commit.sh` passed.
+  - Active-repo stale reference sweep passed (legacy mentions only remain under `docs/archive/`).
+- Follow-ups:
+  - Optional: add an explicit CI assertion that no active docs outside `docs/archive/` reference removed legacy scripts/files.
+
+## Update: 2026-03-06 (Consolidated PR for #136/#139/#140)
+- Author: codex
+- Why:
+  - User requested merging the remaining open cleanup/refactor PRs into a single, up-to-date PR on latest `master`.
+- Changes:
+  - Created consolidation branch from latest `origin/master`:
+    - `chore/consolidate-136-139-140-20260306`
+  - Cherry-picked and conflict-resolved validated commits from:
+    - PR `#136` (installer prereq/docker prep hardening)
+    - PR `#139` (multi-pass archive/code reduction)
+    - PR `#140` (Prysm checkpoint legacy cleanup and related docs/tests)
+  - Opened consolidated PR:
+    - `#143` `chore: consolidate #136, #139, #140 on latest master`
+  - Closed superseded PRs:
+    - `#136`, `#139`, `#140`
+- Validation:
+  - `./test/run_tests.sh --full` passed (`270 passed, 0 failed, 1 skipped`).
+  - `./scripts/pre-commit.sh` passed (`257 passed, 0 failed` in its suite).
+- Follow-ups:
+  - Merge `#143` as the single replacement for the three superseded open PRs.
