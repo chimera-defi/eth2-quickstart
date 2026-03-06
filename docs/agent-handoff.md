@@ -171,3 +171,22 @@ Use this file to preserve context across sessions.
 - Follow-ups:
   - Optional: enable `E2E_PRYSM_CHECKPOINT_SMOKE=true` in one CI matrix Prysm job once runtime stability is confirmed.
   - Optional: tighten to `PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG=true` in CI if log-window reliability is acceptable.
+
+## Update: 2026-03-06 (Lean Recovery of #93/#141 Intent)
+- Author: codex
+- Summary:
+  - Reopened closed PRs `#93` and `#141` so their branches remain active/reviewable while recovering intent in a cleaner implementation.
+  - Implemented a leaner help-flow evolution directly in core scripts:
+    - `run_1.sh`: added early `--help` path before privilege checks.
+    - `run_2.sh`: moved arg/help parsing before log setup to avoid side effects on help calls.
+    - `run_2.sh`: removed stale legacy bootstrap comments and centralized usage text in `print_usage`.
+  - Added regression coverage:
+    - `test/ci_test_run_1.sh` validates `run_1.sh --help` output.
+    - `test/ci_test_run_2.sh` validates `run_2.sh --help` output and asserts no `run_2` log file is created by help.
+  - Kept existing Prysm checkpoint smoke coverage and integrations unchanged.
+- Validation:
+  - `./test/ci_test_run_1.sh` passed.
+  - `./test/run_tests.sh --full` passed (`Total: 280, Passed: 279, Failed: 0, Skipped: 1`).
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - After merging this lean replacement, close `#93`/`#141` again with a superseded-by comment pointing to the replacement PR.
