@@ -146,3 +146,32 @@ Use this file to preserve context across sessions.
   - `cd frontend && bun run build` passed.
 - Follow-ups:
   - Optional: prune additional archive files with the same rule (keep active docs + concise archive indexes, rely on git history for deep historical artifacts).
+
+## Update: 2026-03-06 (Multipass Consolidated Reduction)
+- Author: codex
+- Why:
+  - User requested additional multi-pass reduction and an explicit merge/close recommendation.
+  - `master` had not yet merged PRs #137/#138, and archive context bloat remained high.
+- Passes applied:
+  - Pass 1: consolidated already-validated reductions from #137/#138 (archive/frontend and reports pruning + dead script/template removals).
+  - Pass 2: pruned remaining unreferenced root archive artifacts and retained compact indexes only.
+  - Pass 3: re-ran dead-code scan for shell surfaces and validated behavior remains unchanged.
+- Changes:
+  - Added compact archive indexes:
+    - `docs/archive/README.md` (rewritten as minimal index)
+    - `docs/archive/reports/README.md` (new)
+  - Removed stale root archive artifacts:
+    - `docs/archive/AGENT_CONTEXT.md`
+    - `docs/archive/AGENT_HANDOFF.md`
+    - `docs/archive/DOCUMENTATION_CONSOLIDATION_SUMMARY.md`
+    - `docs/archive/INSTALL_SCRIPTS_REVIEW.md`
+    - `docs/archive/PRYSM_FLAGS_ANALYSIS.md`
+    - `docs/archive/REFACTORING_AUDIT_REPORT.md`
+    - `docs/archive/SHELL_SCRIPT_TEST_RESULTS.md`
+    - `docs/archive/progress.md`
+    - `docs/archive/reports/LOCAL_VERIFICATION_CHECKLIST.md`
+- Validation:
+  - `./test/run_tests.sh --full` passed (`272 passed, 0 failed`).
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - `install/examples/run_prysm_checkpt_sync.sh` appears unreferenced by repo call-sites but was retained as a user-facing example script.
