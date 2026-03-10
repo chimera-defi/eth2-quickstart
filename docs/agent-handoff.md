@@ -271,6 +271,17 @@ Use this file to preserve context across sessions.
   - `REQUIRE_WHIPTAIL_PIPE_TEST=1 SKIP_SHELLCHECK=true USE_MOCKS=true ./test/run_tests.sh --unit` passed.
   - `./scripts/pre-commit.sh` passed.
 
+## Update: 2026-03-10 (PR149 Follow-up Fixes)
+- Author: codex
+- Summary:
+  - Reworked `test/install_sh_smoke.sh` to snapshot the workspace into a temporary Git repo instead of depending on mounted `.git` metadata or worktree layout.
+  - Updated Besu release lookups to the live upstream repo `besu-eth/besu` and hardened GitHub release fetch helpers with retries for transient API failures.
+- Validation:
+  - `docker run --rm --privileged --user root -v "$PWD":/workspace -w /workspace eth-node-test:latest /workspace/test/install_sh_smoke.sh` passed.
+  - `bash test/validate_downloads.sh` passed.
+  - `docker run --rm --privileged -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true -v "$PWD":/workspace -w /workspace eth-node-test:latest /workspace/test/docker_test.sh` passed.
+  - `./scripts/pre-commit.sh` passed.
+
 ## Update: 2026-03-06 (Prysm Checkpoint Sync Audit + Legacy Cleanup)
 - Author: codex
 - Summary:
