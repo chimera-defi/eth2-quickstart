@@ -413,6 +413,16 @@ else
     exit 1
 fi
 
+# Test 31: Verify install.sh supports repo/ref overrides for smoke harnesses
+log_info "Test 31: Verify install.sh repo/ref override support..."
+if grep -q "ETH2_REPO_URL" "$PROJECT_ROOT/install.sh" && \
+   grep -q "ETH2_REF" "$PROJECT_ROOT/install.sh"; then
+    log_info "  install.sh supports ETH2_REPO_URL and ETH2_REF overrides"
+else
+    log_error "  install.sh must support ETH2_REPO_URL and ETH2_REF for smoke harness execution"
+    exit 1
+fi
+
 log_info "╔════════════════════════════════════════════════════════════════╗"
 log_info "║  run_1.sh CI Test PASSED                                      ║"
 log_info "║  Validated: Structure, syntax, functions, SSH safety,         ║"

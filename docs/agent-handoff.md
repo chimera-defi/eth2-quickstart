@@ -351,3 +351,33 @@ Use this file to preserve context across sessions.
   - `./scripts/pre-commit.sh` passed.
 - Follow-ups:
   - Keep watching `#144` CI and patch quickly if any additional regressions surface.
+
+## Update: 2026-03-10 (Installer E2E Smoke Harness Closure)
+- Author: codex
+- Why:
+  - User asked to complete remaining incomplete work without per-task prompting.
+  - `docs/STATUS.md` still tracked installer E2E smoke as optional/incomplete.
+- Changes:
+  - Added installer smoke harness script:
+    - `test/install_sh_smoke.sh`
+    - executes `install.sh --non-interactive` end-to-end and validates generated artifacts (`config/user_config.env`, `install_phase1.sh`, `install_phase2.sh`).
+  - Made `install.sh` testable for deterministic CI smoke runs:
+    - added `ETH2_REPO_URL` override (repo URL/path),
+    - added `ETH2_REF` override (branch/tag/commit),
+    - retained `ETH2_BRANCH` as legacy alias when `ETH2_REF` is unset.
+  - CI integration:
+    - added `install-sh-smoke` job in `.github/workflows/ci.yml`,
+    - included as a dependency for `e2e-client-matrix`.
+  - Regression guard:
+    - `test/ci_test_run_1.sh` now asserts `install.sh` includes `ETH2_REPO_URL` and `ETH2_REF` support.
+  - Docs updates:
+    - `docs/STATUS.md` marks installer smoke as covered and removes it from optional remaining work.
+    - `test/README.md` includes the new smoke test in CI/test inventory.
+    - `docs/CI_WORKFLOWS.md` notes the new `install-sh-smoke` coverage in `ci.yml`.
+- Validation:
+  - `bash test/install_sh_smoke.sh` passed.
+  - `bash -n install.sh test/install_sh_smoke.sh test/ci_test_run_1.sh` passed.
+  - `shellcheck -x ... install.sh test/install_sh_smoke.sh test/ci_test_run_1.sh` passed.
+  - `./scripts/pre-commit.sh` passed (`257 passed, 0 failed`).
+- Follow-ups:
+  - Remaining optional item: add stricter CI assertion for TUI skip behavior outside dedicated TUI contexts (if still desired).
