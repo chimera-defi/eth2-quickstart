@@ -18,22 +18,24 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 INSTALL_DIR="$TMP_DIR/install-under-test"
 LOG_FILE="$TMP_DIR/install.log"
-REPO_MIRROR="$TMP_DIR/repo.git"
-
-# CI may run this script as root against a bind-mounted workspace
-# owned by another UID. Mark it safe for git operations.
-git config --global --add safe.directory "$PROJECT_ROOT" >/dev/null 2>&1 || true
-
-REF="$(git -C "$PROJECT_ROOT" rev-parse HEAD)"
+REPO_SOURCE="$TMP_DIR/repo-src"
 
 echo "[INFO] Running install.sh smoke test"
 echo "[INFO] Project root: $PROJECT_ROOT"
 echo "[INFO] Temp install dir: $INSTALL_DIR"
-echo "[INFO] Creating bare repo mirror for deterministic bootstrap input"
+echo "[INFO] Creating temporary git repo for deterministic bootstrap input"
 
-git clone --bare "$PROJECT_ROOT" "$REPO_MIRROR" >/dev/null 2>&1
+mkdir -p "$REPO_SOURCE"
+tar -C "$PROJECT_ROOT" --exclude=.git -cf - . | tar -C "$REPO_SOURCE" -xf -
+chown -R "$(id -u):$(id -g)" "$REPO_SOURCE"
+git -C "$REPO_SOURCE" init -q
+git -C "$REPO_SOURCE" checkout -q -b smoke-test
+git -C "$REPO_SOURCE" add .
+git -C "$REPO_SOURCE" -c user.name="eth2qs-smoke" -c user.email="smoke@example.invalid" commit -q -m "smoke snapshot"
 
-ETH2_REPO_URL="$REPO_MIRROR" \
+REF="$(git -C "$REPO_SOURCE" rev-parse HEAD)"
+
+ETH2_REPO_URL="$REPO_SOURCE" \
 ETH2_REF="$REF" \
 ETH2_INSTALL_DIR="$INSTALL_DIR" \
 ETH2_NON_INTERACTIVE=1 \
