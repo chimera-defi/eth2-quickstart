@@ -72,6 +72,7 @@ test/
 ├── run_tests.sh            # Test runner for local (supports mocks)
 ├── ci_test_run_1.sh        # run_1 structure validation
 ├── ci_test_run_1_e2e.sh    # run_1 E2E (executes run_1.sh, verifies results)
+├── ci_test_docs_consistency.sh # Active docs link/legacy-reference consistency checks
 ├── prysm_checkpoint_smoke.sh # Optional live Prysm checkpoint-sync smoke
 ├── run_e2e.sh             # Wrapper: Docker + systemd + ci_test_e2e.sh (--phase=1|2)
 ├── lib/
@@ -103,7 +104,8 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 4. **run_1.sh E2E** - Actually runs run_1.sh and verifies results (systemd + openssh)
 5. **run_2.sh Structure** - Validates run_2.sh structure, configs
 6. **run_2.sh E2E** - Runs run_2.sh with default clients, verifies installs
-7. **e2e-client-matrix** - 6 client combos (besu+lighthouse+commit-boost, erigon+teku, etc.; geth+prysm in run-2-e2e)
+7. **Docs Consistency** - Validates active docs local links and retired legacy reference absence
+8. **e2e-client-matrix** - 6 client combos (besu+lighthouse+commit-boost, erigon+teku, etc.; geth+prysm in run-2-e2e)
 
 ### E2E Verification (No Tests Skipped)
 
@@ -144,6 +146,7 @@ Previously we only verified binaries installed and MEV services active. We now *
 | `ci_test_run_1.sh` | Validates run_1.sh structure, syntax, functions, basic ops | root |
 | `ci_test_run_1_e2e.sh` | Executes run_1.sh and verifies results (run via run_e2e.sh --phase=1) | root |
 | `ci_test_run_2.sh` | Validates run_2.sh structure, syntax, configs, Geth install | testuser |
+| `ci_test_docs_consistency.sh` | Validates active doc links and retired legacy reference absence | n/a |
 
 **Note**: Full E2E testing with systemd services and snap packages requires special Docker setup. CI tests validate structure and components that work in standard Docker.
 
