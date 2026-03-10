@@ -19,6 +19,11 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 INSTALL_DIR="$TMP_DIR/install-under-test"
 LOG_FILE="$TMP_DIR/install.log"
 REPO_MIRROR="$TMP_DIR/repo.git"
+
+# CI may run this script as root against a bind-mounted workspace
+# owned by another UID. Mark it safe for git operations.
+git config --global --add safe.directory "$PROJECT_ROOT" >/dev/null 2>&1 || true
+
 REF="$(git -C "$PROJECT_ROOT" rev-parse HEAD)"
 
 echo "[INFO] Running install.sh smoke test"
