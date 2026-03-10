@@ -351,3 +351,36 @@ Use this file to preserve context across sessions.
   - `./scripts/pre-commit.sh` passed.
 - Follow-ups:
   - Keep watching `#144` CI and patch quickly if any additional regressions surface.
+
+## Update: 2026-03-10 (Incomplete-Work Closure Pass: Docs Consistency Automation)
+- Author: codex
+- Why:
+  - User requested autonomous completion/cleanup of remaining incomplete work where feasible.
+- Task list executed:
+  - audited open/incomplete items from `docs/STATUS.md` + prior handoff follow-ups,
+  - implemented an actionable closure item (docs consistency enforcement),
+  - removed stale backlog item that is now functionally covered,
+  - validated locally end-to-end.
+- Changes:
+  - Added new consistency test: `test/ci_test_docs_consistency.sh`
+    - validates local markdown links in active docs (`README.md`, `docs/*.md`),
+    - validates user-facing docs exclude explicitly retired legacy references.
+  - Wired docs consistency into local developer guardrails:
+    - `scripts/pre-commit.sh` now runs `bash test/ci_test_docs_consistency.sh`.
+  - Wired docs consistency into CI:
+    - Added `docs-consistency` job in `.github/workflows/ci.yml`.
+    - Added `docs-consistency` as a dependency for `e2e-client-matrix`.
+    - Extended `.github/workflows/shellcheck.yml` path filters to include docs (`README.md`, `docs/**`).
+    - Added `Docs consistency check` step in `shellcheck.yml`.
+  - Updated docs to reflect this closure:
+    - `docs/STATUS.md`: date bump, added docs-consistency coverage, removed stale optional item about extra TUI skip assertion.
+    - `docs/CI_WORKFLOWS.md`: updated path-filter behavior and docs-check note.
+    - `test/README.md`: added docs-consistency script to test inventory and CI list.
+- Validation:
+  - `bash test/ci_test_docs_consistency.sh` passed.
+  - `./scripts/pre-commit.sh` passed (`257 passed, 0 failed` in integrated suite).
+  - `shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 test/ci_test_docs_consistency.sh` passed.
+  - `bash -n test/ci_test_docs_consistency.sh` passed.
+  - YAML parse check passed for `.github/workflows/ci.yml` and `.github/workflows/shellcheck.yml`.
+- Follow-ups:
+  - Remaining optional item still open: true `install.sh` end-to-end smoke harness in CI (beyond structure checks).
