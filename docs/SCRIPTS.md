@@ -2,7 +2,7 @@
 
 ## Overview
 
-Bash scripts to harden Ubuntu server and install Ethereum node stack: execution client, consensus client, validator, MEV-Boost, and optional Nginx reverse proxy with SSL.
+Bash scripts to harden Ubuntu server and install Ethereum node stack: execution client, consensus client, validator, MEV tooling, and optional Nginx/Caddy reverse proxy with SSL.
 
 - **OS**: Ubuntu 20.04+
 - **Order**: `run_1.sh` → reboot → login as `LOGIN_UNAME` → update `exports.sh` → `run_2.sh`
@@ -65,7 +65,12 @@ ssh LOGIN_UNAME@<server-ip>
 
 **Actions:**
 - Installs `snapd`
-- Runs installers: `./geth.sh`, `./prysm.sh`, `./install_mev_boost.sh`
+- Verifies client configuration path resolution (`install/utils/verify_client_configs.sh`)
+- Runs selected installers from:
+  - `install/execution/<client>.sh`
+  - `install/consensus/<client>.sh`
+  - `install/mev/install_mev_boost.sh` or `install/mev/install_commit_boost.sh`
+  - optional `install/mev/install_ethgas.sh` (requires Commit-Boost)
 - Echoes next steps for Nginx + SSL
 
 **Start services:**
@@ -131,6 +136,12 @@ run_1.sh and run_2.sh write logs to disk. View them with:
 - Downloads and installs Nimbus-eth1 (nightly builds)
 - Lightweight Nim-based execution client
 - Configures with TOML configuration file
+- Creates systemd unit `eth1.service`
+
+#### ethrex.sh
+- **Language: Rust**
+- Downloads and installs Ethrex
+- Configures with typical flags
 - Creates systemd unit `eth1.service`
 
 ### Consensus Clients
@@ -235,9 +246,7 @@ run_1.sh and run_2.sh write logs to disk. View them with:
 - Updates `exports.sh` with selected clients
 
 ### purge_ethereum_data.sh
-- Safely removes default Ethereum data directories
-- Preserves keys/secrets (including `~/secrets`) by design
-- Useful for fresh starts or troubleshooting
+- See [Data Management](#data-management) for scope and safety guarantees.
 
 ## Security Utilities
 
@@ -281,13 +290,13 @@ run_1.sh and run_2.sh write logs to disk. View them with:
 ### commit-boost-pbs.service
 - Commit-Boost PBS module
 - MEV-Boost compatible relay interface
-- Port 18551
+- Port 18550 (drop-in for MEV-Boost)
 - Restart on failure
 
 ### commit-boost-signer.service
 - Commit-Boost Signer module
 - BLS key signing for commitments
-- Port 18552
+- Port 20000
 - Restart on failure
 
 ### ethgas.service
@@ -345,19 +354,10 @@ run_1.sh and run_2.sh write logs to disk. View them with:
 
 ## Troubleshooting
 
-### Common Issues
-1. **Services not starting**: Check logs with `journalctl -u service_name`
-2. **Permission errors**: Ensure proper file ownership
-3. **Port conflicts**: Check for conflicting services
-4. **Sync issues**: Verify network connectivity
-
 ### Logs
 - **System logs**: `journalctl -u service_name -f`
 - **Security logs**: `/var/log/security_monitor.log`
 - **Fail2ban logs**: `/var/log/fail2ban.log`
 
 ### Getting Help
-1. Check service logs
-2. Run security validation scripts
-3. Review configuration files
-4. Check system requirements
+For issue triage patterns and client-specific troubleshooting, see [README.md](../README.md#troubleshooting).

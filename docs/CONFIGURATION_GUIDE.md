@@ -97,7 +97,7 @@ rm -rf ./tmp/
 #### Nethermind (JSON)
 - **Base Config**: `configs/nethermind/nethermind_base.cfg`
 - **Custom Variables**: Memory, ports, fee recipient, graffiti
-- **Merge Strategy**: JSON concatenation (TODO: implement proper JSON merging with jq)
+- **Merge Strategy**: Generated JSON + base defaults (not yet standardized on schema-aware merge tooling)
 
 #### Besu (TOML)  
 - **Base Config**: `configs/besu/besu_base.toml`
