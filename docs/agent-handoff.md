@@ -273,6 +273,18 @@ Use this file to preserve context across sessions.
   - `REQUIRE_WHIPTAIL_PIPE_TEST=1 SKIP_SHELLCHECK=true USE_MOCKS=true ./test/run_tests.sh --unit` passed.
   - `./scripts/pre-commit.sh` passed.
 
+## Update: 2026-03-10 (PR149 CI RCA: install-sh-smoke safe.directory)
+- Author: codex
+- Summary:
+  - Investigated failing `install-sh-smoke` job on PR `#149`.
+  - Root cause: Git safe-directory protection inside CI Docker (`/workspace` owned by a different UID while script runs as root).
+  - Fix: `test/install_sh_smoke.sh` now marks `PROJECT_ROOT` as a safe directory before Git operations.
+- Validation:
+  - `bash -n test/install_sh_smoke.sh` passed.
+  - `shellcheck test/install_sh_smoke.sh` passed.
+  - `bash test/install_sh_smoke.sh` passed.
+  - `bash test/ci_test_run_1.sh` passed.
+
 ## Update: 2026-03-06 (Prysm Checkpoint Sync Audit + Legacy Cleanup)
 - Author: codex
 - Summary:
