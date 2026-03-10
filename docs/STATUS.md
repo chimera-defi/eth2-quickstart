@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-03-05
+Last updated: 2026-03-10
 
 ## Current Capabilities
 
@@ -31,11 +31,13 @@ Last updated: 2026-03-05
   - `./test/whiptail_pipe_test.sh`
   - enforced mode: `REQUIRE_WHIPTAIL_PIPE_TEST=1 ./test/whiptail_pipe_test.sh`
 - CI includes dedicated `tui-whiptail-pipe` job to verify whiptail/Enter behavior with `expect`.
+- Installer smoke harness:
+  - `./test/install_sh_smoke.sh`
+  - CI job: `install-sh-smoke` (non-interactive end-to-end bootstrap validation)
 
 ## Remaining Optional Work
 
 - Add one more CI assertion to fail when TUI tests are skipped in contexts where they should be runnable.
-- Add installer smoke test that executes `install.sh` end-to-end in a controlled test harness (beyond structure/grep checks).
 - Keep pruning active docs when one-off reports appear; move them to `docs/archive/reports/`.
 
 ## Canonical Docs
