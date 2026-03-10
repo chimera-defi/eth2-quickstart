@@ -109,6 +109,22 @@ jobs:
       - name: Verify whiptail works when stdin is piped (curl|bash scenario)
         run: REQUIRE_WHIPTAIL_PIPE_TEST=1 ./test/whiptail_pipe_test.sh
 
+  tui-whiptail-nonskip-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install TUI test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y expect whiptail
+      - name: Enforce non-skip TUI result in shared shell-test context
+        env:
+          REQUIRE_WHIPTAIL_PIPE_TEST: "1"
+          SKIP_SHELLCHECK: "true"
+          USE_MOCKS: "true"
+        run: ./test/run_tests.sh --unit
+
   run-1-e2e:
     needs: [build-docker]
     runs-on: ubuntu-latest
@@ -180,7 +196,7 @@ jobs:
   # Execution: besu, erigon, nethermind, nimbus_eth1, reth, ethrex
   # Consensus: lighthouse, teku, nimbus, grandine, lodestar, prysm
   e2e-client-matrix:
-    needs: [docker-integration, run-1-structure, tui-whiptail-pipe, run-1-e2e, run-2-structure, run-2-e2e, run-2-web, build-docker]
+    needs: [docker-integration, run-1-structure, tui-whiptail-pipe, tui-whiptail-nonskip-guard, run-1-e2e, run-2-structure, run-2-e2e, run-2-web, build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
