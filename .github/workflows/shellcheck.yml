@@ -7,11 +7,15 @@ on:
     branches: [ main, master, develop ]
     paths:
       - '**/*.sh'
+      - 'README.md'
+      - 'docs/**'
       - '.github/workflows/shellcheck.yml'
   pull_request:
     branches: [ main, master, develop, 'cursor/**' ]
     paths:
       - '**/*.sh'
+      - 'README.md'
+      - 'docs/**'
       - '.github/workflows/shellcheck.yml'
   workflow_dispatch:
 
@@ -103,3 +107,6 @@ jobs:
           grep -q "source.*exports.sh" "$script" || { echo "❌ $script must source exports.sh"; exit 1; }
         done
         echo "✅ Structure check done"
+
+    - name: Docs consistency check
+      run: bash ./test/ci_test_docs_consistency.sh

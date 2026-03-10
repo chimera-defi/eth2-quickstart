@@ -51,4 +51,7 @@ done
 echo "=== Common functions unit tests ==="
 bash install/test/test_common_functions.sh
 
+echo "=== Docs consistency ==="
+bash test/ci_test_docs_consistency.sh
+
 echo "✅ Pre-commit checks passed."
