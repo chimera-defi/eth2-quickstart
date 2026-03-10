@@ -10,7 +10,7 @@ Workflows run only when relevant files change. Docs-only changes skip most CI.
 | **security.yml** | `install/security/**`, `configs/**`, `lib/common_functions.sh`, `docs/*security*`, `docs/validate_security_safe.sh` | Most changes |
 | **pr-checks.yml** | `frontend/**`, `**/*.sh`, `test/**`, `install/**`, `lib/**`, `configs/**`, `.github/**` | Docs-only |
 
-**Note:** security.yml runs on security-related doc changes (`docs/*security*`). Other docs-only changes skip ci, shellcheck, frontend, and pr-checks path filters.
+**Note:** `ci.yml` includes both dedicated `tui-whiptail-pipe` and shared-context `tui-whiptail-nonskip-guard` checks so TUI tests cannot silently skip in broader shell-test paths.
 
 ## Artifact retention
 

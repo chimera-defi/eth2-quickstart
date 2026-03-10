@@ -351,3 +351,28 @@ Use this file to preserve context across sessions.
   - `./scripts/pre-commit.sh` passed.
 - Follow-ups:
   - Keep watching `#144` CI and patch quickly if any additional regressions surface.
+
+## Update: 2026-03-10 (TUI Non-Skip CI Assertion Closure)
+- Author: codex
+- Why:
+  - User requested closing remaining incomplete cleanup work without per-task prompting.
+  - `docs/STATUS.md` listed adding an explicit CI assertion for TUI skip behavior.
+- Changes:
+  - Strengthened unit-test behavior:
+    - `test/run_tests.sh` now treats `whiptail_pipe_test.sh` failure as `FAIL` (not `SKIP`) when `REQUIRE_WHIPTAIL_PIPE_TEST=1`.
+  - Added CI non-skip guard outside dedicated TUI job:
+    - new `tui-whiptail-nonskip-guard` job in `.github/workflows/ci.yml`
+    - installs `expect` + `whiptail`
+    - runs `REQUIRE_WHIPTAIL_PIPE_TEST=1 SKIP_SHELLCHECK=true USE_MOCKS=true ./test/run_tests.sh --unit`
+  - Made matrix gating include new guard:
+    - `e2e-client-matrix.needs` now includes `tui-whiptail-nonskip-guard`.
+  - Docs updated:
+    - `docs/STATUS.md` date updated and removed now-closed optional TUI assertion item.
+    - `docs/CI_WORKFLOWS.md` notes dedicated + shared-context TUI enforcement.
+    - `test/README.md` includes the new CI guard in workflow coverage list.
+- Validation:
+  - `REQUIRE_WHIPTAIL_PIPE_TEST=1 SKIP_SHELLCHECK=true USE_MOCKS=true ./test/run_tests.sh --unit` passed.
+  - YAML parse check passed for `.github/workflows/ci.yml`.
+  - `./scripts/pre-commit.sh` passed (`257 passed, 0 failed` in integrated suite).
+- Follow-ups:
+  - Remaining optional items in `docs/STATUS.md` are now installer smoke harness and docs pruning (until merged from their respective PRs).

@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-03-05
+Last updated: 2026-03-10
 
 ## Current Capabilities
 
@@ -34,7 +34,6 @@ Last updated: 2026-03-05
 
 ## Remaining Optional Work
 
-- Add one more CI assertion to fail when TUI tests are skipped in contexts where they should be runnable.
 - Add installer smoke test that executes `install.sh` end-to-end in a controlled test harness (beyond structure/grep checks).
 - Keep pruning active docs when one-off reports appear; move them to `docs/archive/reports/`.
 
