@@ -259,6 +259,20 @@ Use this file to preserve context across sessions.
 - Follow-ups:
   - `install/examples/run_prysm_checkpt_sync.sh` appears unreferenced by repo call-sites but was retained as a user-facing example script.
 
+## Update: 2026-03-10 (Consolidated CI Guardrails: Installer + TUI)
+- Author: codex
+- Summary:
+  - Consolidated prior PR work into one minimal change set for CI/installer hardening.
+  - Added `test/install_sh_smoke.sh` and CI `install-sh-smoke` job to validate `install.sh` non-interactive bootstrap end-to-end.
+  - Updated `install.sh` bootstrap source controls to support `ETH2_REPO_URL` and `ETH2_REF` (with `ETH2_BRANCH` fallback).
+  - Added `tui-whiptail-nonskip-guard` CI job and required non-skip behavior in `test/run_tests.sh` when `REQUIRE_WHIPTAIL_PIPE_TEST=1`.
+  - Added `run_1` regression assertion that installer supports repo/ref overrides.
+- Validation:
+  - `bash test/ci_test_run_1.sh` passed.
+  - `bash test/install_sh_smoke.sh` passed.
+  - `REQUIRE_WHIPTAIL_PIPE_TEST=1 SKIP_SHELLCHECK=true USE_MOCKS=true ./test/run_tests.sh --unit` passed.
+  - `./scripts/pre-commit.sh` passed.
+
 ## Update: 2026-03-06 (Prysm Checkpoint Sync Audit + Legacy Cleanup)
 - Author: codex
 - Summary:
