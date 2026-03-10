@@ -351,3 +351,61 @@ Use this file to preserve context across sessions.
   - `./scripts/pre-commit.sh` passed.
 - Follow-ups:
   - Keep watching `#144` CI and patch quickly if any additional regressions surface.
+
+## Update: 2026-03-10 (Docs Audit: Features vs Incomplete Work)
+- Author: codex
+- Summary:
+  - Audited active docs against current scripts/tests on latest `origin/master`.
+  - Fixed feature drift in `README.md` by adding missing `ethrex` in the execution-client table.
+  - Updated `docs/SCRIPTS.md` to reflect actual `run_2.sh` behavior (installers selected from `install/execution`, `install/consensus`, and `install/mev` paths).
+  - Added `ethrex.sh` to execution-client script docs.
+  - Corrected Commit-Boost port docs:
+    - `commit-boost-pbs.service` is `18550` (MEV-Boost compatible).
+    - `commit-boost-signer.service` is `20000`.
+  - Updated `docs/STATUS.md`:
+    - bumped last-updated date,
+    - renamed remaining-work section to `Open Gaps / Incomplete Work`,
+    - explicitly listed config-merge tooling gap.
+  - Reworded `docs/CONFIGURATION_GUIDE.md` Nethermind merge note as an explicit current-state limitation (instead of TODO phrasing).
+- Validation:
+  - `./scripts/pre-commit.sh` passed (`257 passed, 0 failed` in its integrated test run).
+  - Local markdown link pass over `README.md` and `docs/*.md` found no broken local file links.
+- Follow-ups:
+  - Optional: add a lightweight CI docs consistency check for script-path mentions (in addition to markdown link checks).
+
+## Update: 2026-03-10 (Docs Pass 2: Redundancy Trim)
+- Author: codex
+- Summary:
+  - Ran a second, low-risk docs reduction pass focused on removing duplicate wording and stale phrasing while preserving feature coverage.
+  - Updated `docs/SCRIPTS.md` overview to reflect both Nginx and Caddy web options.
+  - Replaced duplicate `purge_ethereum_data.sh` explanatory bullets in `docs/SCRIPTS.md` with a pointer to the canonical Data Management section.
+  - Updated `docs/README.md` status description wording to match `docs/STATUS.md` section naming (`open gaps/incomplete work`).
+- Validation:
+  - `./scripts/pre-commit.sh` passed (`257 passed, 0 failed` in integrated test run).
+- Follow-ups:
+  - If we want another reduction pass, the next target should be condensing repeated client-description prose between `README.md` and `docs/SCRIPTS.md` into one canonical table and one concise pointer.
+
+## Update: 2026-03-10 (Autonomous Task-Loop Pass: Docs Reduction + Consistency)
+- Author: codex
+- Why:
+  - User requested execution via an internal task loop (no per-task prompting), including multi-pass auditing and reduction.
+- Task list executed:
+  - parallel audit of README/docs overlap and stale phrasing,
+  - focused reduction edits with no behavior changes,
+  - full local validation and size check.
+- Changes:
+  - Reduced verbose README tail docs section:
+    - collapsed long `Additional Documentation` subsections into concise canonical links.
+    - removed large prose block for common-functions summary; retained direct reference to canonical function docs.
+  - Trimmed duplicated generic troubleshooting prose in `docs/SCRIPTS.md`, replaced with pointer to canonical README troubleshooting section.
+  - Preserved prior consistency fixes in this branch:
+    - execution-client matrix includes `ethrex`,
+    - `docs/SCRIPTS.md` reflects actual `run_2.sh` installer paths,
+    - Commit-Boost ports corrected in docs,
+    - `docs/STATUS.md` open-gaps section naming/date alignment,
+    - `docs/CONFIGURATION_GUIDE.md` stale TODO wording replaced with explicit current limitation.
+- Validation:
+  - `./scripts/pre-commit.sh` passed (`257 passed, 0 failed` in integrated suite).
+- Impact:
+  - Targeted docs reduction without functional changes.
+  - Combined tracked docs set reduced from 1554 -> 1510 lines in this pass.
