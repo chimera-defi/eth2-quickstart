@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-03-05
+Last updated: 2026-03-10
 
 ## Current Capabilities
 
@@ -32,10 +32,11 @@ Last updated: 2026-03-05
   - enforced mode: `REQUIRE_WHIPTAIL_PIPE_TEST=1 ./test/whiptail_pipe_test.sh`
 - CI includes dedicated `tui-whiptail-pipe` job to verify whiptail/Enter behavior with `expect`.
 
-## Remaining Optional Work
+## Open Gaps / Incomplete Work
 
 - Add one more CI assertion to fail when TUI tests are skipped in contexts where they should be runnable.
 - Add installer smoke test that executes `install.sh` end-to-end in a controlled test harness (beyond structure/grep checks).
+- Standardize config merge tooling across clients (some docs still describe simple concat/generation rather than schema-aware merge).
 - Keep pruning active docs when one-off reports appear; move them to `docs/archive/reports/`.
 
 ## Canonical Docs
