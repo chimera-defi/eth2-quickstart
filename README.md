@@ -191,6 +191,7 @@ For detailed MEV setup, see [docs/MEV_GUIDE.md](docs/MEV_GUIDE.md).
 | **Nethermind** | C# | Enterprise-focused .NET client | Enterprise, advanced features | `nethermind.sh` |
 | **Besu** | Java | Apache 2.0 licensed, enterprise-ready | Private networks, compliance | `besu.sh` |
 | **Nimbus-eth1** | Nim | Lightweight, resource efficient | Raspberry Pi, low resources | `nimbus_eth1.sh` |
+| **Ethrex** | Rust | Experimental Rust execution client | Testing, client diversity | `ethrex.sh` |
 
 ### Consensus Clients (ETH2)
 | Client | Language | Description | Best For | Install Script |
@@ -441,44 +442,9 @@ Additionally, the beacon checkpoint states have been made available by Sharedsta
 
 ## Additional Documentation
 
-### Core Documentation
-- Project status snapshot: [docs/STATUS.md](docs/STATUS.md)
-- Scripts reference: [docs/SCRIPTS.md](docs/SCRIPTS.md)
-- Setup workflow: [docs/WORKFLOW.md](docs/WORKFLOW.md)
-- Terminology: [docs/GLOSSARY.md](docs/GLOSSARY.md)
-- Security guide: [docs/SECURITY_GUIDE.md](docs/SECURITY_GUIDE.md)
-
-### MEV Documentation
-- **MEV Guide**: [docs/MEV_GUIDE.md](docs/MEV_GUIDE.md) - Complete MEV setup and configuration
-- **MEV Quick Reference**: [docs/MEV_QUICK_REFERENCE.md](docs/MEV_QUICK_REFERENCE.md) - Quick commands and ports
-
-### Configuration & Development
-- Configuration guide: [docs/CONFIGURATION_GUIDE.md](docs/CONFIGURATION_GUIDE.md)
-- Shell scripting best practices: [docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md](docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md)
-
-### Marketing Website (Frontend)
-- Frontend quick start: [frontend/README.md](frontend/README.md) - Uses **Bun** for fast installs
-- Frontend documentation: [docs/FRONTEND.md](docs/FRONTEND.md)
-
-### Testing & Validation
-- **Pre-commit**: `./scripts/pre-commit.sh` — local CI simulation before pushing
-- CI path filtering: [docs/CI_WORKFLOWS.md](docs/CI_WORKFLOWS.md) — when each workflow runs
-- Full local suite: `./test/run_tests.sh --full`
-
-### Project Management
-- Commit message conventions: [docs/COMMIT_MESSAGES.md](docs/COMMIT_MESSAGES.md)
-- Agent handoff and follow-ups: [docs/agent-handoff.md](docs/agent-handoff.md)
-## 📚 **Common Functions Library**
-
-The project includes a comprehensive common functions library (`lib/common_functions.sh`) with 35 centralized functions for:
-- **Logging**: Consistent message formatting across all scripts
-- **Installation**: Standardized installation start/complete messages
-- **Configuration**: JSON, YAML, and TOML configuration merging
-- **Security**: User setup, SSH configuration, fail2ban setup
-- **System Services**: Systemd service creation and management
-- **File Operations**: Secure file downloading with retry logic
-- **System Checks**: Requirements and compatibility validation
-
-**📖 Full Reference:** See `docs/COMMON_FUNCTIONS_REFERENCE.md` for complete function documentation and usage examples.
-
-**✅ Status:** All functions implemented, tested, and ready for production use.
+- Canonical docs index: [docs/README.md](docs/README.md)
+- Current status and open gaps: [docs/STATUS.md](docs/STATUS.md)
+- Script reference: [docs/SCRIPTS.md](docs/SCRIPTS.md)
+- Frontend docs: [docs/FRONTEND.md](docs/FRONTEND.md) and [frontend/README.md](frontend/README.md)
+- Session continuity and follow-ups: [docs/agent-handoff.md](docs/agent-handoff.md)
+- Common functions reference: [docs/COMMON_FUNCTIONS_REFERENCE.md](docs/COMMON_FUNCTIONS_REFERENCE.md)
