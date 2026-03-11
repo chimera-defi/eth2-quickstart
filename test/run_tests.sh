@@ -504,8 +504,12 @@ run_unit_tests() {
         if bash "$SCRIPT_DIR/whiptail_pipe_test.sh" 2>/dev/null; then
             log_test "PASS" "whiptail_pipe_test.sh: OK button works when stdin is pipe"
         else
-            # May skip if expect/whiptail not installed (e.g. in Docker)
-            log_test "SKIP" "whiptail_pipe_test.sh: requires expect+whiptail or TTY"
+            if [[ "${REQUIRE_WHIPTAIL_PIPE_TEST:-0}" == "1" ]]; then
+                log_test "FAIL" "whiptail_pipe_test.sh: required non-skip mode failed"
+            else
+                # May skip if expect/whiptail not installed (e.g. in Docker)
+                log_test "SKIP" "whiptail_pipe_test.sh: requires expect+whiptail or TTY"
+            fi
         fi
     fi
 }

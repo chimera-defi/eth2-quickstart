@@ -330,7 +330,7 @@ mock_get_latest_release() {
     
     # Return mock versions for known repos
     case "$repo" in
-        "hyperledger/besu") echo "24.1.0" ;;
+        "besu-eth/besu") echo "24.1.0" ;;
         "NethermindEth/nethermind") echo "1.25.4" ;;
         "ConsenSys/teku") echo "24.1.0" ;;
         "sigp/lighthouse") echo "v5.0.0" ;;

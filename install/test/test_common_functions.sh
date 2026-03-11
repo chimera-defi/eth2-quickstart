@@ -56,7 +56,7 @@ run_test() {
 # Test 1: get_latest_release with valid repo
 test_get_latest_release_valid() {
     local version
-    version=$(get_latest_release "hyperledger/besu")
+    version=$(get_latest_release "besu-eth/besu")
     
     if [[ -n "$version" ]]; then
         echo "  Got version: $version"

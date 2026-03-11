@@ -174,25 +174,43 @@ whiptail_yesno() {
 # DOWNLOAD FUNCTIONS
 # =============================================================================
 
-# Get latest release version from GitHub
-# Uses GITHUB_TOKEN or GH_TOKEN if set (avoids 60/hr rate limit in CI)
-get_latest_release() {
+github_latest_release_json() {
     local repo="$1"
     local release_url="https://api.github.com/repos/${repo}/releases/latest"
-    local version
-    local curl_opts=(-sf)
+    local response=""
+    local curl_opts=(-sf --retry 3 --retry-delay 2 --retry-all-errors)
+    local attempt
     [[ -n "${GITHUB_TOKEN:-}${GH_TOKEN:-}" ]] && curl_opts+=(-H "Authorization: Bearer ${GITHUB_TOKEN:-$GH_TOKEN}")
-    
+
     if ! command_exists curl; then
         log_error "curl is not installed"
         return 1
     fi
-    
-    if ! version=$(curl "${curl_opts[@]}" "$release_url" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'); then
+
+    for attempt in 1 2 3; do
+        if response=$(curl "${curl_opts[@]}" "$release_url" 2>/dev/null) && [[ -n "$response" ]]; then
+            echo "$response"
+            return 0
+        fi
+        sleep "$attempt"
+    done
+
+    return 1
+}
+
+# Get latest release version from GitHub
+# Uses GITHUB_TOKEN or GH_TOKEN if set (avoids 60/hr rate limit in CI)
+get_latest_release() {
+    local repo="$1"
+    local version
+    local response
+
+    if ! response=$(github_latest_release_json "$repo"); then
         log_warn "Could not fetch latest release for $repo (API request failed)"
         return 1
     fi
-    
+
+    version=$(printf '%s\n' "$response" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
     if [[ -n "$version" ]]; then
         echo "$version"
         return 0
@@ -208,11 +226,14 @@ get_latest_release() {
 get_github_release_asset_url() {
     local repo="$1"
     local match_pattern="$2"
-    local release_url="https://api.github.com/repos/${repo}/releases/latest"
     local url
-    local curl_opts=(-sf)
-    [[ -n "${GITHUB_TOKEN:-}${GH_TOKEN:-}" ]] && curl_opts+=(-H "Authorization: Bearer ${GITHUB_TOKEN:-$GH_TOKEN}")
-    url=$(curl "${curl_opts[@]}" "$release_url" 2>/dev/null | grep -oE '"browser_download_url": "https://[^"]*'"${match_pattern}"'[^"]*"' | head -1 | sed 's/.*"\(https:\/\/[^"]*\)".*/\1/')
+    local response
+
+    if ! response=$(github_latest_release_json "$repo"); then
+        return 1
+    fi
+
+    url=$(printf '%s\n' "$response" | grep -oE '"browser_download_url": "https://[^"]*'"${match_pattern}"'[^"]*"' | head -1 | sed 's/.*"\(https:\/\/[^"]*\)".*/\1/')
     if [[ -n "$url" ]]; then
         echo "$url"
         return 0

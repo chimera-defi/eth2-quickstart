@@ -117,6 +117,22 @@ jobs:
       - name: Verify active docs consistency
         run: bash ./test/ci_test_docs_consistency.sh
 
+  tui-whiptail-nonskip-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install TUI test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y expect whiptail
+      - name: Enforce non-skip TUI result in shared shell-test context
+        env:
+          REQUIRE_WHIPTAIL_PIPE_TEST: "1"
+          SKIP_SHELLCHECK: "true"
+          USE_MOCKS: "true"
+        run: ./test/run_tests.sh --unit
+
   run-1-e2e:
     needs: [build-docker]
     runs-on: ubuntu-latest
@@ -184,11 +200,26 @@ jobs:
           # Verifies install_caddy.sh, install_nginx.sh, config validity, no regressions
           SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" ./test/run_e2e.sh --phase=2
 
+  install-sh-smoke:
+    needs: [build-docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/docker-prep
+        with:
+          image: ${{ needs.build-docker.outputs.image }}
+      - name: Run install.sh non-interactive smoke harness
+        run: |
+          docker run --rm --privileged --user root \
+            -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical -e CI=true \
+            eth-node-test /workspace/test/install_sh_smoke.sh
+
   # Matrix: 6 client combos (geth+prysm+mev-boost covered by run-2-e2e)
   # Execution: besu, erigon, nethermind, nimbus_eth1, reth, ethrex
   # Consensus: lighthouse, teku, nimbus, grandine, lodestar, prysm
   e2e-client-matrix:
-    needs: [docker-integration, run-1-structure, tui-whiptail-pipe, docs-consistency, run-1-e2e, run-2-structure, run-2-e2e, run-2-web, build-docker]
+    needs: [docker-integration, run-1-structure, tui-whiptail-pipe, tui-whiptail-nonskip-guard, docs-consistency, run-1-e2e, run-2-structure, run-2-e2e, run-2-web, install-sh-smoke, build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
