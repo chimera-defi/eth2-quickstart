@@ -282,6 +282,15 @@ Use this file to preserve context across sessions.
   - `docker run --rm --privileged -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true -v "$PWD":/workspace -w /workspace eth-node-test:latest /workspace/test/docker_test.sh` passed.
   - `./scripts/pre-commit.sh` passed.
 
+## Update: 2026-03-11 (Closed PR Follow-up Tracker)
+- Author: codex
+- Summary:
+  - Added `docs/PR_FOLLOWUPS.md` as the canonical tracker for closed PR provenance.
+  - Marked which recent closed PRs were fully superseded by merged replacements versus which ideas remain optional follow-ups.
+  - Updated `docs/STATUS.md` and `docs/README.md` so current coverage reflects merged installer smoke/TUI guard work and points to the new tracker.
+- Validation:
+  - `bash test/ci_test_docs_consistency.sh` passed.
+
 ## Update: 2026-03-06 (Prysm Checkpoint Sync Audit + Legacy Cleanup)
 - Author: codex
 - Summary:
