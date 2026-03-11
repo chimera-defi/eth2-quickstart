@@ -259,6 +259,29 @@ Use this file to preserve context across sessions.
 - Follow-ups:
   - `install/examples/run_prysm_checkpt_sync.sh` appears unreferenced by repo call-sites but was retained as a user-facing example script.
 
+## Update: 2026-03-10 (Installer Smoke + TUI CI Guards)
+- Author: codex
+- Summary:
+  - Added non-interactive installer smoke coverage in CI and support for deterministic bootstrap inputs via `ETH2_REPO_URL` and `ETH2_REF` (`ETH2_BRANCH` fallback retained).
+  - Added a strict shared-shell TUI guard so required `whiptail` pipe coverage fails instead of skipping.
+  - Fixed CI Docker root-context Git safety for the smoke harness by marking `PROJECT_ROOT` as a safe directory.
+- Validation:
+  - `bash test/ci_test_run_1.sh` passed.
+  - `bash test/install_sh_smoke.sh` passed.
+  - `REQUIRE_WHIPTAIL_PIPE_TEST=1 SKIP_SHELLCHECK=true USE_MOCKS=true ./test/run_tests.sh --unit` passed.
+  - `./scripts/pre-commit.sh` passed.
+
+## Update: 2026-03-10 (PR149 Follow-up Fixes)
+- Author: codex
+- Summary:
+  - Reworked `test/install_sh_smoke.sh` to snapshot the workspace into a temporary Git repo instead of depending on mounted `.git` metadata or worktree layout.
+  - Updated Besu release lookups to the live upstream repo `besu-eth/besu` and hardened GitHub release fetch helpers with retries for transient API failures.
+- Validation:
+  - `docker run --rm --privileged --user root -v "$PWD":/workspace -w /workspace eth-node-test:latest /workspace/test/install_sh_smoke.sh` passed.
+  - `bash test/validate_downloads.sh` passed.
+  - `docker run --rm --privileged -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true -v "$PWD":/workspace -w /workspace eth-node-test:latest /workspace/test/docker_test.sh` passed.
+  - `./scripts/pre-commit.sh` passed.
+
 ## Update: 2026-03-06 (Prysm Checkpoint Sync Audit + Legacy Cleanup)
 - Author: codex
 - Summary:

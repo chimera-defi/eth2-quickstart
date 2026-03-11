@@ -38,9 +38,9 @@ bootstrap_log_error() {
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
-REPO_URL="https://github.com/chimera-defi/eth2-quickstart.git"
+REPO_URL="${ETH2_REPO_URL:-https://github.com/chimera-defi/eth2-quickstart.git}"
 INSTALL_DIR="${ETH2_INSTALL_DIR:-$HOME/.eth2-quickstart}"
-BRANCH="${ETH2_BRANCH:-master}"
+REF="${ETH2_REF:-${ETH2_BRANCH:-master}}"
 
 print_help() {
     echo ""
@@ -57,8 +57,10 @@ print_help() {
     echo "  --help                     Show this help message"
     echo ""
     echo "Environment Variables:"
+    echo "  ETH2_REPO_URL         Git repository URL/path (default: github.com/chimera-defi/eth2-quickstart.git)"
     echo "  ETH2_INSTALL_DIR      Installation directory (default: \$HOME/.eth2-quickstart)"
-    echo "  ETH2_BRANCH           Git branch to use (default: master)"
+    echo "  ETH2_REF              Git ref to use (branch/tag/commit; default: master)"
+    echo "  ETH2_BRANCH           Legacy alias for branch (used if ETH2_REF is unset)"
     echo "  ETH2_NON_INTERACTIVE  Force non-interactive mode (1/true/yes)"
     echo ""
 }
@@ -156,12 +158,14 @@ fi
 if [[ -d "$INSTALL_DIR" ]]; then
     bootstrap_log_info "Updating existing repository at $INSTALL_DIR..."
     cd "$INSTALL_DIR"
-    git fetch origin "$BRANCH"
-    git reset --hard "origin/$BRANCH"
+    git fetch origin "$REF"
+    git checkout -f FETCH_HEAD
 else
     bootstrap_log_info "Cloning repository to $INSTALL_DIR..."
-    git clone -b "$BRANCH" "$REPO_URL" "$INSTALL_DIR"
+    git clone "$REPO_URL" "$INSTALL_DIR"
     cd "$INSTALL_DIR"
+    git fetch origin "$REF"
+    git checkout -f FETCH_HEAD
 fi
 
 bootstrap_log_info "Repository ready at $INSTALL_DIR"
