@@ -11,6 +11,26 @@ Use this file to preserve context across sessions.
 - Date: 2026-03-13
 - Author: codex
 - Summary:
+  - Added user-facing agent marketing surfaces on top of the repo-local skill work.
+  - Updated `README.md` with a concise "For External Agents" section that explains the repo-local contract and safe/demo commands.
+  - Added `docs/AGENT_SKILL_LISTING.md` as the canonical short listing/marketing copy for registries, website blurbs, and launch posts.
+  - Added frontend homepage section `frontend/components/sections/Agents.tsx` and rendered it from `frontend/app/page.tsx`.
+  - Kept the website messaging aligned to the actual implementation:
+    - repo-local skill,
+    - canonical `./scripts/eth2qs.sh` command surface,
+    - `doctor --json` for machine-readable health,
+    - `clean-data --dry-run` and secret-preserving cleanup.
+- Validation:
+  - `bash test/ci_test_docs_consistency.sh` passed.
+  - `cd frontend && bun run lint` passed.
+  - `cd frontend && bun run test` passed.
+  - `cd frontend && bun run build` passed.
+- Follow-ups:
+  - If desired, add a dedicated website CTA or nav link for the agent skill after the current copy settles.
+
+- Date: 2026-03-13
+- Author: codex
+- Summary:
   - Added the registry/distribution follow-up for the local agent skill without turning it into a second product.
   - Added `skills/eth2-quickstart/scripts/resolve_repo_root.sh` so an installed skill can deterministically locate the repo root from either the repo root or the skill directory.
   - Extended `skills/eth2-quickstart/SKILL.md` with `metadata.openclaw.skillKey` and an explicit repo-workspace install contract.
