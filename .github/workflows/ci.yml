@@ -9,6 +9,7 @@ on:
     branches: [ main, master, develop ]
     paths:
       - '**/*.sh'
+      - 'skills/**'
       - 'test/Dockerfile'
       - 'test/docker-compose.yml'
       - '.github/workflows/ci.yml'
@@ -17,6 +18,7 @@ on:
     branches: [ main, master, develop, 'cursor/**' ]
     paths:
       - '**/*.sh'
+      - 'skills/**'
       - 'test/Dockerfile'
       - 'test/docker-compose.yml'
       - '.github/workflows/ci.yml'
@@ -116,6 +118,18 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify active docs consistency
         run: bash ./test/ci_test_docs_consistency.sh
+
+  agent-skill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify skill structure
+        run: bash ./test/ci_test_skill_structure.sh
+      - name: Verify skill command mapping
+        run: bash ./test/ci_test_skill_command_mapping.sh
+      - name: Verify skill safety
+        run: bash ./test/ci_test_skill_safety.sh
 
   tui-whiptail-nonskip-guard:
     runs-on: ubuntu-latest

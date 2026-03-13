@@ -11,6 +11,33 @@ Use this file to preserve context across sessions.
 - Date: 2026-03-13
 - Author: codex
 - Summary:
+  - Implemented the first local agent skill at `skills/eth2-quickstart/`.
+  - Kept the skill thin and command-driven:
+    - `SKILL.md` routes intent to the canonical wrapper surface,
+    - `references/` covers workflow, commands, safety, and outputs,
+    - `agents/openai.yaml` provides minimal UI metadata.
+  - Added test-first enforcement for the skill contract:
+    - `test/ci_test_skill_structure.sh`
+    - `test/ci_test_skill_command_mapping.sh`
+    - `test/ci_test_skill_safety.sh`
+  - Wired skill checks into:
+    - `test/run_tests.sh --unit`
+    - `scripts/pre-commit.sh`
+    - `.github/workflows/ci.yml` via a dedicated `agent-skill` job
+  - Updated CI path filters so `skills/**` changes trigger CI.
+  - Added brief discoverability pointers in `README.md` and `docs/README.md`.
+- Validation:
+  - `bash test/ci_test_skill_structure.sh` passed.
+  - `bash test/ci_test_skill_command_mapping.sh` passed.
+  - `bash test/ci_test_skill_safety.sh` passed.
+  - `REQUIRE_WHIPTAIL_PIPE_TEST=1 SKIP_SHELLCHECK=true USE_MOCKS=true ./test/run_tests.sh --unit` passed.
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - If we want public installation or registry distribution, build that in a separate PR on top of this local skill baseline.
+
+- Date: 2026-03-13
+- Author: codex
+- Summary:
   - Refined `docs/AGENT_SKILL_PLAN.md` after reviewing skill-creation guidance and public skill patterns.
   - Added explicit note that generic blockchain/solidity skills are not a good model for this repo because they are usually prose-heavy and not wired to a real command surface.
   - Added a file-by-file first implementation contract for `skills/eth2-quickstart/`.
