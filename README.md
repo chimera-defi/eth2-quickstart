@@ -68,19 +68,20 @@ Use one stable entrypoint for common workflows:
 ./scripts/eth2qs.sh doctor --json
 ```
 
-For agent integrations, the local skill bundle lives at `skills/eth2-quickstart/` and is intended to be used inside this repo workspace.
+For agent integrations, the published skill source lives at `skills/eth2-quickstart/` and is intended to be used inside an `eth2-quickstart` checkout.
 
 ### For External Agents
 
-Agents outside this repo can use the skill, but only through an `eth2-quickstart` checkout.
+Agents outside this repo can use the skill through ClawHub, but it still needs to be used inside an `eth2-quickstart` checkout.
 
-- Install or copy the skill into the repo workspace
+- Install with `clawhub install eth2-quickstart` or `npx clawhub install eth2-quickstart`
+- Clone this repo and run the skill from inside the checkout
 - Resolve the repo root, then use the canonical wrapper commands
 - Prefer `./scripts/eth2qs.sh doctor --json` for machine-readable health
 - Prefer `./scripts/eth2qs.sh clean-data --dry-run` before any cleanup
 - The cleanup flow preserves keys and secrets by design
 
-This is a repo-aware operations skill, not a generic blockchain prompt and not a standalone global package.
+This is a repo-aware operations skill, not a generic blockchain prompt and not a standalone node toolchain.
 
 ### Installation
 
