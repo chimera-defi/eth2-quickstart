@@ -291,6 +291,15 @@ Use this file to preserve context across sessions.
 - Validation:
   - `bash test/ci_test_docs_consistency.sh` passed.
 
+## Update: 2026-03-13 (Agent Skill Packaging Plan)
+- Author: codex
+- Summary:
+  - Added `docs/AGENT_SKILL_PLAN.md` to plan a repo-owned agent skill for node bootstrap, operations, diagnostics, and cleanup.
+  - Recommended a two-layer approach: local Codex skill first, registry packaging second.
+  - Explicitly recommended against making `npx` the primary distribution path for this shell-first repo.
+- Validation:
+  - `bash test/ci_test_docs_consistency.sh` passed.
+
 ## Update: 2026-03-06 (Prysm Checkpoint Sync Audit + Legacy Cleanup)
 - Author: codex
 - Summary:
