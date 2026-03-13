@@ -8,8 +8,8 @@ import { Bot, Shield, TerminalSquare, Binary } from 'lucide-react'
 
 const AGENT_POINTS = [
   {
-    title: 'Repo-aware by design',
-    description: 'Install the skill inside an eth2-quickstart checkout so agents operate against the real repo, not a second toolchain.',
+    title: 'One-line install, repo-aware use',
+    description: 'Install through ClawHub, then run it inside an eth2-quickstart checkout so agents operate against the real repo, not a second toolchain.',
     icon: Bot,
   },
   {
@@ -29,7 +29,11 @@ const AGENT_POINTS = [
   },
 ]
 
-const AGENT_SNIPPET = `# inside an eth2-quickstart checkout
+const AGENT_SNIPPET = `clawhub install eth2-quickstart
+git clone https://github.com/chimera-defi/eth2-quickstart.git
+cd eth2-quickstart
+
+# inside an eth2-quickstart checkout
 ./scripts/eth2qs.sh doctor --json
 ./scripts/eth2qs.sh logs --run2 -n 200
 ./scripts/eth2qs.sh clean-data --dry-run`
@@ -57,19 +61,19 @@ export function Agents() {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="mt-3 text-base text-muted-foreground sm:text-lg"
             >
-              External agents can use the repo-local skill to install, inspect, update,
+              External agents can use the ClawHub-installable skill to inspect, update,
               and clean node stacks without drifting from the supported command surface.
             </motion.p>
             <p className="mt-3 text-sm text-muted-foreground">
-              It is intentionally repo-local. This is not a standalone global package and it
-              does not manage validator secrets.
+              It is intentionally repo-aware. Install is one-line, but use still happens inside
+              the repo checkout, and it does not manage validator secrets.
             </p>
           </div>
 
           <Card className="border-border/60 bg-muted/40">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span className="font-mono uppercase tracking-wide">Agent demo flow</span>
-              <span>repo-local skill</span>
+              <span>ClawHub install</span>
             </div>
             <div className="mt-3 overflow-x-auto">
               <CodeBlock code={AGENT_SNIPPET} language="bash" />

@@ -38,11 +38,12 @@ else
     record_test "SKILL.md has OpenClaw metadata" "FAIL"
 fi
 
-if grep -Fq "repo workspace" "$SKILL_FILE" &&
+if grep -Fq "npx clawhub install eth2-quickstart" "$WORKFLOW_REF" &&
+   grep -Fq "ClawHub" "$SKILL_FILE" &&
    grep -Fq "resolve_repo_root.sh" "$WORKFLOW_REF"; then
-    record_test "distribution docs state repo-local install contract" "PASS"
+    record_test "distribution docs state clawhub install contract" "PASS"
 else
-    record_test "distribution docs state repo-local install contract" "FAIL"
+    record_test "distribution docs state clawhub install contract" "FAIL"
 fi
 
 print_test_summary

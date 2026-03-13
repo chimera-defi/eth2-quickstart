@@ -14,7 +14,7 @@ Install, operate, diagnose, update, and clean Ethereum node stacks through one c
 
 ## One-Liner Pitch
 
-Give an agent a safe, repo-local interface to `eth2-quickstart` so it can bootstrap hosts, inspect node health, and propose cleanup without inventing commands or deleting secrets.
+Give an agent a safe ClawHub-installable interface to `eth2-quickstart` so it can bootstrap hosts, inspect node health, and propose cleanup without inventing commands or deleting secrets.
 
 ## Key Claims
 
@@ -22,12 +22,13 @@ Give an agent a safe, repo-local interface to `eth2-quickstart` so it can bootst
 - Canonical commands: routes through `./scripts/eth2qs.sh`
 - Machine-readable health: uses `./scripts/eth2qs.sh doctor --json`
 - Safe cleanup: prefers `clean-data --dry-run` and preserves secrets by design
+- One-line install: supports `clawhub install eth2-quickstart` and `npx clawhub install eth2-quickstart`
 - CI-backed: skill structure, command mapping, safety, and distribution path are tested
 
 ## Use It Like This
 
-1. Clone `eth2-quickstart`
-2. Install or copy the skill into that repo workspace
+1. Install the skill with `clawhub install eth2-quickstart` or `npx clawhub install eth2-quickstart`
+2. Clone `eth2-quickstart`
 3. Run from inside the repo so the skill can resolve the repo root
 4. Use the wrapper commands for real operations
 

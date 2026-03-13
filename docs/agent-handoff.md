@@ -11,6 +11,24 @@ Use this file to preserve context across sessions.
 - Date: 2026-03-13
 - Author: codex
 - Summary:
+  - Tightened the agent skill packaging work so the external install story matches current ClawHub/OpenClaw distribution norms.
+  - Updated the live skill and workflow guidance to point to `clawhub install eth2-quickstart` and `npx clawhub install eth2-quickstart` instead of vague "copy the skill" wording.
+  - Kept the actual execution boundary explicit: install is one-line, but use still happens inside an `eth2-quickstart` checkout.
+  - Updated `README.md`, `docs/AGENT_SKILL_LISTING.md`, and the homepage `Agents` section so the marketing/install story matches the skill contract.
+  - Tightened `test/ci_test_skill_distribution.sh` so CI now enforces the ClawHub install language and repo-resolution path together.
+- Validation:
+  - `bash test/ci_test_skill_distribution.sh` passed.
+  - `bash test/ci_test_docs_consistency.sh` passed.
+  - `cd frontend && bun run lint` passed.
+  - `cd frontend && bun run test` passed.
+  - `cd frontend && bun run build` passed.
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - If we publish to the public ClawHub registry, keep the listing copy explicit that the skill wraps repo commands and still requires an `eth2-quickstart` checkout.
+
+- Date: 2026-03-13
+- Author: codex
+- Summary:
   - Added user-facing agent marketing surfaces on top of the repo-local skill work.
   - Updated `README.md` with a concise "For External Agents" section that explains the repo-local contract and safe/demo commands.
   - Added `docs/AGENT_SKILL_LISTING.md` as the canonical short listing/marketing copy for registries, website blurbs, and launch posts.

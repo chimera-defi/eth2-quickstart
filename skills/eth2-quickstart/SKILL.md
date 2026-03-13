@@ -8,7 +8,7 @@ metadata:
 
 # Eth2 Quickstart
 
-Use this skill for repo-local Ethereum node workflows. Install it into the repo workspace, not a random directory. Prefer the wrapper command surface over ad hoc script selection.
+Use this skill for Ethereum node workflows inside an `eth2-quickstart` checkout. Publish/install it through ClawHub or `npx clawhub`, then run it from the repo so it can use the canonical wrapper commands.
 
 ## Routing
 
