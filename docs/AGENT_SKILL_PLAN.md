@@ -30,6 +30,35 @@ Why:
 
 If a CLI installer is desired later, prefer a small shell/bootstrap path or a registry-native skill installer over `npx`.
 
+## Example Inputs Reviewed
+
+This plan was shaped against four concrete patterns:
+
+- **OpenClaw/OpenClaw docs**: skills live as folders with `SKILL.md` under the agent workspace and are loaded via progressive disclosure.
+- **SKILL.md support guidance**: keep metadata small, push detail into references, and let scripts/references carry the heavy context.
+- **General skill-library pattern**: public skill catalogs often use a flat `skills/<name>/` layout and a separate installer/registry layer.
+- **Current registry risk**: public skill registries are an active supply-chain target, especially for crypto/blockchain-adjacent skills, so provenance and no-remote-installer rules need to be first-class.
+
+What I did not find useful as a model:
+
+- public "blockchain" or "solidity" agent skills tend to be generic domain-expert prompts, not operational skills wired to a real repo command surface
+- many are prose-heavy and would drift quickly from this repo's actual scripts and supported workflows
+
+So the right pattern here is not "web3 knowledge skill". It is a thin repo-operator skill with strict command mapping and safety checks.
+
+## Security Requirements
+
+The skill must:
+- avoid any instruction that pulls and executes remote code inline
+- prefer repo-local scripts and checked-in references
+- state clearly that installing a skill is equivalent to trusting local executable instructions
+- require human confirmation before destructive or host-wide operations
+
+The first public registry version should not ship until we have:
+- explicit publisher provenance
+- a human-readable review checklist
+- local validation that the skill never instructs the agent to fetch external bootstrap code outside the repo's canonical install paths
+
 ## Scope for V1
 
 The first skill should cover:
@@ -59,6 +88,48 @@ skills/eth2-quickstart/
 
 ## Phase Plan
 
+### Phase 0: Build Spec and Test Harness
+
+- Create the skill directory contract before writing the skill:
+  - `skills/eth2-quickstart/SKILL.md`
+  - `skills/eth2-quickstart/agents/openai.yaml`
+  - `skills/eth2-quickstart/references/*.md`
+- Add a lightweight repo test that verifies:
+  - required skill files exist
+  - `SKILL.md` frontmatter is valid
+  - linked reference files exist
+  - command examples in the skill resolve to real repo entrypoints
+  - the skill does not contain forbidden remote bootstrap patterns such as `curl ... | bash`
+
+### Phase 0.5: First Implementation Contract
+
+The first implementation PR should create exactly these files:
+
+```text
+skills/eth2-quickstart/
+├── SKILL.md
+├── agents/openai.yaml
+└── references/
+    ├── workflow.md
+    ├── commands.md
+    ├── safety.md
+    └── outputs.md
+```
+
+File responsibilities:
+- `SKILL.md`: trigger metadata, intent routing, when to load each reference
+- `agents/openai.yaml`: UI-facing display metadata only
+- `references/workflow.md`: install vs operate vs diagnose vs clean decision tree
+- `references/commands.md`: canonical mapping to `scripts/eth2qs.sh`, `install.sh`, `run_1.sh`, `run_2.sh`, and utility scripts
+- `references/safety.md`: destructive boundaries, secrets policy, reboot/root boundaries
+- `references/outputs.md`: expected command outputs, JSON paths, and service checks an agent can rely on
+
+The first implementation PR should not add:
+- a separate Node CLI
+- remote-install helpers
+- duplicated copies of repo docs under `skills/`
+- client-specific deep reference files unless the generic command mapping proves insufficient
+
 ### Phase 1: Local skill for Codex
 
 - Create `skills/eth2-quickstart/SKILL.md`
@@ -85,6 +156,38 @@ skills/eth2-quickstart/
 - Validate the skill can be installed through a registry flow such as ClawHub
 - Only after that, decide whether a separate installer/distribution wrapper is still useful
 
+## TDD Shape
+
+This should be built test-first, not prose-first.
+
+Implementation order:
+1. Add the skill-structure validation test and make it fail.
+2. Add the minimal skill skeleton and make the test pass.
+3. Add reference files and command-mapping checks.
+4. Add negative checks for unsafe installer patterns.
+5. Add registry metadata only after the local skill passes the repo tests.
+
+Acceptance tests for the implementation PR:
+- skill structure test passes locally and in CI
+- docs consistency still passes
+- command examples in the skill resolve to current repo commands
+- no remote installer pattern is introduced into skill content
+- `scripts/eth2qs.sh` remains the canonical command surface for the skill
+
+Suggested first red/green test split:
+1. `test/ci_test_skill_structure.sh`
+   - fail if any required skill file is missing
+   - fail if `SKILL.md` lacks required frontmatter keys
+   - fail if referenced files do not exist
+2. `test/ci_test_skill_command_mapping.sh`
+   - fail if documented commands do not point at real repo entrypoints
+   - fail if the skill routes install/diagnose/cleanup to non-canonical scripts
+3. `test/ci_test_skill_safety.sh`
+   - fail on forbidden inline remote bootstrap patterns
+   - fail if cleanup guidance contradicts the repo's "preserve secrets" policy
+
+This is enough to one-shot a first buildout. It is not enough to one-shot a polished public-registry release, which should remain a second PR after the local skill exists and passes tests.
+
 ## Open Questions
 
 - Should the skill target only local repo usage, or also remote host orchestration over SSH?
@@ -98,3 +201,4 @@ skills/eth2-quickstart/
 - The skill reuses canonical repo commands instead of re-describing logic in prose
 - Safety boundaries are explicit: root steps, reboot boundary, secret preservation, and destructive cleanup
 - The published skill path does not introduce a second competing UX that drifts from the repo
+- The first implementation PR can be built from this plan without reopening architecture questions
