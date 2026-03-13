@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-03-10
+Last updated: 2026-03-13
 
 ## Current Capabilities
 
@@ -31,19 +31,24 @@ Last updated: 2026-03-10
   - `./test/whiptail_pipe_test.sh`
   - enforced mode: `REQUIRE_WHIPTAIL_PIPE_TEST=1 ./test/whiptail_pipe_test.sh`
 - CI includes dedicated `tui-whiptail-pipe` job to verify whiptail/Enter behavior with `expect`.
+- CI includes `tui-whiptail-nonskip-guard` so required shell-test coverage fails instead of skipping.
+- Installer smoke coverage:
+  - `./test/install_sh_smoke.sh`
+  - enforced in CI via `install-sh-smoke`
 - Docs consistency checks:
   - `./test/ci_test_docs_consistency.sh`
   - enforced in CI via `docs-consistency` job
 
 ## Open Gaps / Incomplete Work
 
-- Add installer smoke test that executes `install.sh` end-to-end in a controlled test harness (beyond structure/grep checks).
 - Standardize config merge tooling across clients (some docs still describe simple concat/generation rather than schema-aware merge).
 - Keep pruning active docs when one-off reports appear; move them to `docs/archive/reports/`.
+- Optional: enable a stable Prysm checkpoint smoke path in CI without adding flake or excessive runtime.
 
 ## Canonical Docs
 
 - Main docs index: `docs/README.md`
 - Script reference: `docs/SCRIPTS.md`
 - Frontend guide: `docs/FRONTEND.md`
+- Closed PR follow-up tracker: `docs/PR_FOLLOWUPS.md`
 - Session continuity: `docs/agent-handoff.md`

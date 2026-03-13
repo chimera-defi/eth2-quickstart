@@ -5,6 +5,7 @@ This directory contains all project documentation organized by category.
 ## Core Documentation
 - **[README.md](../README.md)** - Main project overview and quickstart guide
 - **[STATUS.md](STATUS.md)** - Concise current state, coverage, and open gaps/incomplete work
+- **[PR_FOLLOWUPS.md](PR_FOLLOWUPS.md)** - Closed PR provenance: what was superseded vs what is still worth revisiting
 - **[SCRIPTS.md](SCRIPTS.md)** - Detailed script reference and usage
 - **[WORKFLOW.md](WORKFLOW.md)** - Setup workflow and process documentation
 - **[GLOSSARY.md](GLOSSARY.md)** - Technical terminology and definitions
