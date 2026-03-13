@@ -58,5 +58,6 @@ echo "=== Agent skill checks ==="
 bash test/ci_test_skill_structure.sh
 bash test/ci_test_skill_command_mapping.sh
 bash test/ci_test_skill_safety.sh
+bash test/ci_test_skill_distribution.sh
 
 echo "✅ Pre-commit checks passed."
