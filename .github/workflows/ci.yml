@@ -130,6 +130,8 @@ jobs:
         run: bash ./test/ci_test_skill_command_mapping.sh
       - name: Verify skill safety
         run: bash ./test/ci_test_skill_safety.sh
+      - name: Verify skill distribution contract
+        run: bash ./test/ci_test_skill_distribution.sh
 
   tui-whiptail-nonskip-guard:
     runs-on: ubuntu-latest

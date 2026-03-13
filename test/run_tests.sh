@@ -518,7 +518,8 @@ run_unit_tests() {
     for skill_test in \
         "$SCRIPT_DIR/ci_test_skill_structure.sh" \
         "$SCRIPT_DIR/ci_test_skill_command_mapping.sh" \
-        "$SCRIPT_DIR/ci_test_skill_safety.sh"; do
+        "$SCRIPT_DIR/ci_test_skill_safety.sh" \
+        "$SCRIPT_DIR/ci_test_skill_distribution.sh"; do
         if [[ -f "$skill_test" ]]; then
             if bash "$skill_test"; then
                 log_test "PASS" "$(basename "$skill_test"): all tests passed"
