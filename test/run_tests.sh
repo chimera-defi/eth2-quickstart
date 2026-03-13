@@ -512,6 +512,23 @@ run_unit_tests() {
             fi
         fi
     fi
+
+    log_subheader "Skill contract tests"
+    local skill_test
+    for skill_test in \
+        "$SCRIPT_DIR/ci_test_skill_structure.sh" \
+        "$SCRIPT_DIR/ci_test_skill_command_mapping.sh" \
+        "$SCRIPT_DIR/ci_test_skill_safety.sh"; do
+        if [[ -f "$skill_test" ]]; then
+            if bash "$skill_test"; then
+                log_test "PASS" "$(basename "$skill_test"): all tests passed"
+            else
+                log_test "FAIL" "$(basename "$skill_test"): some tests failed"
+            fi
+        else
+            log_test "SKIP" "$(basename "$skill_test"): file not found"
+        fi
+    done
 }
 
 # =============================================================================

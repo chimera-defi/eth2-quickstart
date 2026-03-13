@@ -68,6 +68,8 @@ Use one stable entrypoint for common workflows:
 ./scripts/eth2qs.sh doctor --json
 ```
 
+For agent integrations, the first local skill bundle now lives at `skills/eth2-quickstart/`.
+
 ### Installation
 
 1. **Download and prepare**:
