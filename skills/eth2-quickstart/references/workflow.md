@@ -4,7 +4,8 @@ Use the wrapper first.
 
 ## Choose The Path
 
-- If the current working directory is uncertain, resolve the repo root first: `REPO_ROOT="$(./skills/eth2-quickstart/scripts/resolve_repo_root.sh)" && cd "$REPO_ROOT"`
+- If you are already in the repo root, resolve it explicitly with: `REPO_ROOT="$(bash ./skills/eth2-quickstart/scripts/resolve_repo_root.sh)" && cd "$REPO_ROOT"`
+- If you are already in the skill directory, use: `REPO_ROOT="$(bash ./scripts/resolve_repo_root.sh)" && cd "$REPO_ROOT"`
 - Fresh bootstrap from a host shell: `./scripts/eth2qs.sh bootstrap --non-interactive`
 - Configure generated scripts before execution: `./scripts/eth2qs.sh configure --interactive` or `--non-interactive`
 - Phase 1 hardening as root: `sudo ./scripts/eth2qs.sh phase1`
