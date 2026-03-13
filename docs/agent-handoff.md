@@ -8,6 +8,24 @@ Use this file to preserve context across sessions.
 - Use a fresh branch + fresh PR for each new task.
 
 ## Latest Update
+- Date: 2026-03-13
+- Author: codex
+- Summary:
+  - Refined `docs/AGENT_SKILL_PLAN.md` after reviewing skill-creation guidance and public skill patterns.
+  - Added explicit note that generic blockchain/solidity skills are not a good model for this repo because they are usually prose-heavy and not wired to a real command surface.
+  - Added a file-by-file first implementation contract for `skills/eth2-quickstart/`.
+  - Added a concrete TDD plan with three initial CI tests:
+    - `ci_test_skill_structure.sh`
+    - `ci_test_skill_command_mapping.sh`
+    - `ci_test_skill_safety.sh`
+  - Clarified scope boundary:
+    - the plan is sufficient to one-shot the first local skill implementation PR,
+    - registry/public packaging should remain a follow-up PR after the local skill passes tests.
+- Validation:
+  - `bash test/ci_test_docs_consistency.sh` passed.
+- Follow-ups:
+  - Implement the first local skill on a fresh branch using the Phase 0/0.5 TDD sequence in `docs/AGENT_SKILL_PLAN.md`.
+
 - Date: 2026-03-05
 - Author: codex
 - Summary:
@@ -288,6 +306,15 @@ Use this file to preserve context across sessions.
   - Added `docs/PR_FOLLOWUPS.md` as the canonical tracker for closed PR provenance.
   - Marked which recent closed PRs were fully superseded by merged replacements versus which ideas remain optional follow-ups.
   - Updated `docs/STATUS.md` and `docs/README.md` so current coverage reflects merged installer smoke/TUI guard work and points to the new tracker.
+- Validation:
+  - `bash test/ci_test_docs_consistency.sh` passed.
+
+## Update: 2026-03-13 (Agent Skill Packaging Plan)
+- Author: codex
+- Summary:
+  - Added `docs/AGENT_SKILL_PLAN.md` to plan a repo-owned agent skill for node bootstrap, operations, diagnostics, and cleanup.
+  - Recommended a two-layer approach: local Codex skill first, registry packaging second.
+  - Explicitly recommended against making `npx` the primary distribution path for this shell-first repo.
 - Validation:
   - `bash test/ci_test_docs_consistency.sh` passed.
 
