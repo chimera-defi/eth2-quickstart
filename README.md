@@ -70,6 +70,18 @@ Use one stable entrypoint for common workflows:
 
 For agent integrations, the local skill bundle lives at `skills/eth2-quickstart/` and is intended to be used inside this repo workspace.
 
+### For External Agents
+
+Agents outside this repo can use the skill, but only through an `eth2-quickstart` checkout.
+
+- Install or copy the skill into the repo workspace
+- Resolve the repo root, then use the canonical wrapper commands
+- Prefer `./scripts/eth2qs.sh doctor --json` for machine-readable health
+- Prefer `./scripts/eth2qs.sh clean-data --dry-run` before any cleanup
+- The cleanup flow preserves keys and secrets by design
+
+This is a repo-aware operations skill, not a generic blockchain prompt and not a standalone global package.
+
 ### Installation
 
 1. **Download and prepare**:
@@ -447,6 +459,7 @@ Additionally, the beacon checkpoint states have been made available by Sharedsta
 - Canonical docs index: [docs/README.md](docs/README.md)
 - Current status and open gaps: [docs/STATUS.md](docs/STATUS.md)
 - Script reference: [docs/SCRIPTS.md](docs/SCRIPTS.md)
+- Agent skill listing copy: [docs/AGENT_SKILL_LISTING.md](docs/AGENT_SKILL_LISTING.md)
 - Frontend docs: [docs/FRONTEND.md](docs/FRONTEND.md) and [frontend/README.md](frontend/README.md)
 - Session continuity and follow-ups: [docs/agent-handoff.md](docs/agent-handoff.md)
 - Common functions reference: [docs/COMMON_FUNCTIONS_REFERENCE.md](docs/COMMON_FUNCTIONS_REFERENCE.md)
