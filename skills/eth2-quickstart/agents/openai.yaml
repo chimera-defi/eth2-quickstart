@@ -1,0 +1,3 @@
+interface:
+  display_name: "Eth2 Quickstart"
+  short_description: "Bootstrap, operate, diagnose, and clean Ethereum node stacks via canonical repo commands"
