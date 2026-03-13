@@ -1,11 +1,14 @@
 ---
 name: eth2-quickstart
 description: Use this skill when working with this repo to bootstrap, operate, diagnose, update, or clean up Ethereum node stacks through the canonical repo commands with strict safety guardrails.
+metadata:
+  openclaw:
+    skillKey: eth2-quickstart
 ---
 
 # Eth2 Quickstart
 
-Use this skill for repo-local Ethereum node workflows. Prefer the wrapper command surface over ad hoc script selection.
+Use this skill for repo-local Ethereum node workflows. Install it into the repo workspace, not a random directory. Prefer the wrapper command surface over ad hoc script selection.
 
 ## Routing
 

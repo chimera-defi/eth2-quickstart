@@ -11,6 +11,25 @@ Use this file to preserve context across sessions.
 - Date: 2026-03-13
 - Author: codex
 - Summary:
+  - Added the registry/distribution follow-up for the local agent skill without turning it into a second product.
+  - Added `skills/eth2-quickstart/scripts/resolve_repo_root.sh` so an installed skill can deterministically locate the repo root from either the repo root or the skill directory.
+  - Extended `skills/eth2-quickstart/SKILL.md` with `metadata.openclaw.skillKey` and an explicit repo-workspace install contract.
+  - Updated workflow guidance so agents resolve the repo root first when the current directory is uncertain.
+  - Added `test/ci_test_skill_distribution.sh` and wired it into:
+    - `.github/workflows/ci.yml` (`agent-skill` job),
+    - `test/run_tests.sh --unit`,
+    - `scripts/pre-commit.sh`.
+- Validation:
+  - `bash test/ci_test_skill_structure.sh` passed.
+  - `bash test/ci_test_skill_command_mapping.sh` passed.
+  - `bash test/ci_test_skill_safety.sh` passed.
+  - `bash test/ci_test_skill_distribution.sh` passed.
+- Follow-ups:
+  - If we publish to a public registry later, keep it repo-local by design unless we intentionally decide to ship a separate standalone toolchain.
+
+- Date: 2026-03-13
+- Author: codex
+- Summary:
   - Implemented the first local agent skill at `skills/eth2-quickstart/`.
   - Kept the skill thin and command-driven:
     - `SKILL.md` routes intent to the canonical wrapper surface,
