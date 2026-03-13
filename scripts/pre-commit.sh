@@ -54,4 +54,9 @@ bash install/test/test_common_functions.sh
 echo "=== Docs consistency ==="
 bash test/ci_test_docs_consistency.sh
 
+echo "=== Agent skill checks ==="
+bash test/ci_test_skill_structure.sh
+bash test/ci_test_skill_command_mapping.sh
+bash test/ci_test_skill_safety.sh
+
 echo "✅ Pre-commit checks passed."
