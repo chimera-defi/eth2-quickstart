@@ -22,7 +22,9 @@ Operations:
   doctor [--json]         Run health checks (human output by default)
   status                  Alias for: doctor
   start                   Start all node services
+  stop                    Stop all node services
   restart                 Restart all node services
+  stats                   Show current service status and system stats
   logs [args...]          View run logs (passed to install/utils/view_logs.sh)
   clean-data [args...]    Purge default node data dirs (safe by default)
   update-all [args...]    Comprehensive updater
@@ -77,8 +79,14 @@ case "$cmd" in
     start)
         run_cmd "$ROOT_DIR/install/utils/start.sh" "$@"
         ;;
+    stop)
+        run_cmd "$ROOT_DIR/install/utils/stop.sh" "$@"
+        ;;
     restart)
         run_cmd "$ROOT_DIR/install/utils/refresh.sh" "$@"
+        ;;
+    stats)
+        run_cmd "$ROOT_DIR/install/utils/stats.sh" "$@"
         ;;
     logs)
         run_cmd "$ROOT_DIR/install/utils/view_logs.sh" "$@"

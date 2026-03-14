@@ -12,6 +12,7 @@ Use this skill for Ethereum node workflows inside an `eth2-quickstart` checkout.
 
 ## Routing
 
+- For end-to-end node operator goals, read [operator.md](references/operator.md).
 - Install/bootstrap: use `./scripts/eth2qs.sh bootstrap ...`. Read [workflow.md](references/workflow.md).
 - Configure or rerun phases: use `./scripts/eth2qs.sh configure`, `phase1`, or `phase2`. Read [workflow.md](references/workflow.md).
 - Diagnose or inspect status: use `./scripts/eth2qs.sh doctor --json` for machine-readable output. Read [outputs.md](references/outputs.md).
@@ -30,6 +31,7 @@ Use this skill for Ethereum node workflows inside an `eth2-quickstart` checkout.
 ## References
 
 - [workflow.md](references/workflow.md): choose bootstrap vs configure vs phase workflows
+- [operator.md](references/operator.md): operator-focused install, resume, run, update, and cleanup flows
 - [commands.md](references/commands.md): canonical command mapping
 - [safety.md](references/safety.md): destructive boundaries and secrets policy
 - [outputs.md](references/outputs.md): expected outputs and checks for agents

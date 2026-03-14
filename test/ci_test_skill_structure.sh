@@ -18,6 +18,7 @@ required_files=(
     "$SKILL_FILE"
     "$OPENAI_YAML"
     "$SKILL_DIR/references/workflow.md"
+    "$SKILL_DIR/references/operator.md"
     "$SKILL_DIR/references/commands.md"
     "$SKILL_DIR/references/safety.md"
     "$SKILL_DIR/references/outputs.md"

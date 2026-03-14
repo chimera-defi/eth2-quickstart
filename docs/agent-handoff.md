@@ -11,6 +11,32 @@ Use this file to preserve context across sessions.
 - Date: 2026-03-13
 - Author: codex
 - Summary:
+  - Expanded the `eth2-quickstart` skill from a thin repo operator into a more useful node-operator skill for agents that want to bootstrap and run their own Ethereum node stacks through this repo.
+  - Added a real wrapper stop path via `install/utils/stop.sh` and exposed both `stop` and `stats` through `./scripts/eth2qs.sh`.
+  - Added `skills/eth2-quickstart/references/operator.md` to cover the high-level agent workflows:
+    - fresh host bootstrap,
+    - resume after reboot,
+    - operate a running node,
+    - recover disk space safely.
+  - Extended skill command coverage and tests so CI now enforces the broader operator contract, not just repo-local structure.
+  - Updated external-facing copy so the README, listing copy, and website reflect bootstrap/run/update/cleanup workflows instead of only diagnosis and cleanup.
+- Validation:
+  - `bash test/ci_test_skill_structure.sh` passed.
+  - `bash test/ci_test_skill_command_mapping.sh` passed.
+  - `bash test/ci_test_skill_safety.sh` passed.
+  - `bash test/ci_test_skill_distribution.sh` passed.
+  - `bash test/ci_test_docs_consistency.sh` passed.
+  - `cd frontend && bun run lint` passed.
+  - `cd frontend && bun run test` passed.
+  - `cd frontend && bun run build` passed.
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - Publish to ClawHub and run a clean install smoke test before claiming the one-line install is live.
+  - If desired later, add richer machine-readable operator outputs for disk usage and install/update summaries beyond `doctor --json`.
+
+- Date: 2026-03-13
+- Author: codex
+- Summary:
   - Tightened the agent skill packaging work so the external install story matches current ClawHub/OpenClaw distribution norms.
   - Updated the live skill and workflow guidance to point to `clawhub install eth2-quickstart` and `npx clawhub install eth2-quickstart` instead of vague "copy the skill" wording.
   - Kept the actual execution boundary explicit: install is one-line, but use still happens inside an `eth2-quickstart` checkout.

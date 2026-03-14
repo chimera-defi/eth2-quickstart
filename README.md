@@ -77,6 +77,7 @@ Agents outside this repo can use the skill through ClawHub, but it still needs t
 - Install with `clawhub install eth2-quickstart` or `npx clawhub install eth2-quickstart`
 - Clone this repo and run the skill from inside the checkout
 - Resolve the repo root, then use the canonical wrapper commands
+- Use the skill for bootstrap, install, start/stop, health checks, updates, and safe cleanup
 - Prefer `./scripts/eth2qs.sh doctor --json` for machine-readable health
 - Prefer `./scripts/eth2qs.sh clean-data --dry-run` before any cleanup
 - The cleanup flow preserves keys and secrets by design
