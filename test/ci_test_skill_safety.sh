@@ -12,7 +12,7 @@ SKILL_DIR="$PROJECT_ROOT/skills/eth2-quickstart"
 SKILL_FILE="$SKILL_DIR/SKILL.md"
 SAFETY_REF="$SKILL_DIR/references/safety.md"
 COMMANDS_REF="$SKILL_DIR/references/commands.md"
-ALL_SKILL_FILES=("$SKILL_FILE" "$SAFETY_REF" "$COMMANDS_REF" "$SKILL_DIR/references/workflow.md" "$SKILL_DIR/references/outputs.md")
+ALL_SKILL_FILES=("$SKILL_FILE" "$SAFETY_REF" "$COMMANDS_REF" "$SKILL_DIR/references/workflow.md" "$SKILL_DIR/references/operator.md" "$SKILL_DIR/references/outputs.md")
 
 log_info "=== CI Test: eth2-quickstart skill safety ==="
 

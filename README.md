@@ -72,9 +72,9 @@ For agent integrations, the published skill source lives at `skills/eth2-quickst
 
 ### For External Agents
 
-Agents outside this repo can use the skill through ClawHub, but it still needs to be used inside an `eth2-quickstart` checkout.
+Agents outside this repo can use the skill after it is published to ClawHub, but it still needs to be used inside an `eth2-quickstart` checkout.
 
-- Install with `clawhub install eth2-quickstart` or `npx clawhub install eth2-quickstart`
+- Once published, install with `clawhub install eth2-quickstart` or `npx clawhub install eth2-quickstart`
 - Clone this repo and run the skill from inside the checkout
 - Resolve the repo root, then use the canonical wrapper commands
 - Use the skill for bootstrap, install, start/stop, health checks, updates, and safe cleanup
