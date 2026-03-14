@@ -21,6 +21,7 @@ required_files=(
     "$SKILL_DIR/references/operator.md"
     "$SKILL_DIR/references/commands.md"
     "$SKILL_DIR/references/safety.md"
+    "$SKILL_DIR/references/sizing.md"
     "$SKILL_DIR/references/outputs.md"
     "$SKILL_DIR/references/examples.md"
     "$SKILL_DIR/references/improvement.md"

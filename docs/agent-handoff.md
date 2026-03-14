@@ -652,3 +652,17 @@ Use this file to preserve context across sessions.
   - `./scripts/pre-commit.sh` passed.
 - Follow-ups:
   - Re-run PR `#156` CI on the new head and confirm the added recorder test stays green in Docker CI.
+
+## Update: 2026-03-14 (Skill README Link + Host Sizing Guidance)
+- Author: codex
+- Summary:
+  - Added a direct README pointer to `skills/eth2-quickstart/SKILL.md` so agent users can find the skill entrypoint from the main repo docs.
+  - Added `skills/eth2-quickstart/references/sizing.md` with durable server sizing guidance for Ethereum node hosts.
+  - Updated the skill routing and examples so agents know to surface disk/RAM/CPU/OS guidance before recommending or using a host.
+  - Added structure coverage so the new sizing reference is part of the enforced skill shape.
+- Validation:
+  - `bash test/ci_test_skill_structure.sh` passed.
+  - `bash test/ci_test_docs_consistency.sh` passed.
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - Re-run PR `#156` CI on the new head and confirm the updated README + sizing reference stay green in docs/skill jobs.

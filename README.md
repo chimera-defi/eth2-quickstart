@@ -70,6 +70,7 @@ Use one stable entrypoint for common workflows:
 ```
 
 For agent integrations, the published skill source lives at `skills/eth2-quickstart/` and is intended to be used inside an `eth2-quickstart` checkout.
+The skill entrypoint is [`skills/eth2-quickstart/SKILL.md`](skills/eth2-quickstart/SKILL.md) and includes operator, sizing, safety, and improvement references for agent users.
 
 ### For External Agents
 
@@ -81,6 +82,7 @@ Agents outside this repo can use the skill after it is published to ClawHub, but
 - Clone this repo and run the skill from inside the checkout
 - Resolve the repo root, then use the canonical wrapper commands
 - Use the skill for bootstrap, install, start/stop, health checks, updates, and safe cleanup
+- Use the skill's sizing guidance before install if the user is choosing a server or asking whether a host is large enough
 - Prefer `./scripts/eth2qs.sh doctor --json` for machine-readable health
 - Prefer `./scripts/eth2qs.sh clean-data --dry-run` before any cleanup
 - The cleanup flow preserves keys and secrets by design
