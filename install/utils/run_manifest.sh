@@ -7,6 +7,9 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../" && pwd)"
 
+# shellcheck source=../../lib/install_planner.sh
+source "$ROOT_DIR/lib/install_planner.sh"
+
 DRY_RUN=false
 FORCE_PHASE=""
 
@@ -37,13 +40,20 @@ EOF
     shift
 done
 
+planner_load_config "$ROOT_DIR"
+CHAIN_VALUE="$(planner_configured_chain)"
+
 if [[ "$DRY_RUN" == "true" ]]; then
     if [[ "$FORCE_PHASE" == "1" ]]; then
         echo "[DRY RUN] Would execute: ./run_1.sh"
         exit 0
     fi
     if [[ "$FORCE_PHASE" == "2" ]]; then
-        echo "[DRY RUN] Would execute: ./run_2.sh"
+        if [[ "$CHAIN_VALUE" == "monad" ]]; then
+            echo "[DRY RUN] Would execute: ./monad_install.sh"
+        else
+            echo "[DRY RUN] Would execute: ./run_2.sh"
+        fi
         exit 0
     fi
     exec "$ROOT_DIR/install/utils/ensure.sh"
@@ -54,9 +64,12 @@ case "$FORCE_PHASE" in
         exec "$ROOT_DIR/run_1.sh"
         ;;
     "2")
+        if [[ "$CHAIN_VALUE" == "monad" ]]; then
+            exec "$ROOT_DIR/monad_install.sh"
+        fi
         exec "$ROOT_DIR/run_2.sh"
         ;;
     *)
-        exec "$ROOT_DIR/install/utils/ensure.sh" --apply
+        exec "$ROOT_DIR/install/utils/ensure.sh" --apply --confirm
         ;;
 esac

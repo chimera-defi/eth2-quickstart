@@ -13,6 +13,7 @@ source "$ROOT_DIR/lib/install_planner.sh"
 APPLY=false
 JSON_OUTPUT=false
 CHAIN_OVERRIDE=""
+CONFIRM=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -26,12 +27,15 @@ while [[ $# -gt 0 ]]; do
             CHAIN_OVERRIDE="${2:-}"
             shift
             ;;
+        --confirm)
+            CONFIRM=true
+            ;;
         --help|-h)
             cat <<'EOF'
-Usage: ./install/utils/ensure.sh [--apply] [--json] [--chain ethereum|monad]
+Usage: ./install/utils/ensure.sh [--apply] [--confirm] [--json] [--chain ethereum|monad]
 
 Preview or execute the next safe install step for this host.
-By default this prints a plan only. Use --apply to execute the next action.
+By default this prints a plan only. Use --apply --confirm to execute the next action.
 EOF
             exit 0
             ;;
@@ -77,6 +81,16 @@ if [[ "$APPLY" == "false" ]]; then
     echo "Preview only. Re-run with --apply to execute the next safe action."
     exit 0
 fi
+
+case "$PLAN_NEXT_ACTION" in
+    phase1|phase2|monad_install)
+        if [[ "$CONFIRM" == "false" ]]; then
+            log_warn "Refusing to execute ${PLAN_NEXT_ACTION} without --confirm."
+            log_warn "Review the plan first, then re-run with --apply --confirm."
+            exit 1
+        fi
+        ;;
+esac
 
 case "$PLAN_NEXT_ACTION" in
     noop)

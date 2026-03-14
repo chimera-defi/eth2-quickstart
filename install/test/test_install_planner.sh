@@ -66,6 +66,21 @@ test_partial_review_state() {
     assert_plan "ethereum" "false" "true" 1 2 "partial_install_review" "review"
 }
 
+test_ensure_requires_confirm() {
+    local output
+    if output="$("$PROJECT_ROOT/install/utils/ensure.sh" --apply 2>&1)"; then
+        echo "  ERROR: ensure --apply should require --confirm"
+        return 1
+    fi
+
+    if grep -q -- "--confirm" <<< "$output"; then
+        return 0
+    fi
+
+    echo "  ERROR: missing --confirm guidance in ensure output"
+    return 1
+}
+
 echo "=========================================="
 echo "Install Planner Test Suite"
 echo "=========================================="
@@ -76,6 +91,7 @@ run_test "ethereum non-root -> phase2" test_needs_phase2
 run_test "monad non-root -> monad_install" test_needs_monad_install
 run_test "fully installed stack -> noop" test_installed_state
 run_test "partial install -> review" test_partial_review_state
+run_test "ensure apply requires confirm" test_ensure_requires_confirm
 
 echo ""
 echo "=========================================="

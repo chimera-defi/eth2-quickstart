@@ -590,3 +590,20 @@ Use this file to preserve context across sessions.
 - Impact:
   - Targeted docs reduction without functional changes.
   - Combined tracked docs set reduced from 1554 -> 1510 lines in this pass.
+
+## Update: 2026-03-14 (Agent Skill Planner Hardening)
+- Author: codex
+- Summary:
+  - Hardened `install/utils/ensure.sh` so `--apply` no longer executes install actions silently; `--confirm` is now required for `phase1`, `phase2`, and `monad_install` execution.
+  - Kept `ensure` preview-first and updated skill/operator docs to match the stricter contract.
+  - Made `install/utils/run_manifest.sh --phase2` chain-aware so Monad routes to `./monad_install.sh` instead of always falling through to `./run_2.sh`.
+  - Added planner regression coverage for the new confirmation requirement in `install/test/test_install_planner.sh`.
+- Validation:
+  - `bash install/test/test_install_planner.sh` passed.
+  - `bash test/ci_test_skill_structure.sh` passed.
+  - `bash test/ci_test_skill_command_mapping.sh` passed.
+  - `bash test/ci_test_skill_safety.sh` passed.
+  - `bash test/ci_test_docs_consistency.sh` passed.
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - Planner/skill contract is locally green; re-push branch changes and confirm PR `#156` CI on the new head.
