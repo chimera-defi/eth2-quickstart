@@ -607,3 +607,16 @@ Use this file to preserve context across sessions.
   - `./scripts/pre-commit.sh` passed.
 - Follow-ups:
   - Planner/skill contract is locally green; re-push branch changes and confirm PR `#156` CI on the new head.
+
+## Update: 2026-03-14 (Ensure Dispatch Integration Coverage)
+- Author: codex
+- Summary:
+  - Added `install/test/test_ensure_dispatch.sh` to exercise `install/utils/ensure.sh` through a temporary fake repo layout.
+  - Coverage now proves preview-only behavior, `--confirm` enforcement, and correct dispatch to `run_1.sh`, `run_2.sh`, and `monad_install.sh` without mutating the host.
+  - Wired the new test into `test/run_tests.sh`, `scripts/pre-commit.sh`, and the Docker CI `docker-integration` job so it runs in the same enforcement path as the rest of the repo.
+- Validation:
+  - `bash install/test/test_ensure_dispatch.sh` passed.
+  - `REQUIRE_WHIPTAIL_PIPE_TEST=1 SKIP_SHELLCHECK=true USE_MOCKS=true ./test/run_tests.sh --unit` passed.
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - Re-run PR `#156` CI on the new head and confirm the Docker integration job remains green with the added ensure-dispatch coverage.
