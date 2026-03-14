@@ -18,6 +18,7 @@ Use this skill for Ethereum node workflows inside an `eth2-quickstart` checkout.
 - Diagnose or inspect status: use `./scripts/eth2qs.sh doctor --json` for machine-readable output. Read [outputs.md](references/outputs.md).
 - Operate services, logs, cleanup, or updates: use the mapped commands in [commands.md](references/commands.md).
 - Before destructive or privilege-sensitive actions, load [safety.md](references/safety.md).
+- For server recommendation or host-fit questions, read [sizing.md](references/sizing.md).
 - For concrete user-task phrasing, read [examples.md](references/examples.md).
 - For durable repo-scoped improvement loops, read [improvement.md](references/improvement.md).
 
@@ -36,6 +37,7 @@ Use this skill for Ethereum node workflows inside an `eth2-quickstart` checkout.
 - [operator.md](references/operator.md): operator-focused install, resume, run, update, and cleanup flows
 - [commands.md](references/commands.md): canonical command mapping
 - [safety.md](references/safety.md): destructive boundaries and secrets policy
+- [sizing.md](references/sizing.md): server sizing and host-fit guidance
 - [outputs.md](references/outputs.md): expected outputs and checks for agents
 - [examples.md](references/examples.md): concrete prompt/task examples for common operator goals
 - [improvement.md](references/improvement.md): how to turn failures and test output into durable repo learnings

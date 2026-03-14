@@ -8,6 +8,12 @@ Use these examples when an agent or user needs a concrete starting prompt.
 Use the eth2-quickstart skill to bootstrap this Ubuntu host for an Ethereum node. Choose a sensible default client stack, keep the flow non-interactive where possible, and stop before any destructive step that needs my confirmation.
 ```
 
+## Recommend Server Size
+
+```text
+Use the eth2-quickstart skill to recommend an appropriate server for this node. Tell me the baseline disk, RAM, CPU, and OS requirements first, then explain whether my target host is good enough for production, RPC use, or only test usage.
+```
+
 ## Resume After Reboot
 
 ```text
