@@ -15,6 +15,8 @@ Usage: ./scripts/eth2qs.sh <command> [args...]
 Core lifecycle:
   bootstrap [args...]     Run one-line bootstrap installer (install.sh)
   configure [args...]     Run configuration wizard
+  plan [args...]          Detect the next safe install step
+  ensure [args...]        Preview or execute the next safe install step
   phase1 [args...]        Run run_1.sh (root/system hardening)
   phase2 [args...]        Run run_2.sh (node install/config)
 
@@ -34,6 +36,8 @@ Utility:
 
 Examples:
   ./scripts/eth2qs.sh bootstrap --non-interactive
+  ./scripts/eth2qs.sh plan --json
+  ./scripts/eth2qs.sh ensure
   ./scripts/eth2qs.sh configure --interactive
   ./scripts/eth2qs.sh doctor --json
   ./scripts/eth2qs.sh logs --run2 -n 200
@@ -66,6 +70,12 @@ case "$cmd" in
         ;;
     configure)
         run_cmd "$ROOT_DIR/install/utils/configure.sh" "$@"
+        ;;
+    plan)
+        run_cmd "$ROOT_DIR/install/utils/plan.sh" "$@"
+        ;;
+    ensure)
+        run_cmd "$ROOT_DIR/install/utils/ensure.sh" "$@"
         ;;
     phase1)
         run_cmd "$ROOT_DIR/run_1.sh" "$@"

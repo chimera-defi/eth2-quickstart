@@ -14,6 +14,12 @@ Use the eth2-quickstart skill to bootstrap this Ubuntu host for an Ethereum node
 Use the eth2-quickstart skill to resume node installation after the Phase 1 reboot boundary. Prefer explicit client flags and verify health with doctor --json when done.
 ```
 
+## Plan The Next Install Step
+
+```text
+Use the eth2-quickstart skill to inspect this host and tell me the next safe install action. Start with plan --json, explain whether Phase 1, Phase 2, or the Monad installer is needed, and do not apply anything until I confirm.
+```
+
 ## Check Node Health
 
 ```text

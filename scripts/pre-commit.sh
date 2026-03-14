@@ -50,6 +50,7 @@ done
 
 echo "=== Common functions unit tests ==="
 bash install/test/test_common_functions.sh
+bash install/test/test_install_planner.sh
 
 echo "=== Docs consistency ==="
 bash test/ci_test_docs_consistency.sh
