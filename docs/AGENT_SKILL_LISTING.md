@@ -10,7 +10,7 @@ It is not a generic blockchain prompt. It is a tested command map over the real 
 
 ## Short Description
 
-Install, operate, diagnose, update, and clean Ethereum node stacks through one canonical repo command surface.
+Bootstrap, operate, diagnose, update, and safely clean Ethereum node stacks through one canonical repo command surface.
 
 ## One-Liner Pitch
 
@@ -21,6 +21,7 @@ Give an agent a safe ClawHub-installable interface to `eth2-quickstart` so it ca
 - Repo-aware: built to run inside an `eth2-quickstart` checkout
 - Canonical commands: routes through `./scripts/eth2qs.sh`
 - Machine-readable health: uses `./scripts/eth2qs.sh doctor --json`
+- Operator flows: covers bootstrap, resume-after-reboot, start, stop, restart, update, and safe cleanup
 - Safe cleanup: prefers `clean-data --dry-run` and preserves secrets by design
 - One-line install: supports `clawhub install eth2-quickstart` and `npx clawhub install eth2-quickstart`
 - CI-backed: skill structure, command mapping, safety, and distribution path are tested
@@ -35,7 +36,9 @@ Give an agent a safe ClawHub-installable interface to `eth2-quickstart` so it ca
 ## Demo Flow
 
 ```bash
+./scripts/eth2qs.sh phase2 --execution=geth --consensus=prysm --mev=mev-boost
 ./scripts/eth2qs.sh doctor --json
+./scripts/eth2qs.sh stats
 ./scripts/eth2qs.sh logs --run2 -n 200
 ./scripts/eth2qs.sh clean-data --dry-run
 ```

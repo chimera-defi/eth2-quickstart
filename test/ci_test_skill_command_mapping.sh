@@ -21,6 +21,9 @@ canonical_commands=(
     "./scripts/eth2qs.sh phase1"
     "./scripts/eth2qs.sh phase2"
     "./scripts/eth2qs.sh doctor --json"
+    "./scripts/eth2qs.sh start"
+    "./scripts/eth2qs.sh stop"
+    "./scripts/eth2qs.sh stats"
     "./scripts/eth2qs.sh logs"
     "./scripts/eth2qs.sh clean-data"
     "./scripts/eth2qs.sh update-all"
@@ -42,6 +45,14 @@ else
     record_test "workflow.md covers bootstrap and both phases" "FAIL"
 fi
 
+if grep -Fq "Fresh Host Bootstrap" "$SKILL_DIR/references/operator.md" &&
+   grep -Fq "./scripts/eth2qs.sh stop" "$SKILL_DIR/references/operator.md" &&
+   grep -Fq "./scripts/eth2qs.sh update-all" "$SKILL_DIR/references/operator.md"; then
+    record_test "operator.md covers install, operate, and update flows" "PASS"
+else
+    record_test "operator.md covers install, operate, and update flows" "FAIL"
+fi
+
 if grep -Fq "./scripts/eth2qs.sh doctor --json" "$OUTPUTS_REF" &&
    grep -Fq "machine-readable" "$OUTPUTS_REF"; then
     record_test "outputs.md documents doctor JSON path" "PASS"
@@ -56,6 +67,8 @@ else
 fi
 
 if grep -Fq "bootstrap)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
+   grep -Fq "stop)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
+   grep -Fq "stats)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "clean-data)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "update-all)" "$PROJECT_ROOT/scripts/eth2qs.sh"; then
     record_test "wrapper implements documented lifecycle/cleanup commands" "PASS"

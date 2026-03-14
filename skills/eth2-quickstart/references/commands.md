@@ -9,7 +9,9 @@ Canonical command surface:
 - Health/status: `./scripts/eth2qs.sh doctor --json`
 - Human-readable status: `./scripts/eth2qs.sh status`
 - Start services: `./scripts/eth2qs.sh start`
+- Stop services: `./scripts/eth2qs.sh stop`
 - Restart services: `./scripts/eth2qs.sh restart`
+- Service/system stats: `./scripts/eth2qs.sh stats`
 - View logs: `./scripts/eth2qs.sh logs --run2 -n 200`
 - Clean default data dirs only: `./scripts/eth2qs.sh clean-data --dry-run`
 - Confirm cleanup after review: `./scripts/eth2qs.sh clean-data --confirm`

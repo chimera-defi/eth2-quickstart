@@ -14,7 +14,7 @@ const AGENT_POINTS = [
   },
   {
     title: 'Canonical command surface',
-    description: 'The skill routes through ./scripts/eth2qs.sh instead of inventing new lifecycle commands.',
+    description: 'The skill routes through ./scripts/eth2qs.sh instead of inventing new lifecycle commands for install, run, update, or cleanup.',
     icon: TerminalSquare,
   },
   {
@@ -34,7 +34,9 @@ git clone https://github.com/chimera-defi/eth2-quickstart.git
 cd eth2-quickstart
 
 # inside an eth2-quickstart checkout
+./scripts/eth2qs.sh phase2 --execution=geth --consensus=prysm --mev=mev-boost
 ./scripts/eth2qs.sh doctor --json
+./scripts/eth2qs.sh stats
 ./scripts/eth2qs.sh logs --run2 -n 200
 ./scripts/eth2qs.sh clean-data --dry-run`
 
@@ -61,8 +63,9 @@ export function Agents() {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="mt-3 text-base text-muted-foreground sm:text-lg"
             >
-              External agents can use the ClawHub-installable skill to inspect, update,
-              and clean node stacks without drifting from the supported command surface.
+              External agents can use the ClawHub-installable skill to bootstrap, run,
+              inspect, update, and clean node stacks without drifting from the supported
+              command surface.
             </motion.p>
             <p className="mt-3 text-sm text-muted-foreground">
               It is intentionally repo-aware. Install is one-line, but use still happens inside
