@@ -33,6 +33,11 @@ Give an agent a safe ClawHub-installable interface to `eth2-quickstart` so it ca
 3. Run from inside the repo so the skill can resolve the repo root
 4. Use the wrapper commands for real operations
 
+## Non-ClawHub Fallbacks
+
+- OpenClaw workspace skill: `git clone --depth 1 https://github.com/chimera-defi/eth2-quickstart.git && cd eth2-quickstart`
+- Codex GitHub-path install: `python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py --repo chimera-defi/eth2-quickstart --path skills/eth2-quickstart`
+
 ## Demo Flow
 
 ```bash
