@@ -13,6 +13,16 @@ source "$ROOT_DIR/lib/install_planner.sh"
 JSON_OUTPUT=false
 CHAIN_OVERRIDE=""
 
+json_escape() {
+    local value="$1"
+    value="${value//\\/\\\\}"
+    value="${value//\"/\\\"}"
+    value="${value//$'\n'/\\n}"
+    value="${value//$'\r'/\\r}"
+    value="${value//$'\t'/\\t}"
+    printf '%s' "$value"
+}
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --json)
@@ -58,14 +68,14 @@ planner_determine_next_action "$CHAIN_VALUE" "$IS_ROOT" "$OPERATOR_EXISTS" "$PLA
 
 if [[ "$JSON_OUTPUT" == "true" ]]; then
     printf '{\n'
-    printf '  "chain": "%s",\n' "$CHAIN_VALUE"
-    printf '  "current_user": "%s",\n' "$CURRENT_USER"
+    printf '  "chain": "%s",\n' "$(json_escape "$CHAIN_VALUE")"
+    printf '  "current_user": "%s",\n' "$(json_escape "$CURRENT_USER")"
     printf '  "is_root": %s,\n' "$IS_ROOT"
-    printf '  "operator_user": "%s",\n' "$OPERATOR_USER"
+    printf '  "operator_user": "%s",\n' "$(json_escape "$OPERATOR_USER")"
     printf '  "operator_user_exists": %s,\n' "$OPERATOR_EXISTS"
-    printf '  "state": "%s",\n' "$PLAN_STATE"
-    printf '  "next_action": "%s",\n' "$PLAN_NEXT_ACTION"
-    printf '  "reason": "%s",\n' "$PLAN_REASON"
+    printf '  "state": "%s",\n' "$(json_escape "$PLAN_STATE")"
+    printf '  "next_action": "%s",\n' "$(json_escape "$PLAN_NEXT_ACTION")"
+    printf '  "reason": "%s",\n' "$(json_escape "$PLAN_REASON")"
     printf '  "core_services_expected": %s,\n' "$PLAN_CORE_EXPECTED"
     printf '  "core_services_installed": %s,\n' "$PLAN_CORE_INSTALLED"
     printf '  "core_services_running": %s,\n' "$PLAN_CORE_RUNNING"
@@ -75,7 +85,10 @@ if [[ "$JSON_OUTPUT" == "true" ]]; then
         if [[ "$i" -eq $((${#PLAN_SERVICE_NAMES[@]} - 1)) ]]; then
             comma=""
         fi
-        printf '    "%s": "%s"%s\n' "${PLAN_SERVICE_NAMES[$i]}" "${PLAN_SERVICE_STATUSES[$i]}" "$comma"
+        printf '    "%s": "%s"%s\n' \
+            "$(json_escape "${PLAN_SERVICE_NAMES[$i]}")" \
+            "$(json_escape "${PLAN_SERVICE_STATUSES[$i]}")" \
+            "$comma"
     done
     printf '  }\n'
     printf '}\n'

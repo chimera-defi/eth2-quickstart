@@ -23,6 +23,7 @@ required_files=(
     "$SKILL_DIR/references/safety.md"
     "$SKILL_DIR/references/outputs.md"
     "$SKILL_DIR/references/examples.md"
+    "$SKILL_DIR/references/improvement.md"
 )
 
 for file in "${required_files[@]}"; do

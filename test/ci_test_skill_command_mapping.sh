@@ -22,6 +22,7 @@ canonical_commands=(
     "./scripts/eth2qs.sh ensure"
     "./scripts/eth2qs.sh phase1"
     "./scripts/eth2qs.sh phase2"
+    "./scripts/eth2qs.sh monad-install"
     "./scripts/eth2qs.sh doctor --json"
     "./scripts/eth2qs.sh start"
     "./scripts/eth2qs.sh stop"
@@ -72,6 +73,7 @@ fi
 if grep -Fq "bootstrap)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "plan)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "ensure)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
+   grep -Fq "monad-install)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "stop)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "stats)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "clean-data)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
