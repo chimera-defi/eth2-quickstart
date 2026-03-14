@@ -438,6 +438,16 @@ run_unit_tests() {
         log_test "SKIP" "test_common_functions.sh: file not found"
     fi
 
+    if [[ -f "$PROJECT_ROOT/install/test/test_ensure_dispatch.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_ensure_dispatch.sh"; then
+            log_test "PASS" "test_ensure_dispatch.sh: all tests passed"
+        else
+            log_test "FAIL" "test_ensure_dispatch.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_ensure_dispatch.sh: file not found"
+    fi
+
     if [[ -f "$PROJECT_ROOT/install/test/test_install_planner.sh" ]]; then
         if bash "$PROJECT_ROOT/install/test/test_install_planner.sh"; then
             log_test "PASS" "test_install_planner.sh: all tests passed"
