@@ -458,6 +458,16 @@ run_unit_tests() {
         log_test "SKIP" "test_plan_json.sh: file not found"
     fi
 
+    if [[ -f "$PROJECT_ROOT/install/test/test_record_skill_observation.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_record_skill_observation.sh"; then
+            log_test "PASS" "test_record_skill_observation.sh: all tests passed"
+        else
+            log_test "FAIL" "test_record_skill_observation.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_record_skill_observation.sh: file not found"
+    fi
+
     if [[ -f "$PROJECT_ROOT/install/test/test_install_planner.sh" ]]; then
         if bash "$PROJECT_ROOT/install/test/test_install_planner.sh"; then
             log_test "PASS" "test_install_planner.sh: all tests passed"

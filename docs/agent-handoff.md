@@ -637,3 +637,18 @@ Use this file to preserve context across sessions.
   - `./scripts/pre-commit.sh` passed.
 - Follow-ups:
   - Re-run PR `#156` CI on the new head and confirm the expanded agent-skill + docker-integration coverage remains green.
+
+## Update: 2026-03-14 (Structured Skill Observations)
+- Author: codex
+- Summary:
+  - Added `scripts/record_skill_observation.sh` to write structured JSONL observations for skill runs.
+  - Added `docs/skill-observations.jsonl` as the durable repo-scoped observation store.
+  - Added `install/test/test_record_skill_observation.sh` to validate print-only JSON output and JSONL append behavior.
+  - Wired the observation test into `test/run_tests.sh`, `scripts/pre-commit.sh`, and Docker CI so the self-improvement mechanism is tested like the rest of the repo.
+  - Updated `skills/eth2-quickstart/references/improvement.md` to use the observation recorder instead of vague memory guidance.
+- Validation:
+  - `bash install/test/test_record_skill_observation.sh` passed.
+  - `REQUIRE_WHIPTAIL_PIPE_TEST=1 SKIP_SHELLCHECK=true USE_MOCKS=true ./test/run_tests.sh --unit` passed.
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - Re-run PR `#156` CI on the new head and confirm the added recorder test stays green in Docker CI.

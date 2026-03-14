@@ -15,6 +15,7 @@ Use this when the agent needs to improve its future performance in this repo wit
    - targeted test first
    - then repo entrypoints like `./test/run_tests.sh --unit` or `./scripts/pre-commit.sh`
 4. Persist only durable learnings:
+   - record a structured observation with `./scripts/record_skill_observation.sh`
    - update `docs/agent-handoff.md`
    - add or tighten tests when behavior changed
    - update the skill references only if the operator contract changed
@@ -26,3 +27,14 @@ Use this when the agent needs to improve its future performance in this repo wit
 - Do not update the skill based on a one-off failure unless the failure exposed a real contract gap.
 - Prefer improving references and tests over adding more prompt prose.
 - If a workflow is chain-specific, expose it explicitly instead of hiding it behind ambiguous guidance.
+
+## Observation Fields
+
+- `timestamp`
+- `skill`
+- `task`
+- `result`
+- `command`
+- `evidence`
+- `notes`
+- `git_sha`
