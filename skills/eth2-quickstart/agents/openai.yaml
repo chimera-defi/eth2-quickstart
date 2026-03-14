@@ -1,3 +1,4 @@
 interface:
   display_name: "Eth2 Quickstart"
   short_description: "Bootstrap, operate, diagnose, and clean Ethereum node stacks via canonical repo commands"
+  default_prompt: "Use eth2-quickstart to bootstrap, operate, diagnose, update, or safely clean an Ethereum node in this repo checkout."

@@ -22,6 +22,7 @@ required_files=(
     "$SKILL_DIR/references/commands.md"
     "$SKILL_DIR/references/safety.md"
     "$SKILL_DIR/references/outputs.md"
+    "$SKILL_DIR/references/examples.md"
 )
 
 for file in "${required_files[@]}"; do
@@ -49,7 +50,8 @@ fi
 
 if grep -q '^interface:$' "$OPENAI_YAML" &&
    grep -q '^  display_name: ' "$OPENAI_YAML" &&
-   grep -q '^  short_description: ' "$OPENAI_YAML"; then
+   grep -q '^  short_description: ' "$OPENAI_YAML" &&
+   grep -q '^  default_prompt: ' "$OPENAI_YAML"; then
     record_test "openai.yaml has required interface metadata" "PASS"
 else
     record_test "openai.yaml has required interface metadata" "FAIL"

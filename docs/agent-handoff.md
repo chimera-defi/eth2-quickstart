@@ -20,6 +20,10 @@ Use this file to preserve context across sessions.
     - recover disk space safely.
   - Extended skill command coverage and tests so CI now enforces the broader operator contract, not just repo-local structure.
   - Updated external-facing copy so the README, listing copy, and website reflect bootstrap/run/update/cleanup workflows instead of only diagnosis and cleanup.
+  - Added ecosystem-consistent non-ClawHub fallback install paths:
+    - clone-and-run for workspace-style agents,
+    - GitHub-path install for Codex-style agents.
+  - Added `skills/eth2-quickstart/references/examples.md` and a `default_prompt` in `agents/openai.yaml` so agents have concrete starting requests instead of only reference prose.
 - Validation:
   - `bash test/ci_test_skill_structure.sh` passed.
   - `bash test/ci_test_skill_command_mapping.sh` passed.

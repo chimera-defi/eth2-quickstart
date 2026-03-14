@@ -18,6 +18,7 @@ Use this skill for Ethereum node workflows inside an `eth2-quickstart` checkout.
 - Diagnose or inspect status: use `./scripts/eth2qs.sh doctor --json` for machine-readable output. Read [outputs.md](references/outputs.md).
 - Operate services, logs, cleanup, or updates: use the mapped commands in [commands.md](references/commands.md).
 - Before destructive or privilege-sensitive actions, load [safety.md](references/safety.md).
+- For concrete user-task phrasing, read [examples.md](references/examples.md).
 
 ## Rules
 
@@ -35,3 +36,4 @@ Use this skill for Ethereum node workflows inside an `eth2-quickstart` checkout.
 - [commands.md](references/commands.md): canonical command mapping
 - [safety.md](references/safety.md): destructive boundaries and secrets policy
 - [outputs.md](references/outputs.md): expected outputs and checks for agents
+- [examples.md](references/examples.md): concrete prompt/task examples for common operator goals
