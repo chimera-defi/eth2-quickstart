@@ -18,6 +18,8 @@ log_info "=== CI Test: eth2-quickstart skill command mapping ==="
 canonical_commands=(
     "./scripts/eth2qs.sh bootstrap"
     "./scripts/eth2qs.sh configure"
+    "./scripts/eth2qs.sh plan --json"
+    "./scripts/eth2qs.sh ensure"
     "./scripts/eth2qs.sh phase1"
     "./scripts/eth2qs.sh phase2"
     "./scripts/eth2qs.sh doctor --json"
@@ -46,6 +48,7 @@ else
 fi
 
 if grep -Fq "Fresh Host Bootstrap" "$SKILL_DIR/references/operator.md" &&
+   grep -Fq "./scripts/eth2qs.sh plan --json" "$SKILL_DIR/references/operator.md" &&
    grep -Fq "./scripts/eth2qs.sh stop" "$SKILL_DIR/references/operator.md" &&
    grep -Fq "./scripts/eth2qs.sh update-all" "$SKILL_DIR/references/operator.md"; then
     record_test "operator.md covers install, operate, and update flows" "PASS"
@@ -67,6 +70,8 @@ else
 fi
 
 if grep -Fq "bootstrap)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
+   grep -Fq "plan)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
+   grep -Fq "ensure)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "stop)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "stats)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "clean-data)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&

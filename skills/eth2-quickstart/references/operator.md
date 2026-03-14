@@ -17,21 +17,24 @@ Use this for a blank host that has not run `run_1.sh` yet.
 
 1. Confirm the host is intended for repo-managed node setup.
 2. Confirm the human accepts root access, SSH hardening, and the reboot boundary.
-3. Run `./scripts/eth2qs.sh bootstrap --non-interactive` for the one-line installer if the host is starting from scratch.
-4. If working from an existing checkout, use:
+3. Start with `./scripts/eth2qs.sh plan --json` so the agent can explain the next safe action before changing the host.
+4. Run `./scripts/eth2qs.sh bootstrap --non-interactive` for the one-line installer if the host is starting from scratch.
+5. Or use `./scripts/eth2qs.sh ensure --apply` if the planner reports `phase1`.
+6. If working from an existing checkout, use:
    - `sudo ./scripts/eth2qs.sh phase1`
    - reboot
    - `./scripts/eth2qs.sh phase2 --execution=<client> --consensus=<client> --mev=<stack>`
-5. After install, run `./scripts/eth2qs.sh doctor --json`.
+7. After install, run `./scripts/eth2qs.sh doctor --json`.
 
 ### 2. Resume After Reboot
 
 Use this when Phase 1 has already run and the host rebooted.
 
 1. Confirm the agent is logged in as the non-root repo user.
-2. Run `./scripts/eth2qs.sh phase2 ...` with explicit client flags when reproducibility matters.
-3. Validate with `./scripts/eth2qs.sh doctor --json`.
-4. If service status is unclear, run `./scripts/eth2qs.sh stats` and `./scripts/eth2qs.sh logs --run2 -n 200`.
+2. Start with `./scripts/eth2qs.sh plan --json`.
+3. Run `./scripts/eth2qs.sh ensure --apply` or `./scripts/eth2qs.sh phase2 ...` with explicit client flags when reproducibility matters.
+4. Validate with `./scripts/eth2qs.sh doctor --json`.
+5. If service status is unclear, run `./scripts/eth2qs.sh stats` and `./scripts/eth2qs.sh logs --run2 -n 200`.
 
 ### 3. Operate A Running Node
 
@@ -42,6 +45,7 @@ Use these commands for routine operations:
 - Restart services: `./scripts/eth2qs.sh restart`
 - Show current status: `./scripts/eth2qs.sh stats`
 - Machine-readable health: `./scripts/eth2qs.sh doctor --json`
+- Next-step planner: `./scripts/eth2qs.sh plan --json`
 - Update software: `./scripts/eth2qs.sh update-all`
 
 ### 4. Recover Disk Space Safely
@@ -54,6 +58,7 @@ Use these commands for routine operations:
 ## Decision Guidance
 
 - Prefer explicit `phase2` client flags when another agent or CI needs reproducibility.
+- Prefer `plan --json` before calling `ensure --apply`.
 - Prefer `doctor --json` before and after any install, update, or cleanup step.
 - Prefer `stats` and `logs` when a human needs a readable RCA.
 - If the requested action falls outside repo-supported workflows, say so instead of improvising.

@@ -24,11 +24,19 @@ Use this file to preserve context across sessions.
     - clone-and-run for workspace-style agents,
     - GitHub-path install for Codex-style agents.
   - Added `skills/eth2-quickstart/references/examples.md` and a `default_prompt` in `agents/openai.yaml` so agents have concrete starting requests instead of only reference prose.
+  - Added planner-driven wrapper support for install routing:
+    - `./scripts/eth2qs.sh plan --json` detects the next safe action,
+    - `./scripts/eth2qs.sh ensure` previews it,
+    - `./scripts/eth2qs.sh ensure --apply` executes only the next safe step.
+  - Added shared planning logic in `lib/install_planner.sh` so detection is not duplicated between wrappers/tests.
+  - Added explicit chain-aware routing for Ethereum vs Monad and made partial installs fail safe into review instead of blind reruns.
+  - Replaced the old duplicate phase-detection logic in `install/utils/run_manifest.sh` with a compatibility wrapper around the planner/ensure flow.
 - Validation:
   - `bash test/ci_test_skill_structure.sh` passed.
   - `bash test/ci_test_skill_command_mapping.sh` passed.
   - `bash test/ci_test_skill_safety.sh` passed.
   - `bash test/ci_test_skill_distribution.sh` passed.
+  - `bash install/test/test_install_planner.sh` passed.
   - `bash test/ci_test_docs_consistency.sh` passed.
   - `cd frontend && bun run lint` passed.
   - `cd frontend && bun run test` passed.
