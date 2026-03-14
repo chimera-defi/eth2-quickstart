@@ -620,3 +620,20 @@ Use this file to preserve context across sessions.
   - `./scripts/pre-commit.sh` passed.
 - Follow-ups:
   - Re-run PR `#156` CI on the new head and confirm the Docker integration job remains green with the added ensure-dispatch coverage.
+
+## Update: 2026-03-14 (Plan JSON Contract + Monad Wrapper Surface)
+- Author: codex
+- Summary:
+  - Hardened `install/utils/plan.sh` JSON output with explicit string escaping so `plan --json` remains a valid machine-readable contract even when reasons contain quotes or newlines.
+  - Added `install/test/test_plan_json.sh` to validate output shape and escaping through a temporary fake repo layout.
+  - Added a dedicated `./scripts/eth2qs.sh monad-install` wrapper verb so chain-specific Monad installs are explicit instead of only implicit through `ensure`.
+  - Updated skill references and public docs to expose the new Monad wrapper path.
+  - Added `skills/eth2-quickstart/references/improvement.md` so durable skill self-improvement stays repo-scoped: observe machine-readable outputs, make the smallest fix, validate, and persist only durable learnings in tests/docs/handoff.
+- Validation:
+  - `bash install/test/test_plan_json.sh` passed.
+  - `bash install/test/test_ensure_dispatch.sh` passed.
+  - `bash install/test/test_install_planner.sh` passed.
+  - `REQUIRE_WHIPTAIL_PIPE_TEST=1 SKIP_SHELLCHECK=true USE_MOCKS=true ./test/run_tests.sh --unit` passed.
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - Re-run PR `#156` CI on the new head and confirm the expanded agent-skill + docker-integration coverage remains green.

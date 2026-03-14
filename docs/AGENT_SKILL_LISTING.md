@@ -42,6 +42,7 @@ Give an agent a safe ClawHub-installable interface to `eth2-quickstart` so it ca
 
 ```bash
 ./scripts/eth2qs.sh phase2 --execution=geth --consensus=prysm --mev=mev-boost
+./scripts/eth2qs.sh monad-install
 ./scripts/eth2qs.sh doctor --json
 ./scripts/eth2qs.sh stats
 ./scripts/eth2qs.sh logs --run2 -n 200

@@ -19,6 +19,7 @@ Core lifecycle:
   ensure [args...]        Preview or execute the next safe install step
   phase1 [args...]        Run run_1.sh (root/system hardening)
   phase2 [args...]        Run run_2.sh (node install/config)
+  monad-install [args...] Run monad_install.sh (Monad install/config)
 
 Operations:
   doctor [--json]         Run health checks (human output by default)
@@ -82,6 +83,9 @@ case "$cmd" in
         ;;
     phase2)
         run_cmd "$ROOT_DIR/run_2.sh" "$@"
+        ;;
+    monad-install)
+        run_cmd "$ROOT_DIR/monad_install.sh" "$@"
         ;;
     doctor|status)
         run_cmd "$ROOT_DIR/install/utils/doctor.sh" "$@"

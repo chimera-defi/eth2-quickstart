@@ -14,11 +14,12 @@ Use this skill for Ethereum node workflows inside an `eth2-quickstart` checkout.
 
 - For end-to-end node operator goals, read [operator.md](references/operator.md).
 - Install/bootstrap: use `./scripts/eth2qs.sh bootstrap ...`. Read [workflow.md](references/workflow.md).
-- Configure or rerun phases: use `./scripts/eth2qs.sh configure`, `phase1`, or `phase2`. Read [workflow.md](references/workflow.md).
+- Configure or rerun phases: use `./scripts/eth2qs.sh configure`, `phase1`, `phase2`, or `monad-install`. Read [workflow.md](references/workflow.md).
 - Diagnose or inspect status: use `./scripts/eth2qs.sh doctor --json` for machine-readable output. Read [outputs.md](references/outputs.md).
 - Operate services, logs, cleanup, or updates: use the mapped commands in [commands.md](references/commands.md).
 - Before destructive or privilege-sensitive actions, load [safety.md](references/safety.md).
 - For concrete user-task phrasing, read [examples.md](references/examples.md).
+- For durable repo-scoped improvement loops, read [improvement.md](references/improvement.md).
 
 ## Rules
 
@@ -37,3 +38,4 @@ Use this skill for Ethereum node workflows inside an `eth2-quickstart` checkout.
 - [safety.md](references/safety.md): destructive boundaries and secrets policy
 - [outputs.md](references/outputs.md): expected outputs and checks for agents
 - [examples.md](references/examples.md): concrete prompt/task examples for common operator goals
+- [improvement.md](references/improvement.md): how to turn failures and test output into durable repo learnings

@@ -65,6 +65,7 @@ Use one stable entrypoint for common workflows:
 ./scripts/eth2qs.sh configure --non-interactive
 ./scripts/eth2qs.sh phase1
 ./scripts/eth2qs.sh phase2
+./scripts/eth2qs.sh monad-install
 ./scripts/eth2qs.sh doctor --json
 ```
 
