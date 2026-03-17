@@ -19,7 +19,6 @@ source "$SCRIPT_DIR/lib/test_utils.sh"
 
 SKILL_DIR="$PROJECT_ROOT/skills/eth2-quickstart"
 RESOLVER="$SKILL_DIR/scripts/resolve_repo_root.sh"
-WRAPPER="$PROJECT_ROOT/scripts/eth2qs.sh"
 TEMP_INSTALL_BASE="${TEMP_INSTALL_BASE:-/tmp/eth2qs-skill-e2e-test-$$}"
 
 log_info "=== E2E Test: eth2-quickstart skill installation routes ==="
