@@ -144,6 +144,8 @@ jobs:
         run: bash ./test/ci_test_skill_safety.sh
       - name: Verify skill distribution contract
         run: bash ./test/ci_test_skill_distribution.sh
+      - name: Verify skill installation e2e
+        run: bash ./test/ci_test_skill_install_e2e.sh
 
   tui-whiptail-nonskip-guard:
     runs-on: ubuntu-latest
