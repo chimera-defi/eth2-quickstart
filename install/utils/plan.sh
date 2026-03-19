@@ -12,6 +12,11 @@ source "$ROOT_DIR/lib/install_planner.sh"
 
 JSON_OUTPUT=false
 CHAIN_OVERRIDE=""
+CHAIN_VALUE=""
+OPERATOR_USER=""
+CURRENT_USER=""
+OPERATOR_EXISTS=false
+IS_ROOT=false
 
 json_escape() {
     local value="$1"
@@ -48,23 +53,7 @@ EOF
     shift
 done
 
-planner_load_config "$ROOT_DIR"
-CHAIN_VALUE="${CHAIN_OVERRIDE:-$(planner_configured_chain)}"
-OPERATOR_USER="${LOGIN_UNAME:-eth}"
-CURRENT_USER="$(id -un)"
-IS_ROOT=false
-if [[ $EUID -eq 0 ]]; then
-    IS_ROOT=true
-fi
-
-if planner_operator_user_exists "$OPERATOR_USER"; then
-    OPERATOR_EXISTS=true
-else
-    OPERATOR_EXISTS=false
-fi
-
-planner_collect_service_states "$CHAIN_VALUE"
-planner_determine_next_action "$CHAIN_VALUE" "$IS_ROOT" "$OPERATOR_EXISTS" "$PLAN_CORE_INSTALLED" "$PLAN_CORE_EXPECTED"
+planner_prepare_context "$ROOT_DIR" "$CHAIN_OVERRIDE"
 
 if [[ "$JSON_OUTPUT" == "true" ]]; then
     printf '{\n'

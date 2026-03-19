@@ -72,6 +72,29 @@ planner_collect_service_states() {
     done
 }
 
+planner_prepare_context() {
+    local root_dir="$1"
+    local chain_override="${2:-}"
+
+    planner_load_config "$root_dir"
+    CHAIN_VALUE="${chain_override:-$(planner_configured_chain)}"
+    OPERATOR_USER="${LOGIN_UNAME:-eth}"
+    CURRENT_USER="$(id -un)"
+    IS_ROOT=false
+    if [[ $EUID -eq 0 ]]; then
+        IS_ROOT=true
+    fi
+
+    if planner_operator_user_exists "$OPERATOR_USER"; then
+        OPERATOR_EXISTS=true
+    else
+        OPERATOR_EXISTS=false
+    fi
+
+    planner_collect_service_states "$CHAIN_VALUE"
+    planner_determine_next_action "$CHAIN_VALUE" "$IS_ROOT" "$OPERATOR_EXISTS" "$PLAN_CORE_INSTALLED" "$PLAN_CORE_EXPECTED"
+}
+
 planner_determine_next_action() {
     local chain="$1"
     local is_root="$2"

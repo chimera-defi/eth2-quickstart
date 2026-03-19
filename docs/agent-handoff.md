@@ -713,3 +713,19 @@ Use this file to preserve context across sessions.
   - `./scripts/pre-commit.sh` passed after the trim pass.
 - Follow-ups:
   - Keep future skill packaging metadata runtime-neutral unless a registry proves it is required.
+
+## Update: 2026-03-19 (Planner Dedup + Doc Reduction)
+- Author: codex
+- Summary:
+  - Deduplicated planner context setup by moving the shared chain/user/service-state initialization into `lib/install_planner.sh` as `planner_prepare_context`.
+  - Simplified `install/utils/plan.sh` and `install/utils/ensure.sh` to call the shared planner helper instead of repeating the same setup logic.
+  - Updated the fake planner fixtures in `install/test/test_ensure_dispatch.sh` and `install/test/test_plan_json.sh` so the refactor stays covered by the existing behavioral tests.
+  - Reduced repeated install/marketing wording in `README.md` and `docs/AGENT_SKILL_LISTING.md` while keeping the website and listing surfaces intact.
+- Validation:
+  - `bash install/test/test_install_planner.sh` passed.
+  - `bash install/test/test_ensure_dispatch.sh` passed.
+  - `bash install/test/test_plan_json.sh` passed.
+  - `bash test/ci_test_docs_consistency.sh` passed.
+  - `./scripts/pre-commit.sh` rerun after the refactor/doc reduction.
+- Follow-ups:
+  - Push the reduced branch state to PR `#156` after the full pre-commit rerun completes cleanly.

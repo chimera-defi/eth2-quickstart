@@ -74,21 +74,24 @@ The skill entrypoint is [`skills/eth2-quickstart/SKILL.md`](skills/eth2-quicksta
 
 ### For External Agents
 
-Agents outside this repo can use the skill after it is published to ClawHub, but it still needs to be used inside an `eth2-quickstart` checkout.
+The skill is repo-aware: install it, then use it from inside an `eth2-quickstart` checkout.
 
-- Once published, install with `clawhub install eth2-quickstart` or `npx clawhub install eth2-quickstart`
-- OpenClaw/workspace fallback: `git clone --depth 1 https://github.com/chimera-defi/eth2-quickstart.git && cd eth2-quickstart`
-- Codex/GitHub-path fallback: `python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py --repo chimera-defi/eth2-quickstart --path skills/eth2-quickstart`
-- Clone this repo and run the skill from inside the checkout
-- Resolve the repo root, then use the canonical wrapper commands
-- Use the skill for bootstrap, install, start/stop, health checks, updates, and safe cleanup
-- Use the skill's sizing guidance before install if the user is choosing a server or asking whether a host is large enough
+```bash
+# once published
+clawhub install eth2-quickstart
+
+# fallback: local workspace
+git clone --depth 1 https://github.com/chimera-defi/eth2-quickstart.git
+cd eth2-quickstart
+```
+
+- Codex fallback: `python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py --repo chimera-defi/eth2-quickstart --path skills/eth2-quickstart`
 - Prefer `./scripts/eth2qs.sh doctor --json` for machine-readable health
-- Prefer `./scripts/eth2qs.sh clean-data --dry-run` before any cleanup
-- Prefer `sudo ./scripts/eth2qs.sh cleanup-host --dry-run` when cleaning stale root-managed installs on a server
+- Prefer `./scripts/eth2qs.sh clean-data --dry-run` before cleanup
+- Prefer `sudo ./scripts/eth2qs.sh cleanup-host --dry-run` for stale root-managed installs
 - The cleanup flow preserves keys and secrets by design
 
-This is a repo-aware operations skill, not a generic blockchain prompt and not a standalone node toolchain.
+This is a repo-backed operations skill, not a standalone blockchain package.
 
 ### Installation
 
