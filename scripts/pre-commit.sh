@@ -55,7 +55,6 @@ bash install/test/test_host_cleanup.sh
 bash install/test/test_doctor_service_drift.sh
 bash install/test/test_ensure_dispatch.sh
 bash install/test/test_plan_json.sh
-bash install/test/test_record_skill_observation.sh
 bash install/test/test_install_planner.sh
 
 echo "=== Docs consistency ==="

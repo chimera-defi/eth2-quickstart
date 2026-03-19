@@ -701,3 +701,15 @@ Use this file to preserve context across sessions.
   - `./scripts/pre-commit.sh` passed.
 - Follow-ups:
   - Push branch updates to PR `#156` and watch CI for any integration drift.
+
+## Update: 2026-03-19 (Skill Surface Trim Pass)
+- Author: codex
+- Summary:
+  - Removed `skills/eth2-quickstart/agents/openai.yaml` from the shipping skill surface. It was runtime-specific packaging metadata, not part of the portable repo-backed skill contract.
+  - Removed the manual observation-telemetry layer (`scripts/record_skill_observation.sh`, `docs/skill-observations.jsonl`, and its test/CI wiring). It was not part of the user-facing skill/runtime path and added maintenance noise.
+  - Removed duplicate `docs/SKILL_INSTALL_ROUTES.md` copy; README, website, and `docs/AGENT_SKILL_LISTING.md` already cover the install/distribution story.
+  - Kept the website agent section and listing copy because they are the intentional public-facing surfaces for sharing the skill with humans and agents.
+- Validation:
+  - `./scripts/pre-commit.sh` passed after the trim pass.
+- Follow-ups:
+  - Keep future skill packaging metadata runtime-neutral unless a registry proves it is required.

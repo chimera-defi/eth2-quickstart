@@ -10,13 +10,11 @@ source "$SCRIPT_DIR/lib/test_utils.sh"
 
 SKILL_DIR="$PROJECT_ROOT/skills/eth2-quickstart"
 SKILL_FILE="$SKILL_DIR/SKILL.md"
-OPENAI_YAML="$SKILL_DIR/agents/openai.yaml"
 
 log_info "=== CI Test: eth2-quickstart skill structure ==="
 
 required_files=(
     "$SKILL_FILE"
-    "$OPENAI_YAML"
     "$SKILL_DIR/references/workflow.md"
     "$SKILL_DIR/references/operator.md"
     "$SKILL_DIR/references/commands.md"
@@ -48,15 +46,6 @@ if grep -q '^description: ' "$SKILL_FILE"; then
     record_test "SKILL.md declares skill description" "PASS"
 else
     record_test "SKILL.md declares skill description" "FAIL"
-fi
-
-if grep -q '^interface:$' "$OPENAI_YAML" &&
-   grep -q '^  display_name: ' "$OPENAI_YAML" &&
-   grep -q '^  short_description: ' "$OPENAI_YAML" &&
-   grep -q '^  default_prompt: ' "$OPENAI_YAML"; then
-    record_test "openai.yaml has required interface metadata" "PASS"
-else
-    record_test "openai.yaml has required interface metadata" "FAIL"
 fi
 
 mapfile -t reference_links < <(sed -nE 's/.*\((references\/[^)#?[:space:]]+).*/\1/p' "$SKILL_FILE")

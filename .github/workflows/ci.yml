@@ -95,9 +95,6 @@ jobs:
           echo "::group::Plan JSON tests"
           docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_plan_json.sh
           echo "::endgroup::"
-          echo "::group::Skill observation tests"
-          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_record_skill_observation.sh
-          echo "::endgroup::"
           echo "::group::Install planner unit tests"
           docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_install_planner.sh
           echo "::endgroup::"
