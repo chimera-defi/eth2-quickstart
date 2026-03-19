@@ -61,6 +61,16 @@ planner_determine_next_action() {
     PLAN_NEXT_ACTION="${TEST_PLAN_NEXT_ACTION:-review}"
     PLAN_REASON="${TEST_PLAN_REASON:-default reason}"
 }
+planner_prepare_context() {
+    planner_load_config "${1:-.}"
+    CHAIN_VALUE="${2:-$(planner_configured_chain)}"
+    OPERATOR_USER="${LOGIN_UNAME:-eth}"
+    CURRENT_USER="test-user"
+    IS_ROOT=false
+    OPERATOR_EXISTS=true
+    planner_collect_service_states "$CHAIN_VALUE"
+    planner_determine_next_action "$CHAIN_VALUE" "$IS_ROOT" "$OPERATOR_EXISTS" "$PLAN_CORE_INSTALLED" "$PLAN_CORE_EXPECTED"
+}
 EOF
 
     chmod +x "$temp_root/lib/common_functions.sh" "$temp_root/lib/install_planner.sh"
