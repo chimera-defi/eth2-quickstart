@@ -666,3 +666,38 @@ Use this file to preserve context across sessions.
   - `./scripts/pre-commit.sh` passed.
 - Follow-ups:
   - Re-run PR `#156` CI on the new head and confirm the updated README + sizing reference stay green in docs/skill jobs.
+
+## Update: 2026-03-19 (Live Host Cleanup Learnings)
+- Author: codex
+- Summary:
+  - Cleaned a live host that still had stale `geth` and Prysm processes plus enabled `eth1`, `cl`, and `validator` units left over from earlier node work.
+  - Root-caused two wrapper gaps from that live cleanup: `install/utils/stats.sh` was not read-only because Prysm version checks called `~/prysm/prysm.sh`, and `clean-data` did not cover root-managed datadirs like `/root/.ethereum` and `/root/.eth2`.
+  - Fixed `install/utils/stats.sh` so Prysm version reporting now inspects already-downloaded local binaries only and refuses to trigger downloads through the Prysm bootstrap script.
+  - Extended `install/utils/purge_ethereum_data.sh` with `--host` mode for root-managed cleanup while preserving `/root/secrets` and `/root/.eth2/network-keys`.
+  - Exposed the new host cleanup path via `./scripts/eth2qs.sh cleanup-host` and updated the skill docs so agents can choose `clean-data` for normal operator cleanup versus `cleanup-host` for stale root-managed installs.
+  - Added regression coverage for both fixes: `install/test/test_stats_read_only.sh` and `install/test/test_host_cleanup.sh`, wired into `test/run_tests.sh`, `scripts/pre-commit.sh`, and Docker CI.
+  - Recorded the live failure as a structured observation in `docs/skill-observations.jsonl`.
+- Validation:
+  - `bash install/test/test_stats_read_only.sh` passed.
+  - `bash install/test/test_host_cleanup.sh` passed.
+  - `bash test/ci_test_skill_command_mapping.sh` passed.
+  - `bash test/ci_test_skill_safety.sh` passed.
+  - `bash test/ci_test_docs_consistency.sh` passed.
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - Push the branch update for PR `#156` and verify the Docker CI rerun stays green with the new stats/host-cleanup regression tests.
+  - ClawHub publish/install remains a separate unresolved distribution step; this pass only hardened local/runtime skill behavior.
+
+## Update: 2026-03-19 (Doctor Drift Detection + Refactor)
+- Author: codex
+- Summary:
+  - Refactored `install/utils/doctor.sh` service and port checks into shared helpers to reduce repeated case/if blocks and lower maintenance cost.
+  - Added runtime-vs-unit drift detection so `doctor --json` now warns when a running service binary does not match the current unit file on disk.
+  - Added `install/test/test_doctor_service_drift.sh` to validate the drift warning contract through a fake repo + stubbed systemctl/ps environment.
+  - Updated regression coverage and docs so the skill/output surfaces explicitly mention service-unit drift as a detectable condition.
+- Validation:
+  - `bash install/test/test_doctor_service_drift.sh` passed.
+  - `bash install/test/test_common_functions.sh` passed.
+  - `./scripts/pre-commit.sh` passed.
+- Follow-ups:
+  - Push branch updates to PR `#156` and watch CI for any integration drift.

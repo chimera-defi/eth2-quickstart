@@ -22,7 +22,7 @@ Give an agent a safe ClawHub-installable interface to `eth2-quickstart` so it ca
 - Canonical commands: routes through `./scripts/eth2qs.sh`
 - Machine-readable health: uses `./scripts/eth2qs.sh doctor --json`
 - Operator flows: covers bootstrap, resume-after-reboot, start, stop, restart, update, and safe cleanup
-- Safe cleanup: prefers `clean-data --dry-run` and preserves secrets by design
+- Safe cleanup: prefers `clean-data --dry-run` for normal operator data and `sudo ./scripts/eth2qs.sh cleanup-host --dry-run` for stale root-managed installs; preserves secrets by design
 - One-line install: supports `clawhub install eth2-quickstart` and `npx clawhub install eth2-quickstart`
 - CI-backed: skill structure, command mapping, safety, and distribution path are tested
 
@@ -47,6 +47,7 @@ Give an agent a safe ClawHub-installable interface to `eth2-quickstart` so it ca
 ./scripts/eth2qs.sh stats
 ./scripts/eth2qs.sh logs --run2 -n 200
 ./scripts/eth2qs.sh clean-data --dry-run
+sudo ./scripts/eth2qs.sh cleanup-host --dry-run
 ```
 
 ## Do Not Claim

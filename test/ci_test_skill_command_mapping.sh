@@ -29,6 +29,7 @@ canonical_commands=(
     "./scripts/eth2qs.sh stats"
     "./scripts/eth2qs.sh logs"
     "./scripts/eth2qs.sh clean-data"
+    "./scripts/eth2qs.sh cleanup-host"
     "./scripts/eth2qs.sh update-all"
 )
 
@@ -77,6 +78,7 @@ if grep -Fq "bootstrap)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "stop)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "stats)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "clean-data)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
+   grep -Fq "cleanup-host)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "update-all)" "$PROJECT_ROOT/scripts/eth2qs.sh"; then
     record_test "wrapper implements documented lifecycle/cleanup commands" "PASS"
 else

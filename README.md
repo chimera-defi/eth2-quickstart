@@ -85,6 +85,7 @@ Agents outside this repo can use the skill after it is published to ClawHub, but
 - Use the skill's sizing guidance before install if the user is choosing a server or asking whether a host is large enough
 - Prefer `./scripts/eth2qs.sh doctor --json` for machine-readable health
 - Prefer `./scripts/eth2qs.sh clean-data --dry-run` before any cleanup
+- Prefer `sudo ./scripts/eth2qs.sh cleanup-host --dry-run` when cleaning stale root-managed installs on a server
 - The cleanup flow preserves keys and secrets by design
 
 This is a repo-aware operations skill, not a generic blockchain prompt and not a standalone node toolchain.

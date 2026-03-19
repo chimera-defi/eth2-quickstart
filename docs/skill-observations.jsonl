@@ -1,1 +1,1 @@
-
+{"timestamp":"2026-03-19T06:42:54Z","skill":"eth2-quickstart","task":"server cleanup of leftover ethereum nodes","result":"failure","command":"./scripts/eth2qs.sh stats","evidence":"stats downloaded Prysm binaries during a read-only inspection, and clean-data did not cover custom root datadirs like /root/.ethereum and /root/.eth2","notes":"Live host also had stale unit metadata: eth1.service described Ethrex while the running MainPID was geth, and cl.service described Lodestar while running Prysm.","git_sha":"bf208d7"}

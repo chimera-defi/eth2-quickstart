@@ -50,6 +50,9 @@ done
 
 echo "=== Common functions unit tests ==="
 bash install/test/test_common_functions.sh
+bash install/test/test_stats_read_only.sh
+bash install/test/test_host_cleanup.sh
+bash install/test/test_doctor_service_drift.sh
 bash install/test/test_ensure_dispatch.sh
 bash install/test/test_plan_json.sh
 bash install/test/test_record_skill_observation.sh

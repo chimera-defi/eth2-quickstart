@@ -438,6 +438,36 @@ run_unit_tests() {
         log_test "SKIP" "test_common_functions.sh: file not found"
     fi
 
+    if [[ -f "$PROJECT_ROOT/install/test/test_stats_read_only.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_stats_read_only.sh"; then
+            log_test "PASS" "test_stats_read_only.sh: all tests passed"
+        else
+            log_test "FAIL" "test_stats_read_only.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_stats_read_only.sh: file not found"
+    fi
+
+    if [[ -f "$PROJECT_ROOT/install/test/test_host_cleanup.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_host_cleanup.sh"; then
+            log_test "PASS" "test_host_cleanup.sh: all tests passed"
+        else
+            log_test "FAIL" "test_host_cleanup.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_host_cleanup.sh: file not found"
+    fi
+
+    if [[ -f "$PROJECT_ROOT/install/test/test_doctor_service_drift.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_doctor_service_drift.sh"; then
+            log_test "PASS" "test_doctor_service_drift.sh: all tests passed"
+        else
+            log_test "FAIL" "test_doctor_service_drift.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_doctor_service_drift.sh: file not found"
+    fi
+
     if [[ -f "$PROJECT_ROOT/install/test/test_ensure_dispatch.sh" ]]; then
         if bash "$PROJECT_ROOT/install/test/test_ensure_dispatch.sh"; then
             log_test "PASS" "test_ensure_dispatch.sh: all tests passed"

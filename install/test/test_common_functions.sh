@@ -303,7 +303,7 @@ test_choose_mev_stack_precedence() {
 
 # Test 15: doctor checks mev service unit name (not mev-boost)
 test_doctor_mev_service_name() {
-    if grep -q 'check_service "mev"' "$PROJECT_ROOT/install/utils/doctor.sh" && \
+    if grep -q 'record_service_health "mev" "MEV-Boost (mev)"' "$PROJECT_ROOT/install/utils/doctor.sh" && \
        ! grep -q 'check_service "mev-boost"' "$PROJECT_ROOT/install/utils/doctor.sh"; then
         echo "  doctor.sh uses correct mev service unit name"
         return 0

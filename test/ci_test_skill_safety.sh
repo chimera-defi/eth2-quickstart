@@ -32,6 +32,7 @@ else
 fi
 
 if grep -Fq "Preserving key/secret paths" "$PROJECT_ROOT/install/utils/purge_ethereum_data.sh" &&
+   grep -Fq "/root/.eth2/network-keys" "$PROJECT_ROOT/install/utils/purge_ethereum_data.sh" &&
    grep -Fq "preserve secrets" "$SAFETY_REF"; then
     record_test "cleanup guidance matches preserve-secrets implementation" "PASS"
 else

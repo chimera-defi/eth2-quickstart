@@ -16,6 +16,7 @@ This is the canonical machine-readable health path for agents.
 - Validate installation status after bootstrap or phase execution
 - Check service health before and after updates
 - Inspect JWT-secret presence and general node readiness
+- Detect service-unit drift when the running binary no longer matches the unit file on disk
 
 ## Human-Oriented Checks
 
