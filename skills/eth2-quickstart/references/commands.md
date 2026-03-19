@@ -18,6 +18,8 @@ Canonical command surface:
 - View logs: `./scripts/eth2qs.sh logs --run2 -n 200`
 - Clean default data dirs only: `./scripts/eth2qs.sh clean-data --dry-run`
 - Confirm cleanup after review: `./scripts/eth2qs.sh clean-data --confirm`
+- Host cleanup for stale root-managed installs: `sudo ./scripts/eth2qs.sh cleanup-host --dry-run`
+- Confirm host cleanup after review: `sudo ./scripts/eth2qs.sh cleanup-host --confirm`
 - Update installed components: `./scripts/eth2qs.sh update-all`
 
 Prefer these commands over direct utility-script paths unless a task specifically needs the lower-level script.

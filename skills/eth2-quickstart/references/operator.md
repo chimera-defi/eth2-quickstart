@@ -54,6 +54,7 @@ Use these commands for routine operations:
 2. Dry-run cleanup: `./scripts/eth2qs.sh clean-data --dry-run`
 3. Require human confirmation before `--confirm`
 4. Explain that default cleanup preserves secrets, validator keystores, wallets, and `~/secrets`
+5. If the host has stale root-managed clients or datadirs outside the operator home, use `sudo ./scripts/eth2qs.sh cleanup-host --dry-run` before confirming host cleanup.
 
 ## Decision Guidance
 
@@ -61,7 +62,7 @@ Use these commands for routine operations:
 - Prefer `monad-install` over implicit chain guessing when the target stack is Monad.
 - Prefer `plan --json` before calling `ensure --apply --confirm`.
 - Prefer `doctor --json` before and after any install, update, or cleanup step.
-- Prefer `stats` and `logs` when a human needs a readable RCA.
+- Prefer `stats` and `logs` when a human needs a readable RCA. `stats` must stay read-only and must not trigger client downloads.
 - If the requested action falls outside repo-supported workflows, say so instead of improvising.
 
 ## Not Covered

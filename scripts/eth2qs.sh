@@ -30,6 +30,7 @@ Operations:
   stats                   Show current service status and system stats
   logs [args...]          View run logs (passed to install/utils/view_logs.sh)
   clean-data [args...]    Purge default node data dirs (safe by default)
+  cleanup-host [args...]  Purge root-managed node data dirs (requires root, preserves secrets)
   update-all [args...]    Comprehensive updater
 
 Utility:
@@ -42,6 +43,7 @@ Examples:
   ./scripts/eth2qs.sh configure --interactive
   ./scripts/eth2qs.sh doctor --json
   ./scripts/eth2qs.sh logs --run2 -n 200
+  sudo ./scripts/eth2qs.sh cleanup-host --dry-run
 EOF
 }
 
@@ -107,6 +109,9 @@ case "$cmd" in
         ;;
     clean-data)
         run_cmd "$ROOT_DIR/install/utils/purge_ethereum_data.sh" "$@"
+        ;;
+    cleanup-host)
+        run_cmd "$ROOT_DIR/install/utils/purge_ethereum_data.sh" --host "$@"
         ;;
     update-all)
         run_cmd "$ROOT_DIR/install/utils/update_all.sh" "$@"
