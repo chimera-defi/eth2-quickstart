@@ -27,10 +27,13 @@ run_test() {
     fi
 }
 
+# shellcheck disable=SC2317
 test_stats_does_not_invoke_prysm_bootstrap_script() {
-    ! grep -Eq '\$HOME/prysm/prysm\.sh.*(beacon-chain|validator).*(-version|--version)' "$STATS_SCRIPT"
+    local pattern="\\\$HOME/prysm/prysm\\.sh.*(beacon-chain|validator).*(-version|--version)"
+    ! grep -Eq "$pattern" "$STATS_SCRIPT"
 }
 
+# shellcheck disable=SC2317
 test_stats_uses_local_prysm_binary_discovery() {
     grep -Fq 'find_prysm_binary' "$STATS_SCRIPT" &&
         grep -Fq 'bootstrap script present, local binary not downloaded' "$STATS_SCRIPT"
