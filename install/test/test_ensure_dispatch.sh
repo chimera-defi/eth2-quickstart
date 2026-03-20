@@ -5,26 +5,7 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-test_count=0
-pass_count=0
-fail_count=0
-
-run_test() {
-    local test_name="$1"
-    local test_func="$2"
-
-    test_count=$((test_count + 1))
-    echo ""
-    echo "=== Test $test_count: $test_name ==="
-
-    if "$test_func"; then
-        echo "PASS: $test_name"
-        pass_count=$((pass_count + 1))
-    else
-        echo "FAIL: $test_name"
-        fail_count=$((fail_count + 1))
-    fi
-}
+source "$SCRIPT_DIR/lib/test_harness.sh"
 
 setup_fake_repo() {
     local temp_root
@@ -199,18 +180,4 @@ run_test "phase1 apply dispatches run_1.sh" test_apply_phase1_dispatch
 run_test "phase2 apply dispatches run_2.sh" test_apply_phase2_dispatch
 run_test "monad apply dispatches monad_install.sh" test_apply_monad_dispatch
 
-echo ""
-echo "=========================================="
-echo "Test Summary"
-echo "=========================================="
-echo "Total tests: $test_count"
-echo "Passed: $pass_count"
-echo "Failed: $fail_count"
-
-if [[ $fail_count -eq 0 ]]; then
-    echo ""
-    echo "All tests passed!"
-    exit 0
-fi
-
-exit 1
+print_summary
