@@ -1,0 +1,59 @@
+# eth2-quickstart
+
+> Repo-backed Ethereum node operations toolkit and agent skill. Use it inside an `eth2-quickstart` checkout to bootstrap, install, operate, inspect, update, and safely clean Ethereum or Monad node stacks without inventing commands.
+
+## What This Project Is
+
+- A shell-scripted Ethereum node setup and operations repo.
+- A repo-aware agent skill under `skills/eth2-quickstart/`.
+- A stable wrapper surface through `./scripts/eth2qs.sh`.
+
+## What Agents Should Do
+
+- Resolve the repo root and run commands from there.
+- Prefer the wrapper over direct utility scripts.
+- Use `./scripts/eth2qs.sh doctor --json` before and after changes.
+- Use `./scripts/eth2qs.sh plan --json` and `./scripts/eth2qs.sh ensure` for planner-driven install routing.
+- Use `./scripts/eth2qs.sh clean-data --dry-run` for normal operator cleanup.
+- Use `sudo ./scripts/eth2qs.sh cleanup-host --dry-run` for stale root-managed installs.
+
+## What Agents Should Not Do
+
+- Do not invent a second toolchain or alternate wrapper surface.
+- Do not remove validator secrets, network keys, or wallet material.
+- Do not claim `llms.txt` is a packaged install path. It is only a text-ingest path.
+- Do not bypass confirmation for root, reboot, or destructive cleanup actions.
+
+## Install And Share Paths
+
+- Preferred packaged path after publish: `clawhub install eth2-quickstart`
+- Codex-style fallback: install from the GitHub path `skills/eth2-quickstart`
+- Raw-ingest fallback: tell the agent to read this repo's `llms.txt` or `llms-full.txt`
+
+## Canonical Commands
+
+- `./scripts/eth2qs.sh bootstrap --non-interactive`
+- `sudo ./scripts/eth2qs.sh phase1`
+- `./scripts/eth2qs.sh phase2 --execution=geth --consensus=prysm --mev=mev-boost`
+- `./scripts/eth2qs.sh monad-install`
+- `./scripts/eth2qs.sh doctor --json`
+- `./scripts/eth2qs.sh stats`
+- `./scripts/eth2qs.sh logs --run2 -n 200`
+- `./scripts/eth2qs.sh clean-data --dry-run`
+- `sudo ./scripts/eth2qs.sh cleanup-host --dry-run`
+- `./scripts/eth2qs.sh update-all`
+
+## Host Sizing
+
+- Baseline Ethereum host: `2-4+ TB` SSD/NVMe, `16-64+ GB` RAM, `4-8+` CPU cores, Ubuntu `20+`
+- Ask whether the host is for a production validator, RPC node, or temporary test usage
+- Treat disk as the most important blocker
+
+## Best References
+
+- [Skill entrypoint](./skills/eth2-quickstart/SKILL.md)
+- [Workflow](./skills/eth2-quickstart/references/workflow.md)
+- [Operator](./skills/eth2-quickstart/references/operator.md)
+- [Commands](./skills/eth2-quickstart/references/commands.md)
+- [Safety](./skills/eth2-quickstart/references/safety.md)
+- [Sizing](./skills/eth2-quickstart/references/sizing.md)

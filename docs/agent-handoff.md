@@ -729,3 +729,20 @@ Use this file to preserve context across sessions.
   - `./scripts/pre-commit.sh` rerun after the refactor/doc reduction.
 - Follow-ups:
   - Push the reduced branch state to PR `#156` after the full pre-commit rerun completes cleanly.
+
+## Update: 2026-03-20 (llms.txt Fallback + Public Copy Trim)
+- Author: codex
+- Summary:
+  - Added root-level `llms.txt` and `llms-full.txt` so agents that do not use ClawHub can ingest a compact, repo-aware context file directly.
+  - Trimmed the README and website agent copy so they point to the new `llms.txt` fallback instead of repeating more wrapper and cleanup detail inline.
+  - Kept ClawHub as the packaged install path and positioned `llms.txt` only as a raw-ingest fallback, not a false package/install claim.
+  - Extended `test/ci_test_skill_distribution.sh` so the `llms.txt` files are part of the tested distribution surface.
+- Validation:
+  - `bash test/ci_test_skill_distribution.sh`
+  - `bash test/ci_test_docs_consistency.sh`
+  - `cd frontend && bun run lint`
+  - `cd frontend && bun run test`
+  - `cd frontend && bun run build`
+  - `./scripts/pre-commit.sh`
+- Follow-ups:
+  - Publish the skill to ClawHub and test both the packaged path and raw `llms.txt` sharing path in a real agent runtime.
