@@ -9,27 +9,27 @@ import { Bot, Shield, TerminalSquare, Binary } from 'lucide-react'
 const AGENT_POINTS = [
   {
     title: 'ClawHub-ready, repo-aware',
-    description: 'Publish through ClawHub, then run it inside an eth2-quickstart checkout so agents operate against the real repo, not a second toolchain.',
+    description: 'Install via ClawHub, operate inside a real repo checkout.',
     icon: Bot,
   },
   {
     title: 'Canonical command surface',
-    description: 'The skill routes through ./scripts/eth2qs.sh instead of inventing new lifecycle commands for install, run, update, or cleanup.',
+    description: 'Routes through ./scripts/eth2qs.sh for install, run, update, and cleanup.',
     icon: TerminalSquare,
   },
   {
     title: 'Machine-readable health',
-    description: 'Agents can rely on doctor --json for stable status checks, then pivot to logs for RCA.',
+    description: 'Use doctor --json for stable status checks.',
     icon: Binary,
   },
   {
     title: 'Safe cleanup defaults',
-    description: 'The recommended cleanup path is dry-run first and preserves keys and secrets by design.',
+    description: 'Dry-run first, keys and secrets preserved by design.',
     icon: Shield,
   },
   {
     title: 'Raw-ingest fallback',
-    description: 'Agents that do not use ClawHub can still ingest llms.txt or llms-full.txt directly as compact repo context.',
+    description: 'Ingest llms.txt directly when ClawHub is unavailable.',
     icon: Bot,
   },
 ]
@@ -70,16 +70,9 @@ export function Agents() {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="mt-3 text-base text-muted-foreground sm:text-lg"
             >
-              External agents can use the ClawHub-ready skill to bootstrap, run,
-              inspect, update, and clean node stacks without drifting from the supported
-              command surface.
+              Agents bootstrap, run, inspect, and clean node stacks through
+              a repo-aware skill. It does not manage validator secrets.
             </motion.p>
-            <p className="mt-3 text-sm text-muted-foreground">
-              It is intentionally repo-aware. Once published, install is one-line, but use still
-              happens inside the repo checkout. For agents without package support, share the
-              repo&apos;s <span className="font-mono">llms.txt</span> file directly. It does not
-              manage validator secrets.
-            </p>
           </div>
 
           <Card className="border-border/60 bg-muted/40">
