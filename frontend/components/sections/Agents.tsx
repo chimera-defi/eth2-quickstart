@@ -27,18 +27,24 @@ const AGENT_POINTS = [
     description: 'The recommended cleanup path is dry-run first and preserves keys and secrets by design.',
     icon: Shield,
   },
+  {
+    title: 'Raw-ingest fallback',
+    description: 'Agents that do not use ClawHub can still ingest llms.txt or llms-full.txt directly as compact repo context.',
+    icon: Bot,
+  },
 ]
 
-const AGENT_SNIPPET = `# after publishing to ClawHub
+const AGENT_SNIPPET = `# packaged install after publishing to ClawHub
 clawhub install eth2-quickstart
 git clone https://github.com/chimera-defi/eth2-quickstart.git
 cd eth2-quickstart
 
+# or tell an agent to ingest:
+# https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/llms.txt
+
 # inside an eth2-quickstart checkout
 ./scripts/eth2qs.sh phase2 --execution=geth --consensus=prysm --mev=mev-boost
 ./scripts/eth2qs.sh doctor --json
-./scripts/eth2qs.sh stats
-./scripts/eth2qs.sh logs --run2 -n 200
 ./scripts/eth2qs.sh clean-data --dry-run`
 
 export function Agents() {
@@ -70,7 +76,9 @@ export function Agents() {
             </motion.p>
             <p className="mt-3 text-sm text-muted-foreground">
               It is intentionally repo-aware. Once published, install is one-line, but use still
-              happens inside the repo checkout, and it does not manage validator secrets.
+              happens inside the repo checkout. For agents without package support, share the
+              repo&apos;s <span className="font-mono">llms.txt</span> file directly. It does not
+              manage validator secrets.
             </p>
           </div>
 

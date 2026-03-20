@@ -85,11 +85,9 @@ git clone --depth 1 https://github.com/chimera-defi/eth2-quickstart.git
 cd eth2-quickstart
 ```
 
+- Raw-ingest fallback for agents that can load a text URL directly: [`llms.txt`](./llms.txt) and [`llms-full.txt`](./llms-full.txt)
 - Codex fallback: `python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py --repo chimera-defi/eth2-quickstart --path skills/eth2-quickstart`
-- Prefer `./scripts/eth2qs.sh doctor --json` for machine-readable health
-- Prefer `./scripts/eth2qs.sh clean-data --dry-run` before cleanup
-- Prefer `sudo ./scripts/eth2qs.sh cleanup-host --dry-run` for stale root-managed installs
-- The cleanup flow preserves keys and secrets by design
+- For the command surface and safety rules, start with [`skills/eth2-quickstart/SKILL.md`](skills/eth2-quickstart/SKILL.md)
 
 This is a repo-backed operations skill, not a standalone blockchain package.
 
