@@ -13,15 +13,15 @@ Important constraints:
 
 ## Core Files
 
-- [Skill entrypoint](./skills/eth2-quickstart/SKILL.md): Main agent skill contract and routing rules.
-- [Workflow reference](./skills/eth2-quickstart/references/workflow.md): Bootstrap vs phase flow, resolver usage, and repo-aware install guidance.
-- [Operator reference](./skills/eth2-quickstart/references/operator.md): Install, resume, operate, update, and cleanup flows.
-- [Command map](./skills/eth2-quickstart/references/commands.md): Canonical wrapper commands.
-- [Safety reference](./skills/eth2-quickstart/references/safety.md): Confirmation boundaries and secret-preservation rules.
-- [Sizing reference](./skills/eth2-quickstart/references/sizing.md): Host sizing guidance before install.
+- [Skill entrypoint](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/SKILL.md): Main agent skill contract and routing rules.
+- [Workflow reference](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/workflow.md): Bootstrap vs phase flow, resolver usage, and repo-aware install guidance.
+- [Operator reference](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/operator.md): Install, resume, operate, update, and cleanup flows.
+- [Command map](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/commands.md): Canonical wrapper commands.
+- [Safety reference](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/safety.md): Confirmation boundaries and secret-preservation rules.
+- [Sizing reference](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/sizing.md): Host sizing guidance before install.
 
 ## Optional
 
-- [Full agent context](./llms-full.txt): Expanded agent-facing summary of install, operation, cleanup, and sharing paths.
-- [README agent section](./README.md#for-external-agents): Human-facing entrypoint for sharing the skill.
-- [Agent listing copy](./docs/AGENT_SKILL_LISTING.md): Short public marketing copy.
+- [Full agent context](https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/llms-full.txt): Expanded agent-facing summary of install, operation, cleanup, and sharing paths.
+- [README agent section](https://github.com/chimera-defi/eth2-quickstart/blob/master/README.md#for-external-agents): Human-facing entrypoint for sharing the skill.
+- [Agent listing copy](https://github.com/chimera-defi/eth2-quickstart/blob/master/docs/AGENT_SKILL_LISTING.md): Short public marketing copy.

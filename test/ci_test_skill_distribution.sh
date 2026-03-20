@@ -52,6 +52,8 @@ fi
 
 if grep -Fq "Skill entrypoint" "$LLMS_FILE" &&
    grep -Fq "llms-full.txt" "$LLMS_FILE" &&
+   grep -Fq "https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/SKILL.md" "$LLMS_FILE" &&
+   grep -Fq "https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/workflow.md" "$LLMS_FULL_FILE" &&
    grep -Fq "./scripts/eth2qs.sh doctor --json" "$LLMS_FULL_FILE"; then
     record_test "llms ingest files expose the skill and command surface" "PASS"
 else
