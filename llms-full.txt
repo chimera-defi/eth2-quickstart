@@ -51,9 +51,9 @@
 
 ## Best References
 
-- [Skill entrypoint](./skills/eth2-quickstart/SKILL.md)
-- [Workflow](./skills/eth2-quickstart/references/workflow.md)
-- [Operator](./skills/eth2-quickstart/references/operator.md)
-- [Commands](./skills/eth2-quickstart/references/commands.md)
-- [Safety](./skills/eth2-quickstart/references/safety.md)
-- [Sizing](./skills/eth2-quickstart/references/sizing.md)
+- [Skill entrypoint](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/SKILL.md)
+- [Workflow](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/workflow.md)
+- [Operator](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/operator.md)
+- [Commands](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/commands.md)
+- [Safety](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/safety.md)
+- [Sizing](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/sizing.md)
