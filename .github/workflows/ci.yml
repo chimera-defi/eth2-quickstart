@@ -80,6 +80,24 @@ jobs:
           echo "::group::Common functions unit tests"
           docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_common_functions.sh
           echo "::endgroup::"
+          echo "::group::Stats read-only tests"
+          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_stats_read_only.sh
+          echo "::endgroup::"
+          echo "::group::Host cleanup tests"
+          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_host_cleanup.sh
+          echo "::endgroup::"
+          echo "::group::Doctor service drift tests"
+          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_doctor_service_drift.sh
+          echo "::endgroup::"
+          echo "::group::Ensure dispatch tests"
+          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_ensure_dispatch.sh
+          echo "::endgroup::"
+          echo "::group::Plan JSON tests"
+          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_plan_json.sh
+          echo "::endgroup::"
+          echo "::group::Install planner unit tests"
+          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_install_planner.sh
+          echo "::endgroup::"
           echo "::group::Unit tests (Caddy validate, downloads, functions)"
           docker run --rm --privileged -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true -e GITHUB_TOKEN="$GITHUB_TOKEN" eth-node-test /workspace/test/docker_test.sh
           echo "::endgroup::"
@@ -130,6 +148,10 @@ jobs:
         run: bash ./test/ci_test_skill_command_mapping.sh
       - name: Verify skill safety
         run: bash ./test/ci_test_skill_safety.sh
+      - name: Verify skill distribution contract
+        run: bash ./test/ci_test_skill_distribution.sh
+      - name: Verify skill installation e2e
+        run: bash ./test/ci_test_skill_install_e2e.sh
 
   tui-whiptail-nonskip-guard:
     runs-on: ubuntu-latest

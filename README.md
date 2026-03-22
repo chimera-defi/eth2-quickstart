@@ -65,10 +65,31 @@ Use one stable entrypoint for common workflows:
 ./scripts/eth2qs.sh configure --non-interactive
 ./scripts/eth2qs.sh phase1
 ./scripts/eth2qs.sh phase2
+./scripts/eth2qs.sh monad-install
 ./scripts/eth2qs.sh doctor --json
 ```
 
-For agent integrations, the first local skill bundle now lives at `skills/eth2-quickstart/`.
+For agent integrations, the published skill source lives at `skills/eth2-quickstart/` and is intended to be used inside an `eth2-quickstart` checkout.
+The skill entrypoint is [`skills/eth2-quickstart/SKILL.md`](skills/eth2-quickstart/SKILL.md) and includes operator, sizing, safety, and improvement references for agent users.
+
+### For External Agents
+
+The skill is repo-aware: install it, then use it from inside an `eth2-quickstart` checkout.
+
+```bash
+# once published
+clawhub install eth2-quickstart
+
+# fallback: local workspace
+git clone --depth 1 https://github.com/chimera-defi/eth2-quickstart.git
+cd eth2-quickstart
+```
+
+- Raw-ingest fallback for agents that can load a text URL directly: [`llms.txt`](./llms.txt) and [`llms-full.txt`](./llms-full.txt)
+- Codex fallback: `python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py --repo chimera-defi/eth2-quickstart --path skills/eth2-quickstart`
+- For the command surface and safety rules, start with [`skills/eth2-quickstart/SKILL.md`](skills/eth2-quickstart/SKILL.md)
+
+This is a repo-backed operations skill, not a standalone blockchain package.
 
 ### Installation
 
@@ -447,6 +468,7 @@ Additionally, the beacon checkpoint states have been made available by Sharedsta
 - Canonical docs index: [docs/README.md](docs/README.md)
 - Current status and open gaps: [docs/STATUS.md](docs/STATUS.md)
 - Script reference: [docs/SCRIPTS.md](docs/SCRIPTS.md)
+- Agent skill listing copy: [docs/AGENT_SKILL_LISTING.md](docs/AGENT_SKILL_LISTING.md)
 - Frontend docs: [docs/FRONTEND.md](docs/FRONTEND.md) and [frontend/README.md](frontend/README.md)
 - Session continuity and follow-ups: [docs/agent-handoff.md](docs/agent-handoff.md)
 - Common functions reference: [docs/COMMON_FUNCTIONS_REFERENCE.md](docs/COMMON_FUNCTIONS_REFERENCE.md)

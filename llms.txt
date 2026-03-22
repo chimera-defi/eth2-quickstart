@@ -1,0 +1,27 @@
+# eth2-quickstart
+
+> Repo-backed Ethereum node operations toolkit and agent skill. Use this when you need to bootstrap, operate, inspect, update, or safely clean Ethereum node hosts through the real repo commands.
+
+This project supports humans and agents. The canonical runtime surface is `./scripts/eth2qs.sh`, and the packaged skill lives under `skills/eth2-quickstart/`.
+
+Important constraints:
+- The skill is repo-aware. Install or load it, then use it inside an `eth2-quickstart` checkout.
+- Prefer `./scripts/eth2qs.sh doctor --json` for machine-readable health.
+- Prefer dry-run cleanup first.
+- Do not remove validator keys or secrets.
+- Treat ClawHub as the package install path. Treat this file as the raw-ingest fallback for agents that can read a text URL directly.
+
+## Core Files
+
+- [Skill entrypoint](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/SKILL.md): Main agent skill contract and routing rules.
+- [Workflow reference](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/workflow.md): Bootstrap vs phase flow, resolver usage, and repo-aware install guidance.
+- [Operator reference](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/operator.md): Install, resume, operate, update, and cleanup flows.
+- [Command map](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/commands.md): Canonical wrapper commands.
+- [Safety reference](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/safety.md): Confirmation boundaries and secret-preservation rules.
+- [Sizing reference](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/sizing.md): Host sizing guidance before install.
+
+## Optional
+
+- [Full agent context](https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/llms-full.txt): Expanded agent-facing summary of install, operation, cleanup, and sharing paths.
+- [README agent section](https://github.com/chimera-defi/eth2-quickstart/blob/master/README.md#for-external-agents): Human-facing entrypoint for sharing the skill.
+- [Agent listing copy](https://github.com/chimera-defi/eth2-quickstart/blob/master/docs/AGENT_SKILL_LISTING.md): Short public marketing copy.

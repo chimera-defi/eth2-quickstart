@@ -12,13 +12,16 @@ This is the canonical machine-readable health path for agents.
 
 ## Expected Uses
 
+- Confirm whether a host is ready for node install or is missing obvious prerequisites
 - Validate installation status after bootstrap or phase execution
 - Check service health before and after updates
 - Inspect JWT-secret presence and general node readiness
+- Detect service-unit drift when the running binary no longer matches the unit file on disk
 
 ## Human-Oriented Checks
 
 - `./scripts/eth2qs.sh status`
+- `./scripts/eth2qs.sh stats`
 - `./scripts/eth2qs.sh logs --run1 -n 100`
 - `./scripts/eth2qs.sh logs --run2 -n 200`
 

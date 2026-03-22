@@ -136,8 +136,8 @@ fi
 
 # Test 5b: MEV service naming consistency in doctor utility
 log_info "Test 5b: Verify doctor MEV service naming..."
-if grep -q 'check_service "mev"' "$PROJECT_ROOT/install/utils/doctor.sh" && \
-   ! grep -q 'check_service "mev-boost"' "$PROJECT_ROOT/install/utils/doctor.sh"; then
+if grep -q 'record_service_health "mev" "MEV-Boost (mev)"' "$PROJECT_ROOT/install/utils/doctor.sh" && \
+   ! grep -q 'record_service_health "mev-boost"' "$PROJECT_ROOT/install/utils/doctor.sh"; then
     log_info "  ✓ doctor.sh checks mev unit name"
 else
     log_error "  ✗ doctor.sh MEV service name mismatch"
