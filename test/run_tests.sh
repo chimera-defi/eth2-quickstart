@@ -437,6 +437,66 @@ run_unit_tests() {
     else
         log_test "SKIP" "test_common_functions.sh: file not found"
     fi
+
+    if [[ -f "$PROJECT_ROOT/install/test/test_stats_read_only.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_stats_read_only.sh"; then
+            log_test "PASS" "test_stats_read_only.sh: all tests passed"
+        else
+            log_test "FAIL" "test_stats_read_only.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_stats_read_only.sh: file not found"
+    fi
+
+    if [[ -f "$PROJECT_ROOT/install/test/test_host_cleanup.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_host_cleanup.sh"; then
+            log_test "PASS" "test_host_cleanup.sh: all tests passed"
+        else
+            log_test "FAIL" "test_host_cleanup.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_host_cleanup.sh: file not found"
+    fi
+
+    if [[ -f "$PROJECT_ROOT/install/test/test_doctor_service_drift.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_doctor_service_drift.sh"; then
+            log_test "PASS" "test_doctor_service_drift.sh: all tests passed"
+        else
+            log_test "FAIL" "test_doctor_service_drift.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_doctor_service_drift.sh: file not found"
+    fi
+
+    if [[ -f "$PROJECT_ROOT/install/test/test_ensure_dispatch.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_ensure_dispatch.sh"; then
+            log_test "PASS" "test_ensure_dispatch.sh: all tests passed"
+        else
+            log_test "FAIL" "test_ensure_dispatch.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_ensure_dispatch.sh: file not found"
+    fi
+
+    if [[ -f "$PROJECT_ROOT/install/test/test_plan_json.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_plan_json.sh"; then
+            log_test "PASS" "test_plan_json.sh: all tests passed"
+        else
+            log_test "FAIL" "test_plan_json.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_plan_json.sh: file not found"
+    fi
+
+    if [[ -f "$PROJECT_ROOT/install/test/test_install_planner.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_install_planner.sh"; then
+            log_test "PASS" "test_install_planner.sh: all tests passed"
+        else
+            log_test "FAIL" "test_install_planner.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_install_planner.sh: file not found"
+    fi
     
     log_subheader "Testing individual functions"
     
@@ -518,7 +578,8 @@ run_unit_tests() {
     for skill_test in \
         "$SCRIPT_DIR/ci_test_skill_structure.sh" \
         "$SCRIPT_DIR/ci_test_skill_command_mapping.sh" \
-        "$SCRIPT_DIR/ci_test_skill_safety.sh"; do
+        "$SCRIPT_DIR/ci_test_skill_safety.sh" \
+        "$SCRIPT_DIR/ci_test_skill_distribution.sh"; do
         if [[ -f "$skill_test" ]]; then
             if bash "$skill_test"; then
                 log_test "PASS" "$(basename "$skill_test"): all tests passed"

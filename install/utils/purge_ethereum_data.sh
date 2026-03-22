@@ -15,13 +15,13 @@ get_script_directories
 # Source exports for configuration
 if [[ -f "$PROJECT_ROOT/exports.sh" ]]; then
     source "$PROJECT_ROOT/exports.sh"
-else
-    export LOGIN_UNAME="eth"
 fi
+export LOGIN_UNAME="${LOGIN_UNAME:-eth}"
 
 # Configuration
 DRY_RUN=false
 CONFIRM_ACTION=false
+HOST_MODE=false
 
 # Default data/state directories to purge
 DATA_DIRS=(
@@ -48,6 +48,14 @@ DATA_DIRS=(
     "$HOME/ethgas"                      # ETHGas
 )
 
+HOST_DATA_DIRS=(
+    "/root/.ethereum"
+    "/root/.eth2"
+    "/root/prysm"
+    "/root/lodestar"
+    "/root/ethrex"
+)
+
 # Paths that are always preserved (keys, secrets, passwords)
 PRESERVE_PATHS=(
     "$HOME/secrets"
@@ -59,6 +67,11 @@ PRESERVE_PATHS=(
     "$HOME/.lighthouse/secrets"
     "$HOME/.lighthouse/mainnet/validators"
     "$HOME/.lighthouse/mainnet/secrets"
+)
+
+HOST_PRESERVE_PATHS=(
+    "/root/secrets"
+    "/root/.eth2/network-keys"
 )
 
 # Services to manage
@@ -75,10 +88,15 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
+        --host)
+            HOST_MODE=true
+            shift
+            ;;
         --help|-h)
-            echo "Usage: $0 [--confirm] [--dry-run]"
+            echo "Usage: $0 [--confirm] [--dry-run] [--host]"
             echo "  --confirm    Skip confirmation prompt"
             echo "  --dry-run    Show what would be deleted"
+            echo "  --host       Include root-managed custom datadirs and stale client installs"
             exit 0
             ;;
         *)
@@ -88,8 +106,32 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Check if running as correct user
-check_user "$LOGIN_UNAME"
+append_unique_paths() {
+    local array_name="$1"
+    shift
+    local candidate existing
+
+    for candidate in "$@"; do
+        [[ -n "$candidate" ]] || continue
+        eval "for existing in \"\${${array_name}[@]}\"; do
+            if [[ \"\$existing\" == \"\$candidate\" ]]; then
+                continue 2
+            fi
+        done"
+        eval "${array_name}+=(\"\$candidate\")"
+    done
+}
+
+if [[ "$HOST_MODE" == "true" ]]; then
+    if [[ $EUID -ne 0 ]]; then
+        log_error "Host cleanup must be run as root."
+        exit 1
+    fi
+    append_unique_paths DATA_DIRS "${HOST_DATA_DIRS[@]}"
+    append_unique_paths PRESERVE_PATHS "${HOST_PRESERVE_PATHS[@]}"
+else
+    check_user "$LOGIN_UNAME"
+fi
 
 path_is_preserved() {
     local path="$1"
@@ -149,6 +191,9 @@ confirm_deletion() {
     
     log_warn "WARNING: This will permanently delete all Ethereum client data!"
     log_warn "This includes blockchain data/state in default directories."
+    if [[ "$HOST_MODE" == "true" ]]; then
+        log_warn "Host cleanup mode includes root-managed custom datadirs and stale client installs."
+    fi
     log_info "Preserving key/secret paths (including ~/secrets and validator keystores)."
     read -p "Are you sure you want to continue? (yes/no): " -r
     
@@ -248,7 +293,11 @@ delete_directories() {
 # Main execution
 main() {
     log_info "Starting Ethereum Data Purge"
-    log_info "Default data directories only (custom datadirs are not touched)"
+    if [[ "$HOST_MODE" == "true" ]]; then
+        log_info "Host cleanup mode enabled: includes root-managed custom datadirs"
+    else
+        log_info "Default data directories only (custom datadirs are not touched)"
+    fi
     log_info "Preserving keys/secrets by design"
     
     if [[ "$DRY_RUN" == "true" ]]; then

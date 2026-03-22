@@ -16,6 +16,7 @@ This directory contains all project documentation organized by category.
 
 ## Development & Testing
 - **[AGENT_SKILL_PLAN.md](AGENT_SKILL_PLAN.md)** - Plan for packaging repo workflows as an installable agent skill
+- **[AGENT_SKILL_LISTING.md](AGENT_SKILL_LISTING.md)** - Marketing/listing copy for the agent skill
 - **[../skills/eth2-quickstart/SKILL.md](../skills/eth2-quickstart/SKILL.md)** - Live local skill for repo-aware agent workflows
 - **[CI_WORKFLOWS.md](CI_WORKFLOWS.md)** - CI path filtering (when each workflow runs)
 - **[SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md](SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md)** - Shell scripting standards

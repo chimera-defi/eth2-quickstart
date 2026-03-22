@@ -126,6 +126,108 @@ check_service() {
     check_service_status "$1"
 }
 
+show_optional_info() {
+    local message="$1"
+    if [[ "$JSON_OUTPUT" == "false" ]]; then
+        log_info "  - $message"
+    fi
+}
+
+record_service_health() {
+    local service="$1"
+    local label="$2"
+    local optional="${3:-false}"
+    local status
+
+    status="$(check_service "$service")"
+    case "$status" in
+        running)
+            record_pass "$label: Running"
+            check_service_unit_drift "$service" "$label"
+            ;;
+        stopped)
+            record_warn "$label: Stopped but enabled"
+            ;;
+        disabled)
+            if [[ "$optional" == "true" ]]; then
+                show_optional_info "$label: Not configured (optional)"
+            else
+                record_warn "$label: Disabled"
+            fi
+            ;;
+        not_installed)
+            if [[ "$optional" == "true" ]]; then
+                show_optional_info "$label: Not installed (optional)"
+            else
+                record_warn "$label: Not installed"
+            fi
+            ;;
+    esac
+}
+
+service_unit_exec_path() {
+    local service="$1"
+    systemctl cat "$service" 2>/dev/null | awk -F= '/^ExecStart=/{print $2; exit}' | awk '{print $1}'
+}
+
+service_runtime_command() {
+    local service="$1"
+    local main_pid
+
+    main_pid="$(systemctl show "$service" -p MainPID --value 2>/dev/null || true)"
+    [[ "$main_pid" =~ ^[0-9]+$ ]] || return 1
+    [[ "$main_pid" -gt 0 ]] || return 1
+
+    ps -p "$main_pid" -o args= 2>/dev/null | sed 's/^[[:space:]]*//'
+}
+
+normalize_command_path() {
+    local command_line="$1"
+    local first_token second_token
+
+    read -r first_token second_token _ <<< "$command_line"
+    case "$(basename "$first_token")" in
+        bash|sh|dash)
+            printf '%s\n' "$second_token"
+            ;;
+        *)
+            printf '%s\n' "$first_token"
+            ;;
+    esac
+}
+
+check_service_unit_drift() {
+    local service="$1"
+    local label="$2"
+    local expected_exec runtime_command runtime_exec expected_base runtime_base
+
+    expected_exec="$(service_unit_exec_path "$service")"
+    runtime_command="$(service_runtime_command "$service" || true)"
+    [[ -n "$expected_exec" && -n "$runtime_command" ]] || return 0
+
+    runtime_exec="$(normalize_command_path "$runtime_command")"
+    [[ -n "$runtime_exec" ]] || return 0
+
+    expected_base="$(basename "$expected_exec")"
+    runtime_base="$(basename "$runtime_exec")"
+
+    if [[ "$expected_base" != "$runtime_base" ]]; then
+        record_warn "$label: Service unit drift detected" "Unit expects $expected_base but runtime is $runtime_base"
+    fi
+}
+
+record_port_health() {
+    local port="$1"
+    local success_message="$2"
+    local idle_message="$3"
+
+    if check_port "$port"; then
+        record_pass "$success_message"
+    else
+        show_optional_info "$idle_message"
+    fi
+}
+
 # =============================================================================
 # HEALTH CHECKS
 # =============================================================================
@@ -229,107 +331,12 @@ if [[ "$JSON_OUTPUT" == "false" ]]; then
     echo -e "${BLUE}[3/7] Service Status${NC}"
 fi
 
-# Check execution client service
-eth1_status=$(check_service "eth1")
-case "$eth1_status" in
-    "running")
-        record_pass "Execution client (eth1): Running"
-        ;;
-    "stopped")
-        record_warn "Execution client (eth1): Stopped but enabled"
-        ;;
-    "disabled")
-        record_warn "Execution client (eth1): Disabled"
-        ;;
-    "not_installed")
-        record_warn "Execution client (eth1): Not installed"
-        ;;
-esac
-
-# Check consensus client service
-cl_status=$(check_service "cl")
-case "$cl_status" in
-    "running")
-        record_pass "Consensus client (cl): Running"
-        ;;
-    "stopped")
-        record_warn "Consensus client (cl): Stopped but enabled"
-        ;;
-    "disabled")
-        record_warn "Consensus client (cl): Disabled"
-        ;;
-    "not_installed")
-        record_warn "Consensus client (cl): Not installed"
-        ;;
-esac
-
-# Check validator service
-validator_status=$(check_service "validator")
-case "$validator_status" in
-    "running")
-        record_pass "Validator: Running"
-        ;;
-    "stopped")
-        record_warn "Validator: Stopped but enabled"
-        ;;
-    "disabled")
-        if [[ "$JSON_OUTPUT" == "false" ]]; then
-            log_info "  - Validator: Not configured (optional)"
-        fi
-        ;;
-    "not_installed")
-        if [[ "$JSON_OUTPUT" == "false" ]]; then
-            log_info "  - Validator: Not installed (optional)"
-        fi
-        ;;
-esac
-
-# Check MEV services (MEV-Boost and/or Commit-Boost stack)
-mev_status=$(check_service "mev")
-commit_pbs_status=$(check_service "commit-boost-pbs")
-commit_signer_status=$(check_service "commit-boost-signer")
-
-case "$mev_status" in
-    "running")
-        record_pass "MEV-Boost (mev): Running"
-        ;;
-    "stopped")
-        record_warn "MEV-Boost (mev): Stopped but enabled"
-        ;;
-    "disabled"|"not_installed")
-        if [[ "$JSON_OUTPUT" == "false" ]]; then
-            log_info "  - MEV-Boost (mev): Not configured (optional)"
-        fi
-        ;;
-esac
-
-case "$commit_pbs_status" in
-    "running")
-        record_pass "Commit-Boost PBS: Running"
-        ;;
-    "stopped")
-        record_warn "Commit-Boost PBS: Stopped but enabled"
-        ;;
-    "disabled"|"not_installed")
-        if [[ "$JSON_OUTPUT" == "false" ]]; then
-            log_info "  - Commit-Boost PBS: Not configured (optional)"
-        fi
-        ;;
-esac
-
-case "$commit_signer_status" in
-    "running")
-        record_pass "Commit-Boost Signer: Running"
-        ;;
-    "stopped")
-        record_warn "Commit-Boost Signer: Stopped but enabled"
-        ;;
-    "disabled"|"not_installed")
-        if [[ "$JSON_OUTPUT" == "false" ]]; then
-            log_info "  - Commit-Boost Signer: Not configured (optional)"
-        fi
-        ;;
-esac
+record_service_health "eth1" "Execution client (eth1)"
+record_service_health "cl" "Consensus client (cl)"
+record_service_health "validator" "Validator" "true"
+record_service_health "mev" "MEV-Boost (mev)" "true"
+record_service_health "commit-boost-pbs" "Commit-Boost PBS" "true"
+record_service_health "commit-boost-signer" "Commit-Boost Signer" "true"
 
 if [[ "$JSON_OUTPUT" == "false" ]]; then
     echo ""
@@ -374,56 +381,12 @@ if [[ "$JSON_OUTPUT" == "false" ]]; then
     echo -e "${BLUE}[5/7] Port Status${NC}"
 fi
 
-# Execution client ports
-if check_port 30303; then
-    record_pass "P2P port 30303: In use (expected if eth1 running)"
-else
-    if [[ "$JSON_OUTPUT" == "false" ]]; then
-        log_info "  - P2P port 30303: Available"
-    fi
-fi
-
-if check_port 8545; then
-    record_pass "HTTP RPC port 8545: In use"
-else
-    if [[ "$JSON_OUTPUT" == "false" ]]; then
-        log_info "  - HTTP RPC port 8545: Available"
-    fi
-fi
-
-if check_port 8551; then
-    record_pass "Engine API port 8551: In use (expected if eth1 running)"
-else
-    if [[ "$JSON_OUTPUT" == "false" ]]; then
-        log_info "  - Engine API port 8551: Available"
-    fi
-fi
-
-# Consensus client ports
-if check_port 9000; then
-    record_pass "Beacon P2P port 9000: In use (expected if cl running)"
-else
-    if [[ "$JSON_OUTPUT" == "false" ]]; then
-        log_info "  - Beacon P2P port 9000: Available"
-    fi
-fi
-
-if check_port 5052; then
-    record_pass "Beacon API port 5052: In use"
-else
-    if [[ "$JSON_OUTPUT" == "false" ]]; then
-        log_info "  - Beacon API port 5052: Available"
-    fi
-fi
-
-# MEV-Boost port
-if check_port 18550; then
-    record_pass "MEV-Boost port 18550: In use"
-else
-    if [[ "$JSON_OUTPUT" == "false" ]]; then
-        log_info "  - MEV service port 18550: Available"
-    fi
-fi
+record_port_health 30303 "P2P port 30303: In use (expected if eth1 running)" "P2P port 30303: Available"
+record_port_health 8545 "HTTP RPC port 8545: In use" "HTTP RPC port 8545: Available"
+record_port_health 8551 "Engine API port 8551: In use (expected if eth1 running)" "Engine API port 8551: Available"
+record_port_health 9000 "Beacon P2P port 9000: In use (expected if cl running)" "Beacon P2P port 9000: Available"
+record_port_health 5052 "Beacon API port 5052: In use" "Beacon API port 5052: Available"
+record_port_health 18550 "MEV-Boost port 18550: In use" "MEV service port 18550: Available"
 
 if [[ "$JSON_OUTPUT" == "false" ]]; then
     echo ""

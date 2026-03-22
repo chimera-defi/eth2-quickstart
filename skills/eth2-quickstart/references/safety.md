@@ -13,8 +13,10 @@
 ## Cleanup
 
 - Prefer `./scripts/eth2qs.sh clean-data --dry-run` first.
+- Prefer `sudo ./scripts/eth2qs.sh cleanup-host --dry-run` for stale root-managed installs.
 - Only move to `--confirm` after the human confirms scope.
 - The purge flow is designed to preserve secrets, validator keystores, wallets, and `~/secrets`.
+- Preserve `/root/secrets` and `/root/.eth2/network-keys` during host cleanup.
 - Custom datadirs are not covered by the default cleanup command.
 
 ## Command Discipline

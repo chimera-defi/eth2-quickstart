@@ -12,7 +12,7 @@ SKILL_DIR="$PROJECT_ROOT/skills/eth2-quickstart"
 SKILL_FILE="$SKILL_DIR/SKILL.md"
 SAFETY_REF="$SKILL_DIR/references/safety.md"
 COMMANDS_REF="$SKILL_DIR/references/commands.md"
-ALL_SKILL_FILES=("$SKILL_FILE" "$SAFETY_REF" "$COMMANDS_REF" "$SKILL_DIR/references/workflow.md" "$SKILL_DIR/references/outputs.md")
+ALL_SKILL_FILES=("$SKILL_FILE" "$SAFETY_REF" "$COMMANDS_REF" "$SKILL_DIR/references/workflow.md" "$SKILL_DIR/references/operator.md" "$SKILL_DIR/references/outputs.md" "$SKILL_DIR/references/examples.md" "$SKILL_DIR/references/improvement.md")
 
 log_info "=== CI Test: eth2-quickstart skill safety ==="
 
@@ -32,6 +32,7 @@ else
 fi
 
 if grep -Fq "Preserving key/secret paths" "$PROJECT_ROOT/install/utils/purge_ethereum_data.sh" &&
+   grep -Fq "/root/.eth2/network-keys" "$PROJECT_ROOT/install/utils/purge_ethereum_data.sh" &&
    grep -Fq "preserve secrets" "$SAFETY_REF"; then
     record_test "cleanup guidance matches preserve-secrets implementation" "PASS"
 else
