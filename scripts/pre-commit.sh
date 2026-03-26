@@ -11,10 +11,14 @@ echo "=== Shellcheck + syntax ==="
 echo "=== Shebang check ==="
 failed=0
 find_sh_files() {
-  find . -name "*.sh" -type f \
-    ! -path "./.git/*" \
-    ! -path "./frontend/node_modules/*" \
-    ! -path "./frontend/.next/*"
+  if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git ls-files '*.sh'
+  else
+    find . -name "*.sh" -type f \
+      ! -path "./.git/*" \
+      ! -path "./frontend/node_modules/*" \
+      ! -path "./frontend/.next/*"
+  fi
 }
 
 while IFS= read -r f; do
@@ -66,5 +70,6 @@ bash test/ci_test_skill_command_mapping.sh
 bash test/ci_test_skill_safety.sh
 bash test/ci_test_skill_distribution.sh
 bash test/ci_test_skill_install_e2e.sh
+bash test/ci_test_mcp_server.sh
 
 echo "✅ Pre-commit checks passed."

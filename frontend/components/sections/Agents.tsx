@@ -32,6 +32,11 @@ const AGENT_POINTS = [
     description: 'Ingest llms.txt directly when ClawHub is unavailable.',
     icon: Bot,
   },
+  {
+    title: 'Native MCP tools',
+    description: 'Run the local stdio server for Claude Code and Codex with the same repo-backed commands.',
+    icon: TerminalSquare,
+  },
 ]
 
 const AGENT_SNIPPET = `# packaged install after publishing to ClawHub
@@ -41,6 +46,10 @@ cd eth2-quickstart
 
 # or tell an agent to ingest:
 # https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/llms.txt
+
+# native MCP path
+python3 -m pip install mcp
+codex mcp add eth2-quickstart ./mcp_server/run_eth2qs_mcp.sh
 
 # inside an eth2-quickstart checkout
 ./scripts/eth2qs.sh phase2 --execution=geth --consensus=prysm --mev=mev-boost
