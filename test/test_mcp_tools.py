@@ -15,6 +15,13 @@ class McpToolsTest(unittest.TestCase):
         self.assertIn("eth2qs_phase2", tools.TOOL_NAMES)
         self.assertIn("eth2qs_cleanup_host_dry_run", tools.TOOL_NAMES)
 
+    def test_server_info_includes_groups_and_examples(self):
+        info = tools.server_info()
+        self.assertIn("tool_groups", info)
+        self.assertIn("call_examples", info)
+        self.assertIn("eth2qs_phase2", info["tool_groups"]["mutating_confirm_required"])
+        self.assertEqual(info["call_examples"]["eth2qs_phase1"]["confirmation_token"], "apply")
+
     def test_confirm_gate_blocks_mutations(self):
         with self.assertRaises(ValueError):
             tools.ensure_apply(confirm=False, confirmation_token="")

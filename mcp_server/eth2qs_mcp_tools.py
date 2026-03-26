@@ -195,6 +195,46 @@ def server_info() -> Dict[str, Any]:
         "repo_root": str(resolve_repo_root()),
         "wrapper": str(eth2qs_path()),
         "tool_names": list(TOOL_NAMES),
+        "tool_groups": {
+            "read_only": [
+                "eth2qs_info",
+                "eth2qs_help",
+                "eth2qs_doctor_json",
+                "eth2qs_plan_json",
+                "eth2qs_ensure_preview",
+                "eth2qs_stats",
+                "eth2qs_logs",
+                "eth2qs_clean_data_dry_run",
+                "eth2qs_cleanup_host_dry_run",
+            ],
+            "mutating_confirm_required": [
+                "eth2qs_ensure_apply",
+                "eth2qs_phase1",
+                "eth2qs_phase2",
+                "eth2qs_start",
+                "eth2qs_stop",
+                "eth2qs_restart",
+                "eth2qs_monad_install",
+            ],
+        },
+        "call_examples": {
+            "eth2qs_doctor_json": {},
+            "eth2qs_plan_json": {"chain": "ethereum"},
+            "eth2qs_phase1": {"confirm": True, "confirmation_token": "apply"},
+            "eth2qs_phase2": {
+                "execution": "geth",
+                "consensus": "prysm",
+                "mev": "mev-boost",
+                "confirm": True,
+                "confirmation_token": "apply",
+            },
+            "eth2qs_ensure_apply": {
+                "chain": "ethereum",
+                "confirm": True,
+                "confirmation_token": "apply",
+            },
+            "eth2qs_clean_data_dry_run": {},
+        },
     }
 
 

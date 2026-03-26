@@ -2,6 +2,8 @@
 
 Use the MCP server when an agent runtime supports native tools and you want Claude Code or Codex to call the repo-backed wrapper directly over stdio.
 
+Agents learn the callable surface from MCP `list_tools`. Use `eth2qs_info` when you want a compact in-band catalog with grouped tool names and example argument payloads.
+
 ## Scope
 
 This server is intentionally thin. It wraps `./scripts/eth2qs.sh`; it does not reimplement install or operations logic.
