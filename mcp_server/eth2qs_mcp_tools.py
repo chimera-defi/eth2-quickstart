@@ -6,11 +6,14 @@ from __future__ import annotations
 import os
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 ALLOWED_CHAINS = {"ethereum", "monad"}
 ALLOWED_LOG_TARGETS = {"run1", "run2"}
+ALLOWED_EXECUTION_CLIENTS = {"geth", "besu", "erigon", "nethermind", "nimbus_eth1", "reth", "ethrex"}
+ALLOWED_CONSENSUS_CLIENTS = {"prysm", "lighthouse", "lodestar", "teku", "nimbus", "grandine"}
+ALLOWED_MEV_OPTIONS = {"mev-boost", "commit-boost", "none"}
 MAX_LOG_LINES = 500
 CONFIRM_TOKEN = "apply"
 
@@ -74,6 +77,14 @@ def _require_confirm(confirm: bool, token: str) -> None:
         raise ValueError("This action requires confirm=true and confirmation_token='apply'")
 
 
+def _optional_choice(flag: str, value: Optional[str], allowed: set[str]) -> List[str]:
+    if value is None:
+        return []
+    if value not in allowed:
+        raise ValueError(f"Unsupported {flag}: {value}")
+    return [f"--{flag}={value}"]
+
+
 def help_tool() -> Dict[str, Any]:
     return _eth2qs("help")
 
@@ -93,6 +104,32 @@ def ensure_preview(chain: Optional[str] = None) -> Dict[str, Any]:
 def ensure_apply(chain: Optional[str] = None, *, confirm: bool = False, confirmation_token: str = "") -> Dict[str, Any]:
     _require_confirm(confirm, confirmation_token)
     return _eth2qs("ensure", "--apply", "--confirm", *_validate_chain(chain))
+
+
+def phase1(*, confirm: bool = False, confirmation_token: str = "") -> Dict[str, Any]:
+    _require_confirm(confirm, confirmation_token)
+    return _eth2qs("phase1")
+
+
+def phase2(
+    execution: Optional[str] = None,
+    consensus: Optional[str] = None,
+    mev: Optional[str] = None,
+    *,
+    ethgas: bool = False,
+    confirm: bool = False,
+    confirmation_token: str = "",
+) -> Dict[str, Any]:
+    _require_confirm(confirm, confirmation_token)
+    args = [
+        "phase2",
+        *_optional_choice("execution", execution, ALLOWED_EXECUTION_CLIENTS),
+        *_optional_choice("consensus", consensus, ALLOWED_CONSENSUS_CLIENTS),
+        *_optional_choice("mev", mev, ALLOWED_MEV_OPTIONS),
+    ]
+    if ethgas:
+        args.append("--ethgas")
+    return _eth2qs(*args)
 
 
 def stats() -> Dict[str, Any]:
@@ -139,6 +176,8 @@ TOOL_NAMES = (
     "eth2qs_plan_json",
     "eth2qs_ensure_preview",
     "eth2qs_ensure_apply",
+    "eth2qs_phase1",
+    "eth2qs_phase2",
     "eth2qs_stats",
     "eth2qs_logs",
     "eth2qs_start",
@@ -168,6 +207,18 @@ def call_tool(name: str, arguments: Optional[Dict[str, Any]] = None) -> Dict[str
         "eth2qs_ensure_preview": lambda args: ensure_preview(chain=args.get("chain")),
         "eth2qs_ensure_apply": lambda args: ensure_apply(
             chain=args.get("chain"),
+            confirm=bool(args.get("confirm")),
+            confirmation_token=str(args.get("confirmation_token", "")),
+        ),
+        "eth2qs_phase1": lambda args: phase1(
+            confirm=bool(args.get("confirm")),
+            confirmation_token=str(args.get("confirmation_token", "")),
+        ),
+        "eth2qs_phase2": lambda args: phase2(
+            execution=args.get("execution"),
+            consensus=args.get("consensus"),
+            mev=args.get("mev"),
+            ethgas=bool(args.get("ethgas")),
             confirm=bool(args.get("confirm")),
             confirmation_token=str(args.get("confirmation_token", "")),
         ),
@@ -208,6 +259,8 @@ __all__ = [
     "doctor_json",
     "ensure_apply",
     "ensure_preview",
+    "phase1",
+    "phase2",
     "help_tool",
     "logs",
     "monad_install",

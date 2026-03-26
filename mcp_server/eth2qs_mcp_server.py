@@ -23,6 +23,8 @@ from mcp_server.eth2qs_mcp_tools import (  # noqa: E402
     help_tool,
     logs,
     monad_install,
+    phase1,
+    phase2,
     plan_json,
     server_info,
     start,
@@ -75,6 +77,32 @@ def eth2qs_ensure_preview(chain: str | None = None) -> dict:
 def eth2qs_ensure_apply(chain: str | None = None, confirm: bool = False, confirmation_token: str = "") -> dict:
     """Execute the next safe install step. Requires confirm=true and confirmation_token='apply'."""
     return ensure_apply(chain=chain, confirm=confirm, confirmation_token=confirmation_token)
+
+
+@mcp.tool(name="eth2qs_phase1")
+def eth2qs_phase1(confirm: bool = False, confirmation_token: str = "") -> dict:
+    """Run Phase 1 hardening. Requires confirm=true and confirmation_token='apply'."""
+    return phase1(confirm=confirm, confirmation_token=confirmation_token)
+
+
+@mcp.tool(name="eth2qs_phase2")
+def eth2qs_phase2(
+    execution: str | None = None,
+    consensus: str | None = None,
+    mev: str | None = None,
+    ethgas: bool = False,
+    confirm: bool = False,
+    confirmation_token: str = "",
+) -> dict:
+    """Run Phase 2 install. Supports execution/consensus/mev flags. Requires confirm=true and confirmation_token='apply'."""
+    return phase2(
+        execution=execution,
+        consensus=consensus,
+        mev=mev,
+        ethgas=ethgas,
+        confirm=confirm,
+        confirmation_token=confirmation_token,
+    )
 
 
 @mcp.tool(name="eth2qs_stats")

@@ -46,6 +46,8 @@ else
 fi
 
 if grep -Fq "eth2qs_doctor_json" "$TOOLS_FILE" &&
+   grep -Fq "eth2qs_phase1" "$TOOLS_FILE" &&
+   grep -Fq "eth2qs_phase2" "$TOOLS_FILE" &&
    grep -Fq "eth2qs_ensure_apply" "$TOOLS_FILE" &&
    grep -Fq "confirmation_token='apply'" "$MCP_REF"; then
     record_test "MCP contract exposes safe tool surface" "PASS"

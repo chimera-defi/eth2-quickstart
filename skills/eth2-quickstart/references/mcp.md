@@ -21,6 +21,8 @@ Safe read/plan tools:
 Explicit apply tools:
 
 - `eth2qs_ensure_apply`
+- `eth2qs_phase1`
+- `eth2qs_phase2`
 - `eth2qs_start`
 - `eth2qs_stop`
 - `eth2qs_restart`
@@ -65,5 +67,6 @@ If your Codex runtime uses config files instead of the CLI, point the server com
 ## Notes
 
 - Prefer `eth2qs_doctor_json` and `eth2qs_plan_json` before any apply tool.
+- Use `eth2qs_phase1` for root/system hardening and `eth2qs_phase2` for explicit Ethereum client install when you do not want planner-driven routing.
 - Use the MCP server for native tool use; use `llms.txt` or the skill files for raw-ingest instruction loading.
 - `cleanup_host_dry_run` is intentionally preview-only at the MCP layer.
