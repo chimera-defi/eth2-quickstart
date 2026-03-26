@@ -87,6 +87,17 @@ cd eth2-quickstart
 
 - Raw-ingest fallback for agents that can load a text URL directly: [`llms.txt`](./llms.txt) and [`llms-full.txt`](./llms-full.txt)
 - Codex fallback: `python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py --repo chimera-defi/eth2-quickstart --path skills/eth2-quickstart`
+- Native tool fallback for Claude Code / Codex via MCP: [`mcp_server/run_eth2qs_mcp.sh`](mcp_server/run_eth2qs_mcp.sh) and [`skills/eth2-quickstart/references/mcp.md`](skills/eth2-quickstart/references/mcp.md)
+
+MCP quickstart:
+
+```bash
+python3 -m pip install mcp
+codex mcp add eth2-quickstart ./mcp_server/run_eth2qs_mcp.sh
+# or: claude mcp add eth2-quickstart -- ./mcp_server/run_eth2qs_mcp.sh
+```
+
+The MCP server can expose the core lifecycle directly: Phase 1 hardening, Phase 2 Ethereum client install, planner-driven install, health checks, logs, and safe cleanup.
 - For the command surface and safety rules, start with [`skills/eth2-quickstart/SKILL.md`](skills/eth2-quickstart/SKILL.md)
 
 This is a repo-backed operations skill, not a standalone blockchain package.

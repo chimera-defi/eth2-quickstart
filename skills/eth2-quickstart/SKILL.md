@@ -20,6 +20,7 @@ Use this skill for Ethereum node workflows inside an `eth2-quickstart` checkout.
 - Before destructive or privilege-sensitive actions, load [safety.md](references/safety.md).
 - For server recommendation or host-fit questions, read [sizing.md](references/sizing.md).
 - For concrete user-task phrasing, read [examples.md](references/examples.md).
+- For Claude Code / Codex native tool use, read [mcp.md](references/mcp.md).
 - For durable repo-scoped improvement loops, read [improvement.md](references/improvement.md).
 
 ## Rules
@@ -40,4 +41,5 @@ Use this skill for Ethereum node workflows inside an `eth2-quickstart` checkout.
 - [sizing.md](references/sizing.md): server sizing and host-fit guidance
 - [outputs.md](references/outputs.md): expected outputs and checks for agents
 - [examples.md](references/examples.md): concrete prompt/task examples for common operator goals
+- [mcp.md](references/mcp.md): Claude Code / Codex MCP server usage and safety contract
 - [improvement.md](references/improvement.md): how to turn failures and test output into durable repo learnings

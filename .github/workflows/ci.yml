@@ -9,7 +9,12 @@ on:
     branches: [ main, master, develop ]
     paths:
       - '**/*.sh'
+      - '**/*.py'
       - 'skills/**'
+      - 'mcp_server/**'
+      - 'README.md'
+      - 'llms.txt'
+      - 'llms-full.txt'
       - 'test/Dockerfile'
       - 'test/docker-compose.yml'
       - '.github/workflows/ci.yml'
@@ -18,7 +23,12 @@ on:
     branches: [ main, master, develop, 'cursor/**' ]
     paths:
       - '**/*.sh'
+      - '**/*.py'
       - 'skills/**'
+      - 'mcp_server/**'
+      - 'README.md'
+      - 'llms.txt'
+      - 'llms-full.txt'
       - 'test/Dockerfile'
       - 'test/docker-compose.yml'
       - '.github/workflows/ci.yml'
@@ -70,6 +80,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Lint and unit tests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -98,6 +109,9 @@ jobs:
           echo "::group::Install planner unit tests"
           docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_install_planner.sh
           echo "::endgroup::"
+          echo "::group::MCP unit tests"
+          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/test/ci_test_mcp_server.sh
+          echo "::endgroup::"
           echo "::group::Unit tests (Caddy validate, downloads, functions)"
           docker run --rm --privileged -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true -e GITHUB_TOKEN="$GITHUB_TOKEN" eth-node-test /workspace/test/docker_test.sh
           echo "::endgroup::"
@@ -111,6 +125,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run run_1 structure
         run: |
           docker run --rm --privileged --user root \
@@ -152,6 +167,8 @@ jobs:
         run: bash ./test/ci_test_skill_distribution.sh
       - name: Verify skill installation e2e
         run: bash ./test/ci_test_skill_install_e2e.sh
+      - name: Verify MCP server contract
+        run: bash ./test/ci_test_mcp_server.sh
 
   tui-whiptail-nonskip-guard:
     runs-on: ubuntu-latest
@@ -178,6 +195,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run run_1 E2E
         env:
           CI: true
@@ -192,6 +210,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run run_2 structure
         run: |
           docker run --rm --privileged --user testuser \
@@ -207,6 +226,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run run_2 E2E (default clients)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -227,6 +247,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run run_2 E2E (Caddy + Nginx install)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -245,6 +266,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run install.sh non-interactive smoke harness
         run: |
           docker run --rm --privileged --user root \
@@ -285,6 +307,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: "E2E ${{ matrix.exec }}+${{ matrix.cons }}+${{ matrix.mev }}"
         timeout-minutes: 25
         env:

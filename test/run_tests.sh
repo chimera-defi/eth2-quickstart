@@ -131,6 +131,14 @@ EOF
 # PHASE 1: LINT AND STATIC ANALYSIS
 # =============================================================================
 
+tracked_shell_scripts() {
+    if git -C "$PROJECT_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        git -C "$PROJECT_ROOT" ls-files '*.sh' | sed "s#^#$PROJECT_ROOT/#"
+    else
+        find "$PROJECT_ROOT" -name "*.sh" -type f ! -path "*/test/*" ! -path "*/node_modules/*"
+    fi
+}
+
 run_lint_tests() {
     log_header "PHASE 1: Lint and Static Analysis"
     
@@ -159,7 +167,7 @@ run_lint_tests() {
                 log_test "FAIL" "shellcheck: $script_name" "Has shellcheck warnings"
                 scripts_failed=$((scripts_failed + 1))
             fi
-        done < <(find "$PROJECT_ROOT" -name "*.sh" -type f ! -path "*/test/*" ! -path "*/node_modules/*")
+        done < <(tracked_shell_scripts)
     
         log_info "Shellcheck: $scripts_passed/$scripts_checked scripts passed"
     fi
@@ -174,7 +182,7 @@ run_lint_tests() {
         else
             log_test "FAIL" "syntax: $script_name" "Syntax error"
         fi
-    done < <(find "$PROJECT_ROOT" -name "*.sh" -type f ! -path "*/test/*" ! -path "*/node_modules/*")
+    done < <(tracked_shell_scripts)
     
     log_subheader "Checking for shebangs"
     
@@ -186,7 +194,7 @@ run_lint_tests() {
         else
             log_test "FAIL" "shebang: $script_name" "Missing shebang"
         fi
-    done < <(find "$PROJECT_ROOT" -name "*.sh" -type f ! -path "*/test/*" ! -path "*/node_modules/*")
+    done < <(tracked_shell_scripts)
 }
 
 # =============================================================================
@@ -496,6 +504,16 @@ run_unit_tests() {
         fi
     else
         log_test "SKIP" "test_install_planner.sh: file not found"
+    fi
+
+    if [[ -f "$PROJECT_ROOT/test/ci_test_mcp_server.sh" ]]; then
+        if bash "$PROJECT_ROOT/test/ci_test_mcp_server.sh"; then
+            log_test "PASS" "ci_test_mcp_server.sh: all tests passed"
+        else
+            log_test "FAIL" "ci_test_mcp_server.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "ci_test_mcp_server.sh: file not found"
     fi
     
     log_subheader "Testing individual functions"
