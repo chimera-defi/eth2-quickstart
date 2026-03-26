@@ -8,11 +8,10 @@ from mcp_server import eth2qs_mcp_tools as tools
 
 
 class McpToolsTest(unittest.TestCase):
-    def test_list_tools_contains_expected_contract(self):
-        names = {tool["name"] for tool in tools.list_tools()}
-        self.assertIn("eth2qs_doctor_json", names)
-        self.assertIn("eth2qs_ensure_apply", names)
-        self.assertIn("eth2qs_cleanup_host_dry_run", names)
+    def test_tool_names_contain_expected_contract(self):
+        self.assertIn("eth2qs_doctor_json", tools.TOOL_NAMES)
+        self.assertIn("eth2qs_ensure_apply", tools.TOOL_NAMES)
+        self.assertIn("eth2qs_cleanup_host_dry_run", tools.TOOL_NAMES)
 
     def test_confirm_gate_blocks_mutations(self):
         with self.assertRaises(ValueError):

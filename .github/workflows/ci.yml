@@ -80,6 +80,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Lint and unit tests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -124,6 +125,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run run_1 structure
         run: |
           docker run --rm --privileged --user root \
@@ -193,6 +195,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run run_1 E2E
         env:
           CI: true
@@ -207,6 +210,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run run_2 structure
         run: |
           docker run --rm --privileged --user testuser \
@@ -222,6 +226,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run run_2 E2E (default clients)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -242,6 +247,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run run_2 E2E (Caddy + Nginx install)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -260,6 +266,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run install.sh non-interactive smoke harness
         run: |
           docker run --rm --privileged --user root \
@@ -300,6 +307,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: "E2E ${{ matrix.exec }}+${{ matrix.cons }}+${{ matrix.mev }}"
         timeout-minutes: 25
         env:

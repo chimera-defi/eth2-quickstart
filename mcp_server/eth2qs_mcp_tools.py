@@ -6,7 +6,7 @@ from __future__ import annotations
 import os
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 ALLOWED_CHAINS = {"ethereum", "monad"}
@@ -74,15 +74,6 @@ def _require_confirm(confirm: bool, token: str) -> None:
         raise ValueError("This action requires confirm=true and confirmation_token='apply'")
 
 
-def server_info() -> Dict[str, Any]:
-    return {
-        "name": "eth2-quickstart-mcp",
-        "repo_root": str(resolve_repo_root()),
-        "wrapper": str(eth2qs_path()),
-        "tools": list_tools(),
-    }
-
-
 def help_tool() -> Dict[str, Any]:
     return _eth2qs("help")
 
@@ -142,130 +133,30 @@ def monad_install(*, confirm: bool = False, confirmation_token: str = "") -> Dic
     return _eth2qs("monad-install")
 
 
-def list_tools() -> List[Dict[str, Any]]:
-    return [
-        {
-            "name": "eth2qs_help",
-            "description": "Show the canonical eth2-quickstart wrapper help.",
-            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
-        },
-        {
-            "name": "eth2qs_doctor_json",
-            "description": "Run doctor --json for machine-readable node health and drift detection.",
-            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
-        },
-        {
-            "name": "eth2qs_plan_json",
-            "description": "Detect the next safe install step. Optional chain override: ethereum or monad.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {"chain": {"type": "string", "enum": ["ethereum", "monad"]}},
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "eth2qs_ensure_preview",
-            "description": "Preview the next safe install step without changing the host.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {"chain": {"type": "string", "enum": ["ethereum", "monad"]}},
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "eth2qs_ensure_apply",
-            "description": "Execute the next safe install step. Requires confirm=true and confirmation_token='apply'.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "chain": {"type": "string", "enum": ["ethereum", "monad"]},
-                    "confirm": {"type": "boolean"},
-                    "confirmation_token": {"type": "string"},
-                },
-                "required": ["confirm", "confirmation_token"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "eth2qs_stats",
-            "description": "Show read-only service and system stats.",
-            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
-        },
-        {
-            "name": "eth2qs_logs",
-            "description": "Show bounded wrapper logs for run1 or run2.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "target": {"type": "string", "enum": ["run1", "run2"], "default": "run2"},
-                    "lines": {"type": "integer", "minimum": 1, "maximum": 500, "default": 200},
-                },
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "eth2qs_start",
-            "description": "Start services. Requires confirm=true and confirmation_token='apply'.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "confirm": {"type": "boolean"},
-                    "confirmation_token": {"type": "string"},
-                },
-                "required": ["confirm", "confirmation_token"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "eth2qs_stop",
-            "description": "Stop services. Requires confirm=true and confirmation_token='apply'.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "confirm": {"type": "boolean"},
-                    "confirmation_token": {"type": "string"},
-                },
-                "required": ["confirm", "confirmation_token"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "eth2qs_restart",
-            "description": "Restart services. Requires confirm=true and confirmation_token='apply'.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "confirm": {"type": "boolean"},
-                    "confirmation_token": {"type": "string"},
-                },
-                "required": ["confirm", "confirmation_token"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "eth2qs_clean_data_dry_run",
-            "description": "Preview safe cleanup of default node data directories while preserving secrets.",
-            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
-        },
-        {
-            "name": "eth2qs_cleanup_host_dry_run",
-            "description": "Preview host-level cleanup for stale root-managed installs while preserving secrets and network keys.",
-            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
-        },
-        {
-            "name": "eth2qs_monad_install",
-            "description": "Run the explicit Monad install path. Requires confirm=true and confirmation_token='apply'.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "confirm": {"type": "boolean"},
-                    "confirmation_token": {"type": "string"},
-                },
-                "required": ["confirm", "confirmation_token"],
-                "additionalProperties": False,
-            },
-        },
-    ]
+TOOL_NAMES = (
+    "eth2qs_help",
+    "eth2qs_doctor_json",
+    "eth2qs_plan_json",
+    "eth2qs_ensure_preview",
+    "eth2qs_ensure_apply",
+    "eth2qs_stats",
+    "eth2qs_logs",
+    "eth2qs_start",
+    "eth2qs_stop",
+    "eth2qs_restart",
+    "eth2qs_clean_data_dry_run",
+    "eth2qs_cleanup_host_dry_run",
+    "eth2qs_monad_install",
+)
+
+
+def server_info() -> Dict[str, Any]:
+    return {
+        "name": "eth2-quickstart-mcp",
+        "repo_root": str(resolve_repo_root()),
+        "wrapper": str(eth2qs_path()),
+        "tool_names": list(TOOL_NAMES),
+    }
 
 
 def call_tool(name: str, arguments: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -318,13 +209,13 @@ __all__ = [
     "ensure_apply",
     "ensure_preview",
     "help_tool",
-    "list_tools",
     "logs",
     "monad_install",
     "plan_json",
     "resolve_repo_root",
     "restart",
     "server_info",
+    "TOOL_NAMES",
     "start",
     "stats",
     "stop",
