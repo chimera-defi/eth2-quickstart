@@ -55,11 +55,7 @@ class McpToolsTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             tools.phase2(mev="unknown", confirm=True, confirmation_token="apply")
 
-    def test_call_tool_rejects_unknown_tool(self):
-        with self.assertRaises(ValueError):
-            tools.call_tool("missing_tool")
-
-    def test_call_tool_dispatches_to_wrapper(self):
+    def test_doctor_json_dispatches_to_wrapper(self):
         fake = {
             "command": ["/repo/scripts/eth2qs.sh", "doctor", "--json"],
             "cwd": "/repo",
@@ -69,7 +65,7 @@ class McpToolsTest(unittest.TestCase):
             "ok": True,
         }
         with patch("mcp_server.eth2qs_mcp_tools._run", return_value=fake) as run_mock:
-            result = tools.call_tool("eth2qs_doctor_json")
+            result = tools.doctor_json()
         self.assertEqual(result["stdout"], "{}")
         run_mock.assert_called_once()
 

@@ -273,62 +273,7 @@ def server_info() -> Dict[str, Any]:
     }
 
 
-def call_tool(name: str, arguments: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    arguments = arguments or {}
-    mapping = {
-        "eth2qs_help": lambda args: help_tool(),
-        "eth2qs_doctor_json": lambda args: doctor_json(),
-        "eth2qs_plan_json": lambda args: plan_json(chain=args.get("chain")),
-        "eth2qs_ensure_preview": lambda args: ensure_preview(chain=args.get("chain")),
-        "eth2qs_ensure_apply": lambda args: ensure_apply(
-            chain=args.get("chain"),
-            confirm=bool(args.get("confirm")),
-            confirmation_token=str(args.get("confirmation_token", "")),
-        ),
-        "eth2qs_client_options": lambda args: client_options(),
-        "eth2qs_phase1": lambda args: phase1(
-            confirm=bool(args.get("confirm")),
-            confirmation_token=str(args.get("confirmation_token", "")),
-        ),
-        "eth2qs_phase2": lambda args: phase2(
-            execution=args.get("execution"),
-            consensus=args.get("consensus"),
-            mev=args.get("mev"),
-            ethgas=bool(args.get("ethgas")),
-            confirm=bool(args.get("confirm")),
-            confirmation_token=str(args.get("confirmation_token", "")),
-        ),
-        "eth2qs_stats": lambda args: stats(),
-        "eth2qs_logs": lambda args: logs(
-            target=str(args.get("target", "run2")),
-            lines=int(args.get("lines", 200)),
-        ),
-        "eth2qs_start": lambda args: start(
-            confirm=bool(args.get("confirm")),
-            confirmation_token=str(args.get("confirmation_token", "")),
-        ),
-        "eth2qs_stop": lambda args: stop(
-            confirm=bool(args.get("confirm")),
-            confirmation_token=str(args.get("confirmation_token", "")),
-        ),
-        "eth2qs_restart": lambda args: restart(
-            confirm=bool(args.get("confirm")),
-            confirmation_token=str(args.get("confirmation_token", "")),
-        ),
-        "eth2qs_clean_data_dry_run": lambda args: clean_data_dry_run(),
-        "eth2qs_cleanup_host_dry_run": lambda args: cleanup_host_dry_run(),
-        "eth2qs_monad_install": lambda args: monad_install(
-            confirm=bool(args.get("confirm")),
-            confirmation_token=str(args.get("confirmation_token", "")),
-        ),
-    }
-    if name not in mapping:
-        raise ValueError(f"Unknown tool: {name}")
-    return mapping[name](arguments)
-
-
 __all__ = [
-    "call_tool",
     "clean_data_dry_run",
     "cleanup_host_dry_run",
     "client_options",
