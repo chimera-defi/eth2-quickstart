@@ -17,6 +17,7 @@ if str(ROOT_DIR) not in sys.path:
 from mcp_server.eth2qs_mcp_tools import (  # noqa: E402
     clean_data_dry_run,
     cleanup_host_dry_run,
+    client_options,
     doctor_json,
     ensure_apply,
     ensure_preview,
@@ -77,6 +78,12 @@ def eth2qs_ensure_preview(chain: str | None = None) -> dict:
 def eth2qs_ensure_apply(chain: str | None = None, confirm: bool = False, confirmation_token: str = "") -> dict:
     """Execute the next safe install step. Requires confirm=true and confirmation_token='apply'."""
     return ensure_apply(chain=chain, confirm=confirm, confirmation_token=confirmation_token)
+
+
+@mcp.tool(name="eth2qs_client_options")
+def eth2qs_client_options() -> dict:
+    """List valid Phase 2 execution/consensus/MEV choices and a few common tested presets."""
+    return client_options()
 
 
 @mcp.tool(name="eth2qs_phase1")

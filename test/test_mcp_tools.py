@@ -11,6 +11,7 @@ class McpToolsTest(unittest.TestCase):
     def test_tool_names_contain_expected_contract(self):
         self.assertIn("eth2qs_doctor_json", tools.TOOL_NAMES)
         self.assertIn("eth2qs_ensure_apply", tools.TOOL_NAMES)
+        self.assertIn("eth2qs_client_options", tools.TOOL_NAMES)
         self.assertIn("eth2qs_phase1", tools.TOOL_NAMES)
         self.assertIn("eth2qs_phase2", tools.TOOL_NAMES)
         self.assertIn("eth2qs_cleanup_host_dry_run", tools.TOOL_NAMES)
@@ -20,7 +21,15 @@ class McpToolsTest(unittest.TestCase):
         self.assertIn("tool_groups", info)
         self.assertIn("call_examples", info)
         self.assertIn("eth2qs_phase2", info["tool_groups"]["mutating_confirm_required"])
+        self.assertIn("eth2qs_client_options", info["tool_groups"]["read_only"])
         self.assertEqual(info["call_examples"]["eth2qs_phase1"]["confirmation_token"], "apply")
+
+    def test_client_options_lists_valid_choices(self):
+        options = tools.client_options()
+        self.assertIn("geth", options["execution_clients"])
+        self.assertIn("prysm", options["consensus_clients"])
+        self.assertIn("mev-boost", options["mev_options"])
+        self.assertEqual(options["ethgas_requires"]["mev"], "commit-boost")
 
     def test_confirm_gate_blocks_mutations(self):
         with self.assertRaises(ValueError):

@@ -132,6 +132,38 @@ def phase2(
     return _eth2qs(*args)
 
 
+def client_options() -> Dict[str, Any]:
+    return {
+        "execution_clients": sorted(ALLOWED_EXECUTION_CLIENTS),
+        "consensus_clients": sorted(ALLOWED_CONSENSUS_CLIENTS),
+        "mev_options": sorted(ALLOWED_MEV_OPTIONS),
+        "ethgas_requires": {"mev": "commit-boost"},
+        "common_presets": [
+            {
+                "name": "default-tested",
+                "execution": "geth",
+                "consensus": "prysm",
+                "mev": "mev-boost",
+                "ethgas": False,
+            },
+            {
+                "name": "commit-boost-with-ethgas",
+                "execution": "geth",
+                "consensus": "prysm",
+                "mev": "commit-boost",
+                "ethgas": True,
+            },
+            {
+                "name": "no-mev",
+                "execution": "geth",
+                "consensus": "prysm",
+                "mev": "none",
+                "ethgas": False,
+            },
+        ],
+    }
+
+
 def stats() -> Dict[str, Any]:
     return _eth2qs("stats")
 
@@ -176,6 +208,7 @@ TOOL_NAMES = (
     "eth2qs_plan_json",
     "eth2qs_ensure_preview",
     "eth2qs_ensure_apply",
+    "eth2qs_client_options",
     "eth2qs_phase1",
     "eth2qs_phase2",
     "eth2qs_stats",
@@ -202,6 +235,7 @@ def server_info() -> Dict[str, Any]:
                 "eth2qs_doctor_json",
                 "eth2qs_plan_json",
                 "eth2qs_ensure_preview",
+                "eth2qs_client_options",
                 "eth2qs_stats",
                 "eth2qs_logs",
                 "eth2qs_clean_data_dry_run",
@@ -220,6 +254,7 @@ def server_info() -> Dict[str, Any]:
         "call_examples": {
             "eth2qs_doctor_json": {},
             "eth2qs_plan_json": {"chain": "ethereum"},
+            "eth2qs_client_options": {},
             "eth2qs_phase1": {"confirm": True, "confirmation_token": "apply"},
             "eth2qs_phase2": {
                 "execution": "geth",
@@ -250,6 +285,7 @@ def call_tool(name: str, arguments: Optional[Dict[str, Any]] = None) -> Dict[str
             confirm=bool(args.get("confirm")),
             confirmation_token=str(args.get("confirmation_token", "")),
         ),
+        "eth2qs_client_options": lambda args: client_options(),
         "eth2qs_phase1": lambda args: phase1(
             confirm=bool(args.get("confirm")),
             confirmation_token=str(args.get("confirmation_token", "")),
@@ -295,6 +331,7 @@ __all__ = [
     "call_tool",
     "clean_data_dry_run",
     "cleanup_host_dry_run",
+    "client_options",
     "CONFIRM_TOKEN",
     "doctor_json",
     "ensure_apply",
