@@ -1,6 +1,6 @@
 ---
 name: eth2-quickstart
-description: Use this skill when working with this repo to bootstrap, operate, diagnose, update, or clean up Ethereum node stacks through the canonical repo commands with strict safety guardrails.
+description: Use this skill whenever the task involves an Ethereum validator node — setting up a node, installing Geth/Besu/Nethermind/Reth or Prysm/Lighthouse/Teku/other clients, configuring MEV-Boost or Commit-Boost, checking node health, operating services, cleaning node data, or updating clients. Routes all actions through `./scripts/eth2qs.sh` with strict safety guardrails. If in doubt about an Ethereum node task, trigger this skill.
 metadata:
   openclaw:
     skillKey: eth2-quickstart
