@@ -53,9 +53,16 @@ Example local stdio server registration:
 
 ```bash
 claude mcp add eth2-quickstart -- ./mcp_server/run_eth2qs_mcp.sh
+# or: ./scripts/install_claude_eth2qs_mcp.sh
 ```
 
 Then run Claude Code from inside the repo checkout so the server can resolve the canonical wrapper.
+
+For Claude plugin packaging, this repo also exposes:
+
+- `.claude-plugin/plugin.json`
+- `.claude-plugin/marketplace.json`
+- `.claude/settings.json`
 
 ## Codex
 
