@@ -1,0 +1,34 @@
+{
+  "name": "chimera-defi-eth2qs",
+  "owner": {
+    "name": "chimera-defi",
+    "email": "opensource@chimera-defi.local"
+  },
+  "metadata": {
+    "description": "Claude Code plugin package for repo-backed Ethereum node setup and operations.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "eth2-quickstart",
+      "source": "./",
+      "description": "Operate eth2-quickstart through Claude Code using the canonical wrapper and MCP server.",
+      "version": "0.1.0",
+      "author": {
+        "name": "chimera-defi",
+        "email": "opensource@chimera-defi.local"
+      },
+      "category": "development",
+      "keywords": [
+        "ethereum",
+        "validator",
+        "staking",
+        "mcp",
+        "claude-code",
+        "node-operations"
+      ],
+      "homepage": "https://github.com/chimera-defi/eth2-quickstart",
+      "repository": "https://github.com/chimera-defi/eth2-quickstart"
+    }
+  ]
+}
