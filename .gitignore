@@ -12,3 +12,7 @@ logs/
 *.deb
 
 .DS_store
+__pycache__/
+.pytest_cache/
+artifacts/
+cryptoskill/
