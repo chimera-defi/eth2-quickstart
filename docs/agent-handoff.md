@@ -7,6 +7,23 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (CLI-Anything Harness, 2026-03-28)
+
+- Added a complete CLI-Anything-style harness scaffold at `eth2-quickstart/agent-harness/` for `cli-anything-eth2-quickstart`.
+- Implemented agent-friendly commands for setup orchestration, client installation, RPC exposure, validator guidance, and health/status inspection.
+- Kept mutations aligned with upstream behavior by delegating to `scripts/eth2qs.sh` and related install scripts while only writing supported overrides into `config/user_config.env`.
+- Added unit tests that run without a backend and E2E tests that auto-skip unless a real checkout is provided via `ETH2QS_E2E_REPO_ROOT`.
+- Added a minimal top-level `cli_anything/__init__.py` so the harness imports cleanly under plain `pytest` runs.
+
+Validation:
+- `python3 -m pytest eth2-quickstart/agent-harness/cli_anything/eth2_quickstart/tests/test_core.py -v`
+- `python3 -m pytest eth2-quickstart/agent-harness/cli_anything/eth2_quickstart/tests/test_full_e2e.py -v`
+
+Follow-ups:
+- If this harness is copied into the real CLI-Anything repo, add the matching `registry.json` entry and README lines there.
+- Confirm the desired contributor metadata for the registry entry before opening that external PR.
+- Keep only the portable CryptoSkill submission payload in this repo; do not vendor the full external registry clone.
+
 ## Latest Update (PR #156 — Agent Skill Rollup, 2026-03-13 through 2026-03-20)
 
 - Implemented repo-owned agent skill at `skills/eth2-quickstart/` with SKILL.md routing, reference docs, and resolver script
