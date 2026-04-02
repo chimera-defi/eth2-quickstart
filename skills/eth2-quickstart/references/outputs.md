@@ -26,3 +26,27 @@ This is the canonical machine-readable health path for agents.
 - `./scripts/eth2qs.sh logs --run2 -n 200`
 
 Use the JSON output when another agent step needs stable parsing. Use the human-readable output and logs when doing RCA.
+
+## `doctor --json` Output Shape
+
+```json
+{
+  "summary": {
+    "passed": 12,
+    "warnings": 2,
+    "failed": 0,
+    "status": "warn"
+  },
+  "checks": [
+    { "status": "pass", "name": "RAM: 32GB (recommended: 16GB+)", "details": "" },
+    { "status": "warn", "name": "Execution client (eth1): Not installed", "details": "" },
+    { "status": "fail", "name": "JWT secret: missing", "details": "/home/user/secrets/jwt.hex not found" }
+  ]
+}
+```
+
+`summary.status` values: `"pass"` (all checks pass), `"warn"` (at least one warning, no failures), `"fail"` (at least one failure).
+
+Check `status` values per entry: `"pass"`, `"warn"`, `"fail"`.
+
+Use `summary.status` for a quick gate check. Iterate `checks` to surface specific issues to the operator.
