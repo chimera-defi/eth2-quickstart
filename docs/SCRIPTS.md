@@ -15,6 +15,7 @@ Use `scripts/eth2qs.sh` as a stable command entrypoint for both humans and AI ag
 ```bash
 ./scripts/eth2qs.sh help
 ./scripts/eth2qs.sh configure --non-interactive
+./scripts/eth2qs.sh client-options --json
 ./scripts/eth2qs.sh phase1
 ./scripts/eth2qs.sh phase2
 ./scripts/eth2qs.sh doctor --json

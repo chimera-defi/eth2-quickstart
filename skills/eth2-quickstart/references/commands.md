@@ -5,6 +5,7 @@ Canonical command surface:
 - Bootstrap repo install: `./scripts/eth2qs.sh bootstrap --non-interactive`
 - Configure scripts: `./scripts/eth2qs.sh configure --non-interactive`
 - Detect the next safe install step: `./scripts/eth2qs.sh plan --json`
+- List supported clients and tested presets: `./scripts/eth2qs.sh client-options --json`
 - Preview/apply the next safe step: `./scripts/eth2qs.sh ensure` or `./scripts/eth2qs.sh ensure --apply --confirm`
 - Run Phase 1 hardening: `sudo ./scripts/eth2qs.sh phase1`
 - Run Phase 2 install: `./scripts/eth2qs.sh phase2 --execution=geth --consensus=prysm --mev=mev-boost`
