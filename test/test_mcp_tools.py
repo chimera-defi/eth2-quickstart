@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -30,6 +32,19 @@ class McpToolsTest(unittest.TestCase):
         self.assertIn("prysm", options["consensus_clients"])
         self.assertIn("mev-boost", options["mev_options"])
         self.assertEqual(options["ethgas_requires"]["mev"], "commit-boost")
+
+    def test_wrapper_client_options_json_matches_mcp(self):
+        wrapper = Path(tools.ROOT_DIR) / "scripts" / "eth2qs.sh"
+        completed = subprocess.run(
+            [str(wrapper), "client-options", "--json"],
+            cwd=str(tools.ROOT_DIR),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, msg=completed.stderr)
+        payload = json.loads(completed.stdout)
+        self.assertEqual(payload, tools.client_options())
 
     def test_confirm_gate_blocks_mutations(self):
         with self.assertRaises(ValueError):
