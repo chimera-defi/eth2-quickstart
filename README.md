@@ -136,6 +136,7 @@ This is a repo-backed operations skill, not a standalone blockchain package.
    
    - Upgrades Ubuntu and programs
    - Sets up firewalls and security hardening
+   - Optional Snort IDS profile (off by default; enable via `ENABLE_SNORT=true` in `config/user_config.env`)
    - Creates non-root user (SSH key-only, migrates root's keys)
    - Installs required programs
 
