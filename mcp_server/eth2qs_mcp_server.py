@@ -18,21 +18,27 @@ from mcp_server.eth2qs_mcp_tools import (  # noqa: E402
     clean_data_dry_run,
     cleanup_host_dry_run,
     client_options,
+    debug_json,
     doctor_json,
     ensure_apply,
     ensure_preview,
     help_tool,
     logs,
+    monitor_export_json,
+    monitor_history_json,
     monad_install,
     phase1,
     phase2,
     plan_json,
+    repair_apply,
+    repair_preview,
+    restart,
     server_info,
     start,
     stats,
     stats_json,
     stop,
-    restart,
+    update_check_json,
 )
 
 try:
@@ -123,6 +129,42 @@ def eth2qs_stats() -> dict:
 def eth2qs_stats_json() -> dict:
     """Show machine-readable monitoring, issue classification, and repair previews."""
     return stats_json()
+
+
+@mcp.tool(name="eth2qs_update_check_json")
+def eth2qs_update_check_json() -> dict:
+    """Compare installed client versions and repo state to the latest known upstream releases."""
+    return update_check_json()
+
+
+@mcp.tool(name="eth2qs_debug_json")
+def eth2qs_debug_json(service: str | None = None, lines: int = 40) -> dict:
+    """Show structured per-service debug details, unit metadata, log tails, and sockets."""
+    return debug_json(service=service, lines=lines)
+
+
+@mcp.tool(name="eth2qs_monitor_export_json")
+def eth2qs_monitor_export_json() -> dict:
+    """Show a compact machine-readable monitor summary for bots, dashboards, or cron hooks."""
+    return monitor_export_json()
+
+
+@mcp.tool(name="eth2qs_monitor_history_json")
+def eth2qs_monitor_history_json(limit: int = 5) -> dict:
+    """Show recent monitor snapshot summaries and simple deltas."""
+    return monitor_history_json(limit=limit)
+
+
+@mcp.tool(name="eth2qs_repair_preview")
+def eth2qs_repair_preview() -> dict:
+    """Show allowlisted smart repair candidates derived from current monitoring output."""
+    return repair_preview()
+
+
+@mcp.tool(name="eth2qs_repair_apply")
+def eth2qs_repair_apply(confirm: bool = False, confirmation_token: str = "") -> dict:
+    """Apply allowlisted smart repair actions. Requires confirm=true and confirmation_token='apply'."""
+    return repair_apply(confirm=confirm, confirmation_token=confirmation_token)
 
 
 @mcp.tool(name="eth2qs_logs")

@@ -5,6 +5,8 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 STATS_SCRIPT="$PROJECT_ROOT/install/utils/stats.sh"
+STATS_JSON_SCRIPT="$PROJECT_ROOT/install/utils/stats_json.py"
+COMMON_MONITOR_SCRIPT="$PROJECT_ROOT/install/utils/monitor_common.py"
 
 test_count=0
 pass_count=0
@@ -30,13 +32,19 @@ run_test() {
 # shellcheck disable=SC2317
 test_stats_does_not_invoke_prysm_bootstrap_script() {
     local pattern="\\\$HOME/prysm/prysm\\.sh.*(beacon-chain|validator).*(-version|--version)"
-    ! grep -Eq "$pattern" "$STATS_SCRIPT"
+    ! grep -Eq "$pattern" "$COMMON_MONITOR_SCRIPT"
 }
 
 # shellcheck disable=SC2317
 test_stats_uses_local_prysm_binary_discovery() {
-    grep -Fq 'find_prysm_binary' "$STATS_SCRIPT" &&
-        grep -Fq 'bootstrap script present, local binary not downloaded' "$STATS_SCRIPT"
+    grep -Fq 'find_prysm_binary' "$COMMON_MONITOR_SCRIPT" &&
+        grep -Fq 'bootstrap script present, local binary not downloaded' "$COMMON_MONITOR_SCRIPT"
+}
+
+# shellcheck disable=SC2317
+test_stats_supports_json_mode() {
+    grep -Fq 'stats_json.py' "$STATS_SCRIPT" &&
+        grep -Fq -- '--json' "$STATS_JSON_SCRIPT"
 }
 
 # shellcheck disable=SC2317

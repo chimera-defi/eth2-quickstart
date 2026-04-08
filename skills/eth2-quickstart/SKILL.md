@@ -15,7 +15,7 @@ Use this skill for Ethereum node workflows inside an `eth2-quickstart` checkout.
 - For end-to-end node operator goals, read [operator.md](references/operator.md).
 - Install/bootstrap: use `./scripts/eth2qs.sh bootstrap ...`. Read [workflow.md](references/workflow.md).
 - Configure or rerun phases: use `./scripts/eth2qs.sh configure`, `phase1`, `phase2`, or `monad-install`. Read [workflow.md](references/workflow.md).
-- Diagnose or inspect status: use `./scripts/eth2qs.sh doctor --json` for machine-readable output. Read [outputs.md](references/outputs.md).
+- Diagnose or inspect status: use `./scripts/eth2qs.sh doctor --json` for health gates, `./scripts/eth2qs.sh stats --json` for machine-readable triage, `./scripts/eth2qs.sh debug --json --service <name>` for structured RCA, `./scripts/eth2qs.sh update-check --json` for freshness/drift, and `./scripts/eth2qs.sh repair` for bounded repair preview/apply. Read [outputs.md](references/outputs.md).
 - Operate services, logs, cleanup, or updates: use the mapped commands in [commands.md](references/commands.md).
 - Before destructive or privilege-sensitive actions, load [safety.md](references/safety.md).
 - For server recommendation or host-fit questions, read [sizing.md](references/sizing.md).
@@ -30,7 +30,7 @@ Use this skill for Ethereum node workflows inside an `eth2-quickstart` checkout.
 - Do not generate validator keys.
 - Do not remove secrets.
 - Require human confirmation before destructive cleanup, host-wide changes, or steps that require reboot/root.
-- Treat `doctor --json` as the canonical machine-readable status surface.
+- Treat `doctor --json` as the canonical health gate, `stats --json` as the canonical machine-readable triage surface, and `monitor export --json` as the canonical compact alert/dashboard surface.
 
 ## References
 
