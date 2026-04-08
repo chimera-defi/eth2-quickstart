@@ -7,6 +7,27 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (run_2 unknown-option hardening, 2026-04-08)
+
+- `run_2.sh` now fails fast on unknown CLI flags before logging/install side effects:
+  - collects unsupported args
+  - prints `Unknown option(s): ...` plus usage to stderr
+  - exits with code `2`
+- Added regression coverage in `test/ci_test_run_2.sh` (`Test 2c`) to enforce:
+  - unknown option returns exit `2`
+  - error + usage text is present
+  - no `logs/run_2_*.log` file is created on this early-exit path
+- Why:
+  - prevents typoed automation flags from silently falling into interactive flow
+  - keeps CLI behavior deterministic for external wrappers/agents
+  - preserves the "no side effects on preflight error" contract already used for `--help`
+- Validation run:
+  - `bash -n run_2.sh`
+  - `bash ./run_2.sh --not-a-real-flag` (verified exit `2` + usage)
+  - `su -s /bin/bash eth2ci -c "cd /tmp/eth2-quickstart-ci-run2 && bash test/ci_test_run_2.sh"` (full structure suite passed as non-root)
+- Follow-up:
+  - mirror this unknown-option fast-fail behavior in other top-level scripts with `--help` preflight paths (`run_1.sh`, selected `install/utils/*`) for consistent automation ergonomics.
+
 ## Latest Update (PR #156 — Agent Skill Rollup, 2026-03-13 through 2026-03-20)
 
 - Implemented repo-owned agent skill at `skills/eth2-quickstart/` with SKILL.md routing, reference docs, and resolver script

@@ -73,6 +73,48 @@ else
     exit 1
 fi
 
+# Test 2c: Verify unknown options fail fast before log side effects
+log_info "Test 2c: Verify unknown options fail fast..."
+unknown_before_count=0
+if [[ -d "$log_dir" ]]; then
+    unknown_before_count=$(find "$log_dir" -maxdepth 1 -type f -name 'run_2_*.log' | wc -l)
+fi
+
+unknown_err_file="$(mktemp)"
+set +e
+bash "$PROJECT_ROOT/run_2.sh" --not-a-real-flag >/dev/null 2>"$unknown_err_file"
+unknown_exit=$?
+set -e
+
+if [[ "$unknown_exit" -eq 2 ]]; then
+    log_info "  ✓ Unknown option exits with code 2"
+else
+    log_error "  ✗ Unknown option exit code was $unknown_exit (expected 2)"
+    rm -f "$unknown_err_file"
+    exit 1
+fi
+
+if grep -q "Unknown option(s): --not-a-real-flag" "$unknown_err_file" && \
+   grep -q "Usage: ./run_2.sh" "$unknown_err_file"; then
+    log_info "  ✓ Unknown option prints error + usage"
+else
+    log_error "  ✗ Unknown option output missing expected error/usage text"
+    rm -f "$unknown_err_file"
+    exit 1
+fi
+rm -f "$unknown_err_file"
+
+unknown_after_count=0
+if [[ -d "$log_dir" ]]; then
+    unknown_after_count=$(find "$log_dir" -maxdepth 1 -type f -name 'run_2_*.log' | wc -l)
+fi
+if [[ "$unknown_after_count" -eq "$unknown_before_count" ]]; then
+    log_info "  ✓ Unknown options do not create run_2 logs"
+else
+    log_error "  ✗ Unknown option path created a run_2 log file"
+    exit 1
+fi
+
 # Test 3: Verify ALL install scripts exist and have valid syntax
 # Covers: execution (7), consensus (6), MEV (3), web (caddy, nginx), utils
 log_info "Test 3: Verify all install scripts (syntax)..."
