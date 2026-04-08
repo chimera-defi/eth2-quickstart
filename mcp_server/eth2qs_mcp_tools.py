@@ -13,7 +13,20 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 CLIENT_OPTIONS_FILE = ROOT_DIR / "config" / "client_options.json"
 ALLOWED_CHAINS = {"ethereum", "monad"}
 ALLOWED_LOG_TARGETS = {"run1", "run2"}
+ALLOWED_DEBUG_SERVICES = {
+    "eth1",
+    "cl",
+    "validator",
+    "mev",
+    "commit-boost-pbs",
+    "commit-boost-signer",
+    "ethgas",
+    "nginx",
+    "caddy",
+}
 MAX_LOG_LINES = 500
+MAX_DEBUG_LINES = 200
+MAX_HISTORY_LIMIT = 20
 CONFIRM_TOKEN = "apply"
 
 
@@ -79,6 +92,26 @@ def _validate_lines(lines: int) -> int:
     if lines < 1 or lines > MAX_LOG_LINES:
         raise ValueError(f"lines must be between 1 and {MAX_LOG_LINES}")
     return lines
+
+
+def _validate_debug_lines(lines: int) -> int:
+    if lines < 1 or lines > MAX_DEBUG_LINES:
+        raise ValueError(f"lines must be between 1 and {MAX_DEBUG_LINES}")
+    return lines
+
+
+def _validate_history_limit(limit: int) -> int:
+    if limit < 1 or limit > MAX_HISTORY_LIMIT:
+        raise ValueError(f"limit must be between 1 and {MAX_HISTORY_LIMIT}")
+    return limit
+
+
+def _validate_service(service: Optional[str]) -> List[str]:
+    if not service:
+        return []
+    if service not in ALLOWED_DEBUG_SERVICES:
+        raise ValueError(f"Unsupported service: {service}")
+    return ["--service", service]
 
 
 def _require_confirm(confirm: bool, token: str) -> None:
@@ -153,6 +186,37 @@ def stats_json() -> Dict[str, Any]:
     return _eth2qs("stats", "--json")
 
 
+def update_check_json() -> Dict[str, Any]:
+    return _eth2qs("update-check", "--json")
+
+
+def debug_json(service: Optional[str] = None, *, lines: int = 40) -> Dict[str, Any]:
+    return _eth2qs(
+        "debug",
+        "--json",
+        *_validate_service(service),
+        "--lines",
+        str(_validate_debug_lines(lines)),
+    )
+
+
+def monitor_export_json() -> Dict[str, Any]:
+    return _eth2qs("monitor", "export", "--json")
+
+
+def monitor_history_json(*, limit: int = 5) -> Dict[str, Any]:
+    return _eth2qs("monitor", "history", "--json", "--limit", str(_validate_history_limit(limit)))
+
+
+def repair_preview() -> Dict[str, Any]:
+    return _eth2qs("repair")
+
+
+def repair_apply(*, confirm: bool = False, confirmation_token: str = "") -> Dict[str, Any]:
+    _require_confirm(confirm, confirmation_token)
+    return _eth2qs("repair", "--apply", "--confirm")
+
+
 def logs(target: str = "run2", lines: int = 200) -> Dict[str, Any]:
     target = _validate_log_target(target)
     lines = _validate_lines(lines)
@@ -199,6 +263,12 @@ TOOL_NAMES = (
     "eth2qs_phase2",
     "eth2qs_stats",
     "eth2qs_stats_json",
+    "eth2qs_update_check_json",
+    "eth2qs_debug_json",
+    "eth2qs_monitor_export_json",
+    "eth2qs_monitor_history_json",
+    "eth2qs_repair_preview",
+    "eth2qs_repair_apply",
     "eth2qs_logs",
     "eth2qs_start",
     "eth2qs_stop",
@@ -225,6 +295,11 @@ def server_info() -> Dict[str, Any]:
                 "eth2qs_client_options",
                 "eth2qs_stats",
                 "eth2qs_stats_json",
+                "eth2qs_update_check_json",
+                "eth2qs_debug_json",
+                "eth2qs_monitor_export_json",
+                "eth2qs_monitor_history_json",
+                "eth2qs_repair_preview",
                 "eth2qs_logs",
                 "eth2qs_clean_data_dry_run",
                 "eth2qs_cleanup_host_dry_run",
@@ -236,6 +311,7 @@ def server_info() -> Dict[str, Any]:
                 "eth2qs_start",
                 "eth2qs_stop",
                 "eth2qs_restart",
+                "eth2qs_repair_apply",
                 "eth2qs_monad_install",
             ],
         },
@@ -244,6 +320,11 @@ def server_info() -> Dict[str, Any]:
             "eth2qs_plan_json": {"chain": "ethereum"},
             "eth2qs_client_options": {},
             "eth2qs_stats_json": {},
+            "eth2qs_update_check_json": {},
+            "eth2qs_debug_json": {"service": "cl", "lines": 40},
+            "eth2qs_monitor_export_json": {},
+            "eth2qs_monitor_history_json": {"limit": 5},
+            "eth2qs_repair_preview": {},
             "eth2qs_phase1": {"confirm": True, "confirmation_token": "apply"},
             "eth2qs_phase2": {
                 "execution": "geth",
@@ -257,6 +338,7 @@ def server_info() -> Dict[str, Any]:
                 "confirm": True,
                 "confirmation_token": "apply",
             },
+            "eth2qs_repair_apply": {"confirm": True, "confirmation_token": "apply"},
             "eth2qs_clean_data_dry_run": {},
         },
     }
@@ -267,6 +349,7 @@ __all__ = [
     "cleanup_host_dry_run",
     "client_options",
     "CONFIRM_TOKEN",
+    "debug_json",
     "doctor_json",
     "ensure_apply",
     "ensure_preview",
@@ -274,8 +357,12 @@ __all__ = [
     "phase2",
     "help_tool",
     "logs",
+    "monitor_export_json",
+    "monitor_history_json",
     "monad_install",
     "plan_json",
+    "repair_apply",
+    "repair_preview",
     "resolve_repo_root",
     "restart",
     "server_info",
@@ -284,4 +371,5 @@ __all__ = [
     "stats",
     "stats_json",
     "stop",
+    "update_check_json",
 ]

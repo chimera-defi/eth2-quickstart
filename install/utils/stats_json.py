@@ -4,134 +4,33 @@
 from __future__ import annotations
 
 import json
-import subprocess
-from datetime import datetime, timezone
+import os
+import sys
 from pathlib import Path
 from typing import Any
 
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-SERVICES = [
-    "eth1",
-    "cl",
-    "validator",
-    "mev",
-    "commit-boost-pbs",
-    "commit-boost-signer",
-    "ethgas",
-    "nginx",
-    "caddy",
-]
-CORE_SERVICES = {"eth1", "cl", "validator"}
-READ_ONLY_COMMAND = "./scripts/eth2qs.sh doctor --json"
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from monitor_common import (  # noqa: E402
+    CORE_SERVICES,
+    READ_ONLY_COMMAND,
+    ROOT_DIR,
+    SERVICES,
+    duty_lines,
+    get_versions,
+    journal_lines,
+    now_iso,
+    parse_json_command,
+    recent_errors,
+    repo_status,
+    service_status,
+)
 
 
-def run(command: list[str], *, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        command,
-        cwd=str(cwd or ROOT_DIR),
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-
-
-def run_text(command: list[str], *, cwd: Path | None = None) -> str:
-    return run(command, cwd=cwd).stdout.strip()
-
-
-def service_status(service: str) -> str:
-    units = run(
-        ["systemctl", "list-unit-files", f"{service}.service", "--no-legend", "--plain"]
-    )
-    if units.returncode != 0 or f"{service}.service" not in units.stdout:
-        return "not_installed"
-    if run(["systemctl", "is-failed", "--quiet", service]).returncode == 0:
-        return "failed"
-    if run(["systemctl", "is-active", "--quiet", service]).returncode == 0:
-        return "running"
-    if run(["systemctl", "is-enabled", "--quiet", service]).returncode == 0:
-        return "stopped"
-    return "disabled"
-
-
-def find_prysm_binary(component: str) -> Path | None:
-    prysm_dist = Path.home() / "prysm" / "dist"
-    if not prysm_dist.is_dir():
-        return None
-    candidates = sorted(
-        path for path in prysm_dist.iterdir() if component in path.name and path.is_file() and path.stat().st_mode & 0o111
-    )
-    return candidates[-1] if candidates else None
-
-
-def version_or_unavailable(command: list[str], *, default: str = "unavailable") -> str:
-    completed = run(command)
-    return completed.stdout.strip() or default if completed.returncode == 0 else default
-
-
-def get_versions() -> dict[str, str]:
-    versions = {
-        "mev_boost": "not_installed",
-        "prysm_beacon": "not_installed",
-        "prysm_validator": "not_installed",
-        "geth": "not_installed",
-    }
-    mev_boost = Path.home() / "mev-boost" / "mev-boost"
-    if mev_boost.exists():
-        versions["mev_boost"] = version_or_unavailable([str(mev_boost), "-version"])
-    beacon = find_prysm_binary("beacon-chain")
-    if beacon:
-        versions["prysm_beacon"] = version_or_unavailable([str(beacon), "--version"])
-    elif (Path.home() / "prysm" / "prysm.sh").exists():
-        versions["prysm_beacon"] = "unavailable (bootstrap script present, local binary not downloaded)"
-    validator = find_prysm_binary("validator")
-    if validator:
-        versions["prysm_validator"] = version_or_unavailable([str(validator), "--version"])
-    elif (Path.home() / "prysm" / "prysm.sh").exists():
-        versions["prysm_validator"] = "unavailable (bootstrap script present, local binary not downloaded)"
-    if run(["bash", "-lc", "command -v geth >/dev/null 2>&1"]).returncode == 0:
-        versions["geth"] = version_or_unavailable(["geth", "version"])
-    return versions
-
-
-def recent_errors(service: str) -> dict[str, object] | None:
-    completed = run(["journalctl", "-u", service, "-n", "200", "--no-pager"])
-    if completed.returncode != 0:
-        return None
-    matches = [line.strip() for line in completed.stdout.splitlines() if "error" in line.lower()]
-    if not matches:
-        return None
-    return {"service": service, "count": len(matches), "sample": matches[-1]}
-
-
-def duty_lines() -> list[str]:
-    completed = run(["journalctl", "-u", "validator", "-n", "1000", "--no-pager"])
-    if completed.returncode != 0:
-        return []
-    lines = [line.strip() for line in completed.stdout.splitlines() if "timeTillDuty" in line]
-    return lines[-5:]
-
-
-def repo_status() -> dict[str, object] | None:
-    upstream = run_text(["git", "rev-parse", "--abbrev-ref", "@{upstream}"], cwd=ROOT_DIR)
-    if not upstream:
-        return None
-    counts = run_text(["git", "rev-list", "--left-right", "--count", f"HEAD...{upstream}"], cwd=ROOT_DIR)
-    if not counts:
-        return {"upstream": upstream, "ahead": None, "behind": None}
-    ahead, behind = counts.split()
-    return {"upstream": upstream, "ahead": int(ahead), "behind": int(behind)}
-
-
-def parse_json_command(command: list[str]) -> dict[str, Any] | None:
-    completed = run(command, cwd=ROOT_DIR)
-    if not completed.stdout.strip():
-        return None
-    try:
-        return json.loads(completed.stdout)
-    except json.JSONDecodeError:
-        return None
+FIXTURE_ENV = "ETH2QS_STATS_FIXTURE"
 
 
 def add_issue(
@@ -188,8 +87,16 @@ def matches_any(sample: str, patterns: tuple[str, ...]) -> bool:
     return any(pattern in sample for pattern in patterns)
 
 
+def builder_restart_command(service_states: dict[str, str]) -> str | None:
+    for service in ("commit-boost-pbs", "mev"):
+        if service_states.get(service) in {"running", "stopped", "failed", "disabled"}:
+            return f"sudo systemctl restart {service}"
+    return None
+
+
 def classify_error_sample(
     item: dict[str, object],
+    service_states: dict[str, str],
     repair_preview: list[dict[str, object]],
     issues: list[dict[str, object]],
 ) -> bool:
@@ -198,6 +105,7 @@ def classify_error_sample(
     evidence = str(item["sample"])
 
     if matches_any(sample, ("connect: connection refused",)) and "18550" in sample:
+        builder_command = builder_restart_command(service_states)
         add_issue(
             issues,
             repair_preview,
@@ -206,8 +114,8 @@ def classify_error_sample(
             service=service,
             summary="Consensus client cannot reach the builder/MEV endpoint",
             suggested_action="Check MEV service health and restart the active MEV stack if needed",
-            safe=True,
-            command="./scripts/eth2qs.sh restart",
+            safe=bool(builder_command),
+            command=builder_command,
             evidence=evidence,
         )
         return True
@@ -324,7 +232,7 @@ def classify_error_sample(
             summary="Consensus networking is degraded and peers are not being maintained",
             suggested_action="Inspect networking, peer configuration, and sync reachability before restart",
             safe=True,
-            command=f"journalctl -u {service} -n 50 --no-pager",
+            command=f"sudo systemctl restart {service}",
             evidence=evidence,
         )
         return True
@@ -411,7 +319,7 @@ def classify_issues(
         )
 
     for item in error_summary:
-        classify_error_sample(item, repair_preview, issues)
+        classify_error_sample(item, service_states, repair_preview, issues)
 
     if doctor:
         summary = doctor.get("summary", {})
@@ -467,9 +375,14 @@ def overall_status(issues: list[dict[str, object]]) -> str:
     return "pass"
 
 
-def main() -> None:
-    service_states = {service: service_status(service) for service in SERVICES}
-    errors = [item for item in (recent_errors(service) for service in SERVICES) if item]
+def build_payload(*, service_names: list[str] | None = None) -> dict[str, Any]:
+    fixture = os.environ.get(FIXTURE_ENV)
+    if fixture:
+        return json.loads(fixture)
+
+    selected_services = service_names or SERVICES
+    service_states = {service: service_status(service) for service in selected_services}
+    errors = [item for item in (recent_errors(service) for service in selected_services) if item]
     versions = get_versions()
     doctor = parse_json_command(["bash", str(ROOT_DIR / "install/utils/doctor.sh"), "--json"])
     plan = parse_json_command(["bash", str(ROOT_DIR / "install/utils/plan.sh"), "--json"])
@@ -487,8 +400,8 @@ def main() -> None:
         "issues_detected": len(issues),
     }
 
-    payload = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+    return {
+        "generated_at": now_iso(),
         "summary": summary,
         "service_states": service_states,
         "versions": versions,
@@ -500,7 +413,77 @@ def main() -> None:
         "plan": plan,
         "repo_status": repo,
     }
-    print(json.dumps(payload, indent=2))
+
+
+def print_human(payload: dict[str, Any]) -> None:
+    summary = payload["summary"]
+    print("=== Monitoring Summary ===")
+    print(f"Status: {summary['status']}")
+    print(
+        "Services: "
+        f"running={summary['services_running']} "
+        f"failed={summary['services_failed']} "
+        f"stopped={summary['services_stopped']} "
+        f"disabled={summary['services_disabled']} "
+        f"not_installed={summary['services_not_installed']}"
+    )
+    print(f"Issues detected: {summary['issues_detected']}")
+    print("")
+
+    print("=== Service States ===")
+    for service, state in payload["service_states"].items():
+        print(f"- {service}: {state}")
+    print("")
+
+    print("=== Top Issues ===")
+    issues = payload["issues"][:10]
+    if issues:
+        for issue in issues:
+            service = f" ({issue['service']})" if "service" in issue else ""
+            print(f"- [{issue['severity']}] {issue['kind']}{service}: {issue['summary']}")
+    else:
+        print("- none")
+    print("")
+
+    print("=== Repair Preview ===")
+    preview = payload["repair_preview"][:10]
+    if preview:
+        for item in preview:
+            service = f" [{item['service']}]" if "service" in item else ""
+            print(f"- {item['action']}{service}: {item['command']} (safe={item['safe']})")
+    else:
+        print("- none")
+    print("")
+
+    print("=== Versions ===")
+    for name, version in payload["versions"].items():
+        print(f"- {name}: {version}")
+    print("")
+
+    if payload["recent_time_till_duty"]:
+        print("=== Recent Validator Duty Lines ===")
+        for line in payload["recent_time_till_duty"]:
+            print(f"- {line}")
+        print("")
+
+    print("=== Recent Error Samples ===")
+    if payload["recent_errors"]:
+        for item in payload["recent_errors"][:10]:
+            print(f"- {item['service']} ({item['count']}): {item['sample']}")
+    else:
+        print("- none")
+
+
+def main() -> None:
+    if any(arg in {"-h", "--help"} for arg in sys.argv[1:]):
+        print("Usage: ./install/utils/stats.sh [--json]")
+        print("  --json    Output machine-readable monitoring and triage data")
+        return
+    payload = build_payload()
+    if "--json" in sys.argv[1:]:
+        print(json.dumps(payload, indent=2))
+        return
+    print_human(payload)
 
 
 if __name__ == "__main__":

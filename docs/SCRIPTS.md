@@ -19,10 +19,19 @@ Use `scripts/eth2qs.sh` as a stable command entrypoint for both humans and AI ag
 ./scripts/eth2qs.sh phase1
 ./scripts/eth2qs.sh phase2
 ./scripts/eth2qs.sh doctor --json
+./scripts/eth2qs.sh debug --json --service cl
 ./scripts/eth2qs.sh stats --json
+./scripts/eth2qs.sh update-check --json
+./scripts/eth2qs.sh monitor export --json
+./scripts/eth2qs.sh repair
+./scripts/eth2qs.sh restart --smart
 ```
 
 `stats --json` is the machine-readable monitoring surface. It summarizes service states, recent journal-derived failure modes, planner/doctor context, and bounded repair previews without making changes.
+`debug --json` is the structured RCA surface. It adds per-service unit metadata, recent log tails, main PID, and listen socket hints.
+`update-check --json` compares installed client versions and repo drift against the latest known upstream release tags.
+`monitor export --json` is the compact summary surface for bots, dashboards, cron jobs, or alert relays, and `monitor snapshot` writes a local history entry under `~/.eth2qs-monitor/`.
+`repair` is the bounded apply surface. It previews allowlisted targeted restarts by default and requires `--apply --confirm` before making changes.
 
 ## Environment Configuration (exports.sh)
 
@@ -82,6 +91,7 @@ ssh LOGIN_UNAME@<server-ip>
 ./install/utils/start.sh
 ./install/utils/stats.sh
 ./scripts/eth2qs.sh stats --json
+./scripts/eth2qs.sh monitor export --json
 ```
 
 ## Logs
