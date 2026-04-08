@@ -1,0 +1,54 @@
+{
+  "type": "object",
+  "required": [
+    "execution_clients",
+    "consensus_clients",
+    "mev_options",
+    "networks",
+    "ethgas_requires",
+    "common_presets"
+  ],
+  "properties": {
+    "execution_clients": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "consensus_clients": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "mev_options": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "networks": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "ethgas_requires": {
+      "type": "object",
+      "required": ["mev"],
+      "properties": {
+        "mev": { "type": "string" }
+      }
+    },
+    "common_presets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "execution", "consensus", "mev", "ethgas"],
+        "properties": {
+          "name": { "type": "string" },
+          "execution": { "type": "string" },
+          "consensus": { "type": "string" },
+          "mev": { "type": "string" },
+          "ethgas": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

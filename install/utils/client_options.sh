@@ -37,6 +37,7 @@ data = json.loads(Path(sys.argv[1]).read_text())
 print("Execution clients:", ", ".join(data["execution_clients"]))
 print("Consensus clients:", ", ".join(data["consensus_clients"]))
 print("MEV options:", ", ".join(data["mev_options"]))
+print("Networks:", ", ".join(data["networks"]))
 print("ETHGas requires:", f"mev={data['ethgas_requires']['mev']}")
 print("Common presets:")
 for preset in data["common_presets"]:

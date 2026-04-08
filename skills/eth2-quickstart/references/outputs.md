@@ -10,6 +10,14 @@ Use:
 
 This is the canonical machine-readable health path for agents.
 
+Other stable machine-readable surfaces:
+
+```bash
+./scripts/eth2qs.sh plan --json
+./scripts/eth2qs.sh client-options --json
+./scripts/eth2qs.sh phase2-preview --execution=geth --consensus=prysm --mev=mev-boost --json
+```
+
 ## Expected Uses
 
 - Confirm whether a host is ready for node install or is missing obvious prerequisites
@@ -25,7 +33,7 @@ This is the canonical machine-readable health path for agents.
 - `./scripts/eth2qs.sh logs --run1 -n 100`
 - `./scripts/eth2qs.sh logs --run2 -n 200`
 
-Use the JSON output when another agent step needs stable parsing. Use the human-readable output and logs when doing RCA.
+Use the JSON output when another agent step needs stable parsing. Use the human-readable output and logs when doing RCA. `stats` is still a human-oriented summary, not a stable JSON contract.
 
 ## `doctor --json` Output Shape
 

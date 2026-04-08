@@ -26,6 +26,7 @@ from mcp_server.eth2qs_mcp_tools import (  # noqa: E402
     monad_install,
     phase1,
     phase2,
+    phase2_preview,
     plan_json,
     server_info,
     start,
@@ -84,6 +85,26 @@ def eth2qs_ensure_apply(chain: str | None = None, confirm: bool = False, confirm
 def eth2qs_client_options() -> dict:
     """List valid Phase 2 execution/consensus/MEV choices and a few common tested presets."""
     return client_options()
+
+
+@mcp.tool(name="eth2qs_phase2_preview")
+def eth2qs_phase2_preview(
+    network: str | None = None,
+    execution: str | None = None,
+    consensus: str | None = None,
+    mev: str | None = None,
+    ethgas: bool = False,
+    skip_deps: bool = False,
+) -> dict:
+    """Preview the explicit Phase 2 command/config updates without changing the host."""
+    return phase2_preview(
+        network=network,
+        execution=execution,
+        consensus=consensus,
+        mev=mev,
+        ethgas=ethgas,
+        skip_deps=skip_deps,
+    )
 
 
 @mcp.tool(name="eth2qs_phase1")

@@ -1,0 +1,28 @@
+{
+  "type": "object",
+  "required": ["summary", "checks"],
+  "properties": {
+    "summary": {
+      "type": "object",
+      "required": ["passed", "warnings", "failed", "status"],
+      "properties": {
+        "passed": { "type": "integer" },
+        "warnings": { "type": "integer" },
+        "failed": { "type": "integer" },
+        "status": { "type": "string", "enum": ["pass", "warn", "fail"] }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["status", "name", "details"],
+        "properties": {
+          "status": { "type": "string", "enum": ["pass", "warn", "fail"] },
+          "name": { "type": "string" },
+          "details": { "type": "string" }
+        }
+      }
+    }
+  }
+}

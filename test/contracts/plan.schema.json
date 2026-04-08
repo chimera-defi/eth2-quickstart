@@ -1,0 +1,33 @@
+{
+  "type": "object",
+  "required": [
+    "chain",
+    "current_user",
+    "is_root",
+    "operator_user",
+    "operator_user_exists",
+    "state",
+    "next_action",
+    "reason",
+    "core_services_expected",
+    "core_services_installed",
+    "core_services_running",
+    "service_states"
+  ],
+  "properties": {
+    "chain": { "type": "string" },
+    "current_user": { "type": "string" },
+    "is_root": { "type": "boolean" },
+    "operator_user": { "type": "string" },
+    "operator_user_exists": { "type": "boolean" },
+    "state": { "type": "string" },
+    "next_action": { "type": "string" },
+    "reason": { "type": "string" },
+    "core_services_expected": { "type": "integer" },
+    "core_services_installed": { "type": "integer" },
+    "core_services_running": { "type": "integer" },
+    "service_states": {
+      "type": "object"
+    }
+  }
+}

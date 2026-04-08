@@ -16,6 +16,7 @@ Safe read/plan tools:
 - `eth2qs_plan_json`
 - `eth2qs_ensure_preview`
 - `eth2qs_client_options`
+- `eth2qs_phase2_preview`
 - `eth2qs_stats`
 - `eth2qs_logs`
 - `eth2qs_clean_data_dry_run`
@@ -79,6 +80,7 @@ If your Codex runtime uses config files instead of the CLI, point the server com
 - Prefer `eth2qs_doctor_json` and `eth2qs_plan_json` before any apply tool.
 - Use `eth2qs_phase1` for root/system hardening and `eth2qs_phase2` for explicit Ethereum client install when you do not want planner-driven routing.
 - Use `eth2qs_client_options` before `eth2qs_phase2` if the agent needs valid client names or a tested preset.
+- Use `eth2qs_phase2_preview` when a wrapper needs the exact explicit `run_2.sh` command shape and any matching config override hints before execution.
 - The MCP `eth2qs_client_options` payload now mirrors `./scripts/eth2qs.sh client-options --json`, so external wrappers can consume the same repo-native source of truth.
 - Use the MCP server for native tool use; use `llms.txt` or the skill files for raw-ingest instruction loading.
 - `cleanup_host_dry_run` is intentionally preview-only at the MCP layer.
