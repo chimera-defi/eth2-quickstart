@@ -17,6 +17,36 @@ require_root
 
 log_installation_start "Consolidated Security Suite"
 
+is_truthy() {
+    local value="${1:-}"
+    case "${value,,}" in
+        1|true|yes|y|on) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+detect_default_interface() {
+    local iface=""
+    iface=$(ip -o -4 route show to default 2>/dev/null | awk '{print $5; exit}')
+    if [[ -z "$iface" ]]; then
+        iface=$(ip -o link show 2>/dev/null | awk -F': ' '$2 != "lo" {print $2; exit}')
+    fi
+    echo "$iface"
+}
+
+detect_home_net_cidr() {
+    local iface="${1:-}"
+    local cidr=""
+    if [[ -n "$iface" ]]; then
+        cidr=$(ip -o -4 addr show dev "$iface" scope global 2>/dev/null | awk '{print $4; exit}')
+    fi
+    if [[ -z "$cidr" ]]; then
+        cidr="192.168.0.0/16"
+        log_warn "Unable to auto-detect SNORT_HOME_NET; falling back to $cidr"
+    fi
+    echo "$cidr"
+}
+
 # Function 1: Setup Firewall
 setup_firewall() {
     log_info "Setting up UFW firewall with comprehensive rules..."
@@ -188,7 +218,95 @@ EOF
     log_info "✓ Fail2ban installation and configuration complete"
 }
 
-# Function 3: Setup AIDE
+# Function 3: Setup optional Snort IDS (off by default)
+setup_snort() {
+    if ! is_truthy "${ENABLE_SNORT:-false}"; then
+        log_info "Snort IDS disabled (ENABLE_SNORT=false)"
+        return 0
+    fi
+
+    log_info "Setting up optional Snort IDS..."
+
+    local snort_iface="${SNORT_INTERFACE:-auto}"
+    local snort_home_net="${SNORT_HOME_NET:-}"
+    local snort_startup="${SNORT_STARTUP:-boot}"
+    local snort_disable_promisc="false"
+    if is_truthy "${SNORT_DISABLE_PROMISCUOUS:-true}"; then
+        snort_disable_promisc="true"
+    fi
+
+    if [[ "$snort_startup" != "boot" && "$snort_startup" != "manual" ]]; then
+        log_warn "Invalid SNORT_STARTUP='$snort_startup' (valid: boot|manual); defaulting to boot"
+        snort_startup="boot"
+    fi
+
+    if [[ -z "$snort_iface" || "$snort_iface" == "auto" ]]; then
+        snort_iface=$(detect_default_interface)
+    fi
+    if [[ -z "$snort_iface" ]]; then
+        snort_iface="eth0"
+        log_warn "Unable to auto-detect network interface; defaulting SNORT_INTERFACE=$snort_iface"
+    fi
+
+    if [[ -z "$snort_home_net" ]]; then
+        snort_home_net=$(detect_home_net_cidr "$snort_iface")
+    fi
+
+    if ! command -v debconf-set-selections >/dev/null 2>&1; then
+        log_error "debconf-set-selections is required for non-interactive Snort setup"
+        exit 1
+    fi
+
+    log_info "Preseeding Snort package config (iface=$snort_iface, HOME_NET=$snort_home_net, startup=$snort_startup)"
+    cat <<EOF | debconf-set-selections
+snort snort/startup select $snort_startup
+snort snort/interface string $snort_iface
+snort snort/address_range string $snort_home_net
+snort snort/disable_promiscuous boolean $snort_disable_promisc
+EOF
+
+    # Ubuntu/Debian package currently provides Snort 2.x; keep this opt-in.
+    install_dependencies snort snort-rules-default
+
+    local snort_debian_conf="/etc/snort/snort.debian.conf"
+    if [[ -f "$snort_debian_conf" ]]; then
+        if grep -q '^DEBIAN_SNORT_HOME_NET=' "$snort_debian_conf"; then
+            sed -i "s|^DEBIAN_SNORT_HOME_NET=.*|DEBIAN_SNORT_HOME_NET=\"$snort_home_net\"|" "$snort_debian_conf"
+        else
+            echo "DEBIAN_SNORT_HOME_NET=\"$snort_home_net\"" >> "$snort_debian_conf"
+        fi
+
+        if grep -q '^DEBIAN_SNORT_INTERFACE=' "$snort_debian_conf"; then
+            sed -i "s|^DEBIAN_SNORT_INTERFACE=.*|DEBIAN_SNORT_INTERFACE=\"$snort_iface\"|" "$snort_debian_conf"
+        else
+            echo "DEBIAN_SNORT_INTERFACE=\"$snort_iface\"" >> "$snort_debian_conf"
+        fi
+    fi
+
+    if command -v snort >/dev/null 2>&1; then
+        if snort -T -q -c /etc/snort/snort.conf >/tmp/snort-selftest.log 2>&1; then
+            log_info "✓ Snort configuration self-test passed"
+        else
+            log_warn "Snort self-test reported issues; see /tmp/snort-selftest.log"
+        fi
+    else
+        log_error "Snort command not found after installation"
+        exit 1
+    fi
+
+    if [[ "$snort_startup" == "boot" ]]; then
+        enable_and_start_systemd_service snort
+        if systemctl is-active --quiet snort 2>/dev/null; then
+            log_info "✓ Snort service running"
+        else
+            log_warn "Snort service not active - check: systemctl status snort"
+        fi
+    else
+        log_info "Snort configured for manual startup"
+    fi
+}
+
+# Function 4: Setup AIDE
 setup_aide() {
     log_info "Setting up AIDE file integrity monitoring..."
 
@@ -263,7 +381,7 @@ EOF
     log_info "✓ AIDE file integrity monitoring setup complete"
 }
 
-# Function 4: Security Verification
+# Function 5: Security Verification
 verify_security_setup() {
     log_info "Verifying security setup..."
 
@@ -302,6 +420,27 @@ verify_security_setup() {
         issues=$((issues + 1))
     fi
 
+    # Check optional Snort
+    if is_truthy "${ENABLE_SNORT:-false}"; then
+        log_info "Checking Snort service..."
+        if command -v snort >/dev/null 2>&1; then
+            log_info "✓ Snort is installed"
+            if [[ "${SNORT_STARTUP:-boot}" == "boot" ]]; then
+                if systemctl is-active --quiet snort 2>/dev/null; then
+                    log_info "✓ Snort service is running"
+                else
+                    log_warn "Snort installed but service is not active"
+                    issues=$((issues + 1))
+                fi
+            else
+                log_info "Snort startup mode is manual; service check skipped"
+            fi
+        else
+            log_error "✗ Snort is not installed"
+            issues=$((issues + 1))
+        fi
+    fi
+
     if [[ $issues -eq 0 ]]; then
         log_info "✓ All security features verified successfully"
     else
@@ -317,6 +456,7 @@ main() {
     # Run all security setup functions
     setup_firewall
     setup_fail2ban
+    setup_snort
     setup_aide
     
     # Verify security setup
@@ -326,6 +466,9 @@ main() {
     log_info "✓ Firewall configured with comprehensive rules"
     log_info "✓ Fail2ban intrusion prevention active"
     log_info "✓ AIDE file integrity monitoring scheduled"
+    if is_truthy "${ENABLE_SNORT:-false}"; then
+        log_info "✓ Snort IDS configured (optional profile)"
+    fi
     log_info "✓ All security features are now active and protecting your system"
     
     log_installation_complete "Consolidated Security Suite" "security-suite"
