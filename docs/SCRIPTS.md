@@ -19,7 +19,10 @@ Use `scripts/eth2qs.sh` as a stable command entrypoint for both humans and AI ag
 ./scripts/eth2qs.sh phase1
 ./scripts/eth2qs.sh phase2
 ./scripts/eth2qs.sh doctor --json
+./scripts/eth2qs.sh stats --json
 ```
+
+`stats --json` is the machine-readable monitoring surface. It summarizes service states, recent journal-derived failure modes, planner/doctor context, and bounded repair previews without making changes.
 
 ## Environment Configuration (exports.sh)
 
@@ -78,6 +81,7 @@ ssh LOGIN_UNAME@<server-ip>
 ```bash
 ./install/utils/start.sh
 ./install/utils/stats.sh
+./scripts/eth2qs.sh stats --json
 ```
 
 ## Logs

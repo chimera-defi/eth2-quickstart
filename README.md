@@ -68,6 +68,7 @@ Use one stable entrypoint for common workflows:
 ./scripts/eth2qs.sh phase2
 ./scripts/eth2qs.sh monad-install
 ./scripts/eth2qs.sh doctor --json
+./scripts/eth2qs.sh stats --json
 ```
 
 For agent integrations, the published skill source lives at `skills/eth2-quickstart/` and is intended to be used inside an `eth2-quickstart` checkout.
@@ -102,6 +103,7 @@ codex mcp add eth2-quickstart ./mcp_server/run_eth2qs_mcp.sh
 
 The MCP server can expose the core lifecycle directly: Phase 1 hardening, Phase 2 Ethereum client install, planner-driven install, health checks, logs, and safe cleanup.
 - For machine-readable client names and tested presets, use `./scripts/eth2qs.sh client-options --json`.
+- For machine-readable monitoring, issue classification, and repair previews, use `./scripts/eth2qs.sh stats --json`.
 - For the command surface and safety rules, start with [`skills/eth2-quickstart/SKILL.md`](skills/eth2-quickstart/SKILL.md)
 
 This is a repo-backed operations skill, not a standalone blockchain package.

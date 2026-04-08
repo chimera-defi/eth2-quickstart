@@ -30,6 +30,7 @@ from mcp_server.eth2qs_mcp_tools import (  # noqa: E402
     server_info,
     start,
     stats,
+    stats_json,
     stop,
     restart,
 )
@@ -116,6 +117,12 @@ def eth2qs_phase2(
 def eth2qs_stats() -> dict:
     """Show read-only service and system stats."""
     return stats()
+
+
+@mcp.tool(name="eth2qs_stats_json")
+def eth2qs_stats_json() -> dict:
+    """Show machine-readable monitoring, issue classification, and repair previews."""
+    return stats_json()
 
 
 @mcp.tool(name="eth2qs_logs")
