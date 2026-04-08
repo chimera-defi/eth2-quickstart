@@ -43,6 +43,8 @@ Use these commands for routine operations:
 - Start services: `./scripts/eth2qs.sh start`
 - Stop services: `./scripts/eth2qs.sh stop`
 - Restart services: `./scripts/eth2qs.sh restart`
+- Preview bounded smart repairs: `./scripts/eth2qs.sh repair`
+- Apply bounded smart repairs: `./scripts/eth2qs.sh repair --apply --confirm`
 - Show current status: `./scripts/eth2qs.sh stats`
 - Machine-readable health: `./scripts/eth2qs.sh doctor --json`
 - Next-step planner: `./scripts/eth2qs.sh plan --json`
@@ -62,6 +64,7 @@ Use these commands for routine operations:
 - Prefer `monad-install` over implicit chain guessing when the target stack is Monad.
 - Prefer `plan --json` before calling `ensure --apply --confirm`.
 - Prefer `doctor --json` before and after any install, update, or cleanup step.
+- Prefer `repair` over `restart --smart` when you want to see exactly which allowlisted actions are eligible before changing the host.
 - Prefer `stats` and `logs` when a human needs a readable RCA. `stats` must stay read-only and must not trigger client downloads.
 - If the requested action falls outside repo-supported workflows, say so instead of improvising.
 

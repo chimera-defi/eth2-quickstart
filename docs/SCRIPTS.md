@@ -20,9 +20,12 @@ Use `scripts/eth2qs.sh` as a stable command entrypoint for both humans and AI ag
 ./scripts/eth2qs.sh phase2
 ./scripts/eth2qs.sh doctor --json
 ./scripts/eth2qs.sh stats --json
+./scripts/eth2qs.sh repair
+./scripts/eth2qs.sh restart --smart
 ```
 
 `stats --json` is the machine-readable monitoring surface. It summarizes service states, recent journal-derived failure modes, planner/doctor context, and bounded repair previews without making changes.
+`repair` is the bounded apply surface. It previews allowlisted targeted restarts by default and requires `--apply --confirm` before making changes.
 
 ## Environment Configuration (exports.sh)
 
