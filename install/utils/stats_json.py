@@ -188,8 +188,16 @@ def matches_any(sample: str, patterns: tuple[str, ...]) -> bool:
     return any(pattern in sample for pattern in patterns)
 
 
+def builder_restart_command(service_states: dict[str, str]) -> str | None:
+    for service in ("commit-boost-pbs", "mev"):
+        if service_states.get(service) in {"running", "stopped", "failed", "disabled"}:
+            return f"sudo systemctl restart {service}"
+    return None
+
+
 def classify_error_sample(
     item: dict[str, object],
+    service_states: dict[str, str],
     repair_preview: list[dict[str, object]],
     issues: list[dict[str, object]],
 ) -> bool:
@@ -198,6 +206,7 @@ def classify_error_sample(
     evidence = str(item["sample"])
 
     if matches_any(sample, ("connect: connection refused",)) and "18550" in sample:
+        builder_command = builder_restart_command(service_states)
         add_issue(
             issues,
             repair_preview,
@@ -206,8 +215,8 @@ def classify_error_sample(
             service=service,
             summary="Consensus client cannot reach the builder/MEV endpoint",
             suggested_action="Check MEV service health and restart the active MEV stack if needed",
-            safe=True,
-            command="./scripts/eth2qs.sh restart",
+            safe=bool(builder_command),
+            command=builder_command,
             evidence=evidence,
         )
         return True
@@ -324,7 +333,7 @@ def classify_error_sample(
             summary="Consensus networking is degraded and peers are not being maintained",
             suggested_action="Inspect networking, peer configuration, and sync reachability before restart",
             safe=True,
-            command=f"journalctl -u {service} -n 50 --no-pager",
+            command=f"sudo systemctl restart {service}",
             evidence=evidence,
         )
         return True
@@ -411,7 +420,7 @@ def classify_issues(
         )
 
     for item in error_summary:
-        classify_error_sample(item, repair_preview, issues)
+        classify_error_sample(item, service_states, repair_preview, issues)
 
     if doctor:
         summary = doctor.get("summary", {})

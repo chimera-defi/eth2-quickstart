@@ -19,6 +19,8 @@ class McpToolsTest(unittest.TestCase):
         self.assertIn("eth2qs_phase1", tools.TOOL_NAMES)
         self.assertIn("eth2qs_phase2", tools.TOOL_NAMES)
         self.assertIn("eth2qs_cleanup_host_dry_run", tools.TOOL_NAMES)
+        self.assertIn("eth2qs_repair_preview", tools.TOOL_NAMES)
+        self.assertIn("eth2qs_repair_apply", tools.TOOL_NAMES)
 
     def test_server_info_includes_groups_and_examples(self):
         info = tools.server_info()
@@ -27,6 +29,8 @@ class McpToolsTest(unittest.TestCase):
         self.assertIn("eth2qs_phase2", info["tool_groups"]["mutating_confirm_required"])
         self.assertIn("eth2qs_client_options", info["tool_groups"]["read_only"])
         self.assertIn("eth2qs_stats_json", info["tool_groups"]["read_only"])
+        self.assertIn("eth2qs_repair_preview", info["tool_groups"]["read_only"])
+        self.assertIn("eth2qs_repair_apply", info["tool_groups"]["mutating_confirm_required"])
         self.assertEqual(info["call_examples"]["eth2qs_phase1"]["confirmation_token"], "apply")
 
     def test_client_options_lists_valid_choices(self):
@@ -56,6 +60,8 @@ class McpToolsTest(unittest.TestCase):
             tools.phase1(confirm=False, confirmation_token="")
         with self.assertRaises(ValueError):
             tools.phase2(confirm=False, confirmation_token="")
+        with self.assertRaises(ValueError):
+            tools.repair_apply(confirm=False, confirmation_token="")
         with self.assertRaises(ValueError):
             tools.stop(confirm=True, confirmation_token="wrong")
 
@@ -99,6 +105,34 @@ class McpToolsTest(unittest.TestCase):
         with patch("mcp_server.eth2qs_mcp_tools._run", return_value=fake) as run_mock:
             result = tools.stats_json()
         self.assertEqual(result["stdout"], "{}")
+        run_mock.assert_called_once()
+
+    def test_repair_preview_dispatches_to_wrapper(self):
+        fake = {
+            "command": ["/repo/scripts/eth2qs.sh", "repair"],
+            "cwd": "/repo",
+            "exit_code": 0,
+            "stdout": "preview",
+            "stderr": "",
+            "ok": True,
+        }
+        with patch("mcp_server.eth2qs_mcp_tools._run", return_value=fake) as run_mock:
+            result = tools.repair_preview()
+        self.assertEqual(result["stdout"], "preview")
+        run_mock.assert_called_once()
+
+    def test_repair_apply_dispatches_to_wrapper(self):
+        fake = {
+            "command": ["/repo/scripts/eth2qs.sh", "repair", "--apply", "--confirm"],
+            "cwd": "/repo",
+            "exit_code": 0,
+            "stdout": "applied",
+            "stderr": "",
+            "ok": True,
+        }
+        with patch("mcp_server.eth2qs_mcp_tools._run", return_value=fake) as run_mock:
+            result = tools.repair_apply(confirm=True, confirmation_token="apply")
+        self.assertEqual(result["stdout"], "applied")
         run_mock.assert_called_once()
 
     def test_phase2_maps_client_flags(self):

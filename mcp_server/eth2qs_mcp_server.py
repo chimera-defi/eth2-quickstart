@@ -27,6 +27,8 @@ from mcp_server.eth2qs_mcp_tools import (  # noqa: E402
     phase1,
     phase2,
     plan_json,
+    repair_apply,
+    repair_preview,
     server_info,
     start,
     stats,
@@ -123,6 +125,18 @@ def eth2qs_stats() -> dict:
 def eth2qs_stats_json() -> dict:
     """Show machine-readable monitoring, issue classification, and repair previews."""
     return stats_json()
+
+
+@mcp.tool(name="eth2qs_repair_preview")
+def eth2qs_repair_preview() -> dict:
+    """Show allowlisted smart repair candidates derived from current monitoring output."""
+    return repair_preview()
+
+
+@mcp.tool(name="eth2qs_repair_apply")
+def eth2qs_repair_apply(confirm: bool = False, confirmation_token: str = "") -> dict:
+    """Apply allowlisted smart repair actions. Requires confirm=true and confirmation_token='apply'."""
+    return repair_apply(confirm=confirm, confirmation_token=confirmation_token)
 
 
 @mcp.tool(name="eth2qs_logs")
