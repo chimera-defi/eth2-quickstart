@@ -24,9 +24,13 @@ canonical_commands=(
     "./scripts/eth2qs.sh phase2"
     "./scripts/eth2qs.sh monad-install"
     "./scripts/eth2qs.sh doctor --json"
+    "./scripts/eth2qs.sh debug --json"
     "./scripts/eth2qs.sh start"
+    "./scripts/eth2qs.sh monitor export --json"
+    "./scripts/eth2qs.sh repair"
     "./scripts/eth2qs.sh stop"
     "./scripts/eth2qs.sh stats"
+    "./scripts/eth2qs.sh update-check --json"
     "./scripts/eth2qs.sh logs"
     "./scripts/eth2qs.sh clean-data"
     "./scripts/eth2qs.sh cleanup-host"
@@ -51,6 +55,7 @@ fi
 
 if grep -Fq "Fresh Host Bootstrap" "$SKILL_DIR/references/operator.md" &&
    grep -Fq "./scripts/eth2qs.sh plan --json" "$SKILL_DIR/references/operator.md" &&
+   grep -Fq "./scripts/eth2qs.sh repair --apply --confirm" "$SKILL_DIR/references/operator.md" &&
    grep -Fq "./scripts/eth2qs.sh stop" "$SKILL_DIR/references/operator.md" &&
    grep -Fq "./scripts/eth2qs.sh update-all" "$SKILL_DIR/references/operator.md"; then
     record_test "operator.md covers install, operate, and update flows" "PASS"
@@ -60,6 +65,8 @@ fi
 
 if grep -Fq "./scripts/eth2qs.sh doctor --json" "$OUTPUTS_REF" &&
    grep -Fq "./scripts/eth2qs.sh stats --json" "$OUTPUTS_REF" &&
+   grep -Fq "./scripts/eth2qs.sh debug --json" "$OUTPUTS_REF" &&
+   grep -Fq "./scripts/eth2qs.sh update-check --json" "$OUTPUTS_REF" &&
    grep -Fq "machine-readable" "$OUTPUTS_REF"; then
     record_test "outputs.md documents doctor/stats JSON paths" "PASS"
 else
@@ -76,8 +83,12 @@ if grep -Fq "bootstrap)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "plan)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "ensure)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "monad-install)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
+   grep -Fq "debug)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
+   grep -Fq "monitor)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
+   grep -Fq "repair)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "stop)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "stats)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
+   grep -Fq "update-check)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "clean-data)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "cleanup-host)" "$PROJECT_ROOT/scripts/eth2qs.sh" &&
    grep -Fq "update-all)" "$PROJECT_ROOT/scripts/eth2qs.sh"; then

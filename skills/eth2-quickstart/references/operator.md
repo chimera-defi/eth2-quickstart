@@ -43,8 +43,13 @@ Use these commands for routine operations:
 - Start services: `./scripts/eth2qs.sh start`
 - Stop services: `./scripts/eth2qs.sh stop`
 - Restart services: `./scripts/eth2qs.sh restart`
+- Preview bounded smart repairs: `./scripts/eth2qs.sh repair`
+- Apply bounded smart repairs: `./scripts/eth2qs.sh repair --apply --confirm`
 - Show current status: `./scripts/eth2qs.sh stats`
 - Machine-readable health: `./scripts/eth2qs.sh doctor --json`
+- Structured per-service debug: `./scripts/eth2qs.sh debug --json --service cl`
+- Repo/component freshness: `./scripts/eth2qs.sh update-check --json`
+- Compact monitor summary: `./scripts/eth2qs.sh monitor export --json`
 - Next-step planner: `./scripts/eth2qs.sh plan --json`
 - Update software: `./scripts/eth2qs.sh update-all`
 
@@ -62,6 +67,10 @@ Use these commands for routine operations:
 - Prefer `monad-install` over implicit chain guessing when the target stack is Monad.
 - Prefer `plan --json` before calling `ensure --apply --confirm`.
 - Prefer `doctor --json` before and after any install, update, or cleanup step.
+- Prefer `update-check --json` before a manual upgrade so the operator knows whether the repo or installed clients are actually stale.
+- Prefer `repair` over `restart --smart` when you want to see exactly which allowlisted actions are eligible before changing the host.
+- Prefer `debug --json` when a machine or wrapper needs recent logs, unit metadata, or socket hints for a specific service.
+- Prefer `monitor export --json` when you need a compact summary for bots, dashboards, or periodic checks.
 - Prefer `stats` and `logs` when a human needs a readable RCA. `stats` must stay read-only and must not trigger client downloads.
 - If the requested action falls outside repo-supported workflows, say so instead of improvising.
 
