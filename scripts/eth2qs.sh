@@ -28,7 +28,7 @@ Operations:
   start                   Start all node services
   stop                    Stop all node services
   restart                 Restart all node services
-  stats                   Show current service status and system stats
+  stats [--json]          Show current service status and system stats
   logs [args...]          View run logs (passed to install/utils/view_logs.sh)
   clean-data [args...]    Purge default node data dirs (safe by default)
   cleanup-host [args...]  Purge root-managed node data dirs (requires root, preserves secrets)
@@ -44,6 +44,7 @@ Examples:
   ./scripts/eth2qs.sh ensure
   ./scripts/eth2qs.sh configure --interactive
   ./scripts/eth2qs.sh doctor --json
+  ./scripts/eth2qs.sh stats --json
   ./scripts/eth2qs.sh logs --run2 -n 200
   sudo ./scripts/eth2qs.sh cleanup-host --dry-run
 EOF

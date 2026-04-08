@@ -11,6 +11,7 @@ Canonical command surface:
 - Run Phase 2 install: `./scripts/eth2qs.sh phase2 --execution=geth --consensus=prysm --mev=mev-boost`
 - Run explicit Monad install: `./scripts/eth2qs.sh monad-install`
 - Health/status: `./scripts/eth2qs.sh doctor --json`
+- Monitoring/triage: `./scripts/eth2qs.sh stats --json`
 - Human-readable status: `./scripts/eth2qs.sh status`
 - Start services: `./scripts/eth2qs.sh start`
 - Stop services: `./scripts/eth2qs.sh stop`

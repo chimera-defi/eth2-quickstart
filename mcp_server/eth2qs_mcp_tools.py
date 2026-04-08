@@ -149,6 +149,10 @@ def stats() -> Dict[str, Any]:
     return _eth2qs("stats")
 
 
+def stats_json() -> Dict[str, Any]:
+    return _eth2qs("stats", "--json")
+
+
 def logs(target: str = "run2", lines: int = 200) -> Dict[str, Any]:
     target = _validate_log_target(target)
     lines = _validate_lines(lines)
@@ -184,6 +188,7 @@ def monad_install(*, confirm: bool = False, confirmation_token: str = "") -> Dic
 
 
 TOOL_NAMES = (
+    "eth2qs_info",
     "eth2qs_help",
     "eth2qs_doctor_json",
     "eth2qs_plan_json",
@@ -193,6 +198,7 @@ TOOL_NAMES = (
     "eth2qs_phase1",
     "eth2qs_phase2",
     "eth2qs_stats",
+    "eth2qs_stats_json",
     "eth2qs_logs",
     "eth2qs_start",
     "eth2qs_stop",
@@ -218,6 +224,7 @@ def server_info() -> Dict[str, Any]:
                 "eth2qs_ensure_preview",
                 "eth2qs_client_options",
                 "eth2qs_stats",
+                "eth2qs_stats_json",
                 "eth2qs_logs",
                 "eth2qs_clean_data_dry_run",
                 "eth2qs_cleanup_host_dry_run",
@@ -236,6 +243,7 @@ def server_info() -> Dict[str, Any]:
             "eth2qs_doctor_json": {},
             "eth2qs_plan_json": {"chain": "ethereum"},
             "eth2qs_client_options": {},
+            "eth2qs_stats_json": {},
             "eth2qs_phase1": {"confirm": True, "confirmation_token": "apply"},
             "eth2qs_phase2": {
                 "execution": "geth",
@@ -274,5 +282,6 @@ __all__ = [
     "TOOL_NAMES",
     "start",
     "stats",
+    "stats_json",
     "stop",
 ]

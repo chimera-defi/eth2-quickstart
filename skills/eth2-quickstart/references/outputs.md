@@ -6,9 +6,10 @@ Use:
 
 ```bash
 ./scripts/eth2qs.sh doctor --json
+./scripts/eth2qs.sh stats --json
 ```
 
-This is the canonical machine-readable health path for agents.
+These are the canonical machine-readable health and monitoring paths for agents.
 
 ## Expected Uses
 
@@ -21,11 +22,10 @@ This is the canonical machine-readable health path for agents.
 ## Human-Oriented Checks
 
 - `./scripts/eth2qs.sh status`
-- `./scripts/eth2qs.sh stats`
 - `./scripts/eth2qs.sh logs --run1 -n 100`
 - `./scripts/eth2qs.sh logs --run2 -n 200`
 
-Use the JSON output when another agent step needs stable parsing. Use the human-readable output and logs when doing RCA.
+Use `doctor --json` for health gates and `stats --json` for service states, issue detection, and repair previews. Use the human-readable output and logs when doing RCA.
 
 ## `doctor --json` Output Shape
 

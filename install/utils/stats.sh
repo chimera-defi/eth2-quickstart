@@ -10,6 +10,16 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_ROOT" || exit 1
 source "$PROJECT_ROOT/lib/common_functions.sh"
 
+if [[ "${1:-}" == "--json" ]]; then
+    exec python3 "$SCRIPT_DIR/stats_json.py"
+fi
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+    echo "Usage: ./install/utils/stats.sh [--json]"
+    echo "  --json    Output machine-readable monitoring and triage data"
+    exit 0
+fi
+
 print_version_output() {
     local label="$1"
     shift
