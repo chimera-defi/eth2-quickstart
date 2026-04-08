@@ -153,6 +153,15 @@ def stats_json() -> Dict[str, Any]:
     return _eth2qs("stats", "--json")
 
 
+def repair_preview() -> Dict[str, Any]:
+    return _eth2qs("repair")
+
+
+def repair_apply(*, confirm: bool = False, confirmation_token: str = "") -> Dict[str, Any]:
+    _require_confirm(confirm, confirmation_token)
+    return _eth2qs("repair", "--apply", "--confirm")
+
+
 def logs(target: str = "run2", lines: int = 200) -> Dict[str, Any]:
     target = _validate_log_target(target)
     lines = _validate_lines(lines)
@@ -199,6 +208,8 @@ TOOL_NAMES = (
     "eth2qs_phase2",
     "eth2qs_stats",
     "eth2qs_stats_json",
+    "eth2qs_repair_preview",
+    "eth2qs_repair_apply",
     "eth2qs_logs",
     "eth2qs_start",
     "eth2qs_stop",
@@ -225,6 +236,7 @@ def server_info() -> Dict[str, Any]:
                 "eth2qs_client_options",
                 "eth2qs_stats",
                 "eth2qs_stats_json",
+                "eth2qs_repair_preview",
                 "eth2qs_logs",
                 "eth2qs_clean_data_dry_run",
                 "eth2qs_cleanup_host_dry_run",
@@ -236,6 +248,7 @@ def server_info() -> Dict[str, Any]:
                 "eth2qs_start",
                 "eth2qs_stop",
                 "eth2qs_restart",
+                "eth2qs_repair_apply",
                 "eth2qs_monad_install",
             ],
         },
@@ -244,6 +257,7 @@ def server_info() -> Dict[str, Any]:
             "eth2qs_plan_json": {"chain": "ethereum"},
             "eth2qs_client_options": {},
             "eth2qs_stats_json": {},
+            "eth2qs_repair_preview": {},
             "eth2qs_phase1": {"confirm": True, "confirmation_token": "apply"},
             "eth2qs_phase2": {
                 "execution": "geth",
@@ -257,6 +271,7 @@ def server_info() -> Dict[str, Any]:
                 "confirm": True,
                 "confirmation_token": "apply",
             },
+            "eth2qs_repair_apply": {"confirm": True, "confirmation_token": "apply"},
             "eth2qs_clean_data_dry_run": {},
         },
     }
@@ -276,6 +291,8 @@ __all__ = [
     "logs",
     "monad_install",
     "plan_json",
+    "repair_apply",
+    "repair_preview",
     "resolve_repo_root",
     "restart",
     "server_info",

@@ -54,6 +54,29 @@ class StatsJsonClassificationTest(unittest.TestCase):
         self.assertIn("service_flag_mismatch", kinds)
         self.assertIn("config_parse_error", kinds)
 
+    def test_peer_and_mev_issues_get_targeted_restart_candidates(self):
+        issues, preview = self.classify(
+            service_states={"cl": "running", "commit-boost-pbs": "running"},
+            error_summary=[
+                {
+                    "service": "cl",
+                    "count": 3,
+                    "sample": "Failed to find and dial peers",
+                },
+                {
+                    "service": "cl",
+                    "count": 2,
+                    "sample": "connect: connection refused 127.0.0.1:18550",
+                },
+            ],
+        )
+        kinds = {issue["kind"] for issue in issues}
+        commands = {item["command"] for item in preview}
+        self.assertIn("peer_connectivity_degraded", kinds)
+        self.assertIn("mev_endpoint_unreachable", kinds)
+        self.assertIn("sudo systemctl restart cl", commands)
+        self.assertIn("sudo systemctl restart commit-boost-pbs", commands)
+
     def test_planner_and_doctor_context_become_issues(self):
         issues, preview = self.classify(
             service_states={"eth1": "not_installed"},
