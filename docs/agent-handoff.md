@@ -53,6 +53,34 @@ Use this file to preserve context across sessions.
 - Validation run: `./scripts/eth2qs.sh client-options --json`, `python3 -m unittest discover -s test -p 'test_mcp_tools.py'`, `bash test/ci_test_mcp_server.sh`
 - Follow-up: external harnesses like CLI-Anything can switch from embedded client enums to the repo-native `client-options --json` surface
 
+## Latest Update (Monitoring / Triage Surface, 2026-04-08)
+
+- Added `install/utils/stats_json.py` and `./scripts/eth2qs.sh stats --json` as the machine-readable monitoring surface for service states, recent errors, planner/doctor context, and bounded repair previews
+- Added MCP `eth2qs_stats_json` so Claude/Codex can inspect current host state without scraping human-oriented `stats.sh` output
+- `stats --json` now classifies several common failure modes from recent journal evidence:
+  - missing validator wallet / keys
+  - service flag mismatch after binary/config drift
+  - config parse failures
+  - peer connectivity degradation
+  - MEV endpoint refusal
+  - locked database / duplicate process symptoms
+- Monitoring output now includes planner/doctor context instead of showing a false `pass` on partially installed or warning-state hosts
+- Added tests:
+  - `install/test/test_stats_json_contract.sh`
+  - `test/test_stats_json.py`
+  - existing MCP/skill contract tests updated to require `stats --json`
+- Updated `README.md`, `docs/SCRIPTS.md`, and skill references to advertise `stats --json` as the preferred monitoring/triage surface
+- Validation run:
+  - `bash install/test/test_stats_json_contract.sh`
+  - `bash install/test/test_stats_read_only.sh`
+  - `python3 -m unittest discover -s test -p 'test_*.py'`
+  - `bash test/ci_test_mcp_server.sh`
+  - `bash test/ci_test_skill_command_mapping.sh`
+  - `REQUIRE_WHIPTAIL_PIPE_TEST=1 SKIP_SHELLCHECK=true USE_MOCKS=true ./test/run_tests.sh --unit`
+- Follow-up:
+  - add a guarded `repair --apply` path for clearly safe actions only
+  - add explicit software release freshness checks before offering updater automation
+
 ## MCP Meta Learnings
 
 - Composite GitHub actions must not reference `secrets.*` directly in `action.yml`; pass tokens through explicit action inputs from the workflow.

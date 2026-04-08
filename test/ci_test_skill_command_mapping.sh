@@ -59,10 +59,11 @@ else
 fi
 
 if grep -Fq "./scripts/eth2qs.sh doctor --json" "$OUTPUTS_REF" &&
+   grep -Fq "./scripts/eth2qs.sh stats --json" "$OUTPUTS_REF" &&
    grep -Fq "machine-readable" "$OUTPUTS_REF"; then
-    record_test "outputs.md documents doctor JSON path" "PASS"
+    record_test "outputs.md documents doctor/stats JSON paths" "PASS"
 else
-    record_test "outputs.md documents doctor JSON path" "FAIL"
+    record_test "outputs.md documents doctor/stats JSON paths" "FAIL"
 fi
 
 if grep -Fq "./scripts/eth2qs.sh doctor --json" "$PROJECT_ROOT/scripts/eth2qs.sh"; then

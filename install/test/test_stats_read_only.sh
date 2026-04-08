@@ -39,12 +39,19 @@ test_stats_uses_local_prysm_binary_discovery() {
         grep -Fq 'bootstrap script present, local binary not downloaded' "$STATS_SCRIPT"
 }
 
+# shellcheck disable=SC2317
+test_stats_supports_json_mode() {
+    grep -Fq 'stats_json.py' "$STATS_SCRIPT" &&
+        grep -Fq -- '--json' "$STATS_SCRIPT"
+}
+
 echo "=========================================="
 echo "Stats Read-Only Test Suite"
 echo "=========================================="
 
 run_test "stats does not invoke prysm bootstrap script for version checks" test_stats_does_not_invoke_prysm_bootstrap_script
 run_test "stats uses local Prysm binary discovery only" test_stats_uses_local_prysm_binary_discovery
+run_test "stats supports machine-readable json mode" test_stats_supports_json_mode
 
 echo ""
 echo "=========================================="
