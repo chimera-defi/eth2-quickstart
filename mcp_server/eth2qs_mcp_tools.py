@@ -4,18 +4,27 @@
 from __future__ import annotations
 
 import os
+import json
 import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
+CLIENT_OPTIONS_FILE = ROOT_DIR / "config" / "client_options.json"
 ALLOWED_CHAINS = {"ethereum", "monad"}
 ALLOWED_LOG_TARGETS = {"run1", "run2"}
-ALLOWED_EXECUTION_CLIENTS = {"geth", "besu", "erigon", "nethermind", "nimbus_eth1", "reth", "ethrex"}
-ALLOWED_CONSENSUS_CLIENTS = {"prysm", "lighthouse", "lodestar", "teku", "nimbus", "grandine"}
-ALLOWED_MEV_OPTIONS = {"mev-boost", "commit-boost", "none"}
 MAX_LOG_LINES = 500
 CONFIRM_TOKEN = "apply"
+
+
+def _load_client_options() -> Dict[str, Any]:
+    return json.loads(CLIENT_OPTIONS_FILE.read_text(encoding="utf-8"))
+
+
+CLIENT_OPTIONS = _load_client_options()
+ALLOWED_EXECUTION_CLIENTS = set(CLIENT_OPTIONS["execution_clients"])
+ALLOWED_CONSENSUS_CLIENTS = set(CLIENT_OPTIONS["consensus_clients"])
+ALLOWED_MEV_OPTIONS = set(CLIENT_OPTIONS["mev_options"])
 
 
 def resolve_repo_root() -> Path:
@@ -133,35 +142,7 @@ def phase2(
 
 
 def client_options() -> Dict[str, Any]:
-    return {
-        "execution_clients": sorted(ALLOWED_EXECUTION_CLIENTS),
-        "consensus_clients": sorted(ALLOWED_CONSENSUS_CLIENTS),
-        "mev_options": sorted(ALLOWED_MEV_OPTIONS),
-        "ethgas_requires": {"mev": "commit-boost"},
-        "common_presets": [
-            {
-                "name": "default-tested",
-                "execution": "geth",
-                "consensus": "prysm",
-                "mev": "mev-boost",
-                "ethgas": False,
-            },
-            {
-                "name": "commit-boost-with-ethgas",
-                "execution": "geth",
-                "consensus": "prysm",
-                "mev": "commit-boost",
-                "ethgas": True,
-            },
-            {
-                "name": "no-mev",
-                "execution": "geth",
-                "consensus": "prysm",
-                "mev": "none",
-                "ethgas": False,
-            },
-        ],
-    }
+    return _load_client_options()
 
 
 def stats() -> Dict[str, Any]:

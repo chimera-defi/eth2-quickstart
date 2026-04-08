@@ -44,6 +44,15 @@ Use this file to preserve context across sessions.
 - Discoverability pass on 2026-03-26: added a compact MCP quickstart to `README.md`, added an MCP pointer to `llms.txt`, and added a native MCP tools callout/snippet to `frontend/components/sections/Agents.tsx`; validated with docs consistency, frontend lint/test/build
 - MCP lifecycle pass on 2026-03-26: added explicit `eth2qs_phase1` and `eth2qs_phase2` tools so server hardening and Ethereum client install are first-class MCP actions instead of only planner-driven behavior; validated in unit tests and via live MCP `list_tools`
 
+## Latest Update (Client Options Surface, 2026-04-07)
+
+- Added `config/client_options.json` as the shared machine-readable source of truth for supported execution clients, consensus clients, MEV options, ETHGas constraints, and tested presets
+- Added `./scripts/eth2qs.sh client-options --json` via `install/utils/client_options.sh` so external wrappers can discover valid flags without re-encoding repo knowledge
+- Updated MCP `eth2qs_client_options` to read the same JSON file instead of maintaining a separate hardcoded copy
+- Updated README, `docs/SCRIPTS.md`, and agent reference docs to point at the new command
+- Validation run: `./scripts/eth2qs.sh client-options --json`, `python3 -m unittest discover -s test -p 'test_mcp_tools.py'`, `bash test/ci_test_mcp_server.sh`
+- Follow-up: external harnesses like CLI-Anything can switch from embedded client enums to the repo-native `client-options --json` surface
+
 ## MCP Meta Learnings
 
 - Composite GitHub actions must not reference `secrets.*` directly in `action.yml`; pass tokens through explicit action inputs from the workflow.

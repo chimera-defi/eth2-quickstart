@@ -1,0 +1,50 @@
+{
+  "execution_clients": [
+    "besu",
+    "erigon",
+    "ethrex",
+    "geth",
+    "nethermind",
+    "nimbus_eth1",
+    "reth"
+  ],
+  "consensus_clients": [
+    "grandine",
+    "lighthouse",
+    "lodestar",
+    "nimbus",
+    "prysm",
+    "teku"
+  ],
+  "mev_options": [
+    "commit-boost",
+    "mev-boost",
+    "none"
+  ],
+  "ethgas_requires": {
+    "mev": "commit-boost"
+  },
+  "common_presets": [
+    {
+      "name": "default-tested",
+      "execution": "geth",
+      "consensus": "prysm",
+      "mev": "mev-boost",
+      "ethgas": false
+    },
+    {
+      "name": "commit-boost-with-ethgas",
+      "execution": "geth",
+      "consensus": "prysm",
+      "mev": "commit-boost",
+      "ethgas": true
+    },
+    {
+      "name": "no-mev",
+      "execution": "geth",
+      "consensus": "prysm",
+      "mev": "none",
+      "ethgas": false
+    }
+  ]
+}
