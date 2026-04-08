@@ -14,6 +14,7 @@ TOOLS_FILE="$MCP_DIR/eth2qs_mcp_tools.py"
 SERVER_FILE="$MCP_DIR/eth2qs_mcp_server.py"
 WRAPPER_FILE="$MCP_DIR/run_eth2qs_mcp.sh"
 CLIENT_OPTIONS_SCRIPT="$PROJECT_ROOT/install/utils/client_options.sh"
+REPAIR_SCRIPT="$PROJECT_ROOT/install/utils/repair.sh"
 STATS_JSON_SCRIPT="$PROJECT_ROOT/install/utils/stats_json.py"
 CLAUDE_PLUGIN_FILE="$PROJECT_ROOT/.claude-plugin/plugin.json"
 CLAUDE_MARKETPLACE_FILE="$PROJECT_ROOT/.claude-plugin/marketplace.json"
@@ -29,6 +30,7 @@ assert_file_exists "$TOOLS_FILE" "mcp_server/eth2qs_mcp_tools.py"
 assert_file_exists "$SERVER_FILE" "mcp_server/eth2qs_mcp_server.py"
 assert_file_exists "$WRAPPER_FILE" "mcp_server/run_eth2qs_mcp.sh"
 assert_file_exists "$CLIENT_OPTIONS_SCRIPT" "install/utils/client_options.sh"
+assert_file_exists "$REPAIR_SCRIPT" "install/utils/repair.sh"
 assert_file_exists "$STATS_JSON_SCRIPT" "install/utils/stats_json.py"
 assert_file_exists "$CLAUDE_PLUGIN_FILE" ".claude-plugin/plugin.json"
 assert_file_exists "$CLAUDE_MARKETPLACE_FILE" ".claude-plugin/marketplace.json"
@@ -36,6 +38,7 @@ assert_file_exists "$CLAUDE_SETTINGS_FILE" ".claude/settings.json"
 assert_file_exists "$CLAUDE_INSTALLER_FILE" "scripts/install_claude_eth2qs_mcp.sh"
 assert_valid_syntax "$WRAPPER_FILE" "run_eth2qs_mcp.sh"
 assert_valid_syntax "$CLIENT_OPTIONS_SCRIPT" "client_options.sh"
+assert_valid_syntax "$REPAIR_SCRIPT" "repair.sh"
 assert_valid_syntax "$CLAUDE_INSTALLER_FILE" "install_claude_eth2qs_mcp.sh"
 
 if python3 -m py_compile "$TOOLS_FILE" "$SERVER_FILE" "$STATS_JSON_SCRIPT"; then
@@ -56,7 +59,8 @@ if grep -Fq "references/mcp.md" "$SKILL_FILE" &&
    grep -Fq "mcp_server/run_eth2qs_mcp.sh" "$README_FILE" &&
    grep -Fq ".claude-plugin/" "$README_FILE" &&
    grep -Fq "client-options --json" "$README_FILE" &&
-   grep -Fq "stats --json" "$README_FILE"; then
+   grep -Fq "stats --json" "$README_FILE" &&
+   grep -Fq "./scripts/eth2qs.sh repair" "$README_FILE"; then
     record_test "MCP docs are wired from the skill and README" "PASS"
 else
     record_test "MCP docs are wired from the skill and README" "FAIL"
@@ -81,6 +85,8 @@ fi
 if grep -Fq "eth2qs_doctor_json" "$TOOLS_FILE" &&
    grep -Fq "eth2qs_client_options" "$TOOLS_FILE" &&
    grep -Fq "eth2qs_stats_json" "$TOOLS_FILE" &&
+   grep -Fq "eth2qs_repair_preview" "$TOOLS_FILE" &&
+   grep -Fq "eth2qs_repair_apply" "$TOOLS_FILE" &&
    grep -Fq "eth2qs_phase1" "$TOOLS_FILE" &&
    grep -Fq "eth2qs_phase2" "$TOOLS_FILE" &&
    grep -Fq "eth2qs_ensure_apply" "$TOOLS_FILE" &&

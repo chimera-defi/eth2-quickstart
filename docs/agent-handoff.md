@@ -81,6 +81,33 @@ Use this file to preserve context across sessions.
   - add a guarded `repair --apply` path for clearly safe actions only
   - add explicit software release freshness checks before offering updater automation
 
+## Latest Update (Safe Repair Workflow, 2026-04-08)
+
+- Added `install/utils/repair.sh` and wrapper command `./scripts/eth2qs.sh repair`
+- `repair` previews allowlisted safe restart actions derived from `stats --json` and requires `--apply --confirm` before making changes
+- Smart refresh now exists via `./scripts/eth2qs.sh restart --smart`, which delegates to the same bounded repair logic instead of restarting the full stack blindly
+- Added MCP tools:
+  - `eth2qs_repair_preview`
+  - `eth2qs_repair_apply`
+- Tightened `stats --json` repair previews so some warnings now map to targeted restarts instead of broad full-stack restarts:
+  - peer connectivity degradation -> restart consensus client
+  - MEV endpoint refusal -> restart the active builder sidecar when one is present
+- Added tests:
+  - `install/test/test_repair_safe_actions.sh`
+  - unit coverage in `test/test_stats_json.py`
+  - MCP contract updates in `test/test_mcp_tools.py` and `test/ci_test_mcp_server.sh`
+- Updated README, `docs/SCRIPTS.md`, SKILL docs, and MCP docs to point agents toward `repair` and `restart --smart`
+- Validation run:
+  - `bash install/test/test_repair_safe_actions.sh`
+  - `python3 -m unittest discover -s test -p 'test_*.py'`
+  - `bash test/ci_test_mcp_server.sh`
+  - `bash test/ci_test_skill_command_mapping.sh`
+  - `bash test/ci_test_docs_consistency.sh`
+  - `REQUIRE_WHIPTAIL_PIPE_TEST=1 SKIP_SHELLCHECK=true USE_MOCKS=true ./test/run_tests.sh --unit`
+- Follow-up:
+  - compare installed client versions to upstream releases before suggesting software updates
+  - collapse more of the human `stats.sh` flow onto the JSON triage core to reduce duplicated monitoring logic
+
 ## MCP Meta Learnings
 
 - Composite GitHub actions must not reference `secrets.*` directly in `action.yml`; pass tokens through explicit action inputs from the workflow.

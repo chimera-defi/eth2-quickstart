@@ -25,7 +25,7 @@ These are the canonical machine-readable health and monitoring paths for agents.
 - `./scripts/eth2qs.sh logs --run1 -n 100`
 - `./scripts/eth2qs.sh logs --run2 -n 200`
 
-Use `doctor --json` for health gates and `stats --json` for service states, issue detection, and repair previews. Use the human-readable output and logs when doing RCA.
+Use `doctor --json` for health gates and `stats --json` for service states, issue detection, and repair previews. `./scripts/eth2qs.sh repair` consumes the same repair preview data but only auto-applies allowlisted safe restart actions. Use the human-readable output and logs when doing RCA.
 
 ## `doctor --json` Output Shape
 

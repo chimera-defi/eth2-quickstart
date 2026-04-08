@@ -26,6 +26,7 @@ Operations:
   doctor [--json]         Run health checks (human output by default)
   status                  Alias for: doctor
   start                   Start all node services
+  repair [args...]        Preview or apply allowlisted smart repair actions
   stop                    Stop all node services
   restart                 Restart all node services
   stats [--json]          Show current service status and system stats
@@ -45,6 +46,8 @@ Examples:
   ./scripts/eth2qs.sh configure --interactive
   ./scripts/eth2qs.sh doctor --json
   ./scripts/eth2qs.sh stats --json
+  ./scripts/eth2qs.sh repair
+  ./scripts/eth2qs.sh restart --smart
   ./scripts/eth2qs.sh logs --run2 -n 200
   sudo ./scripts/eth2qs.sh cleanup-host --dry-run
 EOF
@@ -100,6 +103,9 @@ case "$cmd" in
         ;;
     start)
         run_cmd "$ROOT_DIR/install/utils/start.sh" "$@"
+        ;;
+    repair)
+        run_cmd "$ROOT_DIR/install/utils/repair.sh" "$@"
         ;;
     stop)
         run_cmd "$ROOT_DIR/install/utils/stop.sh" "$@"
