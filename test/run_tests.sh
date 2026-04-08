@@ -456,6 +456,16 @@ run_unit_tests() {
         log_test "SKIP" "test_stats_read_only.sh: file not found"
     fi
 
+    if [[ -f "$PROJECT_ROOT/install/test/test_stats_json_contract.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_stats_json_contract.sh"; then
+            log_test "PASS" "test_stats_json_contract.sh: all tests passed"
+        else
+            log_test "FAIL" "test_stats_json_contract.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_stats_json_contract.sh: file not found"
+    fi
+
     if [[ -f "$PROJECT_ROOT/install/test/test_host_cleanup.sh" ]]; then
         if bash "$PROJECT_ROOT/install/test/test_host_cleanup.sh"; then
             log_test "PASS" "test_host_cleanup.sh: all tests passed"
