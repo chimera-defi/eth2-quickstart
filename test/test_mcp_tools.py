@@ -11,9 +11,11 @@ from mcp_server import eth2qs_mcp_tools as tools
 
 class McpToolsTest(unittest.TestCase):
     def test_tool_names_contain_expected_contract(self):
+        self.assertIn("eth2qs_info", tools.TOOL_NAMES)
         self.assertIn("eth2qs_doctor_json", tools.TOOL_NAMES)
         self.assertIn("eth2qs_ensure_apply", tools.TOOL_NAMES)
         self.assertIn("eth2qs_client_options", tools.TOOL_NAMES)
+        self.assertIn("eth2qs_phase2_preview", tools.TOOL_NAMES)
         self.assertIn("eth2qs_phase1", tools.TOOL_NAMES)
         self.assertIn("eth2qs_phase2", tools.TOOL_NAMES)
         self.assertIn("eth2qs_cleanup_host_dry_run", tools.TOOL_NAMES)
@@ -24,6 +26,7 @@ class McpToolsTest(unittest.TestCase):
         self.assertIn("call_examples", info)
         self.assertIn("eth2qs_phase2", info["tool_groups"]["mutating_confirm_required"])
         self.assertIn("eth2qs_client_options", info["tool_groups"]["read_only"])
+        self.assertIn("eth2qs_phase2_preview", info["tool_groups"]["read_only"])
         self.assertEqual(info["call_examples"]["eth2qs_phase1"]["confirmation_token"], "apply")
 
     def test_client_options_lists_valid_choices(self):
@@ -31,6 +34,7 @@ class McpToolsTest(unittest.TestCase):
         self.assertIn("geth", options["execution_clients"])
         self.assertIn("prysm", options["consensus_clients"])
         self.assertIn("mev-boost", options["mev_options"])
+        self.assertIn("holesky", options["networks"])
         self.assertEqual(options["ethgas_requires"]["mev"], "commit-boost")
 
     def test_wrapper_client_options_json_matches_mcp(self):
@@ -107,6 +111,34 @@ class McpToolsTest(unittest.TestCase):
         self.assertIn("--execution=geth", called)
         self.assertIn("--consensus=prysm", called)
         self.assertIn("--mev=mev-boost", called)
+
+    def test_phase2_preview_maps_flags(self):
+        fake = {
+            "command": [],
+            "cwd": "/repo",
+            "exit_code": 0,
+            "stdout": "",
+            "stderr": "",
+            "ok": True,
+        }
+        with patch("mcp_server.eth2qs_mcp_tools._run", return_value=fake) as run_mock:
+            tools.phase2_preview(
+                network="holesky",
+                execution="geth",
+                consensus="prysm",
+                mev="commit-boost",
+                ethgas=True,
+                skip_deps=True,
+            )
+        called = run_mock.call_args[0][0]
+        self.assertIn("phase2-preview", called)
+        self.assertIn("--network=holesky", called)
+        self.assertIn("--execution=geth", called)
+        self.assertIn("--consensus=prysm", called)
+        self.assertIn("--mev=commit-boost", called)
+        self.assertIn("--ethgas", called)
+        self.assertIn("--skip-deps", called)
+        self.assertIn("--json", called)
 
     def test_repo_root_env_override_is_honored(self):
         with tempfile.TemporaryDirectory() as tmpdir:

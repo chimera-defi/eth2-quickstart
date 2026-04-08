@@ -16,6 +16,7 @@ Core lifecycle:
   bootstrap [args...]     Run one-line bootstrap installer (install.sh)
   configure [args...]     Run configuration wizard
   client-options [args...] Show supported client names and tested presets
+  phase2-preview [args...] Preview the explicit Phase 2 command without mutating the host
   plan [args...]          Detect the next safe install step
   ensure [args...]        Preview or execute the next safe install step
   phase1 [args...]        Run run_1.sh (root/system hardening)
@@ -40,6 +41,7 @@ Utility:
 Examples:
   ./scripts/eth2qs.sh bootstrap --non-interactive
   ./scripts/eth2qs.sh client-options --json
+  ./scripts/eth2qs.sh phase2-preview --execution=geth --consensus=prysm --mev=mev-boost --json
   ./scripts/eth2qs.sh plan --json
   ./scripts/eth2qs.sh ensure
   ./scripts/eth2qs.sh configure --interactive
@@ -78,6 +80,9 @@ case "$cmd" in
         ;;
     client-options)
         run_cmd "$ROOT_DIR/install/utils/client_options.sh" "$@"
+        ;;
+    phase2-preview)
+        run_cmd "$ROOT_DIR/install/utils/phase2_preview.py" "$@"
         ;;
     plan)
         run_cmd "$ROOT_DIR/install/utils/plan.sh" "$@"

@@ -25,6 +25,7 @@ CLIENT_OPTIONS = _load_client_options()
 ALLOWED_EXECUTION_CLIENTS = set(CLIENT_OPTIONS["execution_clients"])
 ALLOWED_CONSENSUS_CLIENTS = set(CLIENT_OPTIONS["consensus_clients"])
 ALLOWED_MEV_OPTIONS = set(CLIENT_OPTIONS["mev_options"])
+ALLOWED_NETWORKS = set(CLIENT_OPTIONS["networks"])
 
 
 def resolve_repo_root() -> Path:
@@ -141,6 +142,30 @@ def phase2(
     return _eth2qs(*args)
 
 
+def phase2_preview(
+    network: Optional[str] = None,
+    execution: Optional[str] = None,
+    consensus: Optional[str] = None,
+    mev: Optional[str] = None,
+    *,
+    ethgas: bool = False,
+    skip_deps: bool = False,
+) -> Dict[str, Any]:
+    args = [
+        "phase2-preview",
+        *_optional_choice("network", network, ALLOWED_NETWORKS),
+        *_optional_choice("execution", execution, ALLOWED_EXECUTION_CLIENTS),
+        *_optional_choice("consensus", consensus, ALLOWED_CONSENSUS_CLIENTS),
+        *_optional_choice("mev", mev, ALLOWED_MEV_OPTIONS),
+        "--json",
+    ]
+    if ethgas:
+        args.append("--ethgas")
+    if skip_deps:
+        args.append("--skip-deps")
+    return _eth2qs(*args)
+
+
 def client_options() -> Dict[str, Any]:
     return _load_client_options()
 
@@ -184,12 +209,14 @@ def monad_install(*, confirm: bool = False, confirmation_token: str = "") -> Dic
 
 
 TOOL_NAMES = (
+    "eth2qs_info",
     "eth2qs_help",
     "eth2qs_doctor_json",
     "eth2qs_plan_json",
     "eth2qs_ensure_preview",
     "eth2qs_ensure_apply",
     "eth2qs_client_options",
+    "eth2qs_phase2_preview",
     "eth2qs_phase1",
     "eth2qs_phase2",
     "eth2qs_stats",
@@ -217,6 +244,7 @@ def server_info() -> Dict[str, Any]:
                 "eth2qs_plan_json",
                 "eth2qs_ensure_preview",
                 "eth2qs_client_options",
+                "eth2qs_phase2_preview",
                 "eth2qs_stats",
                 "eth2qs_logs",
                 "eth2qs_clean_data_dry_run",
@@ -236,6 +264,11 @@ def server_info() -> Dict[str, Any]:
             "eth2qs_doctor_json": {},
             "eth2qs_plan_json": {"chain": "ethereum"},
             "eth2qs_client_options": {},
+            "eth2qs_phase2_preview": {
+                "execution": "geth",
+                "consensus": "prysm",
+                "mev": "mev-boost",
+            },
             "eth2qs_phase1": {"confirm": True, "confirmation_token": "apply"},
             "eth2qs_phase2": {
                 "execution": "geth",
@@ -262,11 +295,12 @@ __all__ = [
     "doctor_json",
     "ensure_apply",
     "ensure_preview",
-    "phase1",
-    "phase2",
     "help_tool",
     "logs",
     "monad_install",
+    "phase1",
+    "phase2",
+    "phase2_preview",
     "plan_json",
     "resolve_repo_root",
     "restart",

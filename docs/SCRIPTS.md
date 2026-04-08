@@ -16,10 +16,13 @@ Use `scripts/eth2qs.sh` as a stable command entrypoint for both humans and AI ag
 ./scripts/eth2qs.sh help
 ./scripts/eth2qs.sh configure --non-interactive
 ./scripts/eth2qs.sh client-options --json
+./scripts/eth2qs.sh phase2-preview --execution=geth --consensus=prysm --mev=mev-boost --json
 ./scripts/eth2qs.sh phase1
 ./scripts/eth2qs.sh phase2
 ./scripts/eth2qs.sh doctor --json
 ```
+
+Use `client-options --json` as the enum source of truth and `phase2-preview --json` when a wrapper needs the exact explicit `run_2.sh` command plus any required `config/user_config.env` network overrides before execution.
 
 ## Environment Configuration (exports.sh)
 

@@ -21,6 +21,10 @@
     "mev-boost",
     "none"
   ],
+  "networks": [
+    "holesky",
+    "mainnet"
+  ],
   "ethgas_requires": {
     "mev": "commit-boost"
   },

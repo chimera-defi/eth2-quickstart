@@ -53,6 +53,17 @@ Use this file to preserve context across sessions.
 - Validation run: `./scripts/eth2qs.sh client-options --json`, `python3 -m unittest discover -s test -p 'test_mcp_tools.py'`, `bash test/ci_test_mcp_server.sh`
 - Follow-up: external harnesses like CLI-Anything can switch from embedded client enums to the repo-native `client-options --json` surface
 
+## Latest Update (Phase 2 Preview Contract, 2026-04-08)
+
+- Added `install/utils/phase2_preview.py` and wired `./scripts/eth2qs.sh phase2-preview` as a read-only preview for explicit `run_2.sh` installs
+- Preview returns machine-readable `wrapper_command`, `run_2_command`, `config_updates`, `constraints`, and source-of-truth metadata
+- Added `networks` to `config/client_options.json` so wrappers can use one repo-native enum source for both client choices and supported network overrides
+- Added MCP `eth2qs_phase2_preview` so native-tool runtimes can preview explicit installs without mutating the host
+- Added wrapper contract schemas under `test/contracts/` plus `test/test_wrapper_contracts.py` to validate live JSON output from `doctor`, `plan`, `client-options`, and `phase2-preview`
+- Expanded MCP CI to cover the new preview tool and all Python wrapper/MCP tests
+- Validation run: `./scripts/eth2qs.sh phase2-preview --execution=geth --consensus=prysm --mev=mev-boost --json`, `python3 -m unittest discover -s test -p 'test_*.py'`, `bash test/ci_test_mcp_server.sh`
+- Follow-up: add a machine-readable monitoring/stats surface so wrappers do not need to parse the current human-only `stats.sh` output
+
 ## MCP Meta Learnings
 
 - Composite GitHub actions must not reference `secrets.*` directly in `action.yml`; pass tokens through explicit action inputs from the workflow.
