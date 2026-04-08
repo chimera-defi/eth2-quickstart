@@ -81,6 +81,76 @@ Use this file to preserve context across sessions.
   - add a guarded `repair --apply` path for clearly safe actions only
   - add explicit software release freshness checks before offering updater automation
 
+## Latest Update (Safe Repair Workflow, 2026-04-08)
+
+- Added `install/utils/repair.sh` and wrapper command `./scripts/eth2qs.sh repair`
+- `repair` previews allowlisted safe restart actions derived from `stats --json` and requires `--apply --confirm` before making changes
+- Smart refresh now exists via `./scripts/eth2qs.sh restart --smart`, which delegates to the same bounded repair logic instead of restarting the full stack blindly
+- Added MCP tools:
+  - `eth2qs_repair_preview`
+  - `eth2qs_repair_apply`
+- Tightened `stats --json` repair previews so some warnings now map to targeted restarts instead of broad full-stack restarts:
+  - peer connectivity degradation -> restart consensus client
+  - MEV endpoint refusal -> restart the active builder sidecar when one is present
+- Added tests:
+  - `install/test/test_repair_safe_actions.sh`
+  - unit coverage in `test/test_stats_json.py`
+  - MCP contract updates in `test/test_mcp_tools.py` and `test/ci_test_mcp_server.sh`
+- Updated README, `docs/SCRIPTS.md`, SKILL docs, and MCP docs to point agents toward `repair` and `restart --smart`
+- Validation run:
+  - `bash install/test/test_repair_safe_actions.sh`
+  - `python3 -m unittest discover -s test -p 'test_*.py'`
+  - `bash test/ci_test_mcp_server.sh`
+  - `bash test/ci_test_skill_command_mapping.sh`
+  - `bash test/ci_test_docs_consistency.sh`
+  - `REQUIRE_WHIPTAIL_PIPE_TEST=1 SKIP_SHELLCHECK=true USE_MOCKS=true ./test/run_tests.sh --unit`
+- Follow-up:
+  - compare installed client versions to upstream releases before suggesting software updates
+  - collapse more of the human `stats.sh` flow onto the JSON triage core to reduce duplicated monitoring logic
+
+## Latest Update (Monitoring Platform Pass, 2026-04-08)
+
+- Added a shared monitoring helper module at `install/utils/monitor_common.py` so repo drift, service state, journal, version, and systemd metadata are no longer reimplemented across multiple scripts
+- Reduced shell duplication by turning `install/utils/stats.sh` into a thin dispatcher to the Python monitoring core
+- Added `./scripts/eth2qs.sh update-check --json` via `install/utils/update_check.py` / `update_check.sh`
+  - compares local repo drift and installed `geth`, `mev-boost`, and `prysm` versions against the latest known upstream release tags
+- Added `./scripts/eth2qs.sh debug --json --service <name>` via `install/utils/debug_json.py` / `debug.sh`
+  - returns structured per-service RCA data: unit metadata, recent log tail, recent error sample, main PID, and listen socket hints
+- Added `./scripts/eth2qs.sh monitor ...` via `install/utils/monitor_report.py` / `monitor.sh`
+  - `monitor export --json`: compact status for bots/dashboards/cron
+  - `monitor snapshot --json`: writes a local history entry under `~/.eth2qs-monitor/snapshots/`
+  - `monitor history --json --limit N`: shows recent summaries and deltas
+- Added new MCP read-only tools:
+  - `eth2qs_update_check_json`
+  - `eth2qs_debug_json`
+  - `eth2qs_monitor_export_json`
+  - `eth2qs_monitor_history_json`
+- Updated README, `docs/SCRIPTS.md`, and skill references so the new monitoring/update/debug surfaces are part of the documented contract
+- Added tests:
+  - `install/test/test_monitor_contracts.sh`
+  - `test/test_update_check.py`
+  - `test/test_debug_json.py`
+  - `test/test_monitor_report.py`
+  - expanded `test/test_mcp_tools.py`, `test/ci_test_mcp_server.sh`, `test/ci_test_skill_command_mapping.sh`
+- Validation run:
+  - `python3 -m py_compile install/utils/monitor_common.py install/utils/stats_json.py install/utils/update_check.py install/utils/debug_json.py install/utils/monitor_report.py mcp_server/eth2qs_mcp_tools.py mcp_server/eth2qs_mcp_server.py`
+  - `python3 -m unittest discover -s test -p 'test_*.py'`
+  - `bash install/test/test_stats_json_contract.sh`
+  - `bash install/test/test_monitor_contracts.sh`
+  - `bash install/test/test_stats_read_only.sh`
+  - `bash test/ci_test_mcp_server.sh`
+  - `bash test/ci_test_skill_command_mapping.sh`
+  - `bash test/ci_test_docs_consistency.sh`
+  - `REQUIRE_WHIPTAIL_PIPE_TEST=1 SKIP_SHELLCHECK=true USE_MOCKS=true ./test/run_tests.sh --unit`
+- Live host timing notes from `/usr/bin/time`:
+  - `./scripts/eth2qs.sh update-check --json` ≈ `0.88s`
+  - `./scripts/eth2qs.sh monitor export --json` ≈ `6.09s`
+  - `./scripts/eth2qs.sh stats --json` ≈ `17.24s`
+  - `./scripts/eth2qs.sh debug --json --service cl` improved from ≈ `29.78s` to ≈ `5.41s` after making filtered debug requests avoid a full-host stats pass
+- Follow-up:
+  - `stats --json` is still the latency bottleneck because it walks recent journals for every known service; next pass should add an explicit fast mode or incremental cache instead of re-scanning the full fleet on every call
+  - `repair --apply` is still intentionally bounded to allowlisted restart actions; do not widen it into unattended software upgrades without explicit freshness + safety gates
+
 ## MCP Meta Learnings
 
 - Composite GitHub actions must not reference `secrets.*` directly in `action.yml`; pass tokens through explicit action inputs from the workflow.

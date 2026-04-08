@@ -12,10 +12,16 @@ Canonical command surface:
 - Run explicit Monad install: `./scripts/eth2qs.sh monad-install`
 - Health/status: `./scripts/eth2qs.sh doctor --json`
 - Monitoring/triage: `./scripts/eth2qs.sh stats --json`
+- Structured service debug: `./scripts/eth2qs.sh debug --json --service cl`
+- Update freshness / repo drift: `./scripts/eth2qs.sh update-check --json`
+- Compact monitor summary: `./scripts/eth2qs.sh monitor export --json`
+- Save a monitor snapshot: `./scripts/eth2qs.sh monitor snapshot --json`
+- Review recent monitor history: `./scripts/eth2qs.sh monitor history --json --limit 5`
+- Smart repair preview/apply: `./scripts/eth2qs.sh repair` or `./scripts/eth2qs.sh repair --apply --confirm`
 - Human-readable status: `./scripts/eth2qs.sh status`
 - Start services: `./scripts/eth2qs.sh start`
 - Stop services: `./scripts/eth2qs.sh stop`
-- Restart services: `./scripts/eth2qs.sh restart`
+- Restart services: `./scripts/eth2qs.sh restart` or `./scripts/eth2qs.sh restart --smart`
 - Service/system stats: `./scripts/eth2qs.sh stats`
 - View logs: `./scripts/eth2qs.sh logs --run2 -n 200`
 - Clean default data dirs only: `./scripts/eth2qs.sh clean-data --dry-run`
