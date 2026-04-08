@@ -37,6 +37,7 @@ CONSENSUS_CLIENT=""
 MEV_FLAG=""
 ETHGAS_FLAG=false
 SKIP_DEPS=false
+UNKNOWN_OPTIONS=()
 for arg in "$@"; do
     case "$arg" in
         --execution=*)
@@ -58,8 +59,16 @@ for arg in "$@"; do
             print_usage
             exit 0
             ;;
+        *)
+            UNKNOWN_OPTIONS+=("$arg")
+            ;;
     esac
 done
+if [[ ${#UNKNOWN_OPTIONS[@]} -gt 0 ]]; then
+    echo "Unknown option(s): ${UNKNOWN_OPTIONS[*]}" >&2
+    print_usage >&2
+    exit 2
+fi
 FLAGS_MODE=false
 [[ -n "$EXECUTION_CLIENT" || -n "$CONSENSUS_CLIENT" || -n "$MEV_FLAG" ]] && FLAGS_MODE=true
 
