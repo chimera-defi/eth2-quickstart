@@ -115,7 +115,7 @@ if [[ "$VIBE_MODE" == "true" ]]; then
     CONS_CLIENT="$REC_CONS"
     MEV_CHOICE="mev-boost"
     FEE_RECIPIENT="0x0000000000000000000000000000000000000000"
-    GRAFFITI="Eth2QuickStart"
+    GRAFITTI="Eth2QuickStart"
     
     log_info "Hardware profile: $HARDWARE_PROFILE"
     log_info "Network: $NETWORK"
@@ -206,9 +206,9 @@ else
     fi
     
     # 6. Graffiti
-    GRAFFITI=$(whiptail --title "Graffiti" --inputbox "Enter your validator graffiti:\n\n(This public note appears on blocks you propose)" 12 70 "Eth2QuickStart" 3>&1 1>&2 2>&3 </dev/tty)
-    if [[ $? -ne 0 ]] || [[ -z "$GRAFFITI" ]]; then 
-        GRAFFITI="Eth2QuickStart"
+    GRAFITTI=$(whiptail --title "Graffiti" --inputbox "Enter your validator graffiti:\n\n(This public note appears on blocks you propose)" 12 70 "Eth2QuickStart" 3>&1 1>&2 2>&3 </dev/tty)
+    if [[ $? -ne 0 ]] || [[ -z "$GRAFITTI" ]]; then 
+        GRAFITTI="Eth2QuickStart"
     fi
 fi
 
@@ -229,7 +229,7 @@ export ETH_NETWORK='$NETWORK'
 export FEE_RECIPIENT='$FEE_RECIPIENT'
 
 # Validator graffiti (shown on proposed blocks)
-export GRAFITTI='$GRAFFITI'
+export GRAFITTI='$GRAFITTI'
 
 # Selected Clients
 export EXEC_CLIENT='$EXEC_CLIENT'
@@ -460,7 +460,7 @@ echo "  Network:    $NETWORK"
 echo "  Execution:  $EXEC_CLIENT"
 echo "  Consensus:  $CONS_CLIENT"
 echo "  MEV:        $MEV_CHOICE"
-echo "  Graffiti:   $GRAFFITI"
+echo "  Graffiti:   $GRAFITTI"
 echo ""
 
 if [[ "$VIBE_MODE" != "true" ]]; then
