@@ -114,7 +114,7 @@ EOF
         ! grep -Fq "update-all" "$sudo_log"
     local status=$?
     rm -rf "$temp_dir"
-    return $status
+    return "$status"
 }
 
 test_refresh_supports_smart_mode() {
