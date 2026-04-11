@@ -41,16 +41,22 @@ test_stats_uses_local_prysm_binary_discovery() {
         grep -Fq 'bootstrap script present, local binary not downloaded' "$COMMON_MONITOR_SCRIPT"
 }
 
-# shellcheck disable=SC2317
 test_stats_supports_json_mode() {
-    grep -Fq 'stats_json.py' "$STATS_SCRIPT" &&
-        grep -Fq -- '--json' "$STATS_JSON_SCRIPT"
-}
+    local fixture='{"summary":{"status":"pass","issues_detected":0},"issues":[]}'
+    local output
 
-# shellcheck disable=SC2317
-test_stats_supports_json_mode() {
+    output="$(ETH2QS_STATS_FIXTURE="$fixture" bash "$STATS_SCRIPT" --json)"
+
     grep -Fq 'stats_json.py' "$STATS_SCRIPT" &&
-        grep -Fq -- '--json' "$STATS_SCRIPT"
+        grep -Fq -- '--json' "$STATS_JSON_SCRIPT" &&
+        printf '%s' "$output" | python3 -c '
+import json
+import sys
+
+payload = json.load(sys.stdin)
+if payload.get("summary", {}).get("status") != "pass":
+    raise SystemExit(1)
+'
 }
 
 echo "=========================================="

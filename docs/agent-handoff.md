@@ -7,6 +7,27 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (PR #168 CI fix, 2026-04-10)
+
+- Fixed `shellcheck-extended` failure in `install/test/test_repair_safe_actions.sh` by quoting a return status variable:
+  - `return $status` -> `return "$status"`
+- Fixed `tui-whiptail-nonskip-guard` and `docker-integration` failure caused by a brittle/duplicated JSON-mode test in `install/test/test_stats_read_only.sh`:
+  - removed duplicate `test_stats_supports_json_mode` definition
+  - replaced static `grep '--json' stats.sh` assertion with behavior validation:
+    - injects `ETH2QS_STATS_FIXTURE`
+    - runs `stats.sh --json`
+    - verifies emitted payload is valid JSON with expected summary status
+- Why:
+  - the wrapper `stats.sh` now delegates to `stats_json.py` and forwards args (`"$@"`), so checking for a literal `--json` string in `stats.sh` was a false negative
+  - CI needed to validate real behavior, not implementation detail
+- Validation run:
+  - `bash install/test/test_stats_read_only.sh`
+  - `shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 install/test/test_repair_safe_actions.sh install/test/test_stats_read_only.sh`
+  - `REQUIRE_WHIPTAIL_PIPE_TEST=1 SKIP_SHELLCHECK=true USE_MOCKS=true ./test/run_tests.sh --unit`
+  - full repo shellcheck parity with CI loop over all `*.sh` files
+- Follow-up:
+  - keep behavior-based assertions for wrapper scripts to avoid future false CI failures when implementation details change but public behavior is unchanged.
+
 ## Latest Update (run_2 unknown-option hardening, 2026-04-08)
 
 - `run_2.sh` now fails fast on unknown CLI flags before logging/install side effects:
