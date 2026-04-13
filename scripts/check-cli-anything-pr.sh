@@ -1,22 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEFAULT_REPO="HKUDS/CLI-Anything"
-DEFAULT_PR="195"
+DEFAULT_REPO="chimera-defi/eth2-quickstart"
+DEFAULT_PR="167"
 DEFAULT_IGNORE_AUTHOR="chimera-defi"
 DEFAULT_STATE_DIR="${HOME}/.eth2qs-pr-watch"
 DEFAULT_ACTIONABLE_REGEX='blocker|request[[:space:]]+changes|should[[:space:]]+fix|must[[:space:]]+fix|please[[:space:]]+fix|needs?[[:space:]]+fix|merge[[:space:]]+conflict|rebase|failing'
+DEFAULT_CRON_MARKER="eth2qs-cli-pr-watch"
 
 usage() {
   cat <<'EOF'
 usage: ./scripts/check-cli-anything-pr.sh [options]
 
 options:
-  --repo <owner/name>        Upstream repository to watch (default: HKUDS/CLI-Anything)
-  --pr <number>              Pull request number to watch (default: 195)
+  --repo <owner/name>        Repository to watch (default: chimera-defi/eth2-quickstart)
+  --pr <number>              Pull request number to watch (default: 167)
   --ignore-author <login>    Ignore actionable checks from this author (default: chimera-defi)
   --state-dir <path>         State/report directory (default: ~/.eth2qs-pr-watch)
   --autofix-cmd <command>    Optional command to run when new actionable feedback is found
+  --disable-cron-on-closed   Remove cron marker entry when PR is no longer open
+  --cron-marker <text>       Cron marker to remove (default: eth2qs-cli-pr-watch)
   --dry-run                  Do not execute autofix command
   --exit-nonzero-on-actionable
                              Exit with code 10 when actionable feedback is found
@@ -30,6 +33,8 @@ env overrides:
   ETH2QS_PR_WATCH_AUTOFIX_CMD
   ETH2QS_PR_WATCH_AUTOFIX_B64
   ETH2QS_PR_WATCH_ACTIONABLE_REGEX
+  ETH2QS_PR_WATCH_DISABLE_CRON_ON_CLOSED
+  ETH2QS_PR_WATCH_CRON_MARKER
 EOF
 }
 
@@ -41,12 +46,26 @@ require_cmd() {
   fi
 }
 
+remove_cron_entry() {
+  local marker="$1"
+  require_cmd crontab
+  require_cmd mktemp
+  require_cmd awk
+  local tmpfile
+  tmpfile="$(mktemp)"
+  crontab -l 2>/dev/null | awk -v marker="$marker" 'index($0, marker) == 0' > "$tmpfile" || true
+  crontab "$tmpfile"
+  rm -f "$tmpfile"
+}
+
 repo="${ETH2QS_PR_WATCH_REPO:-$DEFAULT_REPO}"
 pr_number="${ETH2QS_PR_WATCH_PR:-$DEFAULT_PR}"
 ignore_author="${ETH2QS_PR_WATCH_IGNORE_AUTHOR:-$DEFAULT_IGNORE_AUTHOR}"
 state_dir="${ETH2QS_PR_WATCH_STATE_DIR:-$DEFAULT_STATE_DIR}"
 autofix_cmd="${ETH2QS_PR_WATCH_AUTOFIX_CMD:-}"
 actionable_regex="${ETH2QS_PR_WATCH_ACTIONABLE_REGEX:-$DEFAULT_ACTIONABLE_REGEX}"
+disable_cron_on_closed="${ETH2QS_PR_WATCH_DISABLE_CRON_ON_CLOSED:-false}"
+cron_marker="${ETH2QS_PR_WATCH_CRON_MARKER:-$DEFAULT_CRON_MARKER}"
 dry_run="false"
 exit_nonzero_on_actionable="false"
 
@@ -70,6 +89,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --autofix-cmd)
       autofix_cmd="$2"
+      shift 2
+      ;;
+    --disable-cron-on-closed)
+      disable_cron_on_closed="true"
+      shift
+      ;;
+    --cron-marker)
+      cron_marker="$2"
       shift 2
       ;;
     --dry-run)
@@ -109,6 +136,53 @@ checked_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 pr_meta="$(gh api "repos/${repo}/pulls/${pr_number}")"
 pr_state="$(jq -r '.state // "unknown"' <<<"$pr_meta")"
 pr_merged_at="$(jq -r '.merged_at // ""' <<<"$pr_meta")"
+
+if [[ "$disable_cron_on_closed" == "true" && "$pr_state" != "open" ]]; then
+  remove_cron_entry "$cron_marker"
+  jq -n \
+    --arg checked_at "$checked_at" \
+    --arg repo "$repo" \
+    --argjson pr_number "$pr_number" \
+    --arg pr_state "$pr_state" \
+    --arg pr_merged_at "$pr_merged_at" '
+      {
+        checked_at: $checked_at,
+        repo: $repo,
+        pr_number: $pr_number,
+        pr_state: $pr_state,
+        pr_merged_at: (if $pr_merged_at == "" then null else $pr_merged_at end),
+        processed_ids: [],
+        last_run: {
+          new_count: 0,
+          actionable_count: 0,
+          report_path: null,
+          autofix_status: "skipped_pr_closed",
+          cron_removed: true
+        }
+      }
+    ' > "$state_file"
+
+  jq -n \
+    --arg checked_at "$checked_at" \
+    --arg repo "$repo" \
+    --argjson pr_number "$pr_number" \
+    --arg pr_state "$pr_state" \
+    --arg pr_merged_at "$pr_merged_at" '
+      {
+        checked_at: $checked_at,
+        repo: $repo,
+        pr_number: $pr_number,
+        pr_state: $pr_state,
+        pr_merged_at: (if $pr_merged_at == "" then null else $pr_merged_at end),
+        new_count: 0,
+        actionable_count: 0,
+        report_path: null,
+        autofix_status: "skipped_pr_closed",
+        cron_removed: true
+      }
+    '
+  exit 0
+fi
 
 issue_comments="$(gh api --paginate "repos/${repo}/issues/${pr_number}/comments?per_page=100")"
 review_comments="$(gh api --paginate "repos/${repo}/pulls/${pr_number}/comments?per_page=100")"
