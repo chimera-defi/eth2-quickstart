@@ -7,6 +7,34 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (PR watch refinement pass, 2026-04-13)
+
+- Refined watch defaults to local active PR monitoring:
+  - default `--repo`: `chimera-defi/eth2-quickstart`
+  - default `--pr`: `167`
+- Added automatic cron self-disable behavior:
+  - `check-cli-anything-pr.sh --disable-cron-on-closed` now removes its cron marker entry when the watched PR is no longer open.
+- Added `scripts/uninstall-cli-anything-pr-watch-cron.sh` for explicit manual cleanup by cron marker.
+- Added tracked `status/poll_ci.sh`:
+  - snapshots open PR CI/review state to `status/open-prs.json` and `status/ci-summary.json`
+  - runs one PR-watch check per poll cycle and writes `status/pr-watch-last.json`
+  - fixes the previously missing cron target path for `*/5 * * * * .../status/poll_ci.sh`
+- Updated `scripts/install-cli-anything-pr-watch-cron.sh`:
+  - supports `--disable-on-closed` / `--no-disable-on-closed`
+  - passes marker + disable flags to the watch command
+  - defaults to self-disable enabled
+- Updated `docs/SCRIPTS.md` with new defaults and uninstall command.
+- Validation run:
+  - `bash -n scripts/check-cli-anything-pr.sh`
+  - `bash -n scripts/install-cli-anything-pr-watch-cron.sh`
+  - `bash -n scripts/uninstall-cli-anything-pr-watch-cron.sh`
+  - `bash -n status/poll_ci.sh`
+  - `shellcheck scripts/check-cli-anything-pr.sh scripts/install-cli-anything-pr-watch-cron.sh scripts/uninstall-cli-anything-pr-watch-cron.sh`
+  - `./scripts/install-cli-anything-pr-watch-cron.sh --repo chimera-defi/eth2-quickstart --pr 167 --state-dir /tmp/eth2qs-pr-watch-test`
+  - `./scripts/check-cli-anything-pr.sh --repo chimera-defi/eth2-quickstart --pr 169 --state-dir /tmp/eth2qs-pr-watch-test --disable-cron-on-closed --cron-marker eth2qs-cli-pr-watch-test`
+  - `./scripts/uninstall-cli-anything-pr-watch-cron.sh --cron-marker eth2qs-cli-pr-watch-test`
+  - `ETH2QS_STATUS_WATCH_PR=169 ./status/poll_ci.sh`
+
 ## Latest Update (CLI-Anything PR watch cron, 2026-04-13)
 
 - Added `scripts/check-cli-anything-pr.sh` to monitor upstream PR feedback daily via GitHub API.

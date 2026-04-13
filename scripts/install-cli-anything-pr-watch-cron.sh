@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEFAULT_REPO="HKUDS/CLI-Anything"
-DEFAULT_PR="195"
+DEFAULT_REPO="chimera-defi/eth2-quickstart"
+DEFAULT_PR="167"
 DEFAULT_SCHEDULE="15 9 * * *"
 DEFAULT_STATE_DIR="${HOME}/.eth2qs-pr-watch"
 CRON_MARKER="eth2qs-cli-pr-watch"
@@ -12,11 +12,14 @@ usage() {
 usage: ./scripts/install-cli-anything-pr-watch-cron.sh [options]
 
 options:
-  --repo <owner/name>      Upstream repository to watch (default: HKUDS/CLI-Anything)
-  --pr <number>            Pull request number to watch (default: 195)
+  --repo <owner/name>      Repository to watch (default: chimera-defi/eth2-quickstart)
+  --pr <number>            Pull request number to watch (default: 167)
   --schedule "<cron expr>" Cron schedule (default: 15 9 * * *)
   --state-dir <path>       State/log directory (default: ~/.eth2qs-pr-watch)
   --autofix-cmd <command>  Optional command invoked when actionable feedback appears
+  --disable-on-closed      Auto-remove cron entry when PR is no longer open (default: enabled)
+  --no-disable-on-closed   Do not auto-remove cron entry on closed/merged PR
+  --cron-marker <text>     Marker used for idempotent replace (default: eth2qs-cli-pr-watch)
   --help                   Show this help
 
 notes:
@@ -38,6 +41,7 @@ pr_number="$DEFAULT_PR"
 schedule="$DEFAULT_SCHEDULE"
 state_dir="$DEFAULT_STATE_DIR"
 autofix_cmd=""
+disable_on_closed="true"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -59,6 +63,18 @@ while [[ $# -gt 0 ]]; do
       ;;
     --autofix-cmd)
       autofix_cmd="$2"
+      shift 2
+      ;;
+    --disable-on-closed)
+      disable_on_closed="true"
+      shift
+      ;;
+    --no-disable-on-closed)
+      disable_on_closed="false"
+      shift
+      ;;
+    --cron-marker)
+      CRON_MARKER="$2"
       shift 2
       ;;
     --help|-h)
@@ -93,7 +109,12 @@ if [[ -n "$autofix_cmd" ]]; then
   cron_env="ETH2QS_PR_WATCH_AUTOFIX_B64='${autofix_b64}' "
 fi
 
-cron_line="${schedule} ${cron_env}${watch_script} --repo ${repo} --pr ${pr_number} --state-dir ${state_dir} >> ${log_file} 2>&1 # ${CRON_MARKER}"
+disable_flag=""
+if [[ "$disable_on_closed" == "true" ]]; then
+  disable_flag="--disable-cron-on-closed --cron-marker ${CRON_MARKER}"
+fi
+
+cron_line="${schedule} ${cron_env}${watch_script} --repo ${repo} --pr ${pr_number} --state-dir ${state_dir} ${disable_flag} >> ${log_file} 2>&1 # ${CRON_MARKER}"
 
 tmpfile="$(mktemp)"
 {
