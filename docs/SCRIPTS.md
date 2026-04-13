@@ -8,6 +8,25 @@ Bash scripts to harden Ubuntu server and install Ethereum node stack: execution 
 - **Order**: `run_1.sh` → reboot → login as `LOGIN_UNAME` → update `exports.sh` → `run_2.sh`
 - **Config**: `exports.sh` (email, domain, fee recipient, graffiti, peers, relay list, ports)
 
+## Repo Maintenance Automation
+
+For upstream review tracking (for example CLI-Anything harness PRs), use:
+
+```bash
+./scripts/check-cli-anything-pr.sh
+./scripts/install-cli-anything-pr-watch-cron.sh
+./scripts/uninstall-cli-anything-pr-watch-cron.sh
+./status/poll_ci.sh
+```
+
+Defaults now target the local active PR (`chimera-defi/eth2-quickstart` PR `167`).
+Override target PR with `--repo` and `--pr` when needed.
+
+`check-cli-anything-pr.sh` stores state under `~/.eth2qs-pr-watch/`, reports new actionable feedback, and can optionally trigger an autofix command.
+`install-cli-anything-pr-watch-cron.sh` installs an idempotent daily cron entry that runs the check script, appends logs to `~/.eth2qs-pr-watch/cron.log`, and auto-removes itself when the watched PR closes/merges.
+`uninstall-cli-anything-pr-watch-cron.sh` removes existing watch entries by cron marker.
+`status/poll_ci.sh` snapshots open PR CI/review state into `status/ci-summary.json` and runs one PR-watch check each poll cycle.
+
 ## Unified Wrapper (Recommended)
 
 Use `scripts/eth2qs.sh` as a stable command entrypoint for both humans and AI agents.
