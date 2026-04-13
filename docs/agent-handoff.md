@@ -7,6 +7,26 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (CLI-Anything PR watch cron, 2026-04-13)
+
+- Added `scripts/check-cli-anything-pr.sh` to monitor upstream PR feedback daily via GitHub API.
+  - Tracks new issue comments, review comments, and review states.
+  - Flags actionable feedback from non-self authors (`request changes`, blockers, fix requests).
+  - Writes state + alert reports under `~/.eth2qs-pr-watch/`.
+  - Supports optional `--autofix-cmd` hook for automated follow-up.
+- Added `scripts/install-cli-anything-pr-watch-cron.sh`.
+  - Installs/replaces an idempotent cron entry with marker `eth2qs-cli-pr-watch`.
+  - Defaults to daily run (`15 9 * * *`) and logs to `~/.eth2qs-pr-watch/cron.log`.
+- Added maintenance docs in `docs/SCRIPTS.md` for these commands.
+- Validation run:
+  - `bash -n scripts/check-cli-anything-pr.sh`
+  - `bash -n scripts/install-cli-anything-pr-watch-cron.sh`
+  - `./scripts/check-cli-anything-pr.sh --repo HKUDS/CLI-Anything --pr 195 --state-dir /tmp/eth2qs-pr-watch-test`
+  - `./scripts/install-cli-anything-pr-watch-cron.sh --repo HKUDS/CLI-Anything --pr 195 --state-dir /tmp/eth2qs-pr-watch-test --schedule "17 9 * * *"`
+- Follow-up:
+  - PR #195 is already merged (2026-04-13), so this automation is mainly a reusable pattern for future upstream PRs.
+  - If fully autonomous patching is desired, wire `--autofix-cmd` to a guarded branch+test+PR workflow.
+
 ## Latest Update (PR #168 CI fix, 2026-04-10)
 
 - Fixed `shellcheck-extended` failure in `install/test/test_repair_safe_actions.sh` by quoting a return status variable:

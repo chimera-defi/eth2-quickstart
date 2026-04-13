@@ -8,6 +8,18 @@ Bash scripts to harden Ubuntu server and install Ethereum node stack: execution 
 - **Order**: `run_1.sh` → reboot → login as `LOGIN_UNAME` → update `exports.sh` → `run_2.sh`
 - **Config**: `exports.sh` (email, domain, fee recipient, graffiti, peers, relay list, ports)
 
+## Repo Maintenance Automation
+
+For upstream review tracking (for example CLI-Anything harness PRs), use:
+
+```bash
+./scripts/check-cli-anything-pr.sh --repo HKUDS/CLI-Anything --pr 195
+./scripts/install-cli-anything-pr-watch-cron.sh --repo HKUDS/CLI-Anything --pr 195
+```
+
+`check-cli-anything-pr.sh` stores state under `~/.eth2qs-pr-watch/`, reports new actionable feedback, and can optionally trigger an autofix command.
+`install-cli-anything-pr-watch-cron.sh` installs an idempotent daily cron entry that runs the check script and appends logs to `~/.eth2qs-pr-watch/cron.log`.
+
 ## Unified Wrapper (Recommended)
 
 Use `scripts/eth2qs.sh` as a stable command entrypoint for both humans and AI agents.
