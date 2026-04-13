@@ -171,6 +171,27 @@ Use this file to preserve context across sessions.
   - add a guarded `repair --apply` path for clearly safe actions only
   - add explicit software release freshness checks before offering updater automation
 
+## Latest Update (Snort Default-On Baseline, 2026-04-13)
+
+- Switched Snort IDS from opt-in to enabled-by-default baseline:
+  - `exports.sh` now defaults `ENABLE_SNORT='true'`
+  - `install/security/consolidated_security.sh` now treats missing `ENABLE_SNORT` as enabled (`${ENABLE_SNORT:-true}`)
+- Kept explicit disable path for constrained hosts:
+  - set `ENABLE_SNORT=false` in `config/user_config.env`
+- Updated user-facing docs to match runtime behavior:
+  - `README.md`
+  - `config/user_config.env.example`
+  - `docs/SCRIPTS.md`
+  - `docs/SECURITY_GUIDE.md`
+  - `docs/SECURITY_STATUS.md`
+- Updated CI guardrails in `test/ci_test_run_1.sh` so defaults and gating checks assert default-on behavior.
+- Validation run:
+  - `bash -n exports.sh`
+  - `bash -n install/security/consolidated_security.sh`
+  - `bash -n test/ci_test_run_1.sh`
+  - `bash test/ci_test_run_1.sh`
+  - `bash test/ci_test_docs_consistency.sh`
+
 ## Latest Update (Optional Snort IDS Profile, 2026-04-09)
 
 - Added optional Snort IDS integration to Phase 1 security hardening with `ENABLE_SNORT=false` default in `exports.sh`
