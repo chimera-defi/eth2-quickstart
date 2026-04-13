@@ -218,14 +218,14 @@ EOF
     log_info "✓ Fail2ban installation and configuration complete"
 }
 
-# Function 3: Setup optional Snort IDS (off by default)
+# Function 3: Setup Snort IDS (enabled by default; can be disabled via ENABLE_SNORT=false)
 setup_snort() {
-    if ! is_truthy "${ENABLE_SNORT:-false}"; then
-        log_info "Snort IDS disabled (ENABLE_SNORT=false)"
+    if ! is_truthy "${ENABLE_SNORT:-true}"; then
+        log_info "Snort IDS disabled via configuration (ENABLE_SNORT=false)"
         return 0
     fi
 
-    log_info "Setting up optional Snort IDS..."
+    log_info "Setting up Snort IDS..."
 
     local snort_iface="${SNORT_INTERFACE:-auto}"
     local snort_home_net="${SNORT_HOME_NET:-}"
@@ -265,7 +265,7 @@ snort snort/address_range string $snort_home_net
 snort snort/disable_promiscuous boolean $snort_disable_promisc
 EOF
 
-    # Ubuntu/Debian package currently provides Snort 2.x; keep this opt-in.
+    # Ubuntu/Debian package currently provides Snort 2.x.
     install_dependencies snort snort-rules-default
 
     local snort_debian_conf="/etc/snort/snort.debian.conf"
@@ -420,8 +420,8 @@ verify_security_setup() {
         issues=$((issues + 1))
     fi
 
-    # Check optional Snort
-    if is_truthy "${ENABLE_SNORT:-false}"; then
+    # Check Snort when enabled
+    if is_truthy "${ENABLE_SNORT:-true}"; then
         log_info "Checking Snort service..."
         if command -v snort >/dev/null 2>&1; then
             log_info "✓ Snort is installed"
@@ -466,8 +466,8 @@ main() {
     log_info "✓ Firewall configured with comprehensive rules"
     log_info "✓ Fail2ban intrusion prevention active"
     log_info "✓ AIDE file integrity monitoring scheduled"
-    if is_truthy "${ENABLE_SNORT:-false}"; then
-        log_info "✓ Snort IDS configured (optional profile)"
+    if is_truthy "${ENABLE_SNORT:-true}"; then
+        log_info "✓ Snort IDS configured"
     fi
     log_info "✓ All security features are now active and protecting your system"
     

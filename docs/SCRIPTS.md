@@ -85,7 +85,7 @@ ssh LOGIN_UNAME@<server-ip>
 - Backs up and migrates authorized_keys from root, SUDO_USER, and all /home/* users to new user (prevents lockout)
 - Copies eth2-quickstart to `~/eth2-quickstart` for new user (handoff: `cd ~/eth2-quickstart && ./run_2.sh`)
 - Security: runs consolidated security script
-- Optional IDS: Snort can be enabled via `ENABLE_SNORT=true` (off by default)
+- IDS: Snort is enabled by default; set `ENABLE_SNORT=false` to disable
 - NTP: installs `chrony` and enables NTP
 - Security: mounts `/run/shm` as `tmpfs` with `ro,noexec,nosuid`
 

@@ -3,7 +3,7 @@
 ## Current Architecture
 
 **Active Security Scripts**:
-- `install/security/consolidated_security.sh` - firewall, fail2ban, optional Snort IDS, AIDE setup. Called from run_1.sh
+- `install/security/consolidated_security.sh` - firewall, fail2ban, Snort IDS, AIDE setup. Called from run_1.sh
   - Functions: `setup_firewall()`, `setup_fail2ban()`, `setup_snort()`, `setup_aide()`, `verify_security_setup()`
   - Uses: `install_dependencies()`, `enable_and_start_systemd_service()`, `require_root()`, `get_script_directories()`
 - `install/security/nginx_harden.sh` (66 lines) - nginx proxy abuse protection. Called from nginx install scripts
