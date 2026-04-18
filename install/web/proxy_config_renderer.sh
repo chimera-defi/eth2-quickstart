@@ -9,10 +9,22 @@ if [[ -n "${ETH2QS_PROXY_CONFIG_RENDERER_LOADED:-}" ]]; then
 fi
 ETH2QS_PROXY_CONFIG_RENDERER_LOADED=1
 
-readonly PROXY_RPC_READ_METHODS_REGEX='eth_chainId|net_version|web3_clientVersion|eth_blockNumber|eth_getBlockByNumber|eth_getBlockByHash|eth_getTransactionByHash|eth_getTransactionReceipt|eth_getBalance|eth_getCode|eth_getStorageAt|eth_call|eth_estimateGas|eth_getLogs|eth_feeHistory|eth_gasPrice'
-readonly PROXY_RPC_WRITE_METHODS_REGEX='eth_sendRawTransaction|eth_sendTransaction|personal_sendTransaction|engine_[[:alnum:]_]+|admin_[[:alnum:]_]+|miner_[[:alnum:]_]+|txpool_[[:alnum:]_]+|debug_[[:alnum:]_]+'
-readonly PROXY_SPAM_EXTENSIONS_REGEX='m3u8|m3u|php|asp|aspx|jsp|cgi|pl|env|git|bak|ini|sql|sqlite|tar|gz|zip'
-readonly PROXY_ATTACK_PATHS_REGEX='admin|wp-admin|wp-login|\.env|config|cgi-bin|phpmyadmin|boaform|HNAP1|xmlrpc\.php'
+PROXY_RENDERER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROXY_POLICY_CONFIG="$PROXY_RENDERER_DIR/../../config/edge_policy.env"
+if [[ -f "$PROXY_POLICY_CONFIG" ]]; then
+    # shellcheck source=../../config/edge_policy.env
+    source "$PROXY_POLICY_CONFIG"
+fi
+
+: "${PROXY_RPC_READ_METHODS_REGEX:=eth_chainId|net_version|web3_clientVersion|eth_blockNumber|eth_getBlockByNumber|eth_getBlockByHash|eth_getTransactionByHash|eth_getTransactionReceipt|eth_getBalance|eth_getCode|eth_getStorageAt|eth_call|eth_estimateGas|eth_getLogs|eth_feeHistory|eth_gasPrice}"
+: "${PROXY_RPC_WRITE_METHODS_REGEX:=eth_sendRawTransaction|eth_sendTransaction|personal_sendTransaction|engine_[[:alnum:]_]+|admin_[[:alnum:]_]+|miner_[[:alnum:]_]+|txpool_[[:alnum:]_]+|debug_[[:alnum:]_]+}"
+: "${PROXY_SPAM_EXTENSIONS_REGEX:=m3u8|m3u|php|asp|aspx|jsp|cgi|pl|env|git|bak|ini|sql|sqlite|tar|gz|zip}"
+: "${PROXY_ATTACK_PATHS_REGEX:=admin|wp-admin|wp-login|\\.env|config|cgi-bin|phpmyadmin|boaform|HNAP1|xmlrpc\\.php}"
+
+readonly PROXY_RPC_READ_METHODS_REGEX
+readonly PROXY_RPC_WRITE_METHODS_REGEX
+readonly PROXY_SPAM_EXTENSIONS_REGEX
+readonly PROXY_ATTACK_PATHS_REGEX
 
 render_nginx_http_policy_file() {
     local output_path="$1"
@@ -79,129 +91,29 @@ render_nginx_site_config() {
     local use_ssl="${3:-false}"
     local cert_path="${4:-}"
     local key_path="${5:-}"
+    local redirect_block=""
+    local listen_block=""
+    local tls_block=""
+    local header_block=""
 
     if [[ "$use_ssl" == "true" ]]; then
-        cat > "$config_path" << EOF
-# HTTP to HTTPS redirect
-server {
-    listen 80;
-    listen [::]:80;
-    server_name $server_name;
-    return 301 https://\$server_name\$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
-    server_name $server_name;
-
-    ssl_certificate $cert_path;
-    ssl_certificate_key $key_path;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256';
-    ssl_prefer_server_ciphers off;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_timeout 10m;
-    ssl_session_tickets off;
-    ssl_stapling on;
-    ssl_stapling_verify on;
-
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
-    add_header X-Frame-Options "DENY" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' wss: https:; font-src 'self' data:; object-src 'none'; media-src 'self'; frame-src 'none';" always;
-    add_header Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), speaker=(), vibrate=(), fullscreen=(self), sync-xhr=()" always;
-
-    location ~* \\.($PROXY_SPAM_EXTENSIONS_REGEX)(?:\$|/) {
-        access_log off;
-        log_not_found off;
-        return 403;
-    }
-
-    location ~* ^/($PROXY_ATTACK_PATHS_REGEX)(?:\$|/) {
-        return 403;
-    }
-
-    location = / {
-        return 404;
-    }
-
-    location ^~ /ws {
-        if (\$request_method != GET) {
-            return 405;
-        }
-
-        limit_req zone=ws burst=5 nodelay;
-        limit_conn conn_limit_per_ip 20;
-
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header Host \$http_host;
-        proxy_set_header X-NginX-Proxy true;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_pass http://$LH:$NETHERMIND_WS_PORT/;
-        proxy_read_timeout 60s;
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-    }
-
-    location ^~ /rpc {
-        if (\$request_method != POST) {
-            return 405;
-        }
-
-        limit_req zone=api burst=10 nodelay;
-        limit_conn conn_limit_per_ip 30;
-
-        proxy_cache rpc_read_cache;
-        proxy_cache_methods POST;
-        proxy_cache_key "\$scheme://\$host\$request_uri|\$request_body";
-        proxy_cache_lock on;
-        proxy_cache_lock_age 5s;
-        proxy_cache_lock_timeout 10s;
-        proxy_cache_valid 200 2s;
-        proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
-        proxy_cache_bypass 0;
-        proxy_no_cache \$rpc_cache_bypass;
-
-        add_header X-RPC-Cache \$upstream_cache_status always;
-        add_header X-RPC-Cache-Bypass \$rpc_cache_bypass always;
-
-        proxy_http_version 1.1;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header Host \$http_host;
-        proxy_set_header X-NginX-Proxy true;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_pass http://$LH:$NETHERMIND_HTTP_PORT/;
-        proxy_read_timeout 30s;
-        proxy_connect_timeout 30s;
-        proxy_send_timeout 30s;
-    }
-
-    location / {
-        return 403;
-    }
-}
-EOF
-        return 0
+        redirect_block=$'# HTTP to HTTPS redirect\nserver {\n    listen 80;\n    listen [::]:80;\n    server_name '"$server_name"$';\n    return 301 https://\\$server_name\\$request_uri;\n}\n\n'
+        listen_block=$'    listen 443 ssl http2;\n    listen [::]:443 ssl http2;'
+        tls_block=$'    ssl_certificate '"$cert_path"$';\n    ssl_certificate_key '"$key_path"$';\n    ssl_protocols TLSv1.2 TLSv1.3;\n    ssl_ciphers '\''ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256'\'';\n    ssl_prefer_server_ciphers off;\n    ssl_session_cache shared:SSL:10m;\n    ssl_session_timeout 10m;\n    ssl_session_tickets off;\n    ssl_stapling on;\n    ssl_stapling_verify on;'
+        header_block=$'    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;\n    add_header X-Frame-Options "DENY" always;\n    add_header X-Content-Type-Options "nosniff" always;\n    add_header X-XSS-Protection "1; mode=block" always;\n    add_header Referrer-Policy "strict-origin-when-cross-origin" always;\n    add_header Content-Security-Policy "default-src '\''self'\''; script-src '\''self'\'' '\''unsafe-inline'\''; style-src '\''self'\'' '\''unsafe-inline'\''; img-src '\''self'\'' data: https:; connect-src '\''self'\'' wss: https:; font-src '\''self'\'' data:; object-src '\''none'\''; media-src '\''self'\''; frame-src '\''none'\'';" always;\n    add_header Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), speaker=(), vibrate=(), fullscreen=(self), sync-xhr=()" always;'
+    else
+        listen_block=$'    listen 80;\n    listen [::]:80;'
+        header_block=$'    add_header X-Frame-Options "DENY" always;\n    add_header X-Content-Type-Options "nosniff" always;\n    add_header X-XSS-Protection "1; mode=block" always;\n    add_header Referrer-Policy "strict-origin-when-cross-origin" always;'
     fi
 
     cat > "$config_path" << EOF
+$redirect_block
 server {
-    listen 80;
-    listen [::]:80;
+$listen_block
     server_name $server_name;
 
-    add_header X-Frame-Options "DENY" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+$tls_block
+$header_block
 
     location ~* \\.($PROXY_SPAM_EXTENSIONS_REGEX)(?:\$|/) {
         access_log off;

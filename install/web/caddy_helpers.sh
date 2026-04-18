@@ -5,8 +5,6 @@
 
 # Source common web helpers (use BASH_SOURCE so it works when sourced from any path)
 CADDY_HELPERS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=web_helpers_common.sh
-source "$CADDY_HELPERS_DIR/web_helpers_common.sh"
 # shellcheck source=proxy_config_renderer.sh
 source "$CADDY_HELPERS_DIR/proxy_config_renderer.sh"
 

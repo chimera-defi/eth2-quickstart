@@ -7,6 +7,33 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (Edge-policy refactor pass, 2026-04-18)
+
+- Refactored shared edge policy to be data-driven via:
+  - `config/edge_policy.env`
+  - loaded by `install/web/proxy_config_renderer.sh` with safe defaults.
+- De-duplicated `render_nginx_site_config` in `install/web/proxy_config_renderer.sh`:
+  - reduced dual SSL/non-SSL template duplication while preserving behavior.
+- Removed unused legacy helper surface:
+  - deleted `install/web/web_helpers_common.sh`
+  - removed stale sourcing from Nginx/Caddy helpers and Caddy validation test.
+- Consolidated fail2ban ownership by phase:
+  - `install/security/consolidated_security.sh` now manages baseline SSH fail2ban only (phase 1).
+  - `install/security/nginx_harden.sh` remains owner of Nginx-specific fail2ban filters/jails.
+- Refactored web hardening E2E assertions for reuse:
+  - `test/ci_test_e2e.sh` now uses shared helpers for HTTP-code assertions/listener readiness.
+- Expanded structure checks to include new policy config artifact:
+  - `test/ci_test_run_2.sh` now requires and syntax-checks `config/edge_policy.env`.
+- Validation run:
+  - `bash -n install/security/consolidated_security.sh install/web/caddy_helpers.sh install/web/nginx_helpers.sh install/web/proxy_config_renderer.sh test/ci_test_e2e.sh test/ci_test_run_2.sh test/validate_caddy_config.sh config/edge_policy.env`
+  - `shellcheck -x --exclude=SC1091,SC2034 install/security/consolidated_security.sh install/web/caddy_helpers.sh install/web/nginx_helpers.sh install/web/proxy_config_renderer.sh test/ci_test_e2e.sh test/ci_test_run_2.sh test/validate_caddy_config.sh`
+  - `bash test/validate_proxy_policy_sync.sh`
+  - `bash test/validate_caddy_config.sh`
+  - `docker run --rm --privileged --user testuser -v "$PWD:/workspace" -w /workspace -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical -e CI=true eth-node-test /workspace/test/ci_test_run_2.sh`
+  - `docker run --rm --privileged -v "$PWD:/workspace" -w /workspace -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true eth-node-test /workspace/test/docker_test.sh`
+- Follow-up:
+  - Caddy still emits non-fatal warnings about redundant `header_up X-Forwarded-*`; optional cleanup can remove those directives from the renderer.
+
 ## Latest Update (PR #170 docker-integration CI fix, 2026-04-18)
 
 - Fixed `docker-integration` failure in `test/validate_caddy_config.sh` where `caddy validate` ran as non-root and failed opening `/var/log/caddy/access.log`.
