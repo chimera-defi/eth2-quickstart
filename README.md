@@ -368,6 +368,7 @@ sudo ./install_caddy_ssl.sh
 - **Rate Limiting**: Built-in rate limiting capabilities
 - **Easy Configuration**: Simple Caddyfile syntax
 - **Security Hardening**: `./caddy_harden.sh` for enhanced security
+- **Shared Edge Policy**: Nginx + Caddy route/hardening policy is generated from `install/web/proxy_config_renderer.sh`
 
 ### Test Caddy Installation
 Testing helpers were removed. Use:

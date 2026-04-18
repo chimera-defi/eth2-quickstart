@@ -7,6 +7,43 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (Unified Nginx/Caddy edge policy + RPC cache hardening, 2026-04-18)
+
+- Implemented a single shared edge-policy renderer at:
+  - `install/web/proxy_config_renderer.sh`
+- Refactored both web stacks to consume the same source-of-truth policy:
+  - `install/web/nginx_helpers.sh`
+  - `install/web/caddy_helpers.sh`
+  - `install/security/caddy_harden.sh`
+- Added Nginx RPC read-cache and hardening behavior in shared policy:
+  - JSON-RPC method classification via `map` in `http` context
+  - cache enabled for read calls (`MISS/HIT` path)
+  - write/dynamic calls marked non-cacheable (`proxy_no_cache`)
+  - spam path blocks and request-method restrictions retained
+- Added fail2ban/jail hardening improvements for Nginx:
+  - `install/security/nginx_harden.sh`
+- Ensured Caddy apply path always restarts against latest rendered config:
+  - `install/web/install_caddy.sh`
+  - log path ownership/readiness hardened in helper layer
+- Added policy-sync test coverage:
+  - `test/validate_proxy_policy_sync.sh`
+  - wired into `test/ci_test_run_2.sh`
+- Expanded phase-2 E2E assertions:
+  - `test/ci_test_e2e.sh`
+  - verifies Caddy method/spam hardening
+  - verifies Nginx method/spam hardening + RPC cache classification/hit
+- Updated docs for shared-policy architecture:
+  - `README.md`
+  - `docs/CADDY_INSTALLATION.md`
+- Validation run:
+  - `bash -n install/web/proxy_config_renderer.sh install/web/nginx_helpers.sh install/web/caddy_helpers.sh install/web/install_caddy.sh install/security/caddy_harden.sh install/security/nginx_harden.sh install/security/consolidated_security.sh test/validate_proxy_policy_sync.sh test/ci_test_e2e.sh test/ci_test_run_2.sh`
+  - `shellcheck install/web/proxy_config_renderer.sh install/web/nginx_helpers.sh install/web/caddy_helpers.sh install/web/install_caddy.sh install/security/caddy_harden.sh install/security/nginx_harden.sh install/security/consolidated_security.sh test/validate_proxy_policy_sync.sh test/ci_test_e2e.sh test/ci_test_run_2.sh`
+  - `bash test/validate_proxy_policy_sync.sh`
+  - `bash test/validate_caddy_config.sh`
+  - `E2E_MEV=none ./test/run_e2e.sh --phase=2` (pass: 27/27)
+- Follow-up:
+  - Docker E2E build time remains dominated by `chown -R /workspace` in `test/Dockerfile`; consider Dockerfile layering/ownership optimization to speed CI feedback loops.
+
 ## Latest Update (PR watch refinement pass, 2026-04-13)
 
 - Refined watch defaults to local active PR monitoring:

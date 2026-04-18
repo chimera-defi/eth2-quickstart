@@ -85,7 +85,8 @@ port    = 80,443
 filter = nginx-limit-req
 logpath = /var/log/nginx/error.log
 maxretry = 5
-bantime  = 3600
+findtime = 600
+bantime  = 21600
 EOF
 fi
 
@@ -97,6 +98,29 @@ ignoreregex =
 EOF
 
 sudo mv /tmp/nginx-limit-req.conf /etc/fail2ban/filter.d/nginx-limit-req.conf
+
+# Add jail for repeated non-RPC spammy path probes (issue #2)
+if ! grep -q "\[nginx-rpc-spam\]" /etc/fail2ban/jail.local 2>/dev/null; then
+    cat >> /etc/fail2ban/jail.local << EOF
+
+[nginx-rpc-spam]
+enabled = true
+port    = 80,443
+filter  = nginx-rpc-spam
+logpath = /var/log/nginx/access.log
+maxretry = 6
+findtime = 600
+bantime  = 86400
+EOF
+fi
+
+cat > /tmp/nginx-rpc-spam.conf << EOF
+[Definition]
+failregex = ^<HOST> -.*"(GET|HEAD) /(?!rpc|ws)([^ ]*) HTTP/.*" (403|404|444)
+ignoreregex =
+EOF
+
+sudo mv /tmp/nginx-rpc-spam.conf /etc/fail2ban/filter.d/nginx-rpc-spam.conf
 
 # Add additional security settings to nginx.conf (avoid duplicate server_tokens)
 log_info "Enhancing nginx.conf with security settings..."
@@ -208,7 +232,8 @@ log_info "- Fail2ban rate limit protection"
 log_info "- Enhanced security monitoring"
 log_info "- Configuration backup and rollback support"
 log_info "- Server tokens disabled"
+log_info "- Spam-path fail2ban jail for non-RPC probes"
 
 log_info "Configuration backup: /etc/nginx/sites-enabled/default.backup.*"
 log_info "Security logs: /var/log/nginx_security.log"
-log_info "Fail2ban jails: nginx-proxy, nginx-limit-req"
+log_info "Fail2ban jails: nginx-proxy, nginx-limit-req, nginx-rpc-spam"

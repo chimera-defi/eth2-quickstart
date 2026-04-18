@@ -119,7 +119,7 @@ fi
 # Covers: execution (7), consensus (6), MEV (3), web (caddy, nginx), utils
 log_info "Test 3: Verify all install scripts (syntax)..."
 syntax_fail=0
-for script in "${CLIENT_SCRIPTS[@]}" "install/utils/install_dependencies.sh" "install/utils/select_clients.sh" "install/web/install_caddy.sh" "install/web/install_nginx.sh"; do
+for script in "${CLIENT_SCRIPTS[@]}" "install/utils/install_dependencies.sh" "install/utils/select_clients.sh" "install/web/install_caddy.sh" "install/web/install_nginx.sh" "install/web/proxy_config_renderer.sh" "test/validate_proxy_policy_sync.sh"; do
     if [[ -f "$PROJECT_ROOT/$script" ]]; then
         if bash -n "$PROJECT_ROOT/$script" 2>/dev/null; then
             log_info "  ✓ $script"
@@ -257,6 +257,15 @@ if grep -q "./install/web/install_nginx.sh" "$PROJECT_ROOT/install/ssl/install_a
     log_info "  ✓ SSL scripts use canonical install/web script paths"
 else
     log_error "  ✗ SSL scripts contain stale nginx script paths"
+    exit 1
+fi
+
+# Test 11: Shared proxy policy should render consistent Nginx/Caddy routes
+log_info "Test 11: Validate shared proxy policy rendering..."
+if bash "$PROJECT_ROOT/test/validate_proxy_policy_sync.sh"; then
+    log_info "  ✓ Shared proxy policy rendering passes"
+else
+    log_error "  ✗ Shared proxy policy rendering failed"
     exit 1
 fi
 
