@@ -7,6 +7,35 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (Edge performance + parity feature bundle, 2026-04-18)
+
+- Expanded shared edge renderer with explicit performance/reliability knobs for both Nginx and Caddy:
+  - upstream pool definitions for RPC/WS with selectable LB policy (`least_conn` or `ip_hash`)
+  - explicit upstream retry/failover tuning
+  - explicit keepalive sizing
+  - shared compression enablement
+  - optional metrics endpoint wiring
+  - optional trusted-proxy handling
+- Added Nginx cache enhancements for RPC-read path:
+  - `proxy_cache_background_update on`
+  - `proxy_cache_revalidate on`
+  - configurable `proxy_cache_min_uses` (`EDGE_RPC_CACHE_MIN_USES`)
+- Removed redundant Caddy `header_up X-Forwarded-*` overrides to align with Caddy defaults and reduce noisy validation warnings.
+- Added new user-facing tuning knobs in:
+  - `exports.sh`
+  - `config/user_config.env.example`
+- Extended parity contract checks:
+  - `test/validate_proxy_policy_sync.sh` now asserts upstream blocks, retry/cache tuning, and compression directives.
+- Validation run:
+  - `bash -n install/web/proxy_config_renderer.sh exports.sh config/user_config.env.example test/validate_proxy_policy_sync.sh`
+  - `shellcheck -x --exclude=SC1091,SC2034 install/web/proxy_config_renderer.sh exports.sh test/validate_proxy_policy_sync.sh`
+  - `bash test/validate_proxy_policy_sync.sh`
+  - `bash test/validate_caddy_config.sh`
+  - `docker run --rm --privileged --user testuser -v "$PWD:/workspace" -w /workspace -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical -e CI=true eth-node-test /workspace/test/ci_test_run_2.sh`
+  - `docker run --rm --privileged -v "$PWD:/workspace" -w /workspace -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true eth-node-test /workspace/test/docker_test.sh`
+- Follow-up:
+  - metrics remain opt-in (`EDGE_ENABLE_METRICS=false` default) to avoid exposing status endpoints by accident.
+
 ## Latest Update (Edge-policy refactor pass, 2026-04-18)
 
 - Refactored shared edge policy to be data-driven via:

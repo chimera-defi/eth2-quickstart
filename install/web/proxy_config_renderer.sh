@@ -26,6 +26,113 @@ readonly PROXY_RPC_WRITE_METHODS_REGEX
 readonly PROXY_SPAM_EXTENSIONS_REGEX
 readonly PROXY_ATTACK_PATHS_REGEX
 
+: "${EDGE_RPC_UPSTREAMS:=${LH}:${NETHERMIND_HTTP_PORT}}"
+: "${EDGE_WS_UPSTREAMS:=${LH}:${NETHERMIND_WS_PORT}}"
+: "${EDGE_LB_POLICY:=least_conn}"                 # least_conn|ip_hash
+: "${EDGE_UPSTREAM_KEEPALIVE:=64}"
+: "${EDGE_DNS_RESOLVER:=}"                        # e.g. "1.1.1.1 8.8.8.8"
+: "${EDGE_TRUSTED_PROXIES:=}"                     # comma-separated CIDRs
+: "${EDGE_ENABLE_METRICS:=false}"
+: "${EDGE_METRICS_PATH:=/metrics}"
+: "${EDGE_ENABLE_COMPRESSION:=true}"
+: "${EDGE_RPC_CACHE_MIN_USES:=1}"
+: "${CADDY_LB_POLICY:=least_conn}"                # random, random_choose, least_conn, round_robin, first, ip_hash, uri_hash, header, cookie
+: "${CADDY_LB_RETRIES:=2}"
+: "${CADDY_LB_TRY_DURATION:=5s}"
+: "${CADDY_LB_TRY_INTERVAL:=250ms}"
+: "${CADDY_FAIL_DURATION:=30s}"
+: "${CADDY_MAX_FAILS:=3}"
+
+readonly EDGE_RPC_UPSTREAMS
+readonly EDGE_WS_UPSTREAMS
+readonly EDGE_LB_POLICY
+readonly EDGE_UPSTREAM_KEEPALIVE
+readonly EDGE_DNS_RESOLVER
+readonly EDGE_TRUSTED_PROXIES
+readonly EDGE_ENABLE_METRICS
+readonly EDGE_METRICS_PATH
+readonly EDGE_ENABLE_COMPRESSION
+readonly EDGE_RPC_CACHE_MIN_USES
+readonly CADDY_LB_POLICY
+readonly CADDY_LB_RETRIES
+readonly CADDY_LB_TRY_DURATION
+readonly CADDY_LB_TRY_INTERVAL
+readonly CADDY_FAIL_DURATION
+readonly CADDY_MAX_FAILS
+
+trim_space() {
+    local value="$1"
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+    printf '%s' "$value"
+}
+
+csv_to_space_list() {
+    local csv="$1"
+    local item
+    local out=()
+    IFS=',' read -r -a items <<< "$csv"
+    for item in "${items[@]}"; do
+        item="$(trim_space "$item")"
+        [[ -n "$item" ]] && out+=("$item")
+    done
+    printf '%s ' "${out[@]}"
+}
+
+upstream_host_from_addr() {
+    local addr="$1"
+    local host="$addr"
+    if [[ "$addr" =~ ^\[[^]]+\]:[0-9]+$ ]]; then
+        host="${addr%%]:*}]"
+    elif [[ "$addr" == *:* ]]; then
+        host="${addr%:*}"
+    fi
+    printf '%s' "$host"
+}
+
+should_add_resolve_flag() {
+    local addr="$1"
+    local host
+    host="$(upstream_host_from_addr "$addr")"
+    [[ -n "$EDGE_DNS_RESOLVER" && ! "$host" =~ ^[0-9.]+$ && ! "$host" =~ ^\[[0-9a-fA-F:]+\]$ && "$host" != "localhost" ]]
+}
+
+render_nginx_upstream_block() {
+    local name="$1"
+    local upstream_csv="$2"
+    local lb_policy="$3"
+    local policy_line=""
+    local server_lines=""
+    local addr
+
+    case "$lb_policy" in
+        ip_hash)
+            policy_line='    ip_hash;'
+            ;;
+        *)
+            policy_line='    least_conn;'
+            ;;
+    esac
+
+    IFS=',' read -r -a upstreams <<< "$upstream_csv"
+    for addr in "${upstreams[@]}"; do
+        addr="$(trim_space "$addr")"
+        [[ -z "$addr" ]] && continue
+        if should_add_resolve_flag "$addr"; then
+            server_lines+="    server $addr resolve max_fails=3 fail_timeout=30s;"$'\n'
+        else
+            server_lines+="    server $addr max_fails=3 fail_timeout=30s;"$'\n'
+        fi
+    done
+
+    cat << EOF
+upstream $name {
+$policy_line
+$server_lines    keepalive $EDGE_UPSTREAM_KEEPALIVE;
+}
+EOF
+}
+
 render_nginx_http_policy_file() {
     local output_path="$1"
 
@@ -58,6 +165,23 @@ client_body_temp_path /var/cache/nginx/client_temp 1 2;
 # Leak less fingerprinting info
 server_tokens off;
 EOF
+
+    if [[ -n "$EDGE_DNS_RESOLVER" ]]; then
+        echo "resolver $EDGE_DNS_RESOLVER valid=30s ipv6=off;" >> "$output_path"
+    fi
+
+    if [[ "$EDGE_ENABLE_COMPRESSION" == "true" ]]; then
+        cat >> "$output_path" << 'EOF'
+
+# Response compression
+gzip on;
+gzip_vary on;
+gzip_proxied any;
+gzip_comp_level 5;
+gzip_min_length 1024;
+gzip_types application/json application/javascript text/css text/plain application/xml text/xml;
+EOF
+    fi
 
     cat >> "$output_path" << EOF
 
@@ -95,6 +219,9 @@ render_nginx_site_config() {
     local listen_block=""
     local tls_block=""
     local header_block=""
+    local trusted_proxy_block=""
+    local metrics_location_block=""
+    local upstream_blocks=""
 
     if [[ "$use_ssl" == "true" ]]; then
         redirect_block=$'# HTTP to HTTPS redirect\nserver {\n    listen 80;\n    listen [::]:80;\n    server_name '"$server_name"$';\n    return 301 https://\\$server_name\\$request_uri;\n}\n\n'
@@ -106,14 +233,33 @@ render_nginx_site_config() {
         header_block=$'    add_header X-Frame-Options "DENY" always;\n    add_header X-Content-Type-Options "nosniff" always;\n    add_header X-XSS-Protection "1; mode=block" always;\n    add_header Referrer-Policy "strict-origin-when-cross-origin" always;'
     fi
 
+    if [[ -n "$EDGE_TRUSTED_PROXIES" ]]; then
+        local proxy_cidr
+        IFS=',' read -r -a proxy_cidrs <<< "$EDGE_TRUSTED_PROXIES"
+        trusted_proxy_block=$'    real_ip_header X-Forwarded-For;\n    real_ip_recursive on;\n'
+        for proxy_cidr in "${proxy_cidrs[@]}"; do
+            proxy_cidr="$(trim_space "$proxy_cidr")"
+            [[ -n "$proxy_cidr" ]] && trusted_proxy_block+="    set_real_ip_from $proxy_cidr;"$'\n'
+        done
+    fi
+
+    if [[ "$EDGE_ENABLE_METRICS" == "true" ]]; then
+        metrics_location_block=$'    location = '"$EDGE_METRICS_PATH"$' {\n        stub_status;\n        access_log off;\n        allow 127.0.0.1;\n        allow ::1;\n        deny all;\n    }\n'
+    fi
+
+    upstream_blocks="$(render_nginx_upstream_block "ws_backend" "$EDGE_WS_UPSTREAMS" "$EDGE_LB_POLICY")"$'\n'"$(render_nginx_upstream_block "rpc_backend" "$EDGE_RPC_UPSTREAMS" "$EDGE_LB_POLICY")"
+
     cat > "$config_path" << EOF
 $redirect_block
+$upstream_blocks
+
 server {
 $listen_block
     server_name $server_name;
 
 $tls_block
 $header_block
+$trusted_proxy_block
 
     location ~* \\.($PROXY_SPAM_EXTENSIONS_REGEX)(?:\$|/) {
         access_log off;
@@ -129,6 +275,7 @@ $header_block
         return 404;
     }
 
+$metrics_location_block
     location ^~ /ws {
         if (\$request_method != GET) {
             return 405;
@@ -145,7 +292,11 @@ $header_block
         proxy_set_header Host \$http_host;
         proxy_set_header X-NginX-Proxy true;
         proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_pass http://$LH:$NETHERMIND_WS_PORT/;
+        proxy_next_upstream error timeout http_500 http_502 http_503 http_504;
+        proxy_next_upstream_tries 2;
+        proxy_next_upstream_timeout 10s;
+        proxy_socket_keepalive on;
+        proxy_pass http://ws_backend/;
         proxy_read_timeout 60s;
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
@@ -165,6 +316,9 @@ $header_block
         proxy_cache_lock on;
         proxy_cache_lock_age 5s;
         proxy_cache_lock_timeout 10s;
+        proxy_cache_background_update on;
+        proxy_cache_revalidate on;
+        proxy_cache_min_uses $EDGE_RPC_CACHE_MIN_USES;
         proxy_cache_valid 200 2s;
         proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
         proxy_cache_bypass 0;
@@ -179,7 +333,11 @@ $header_block
         proxy_set_header Host \$http_host;
         proxy_set_header X-NginX-Proxy true;
         proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_pass http://$LH:$NETHERMIND_HTTP_PORT/;
+        proxy_next_upstream error timeout http_500 http_502 http_503 http_504;
+        proxy_next_upstream_tries 2;
+        proxy_next_upstream_timeout 10s;
+        proxy_socket_keepalive on;
+        proxy_pass http://rpc_backend/;
         proxy_read_timeout 30s;
         proxy_connect_timeout 30s;
         proxy_send_timeout 30s;
@@ -207,6 +365,12 @@ render_caddy_site_config() {
     local rate_limit_ws=""
     local rate_limit_rpc=""
     local strict_sni_line="        strict_sni_host"
+    local trusted_proxies_line=""
+    local metrics_global_line=""
+    local metrics_site_line=""
+    local encode_line=""
+    local caddy_rpc_upstreams=""
+    local caddy_ws_upstreams=""
 
     if [[ "${CI_E2E:-}" == "true" ]]; then
         enable_rate_limit="false"
@@ -231,13 +395,42 @@ render_caddy_site_config() {
         rate_limit_rpc='        rate_limit zone api'
     fi
 
+    caddy_rpc_upstreams="$(trim_space "$(csv_to_space_list "$EDGE_RPC_UPSTREAMS")")"
+    caddy_ws_upstreams="$(trim_space "$(csv_to_space_list "$EDGE_WS_UPSTREAMS")")"
+
+    if [[ -z "$caddy_rpc_upstreams" ]]; then
+        caddy_rpc_upstreams="$LH:$NETHERMIND_HTTP_PORT"
+    fi
+    if [[ -z "$caddy_ws_upstreams" ]]; then
+        caddy_ws_upstreams="$LH:$NETHERMIND_WS_PORT"
+    fi
+
+    if [[ "$EDGE_ENABLE_COMPRESSION" == "true" ]]; then
+        encode_line='    encode zstd gzip'
+    fi
+
+    if [[ "$EDGE_ENABLE_METRICS" == "true" ]]; then
+        metrics_global_line='    metrics'
+        metrics_site_line="    metrics $EDGE_METRICS_PATH"
+    fi
+
+    if [[ -n "$EDGE_TRUSTED_PROXIES" ]]; then
+        local trusted_proxy_list
+        trusted_proxy_list="$(trim_space "$(csv_to_space_list "$EDGE_TRUSTED_PROXIES")")"
+        if [[ -n "$trusted_proxy_list" ]]; then
+            trusted_proxies_line=$'        trusted_proxies static '"$trusted_proxy_list"$'\n        trusted_proxies_strict'
+        fi
+    fi
+
     cat > "$config_path" << EOF
 {
     auto_https off
+${metrics_global_line}
     servers {
         protocols h1 h2 h3
 $strict_sni_line
         max_header_size 1048576
+$trusted_proxies_line
     }
     admin off
 }
@@ -246,6 +439,9 @@ $redirect_block
 
 $site_address {
 $tls_block
+
+${encode_line}
+${metrics_site_line}
 
     @spam path_regexp spam (?i).*(\\.($PROXY_SPAM_EXTENSIONS_REGEX))(?:\$|/)
     respond @spam "Access Denied" 403
@@ -257,11 +453,20 @@ $tls_block
     route @ws_path {
 $rate_limit_ws
         @ws_get method GET
-        reverse_proxy @ws_get $LH:$NETHERMIND_WS_PORT {
+        reverse_proxy @ws_get $caddy_ws_upstreams {
+            lb_policy $CADDY_LB_POLICY
+            lb_retries $CADDY_LB_RETRIES
+            lb_try_duration $CADDY_LB_TRY_DURATION
+            lb_try_interval $CADDY_LB_TRY_INTERVAL
+            fail_duration $CADDY_FAIL_DURATION
+            max_fails $CADDY_MAX_FAILS
+            transport http {
+                dial_timeout 5s
+                response_header_timeout 30s
+                keepalive 120s
+            }
             header_up Host {host}
             header_up X-Real-IP {remote}
-            header_up X-Forwarded-For {remote}
-            header_up X-Forwarded-Proto {scheme}
         }
         respond "Method Not Allowed" 405
     }
@@ -270,11 +475,20 @@ $rate_limit_ws
     route @rpc_path {
 $rate_limit_rpc
         @rpc_post method POST
-        reverse_proxy @rpc_post $LH:$NETHERMIND_HTTP_PORT {
+        reverse_proxy @rpc_post $caddy_rpc_upstreams {
+            lb_policy $CADDY_LB_POLICY
+            lb_retries $CADDY_LB_RETRIES
+            lb_try_duration $CADDY_LB_TRY_DURATION
+            lb_try_interval $CADDY_LB_TRY_INTERVAL
+            fail_duration $CADDY_FAIL_DURATION
+            max_fails $CADDY_MAX_FAILS
+            transport http {
+                dial_timeout 5s
+                response_header_timeout 30s
+                keepalive 120s
+            }
             header_up Host {host}
             header_up X-Real-IP {remote}
-            header_up X-Forwarded-For {remote}
-            header_up X-Forwarded-Proto {scheme}
         }
         respond "Method Not Allowed" 405
     }

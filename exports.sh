@@ -89,6 +89,27 @@ export ETHREX_ENGINE_PORT=8551
 export ETHREX_P2P_PORT=30303
 export ETHREX_METRICS_PORT=9090
 
+# Shared edge proxy tuning (NGINX + Caddy)
+# Multiple upstreams can be supplied as comma-separated host:port values.
+export EDGE_RPC_UPSTREAMS="$LH:$NETHERMIND_HTTP_PORT"
+export EDGE_WS_UPSTREAMS="$LH:$NETHERMIND_WS_PORT"
+export EDGE_LB_POLICY='least_conn'            # least_conn | ip_hash
+export EDGE_UPSTREAM_KEEPALIVE='64'
+export EDGE_DNS_RESOLVER=''                   # e.g. "1.1.1.1 8.8.8.8" for DNS-based upstream resolution
+export EDGE_TRUSTED_PROXIES=''                # e.g. "173.245.48.0/20,103.21.244.0/22"
+export EDGE_ENABLE_METRICS='false'
+export EDGE_METRICS_PATH='/metrics'
+export EDGE_ENABLE_COMPRESSION='true'
+export EDGE_RPC_CACHE_MIN_USES='1'
+
+# Caddy reverse_proxy resilience knobs
+export CADDY_LB_POLICY='least_conn'
+export CADDY_LB_RETRIES='2'
+export CADDY_LB_TRY_DURATION='5s'
+export CADDY_LB_TRY_INTERVAL='250ms'
+export CADDY_FAIL_DURATION='30s'
+export CADDY_MAX_FAILS='3'
+
 # Common ports
 export ENGINE_PORT=8551  # JWT-secured Engine API port
 export METRICS_PORT=6060  # Prometheus metrics port
