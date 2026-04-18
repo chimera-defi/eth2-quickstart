@@ -23,31 +23,40 @@ export CI_E2E=true
 
 create_caddy_config_auto_https "${SERVER_NAME:-rpc.sharedtools.org}" "$CADDYFILE"
 
-# Caddy requires --adapter caddyfile for Caddyfile format (otherwise parses as JSON)
-if command -v caddy &>/dev/null; then
+trap 'rm -f "$CADDYFILE"' EXIT
+
+validate_with_caddy() {
+    # Caddy requires --adapter caddyfile for Caddyfile format (otherwise parses as JSON)
+    if command -v sudo &>/dev/null && sudo -n true 2>/dev/null; then
+        echo "Validating with sudo caddy validate..."
+        if sudo caddy validate --config "$CADDYFILE" --adapter caddyfile; then
+            return 0
+        fi
+    fi
+
     echo "Validating with caddy validate..."
-    if caddy validate --config "$CADDYFILE" --adapter caddyfile; then
-        echo "✓ Caddy config is valid"
-        rm -f "$CADDYFILE"
-        exit 0
-    else
-        echo "✗ Caddy config validation failed"
-        rm -f "$CADDYFILE"
-        exit 1
-    fi
-elif command -v docker &>/dev/null; then
+    caddy validate --config "$CADDYFILE" --adapter caddyfile
+}
+
+validate_with_docker() {
     echo "Validating with docker run caddy..."
-    if docker run --rm -v "$CADDYFILE:/etc/caddy/Caddyfile:ro" caddy:2 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile; then
-        echo "✓ Caddy config is valid"
-        rm -f "$CADDYFILE"
-        exit 0
-    else
-        echo "✗ Caddy config validation failed"
-        rm -f "$CADDYFILE"
-        exit 1
-    fi
-else
+    docker run --rm -v "$CADDYFILE:/etc/caddy/Caddyfile:ro" caddy:2 \
+        caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+}
+
+if command -v caddy &>/dev/null && validate_with_caddy; then
+    echo "✓ Caddy config is valid"
+    exit 0
+fi
+
+if command -v docker &>/dev/null && validate_with_docker; then
+    echo "✓ Caddy config is valid"
+    exit 0
+fi
+
+echo "✗ Caddy config validation failed"
+if ! command -v caddy &>/dev/null && ! command -v docker &>/dev/null; then
     echo "Error: caddy or docker required for validation"
     echo "Generated config at: $CADDYFILE"
-    exit 1
 fi
+exit 1
