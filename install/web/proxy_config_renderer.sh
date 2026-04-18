@@ -369,7 +369,7 @@ render_caddy_site_config() {
     local strict_sni_line="        strict_sni_host"
     local trusted_proxies_line=""
     local metrics_global_line=""
-    local metrics_site_line=""
+    local metrics_local_block=""
     local encode_line=""
     local caddy_rpc_upstreams=""
     local caddy_ws_upstreams=""
@@ -413,7 +413,7 @@ render_caddy_site_config() {
 
     if [[ "$EDGE_ENABLE_METRICS" == "true" ]]; then
         metrics_global_line='    metrics'
-        metrics_site_line="    metrics $EDGE_METRICS_PATH"
+        metrics_local_block=$'http://127.0.0.1 {\n    metrics '"$EDGE_METRICS_PATH"$'\n}\n'
     fi
 
     if [[ -n "$EDGE_TRUSTED_PROXIES" ]]; then
@@ -439,11 +439,12 @@ $trusted_proxies_line
 
 $redirect_block
 
+$metrics_local_block
+
 $site_address {
 $tls_block
 
 ${encode_line}
-${metrics_site_line}
 
     @spam path_regexp spam (?i).*(\\.($PROXY_SPAM_EXTENSIONS_REGEX))(?:\$|/)
     respond @spam "Access Denied" 403

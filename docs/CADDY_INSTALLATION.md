@@ -27,6 +27,7 @@ The Caddy implementation follows the project's established patterns:
 - **Error Handling**: Follows project's error handling patterns
 - **Configuration Management**: Uses centralized variables from `exports.sh`
 - **Shared Edge Policy**: Route/method/security policy is rendered from `install/web/proxy_config_renderer.sh` for both Nginx and Caddy
+- **Shared Edge Tuning**: `EDGE_*` and `CADDY_*` env vars tune retries, keepalive, compression, metrics, trusted proxies, and upstream fanout for both web stacks
 - **Shellcheck Compliance**: All scripts pass shellcheck validation
 
 ## Installation Scripts

@@ -80,6 +80,13 @@ validate_caddy_config() {
     return 1
 }
 
+format_caddy_config() {
+    local caddyfile_path="$1"
+    if command -v caddy &>/dev/null; then
+        caddy fmt --overwrite "$caddyfile_path" >/dev/null 2>&1 || true
+    fi
+}
+
 # Create Caddy configuration with automatic HTTPS or CI internal TLS
 create_caddy_config_auto_https() {
     local server_name="$1"
@@ -87,6 +94,7 @@ create_caddy_config_auto_https() {
 
     log_info "Creating Caddy configuration with shared edge policy for $server_name..."
     render_caddy_site_config "$server_name" "$caddyfile_path" "auto"
+    format_caddy_config "$caddyfile_path"
     log_info "Caddy configuration created: $caddyfile_path"
 }
 
@@ -99,5 +107,6 @@ create_caddy_config_manual_ssl() {
 
     log_info "Creating Caddy configuration with manual SSL for $server_name..."
     render_caddy_site_config "$server_name" "$caddyfile_path" "manual" "$cert_path" "$key_path"
+    format_caddy_config "$caddyfile_path"
     log_info "Caddy SSL configuration created: $caddyfile_path"
 }

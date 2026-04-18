@@ -370,6 +370,18 @@ sudo ./install_caddy_ssl.sh
 - **Security Hardening**: `./caddy_harden.sh` for enhanced security
 - **Shared Edge Policy**: Nginx + Caddy route/hardening policy is generated from `install/web/proxy_config_renderer.sh`
 
+### Shared Edge Tuning (Nginx + Caddy)
+Override in `config/user_config.env` when needed:
+- `EDGE_RPC_UPSTREAMS` / `EDGE_WS_UPSTREAMS`: comma-separated upstream backends (for fanout/failover).
+- `EDGE_LB_POLICY`: `least_conn` or `ip_hash`.
+- `EDGE_UPSTREAM_KEEPALIVE`: upstream keepalive pool size.
+- `EDGE_DNS_RESOLVER`: resolver list for hostname upstreams in Nginx (`resolve` mode).
+- `EDGE_ENABLE_COMPRESSION`: shared response compression toggle.
+- `EDGE_ENABLE_METRICS` + `EDGE_METRICS_PATH`: local-only metrics endpoint toggle/path.
+- `EDGE_TRUSTED_PROXIES`: trusted proxy CIDRs for forwarded client IP handling.
+- `EDGE_RPC_CACHE_MIN_USES`: Nginx RPC cache threshold.
+- `CADDY_LB_*`: Caddy retry/failover tuning (`CADDY_LB_RETRIES`, `CADDY_LB_TRY_DURATION`, `CADDY_LB_TRY_INTERVAL`, `CADDY_FAIL_DURATION`, `CADDY_MAX_FAILS`).
+
 ### Test Caddy Installation
 Testing helpers were removed. Use:
 ```bash

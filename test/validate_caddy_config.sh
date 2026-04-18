@@ -38,8 +38,8 @@ validate_with_caddy() {
 
 validate_with_docker() {
     echo "Validating with docker run caddy..."
-    docker run --rm -v "$CADDYFILE:/etc/caddy/Caddyfile:ro" caddy:2 \
-        caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+    docker run --rm -v "$CADDYFILE:/etc/caddy/Caddyfile" caddy:2 \
+        sh -c "caddy fmt --overwrite /etc/caddy/Caddyfile >/dev/null && caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile"
 }
 
 if command -v caddy &>/dev/null && validate_with_caddy; then
