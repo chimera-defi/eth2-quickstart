@@ -7,6 +7,21 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (PR #170 docker-integration CI fix, 2026-04-18)
+
+- Fixed `docker-integration` failure in `test/validate_caddy_config.sh` where `caddy validate` ran as non-root and failed opening `/var/log/caddy/access.log`.
+- Validation strategy is now resilient and ordered:
+  - try `sudo -n caddy validate` when non-interactive sudo is available,
+  - fallback to plain `caddy validate`,
+  - fallback to `docker run caddy validate`.
+- Added cleanup trap for generated temporary Caddyfile to avoid stale `/tmp` artifacts.
+- Validation run:
+  - `bash test/validate_caddy_config.sh`
+  - `docker run --rm --privileged -v "$PWD:/workspace" -w /workspace eth-node-test /workspace/test/validate_caddy_config.sh`
+  - `docker run --rm --privileged -v "$PWD:/workspace" -w /workspace -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true eth-node-test /workspace/test/docker_test.sh`
+- Follow-up:
+  - CI still emits non-fatal Caddy warnings about redundant `header_up X-Forwarded-*`; optional cleanup can remove these directives from the shared renderer for cleaner logs.
+
 ## Latest Update (Unified Nginx/Caddy edge policy + RPC cache hardening, 2026-04-18)
 
 - Implemented a single shared edge-policy renderer at:
