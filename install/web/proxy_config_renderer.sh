@@ -172,19 +172,6 @@ EOF
         echo "resolver $EDGE_DNS_RESOLVER valid=30s ipv6=off;" >> "$output_path"
     fi
 
-    if [[ "$EDGE_ENABLE_COMPRESSION" == "true" ]]; then
-        cat >> "$output_path" << 'EOF'
-
-# Response compression
-gzip on;
-gzip_vary on;
-gzip_proxied any;
-gzip_comp_level 5;
-gzip_min_length 1024;
-gzip_types application/json application/javascript text/css text/plain application/xml text/xml;
-EOF
-    fi
-
     cat >> "$output_path" << EOF
 
 # Classify JSON-RPC request bodies for cache safety.
@@ -223,6 +210,7 @@ render_nginx_site_config() {
     local header_block=""
     local trusted_proxy_block=""
     local metrics_location_block=""
+    local compression_block=""
     local upstream_blocks=""
 
     if [[ "$use_ssl" == "true" ]]; then
@@ -249,6 +237,10 @@ render_nginx_site_config() {
         metrics_location_block=$'    location = '"$EDGE_METRICS_PATH"$' {\n        stub_status;\n        access_log off;\n        allow 127.0.0.1;\n        allow ::1;\n        deny all;\n    }\n'
     fi
 
+    if [[ "$EDGE_ENABLE_COMPRESSION" == "true" ]]; then
+        compression_block=$'    gzip on;\n    gzip_vary on;\n    gzip_proxied any;\n    gzip_comp_level 5;\n    gzip_min_length 1024;\n    gzip_types application/json application/javascript text/css text/plain application/xml text/xml;\n'
+    fi
+
     upstream_blocks="$(render_nginx_upstream_block "ws_backend" "$EDGE_WS_UPSTREAMS" "$EDGE_LB_POLICY")"$'\n'"$(render_nginx_upstream_block "rpc_backend" "$EDGE_RPC_UPSTREAMS" "$EDGE_LB_POLICY")"
 
     cat > "$config_path" << EOF
@@ -262,6 +254,7 @@ $listen_block
 $tls_block
 $header_block
 $trusted_proxy_block
+$compression_block
 
     location ~* \\.($PROXY_SPAM_EXTENSIONS_REGEX)(?:\$|/) {
         access_log off;

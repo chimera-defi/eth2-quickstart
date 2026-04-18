@@ -7,6 +7,29 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (CI fix: Nginx gzip duplicate in run_2 E2E, 2026-04-18)
+
+- Fixed failing CI jobs `run-2-e2e` and `run-2-web` caused by:
+  - `nginx: "gzip" directive is duplicate in /etc/nginx/conf.d/eth2-edge-policy.conf`
+- Root cause:
+  - shared HTTP policy file set `gzip on;` in `http` context, which conflicts with distro defaults that already set gzip in `nginx.conf`.
+- Change:
+  - moved Nginx compression directives from `render_nginx_http_policy_file` to `render_nginx_site_config` (server context) in `install/web/proxy_config_renderer.sh`.
+  - kept `EDGE_ENABLE_COMPRESSION` behavior intact (still toggles compression for both Nginx and Caddy).
+- Test updates:
+  - `test/validate_proxy_policy_sync.sh` now asserts Nginx compression in rendered site config.
+  - `test/validate_proxy_policy_toggles.sh` now asserts compression-off state in rendered Nginx site config.
+- Validation run:
+  - `bash -n install/web/proxy_config_renderer.sh test/validate_proxy_policy_sync.sh test/validate_proxy_policy_toggles.sh`
+  - `shellcheck -x --exclude=SC1091,SC2034 install/web/proxy_config_renderer.sh test/validate_proxy_policy_sync.sh test/validate_proxy_policy_toggles.sh`
+  - `bash test/validate_proxy_policy_sync.sh`
+  - `bash test/validate_proxy_policy_toggles.sh`
+  - `bash test/validate_caddy_config.sh`
+  - `GITHUB_TOKEN="$(gh auth token)" SKIP_BUILD=true E2E_EXECUTION=geth E2E_CONSENSUS=prysm E2E_MEV=mev-boost ./test/run_e2e.sh --phase=2`
+  - `GITHUB_TOKEN="$(gh auth token)" SKIP_BUILD=true ./test/run_e2e.sh --phase=2`
+- Follow-up:
+  - remaining Caddy `header_up` warnings in E2E are non-fatal; optional cleanup can remove redundant forwarded-header directives.
+
 ## Latest Update (Merge-hardening CI flake guard, 2026-04-18)
 
 - Hardened `test/validate_downloads.sh` so transient GitHub API/network jitter is retried before failing CI:
