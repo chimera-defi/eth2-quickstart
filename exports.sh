@@ -29,6 +29,15 @@ export CHAIN='ethereum'
 export maxretry='3'
 export REPO_NAME="eth2-quickstart"
 
+# IDS profile (enabled by default).
+# Set ENABLE_SNORT=false to skip Snort package install/config in Phase 1.
+# Defaults are safe for host-level IDS on a validator/RPC node.
+export ENABLE_SNORT='true'
+export SNORT_INTERFACE='auto'               # auto-detect default route interface
+export SNORT_HOME_NET=''                    # auto-detect CIDR from interface when empty
+export SNORT_STARTUP='boot'                 # boot | manual
+export SNORT_DISABLE_PROMISCUOUS='true'     # true = inspect traffic for host interface only
+
 # Server name used for nginx, caddy & ssl setup
 export SERVER_NAME="rpc.sharedtools.org"
 

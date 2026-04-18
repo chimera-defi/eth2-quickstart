@@ -9,6 +9,7 @@ This guide provides comprehensive security information for the Ethereum node set
 - **Localhost Binding**: All services bind to `127.0.0.1` only
 - **Firewall Protection**: UFW firewall with comprehensive rules
 - **Fail2ban Integration**: Protection against brute force attacks
+- **Snort IDS**: Host-level packet inspection profile (enabled by default, configurable)
 - **Private Network Blocking**: Prevents network scan abuse
 
 ### File Security
@@ -36,7 +37,7 @@ This guide provides comprehensive security information for the Ethereum node set
 ## Security Scripts
 
 ### Core Security Scripts
-- **`install/security/consolidated_security.sh`** - Main security setup (firewall, fail2ban, AIDE)
+- **`install/security/consolidated_security.sh`** - Main security setup (firewall, fail2ban, Snort, AIDE)
 - **`install/security/nginx_harden.sh`** - Nginx proxy abuse protection
 - **`install/security/test_security_fixes.sh`** - Security testing suite
 
@@ -108,6 +109,19 @@ AIDE (Advanced Intrusion Detection Environment) creates a baseline of critical s
 - **`/bin`, `/usr/bin`, `/usr/sbin`** – Executables
 
 The config uses SHA-256 checksums for content integrity (per [AIDE best practices](https://github.com/aide/aide/blob/master/doc/aide.conf.5)). Daily checks run at 2 AM via cron. Review `/var/log/aide_check.log` for changes.
+
+### Snort IDS Profile
+Snort support is enabled by default during Phase 1 hardening.
+
+Disable via `config/user_config.env`:
+
+```bash
+export ENABLE_SNORT='false'
+export SNORT_INTERFACE='auto'
+export SNORT_HOME_NET=''
+export SNORT_STARTUP='boot'
+export SNORT_DISABLE_PROMISCUOUS='true'
+```
 
 ### Monitoring Schedule
 - **Security Monitoring**: Every 15 minutes

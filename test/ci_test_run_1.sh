@@ -423,6 +423,29 @@ else
     exit 1
 fi
 
+# Test 32: Verify Snort config defaults are present and enabled
+log_info "Test 32: Verify Snort defaults..."
+if grep -q "export ENABLE_SNORT='true'" "$PROJECT_ROOT/exports.sh" && \
+   grep -q "export SNORT_INTERFACE='auto'" "$PROJECT_ROOT/exports.sh" && \
+   grep -q "export SNORT_STARTUP='boot'" "$PROJECT_ROOT/exports.sh"; then
+    log_info "  Snort defaults are present and enabled-by-default"
+else
+    log_error "  exports.sh must define safe Snort defaults with default enablement"
+    exit 1
+fi
+
+# Test 33: Verify Snort setup is gated in consolidated security
+log_info "Test 33: Verify Snort gating in consolidated security..."
+if grep -q "^setup_snort()" "$PROJECT_ROOT/install/security/consolidated_security.sh" && \
+   grep -q 'ENABLE_SNORT:-true' "$PROJECT_ROOT/install/security/consolidated_security.sh" && \
+   grep -q "install_dependencies snort snort-rules-default" "$PROJECT_ROOT/install/security/consolidated_security.sh" && \
+   grep -q "setup_snort" "$PROJECT_ROOT/install/security/consolidated_security.sh"; then
+    log_info "  consolidated security script includes gated Snort setup"
+else
+    log_error "  consolidated security script missing gated Snort integration"
+    exit 1
+fi
+
 log_info "╔════════════════════════════════════════════════════════════════╗"
 log_info "║  run_1.sh CI Test PASSED                                      ║"
 log_info "║  Validated: Structure, syntax, functions, SSH safety,         ║"

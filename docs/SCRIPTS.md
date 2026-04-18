@@ -64,6 +64,8 @@ Key variables:
 - `MAX_PEERS`: Consensus client peer cap
 - `GETH_CACHE`: Geth cache size in MB (default `8192`)
 - `MEV_RELAYS`: Comma-separated MEV-Boost relay URLs
+- `ENABLE_SNORT`: Optional Snort IDS profile toggle (`false` by default)
+- `SNORT_INTERFACE` / `SNORT_HOME_NET`: Optional Snort capture interface and CIDR scope
 
 ## Stage 1: Initial Hardening (run_1.sh)
 
@@ -83,6 +85,7 @@ ssh LOGIN_UNAME@<server-ip>
 - Backs up and migrates authorized_keys from root, SUDO_USER, and all /home/* users to new user (prevents lockout)
 - Copies eth2-quickstart to `~/eth2-quickstart` for new user (handoff: `cd ~/eth2-quickstart && ./run_2.sh`)
 - Security: runs consolidated security script
+- IDS: Snort is enabled by default; set `ENABLE_SNORT=false` to disable
 - NTP: installs `chrony` and enables NTP
 - Security: mounts `/run/shm` as `tmpfs` with `ro,noexec,nosuid`
 
