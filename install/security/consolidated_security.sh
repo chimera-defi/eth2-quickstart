@@ -173,9 +173,27 @@ FILTER
         log_info "Created nginx-proxy fail2ban filter"
     fi
 
+    if [[ ! -f /etc/fail2ban/filter.d/nginx-limit-req.conf ]]; then
+        cat > /etc/fail2ban/filter.d/nginx-limit-req.conf << 'FILTER'
+[Definition]
+failregex = limiting requests, excess:.* by zone.*client: <HOST>
+ignoreregex =
+FILTER
+        log_info "Created nginx-limit-req fail2ban filter"
+    fi
+
+    if [[ ! -f /etc/fail2ban/filter.d/nginx-rpc-spam.conf ]]; then
+        cat > /etc/fail2ban/filter.d/nginx-rpc-spam.conf << 'FILTER'
+[Definition]
+failregex = ^<HOST> -.*"(GET|HEAD) /(?!rpc|ws)([^ ]*) HTTP/.*" (403|404|444)
+ignoreregex =
+FILTER
+        log_info "Created nginx-rpc-spam fail2ban filter"
+    fi
+
     # Ensure log files exist - fail2ban jails fail to start if logpath is missing
     ensure_directory /var/log/nginx
-    for logfile in /var/log/auth.log /var/log/nginx/access.log; do
+    for logfile in /var/log/auth.log /var/log/nginx/access.log /var/log/nginx/error.log; do
         if [[ ! -f "$logfile" ]]; then
             touch "$logfile"
             log_info "Created $logfile for fail2ban jail"
@@ -194,6 +212,24 @@ port = 80,443
 filter = nginx-proxy
 logpath = /var/log/nginx/access.log
 maxretry = 2
+bantime = 86400
+
+[nginx-limit-req]
+enabled = true
+port = 80,443
+filter = nginx-limit-req
+logpath = /var/log/nginx/error.log
+maxretry = 5
+findtime = 600
+bantime = 21600
+
+[nginx-rpc-spam]
+enabled = true
+port = 80,443
+filter = nginx-rpc-spam
+logpath = /var/log/nginx/access.log
+maxretry = 6
+findtime = 600
 bantime = 86400
 
 [sshd]

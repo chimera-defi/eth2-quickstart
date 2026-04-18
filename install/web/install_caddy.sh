@@ -57,14 +57,14 @@ validate_caddy_config "/etc/caddy/Caddyfile"
 
 # Run Caddy hardening (sudo -E preserves CI_E2E for minimal config in Docker)
 log_info "Running Caddy security hardening..."
-if ! sudo -E "$SCRIPT_DIR/../security/caddy_harden.sh"; then
+if ! sudo -E bash "$SCRIPT_DIR/../security/caddy_harden.sh"; then
     log_error "Caddy hardening failed"
     exit 1
 fi
 
 # Start/restart Caddy only after final config + hardening are in place
 log_info "Restarting Caddy with final configuration..."
-if ! enable_and_start_systemd_service caddy; then
+if ! restart_caddy_service; then
     log_error "Failed to start Caddy service after configuration"
     exit 1
 fi

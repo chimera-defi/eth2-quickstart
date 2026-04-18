@@ -235,6 +235,49 @@ if [[ "$PHASE" == "2" ]]; then
     record_test "install_caddy" "PASS"
     verify_installed "Caddy" command -v caddy
 
+    log_header "Caddy edge hardening smoke checks"
+    edge_host="${SERVER_NAME:-rpc.sharedtools.org}"
+
+    caddy_ready="false"
+    for _ in $(seq 1 20); do
+        if curl -sS -o /dev/null -H "Host: ${edge_host}" "http://127.0.0.1/rpc" 2>/dev/null; then
+            caddy_ready="true"
+            break
+        fi
+        sleep 1
+    done
+    if [[ "$caddy_ready" != "true" ]]; then
+        record_test "caddy listener readiness" "FAIL"
+        log_error "Caddy did not accept HTTP connections for host ${edge_host} within timeout"
+        print_test_summary
+        exit 1
+    fi
+    record_test "caddy listener readiness" "PASS"
+
+    caddy_spam_code="$(curl -sS -o /dev/null -w '%{http_code}' \
+        -H "Host: ${edge_host}" \
+        "http://127.0.0.1/acehd001/master.m3u8" || true)"
+    if [[ "$caddy_spam_code" == "403" || "$caddy_spam_code" == "404" ]]; then
+        record_test "caddy spam path blocked" "PASS"
+    else
+        record_test "caddy spam path blocked" "FAIL"
+        log_error "Unexpected caddy spam-path status: $caddy_spam_code"
+        print_test_summary
+        exit 1
+    fi
+
+    caddy_rpc_get_code="$(curl -sS -o /dev/null -w '%{http_code}' \
+        -H "Host: ${edge_host}" \
+        "http://127.0.0.1/rpc" || true)"
+    if [[ "$caddy_rpc_get_code" == "405" ]]; then
+        record_test "caddy rpc method restriction" "PASS"
+    else
+        record_test "caddy rpc method restriction" "FAIL"
+        log_error "Expected caddy /rpc GET to return 405, got: $caddy_rpc_get_code"
+        print_test_summary
+        exit 1
+    fi
+
     log_info "Stopping Caddy before Nginx (port conflict)"
     sudo systemctl stop caddy 2>/dev/null || true
 
@@ -249,6 +292,77 @@ if [[ "$PHASE" == "2" ]]; then
     rm -f "/tmp/nginx_e2e_$$.log"
     record_test "install_nginx" "PASS"
     verify_installed "Nginx" command -v nginx
+
+    log_header "Nginx cache + hardening E2E checks"
+
+    nginx_spam_code="$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1/acehd001/master.m3u8" -H "Host: ${edge_host}" || true)"
+    if [[ "$nginx_spam_code" == "403" || "$nginx_spam_code" == "404" || "$nginx_spam_code" == "000" ]]; then
+        record_test "nginx spam path blocked" "PASS"
+    else
+        record_test "nginx spam path blocked" "FAIL"
+        log_error "Unexpected nginx spam-path status: $nginx_spam_code"
+        print_test_summary
+        exit 1
+    fi
+
+    nginx_rpc_get_code="$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1/rpc" -H "Host: ${edge_host}" || true)"
+    if [[ "$nginx_rpc_get_code" == "405" ]]; then
+        record_test "nginx rpc method restriction" "PASS"
+    else
+        record_test "nginx rpc method restriction" "FAIL"
+        log_error "Expected nginx /rpc GET to return 405, got: $nginx_rpc_get_code"
+        print_test_summary
+        exit 1
+    fi
+
+    rpc_payload='{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}'
+    rpc_headers_1="/tmp/nginx_rpc_headers_1_$$.txt"
+    rpc_headers_2="/tmp/nginx_rpc_headers_2_$$.txt"
+    rpc_body_1="/tmp/nginx_rpc_body_1_$$.json"
+    rpc_body_2="/tmp/nginx_rpc_body_2_$$.json"
+
+    if ! curl -sS -D "$rpc_headers_1" -o "$rpc_body_1" \
+        -H "Host: ${edge_host}" \
+        -H "Content-Type: application/json" \
+        --data "$rpc_payload" \
+        "http://127.0.0.1/rpc"; then
+        record_test "nginx rpc cache smoke request 1" "FAIL"
+        print_test_summary
+        exit 1
+    fi
+
+    if ! curl -sS -D "$rpc_headers_2" -o "$rpc_body_2" \
+        -H "Host: ${edge_host}" \
+        -H "Content-Type: application/json" \
+        --data "$rpc_payload" \
+        "http://127.0.0.1/rpc"; then
+        record_test "nginx rpc cache smoke request 2" "FAIL"
+        print_test_summary
+        exit 1
+    fi
+
+    rpc_cache_header_2="$(grep -i '^X-RPC-Cache:' "$rpc_headers_2" | awk '{print toupper($2)}' | tr -d '\r' | head -1)"
+    rpc_cache_bypass_2="$(grep -i '^X-RPC-Cache-Bypass:' "$rpc_headers_2" | awk '{print $2}' | tr -d '\r' | head -1)"
+
+    if [[ "$rpc_cache_bypass_2" == "0" ]] && [[ "$rpc_cache_header_2" == "HIT" || "$rpc_cache_header_2" == "MISS" ]]; then
+        record_test "nginx rpc cache classification" "PASS"
+    else
+        record_test "nginx rpc cache classification" "FAIL"
+        log_error "Expected cacheable read call (bypass=0 and cache status HIT/MISS), got bypass=$rpc_cache_bypass_2 cache=$rpc_cache_header_2"
+        print_test_summary
+        exit 1
+    fi
+
+    if [[ "$rpc_cache_header_2" == "HIT" ]]; then
+        record_test "nginx rpc cache hit" "PASS"
+    else
+        record_test "nginx rpc cache hit" "FAIL"
+        log_error "Expected second eth_chainId request to be cache HIT, got: $rpc_cache_header_2"
+        print_test_summary
+        exit 1
+    fi
+
+    rm -f "$rpc_headers_1" "$rpc_headers_2" "$rpc_body_1" "$rpc_body_2"
 fi
 
 # =============================================================================

@@ -26,6 +26,7 @@ The Caddy implementation follows the project's established patterns:
 - **Consistent Logging**: Uses project's logging functions
 - **Error Handling**: Follows project's error handling patterns
 - **Configuration Management**: Uses centralized variables from `exports.sh`
+- **Shared Edge Policy**: Route/method/security policy is rendered from `install/web/proxy_config_renderer.sh` for both Nginx and Caddy
 - **Shellcheck Compliance**: All scripts pass shellcheck validation
 
 ## Installation Scripts
