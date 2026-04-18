@@ -83,7 +83,8 @@ upstream_host_from_addr() {
     local addr="$1"
     local host="$addr"
     if [[ "$addr" =~ ^\[[^]]+\]:[0-9]+$ ]]; then
-        host="${addr%%]:*}]"
+        host="${addr%%]:*}"
+        host="${host#\[}"
     elif [[ "$addr" == *:* ]]; then
         host="${addr%:*}"
     fi
@@ -94,7 +95,8 @@ should_add_resolve_flag() {
     local addr="$1"
     local host
     host="$(upstream_host_from_addr "$addr")"
-    [[ -n "$EDGE_DNS_RESOLVER" && ! "$host" =~ ^[0-9.]+$ && ! "$host" =~ ^\[[0-9a-fA-F:]+\]$ && "$host" != "localhost" ]]
+    [[ "$host" == *:* ]] && return 1
+    [[ -n "$EDGE_DNS_RESOLVER" && ! "$host" =~ ^[0-9.]+$ && "$host" != "localhost" ]]
 }
 
 render_nginx_upstream_block() {
