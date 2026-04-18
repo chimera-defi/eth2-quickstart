@@ -7,6 +7,32 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (Edge polish loop pass, 2026-04-18)
+
+- Added focused toggle contract test:
+  - `test/validate_proxy_policy_toggles.sh`
+  - validates metrics/trusted-proxy toggles, resolver + mixed upstream behavior, and compression on/off behavior.
+- Wired toggle contract test into run_2 structure CI:
+  - `test/ci_test_run_2.sh`
+- Tightened Caddy metrics exposure semantics:
+  - metrics now render to a local-only site block (`http://127.0.0.1`) when enabled, instead of public site route exposure.
+- Added best-effort Caddyfile formatting on render:
+  - `install/web/caddy_helpers.sh` now runs `caddy fmt --overwrite` when Caddy binary is available.
+  - `test/validate_caddy_config.sh` docker validation path now formats before validate.
+- Updated user-facing docs for new shared edge tuning knobs:
+  - `README.md`
+  - `docs/CADDY_INSTALLATION.md`
+- Validation run:
+  - `bash -n install/web/proxy_config_renderer.sh install/web/caddy_helpers.sh test/validate_proxy_policy_toggles.sh test/ci_test_run_2.sh test/validate_caddy_config.sh`
+  - `shellcheck -x --exclude=SC1091,SC2034 install/web/proxy_config_renderer.sh install/web/caddy_helpers.sh test/validate_proxy_policy_toggles.sh test/ci_test_run_2.sh test/validate_caddy_config.sh`
+  - `bash test/validate_proxy_policy_sync.sh`
+  - `bash test/validate_proxy_policy_toggles.sh`
+  - `bash test/validate_caddy_config.sh`
+  - `docker run --rm --privileged --user testuser -v "$PWD:/workspace" -w /workspace -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical -e CI=true eth-node-test /workspace/test/ci_test_run_2.sh`
+  - `docker run --rm --privileged -v "$PWD:/workspace" -w /workspace -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true eth-node-test /workspace/test/docker_test.sh`
+- Follow-up:
+  - CI re-run on latest branch head is still required before merge.
+
 ## Latest Update (Edge performance + parity feature bundle, 2026-04-18)
 
 - Expanded shared edge renderer with explicit performance/reliability knobs for both Nginx and Caddy:
