@@ -4,8 +4,6 @@
 # Local helper functions for Nginx installation scripts
 
 NGINX_HELPERS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=web_helpers_common.sh
-source "$NGINX_HELPERS_DIR/web_helpers_common.sh"
 # shellcheck source=proxy_config_renderer.sh
 source "$NGINX_HELPERS_DIR/proxy_config_renderer.sh"
 

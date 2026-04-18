@@ -13,8 +13,6 @@ cd "$PROJECT_ROOT" || exit 1
 source "$PROJECT_ROOT/exports.sh"
 # shellcheck source=../lib/common_functions.sh
 source "$PROJECT_ROOT/lib/common_functions.sh"
-# shellcheck source=../install/web/web_helpers_common.sh
-source "$PROJECT_ROOT/install/web/web_helpers_common.sh"
 # shellcheck source=../install/web/caddy_helpers.sh
 source "$PROJECT_ROOT/install/web/caddy_helpers.sh"
 

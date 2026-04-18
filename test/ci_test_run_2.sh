@@ -34,7 +34,7 @@ source_exports
 # Structure validation only - no actual installs. E2E (actual execution) is in ci_test_e2e.sh
 # Test 1: Verify required files exist
 log_info "Test 1: Verify required files..."
-for file in run_2.sh exports.sh lib/common_functions.sh; do
+for file in run_2.sh exports.sh lib/common_functions.sh config/edge_policy.env; do
     assert_file_exists "$PROJECT_ROOT/$file" "$file"
 done
 
@@ -119,7 +119,7 @@ fi
 # Covers: execution (7), consensus (6), MEV (3), web (caddy, nginx), utils
 log_info "Test 3: Verify all install scripts (syntax)..."
 syntax_fail=0
-for script in "${CLIENT_SCRIPTS[@]}" "install/utils/install_dependencies.sh" "install/utils/select_clients.sh" "install/web/install_caddy.sh" "install/web/install_nginx.sh" "install/web/proxy_config_renderer.sh" "test/validate_proxy_policy_sync.sh"; do
+for script in "${CLIENT_SCRIPTS[@]}" "install/utils/install_dependencies.sh" "install/utils/select_clients.sh" "install/web/install_caddy.sh" "install/web/install_nginx.sh" "install/web/proxy_config_renderer.sh" "config/edge_policy.env" "test/validate_proxy_policy_sync.sh"; do
     if [[ -f "$PROJECT_ROOT/$script" ]]; then
         if bash -n "$PROJECT_ROOT/$script" 2>/dev/null; then
             log_info "  ✓ $script"
