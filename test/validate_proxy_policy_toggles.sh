@@ -98,6 +98,7 @@ echo "Case 3: compression toggle off"
 render_case "$tmp_nginx" "$tmp_nginx_policy" "$tmp_caddy" EDGE_ENABLE_COMPRESSION=false
 
 assert_not_contains "$tmp_nginx_policy" '^gzip on;' "nginx gzip disabled"
+assert_not_contains "$tmp_nginx" 'gzip on;' "nginx gzip disabled in site config"
 assert_not_contains "$tmp_caddy" 'encode zstd gzip' "caddy encode disabled"
 
 echo "✓ Shared proxy policy toggle rendering looks consistent"
