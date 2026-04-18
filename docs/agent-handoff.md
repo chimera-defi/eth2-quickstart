@@ -7,6 +7,22 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (Merge-hardening CI flake guard, 2026-04-18)
+
+- Hardened `test/validate_downloads.sh` so transient GitHub API/network jitter is retried before failing CI:
+  - bounded retries with linear backoff for both `get_latest_release` and asset URL checks
+  - does not fail fast on first miss; aggregates all failures and reports a full failing checklist
+- Added optional tuning env vars for CI/local runs:
+  - `DOWNLOAD_TEST_RETRIES` (default `3`)
+  - `DOWNLOAD_TEST_RETRY_DELAY_SECONDS` (default `2`)
+- Validation run:
+  - `bash -n test/validate_downloads.sh`
+  - `shellcheck -x --exclude=SC1091,SC2034 test/validate_downloads.sh`
+  - `bash test/validate_downloads.sh`
+  - `docker run --rm --privileged -v "$PWD:/workspace" -w /workspace -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true eth-node-test /workspace/test/docker_test.sh`
+- Follow-up:
+  - keep retries bounded (no infinite loop) so persistent upstream/API issues still fail loudly.
+
 ## Latest Update (Edge polish loop pass, 2026-04-18)
 
 - Added focused toggle contract test:
