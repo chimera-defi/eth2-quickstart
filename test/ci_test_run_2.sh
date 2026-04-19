@@ -282,8 +282,8 @@ fi
 log_info "Test 13: Verify Nginx hardening backup safety..."
 nginx_harden_script="$PROJECT_ROOT/install/security/nginx_harden.sh"
 if grep -q 'backup_root="/etc/nginx/backups"' "$nginx_harden_script" && \
-   grep -q 'default_backup_path="\$backup_root/sites-enabled-default\.' "$nginx_harden_script" && \
-   grep -q 'nginx_conf_backup_path="\$backup_root/nginx.conf\.' "$nginx_harden_script" && \
+   grep -Fq "default_backup_path=\"\$backup_root/sites-enabled-default." "$nginx_harden_script" && \
+   grep -Fq "nginx_conf_backup_path=\"\$backup_root/nginx.conf." "$nginx_harden_script" && \
    grep -q 'restore_nginx_backups' "$nginx_harden_script" && \
    ! grep -q '/etc/nginx/sites-enabled/default.backup' "$nginx_harden_script" && \
    ! grep -q 'cp /etc/nginx/sites-enabled/default.backup.\*' "$nginx_harden_script" && \
