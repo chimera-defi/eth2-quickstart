@@ -34,7 +34,7 @@ source_exports
 # Structure validation only - no actual installs. E2E (actual execution) is in ci_test_e2e.sh
 # Test 1: Verify required files exist
 log_info "Test 1: Verify required files..."
-for file in run_2.sh exports.sh lib/common_functions.sh; do
+for file in run_2.sh exports.sh lib/common_functions.sh config/edge_policy.env; do
     assert_file_exists "$PROJECT_ROOT/$file" "$file"
 done
 
@@ -119,7 +119,7 @@ fi
 # Covers: execution (7), consensus (6), MEV (3), web (caddy, nginx), utils
 log_info "Test 3: Verify all install scripts (syntax)..."
 syntax_fail=0
-for script in "${CLIENT_SCRIPTS[@]}" "install/utils/install_dependencies.sh" "install/utils/select_clients.sh" "install/web/install_caddy.sh" "install/web/install_nginx.sh"; do
+for script in "${CLIENT_SCRIPTS[@]}" "install/utils/install_dependencies.sh" "install/utils/select_clients.sh" "install/web/install_caddy.sh" "install/web/install_nginx.sh" "install/web/proxy_config_renderer.sh" "config/edge_policy.env" "test/validate_proxy_policy_sync.sh" "test/validate_proxy_policy_toggles.sh"; do
     if [[ -f "$PROJECT_ROOT/$script" ]]; then
         if bash -n "$PROJECT_ROOT/$script" 2>/dev/null; then
             log_info "  ✓ $script"
@@ -257,6 +257,40 @@ if grep -q "./install/web/install_nginx.sh" "$PROJECT_ROOT/install/ssl/install_a
     log_info "  ✓ SSL scripts use canonical install/web script paths"
 else
     log_error "  ✗ SSL scripts contain stale nginx script paths"
+    exit 1
+fi
+
+# Test 11: Shared proxy policy should render consistent Nginx/Caddy routes
+log_info "Test 11: Validate shared proxy policy rendering..."
+if bash "$PROJECT_ROOT/test/validate_proxy_policy_sync.sh"; then
+    log_info "  ✓ Shared proxy policy rendering passes"
+else
+    log_error "  ✗ Shared proxy policy rendering failed"
+    exit 1
+fi
+
+# Test 12: Shared proxy policy feature toggles should render correctly
+log_info "Test 12: Validate shared proxy policy toggles..."
+if bash "$PROJECT_ROOT/test/validate_proxy_policy_toggles.sh"; then
+    log_info "  ✓ Shared proxy policy toggle rendering passes"
+else
+    log_error "  ✗ Shared proxy policy toggle rendering failed"
+    exit 1
+fi
+
+# Test 13: Nginx hardening backups must not live in active include paths
+log_info "Test 13: Verify Nginx hardening backup safety..."
+nginx_harden_script="$PROJECT_ROOT/install/security/nginx_harden.sh"
+if grep -q 'backup_root="/etc/nginx/backups"' "$nginx_harden_script" && \
+   grep -Fq "default_backup_path=\"\$backup_root/sites-enabled-default." "$nginx_harden_script" && \
+   grep -Fq "nginx_conf_backup_path=\"\$backup_root/nginx.conf." "$nginx_harden_script" && \
+   grep -q 'restore_nginx_backups' "$nginx_harden_script" && \
+   ! grep -q '/etc/nginx/sites-enabled/default.backup' "$nginx_harden_script" && \
+   ! grep -q 'cp /etc/nginx/sites-enabled/default.backup.\*' "$nginx_harden_script" && \
+   ! grep -q 'cp /etc/nginx/nginx.conf.backup.\*' "$nginx_harden_script"; then
+    log_info "  ✓ Nginx hardening backup path/restore strategy is safe"
+else
+    log_error "  ✗ Nginx hardening backup strategy may reintroduce include collisions"
     exit 1
 fi
 

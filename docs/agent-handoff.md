@@ -7,6 +7,267 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (CI run-2 fix: /workspace ownership for testuser, 2026-04-19)
+
+- New CI failures after `c3dc625`:
+  - `run-2-e2e` and `run-2-web` failed with:
+    - `mkdir: cannot create directory '/workspace/logs': Permission denied`
+- Root cause:
+  - `COPY --chown=testuser:testuser . /workspace/` set ownership for copied contents,
+    but `/workspace` itself (created by `WORKDIR`) remained `root:root`.
+  - `run_2.sh` (executed as `testuser`) needs to create `/workspace/logs` in clean CI images.
+- Fix:
+  - `test/Dockerfile`: add non-recursive top-level ownership correction:
+    - `RUN chown testuser:testuser /workspace`
+  - keeps prior recursive-`chown -R` removal (performance win) while restoring write safety.
+- Local validation after fix:
+  - `docker build -f test/Dockerfile -t eth-node-test-local .`
+  - `docker run --rm --entrypoint bash eth-node-test-local -lc 'id && stat -c "%U:%G %a %n" /workspace && mkdir -p /workspace/logs && stat -c "%U:%G %a %n" /workspace/logs'`
+  - `GITHUB_TOKEN="$(gh auth token)" E2E_IMAGE_NAME=eth-node-test-local SKIP_BUILD=true E2E_EXECUTION=geth E2E_CONSENSUS=prysm E2E_MEV=mev-boost ./test/run_e2e.sh --phase=2` -> `29/29`
+  - `GITHUB_TOKEN="$(gh auth token)" E2E_IMAGE_NAME=eth-node-test-local SKIP_BUILD=true ./test/run_e2e.sh --phase=2` -> `29/29`
+
+## Latest Update (CI shellcheck fix + fresh-image multi-pass rerun, 2026-04-19)
+
+- Root cause of new CI failure was non-functional lint-only regression:
+  - `shellcheck-extended` flagged `SC2016` in `test/ci_test_run_2.sh` (`Test 13` grep patterns).
+- Fix:
+  - switched the two backup-path assertions in `Test 13` from single-quoted regex to fixed-string `grep -Fq` checks.
+  - behavior preserved: still enforces `/etc/nginx/backups` strategy and rejects legacy wildcard restore patterns.
+- Fresh local validation (post-fix):
+  - exact CI-style shellcheck sweep over all `.sh` files (pass)
+  - `bash test/validate_proxy_policy_sync.sh` (pass)
+  - `bash test/validate_proxy_policy_toggles.sh` (pass)
+  - `bash test/validate_caddy_config.sh` (pass)
+  - `docker run ... eth-node-test-local /workspace/test/ci_test_run_2.sh` (pass, includes new `Test 13`)
+  - rebuilt image from current HEAD: `docker build -f test/Dockerfile -t eth-node-test-local .`
+  - fresh-image E2E:
+    - `... ./test/run_e2e.sh --phase=1` -> `18/18`
+    - `... ./test/run_e2e.sh --phase=2` -> `29/29`
+- Outcome:
+  - Caddy/Nginx shared-policy parity checks remain green.
+  - CI-only miss explained by lint rule coverage mismatch in local quick pass, now corrected and revalidated.
+
+## Latest Update (Multi-pass CI/local parity review + Docker E2E image hardening, 2026-04-19)
+
+- Performed a second-pass audit focused on Nginx/Caddy parity + CI/local drift:
+  - confirmed shared renderer still drives both stacks:
+    - `install/web/proxy_config_renderer.sh`
+    - `install/web/nginx_helpers.sh`
+    - `install/web/caddy_helpers.sh`
+  - confirmed historical CI failures (`run-2-e2e`, `run-2-web`) on old head are now green on current head.
+- Found and fixed a local/CI reproducibility bottleneck in test image build:
+  - `test/Dockerfile` no longer uses recursive `chown -R /workspace` step.
+  - now uses `COPY --chown=testuser:testuser` with early user creation.
+  - preserved sudo safety by configuring only `testuser` entries in `/etc/sudoers.d` **after** package install (keeps root sudo policy intact).
+- Added regression guard for the Nginx backup/include collision class:
+  - `test/ci_test_run_2.sh` new `Test 13` enforces backup paths under `/etc/nginx/backups` and blocks wildcard restore regressions.
+- Validation run:
+  - `bash -n install/web/proxy_config_renderer.sh install/web/nginx_helpers.sh install/web/caddy_helpers.sh install/security/nginx_harden.sh install/security/caddy_harden.sh install/web/install_caddy.sh install/web/install_nginx.sh test/run_e2e.sh test/ci_test_e2e.sh`
+  - `shellcheck -x --exclude=SC1091,SC2034 install/web/proxy_config_renderer.sh install/web/nginx_helpers.sh install/web/caddy_helpers.sh install/security/nginx_harden.sh install/security/caddy_harden.sh install/web/install_caddy.sh install/web/install_nginx.sh test/run_e2e.sh test/ci_test_e2e.sh`
+  - `bash test/validate_proxy_policy_sync.sh`
+  - `bash test/validate_proxy_policy_toggles.sh`
+  - `bash test/validate_caddy_config.sh`
+  - `E2E_IMAGE_NAME=eth-node-test-local SKIP_BUILD=true E2E_EXECUTION=geth E2E_CONSENSUS=prysm E2E_MEV=mev-boost ./test/run_e2e.sh --phase=2`
+  - `E2E_IMAGE_NAME=eth-node-test-local SKIP_BUILD=true ./test/run_e2e.sh --phase=2`
+  - `E2E_IMAGE_NAME=eth-node-test-local SKIP_BUILD=true ./test/run_e2e.sh --phase=1`
+  - `docker run --rm --privileged --user testuser -v "$PWD:/workspace" -w /workspace -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical -e CI=true eth-node-test-local /workspace/test/ci_test_run_2.sh`
+- Follow-up:
+  - optional future optimization: add safe `.dockerignore` strategy for local build context size, but only after confirming no tests depend on `.git` presence in-image.
+
+## Latest Update (CI fix: Nginx hardening backup include collision, 2026-04-19)
+
+- Fixed failing PR #170 jobs `run-2-e2e` / `run-2-web` root cause in Nginx hardening:
+  - `install/security/nginx_harden.sh` previously wrote backups to `/etc/nginx/sites-enabled/default.backup.*`
+  - those files can be glob-included by Nginx config loading, creating duplicate `upstream ws_backend` definitions during `nginx -t`
+- Change:
+  - moved backup outputs to `/etc/nginx/backups`
+  - added explicit backup paths:
+    - `sites-enabled-default.<timestamp>.bak`
+    - `nginx.conf.<timestamp>.bak`
+  - added `restore_nginx_backups()` helper to restore only those explicit files
+  - replaced wildcard rollback copies with helper
+  - updated final hardening summary log to show backup directory
+- Validation run:
+  - `bash -n install/security/nginx_harden.sh`
+  - `shellcheck -x --exclude=SC1091,SC2034 install/security/nginx_harden.sh`
+  - `GITHUB_TOKEN="$(gh auth token)" SKIP_BUILD=true ./test/run_e2e.sh --phase=2` (green, but uses prebuilt image)
+  - committed and pushed fix commit: `39a37fc` (`fix(ci): keep nginx hardening backups out of active includes`)
+- Follow-up:
+  - wait for fresh PR #170 CI on commit `39a37fc` (especially `CI - Docker Integration Tests`) before merge.
+
+## Latest Update (CI fix: Nginx gzip duplicate in run_2 E2E, 2026-04-18)
+
+- Fixed failing CI jobs `run-2-e2e` and `run-2-web` caused by:
+  - `nginx: "gzip" directive is duplicate in /etc/nginx/conf.d/eth2-edge-policy.conf`
+- Root cause:
+  - shared HTTP policy file set `gzip on;` in `http` context, which conflicts with distro defaults that already set gzip in `nginx.conf`.
+- Change:
+  - moved Nginx compression directives from `render_nginx_http_policy_file` to `render_nginx_site_config` (server context) in `install/web/proxy_config_renderer.sh`.
+  - kept `EDGE_ENABLE_COMPRESSION` behavior intact (still toggles compression for both Nginx and Caddy).
+- Test updates:
+  - `test/validate_proxy_policy_sync.sh` now asserts Nginx compression in rendered site config.
+  - `test/validate_proxy_policy_toggles.sh` now asserts compression-off state in rendered Nginx site config.
+- Validation run:
+  - `bash -n install/web/proxy_config_renderer.sh test/validate_proxy_policy_sync.sh test/validate_proxy_policy_toggles.sh`
+  - `shellcheck -x --exclude=SC1091,SC2034 install/web/proxy_config_renderer.sh test/validate_proxy_policy_sync.sh test/validate_proxy_policy_toggles.sh`
+  - `bash test/validate_proxy_policy_sync.sh`
+  - `bash test/validate_proxy_policy_toggles.sh`
+  - `bash test/validate_caddy_config.sh`
+  - `GITHUB_TOKEN="$(gh auth token)" SKIP_BUILD=true E2E_EXECUTION=geth E2E_CONSENSUS=prysm E2E_MEV=mev-boost ./test/run_e2e.sh --phase=2`
+  - `GITHUB_TOKEN="$(gh auth token)" SKIP_BUILD=true ./test/run_e2e.sh --phase=2`
+- Follow-up:
+  - remaining Caddy `header_up` warnings in E2E are non-fatal; optional cleanup can remove redundant forwarded-header directives.
+
+## Latest Update (Merge-hardening CI flake guard, 2026-04-18)
+
+- Hardened `test/validate_downloads.sh` so transient GitHub API/network jitter is retried before failing CI:
+  - bounded retries with linear backoff for both `get_latest_release` and asset URL checks
+  - does not fail fast on first miss; aggregates all failures and reports a full failing checklist
+- Added optional tuning env vars for CI/local runs:
+  - `DOWNLOAD_TEST_RETRIES` (default `3`)
+  - `DOWNLOAD_TEST_RETRY_DELAY_SECONDS` (default `2`)
+- Validation run:
+  - `bash -n test/validate_downloads.sh`
+  - `shellcheck -x --exclude=SC1091,SC2034 test/validate_downloads.sh`
+  - `bash test/validate_downloads.sh`
+  - `docker run --rm --privileged -v "$PWD:/workspace" -w /workspace -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true eth-node-test /workspace/test/docker_test.sh`
+- Follow-up:
+  - keep retries bounded (no infinite loop) so persistent upstream/API issues still fail loudly.
+
+## Latest Update (Edge polish loop pass, 2026-04-18)
+
+- Added focused toggle contract test:
+  - `test/validate_proxy_policy_toggles.sh`
+  - validates metrics/trusted-proxy toggles, resolver + mixed upstream behavior, and compression on/off behavior.
+- Wired toggle contract test into run_2 structure CI:
+  - `test/ci_test_run_2.sh`
+- Tightened Caddy metrics exposure semantics:
+  - metrics now render to a local-only site block (`http://127.0.0.1`) when enabled, instead of public site route exposure.
+- Added best-effort Caddyfile formatting on render:
+  - `install/web/caddy_helpers.sh` now runs `caddy fmt --overwrite` when Caddy binary is available.
+  - `test/validate_caddy_config.sh` docker validation path now formats before validate.
+- Updated user-facing docs for new shared edge tuning knobs:
+  - `README.md`
+  - `docs/CADDY_INSTALLATION.md`
+- Validation run:
+  - `bash -n install/web/proxy_config_renderer.sh install/web/caddy_helpers.sh test/validate_proxy_policy_toggles.sh test/ci_test_run_2.sh test/validate_caddy_config.sh`
+  - `shellcheck -x --exclude=SC1091,SC2034 install/web/proxy_config_renderer.sh install/web/caddy_helpers.sh test/validate_proxy_policy_toggles.sh test/ci_test_run_2.sh test/validate_caddy_config.sh`
+  - `bash test/validate_proxy_policy_sync.sh`
+  - `bash test/validate_proxy_policy_toggles.sh`
+  - `bash test/validate_caddy_config.sh`
+  - `docker run --rm --privileged --user testuser -v "$PWD:/workspace" -w /workspace -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical -e CI=true eth-node-test /workspace/test/ci_test_run_2.sh`
+  - `docker run --rm --privileged -v "$PWD:/workspace" -w /workspace -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true eth-node-test /workspace/test/docker_test.sh`
+- Follow-up:
+  - CI re-run on latest branch head is still required before merge.
+
+## Latest Update (Edge performance + parity feature bundle, 2026-04-18)
+
+- Expanded shared edge renderer with explicit performance/reliability knobs for both Nginx and Caddy:
+  - upstream pool definitions for RPC/WS with selectable LB policy (`least_conn` or `ip_hash`)
+  - explicit upstream retry/failover tuning
+  - explicit keepalive sizing
+  - shared compression enablement
+  - optional metrics endpoint wiring
+  - optional trusted-proxy handling
+- Added Nginx cache enhancements for RPC-read path:
+  - `proxy_cache_background_update on`
+  - `proxy_cache_revalidate on`
+  - configurable `proxy_cache_min_uses` (`EDGE_RPC_CACHE_MIN_USES`)
+- Removed redundant Caddy `header_up X-Forwarded-*` overrides to align with Caddy defaults and reduce noisy validation warnings.
+- Added new user-facing tuning knobs in:
+  - `exports.sh`
+  - `config/user_config.env.example`
+- Extended parity contract checks:
+  - `test/validate_proxy_policy_sync.sh` now asserts upstream blocks, retry/cache tuning, and compression directives.
+- Validation run:
+  - `bash -n install/web/proxy_config_renderer.sh exports.sh config/user_config.env.example test/validate_proxy_policy_sync.sh`
+  - `shellcheck -x --exclude=SC1091,SC2034 install/web/proxy_config_renderer.sh exports.sh test/validate_proxy_policy_sync.sh`
+  - `bash test/validate_proxy_policy_sync.sh`
+  - `bash test/validate_caddy_config.sh`
+  - `docker run --rm --privileged --user testuser -v "$PWD:/workspace" -w /workspace -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical -e CI=true eth-node-test /workspace/test/ci_test_run_2.sh`
+  - `docker run --rm --privileged -v "$PWD:/workspace" -w /workspace -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true eth-node-test /workspace/test/docker_test.sh`
+- Follow-up:
+  - metrics remain opt-in (`EDGE_ENABLE_METRICS=false` default) to avoid exposing status endpoints by accident.
+
+## Latest Update (Edge-policy refactor pass, 2026-04-18)
+
+- Refactored shared edge policy to be data-driven via:
+  - `config/edge_policy.env`
+  - loaded by `install/web/proxy_config_renderer.sh` with safe defaults.
+- De-duplicated `render_nginx_site_config` in `install/web/proxy_config_renderer.sh`:
+  - reduced dual SSL/non-SSL template duplication while preserving behavior.
+- Removed unused legacy helper surface:
+  - deleted `install/web/web_helpers_common.sh`
+  - removed stale sourcing from Nginx/Caddy helpers and Caddy validation test.
+- Consolidated fail2ban ownership by phase:
+  - `install/security/consolidated_security.sh` now manages baseline SSH fail2ban only (phase 1).
+  - `install/security/nginx_harden.sh` remains owner of Nginx-specific fail2ban filters/jails.
+- Refactored web hardening E2E assertions for reuse:
+  - `test/ci_test_e2e.sh` now uses shared helpers for HTTP-code assertions/listener readiness.
+- Expanded structure checks to include new policy config artifact:
+  - `test/ci_test_run_2.sh` now requires and syntax-checks `config/edge_policy.env`.
+- Validation run:
+  - `bash -n install/security/consolidated_security.sh install/web/caddy_helpers.sh install/web/nginx_helpers.sh install/web/proxy_config_renderer.sh test/ci_test_e2e.sh test/ci_test_run_2.sh test/validate_caddy_config.sh config/edge_policy.env`
+  - `shellcheck -x --exclude=SC1091,SC2034 install/security/consolidated_security.sh install/web/caddy_helpers.sh install/web/nginx_helpers.sh install/web/proxy_config_renderer.sh test/ci_test_e2e.sh test/ci_test_run_2.sh test/validate_caddy_config.sh`
+  - `bash test/validate_proxy_policy_sync.sh`
+  - `bash test/validate_caddy_config.sh`
+  - `docker run --rm --privileged --user testuser -v "$PWD:/workspace" -w /workspace -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical -e CI=true eth-node-test /workspace/test/ci_test_run_2.sh`
+  - `docker run --rm --privileged -v "$PWD:/workspace" -w /workspace -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true eth-node-test /workspace/test/docker_test.sh`
+- Follow-up:
+  - Caddy still emits non-fatal warnings about redundant `header_up X-Forwarded-*`; optional cleanup can remove those directives from the renderer.
+
+## Latest Update (PR #170 docker-integration CI fix, 2026-04-18)
+
+- Fixed `docker-integration` failure in `test/validate_caddy_config.sh` where `caddy validate` ran as non-root and failed opening `/var/log/caddy/access.log`.
+- Validation strategy is now resilient and ordered:
+  - try `sudo -n caddy validate` when non-interactive sudo is available,
+  - fallback to plain `caddy validate`,
+  - fallback to `docker run caddy validate`.
+- Added cleanup trap for generated temporary Caddyfile to avoid stale `/tmp` artifacts.
+- Validation run:
+  - `bash test/validate_caddy_config.sh`
+  - `docker run --rm --privileged -v "$PWD:/workspace" -w /workspace eth-node-test /workspace/test/validate_caddy_config.sh`
+  - `docker run --rm --privileged -v "$PWD:/workspace" -w /workspace -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true eth-node-test /workspace/test/docker_test.sh`
+- Follow-up:
+  - CI still emits non-fatal Caddy warnings about redundant `header_up X-Forwarded-*`; optional cleanup can remove these directives from the shared renderer for cleaner logs.
+
+## Latest Update (Unified Nginx/Caddy edge policy + RPC cache hardening, 2026-04-18)
+
+- Implemented a single shared edge-policy renderer at:
+  - `install/web/proxy_config_renderer.sh`
+- Refactored both web stacks to consume the same source-of-truth policy:
+  - `install/web/nginx_helpers.sh`
+  - `install/web/caddy_helpers.sh`
+  - `install/security/caddy_harden.sh`
+- Added Nginx RPC read-cache and hardening behavior in shared policy:
+  - JSON-RPC method classification via `map` in `http` context
+  - cache enabled for read calls (`MISS/HIT` path)
+  - write/dynamic calls marked non-cacheable (`proxy_no_cache`)
+  - spam path blocks and request-method restrictions retained
+- Added fail2ban/jail hardening improvements for Nginx:
+  - `install/security/nginx_harden.sh`
+- Ensured Caddy apply path always restarts against latest rendered config:
+  - `install/web/install_caddy.sh`
+  - log path ownership/readiness hardened in helper layer
+- Added policy-sync test coverage:
+  - `test/validate_proxy_policy_sync.sh`
+  - wired into `test/ci_test_run_2.sh`
+- Expanded phase-2 E2E assertions:
+  - `test/ci_test_e2e.sh`
+  - verifies Caddy method/spam hardening
+  - verifies Nginx method/spam hardening + RPC cache classification/hit
+- Updated docs for shared-policy architecture:
+  - `README.md`
+  - `docs/CADDY_INSTALLATION.md`
+- Validation run:
+  - `bash -n install/web/proxy_config_renderer.sh install/web/nginx_helpers.sh install/web/caddy_helpers.sh install/web/install_caddy.sh install/security/caddy_harden.sh install/security/nginx_harden.sh install/security/consolidated_security.sh test/validate_proxy_policy_sync.sh test/ci_test_e2e.sh test/ci_test_run_2.sh`
+  - `shellcheck install/web/proxy_config_renderer.sh install/web/nginx_helpers.sh install/web/caddy_helpers.sh install/web/install_caddy.sh install/security/caddy_harden.sh install/security/nginx_harden.sh install/security/consolidated_security.sh test/validate_proxy_policy_sync.sh test/ci_test_e2e.sh test/ci_test_run_2.sh`
+  - `bash test/validate_proxy_policy_sync.sh`
+  - `bash test/validate_caddy_config.sh`
+  - `E2E_MEV=none ./test/run_e2e.sh --phase=2` (pass: 27/27)
+- Follow-up:
+  - Docker E2E build time remains dominated by `chown -R /workspace` in `test/Dockerfile`; consider Dockerfile layering/ownership optimization to speed CI feedback loops.
+
 ## Latest Update (PR watch refinement pass, 2026-04-13)
 
 - Refined watch defaults to local active PR monitoring:
