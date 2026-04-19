@@ -7,6 +7,27 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (CI shellcheck fix + fresh-image multi-pass rerun, 2026-04-19)
+
+- Root cause of new CI failure was non-functional lint-only regression:
+  - `shellcheck-extended` flagged `SC2016` in `test/ci_test_run_2.sh` (`Test 13` grep patterns).
+- Fix:
+  - switched the two backup-path assertions in `Test 13` from single-quoted regex to fixed-string `grep -Fq` checks.
+  - behavior preserved: still enforces `/etc/nginx/backups` strategy and rejects legacy wildcard restore patterns.
+- Fresh local validation (post-fix):
+  - exact CI-style shellcheck sweep over all `.sh` files (pass)
+  - `bash test/validate_proxy_policy_sync.sh` (pass)
+  - `bash test/validate_proxy_policy_toggles.sh` (pass)
+  - `bash test/validate_caddy_config.sh` (pass)
+  - `docker run ... eth-node-test-local /workspace/test/ci_test_run_2.sh` (pass, includes new `Test 13`)
+  - rebuilt image from current HEAD: `docker build -f test/Dockerfile -t eth-node-test-local .`
+  - fresh-image E2E:
+    - `... ./test/run_e2e.sh --phase=1` -> `18/18`
+    - `... ./test/run_e2e.sh --phase=2` -> `29/29`
+- Outcome:
+  - Caddy/Nginx shared-policy parity checks remain green.
+  - CI-only miss explained by lint rule coverage mismatch in local quick pass, now corrected and revalidated.
+
 ## Latest Update (Multi-pass CI/local parity review + Docker E2E image hardening, 2026-04-19)
 
 - Performed a second-pass audit focused on Nginx/Caddy parity + CI/local drift:
