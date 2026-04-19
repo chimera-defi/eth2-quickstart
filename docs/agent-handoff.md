@@ -7,6 +7,25 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (CI run-2 fix: /workspace ownership for testuser, 2026-04-19)
+
+- New CI failures after `c3dc625`:
+  - `run-2-e2e` and `run-2-web` failed with:
+    - `mkdir: cannot create directory '/workspace/logs': Permission denied`
+- Root cause:
+  - `COPY --chown=testuser:testuser . /workspace/` set ownership for copied contents,
+    but `/workspace` itself (created by `WORKDIR`) remained `root:root`.
+  - `run_2.sh` (executed as `testuser`) needs to create `/workspace/logs` in clean CI images.
+- Fix:
+  - `test/Dockerfile`: add non-recursive top-level ownership correction:
+    - `RUN chown testuser:testuser /workspace`
+  - keeps prior recursive-`chown -R` removal (performance win) while restoring write safety.
+- Local validation after fix:
+  - `docker build -f test/Dockerfile -t eth-node-test-local .`
+  - `docker run --rm --entrypoint bash eth-node-test-local -lc 'id && stat -c "%U:%G %a %n" /workspace && mkdir -p /workspace/logs && stat -c "%U:%G %a %n" /workspace/logs'`
+  - `GITHUB_TOKEN="$(gh auth token)" E2E_IMAGE_NAME=eth-node-test-local SKIP_BUILD=true E2E_EXECUTION=geth E2E_CONSENSUS=prysm E2E_MEV=mev-boost ./test/run_e2e.sh --phase=2` -> `29/29`
+  - `GITHUB_TOKEN="$(gh auth token)" E2E_IMAGE_NAME=eth-node-test-local SKIP_BUILD=true ./test/run_e2e.sh --phase=2` -> `29/29`
+
 ## Latest Update (CI shellcheck fix + fresh-image multi-pass rerun, 2026-04-19)
 
 - Root cause of new CI failure was non-functional lint-only regression:
