@@ -16,6 +16,9 @@ RUN useradd -m -s /bin/bash testuser
 WORKDIR /workspace
 # Preserve the previous end-state ownership without a late recursive chown.
 COPY --chown=testuser:testuser . /workspace/
+# WORKDIR creates /workspace as root; grant testuser ownership of the top-level
+# directory so runtime scripts can create new paths like /workspace/logs.
+RUN chown testuser:testuser /workspace
 
 # Pre-seed debconf (single source: install/utils/debconf_preseed.sh)
 RUN bash /workspace/install/utils/debconf_preseed.sh
