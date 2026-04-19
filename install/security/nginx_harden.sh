@@ -14,11 +14,26 @@ require_root
 
 log_info "Starting Nginx security hardening..."
 
+backup_root="/etc/nginx/backups"
+backup_timestamp="$(date +%Y%m%d_%H%M%S)"
+default_backup_path="$backup_root/sites-enabled-default.${backup_timestamp}.bak"
+nginx_conf_backup_path="$backup_root/nginx.conf.${backup_timestamp}.bak"
+
+restore_nginx_backups() {
+    if [[ -f "$default_backup_path" ]]; then
+        sudo cp "$default_backup_path" /etc/nginx/sites-enabled/default 2>/dev/null || true
+    fi
+    if [[ -f "$nginx_conf_backup_path" ]]; then
+        sudo cp "$nginx_conf_backup_path" /etc/nginx/nginx.conf 2>/dev/null || true
+    fi
+}
+
 # Backup original Nginx configuration
 log_info "Creating backup of original Nginx configuration..."
+sudo mkdir -p "$backup_root"
 if [[ -f /etc/nginx/sites-enabled/default ]]; then
-    sudo cp /etc/nginx/sites-enabled/default "/etc/nginx/sites-enabled/default.backup.$(date +%Y%m%d_%H%M%S)"
-    log_info "Backup created: /etc/nginx/sites-enabled/default.backup.$(date +%Y%m%d_%H%M%S)"
+    sudo cp /etc/nginx/sites-enabled/default "$default_backup_path"
+    log_info "Backup created: $default_backup_path"
 else
     log_error "Nginx configuration not found at /etc/nginx/sites-enabled/default"
     exit 1
@@ -26,7 +41,7 @@ fi
 
 # Backup nginx.conf if it exists
 if [[ -f /etc/nginx/nginx.conf ]]; then
-    sudo cp /etc/nginx/nginx.conf "/etc/nginx/nginx.conf.backup.$(date +%Y%m%d_%H%M%S)"
+    sudo cp /etc/nginx/nginx.conf "$nginx_conf_backup_path"
 fi
 
 # Create fail2ban filter for nginx proxy abuse
@@ -85,7 +100,8 @@ port    = 80,443
 filter = nginx-limit-req
 logpath = /var/log/nginx/error.log
 maxretry = 5
-bantime  = 3600
+findtime = 600
+bantime  = 21600
 EOF
 fi
 
@@ -97,6 +113,29 @@ ignoreregex =
 EOF
 
 sudo mv /tmp/nginx-limit-req.conf /etc/fail2ban/filter.d/nginx-limit-req.conf
+
+# Add jail for repeated non-RPC spammy path probes (issue #2)
+if ! grep -q "\[nginx-rpc-spam\]" /etc/fail2ban/jail.local 2>/dev/null; then
+    cat >> /etc/fail2ban/jail.local << EOF
+
+[nginx-rpc-spam]
+enabled = true
+port    = 80,443
+filter  = nginx-rpc-spam
+logpath = /var/log/nginx/access.log
+maxretry = 6
+findtime = 600
+bantime  = 86400
+EOF
+fi
+
+cat > /tmp/nginx-rpc-spam.conf << EOF
+[Definition]
+failregex = ^<HOST> -.*"(GET|HEAD) /(?!rpc|ws)([^ ]*) HTTP/.*" (403|404|444)
+ignoreregex =
+EOF
+
+sudo mv /tmp/nginx-rpc-spam.conf /etc/fail2ban/filter.d/nginx-rpc-spam.conf
 
 # Add additional security settings to nginx.conf (avoid duplicate server_tokens)
 log_info "Enhancing nginx.conf with security settings..."
@@ -123,8 +162,7 @@ log_info "Validating Nginx configuration..."
 if ! sudo nginx -t; then
     log_error "Nginx configuration validation failed after hardening"
     log_info "Restoring backups..."
-    sudo cp /etc/nginx/sites-enabled/default.backup.* /etc/nginx/sites-enabled/default 2>/dev/null || true
-    sudo cp /etc/nginx/nginx.conf.backup.* /etc/nginx/nginx.conf 2>/dev/null || true
+    restore_nginx_backups
     sudo systemctl restart nginx
     exit 1
 fi
@@ -133,8 +171,7 @@ log_info "Restarting nginx..."
 if ! sudo systemctl restart nginx; then
     log_error "Failed to restart nginx"
     log_info "Restoring backups..."
-    sudo cp /etc/nginx/sites-enabled/default.backup.* /etc/nginx/sites-enabled/default 2>/dev/null || true
-    sudo cp /etc/nginx/nginx.conf.backup.* /etc/nginx/nginx.conf 2>/dev/null || true
+    restore_nginx_backups
     sudo systemctl restart nginx
     exit 1
 fi
@@ -208,7 +245,8 @@ log_info "- Fail2ban rate limit protection"
 log_info "- Enhanced security monitoring"
 log_info "- Configuration backup and rollback support"
 log_info "- Server tokens disabled"
+log_info "- Spam-path fail2ban jail for non-RPC probes"
 
-log_info "Configuration backup: /etc/nginx/sites-enabled/default.backup.*"
+log_info "Configuration backup: $backup_root"
 log_info "Security logs: /var/log/nginx_security.log"
-log_info "Fail2ban jails: nginx-proxy, nginx-limit-req"
+log_info "Fail2ban jails: nginx-proxy, nginx-limit-req, nginx-rpc-spam"
