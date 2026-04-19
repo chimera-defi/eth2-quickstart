@@ -278,6 +278,22 @@ else
     exit 1
 fi
 
+# Test 13: Nginx hardening backups must not live in active include paths
+log_info "Test 13: Verify Nginx hardening backup safety..."
+nginx_harden_script="$PROJECT_ROOT/install/security/nginx_harden.sh"
+if grep -q 'backup_root="/etc/nginx/backups"' "$nginx_harden_script" && \
+   grep -q 'default_backup_path="\$backup_root/sites-enabled-default\.' "$nginx_harden_script" && \
+   grep -q 'nginx_conf_backup_path="\$backup_root/nginx.conf\.' "$nginx_harden_script" && \
+   grep -q 'restore_nginx_backups' "$nginx_harden_script" && \
+   ! grep -q '/etc/nginx/sites-enabled/default.backup' "$nginx_harden_script" && \
+   ! grep -q 'cp /etc/nginx/sites-enabled/default.backup.\*' "$nginx_harden_script" && \
+   ! grep -q 'cp /etc/nginx/nginx.conf.backup.\*' "$nginx_harden_script"; then
+    log_info "  ✓ Nginx hardening backup path/restore strategy is safe"
+else
+    log_error "  ✗ Nginx hardening backup strategy may reintroduce include collisions"
+    exit 1
+fi
+
 log_info "╔════════════════════════════════════════════════════════════════╗"
 log_info "║  run_2.sh - Structure PASSED                                  ║"
 log_info "║  Full E2E: ./test/run_e2e.sh --phase=2                        ║"

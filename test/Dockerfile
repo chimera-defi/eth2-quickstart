@@ -9,9 +9,13 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV DEBIAN_PRIORITY=critical
 
+# Create a non-root user for testing (mimics real deployment)
+RUN useradd -m -s /bin/bash testuser
+
 # Set up working directory and copy project first (needed for debconf_preseed.sh)
 WORKDIR /workspace
-COPY . /workspace/
+# Preserve the previous end-state ownership without a late recursive chown.
+COPY --chown=testuser:testuser . /workspace/
 
 # Pre-seed debconf (single source: install/utils/debconf_preseed.sh)
 RUN bash /workspace/install/utils/debconf_preseed.sh
@@ -38,15 +42,12 @@ RUN systemctl enable ssh 2>/dev/null || systemctl enable sshd 2>/dev/null || tru
 # Create root SSH keys for run_1 E2E (collect_and_backup_authorized_keys requires keys or exits)
 RUN mkdir -p /root/.ssh && echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI test-key-for-e2e" > /root/.ssh/authorized_keys && chmod 600 /root/.ssh/authorized_keys
 
-# Create a non-root user for testing (mimics real deployment)
-# Preserve DEBIAN_* through sudo so apt/dpkg stay noninteractive (prevents tzdata Readline hang)
-RUN useradd -m -s /bin/bash testuser \
-    && echo "testuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
-    && echo 'Defaults env_keep += "DEBIAN_FRONTEND DEBIAN_PRIORITY TZ"' > /etc/sudoers.d/99-noninteractive \
-    && chmod 440 /etc/sudoers.d/99-noninteractive
-
-# Set ownership
-RUN chown -R testuser:testuser /workspace
+# Configure testuser sudo access after sudo package is installed so default root
+# policy remains intact.
+RUN mkdir -p /etc/sudoers.d \
+    && printf '%s\n' "testuser ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/99-testuser \
+    && printf '%s\n' 'Defaults:testuser env_keep += "DEBIAN_FRONTEND DEBIAN_PRIORITY TZ"' > /etc/sudoers.d/99-testuser-env \
+    && chmod 440 /etc/sudoers.d/99-testuser /etc/sudoers.d/99-testuser-env
 
 # Pre-install phase2 user tools once per image so matrix lanes avoid repeated setup cost.
 # CI_E2E=true is required because phase2 intentionally skips Rust installs in generic Docker.

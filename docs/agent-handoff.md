@@ -7,6 +7,54 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (Multi-pass CI/local parity review + Docker E2E image hardening, 2026-04-19)
+
+- Performed a second-pass audit focused on Nginx/Caddy parity + CI/local drift:
+  - confirmed shared renderer still drives both stacks:
+    - `install/web/proxy_config_renderer.sh`
+    - `install/web/nginx_helpers.sh`
+    - `install/web/caddy_helpers.sh`
+  - confirmed historical CI failures (`run-2-e2e`, `run-2-web`) on old head are now green on current head.
+- Found and fixed a local/CI reproducibility bottleneck in test image build:
+  - `test/Dockerfile` no longer uses recursive `chown -R /workspace` step.
+  - now uses `COPY --chown=testuser:testuser` with early user creation.
+  - preserved sudo safety by configuring only `testuser` entries in `/etc/sudoers.d` **after** package install (keeps root sudo policy intact).
+- Added regression guard for the Nginx backup/include collision class:
+  - `test/ci_test_run_2.sh` new `Test 13` enforces backup paths under `/etc/nginx/backups` and blocks wildcard restore regressions.
+- Validation run:
+  - `bash -n install/web/proxy_config_renderer.sh install/web/nginx_helpers.sh install/web/caddy_helpers.sh install/security/nginx_harden.sh install/security/caddy_harden.sh install/web/install_caddy.sh install/web/install_nginx.sh test/run_e2e.sh test/ci_test_e2e.sh`
+  - `shellcheck -x --exclude=SC1091,SC2034 install/web/proxy_config_renderer.sh install/web/nginx_helpers.sh install/web/caddy_helpers.sh install/security/nginx_harden.sh install/security/caddy_harden.sh install/web/install_caddy.sh install/web/install_nginx.sh test/run_e2e.sh test/ci_test_e2e.sh`
+  - `bash test/validate_proxy_policy_sync.sh`
+  - `bash test/validate_proxy_policy_toggles.sh`
+  - `bash test/validate_caddy_config.sh`
+  - `E2E_IMAGE_NAME=eth-node-test-local SKIP_BUILD=true E2E_EXECUTION=geth E2E_CONSENSUS=prysm E2E_MEV=mev-boost ./test/run_e2e.sh --phase=2`
+  - `E2E_IMAGE_NAME=eth-node-test-local SKIP_BUILD=true ./test/run_e2e.sh --phase=2`
+  - `E2E_IMAGE_NAME=eth-node-test-local SKIP_BUILD=true ./test/run_e2e.sh --phase=1`
+  - `docker run --rm --privileged --user testuser -v "$PWD:/workspace" -w /workspace -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical -e CI=true eth-node-test-local /workspace/test/ci_test_run_2.sh`
+- Follow-up:
+  - optional future optimization: add safe `.dockerignore` strategy for local build context size, but only after confirming no tests depend on `.git` presence in-image.
+
+## Latest Update (CI fix: Nginx hardening backup include collision, 2026-04-19)
+
+- Fixed failing PR #170 jobs `run-2-e2e` / `run-2-web` root cause in Nginx hardening:
+  - `install/security/nginx_harden.sh` previously wrote backups to `/etc/nginx/sites-enabled/default.backup.*`
+  - those files can be glob-included by Nginx config loading, creating duplicate `upstream ws_backend` definitions during `nginx -t`
+- Change:
+  - moved backup outputs to `/etc/nginx/backups`
+  - added explicit backup paths:
+    - `sites-enabled-default.<timestamp>.bak`
+    - `nginx.conf.<timestamp>.bak`
+  - added `restore_nginx_backups()` helper to restore only those explicit files
+  - replaced wildcard rollback copies with helper
+  - updated final hardening summary log to show backup directory
+- Validation run:
+  - `bash -n install/security/nginx_harden.sh`
+  - `shellcheck -x --exclude=SC1091,SC2034 install/security/nginx_harden.sh`
+  - `GITHUB_TOKEN="$(gh auth token)" SKIP_BUILD=true ./test/run_e2e.sh --phase=2` (green, but uses prebuilt image)
+  - committed and pushed fix commit: `39a37fc` (`fix(ci): keep nginx hardening backups out of active includes`)
+- Follow-up:
+  - wait for fresh PR #170 CI on commit `39a37fc` (especially `CI - Docker Integration Tests`) before merge.
+
 ## Latest Update (CI fix: Nginx gzip duplicate in run_2 E2E, 2026-04-18)
 
 - Fixed failing CI jobs `run-2-e2e` and `run-2-web` caused by:
