@@ -64,11 +64,21 @@ done <<< "$CASE_OVERRIDES"
 source "$PROJECT_ROOT/lib/common_functions.sh"
 source "$PROJECT_ROOT/install/web/nginx_helpers.sh"
 source "$PROJECT_ROOT/install/web/caddy_helpers.sh"
-export CI_E2E=true
+export CI_E2E="${CI_E2E:-true}"
 create_nginx_config "${SERVER_NAME:-rpc.sharedtools.org}" "$NGINX_OUT" "false"
 render_nginx_http_policy_file "$NGINX_POLICY_OUT"
 create_caddy_config_auto_https "${SERVER_NAME:-rpc.sharedtools.org}" "$CADDY_OUT"
 '
+}
+
+assert_render_fails() {
+    local label="$1"
+    shift
+    if render_case "$tmp_nginx" "$tmp_nginx_policy" "$tmp_caddy" "$@"; then
+        echo "✗ Unexpected success: $label"
+        exit 1
+    fi
+    echo "✓ $label"
 }
 
 echo "Case 1: metrics + trusted proxy toggles"
@@ -100,5 +110,41 @@ render_case "$tmp_nginx" "$tmp_nginx_policy" "$tmp_caddy" EDGE_ENABLE_COMPRESSIO
 assert_not_contains "$tmp_nginx_policy" '^gzip on;' "nginx gzip disabled"
 assert_not_contains "$tmp_nginx" 'gzip on;' "nginx gzip disabled in site config"
 assert_not_contains "$tmp_caddy" 'encode zstd gzip' "caddy encode disabled"
+
+echo "Case 4: strict mode should fail when required Caddy features are disabled"
+assert_render_fails "rate-limit strict mode fails when rate limiting is disabled" \
+    CADDY_ENABLE_RATE_LIMIT=false \
+    CADDY_REQUIRE_RATE_LIMIT=true
+
+assert_render_fails "dns-challenge strict mode fails when DNS challenge is disabled" \
+    CADDY_ENABLE_DNS_CHALLENGE=false \
+    CADDY_REQUIRE_DNS_CHALLENGE=true
+
+echo "Case 5: shared anti-abuse knobs should render into both Nginx + Caddy"
+render_case "$tmp_nginx" "$tmp_nginx_policy" "$tmp_caddy" \
+    EDGE_RPC_RATE_LIMIT_RPM=61 \
+    EDGE_WS_RATE_LIMIT_RPM=27 \
+    EDGE_GENERAL_RATE_LIMIT_RPM=111 \
+    EDGE_RPC_BURST=13 \
+    EDGE_WS_BURST=7 \
+    EDGE_RPC_CONN_LIMIT_PER_IP=41 \
+    EDGE_WS_CONN_LIMIT_PER_IP=23 \
+    CADDY_MODULE_LIST_CACHE='http.handlers.rate_limit' \
+    CI_E2E=false \
+    CADDY_ENABLE_RATE_LIMIT=true
+
+# shellcheck disable=SC2016
+assert_contains "$tmp_nginx_policy" 'limit_req_zone \$binary_remote_addr zone=api:10m rate=61r/m;' "nginx rpc rpm from shared knob"
+# shellcheck disable=SC2016
+assert_contains "$tmp_nginx_policy" 'limit_req_zone \$binary_remote_addr zone=ws:10m rate=27r/m;' "nginx ws rpm from shared knob"
+# shellcheck disable=SC2016
+assert_contains "$tmp_nginx_policy" 'limit_req_zone \$binary_remote_addr zone=general:10m rate=111r/m;' "nginx general rpm from shared knob"
+assert_contains "$tmp_nginx" 'limit_req zone=ws burst=7 nodelay;' "nginx ws burst from shared knob"
+assert_contains "$tmp_nginx" 'limit_req zone=api burst=13 nodelay;' "nginx rpc burst from shared knob"
+assert_contains "$tmp_nginx" 'limit_conn conn_limit_per_ip 23;' "nginx ws conn limit from shared knob"
+assert_contains "$tmp_nginx" 'limit_conn conn_limit_per_ip 41;' "nginx rpc conn limit from shared knob"
+assert_contains "$tmp_caddy" 'events 61' "caddy rpc rpm from shared knob"
+assert_contains "$tmp_caddy" 'events 27' "caddy ws rpm from shared knob"
+assert_contains "$tmp_caddy" 'events 111' "caddy general rpm from shared knob"
 
 echo "✓ Shared proxy policy toggle rendering looks consistent"

@@ -6,7 +6,7 @@ set -Eeuo pipefail
 
 # Setup paths and source shared utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOG_PREFIX="INFO"
+export LOG_PREFIX="INFO"
 # shellcheck source=lib/test_utils.sh
 source "$SCRIPT_DIR/lib/test_utils.sh"
 
@@ -141,6 +141,20 @@ else
     record_test "Caddy config validates" "SKIP"
 fi
 
+# Nginx config validation (shared edge policy renderer output must pass nginx -t)
+if [[ -f "$PROJECT_ROOT/test/validate_nginx_config.sh" ]]; then
+    if "$PROJECT_ROOT/test/validate_nginx_config.sh"; then
+        record_test "Nginx config validates" "PASS"
+    else
+        record_test "Nginx config validates" "FAIL"
+        log_error "Nginx config validation failed - fix config and re-run"
+        print_test_summary
+        exit 1
+    fi
+else
+    record_test "Nginx config validates" "SKIP"
+fi
+
 # Download URL validation (get_latest_release, get_github_release_asset_url)
 if [[ -f "$PROJECT_ROOT/test/validate_downloads.sh" ]]; then
     if "$PROJECT_ROOT/test/validate_downloads.sh"; then
@@ -153,6 +167,20 @@ if [[ -f "$PROJECT_ROOT/test/validate_downloads.sh" ]]; then
     fi
 else
     record_test "Download URL functions" "SKIP"
+fi
+
+# Review/security/regression guardrails should remain wired in repo checks
+if [[ -f "$PROJECT_ROOT/test/validate_review_guardrails.sh" ]]; then
+    if "$PROJECT_ROOT/test/validate_review_guardrails.sh"; then
+        record_test "Review guardrails validate" "PASS"
+    else
+        record_test "Review guardrails validate" "FAIL"
+        log_error "Review guardrails validation failed - required checks may have drifted"
+        print_test_summary
+        exit 1
+    fi
+else
+    record_test "Review guardrails validate" "SKIP"
 fi
 
 # =============================================================================

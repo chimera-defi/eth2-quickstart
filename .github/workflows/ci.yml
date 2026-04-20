@@ -235,8 +235,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CI: true
         run: |
-          # Pass E2E_EXECUTION/E2E_CONSENSUS to skip Caddy/Nginx (saves ~1.5 min)
-          # Caddy/Nginx install tested in run-2-web
+          # Use fixed baseline clients for a deterministic phase-2 lane.
+          # Caddy/Nginx install+validation still runs in phase-2 and is
+          # additionally covered in the dedicated run-2-web lane.
           SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" \
           E2E_EXECUTION=geth E2E_CONSENSUS=prysm E2E_MEV=mev-boost \
           ./test/run_e2e.sh --phase=2

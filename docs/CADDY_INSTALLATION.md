@@ -4,14 +4,14 @@ This guide covers the installation and configuration of Caddy web server as an a
 
 ## Overview
 
-Caddy is a modern web server with automatic HTTPS, built-in security features, and easy configuration. It's designed to be more user-friendly than traditional web servers while providing excellent performance and security.
+Caddy is a modern web server with automatic HTTPS, strong security defaults, and easy configuration. In this project, Caddy and Nginx share one generated edge policy, and optional Caddy capabilities (DNS challenge, rate limiting) are auto-detected by the renderer.
 
 ## Features
 
 - **Automatic HTTPS**: Built-in Let's Encrypt integration
 - **HTTP/2 and HTTP/3 Support**: Modern protocol support
 - **Security Headers**: Comprehensive security headers by default
-- **Rate Limiting**: Built-in rate limiting capabilities
+- **Rate Limiting**: Optional (enabled when Caddy `http.handlers.rate_limit` module is available)
 - **Easy Configuration**: Simple Caddyfile syntax
 - **Reverse Proxy**: Excellent reverse proxy capabilities
 - **Logging**: Structured JSON logging
@@ -43,7 +43,7 @@ sudo ./install_caddy.sh
 
 **Features:**
 - Installs Caddy from official repository
-- Configures automatic HTTPS with Cloudflare DNS
+- Configures automatic HTTPS (uses Cloudflare DNS challenge when `dns.providers.cloudflare` and `CLOUDFLARE_API_TOKEN` are available)
 - Sets up reverse proxy for Ethereum RPC and WebSocket APIs
 - Applies security hardening
 - Configures firewall rules
@@ -80,7 +80,7 @@ sudo ./caddy_harden.sh
 **Security Features:**
 - Enhanced SSL/TLS configuration
 - Comprehensive security headers
-- Rate limiting on all endpoints
+- Rate limiting on all endpoints (when `http.handlers.rate_limit` is available)
 - Attack pattern blocking
 - Request size limits
 - Timeout configurations
@@ -98,10 +98,10 @@ sudo ./caddy_harden.sh
 
 ### Key Configuration Features
 
-1. **Automatic HTTPS**: Uses Cloudflare DNS for certificate management
+1. **Automatic HTTPS**: Uses ACME/TLS automation; Cloudflare DNS challenge is enabled when module+token are available
 2. **Reverse Proxy**: Routes traffic to Ethereum clients
 3. **Security Headers**: Comprehensive security headers
-4. **Rate Limiting**: Per-endpoint rate limiting
+4. **Rate Limiting**: Per-endpoint rate limiting (optional/module-dependent)
 5. **Logging**: Structured JSON logging with rotation
 
 ## Endpoints
@@ -170,6 +170,8 @@ sudo caddy run --config /etc/caddy/Caddyfile --dry-run
 - **MIME Sniffing Protection**: X-Content-Type-Options
 
 ### Rate Limiting
+- Enabled only when the active Caddy binary includes `http.handlers.rate_limit`.
+- Use `CADDY_REQUIRE_RATE_LIMIT=true` to fail render/install if that module is unavailable.
 - **API endpoints**: 50 requests per minute per IP
 - **WebSocket endpoints**: 20 requests per minute per IP
 - **Window**: 1-minute sliding window
@@ -181,9 +183,12 @@ sudo caddy run --config /etc/caddy/Caddyfile --dry-run
 
 ## Testing
 
-Testing via CI-integrated scripts has been removed. Validate your deployment using Caddy's built-in commands:
+Validate generated edge configs with the built-in tools before deploy:
 
 ```bash
+bash ./test/validate_review_guardrails.sh
+bash ./test/validate_caddy_config.sh
+bash ./test/validate_nginx_config.sh
 sudo caddy validate --config /etc/caddy/Caddyfile
 sudo systemctl status caddy
 ```
@@ -230,7 +235,7 @@ sudo caddy run --config /etc/caddy/Caddyfile --debug
 | Configuration | Simple Caddyfile | Complex nginx.conf |
 | HTTPS | Automatic | Manual setup |
 | Security | Built-in headers | Manual configuration |
-| Rate Limiting | Built-in | Requires modules |
+| Rate Limiting | Optional (`rate_limit` module) | Built-in (`limit_req`/`limit_conn`) |
 | HTTP/3 | Native support | Requires modules |
 | Learning Curve | Easy | Steep |
 
@@ -245,6 +250,13 @@ The following environment variables are used:
 - `LH`: Local host address
 - `NETHERMIND_HTTP_PORT`: Nethermind HTTP port
 - `NETHERMIND_WS_PORT`: Nethermind WebSocket port
+- `EDGE_RPC_RATE_LIMIT_RPM` / `EDGE_WS_RATE_LIMIT_RPM` / `EDGE_GENERAL_RATE_LIMIT_RPM`: shared rate-limit budgets rendered into both Nginx + Caddy policies
+- `EDGE_RPC_BURST` / `EDGE_WS_BURST`: shared request burst ceilings for Nginx request limiting
+- `EDGE_RPC_CONN_LIMIT_PER_IP` / `EDGE_WS_CONN_LIMIT_PER_IP`: shared per-IP connection ceilings for Nginx
+- `CADDY_ENABLE_RATE_LIMIT`: `auto|true|false` (module auto-detect by default)
+- `CADDY_REQUIRE_RATE_LIMIT`: `true|false` fail-fast guard for rate limiting
+- `CADDY_ENABLE_DNS_CHALLENGE`: `auto|true|false` (Cloudflare DNS challenge auto-detect by default)
+- `CADDY_REQUIRE_DNS_CHALLENGE`: `true|false` fail-fast guard for DNS challenge
 
 ## Integration with Ethereum Clients
 
@@ -260,7 +272,7 @@ Caddy is configured to work with:
 3. **Backup Configuration**: Keep backups of working configurations
 4. **Test Changes**: Always test configuration changes in a safe environment
 5. **Security Monitoring**: Use the built-in security monitoring
-6. **Rate Limiting**: Adjust rate limits based on your needs
+6. **Rate Limiting**: If using Caddy, confirm module availability or enforce strict mode with `CADDY_REQUIRE_RATE_LIMIT=true`
 7. **SSL Certificates**: Monitor certificate expiration
 
 ## Support
