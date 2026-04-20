@@ -12,6 +12,17 @@ This file defines persistent workflow guidance for coding agents working in this
    - commit to a dedicated branch.
 4. Run relevant local validation before opening a PR.
 
+## Completion Quality Gate (Mandatory)
+- Before handoff/PR, always run and record:
+  - security audit,
+  - code review (including dead-code/cleanup pass),
+  - regression review (targeted + relevant end-to-end checks).
+- If any of the above cannot be run locally, explicitly document:
+  - what could not run,
+  - why it could not run,
+  - residual risk and follow-up.
+- Add the exact commands + outcomes to `docs/agent-handoff.md`.
+
 ## Branch and PR Policy
 - Treat each new user task as new work: use a fresh branch.
 - Open a new PR for each distinct work item.

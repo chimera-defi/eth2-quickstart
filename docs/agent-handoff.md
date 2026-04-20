@@ -7,6 +7,125 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (Rate-limit dedupe + guardrail hooks pass, 2026-04-20)
+
+- Tightened Nginx/Caddy parity with deeper dedupe in shared renderer:
+  - `install/web/proxy_config_renderer.sh` now centralizes shared anti-abuse thresholds:
+    - `EDGE_RPC_RATE_LIMIT_RPM`
+    - `EDGE_WS_RATE_LIMIT_RPM`
+    - `EDGE_GENERAL_RATE_LIMIT_RPM`
+    - `EDGE_RPC_BURST`
+    - `EDGE_WS_BURST`
+    - `EDGE_RPC_CONN_LIMIT_PER_IP`
+    - `EDGE_WS_CONN_LIMIT_PER_IP`
+  - same shared values now render into both Nginx + Caddy policies.
+  - added positive-integer input validation for these fields (fail-fast on invalid overrides).
+  - `config/edge_policy.env` now uses `VAR="${VAR:-default}"` semantics so user/config/CI overrides are respected instead of being overwritten.
+- Propagated config/docs for new shared policy knobs:
+  - `config/edge_policy.env`
+  - `exports.sh`
+  - `config/user_config.env.example`
+  - `README.md`
+  - `docs/CADDY_INSTALLATION.md`
+- Fixed stale security-audit logic:
+  - `install/security/test_security_fixes.sh` network exposure check now excludes intentional SSH binding file (`configs/sshd_config`).
+  - rate-limit check now understands shared Nginx edge policy path (`/etc/nginx/conf.d/eth2-edge-policy.conf`) and skips cleanly when policy is not installed on the host.
+- Added explicit future guardrails:
+  - new `test/validate_review_guardrails.sh` verifies mandatory quality-gate docs + CI wiring for parity/security validators.
+  - wired into:
+    - `test/ci_test_run_2.sh` (new Test 16),
+    - `test/docker_test.sh` (recorded test gate).
+  - `test/validate_proxy_policy_toggles.sh` gained a dedicated case to assert shared anti-abuse values render into both Nginx + Caddy outputs.
+- Validation run (this pass):
+  - `bash -n install/web/proxy_config_renderer.sh install/security/test_security_fixes.sh test/ci_test_run_2.sh test/docker_test.sh test/validate_review_guardrails.sh config/edge_policy.env exports.sh`
+  - `shellcheck -x -e SC1091 install/web/proxy_config_renderer.sh install/security/test_security_fixes.sh test/ci_test_run_2.sh test/docker_test.sh test/validate_review_guardrails.sh exports.sh`
+  - `bash test/validate_proxy_policy_sync.sh`
+  - `bash test/validate_proxy_policy_toggles.sh`
+  - `bash test/validate_caddy_config.sh`
+  - `bash test/validate_nginx_config.sh`
+  - `bash test/validate_review_guardrails.sh`
+  - `docker run --rm --privileged --user testuser -v "$PWD:/workspace" -w /workspace -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical -e CI=true eth-node-test /workspace/test/ci_test_run_2.sh`
+  - `./test/run_e2e.sh --phase=2` -> `Total tests: 29, Passed: 29, Failed: 0`
+
+## Latest Update (Security/regression audit gate + cleanup pass, 2026-04-20)
+
+- Added persistent completion criteria to `AGENTS.md`:
+  - every handoff/PR must include security audit, code/dead-code review, and regression review;
+  - if anything cannot run locally, document skipped checks + residual risk;
+  - always record executed commands and outcomes in this handoff file.
+- Multi-pass local audit run completed on current edge-policy changes:
+  - `bash -n exports.sh install/web/caddy_helpers.sh install/web/proxy_config_renderer.sh test/ci_test_run_2.sh test/docker_test.sh test/validate_caddy_config.sh test/validate_proxy_policy_toggles.sh test/validate_nginx_config.sh`
+  - `shellcheck -x -e SC1091 test/validate_caddy_config.sh install/web/proxy_config_renderer.sh install/web/caddy_helpers.sh test/validate_nginx_config.sh test/validate_proxy_policy_toggles.sh test/ci_test_run_2.sh test/docker_test.sh exports.sh`
+  - `bash test/validate_proxy_policy_sync.sh`
+  - `bash test/validate_proxy_policy_toggles.sh`
+  - `bash test/validate_caddy_config.sh`
+  - `bash test/validate_nginx_config.sh`
+  - `./test/run_e2e.sh --phase=2` -> `Total tests: 29, Passed: 29, Failed: 0`
+- Cleanup/refinement:
+  - `test/validate_caddy_config.sh` now handles `caddy adapt` / `caddy validate` failures explicitly and returns cleanly for fallback/error handling.
+- Status:
+  - static checks clean;
+  - shared-policy regression checks passing;
+  - full `./test/run_e2e.sh --phase=2` rerun passed locally (`29/29`).
+
+## Latest Update (Strict-mode parity pass + local multi-pass revalidation, 2026-04-20)
+
+- Completed another end-to-end parity pass for shared Nginx/Caddy edge config and docs.
+- Added explicit strict-mode regression coverage for Caddy optional features:
+  - `test/validate_proxy_policy_toggles.sh` now asserts render failure when:
+    - `CADDY_REQUIRE_RATE_LIMIT=true` with rate limiting disabled
+    - `CADDY_REQUIRE_DNS_CHALLENGE=true` with DNS challenge disabled
+- Extended run_2 structure validation:
+  - `test/ci_test_run_2.sh` now runs `test/validate_caddy_config.sh` (new Test 15) in addition to Nginx validation.
+- Smoothed Caddy validator behavior in non-root CI/container runs:
+  - `test/validate_caddy_config.sh` now formats with user-level `caddy fmt --overwrite` and uses sudo only for adapt/validate when available.
+  - `install/web/caddy_helpers.sh` avoids forced overwrite-format for `/tmp/*` outputs to reduce temp-file permission edge cases.
+- Documentation parity cleanup:
+  - `docs/CADDY_INSTALLATION.md`: corrected module-dependent rate-limit behavior, DNS-challenge wording, env var docs, and validation guidance.
+  - `README.md`: corrected Caddy vs Nginx rate-limit comparison and capability wording.
+- Local validation run (this pass):
+  - `shellcheck -e SC1091 install/web/proxy_config_renderer.sh install/web/caddy_helpers.sh test/validate_proxy_policy_toggles.sh test/validate_caddy_config.sh test/validate_nginx_config.sh test/ci_test_run_2.sh exports.sh`
+  - `bash -n install/web/proxy_config_renderer.sh install/web/caddy_helpers.sh test/validate_proxy_policy_toggles.sh test/validate_caddy_config.sh test/validate_nginx_config.sh test/ci_test_run_2.sh exports.sh`
+  - `bash test/validate_proxy_policy_sync.sh`
+  - `bash test/validate_proxy_policy_toggles.sh`
+  - `bash test/validate_caddy_config.sh`
+  - `bash test/validate_nginx_config.sh`
+  - `docker run --rm --privileged --user testuser -v "$PWD:/workspace" -w /workspace -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical -e CI=true eth-node-test /workspace/test/validate_caddy_config.sh`
+  - `docker run --rm --privileged --user testuser -v "$PWD:/workspace" -w /workspace -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical -e CI=true eth-node-test /workspace/test/ci_test_run_2.sh`
+  - `docker run --rm --privileged -v "$PWD:/workspace" -w /workspace -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true eth-node-test /workspace/test/docker_test.sh`
+  - `./test/run_e2e.sh --phase=2` -> `Total tests: 29, Passed: 29, Failed: 0`
+- Outcome:
+  - Shared policy remains in sync across Nginx/Caddy.
+  - Native config validators run locally and in CI paths.
+  - Strict fail-fast toggles are now tested, not just implemented.
+
+## Latest Update (Multi-pass Caddy/Nginx validator hardening + non-root run_2 parity, 2026-04-19)
+
+- Completed a full multi-pass review of shared edge policy + validator wiring.
+- Found and fixed a production Caddy validity gap:
+  - stock Caddy does not include optional `dns.providers.cloudflare`/`http.handlers.rate_limit` modules.
+  - `install/web/proxy_config_renderer.sh` now auto-gates those directives based on installed modules and token presence.
+  - default render now stays valid on stock Caddy while still enabling optional features when modules exist.
+- Strengthened Caddy validation path:
+  - `test/validate_caddy_config.sh` now validates both `CI_E2E` and standard render modes.
+  - `install/web/caddy_helpers.sh::validate_caddy_config` now runs `caddy fmt` + `caddy adapt` + `caddy validate`.
+- Added/iterated Nginx renderer validation:
+  - new `test/validate_nginx_config.sh` validates generated config with `nginx -t` (or Docker fallback).
+  - hardened for non-root use by remapping cache/log paths, pid path, and listen port in validator-only temp config.
+  - wired into `test/ci_test_run_2.sh` (Test 14) and `test/docker_test.sh`.
+- CI workflow clarity:
+  - `.github/workflows/ci.yml` comments updated to reflect that phase-2 still exercises Caddy/Nginx install+validation.
+- Local validation run (this pass):
+  - `shellcheck -x --exclude=SC1091,SC2034 install/web/caddy_helpers.sh install/web/proxy_config_renderer.sh test/validate_caddy_config.sh test/validate_nginx_config.sh test/validate_proxy_policy_sync.sh test/validate_proxy_policy_toggles.sh test/ci_test_run_2.sh test/docker_test.sh`
+  - `bash test/validate_caddy_config.sh`
+  - `bash test/validate_nginx_config.sh`
+  - `bash test/validate_proxy_policy_sync.sh`
+  - `bash test/validate_proxy_policy_toggles.sh`
+  - non-root parity check in temp writable copy:
+    - `sudo -u eth2test ... bash test/ci_test_run_2.sh` -> pass
+- Environment note:
+  - Installed native Caddy for local validator parity (`caddy v2.11.2`) using repo’s package source path.
+
 ## Latest Update (CI run-2 fix: /workspace ownership for testuser, 2026-04-19)
 
 - New CI failures after `c3dc625`:

@@ -71,6 +71,12 @@ validate_caddy_config() {
     local caddyfile_path="$1"
 
     log_info "Validating Caddy configuration..."
+    sudo caddy fmt --overwrite "$caddyfile_path" >/dev/null 2>&1 || true
+    if ! sudo caddy adapt --config "$caddyfile_path" --adapter caddyfile >/dev/null; then
+        log_error "Caddy configuration adaptation failed"
+        return 1
+    fi
+
     if sudo caddy validate --config "$caddyfile_path" --adapter caddyfile; then
         log_info "✓ Caddy configuration is valid"
         return 0
@@ -83,7 +89,13 @@ validate_caddy_config() {
 format_caddy_config() {
     local caddyfile_path="$1"
     if command -v caddy &>/dev/null; then
-        caddy fmt --overwrite "$caddyfile_path" >/dev/null 2>&1 || true
+        # Temp files in /tmp can hit overwrite permission edge cases in some CI
+        # container setups; run non-overwrite fmt there as a syntax/style check.
+        if [[ "$caddyfile_path" == /tmp/* ]]; then
+            caddy fmt "$caddyfile_path" >/dev/null 2>&1 || true
+        else
+            caddy fmt --overwrite "$caddyfile_path" >/dev/null 2>&1 || true
+        fi
     fi
 }
 

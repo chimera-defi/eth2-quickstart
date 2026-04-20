@@ -365,7 +365,7 @@ sudo ./install_caddy_ssl.sh
 - **Automatic HTTPS**: Built-in Let's Encrypt integration
 - **HTTP/2 and HTTP/3**: Modern protocol support
 - **Security Headers**: Comprehensive security by default
-- **Rate Limiting**: Built-in rate limiting capabilities
+- **Rate Limiting**: Optional (enabled when Caddy `rate_limit` module is available)
 - **Easy Configuration**: Simple Caddyfile syntax
 - **Security Hardening**: `./caddy_harden.sh` for enhanced security
 - **Shared Edge Policy**: Nginx + Caddy route/hardening policy is generated from `install/web/proxy_config_renderer.sh`
@@ -379,12 +379,18 @@ Override in `config/user_config.env` when needed:
 - `EDGE_ENABLE_COMPRESSION`: shared response compression toggle.
 - `EDGE_ENABLE_METRICS` + `EDGE_METRICS_PATH`: local-only metrics endpoint toggle/path.
 - `EDGE_TRUSTED_PROXIES`: trusted proxy CIDRs for forwarded client IP handling.
+- `EDGE_*_RATE_LIMIT_RPM` (`EDGE_RPC_RATE_LIMIT_RPM`, `EDGE_WS_RATE_LIMIT_RPM`, `EDGE_GENERAL_RATE_LIMIT_RPM`): shared anti-abuse rate limits used by both Nginx + Caddy renders.
+- `EDGE_*_BURST` (`EDGE_RPC_BURST`, `EDGE_WS_BURST`) + `EDGE_*_CONN_LIMIT_PER_IP` (`EDGE_RPC_CONN_LIMIT_PER_IP`, `EDGE_WS_CONN_LIMIT_PER_IP`): shared burst/connection ceilings for Nginx request shaping.
 - `EDGE_RPC_CACHE_MIN_USES`: Nginx RPC cache threshold.
 - `CADDY_LB_*`: Caddy retry/failover tuning (`CADDY_LB_RETRIES`, `CADDY_LB_TRY_DURATION`, `CADDY_LB_TRY_INTERVAL`, `CADDY_FAIL_DURATION`, `CADDY_MAX_FAILS`).
+- `CADDY_REQUIRE_RATE_LIMIT` / `CADDY_REQUIRE_DNS_CHALLENGE`: strict mode flags to fail render/install if optional Caddy capabilities cannot be enabled.
 
 ### Test Caddy Installation
 Testing helpers were removed. Use:
 ```bash
+bash ./test/validate_review_guardrails.sh
+bash ./test/validate_nginx_config.sh
+bash ./test/validate_caddy_config.sh
 sudo caddy validate --config /etc/caddy/Caddyfile
 ```
 
@@ -394,7 +400,7 @@ sudo caddy validate --config /etc/caddy/Caddyfile
 | Configuration | Simple Caddyfile | Complex nginx.conf |
 | HTTPS | Automatic | Manual setup |
 | Security | Built-in headers | Manual configuration |
-| Rate Limiting | Built-in | Requires modules |
+| Rate Limiting | Optional (`rate_limit` module) | Built-in (`limit_req`/`limit_conn`) |
 | HTTP/3 | Native support | Requires modules |
 
 For detailed Caddy setup instructions, see [Caddy Installation Guide](docs/CADDY_INSTALLATION.md).
@@ -402,7 +408,7 @@ For detailed Caddy setup instructions, see [Caddy Installation Guide](docs/CADDY
 ### Features
 - **RPC/WS endpoints**: Secure access to Ethereum node
 - **SSL/TLS**: Automatic certificate management
-- **Rate limiting**: Protection against abuse
+- **Rate limiting**: Abuse protection (Caddy module-dependent, Nginx native)
 - **Authentication**: JWT-based access control
 
 ## Security Features
