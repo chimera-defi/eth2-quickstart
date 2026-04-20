@@ -7,6 +7,51 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (Batteries-included Caddy guardrails pass, 2026-04-20)
+
+- Upgraded Caddy install behavior to make edge guardrails batteries-included by default:
+  - `install/web/caddy_helpers.sh` now bootstraps required Caddy modules during `install_caddy`:
+    - `http.handlers.rate_limit`
+    - `dns.providers.cloudflare`
+  - bootstrap flow:
+    - detect missing required modules from `caddy list-modules`
+    - download a custom Caddy binary from Caddy download API with required plugin packages
+    - install binary to `/usr/bin/caddy` and verify required modules are present
+  - install now fails fast if module bootstrap is enabled but cannot be completed (explicit secure-by-default behavior).
+- Added explicit module bootstrap knobs:
+  - `exports.sh`:
+    - `CADDY_ENSURE_MODULES='true'`
+    - `CADDY_REQUIRED_MODULES='http.handlers.rate_limit,dns.providers.cloudflare'`
+    - `CADDY_REQUIRED_PACKAGES='github.com/mholt/caddy-ratelimit,github.com/caddy-dns/cloudflare'`
+  - `config/user_config.env.example` now documents overrides for all three.
+- Updated docs to reflect batteries-included defaults:
+  - `README.md`
+  - `docs/CADDY_INSTALLATION.md`
+- Expanded review guardrails to assert module-bootstrap defaults remain wired:
+  - `test/validate_review_guardrails.sh`
+
+- Quality gate outcomes:
+  - Security audit:
+    - `bash install/security/test_security_fixes.sh` (from local dev workspace) -> partial/expected host failures because this host is not a provisioned run_1 target (`/usr/local/bin/security_monitor.sh`, root cron entries, logrotate config absent).
+    - Residual risk: local workspace audit cannot validate host-level security artifacts without a provisioned target.
+    - Mitigation: full phase-2 E2E (below) validates installer behavior in containerized target context, including Caddy/Nginx hardening path.
+  - Code/dead-code review:
+    - manual multi-pass review of changed scripts/docs (`install/web/caddy_helpers.sh`, `exports.sh`, docs/tests) to remove incorrect module/package coupling and ensure explicit checks.
+  - Regression review:
+    - `bash -n install/web/caddy_helpers.sh test/validate_review_guardrails.sh exports.sh`
+    - `shellcheck -x -e SC1091 install/web/caddy_helpers.sh test/validate_review_guardrails.sh`
+    - `bash test/validate_review_guardrails.sh`
+    - `bash test/validate_proxy_policy_toggles.sh`
+    - `bash test/validate_caddy_config.sh`
+    - `bash test/validate_nginx_config.sh`
+    - `./test/run_e2e.sh --phase=2` -> `Total tests: 29, Passed: 29, Failed: 0`
+
+- Bug found/fixed during this pass:
+  - initial module bootstrap attempt used module IDs as download API package parameters, causing `curl ... error: 400` in E2E.
+  - fixed by separating:
+    - required module IDs (`CADDY_REQUIRED_MODULES`) for validation
+    - package import paths (`CADDY_REQUIRED_PACKAGES`) for API download.
+
 ## Latest Update (Rate-limit dedupe + guardrail hooks pass, 2026-04-20)
 
 - Tightened Nginx/Caddy parity with deeper dedupe in shared renderer:

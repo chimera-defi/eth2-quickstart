@@ -35,5 +35,9 @@ assert_contains "$PROJECT_ROOT/test/docker_test.sh" "validate_caddy_config.sh" "
 assert_contains "$PROJECT_ROOT/test/docker_test.sh" "validate_nginx_config.sh" "docker test includes nginx validation"
 
 assert_contains "$PROJECT_ROOT/install/security/test_security_fixes.sh" "--exclude='sshd_config'" "security exposure check excludes intentional sshd binding"
+assert_contains "$PROJECT_ROOT/exports.sh" "export CADDY_ENSURE_MODULES='true'" "exports enables Caddy module bootstrap by default"
+assert_contains "$PROJECT_ROOT/exports.sh" "export CADDY_REQUIRED_MODULES='http.handlers.rate_limit,dns.providers.cloudflare'" "exports defines required Caddy modules"
+assert_contains "$PROJECT_ROOT/exports.sh" "export CADDY_REQUIRED_PACKAGES='github.com/mholt/caddy-ratelimit,github.com/caddy-dns/cloudflare'" "exports defines Caddy module package imports"
+assert_contains "$PROJECT_ROOT/install/web/caddy_helpers.sh" "ensure_caddy_security_modules" "caddy helpers include module bootstrap guard"
 
 echo "✓ Review/security/regression guardrails validated"

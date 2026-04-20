@@ -365,7 +365,7 @@ sudo ./install_caddy_ssl.sh
 - **Automatic HTTPS**: Built-in Let's Encrypt integration
 - **HTTP/2 and HTTP/3**: Modern protocol support
 - **Security Headers**: Comprehensive security by default
-- **Rate Limiting**: Optional (enabled when Caddy `rate_limit` module is available)
+- **Rate Limiting**: Batteries-included (installer bootstraps Caddy with `rate_limit` module by default)
 - **Easy Configuration**: Simple Caddyfile syntax
 - **Security Hardening**: `./caddy_harden.sh` for enhanced security
 - **Shared Edge Policy**: Nginx + Caddy route/hardening policy is generated from `install/web/proxy_config_renderer.sh`
@@ -383,7 +383,8 @@ Override in `config/user_config.env` when needed:
 - `EDGE_*_BURST` (`EDGE_RPC_BURST`, `EDGE_WS_BURST`) + `EDGE_*_CONN_LIMIT_PER_IP` (`EDGE_RPC_CONN_LIMIT_PER_IP`, `EDGE_WS_CONN_LIMIT_PER_IP`): shared burst/connection ceilings for Nginx request shaping.
 - `EDGE_RPC_CACHE_MIN_USES`: Nginx RPC cache threshold.
 - `CADDY_LB_*`: Caddy retry/failover tuning (`CADDY_LB_RETRIES`, `CADDY_LB_TRY_DURATION`, `CADDY_LB_TRY_INTERVAL`, `CADDY_FAIL_DURATION`, `CADDY_MAX_FAILS`).
-- `CADDY_REQUIRE_RATE_LIMIT` / `CADDY_REQUIRE_DNS_CHALLENGE`: strict mode flags to fail render/install if optional Caddy capabilities cannot be enabled.
+- `CADDY_ENSURE_MODULES` + `CADDY_REQUIRED_MODULES` + `CADDY_REQUIRED_PACKAGES`: Caddy installer module bootstrap controls (default ensures `http.handlers.rate_limit,dns.providers.cloudflare` via `github.com/mholt/caddy-ratelimit,github.com/caddy-dns/cloudflare`).
+- `CADDY_REQUIRE_RATE_LIMIT` / `CADDY_REQUIRE_DNS_CHALLENGE`: strict mode flags to fail render/install when required Caddy capabilities are unavailable.
 
 ### Test Caddy Installation
 Testing helpers were removed. Use:
@@ -400,7 +401,7 @@ sudo caddy validate --config /etc/caddy/Caddyfile
 | Configuration | Simple Caddyfile | Complex nginx.conf |
 | HTTPS | Automatic | Manual setup |
 | Security | Built-in headers | Manual configuration |
-| Rate Limiting | Optional (`rate_limit` module) | Built-in (`limit_req`/`limit_conn`) |
+| Rate Limiting | Enabled by default via installer-bundled `rate_limit` module | Built-in (`limit_req`/`limit_conn`) |
 | HTTP/3 | Native support | Requires modules |
 
 For detailed Caddy setup instructions, see [Caddy Installation Guide](docs/CADDY_INSTALLATION.md).
@@ -408,7 +409,7 @@ For detailed Caddy setup instructions, see [Caddy Installation Guide](docs/CADDY
 ### Features
 - **RPC/WS endpoints**: Secure access to Ethereum node
 - **SSL/TLS**: Automatic certificate management
-- **Rate limiting**: Abuse protection (Caddy module-dependent, Nginx native)
+- **Rate limiting**: Abuse protection enabled by default for both Caddy and Nginx
 - **Authentication**: JWT-based access control
 
 ## Security Features
