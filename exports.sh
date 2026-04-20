@@ -116,6 +116,9 @@ export CADDY_LB_TRY_DURATION='5s'
 export CADDY_LB_TRY_INTERVAL='250ms'
 export CADDY_FAIL_DURATION='30s'
 export CADDY_MAX_FAILS='3'
+export CADDY_ENSURE_MODULES='true'             # bootstrap Caddy binary with required modules
+export CADDY_REQUIRED_MODULES='http.handlers.rate_limit,dns.providers.cloudflare'
+export CADDY_REQUIRED_PACKAGES='github.com/mholt/caddy-ratelimit,github.com/caddy-dns/cloudflare'
 export CADDY_REQUIRE_RATE_LIMIT='false'         # fail render/install if rate_limit cannot be enabled
 export CADDY_REQUIRE_DNS_CHALLENGE='false'      # fail render/install if Cloudflare DNS challenge cannot be enabled
 
