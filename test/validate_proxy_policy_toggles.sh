@@ -146,5 +146,12 @@ assert_contains "$tmp_nginx" 'limit_conn conn_limit_per_ip 41;' "nginx rpc conn 
 assert_contains "$tmp_caddy" 'events 61' "caddy rpc rpm from shared knob"
 assert_contains "$tmp_caddy" 'events 27' "caddy ws rpm from shared knob"
 assert_contains "$tmp_caddy" 'events 111' "caddy general rpm from shared knob"
+assert_contains "$tmp_caddy" 'zone api \{' "caddy api rate-limit zone block"
+assert_contains "$tmp_caddy" 'zone ws \{' "caddy ws rate-limit zone block"
+assert_contains "$tmp_caddy" 'method POST' "caddy api matcher method"
+assert_contains "$tmp_caddy" 'path /rpc\*' "caddy api matcher path"
+assert_contains "$tmp_caddy" 'method GET' "caddy ws matcher method"
+assert_contains "$tmp_caddy" 'path /ws\*' "caddy ws matcher path"
+assert_not_contains "$tmp_caddy" 'rate_limit zone (api|ws)' "caddy avoids invalid route-level rate_limit syntax"
 
 echo "✓ Shared proxy policy toggle rendering looks consistent"

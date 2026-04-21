@@ -32,7 +32,7 @@ readonly PROXY_ATTACK_PATHS_REGEX
 : "${EDGE_UPSTREAM_KEEPALIVE:=64}"
 : "${EDGE_DNS_RESOLVER:=}"                        # e.g. "1.1.1.1 8.8.8.8"
 : "${EDGE_TRUSTED_PROXIES:=}"                     # comma-separated CIDRs
-: "${EDGE_ENABLE_METRICS:=false}"
+: "${EDGE_ENABLE_METRICS:=true}"
 : "${EDGE_METRICS_PATH:=/metrics}"
 : "${EDGE_ENABLE_COMPRESSION:=true}"
 : "${EDGE_RPC_RATE_LIMIT_RPM:=50}"
@@ -49,6 +49,7 @@ readonly PROXY_ATTACK_PATHS_REGEX
 : "${CADDY_LB_TRY_INTERVAL:=250ms}"
 : "${CADDY_FAIL_DURATION:=30s}"
 : "${CADDY_MAX_FAILS:=3}"
+: "${CADDY_INSTALL_ENFORCE_RATE_LIMIT:=true}"
 : "${CADDY_REQUIRE_RATE_LIMIT:=false}"            # fail render if rate_limit cannot be enabled
 : "${CADDY_REQUIRE_DNS_CHALLENGE:=false}"         # fail render if Cloudflare DNS challenge cannot be enabled
 
@@ -75,6 +76,7 @@ readonly CADDY_LB_TRY_DURATION
 readonly CADDY_LB_TRY_INTERVAL
 readonly CADDY_FAIL_DURATION
 readonly CADDY_MAX_FAILS
+readonly CADDY_INSTALL_ENFORCE_RATE_LIMIT
 readonly CADDY_REQUIRE_RATE_LIMIT
 readonly CADDY_REQUIRE_DNS_CHALLENGE
 
@@ -416,8 +418,7 @@ render_caddy_site_config() {
     local enable_rate_limit="${CADDY_ENABLE_RATE_LIMIT:-auto}"
     local enable_dns_challenge="${CADDY_ENABLE_DNS_CHALLENGE:-auto}"
     local rate_limit_global=""
-    local rate_limit_ws=""
-    local rate_limit_rpc=""
+    local require_rate_limit="$CADDY_REQUIRE_RATE_LIMIT"
     local strict_sni_line="        strict_sni_host"
     local trusted_proxies_line=""
     local metrics_global_line=""
@@ -429,10 +430,13 @@ render_caddy_site_config() {
     validate_edge_policy_numeric_inputs
 
     if [[ "${CI_E2E:-}" == "true" ]]; then
-        enable_rate_limit="false"
         site_address=":80"
         tls_block=""
         strict_sni_line=""
+    fi
+
+    if [[ "${CADDY_INSTALL_FLOW:-false}" == "true" ]] && [[ "$CADDY_INSTALL_ENFORCE_RATE_LIMIT" == "true" ]]; then
+        require_rate_limit="true"
     fi
 
     if [[ "$enable_rate_limit" == "auto" ]]; then
@@ -455,7 +459,7 @@ render_caddy_site_config() {
         enable_dns_challenge="false"
     fi
 
-    if [[ "$CADDY_REQUIRE_RATE_LIMIT" == "true" ]] && [[ "$enable_rate_limit" != "true" ]]; then
+    if [[ "$require_rate_limit" == "true" ]] && [[ "$enable_rate_limit" != "true" ]]; then
         echo "Error: Caddy rate_limit is required, but http.handlers.rate_limit is unavailable in this Caddy build" >&2
         return 1
     fi
@@ -476,9 +480,7 @@ render_caddy_site_config() {
     fi
 
     if [[ "$enable_rate_limit" == "true" ]]; then
-        rate_limit_global=$'    rate_limit {\n        zone api {\n            key {remote_host}\n            events '"$EDGE_RPC_RATE_LIMIT_RPM"$'\n            window 1m\n        }\n        zone ws {\n            key {remote_host}\n            events '"$EDGE_WS_RATE_LIMIT_RPM"$'\n            window 1m\n        }\n        zone general {\n            key {remote_host}\n            events '"$EDGE_GENERAL_RATE_LIMIT_RPM"$'\n            window 1m\n        }\n    }\n'
-        rate_limit_ws='        rate_limit zone ws'
-        rate_limit_rpc='        rate_limit zone api'
+        rate_limit_global=$'    rate_limit {\n        zone api {\n            match {\n                method POST\n                path /rpc*\n            }\n            key {remote_host}\n            events '"$EDGE_RPC_RATE_LIMIT_RPM"$'\n            window 1m\n        }\n        zone ws {\n            match {\n                method GET\n                path /ws*\n            }\n            key {remote_host}\n            events '"$EDGE_WS_RATE_LIMIT_RPM"$'\n            window 1m\n        }\n        zone general {\n            key {remote_host}\n            events '"$EDGE_GENERAL_RATE_LIMIT_RPM"$'\n            window 1m\n        }\n    }\n'
     fi
 
     caddy_rpc_upstreams="$(trim_space "$(csv_to_space_list "$EDGE_RPC_UPSTREAMS")")"
@@ -538,7 +540,6 @@ ${encode_line}
 
     @ws_path path /ws*
     route @ws_path {
-$rate_limit_ws
         @ws_get method GET
         reverse_proxy @ws_get $caddy_ws_upstreams {
             lb_policy $CADDY_LB_POLICY
@@ -560,7 +561,6 @@ $rate_limit_ws
 
     @rpc_path path /rpc*
     route @rpc_path {
-$rate_limit_rpc
         @rpc_post method POST
         reverse_proxy @rpc_post $caddy_rpc_upstreams {
             lb_policy $CADDY_LB_POLICY

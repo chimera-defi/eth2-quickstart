@@ -713,6 +713,42 @@ Use this file to preserve context across sessions.
 - Follow-up:
   - `stats --json` is still the latency bottleneck because it walks recent journals for every known service; next pass should add an explicit fast mode or incremental cache instead of re-scanning the full fleet on every call
   - `repair --apply` is still intentionally bounded to allowlisted restart actions; do not widen it into unattended software upgrades without explicit freshness + safety gates
+
+## Latest Update (Caddy install-enforced rate-limit + fail2ban defaults, 2026-04-21)
+
+- Implemented batteries-included defaults for edge hardening:
+  - metrics default-on in shared edge policy (`EDGE_ENABLE_METRICS=true`)
+  - install-time Caddy rate-limit enforcement default (`CADDY_INSTALL_ENFORCE_RATE_LIMIT=true`)
+  - Caddy fail2ban jails for spam-path probes and repeated 429 abuse (`caddy-rpc-spam`, `caddy-rate-limit`)
+- Fixed CI regression root cause:
+  - previous generated Caddyfile used invalid `rate_limit zone <name>` route-level syntax
+  - renderer now emits valid `rate_limit { zone ... { match { ... } ... } }` blocks with request matchers for `/rpc*` and `/ws*`
+  - `test/validate_proxy_policy_toggles.sh` now explicitly asserts matcher-based zone blocks and rejects `rate_limit zone (api|ws)` output
+- Files changed:
+  - `install/web/proxy_config_renderer.sh`
+  - `install/web/install_caddy.sh`
+  - `install/security/caddy_harden.sh`
+  - `exports.sh`
+  - `config/user_config.env.example`
+  - `README.md`
+  - `docs/CADDY_INSTALLATION.md`
+  - `test/validate_review_guardrails.sh`
+- Completion quality gate:
+  - Security audit:
+    - `bash install/security/test_security_fixes.sh` -> **partial/expected host-level failures** (`Security monitoring script not found`, root crontab/logrotate checks missing) because this dev host is not a provisioned run_1 target.
+    - Residual risk: host-level security monitoring wiring cannot be fully asserted outside a provisioned target host.
+  - Code/dead-code review:
+    - manual multi-pass review over all changed files; removed invalid Caddy rate-limit invocation pattern; verified no leftover `rate_limit zone` usage.
+  - Regression review:
+    - `bash -n install/web/proxy_config_renderer.sh install/web/install_caddy.sh install/security/caddy_harden.sh test/validate_review_guardrails.sh` -> pass
+    - `shellcheck -x -e SC1091 install/web/proxy_config_renderer.sh install/web/install_caddy.sh install/security/caddy_harden.sh test/validate_review_guardrails.sh` -> pass
+    - `bash test/validate_caddy_config.sh` -> pass
+    - `bash test/validate_proxy_policy_toggles.sh` -> pass
+    - `bash test/validate_review_guardrails.sh` -> pass
+    - `bash test/validate_nginx_config.sh` -> pass
+    - `bash test/validate_proxy_policy_sync.sh` -> pass
+    - `./test/run_e2e.sh --phase=2` -> pass (`29/29`)
+    - `bash test/ci_test_run_2.sh` -> not runnable in this shell because it requires non-root execution.
 ## MCP Meta Learnings
 
 - Composite GitHub actions must not reference `secrets.*` directly in `action.yml`; pass tokens through explicit action inputs from the workflow.

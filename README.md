@@ -366,6 +366,7 @@ sudo ./install_caddy_ssl.sh
 - **HTTP/2 and HTTP/3**: Modern protocol support
 - **Security Headers**: Comprehensive security by default
 - **Rate Limiting**: Batteries-included (installer bootstraps Caddy with `rate_limit` module by default)
+- **Fail2ban Jails**: Default spam/429 ban rules for Caddy access logs
 - **Easy Configuration**: Simple Caddyfile syntax
 - **Security Hardening**: `./caddy_harden.sh` for enhanced security
 - **Shared Edge Policy**: Nginx + Caddy route/hardening policy is generated from `install/web/proxy_config_renderer.sh`
@@ -377,13 +378,14 @@ Override in `config/user_config.env` when needed:
 - `EDGE_UPSTREAM_KEEPALIVE`: upstream keepalive pool size.
 - `EDGE_DNS_RESOLVER`: resolver list for hostname upstreams in Nginx (`resolve` mode).
 - `EDGE_ENABLE_COMPRESSION`: shared response compression toggle.
-- `EDGE_ENABLE_METRICS` + `EDGE_METRICS_PATH`: local-only metrics endpoint toggle/path.
+- `EDGE_ENABLE_METRICS` + `EDGE_METRICS_PATH`: local-only metrics endpoint toggle/path (enabled by default).
 - `EDGE_TRUSTED_PROXIES`: trusted proxy CIDRs for forwarded client IP handling.
 - `EDGE_*_RATE_LIMIT_RPM` (`EDGE_RPC_RATE_LIMIT_RPM`, `EDGE_WS_RATE_LIMIT_RPM`, `EDGE_GENERAL_RATE_LIMIT_RPM`): shared anti-abuse rate limits used by both Nginx + Caddy renders.
 - `EDGE_*_BURST` (`EDGE_RPC_BURST`, `EDGE_WS_BURST`) + `EDGE_*_CONN_LIMIT_PER_IP` (`EDGE_RPC_CONN_LIMIT_PER_IP`, `EDGE_WS_CONN_LIMIT_PER_IP`): shared burst/connection ceilings for Nginx request shaping.
 - `EDGE_RPC_CACHE_MIN_USES`: Nginx RPC cache threshold.
 - `CADDY_LB_*`: Caddy retry/failover tuning (`CADDY_LB_RETRIES`, `CADDY_LB_TRY_DURATION`, `CADDY_LB_TRY_INTERVAL`, `CADDY_FAIL_DURATION`, `CADDY_MAX_FAILS`).
 - `CADDY_ENSURE_MODULES` + `CADDY_REQUIRED_MODULES` + `CADDY_REQUIRED_PACKAGES`: Caddy installer module bootstrap controls (default ensures `http.handlers.rate_limit,dns.providers.cloudflare` via `github.com/mholt/caddy-ratelimit,github.com/caddy-dns/cloudflare`).
+- `CADDY_INSTALL_ENFORCE_RATE_LIMIT`: force `install_caddy.sh` to fail if rate-limiting cannot be enabled (default `true`).
 - `CADDY_REQUIRE_RATE_LIMIT` / `CADDY_REQUIRE_DNS_CHALLENGE`: strict mode flags to fail render/install when required Caddy capabilities are unavailable.
 
 ### Test Caddy Installation
