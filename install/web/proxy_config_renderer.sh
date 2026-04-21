@@ -196,7 +196,7 @@ EOF
 render_nginx_http_policy_file() {
     local output_path="$1"
 
-    validate_edge_policy_numeric_inputs
+    validate_edge_policy_numeric_inputs || return 1
 
     cat > "$output_path" << EOF
 # Shared edge policy (generated)
@@ -427,7 +427,7 @@ render_caddy_site_config() {
     local caddy_rpc_upstreams=""
     local caddy_ws_upstreams=""
 
-    validate_edge_policy_numeric_inputs
+    validate_edge_policy_numeric_inputs || return 1
 
     if [[ "${CI_E2E:-}" == "true" ]]; then
         site_address=":80"
