@@ -32,9 +32,16 @@ readonly PROXY_ATTACK_PATHS_REGEX
 : "${EDGE_UPSTREAM_KEEPALIVE:=64}"
 : "${EDGE_DNS_RESOLVER:=}"                        # e.g. "1.1.1.1 8.8.8.8"
 : "${EDGE_TRUSTED_PROXIES:=}"                     # comma-separated CIDRs
-: "${EDGE_ENABLE_METRICS:=false}"
+: "${EDGE_ENABLE_METRICS:=true}"
 : "${EDGE_METRICS_PATH:=/metrics}"
 : "${EDGE_ENABLE_COMPRESSION:=true}"
+: "${EDGE_RPC_RATE_LIMIT_RPM:=50}"
+: "${EDGE_WS_RATE_LIMIT_RPM:=20}"
+: "${EDGE_GENERAL_RATE_LIMIT_RPM:=100}"
+: "${EDGE_RPC_BURST:=10}"
+: "${EDGE_WS_BURST:=5}"
+: "${EDGE_RPC_CONN_LIMIT_PER_IP:=30}"
+: "${EDGE_WS_CONN_LIMIT_PER_IP:=20}"
 : "${EDGE_RPC_CACHE_MIN_USES:=1}"
 : "${CADDY_LB_POLICY:=least_conn}"                # random, random_choose, least_conn, round_robin, first, ip_hash, uri_hash, header, cookie
 : "${CADDY_LB_RETRIES:=2}"
@@ -42,6 +49,9 @@ readonly PROXY_ATTACK_PATHS_REGEX
 : "${CADDY_LB_TRY_INTERVAL:=250ms}"
 : "${CADDY_FAIL_DURATION:=30s}"
 : "${CADDY_MAX_FAILS:=3}"
+: "${CADDY_INSTALL_ENFORCE_RATE_LIMIT:=true}"
+: "${CADDY_REQUIRE_RATE_LIMIT:=false}"            # fail render if rate_limit cannot be enabled
+: "${CADDY_REQUIRE_DNS_CHALLENGE:=false}"         # fail render if Cloudflare DNS challenge cannot be enabled
 
 readonly EDGE_RPC_UPSTREAMS
 readonly EDGE_WS_UPSTREAMS
@@ -52,6 +62,13 @@ readonly EDGE_TRUSTED_PROXIES
 readonly EDGE_ENABLE_METRICS
 readonly EDGE_METRICS_PATH
 readonly EDGE_ENABLE_COMPRESSION
+readonly EDGE_RPC_RATE_LIMIT_RPM
+readonly EDGE_WS_RATE_LIMIT_RPM
+readonly EDGE_GENERAL_RATE_LIMIT_RPM
+readonly EDGE_RPC_BURST
+readonly EDGE_WS_BURST
+readonly EDGE_RPC_CONN_LIMIT_PER_IP
+readonly EDGE_WS_CONN_LIMIT_PER_IP
 readonly EDGE_RPC_CACHE_MIN_USES
 readonly CADDY_LB_POLICY
 readonly CADDY_LB_RETRIES
@@ -59,6 +76,9 @@ readonly CADDY_LB_TRY_DURATION
 readonly CADDY_LB_TRY_INTERVAL
 readonly CADDY_FAIL_DURATION
 readonly CADDY_MAX_FAILS
+readonly CADDY_INSTALL_ENFORCE_RATE_LIMIT
+readonly CADDY_REQUIRE_RATE_LIMIT
+readonly CADDY_REQUIRE_DNS_CHALLENGE
 
 trim_space() {
     local value="$1"
@@ -97,6 +117,44 @@ should_add_resolve_flag() {
     host="$(upstream_host_from_addr "$addr")"
     [[ "$host" == *:* ]] && return 1
     [[ -n "$EDGE_DNS_RESOLVER" && ! "$host" =~ ^[0-9.]+$ && "$host" != "localhost" ]]
+}
+
+caddy_has_module() {
+    local module_name="$1"
+
+    if ! command -v caddy &>/dev/null; then
+        return 1
+    fi
+
+    if [[ -z "${CADDY_MODULE_LIST_CACHE:-}" ]]; then
+        CADDY_MODULE_LIST_CACHE="$(caddy list-modules 2>/dev/null || true)"
+    fi
+
+    grep -Fxq "$module_name" <<< "$CADDY_MODULE_LIST_CACHE"
+}
+
+is_positive_integer() {
+    local value="$1"
+    [[ "$value" =~ ^[0-9]+$ ]] && [[ "$value" -gt 0 ]]
+}
+
+validate_edge_policy_numeric_inputs() {
+    local name
+    for name in \
+        EDGE_RPC_RATE_LIMIT_RPM \
+        EDGE_WS_RATE_LIMIT_RPM \
+        EDGE_GENERAL_RATE_LIMIT_RPM \
+        EDGE_RPC_BURST \
+        EDGE_WS_BURST \
+        EDGE_RPC_CONN_LIMIT_PER_IP \
+        EDGE_WS_CONN_LIMIT_PER_IP \
+        EDGE_RPC_CACHE_MIN_USES; do
+        if ! is_positive_integer "${!name}"; then
+            echo "Error: $name must be a positive integer (got '${!name}')" >&2
+            return 1
+        fi
+    done
+    return 0
 }
 
 render_nginx_upstream_block() {
@@ -138,18 +196,20 @@ EOF
 render_nginx_http_policy_file() {
     local output_path="$1"
 
-    cat > "$output_path" << 'EOF'
+    validate_edge_policy_numeric_inputs || return 1
+
+    cat > "$output_path" << EOF
 # Shared edge policy (generated)
 
 # Rate limiting zones
-limit_req_zone $binary_remote_addr zone=api:10m rate=50r/m;
-limit_req_zone $binary_remote_addr zone=ws:10m rate=20r/m;
-limit_req_zone $binary_remote_addr zone=general:10m rate=100r/m;
+limit_req_zone \$binary_remote_addr zone=api:10m rate=${EDGE_RPC_RATE_LIMIT_RPM}r/m;
+limit_req_zone \$binary_remote_addr zone=ws:10m rate=${EDGE_WS_RATE_LIMIT_RPM}r/m;
+limit_req_zone \$binary_remote_addr zone=general:10m rate=${EDGE_GENERAL_RATE_LIMIT_RPM}r/m;
 limit_req_status 429;
 
 # Connection limiting zones
-limit_conn_zone $binary_remote_addr zone=conn_limit_per_ip:10m;
-limit_conn_zone $binary_remote_addr zone=conn_limit_total:10m;
+limit_conn_zone \$binary_remote_addr zone=conn_limit_per_ip:10m;
+limit_conn_zone \$binary_remote_addr zone=conn_limit_total:10m;
 limit_conn_status 429;
 
 # RPC read cache
@@ -276,8 +336,8 @@ $metrics_location_block
             return 405;
         }
 
-        limit_req zone=ws burst=5 nodelay;
-        limit_conn conn_limit_per_ip 20;
+        limit_req zone=ws burst=$EDGE_WS_BURST nodelay;
+        limit_conn conn_limit_per_ip $EDGE_WS_CONN_LIMIT_PER_IP;
 
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
@@ -302,8 +362,8 @@ $metrics_location_block
             return 405;
         }
 
-        limit_req zone=api burst=10 nodelay;
-        limit_conn conn_limit_per_ip 30;
+        limit_req zone=api burst=$EDGE_RPC_BURST nodelay;
+        limit_conn conn_limit_per_ip $EDGE_RPC_CONN_LIMIT_PER_IP;
 
         proxy_cache rpc_read_cache;
         proxy_cache_methods POST;
@@ -352,13 +412,13 @@ render_caddy_site_config() {
     local cert_path="${4:-}"
     local key_path="${5:-}"
 
-    local tls_block
+    local tls_block=""
     local redirect_block=""
     local site_address="https://$server_name"
-    local enable_rate_limit="${CADDY_ENABLE_RATE_LIMIT:-true}"
+    local enable_rate_limit="${CADDY_ENABLE_RATE_LIMIT:-auto}"
+    local enable_dns_challenge="${CADDY_ENABLE_DNS_CHALLENGE:-auto}"
     local rate_limit_global=""
-    local rate_limit_ws=""
-    local rate_limit_rpc=""
+    local require_rate_limit="$CADDY_REQUIRE_RATE_LIMIT"
     local strict_sni_line="        strict_sni_host"
     local trusted_proxies_line=""
     local metrics_global_line=""
@@ -367,11 +427,46 @@ render_caddy_site_config() {
     local caddy_rpc_upstreams=""
     local caddy_ws_upstreams=""
 
+    validate_edge_policy_numeric_inputs || return 1
+
     if [[ "${CI_E2E:-}" == "true" ]]; then
-        enable_rate_limit="false"
         site_address=":80"
         tls_block=""
         strict_sni_line=""
+    fi
+
+    if [[ "${CADDY_INSTALL_FLOW:-false}" == "true" ]] && [[ "$CADDY_INSTALL_ENFORCE_RATE_LIMIT" == "true" ]]; then
+        require_rate_limit="true"
+    fi
+
+    if [[ "$enable_rate_limit" == "auto" ]]; then
+        if caddy_has_module "http.handlers.rate_limit"; then
+            enable_rate_limit="true"
+        else
+            enable_rate_limit="false"
+        fi
+    elif [[ "$enable_rate_limit" == "true" ]] && ! caddy_has_module "http.handlers.rate_limit"; then
+        enable_rate_limit="false"
+    fi
+
+    if [[ "$enable_dns_challenge" == "auto" ]]; then
+        if [[ -n "${CLOUDFLARE_API_TOKEN:-}" ]] && caddy_has_module "dns.providers.cloudflare"; then
+            enable_dns_challenge="true"
+        else
+            enable_dns_challenge="false"
+        fi
+    elif [[ "$enable_dns_challenge" == "true" ]] && ! caddy_has_module "dns.providers.cloudflare"; then
+        enable_dns_challenge="false"
+    fi
+
+    if [[ "$require_rate_limit" == "true" ]] && [[ "$enable_rate_limit" != "true" ]]; then
+        echo "Error: Caddy rate_limit is required, but http.handlers.rate_limit is unavailable in this Caddy build" >&2
+        return 1
+    fi
+
+    if [[ "$CADDY_REQUIRE_DNS_CHALLENGE" == "true" ]] && [[ "$enable_dns_challenge" != "true" ]]; then
+        echo "Error: Caddy DNS challenge is required, but dns.providers.cloudflare and/or CLOUDFLARE_API_TOKEN is unavailable" >&2
+        return 1
     fi
 
     if [[ "${CI_E2E:-}" != "true" ]]; then
@@ -380,14 +475,12 @@ render_caddy_site_config() {
 
     if [[ "${CI_E2E:-}" != "true" ]] && [[ "$tls_mode" == "manual" ]]; then
         tls_block="    tls $cert_path $key_path"
-    elif [[ "${CI_E2E:-}" != "true" ]]; then
+    elif [[ "${CI_E2E:-}" != "true" ]] && [[ "$enable_dns_challenge" == "true" ]]; then
         tls_block=$'    tls {\n        dns cloudflare {\n            env CLOUDFLARE_API_TOKEN\n        }\n    }'
     fi
 
     if [[ "$enable_rate_limit" == "true" ]]; then
-        rate_limit_global=$'    rate_limit {\n        zone api {\n            key {remote_host}\n            events 50\n            window 1m\n        }\n        zone ws {\n            key {remote_host}\n            events 20\n            window 1m\n        }\n        zone general {\n            key {remote_host}\n            events 100\n            window 1m\n        }\n    }\n'
-        rate_limit_ws='        rate_limit zone ws'
-        rate_limit_rpc='        rate_limit zone api'
+        rate_limit_global=$'    rate_limit {\n        zone api {\n            match {\n                method POST\n                path /rpc*\n            }\n            key {remote_host}\n            events '"$EDGE_RPC_RATE_LIMIT_RPM"$'\n            window 1m\n        }\n        zone ws {\n            match {\n                method GET\n                path /ws*\n            }\n            key {remote_host}\n            events '"$EDGE_WS_RATE_LIMIT_RPM"$'\n            window 1m\n        }\n        zone general {\n            key {remote_host}\n            events '"$EDGE_GENERAL_RATE_LIMIT_RPM"$'\n            window 1m\n        }\n    }\n'
     fi
 
     caddy_rpc_upstreams="$(trim_space "$(csv_to_space_list "$EDGE_RPC_UPSTREAMS")")"
@@ -447,7 +540,6 @@ ${encode_line}
 
     @ws_path path /ws*
     route @ws_path {
-$rate_limit_ws
         @ws_get method GET
         reverse_proxy @ws_get $caddy_ws_upstreams {
             lb_policy $CADDY_LB_POLICY
@@ -469,7 +561,6 @@ $rate_limit_ws
 
     @rpc_path path /rpc*
     route @rpc_path {
-$rate_limit_rpc
         @rpc_post method POST
         reverse_proxy @rpc_post $caddy_rpc_upstreams {
             lb_policy $CADDY_LB_POLICY

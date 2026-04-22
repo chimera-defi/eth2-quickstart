@@ -119,7 +119,7 @@ fi
 # Covers: execution (7), consensus (6), MEV (3), web (caddy, nginx), utils
 log_info "Test 3: Verify all install scripts (syntax)..."
 syntax_fail=0
-for script in "${CLIENT_SCRIPTS[@]}" "install/utils/install_dependencies.sh" "install/utils/select_clients.sh" "install/web/install_caddy.sh" "install/web/install_nginx.sh" "install/web/proxy_config_renderer.sh" "config/edge_policy.env" "test/validate_proxy_policy_sync.sh" "test/validate_proxy_policy_toggles.sh"; do
+for script in "${CLIENT_SCRIPTS[@]}" "install/utils/install_dependencies.sh" "install/utils/select_clients.sh" "install/web/install_caddy.sh" "install/web/install_nginx.sh" "install/web/proxy_config_renderer.sh" "config/edge_policy.env" "test/validate_proxy_policy_sync.sh" "test/validate_proxy_policy_toggles.sh" "test/validate_caddy_config.sh" "test/validate_nginx_config.sh" "test/validate_review_guardrails.sh"; do
     if [[ -f "$PROJECT_ROOT/$script" ]]; then
         if bash -n "$PROJECT_ROOT/$script" 2>/dev/null; then
             log_info "  ✓ $script"
@@ -291,6 +291,33 @@ if grep -q 'backup_root="/etc/nginx/backups"' "$nginx_harden_script" && \
     log_info "  ✓ Nginx hardening backup path/restore strategy is safe"
 else
     log_error "  ✗ Nginx hardening backup strategy may reintroduce include collisions"
+    exit 1
+fi
+
+# Test 14: Generated Nginx config should pass native nginx -t validation
+log_info "Test 14: Validate Nginx renderer output with nginx -t..."
+if bash "$PROJECT_ROOT/test/validate_nginx_config.sh"; then
+    log_info "  ✓ Nginx renderer output validates"
+else
+    log_error "  ✗ Nginx renderer output validation failed"
+    exit 1
+fi
+
+# Test 15: Generated Caddy config should pass native caddy adapt/validate checks
+log_info "Test 15: Validate Caddy renderer output with caddy validate..."
+if bash "$PROJECT_ROOT/test/validate_caddy_config.sh"; then
+    log_info "  ✓ Caddy renderer output validates"
+else
+    log_error "  ✗ Caddy renderer output validation failed"
+    exit 1
+fi
+
+# Test 16: Review/security/regression guardrails should stay wired
+log_info "Test 16: Validate review guardrails..."
+if bash "$PROJECT_ROOT/test/validate_review_guardrails.sh"; then
+    log_info "  ✓ Review guardrails validated"
+else
+    log_error "  ✗ Review guardrails validation failed"
     exit 1
 fi
 
