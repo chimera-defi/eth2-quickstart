@@ -35,6 +35,10 @@ setup_caddy_service
 
 # Create Caddy configuration
 log_info "Creating Caddy configuration..."
+export CADDY_INSTALL_FLOW=true
+if [[ "${CADDY_INSTALL_ENFORCE_RATE_LIMIT:-true}" == "true" ]]; then
+    log_info "Enforcing Caddy rate-limit availability during install flow"
+fi
 create_caddy_config_auto_https "$SERVER_NAME" "$HOME/caddy_conf_temp"
 
 # Install Caddy configuration

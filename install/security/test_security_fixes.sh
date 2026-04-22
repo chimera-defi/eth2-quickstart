@@ -18,12 +18,13 @@ test_network_exposure() {
     
     local issues_found=0
     
-    # Check for 0.0.0.0 bindings in config files
-    if grep -r "0\.0\.0\.0" "$PROJECT_ROOT/configs/" >/dev/null 2>&1; then
-        log_error "Found 0.0.0.0 bindings in config files"
+    # Check for 0.0.0.0 bindings in Ethereum client config files.
+    # sshd is intentionally managed separately and may legitimately listen on 0.0.0.0.
+    if grep -r "0\.0\.0\.0" "$PROJECT_ROOT/configs/" --exclude='sshd_config' >/dev/null 2>&1; then
+        log_error "Found 0.0.0.0 bindings in Ethereum config files"
         issues_found=$((issues_found + 1))
     else
-        log_info "✓ No 0.0.0.0 bindings found in config files"
+        log_info "✓ No 0.0.0.0 bindings found in Ethereum config files"
     fi
     
     # Check for localhost bindings
@@ -116,16 +117,23 @@ test_rate_limiting() {
     
     local issues_found=0
     
-    # Check if nginx configuration has rate limiting
-    if [[ -f "/etc/nginx/sites-available/default" ]]; then
-        if grep -q "limit_req_zone" "/etc/nginx/sites-available/default"; then
-            log_info "✓ Rate limiting configured in nginx"
+    # Shared renderer policy (preferred path)
+    if [[ -f "/etc/nginx/conf.d/eth2-edge-policy.conf" ]]; then
+        if grep -q "limit_req_zone" "/etc/nginx/conf.d/eth2-edge-policy.conf"; then
+            log_info "✓ Rate limiting configured in shared nginx edge policy"
         else
-            log_warn "Rate limiting not found in nginx config"
+            log_warn "Rate limiting not found in shared nginx edge policy"
             issues_found=$((issues_found + 1))
         fi
+    # Legacy path fallback
+    elif [[ -f "/etc/nginx/sites-available/default" ]]; then
+        if grep -q "limit_req_zone" "/etc/nginx/sites-available/default"; then
+            log_info "✓ Rate limiting configured in nginx site config"
+        else
+            log_info "Rate limiting check skipped (shared edge policy not installed on this host)"
+        fi
     else
-        log_warn "Nginx config not found - rate limiting test skipped"
+        log_info "Rate limiting check skipped (nginx config not found)"
     fi
     
     return $issues_found

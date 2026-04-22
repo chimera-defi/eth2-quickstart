@@ -97,9 +97,16 @@ export EDGE_LB_POLICY='least_conn'            # least_conn | ip_hash
 export EDGE_UPSTREAM_KEEPALIVE='64'
 export EDGE_DNS_RESOLVER=''                   # e.g. "1.1.1.1 8.8.8.8" for DNS-based upstream resolution
 export EDGE_TRUSTED_PROXIES=''                # e.g. "173.245.48.0/20,103.21.244.0/22"
-export EDGE_ENABLE_METRICS='false'
+export EDGE_ENABLE_METRICS='true'
 export EDGE_METRICS_PATH='/metrics'
 export EDGE_ENABLE_COMPRESSION='true'
+export EDGE_RPC_RATE_LIMIT_RPM='50'
+export EDGE_WS_RATE_LIMIT_RPM='20'
+export EDGE_GENERAL_RATE_LIMIT_RPM='100'
+export EDGE_RPC_BURST='10'
+export EDGE_WS_BURST='5'
+export EDGE_RPC_CONN_LIMIT_PER_IP='30'
+export EDGE_WS_CONN_LIMIT_PER_IP='20'
 export EDGE_RPC_CACHE_MIN_USES='1'
 
 # Caddy reverse_proxy resilience knobs
@@ -109,6 +116,12 @@ export CADDY_LB_TRY_DURATION='5s'
 export CADDY_LB_TRY_INTERVAL='250ms'
 export CADDY_FAIL_DURATION='30s'
 export CADDY_MAX_FAILS='3'
+export CADDY_ENSURE_MODULES='true'             # bootstrap Caddy binary with required modules
+export CADDY_REQUIRED_MODULES='http.handlers.rate_limit,dns.providers.cloudflare'
+export CADDY_REQUIRED_PACKAGES='github.com/mholt/caddy-ratelimit,github.com/caddy-dns/cloudflare'
+export CADDY_INSTALL_ENFORCE_RATE_LIMIT='true' # force rate-limit requirement during install_caddy
+export CADDY_REQUIRE_RATE_LIMIT='false'         # fail render/install if rate_limit cannot be enabled
+export CADDY_REQUIRE_DNS_CHALLENGE='false'      # fail render/install if Cloudflare DNS challenge cannot be enabled
 
 # Common ports
 export ENGINE_PORT=8551  # JWT-secured Engine API port
