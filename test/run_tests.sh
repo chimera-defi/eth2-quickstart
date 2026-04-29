@@ -131,6 +131,14 @@ EOF
 # PHASE 1: LINT AND STATIC ANALYSIS
 # =============================================================================
 
+tracked_shell_scripts() {
+    if git -C "$PROJECT_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        git -C "$PROJECT_ROOT" ls-files '*.sh' | sed "s#^#$PROJECT_ROOT/#"
+    else
+        find "$PROJECT_ROOT" -name "*.sh" -type f ! -path "*/test/*" ! -path "*/node_modules/*"
+    fi
+}
+
 run_lint_tests() {
     log_header "PHASE 1: Lint and Static Analysis"
     
@@ -159,7 +167,7 @@ run_lint_tests() {
                 log_test "FAIL" "shellcheck: $script_name" "Has shellcheck warnings"
                 scripts_failed=$((scripts_failed + 1))
             fi
-        done < <(find "$PROJECT_ROOT" -name "*.sh" -type f ! -path "*/test/*" ! -path "*/node_modules/*")
+        done < <(tracked_shell_scripts)
     
         log_info "Shellcheck: $scripts_passed/$scripts_checked scripts passed"
     fi
@@ -174,7 +182,7 @@ run_lint_tests() {
         else
             log_test "FAIL" "syntax: $script_name" "Syntax error"
         fi
-    done < <(find "$PROJECT_ROOT" -name "*.sh" -type f ! -path "*/test/*" ! -path "*/node_modules/*")
+    done < <(tracked_shell_scripts)
     
     log_subheader "Checking for shebangs"
     
@@ -186,7 +194,7 @@ run_lint_tests() {
         else
             log_test "FAIL" "shebang: $script_name" "Missing shebang"
         fi
-    done < <(find "$PROJECT_ROOT" -name "*.sh" -type f ! -path "*/test/*" ! -path "*/node_modules/*")
+    done < <(tracked_shell_scripts)
 }
 
 # =============================================================================
@@ -437,6 +445,106 @@ run_unit_tests() {
     else
         log_test "SKIP" "test_common_functions.sh: file not found"
     fi
+
+    if [[ -f "$PROJECT_ROOT/install/test/test_stats_read_only.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_stats_read_only.sh"; then
+            log_test "PASS" "test_stats_read_only.sh: all tests passed"
+        else
+            log_test "FAIL" "test_stats_read_only.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_stats_read_only.sh: file not found"
+    fi
+
+    if [[ -f "$PROJECT_ROOT/install/test/test_repair_safe_actions.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_repair_safe_actions.sh"; then
+            log_test "PASS" "test_repair_safe_actions.sh: all tests passed"
+        else
+            log_test "FAIL" "test_repair_safe_actions.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_repair_safe_actions.sh: file not found"
+    fi
+
+    if [[ -f "$PROJECT_ROOT/install/test/test_stats_json_contract.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_stats_json_contract.sh"; then
+            log_test "PASS" "test_stats_json_contract.sh: all tests passed"
+        else
+            log_test "FAIL" "test_stats_json_contract.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_stats_json_contract.sh: file not found"
+    fi
+
+    if [[ -f "$PROJECT_ROOT/install/test/test_monitor_contracts.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_monitor_contracts.sh"; then
+            log_test "PASS" "test_monitor_contracts.sh: all tests passed"
+        else
+            log_test "FAIL" "test_monitor_contracts.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_monitor_contracts.sh: file not found"
+    fi
+
+    if [[ -f "$PROJECT_ROOT/install/test/test_host_cleanup.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_host_cleanup.sh"; then
+            log_test "PASS" "test_host_cleanup.sh: all tests passed"
+        else
+            log_test "FAIL" "test_host_cleanup.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_host_cleanup.sh: file not found"
+    fi
+
+    if [[ -f "$PROJECT_ROOT/install/test/test_doctor_service_drift.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_doctor_service_drift.sh"; then
+            log_test "PASS" "test_doctor_service_drift.sh: all tests passed"
+        else
+            log_test "FAIL" "test_doctor_service_drift.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_doctor_service_drift.sh: file not found"
+    fi
+
+    if [[ -f "$PROJECT_ROOT/install/test/test_ensure_dispatch.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_ensure_dispatch.sh"; then
+            log_test "PASS" "test_ensure_dispatch.sh: all tests passed"
+        else
+            log_test "FAIL" "test_ensure_dispatch.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_ensure_dispatch.sh: file not found"
+    fi
+
+    if [[ -f "$PROJECT_ROOT/install/test/test_plan_json.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_plan_json.sh"; then
+            log_test "PASS" "test_plan_json.sh: all tests passed"
+        else
+            log_test "FAIL" "test_plan_json.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_plan_json.sh: file not found"
+    fi
+
+    if [[ -f "$PROJECT_ROOT/install/test/test_install_planner.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_install_planner.sh"; then
+            log_test "PASS" "test_install_planner.sh: all tests passed"
+        else
+            log_test "FAIL" "test_install_planner.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_install_planner.sh: file not found"
+    fi
+
+    if [[ -f "$PROJECT_ROOT/test/ci_test_mcp_server.sh" ]]; then
+        if bash "$PROJECT_ROOT/test/ci_test_mcp_server.sh"; then
+            log_test "PASS" "ci_test_mcp_server.sh: all tests passed"
+        else
+            log_test "FAIL" "ci_test_mcp_server.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "ci_test_mcp_server.sh: file not found"
+    fi
     
     log_subheader "Testing individual functions"
     
@@ -504,10 +612,32 @@ run_unit_tests() {
         if bash "$SCRIPT_DIR/whiptail_pipe_test.sh" 2>/dev/null; then
             log_test "PASS" "whiptail_pipe_test.sh: OK button works when stdin is pipe"
         else
-            # May skip if expect/whiptail not installed (e.g. in Docker)
-            log_test "SKIP" "whiptail_pipe_test.sh: requires expect+whiptail or TTY"
+            if [[ "${REQUIRE_WHIPTAIL_PIPE_TEST:-0}" == "1" ]]; then
+                log_test "FAIL" "whiptail_pipe_test.sh: required non-skip mode failed"
+            else
+                # May skip if expect/whiptail not installed (e.g. in Docker)
+                log_test "SKIP" "whiptail_pipe_test.sh: requires expect+whiptail or TTY"
+            fi
         fi
     fi
+
+    log_subheader "Skill contract tests"
+    local skill_test
+    for skill_test in \
+        "$SCRIPT_DIR/ci_test_skill_structure.sh" \
+        "$SCRIPT_DIR/ci_test_skill_command_mapping.sh" \
+        "$SCRIPT_DIR/ci_test_skill_safety.sh" \
+        "$SCRIPT_DIR/ci_test_skill_distribution.sh"; do
+        if [[ -f "$skill_test" ]]; then
+            if bash "$skill_test"; then
+                log_test "PASS" "$(basename "$skill_test"): all tests passed"
+            else
+                log_test "FAIL" "$(basename "$skill_test"): some tests failed"
+            fi
+        else
+            log_test "SKIP" "$(basename "$skill_test"): file not found"
+        fi
+    done
 }
 
 # =============================================================================
@@ -562,6 +692,23 @@ run_integration_tests() {
             log_test "PASS" "test_mev_implementations.sh: syntax valid"
         else
             log_test "FAIL" "test_mev_implementations.sh: syntax error"
+        fi
+    fi
+
+    log_subheader "Optional live smoke tests"
+    if [[ -f "$SCRIPT_DIR/prysm_checkpoint_smoke.sh" ]]; then
+        if [[ "${ENABLE_PRYSM_CHECKPOINT_SMOKE:-false}" != "true" ]]; then
+            log_test "SKIP" "prysm_checkpoint_smoke.sh: set ENABLE_PRYSM_CHECKPOINT_SMOKE=true"
+        else
+            set +e
+            ENABLE_PRYSM_CHECKPOINT_SMOKE=true bash "$SCRIPT_DIR/prysm_checkpoint_smoke.sh"
+            local smoke_rc=$?
+            set -e
+            case "$smoke_rc" in
+                0) log_test "PASS" "prysm_checkpoint_smoke.sh: checkpoint behavior verified" ;;
+                2) log_test "SKIP" "prysm_checkpoint_smoke.sh: prerequisites not met" ;;
+                *) log_test "FAIL" "prysm_checkpoint_smoke.sh: failed" ;;
+            esac
         fi
     fi
     

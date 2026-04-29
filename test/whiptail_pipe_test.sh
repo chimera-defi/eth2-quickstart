@@ -8,7 +8,7 @@
 # 3. Send Enter to dismiss the OK button
 # 4. Verify whiptail exits 0
 
-set -e
+set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -18,8 +18,15 @@ source "$SCRIPT_DIR/lib/test_utils.sh"
 
 log_header "Whiptail Pipe Test (curl|bash scenario)"
 
-# Skip if no TTY (e.g. in CI without expect)
+REQUIRE_WHIPTAIL_PIPE_TEST="${REQUIRE_WHIPTAIL_PIPE_TEST:-0}"
+
+# Skip if dependencies are missing unless explicitly required.
 if ! command -v expect &>/dev/null || ! command -v whiptail &>/dev/null; then
+    if [[ "$REQUIRE_WHIPTAIL_PIPE_TEST" == "1" ]]; then
+        record_test "Whiptail pipe test (expect/whiptail installed)" "FAIL"
+        print_test_summary
+        exit 1
+    fi
     record_test "Whiptail pipe test (expect/whiptail not installed)" "SKIP"
     exit 0
 fi

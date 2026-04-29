@@ -10,3 +10,8 @@ logs/
 
 # Package artifacts (chrony, etc.)
 *.deb
+
+# CI poll snapshots
+status/*.json
+
+.DS_store

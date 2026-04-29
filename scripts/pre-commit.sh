@@ -10,9 +10,20 @@ echo "=== Shellcheck + syntax ==="
 
 echo "=== Shebang check ==="
 failed=0
+find_sh_files() {
+  if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git ls-files '*.sh'
+  else
+    find . -name "*.sh" -type f \
+      ! -path "./.git/*" \
+      ! -path "./frontend/node_modules/*" \
+      ! -path "./frontend/.next/*"
+  fi
+}
+
 while IFS= read -r f; do
   head -1 "$f" | grep -q "^#!/" || { echo "❌ $f lacks shebang"; failed=1; }
-done < <(find . -name "*.sh" -type f ! -path "./.git/*")
+done < <(find_sh_files)
 [[ $failed -eq 1 ]] && exit 1
 
 echo "=== Dependency validation ==="
@@ -32,7 +43,7 @@ while IFS= read -r script; do
       echo "❌ $script sources missing: $sf"; failed=1
     fi
   done < <(grep -n '^[[:space:]]*source[[:space:]]' "$script" 2>/dev/null || true)
-done < <(find . -name "*.sh" -type f ! -path "./.git/*")
+done < <(find_sh_files)
 [[ $failed -eq 1 ]] && exit 1
 
 echo "=== run_1/run_2 structure ==="
@@ -43,5 +54,25 @@ done
 
 echo "=== Common functions unit tests ==="
 bash install/test/test_common_functions.sh
+bash install/test/test_stats_read_only.sh
+bash install/test/test_repair_safe_actions.sh
+bash install/test/test_stats_json_contract.sh
+bash install/test/test_monitor_contracts.sh
+bash install/test/test_host_cleanup.sh
+bash install/test/test_doctor_service_drift.sh
+bash install/test/test_ensure_dispatch.sh
+bash install/test/test_plan_json.sh
+bash install/test/test_install_planner.sh
+
+echo "=== Docs consistency ==="
+bash test/ci_test_docs_consistency.sh
+
+echo "=== Agent skill checks ==="
+bash test/ci_test_skill_structure.sh
+bash test/ci_test_skill_command_mapping.sh
+bash test/ci_test_skill_safety.sh
+bash test/ci_test_skill_distribution.sh
+bash test/ci_test_skill_install_e2e.sh
+bash test/ci_test_mcp_server.sh
 
 echo "✅ Pre-commit checks passed."

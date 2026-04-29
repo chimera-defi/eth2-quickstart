@@ -2,11 +2,55 @@
 
 ## Overview
 
-Bash scripts to harden Ubuntu server and install Ethereum node stack: execution client, consensus client, validator, MEV-Boost, and optional Nginx reverse proxy with SSL.
+Bash scripts to harden Ubuntu server and install Ethereum node stack: execution client, consensus client, validator, MEV tooling, and optional Nginx/Caddy reverse proxy with SSL.
 
 - **OS**: Ubuntu 20.04+
 - **Order**: `run_1.sh` → reboot → login as `LOGIN_UNAME` → update `exports.sh` → `run_2.sh`
 - **Config**: `exports.sh` (email, domain, fee recipient, graffiti, peers, relay list, ports)
+
+## Repo Maintenance Automation
+
+For upstream review tracking (for example CLI-Anything harness PRs), use:
+
+```bash
+./scripts/check-cli-anything-pr.sh
+./scripts/install-cli-anything-pr-watch-cron.sh
+./scripts/uninstall-cli-anything-pr-watch-cron.sh
+./status/poll_ci.sh
+```
+
+Defaults now target the local active PR (`chimera-defi/eth2-quickstart` PR `167`).
+Override target PR with `--repo` and `--pr` when needed.
+
+`check-cli-anything-pr.sh` stores state under `~/.eth2qs-pr-watch/`, reports new actionable feedback, and can optionally trigger an autofix command.
+`install-cli-anything-pr-watch-cron.sh` installs an idempotent daily cron entry that runs the check script, appends logs to `~/.eth2qs-pr-watch/cron.log`, and auto-removes itself when the watched PR closes/merges.
+`uninstall-cli-anything-pr-watch-cron.sh` removes existing watch entries by cron marker.
+`status/poll_ci.sh` snapshots open PR CI/review state into `status/ci-summary.json` and runs one PR-watch check each poll cycle.
+
+## Unified Wrapper (Recommended)
+
+Use `scripts/eth2qs.sh` as a stable command entrypoint for both humans and AI agents.
+
+```bash
+./scripts/eth2qs.sh help
+./scripts/eth2qs.sh configure --non-interactive
+./scripts/eth2qs.sh client-options --json
+./scripts/eth2qs.sh phase1
+./scripts/eth2qs.sh phase2
+./scripts/eth2qs.sh doctor --json
+./scripts/eth2qs.sh debug --json --service cl
+./scripts/eth2qs.sh stats --json
+./scripts/eth2qs.sh update-check --json
+./scripts/eth2qs.sh monitor export --json
+./scripts/eth2qs.sh repair
+./scripts/eth2qs.sh restart --smart
+```
+
+`stats --json` is the machine-readable monitoring surface. It summarizes service states, recent journal-derived failure modes, planner/doctor context, and bounded repair previews without making changes.
+`debug --json` is the structured RCA surface. It adds per-service unit metadata, recent log tails, main PID, and listen socket hints.
+`update-check --json` compares installed client versions and repo drift against the latest known upstream release tags.
+`monitor export --json` is the compact summary surface for bots, dashboards, cron jobs, or alert relays, and `monitor snapshot` writes a local history entry under `~/.eth2qs-monitor/`.
+`repair` is the bounded apply surface. It previews allowlisted targeted restarts by default and requires `--apply --confirm` before making changes.
 
 ## Environment Configuration (exports.sh)
 
@@ -20,6 +64,8 @@ Key variables:
 - `MAX_PEERS`: Consensus client peer cap
 - `GETH_CACHE`: Geth cache size in MB (default `8192`)
 - `MEV_RELAYS`: Comma-separated MEV-Boost relay URLs
+- `ENABLE_SNORT`: Optional Snort IDS profile toggle (`false` by default)
+- `SNORT_INTERFACE` / `SNORT_HOME_NET`: Optional Snort capture interface and CIDR scope
 
 ## Stage 1: Initial Hardening (run_1.sh)
 
@@ -39,6 +85,7 @@ ssh LOGIN_UNAME@<server-ip>
 - Backs up and migrates authorized_keys from root, SUDO_USER, and all /home/* users to new user (prevents lockout)
 - Copies eth2-quickstart to `~/eth2-quickstart` for new user (handoff: `cd ~/eth2-quickstart && ./run_2.sh`)
 - Security: runs consolidated security script
+- IDS: Snort is enabled by default; set `ENABLE_SNORT=false` to disable
 - NTP: installs `chrony` and enables NTP
 - Security: mounts `/run/shm` as `tmpfs` with `ro,noexec,nosuid`
 
@@ -53,12 +100,20 @@ ssh LOGIN_UNAME@<server-ip>
 
 **Actions:**
 - Installs `snapd`
-- Runs installers: `./geth.sh`, `./prysm.sh`, `./install_mev_boost.sh`
+- Verifies client configuration path resolution (`install/utils/verify_client_configs.sh`)
+- Runs selected installers from:
+  - `install/execution/<client>.sh`
+  - `install/consensus/<client>.sh`
+  - `install/mev/install_mev_boost.sh` or `install/mev/install_commit_boost.sh`
+  - optional `install/mev/install_ethgas.sh` (requires Commit-Boost)
 - Echoes next steps for Nginx + SSL
 
 **Start services:**
 ```bash
-sudo systemctl start eth1 cl validator mev
+./install/utils/start.sh
+./install/utils/stats.sh
+./scripts/eth2qs.sh stats --json
+./scripts/eth2qs.sh monitor export --json
 ```
 
 ## Logs
@@ -118,6 +173,12 @@ run_1.sh and run_2.sh write logs to disk. View them with:
 - Downloads and installs Nimbus-eth1 (nightly builds)
 - Lightweight Nim-based execution client
 - Configures with TOML configuration file
+- Creates systemd unit `eth1.service`
+
+#### ethrex.sh
+- **Language: Rust**
+- Downloads and installs Ethrex
+- Configures with typical flags
 - Creates systemd unit `eth1.service`
 
 ### Consensus Clients
@@ -209,8 +270,8 @@ run_1.sh and run_2.sh write logs to disk. View them with:
 - Configures reverse proxy for RPC/WS endpoints
 - Sets up rate limiting and security headers
 
-### install_ssl.sh
-- Installs SSL certificates using ACME
+### install_acme_ssl.sh / install_ssl_certbot.sh
+- Installs SSL certificates (ACME.sh or Certbot flow)
 - Configures HTTPS redirect
 - Sets up certificate renewal
 
@@ -222,8 +283,7 @@ run_1.sh and run_2.sh write logs to disk. View them with:
 - Updates `exports.sh` with selected clients
 
 ### purge_ethereum_data.sh
-- Safely removes Ethereum data directories
-- Useful for fresh starts or troubleshooting
+- See [Data Management](#data-management) for scope and safety guarantees.
 
 ## Security Utilities
 
@@ -267,19 +327,29 @@ run_1.sh and run_2.sh write logs to disk. View them with:
 ### commit-boost-pbs.service
 - Commit-Boost PBS module
 - MEV-Boost compatible relay interface
-- Port 18551
+- Port 18550 (drop-in for MEV-Boost)
 - Restart on failure
 
 ### commit-boost-signer.service
 - Commit-Boost Signer module
 - BLS key signing for commitments
-- Port 18552
+- Port 20000
 - Restart on failure
 
 ### ethgas.service
 - ETHGas preconfirmation service
 - Requires Commit-Boost services
 - Port 18552 (metrics 18553)
+- Restart on failure
+
+### nginx.service
+- Nginx reverse proxy service
+- Optional (web RPC/SSL setup)
+- Restart on failure
+
+### caddy.service
+- Caddy reverse proxy service
+- Optional alternative to Nginx
 - Restart on failure
 
 ## Networking and Ports
@@ -300,28 +370,26 @@ run_1.sh and run_2.sh write logs to disk. View them with:
 ## Data Management
 
 ### purge_ethereum_data.sh
-- Removes Ethereum data directories
-- Preserves configuration files
+- Removes default Ethereum data/state directories
+- Preserves key/secret paths (including `~/secrets` and validator keystores)
+- Does not touch custom non-default datadirs
 - Useful for fresh starts
 
 ### Data Directories
 - **Geth**: `~/.ethereum`
 - **Erigon**: `~/.local/share/erigon`
 - **Reth**: `~/.local/share/reth`
-- **Prysm**: `~/prysm`
+- **Ethrex**: `~/ethrex/data`
+- **Prysm**: `~/.local/share/prysm`
 - **Lighthouse**: `~/.lighthouse`
 - **Teku**: `~/.local/share/teku`
-- **Nimbus**: `~/.cache/nimbus`
+- **Nimbus**: `~/.local/share/nimbus`
 - **Lodestar**: `~/.local/share/lodestar`
 - **Grandine**: `~/.local/share/grandine`
+- **Commit-Boost**: `~/commit-boost`
+- **ETHGas**: `~/ethgas`
 
 ## Troubleshooting
-
-### Common Issues
-1. **Services not starting**: Check logs with `journalctl -u service_name`
-2. **Permission errors**: Ensure proper file ownership
-3. **Port conflicts**: Check for conflicting services
-4. **Sync issues**: Verify network connectivity
 
 ### Logs
 - **System logs**: `journalctl -u service_name -f`
@@ -329,7 +397,4 @@ run_1.sh and run_2.sh write logs to disk. View them with:
 - **Fail2ban logs**: `/var/log/fail2ban.log`
 
 ### Getting Help
-1. Check service logs
-2. Run security validation scripts
-3. Review configuration files
-4. Check system requirements
+For issue triage patterns and client-specific troubleshooting, see [README.md](../README.md#troubleshooting).

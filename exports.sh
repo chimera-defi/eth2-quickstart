@@ -14,8 +14,29 @@ export EMAIL="chimera_defi@protonmail.com"
 
 export LOGIN_UNAME='eth'
 export YourSSHPortNumber='22'
+
+# Chain selection: which blockchain node to install in Phase 2
+# Valid values: 'ethereum' | 'monad'
+# Default is ethereum to preserve existing behaviour.
+export CHAIN='ethereum'
+
+# Path to a dedicated NVMe device for Monad TrieDB state storage.
+# WARNING: THIS DEVICE WILL BE COMPLETELY REFORMATTED. ALL DATA ON IT WILL BE DESTROYED.
+# Do NOT set this to your OS drive. No default is provided because a wrong value is destructive.
+# Set in config/user_config.env when CHAIN='monad'. Use 'lsblk' to identify the correct device.
+# export MONAD_TRIEDB_DRIVE='/dev/nvme1n1'
+
 export maxretry='3'
 export REPO_NAME="eth2-quickstart"
+
+# IDS profile (enabled by default).
+# Set ENABLE_SNORT=false to skip Snort package install/config in Phase 1.
+# Defaults are safe for host-level IDS on a validator/RPC node.
+export ENABLE_SNORT='true'
+export SNORT_INTERFACE='auto'               # auto-detect default route interface
+export SNORT_HOME_NET=''                    # auto-detect CIDR from interface when empty
+export SNORT_STARTUP='boot'                 # boot | manual
+export SNORT_DISABLE_PROMISCUOUS='true'     # true = inspect traffic for host interface only
 
 # Server name used for nginx, caddy & ssl setup
 export SERVER_NAME="rpc.sharedtools.org"
@@ -24,7 +45,7 @@ export SERVER_NAME="rpc.sharedtools.org"
 export FEE_RECIPIENT=0xa1feaF41d843d53d0F6bEd86a8cF592cE21C409e
 export GRAFITTI="SharedStake.org!"
 export MAX_PEERS=100 # You may want to reduce this if you have banwidth restrictions
-export PRYSM_CPURL="https://beaconstate.ethstaker.cc"
+export PRYSM_CPURL="https://mainnet.checkpoint.sigp.io"
 # Goerli link if needed for checkpoint sync https://goerli.checkpoint-sync.ethpandaops.io/
 export USE_PRYSM_MODERN=true
 export PRYSM_ALLOW_UNVERIFIED_BINARIES=1
@@ -68,6 +89,40 @@ export ETHREX_ENGINE_PORT=8551
 export ETHREX_P2P_PORT=30303
 export ETHREX_METRICS_PORT=9090
 
+# Shared edge proxy tuning (NGINX + Caddy)
+# Multiple upstreams can be supplied as comma-separated host:port values.
+export EDGE_RPC_UPSTREAMS="$LH:$NETHERMIND_HTTP_PORT"
+export EDGE_WS_UPSTREAMS="$LH:$NETHERMIND_WS_PORT"
+export EDGE_LB_POLICY='least_conn'            # least_conn | ip_hash
+export EDGE_UPSTREAM_KEEPALIVE='64'
+export EDGE_DNS_RESOLVER=''                   # e.g. "1.1.1.1 8.8.8.8" for DNS-based upstream resolution
+export EDGE_TRUSTED_PROXIES=''                # e.g. "173.245.48.0/20,103.21.244.0/22"
+export EDGE_ENABLE_METRICS='true'
+export EDGE_METRICS_PATH='/metrics'
+export EDGE_ENABLE_COMPRESSION='true'
+export EDGE_RPC_RATE_LIMIT_RPM='50'
+export EDGE_WS_RATE_LIMIT_RPM='20'
+export EDGE_GENERAL_RATE_LIMIT_RPM='100'
+export EDGE_RPC_BURST='10'
+export EDGE_WS_BURST='5'
+export EDGE_RPC_CONN_LIMIT_PER_IP='30'
+export EDGE_WS_CONN_LIMIT_PER_IP='20'
+export EDGE_RPC_CACHE_MIN_USES='1'
+
+# Caddy reverse_proxy resilience knobs
+export CADDY_LB_POLICY='least_conn'
+export CADDY_LB_RETRIES='2'
+export CADDY_LB_TRY_DURATION='5s'
+export CADDY_LB_TRY_INTERVAL='250ms'
+export CADDY_FAIL_DURATION='30s'
+export CADDY_MAX_FAILS='3'
+export CADDY_ENSURE_MODULES='true'             # bootstrap Caddy binary with required modules
+export CADDY_REQUIRED_MODULES='http.handlers.rate_limit,dns.providers.cloudflare'
+export CADDY_REQUIRED_PACKAGES='github.com/mholt/caddy-ratelimit,github.com/caddy-dns/cloudflare'
+export CADDY_INSTALL_ENFORCE_RATE_LIMIT='true' # force rate-limit requirement during install_caddy
+export CADDY_REQUIRE_RATE_LIMIT='false'         # fail render/install if rate_limit cannot be enabled
+export CADDY_REQUIRE_DNS_CHALLENGE='false'      # fail render/install if Cloudflare DNS challenge cannot be enabled
+
 # Common ports
 export ENGINE_PORT=8551  # JWT-secured Engine API port
 export METRICS_PORT=6060  # Prometheus metrics port
@@ -79,11 +134,10 @@ export LODESTAR_REST_PORT=9596
 export GRANDINE_REST_PORT=5052
 
 # Client-specific checkpoint URLs (fallbacks if main fails)
-export TEKU_CHECKPOINT_URL="https://beaconstate.ethstaker.cc"
-export NIMBUS_CHECKPOINT_URL="https://beaconstate.ethstaker.cc"
-export LODESTAR_CHECKPOINT_URL="https://beaconstate.ethstaker.cc"
+export TEKU_CHECKPOINT_URL="https://mainnet.checkpoint.sigp.io"
+export LODESTAR_CHECKPOINT_URL="https://mainnet.checkpoint.sigp.io"
 export LIGHTHOUSE_CHECKPOINT_URL="https://mainnet.checkpoint.sigp.io"
-export GRANDINE_CHECKPOINT_URL="https://beaconstate.ethstaker.cc"
+export GRANDINE_CHECKPOINT_URL="https://mainnet.checkpoint.sigp.io"
 
 # ============================================================================
 # MEV Configuration

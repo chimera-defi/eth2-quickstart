@@ -37,10 +37,14 @@ mkdir -p "$CONFIG_DIR"
 # =============================================================================
 
 VIBE_MODE=false
+FORCE_INTERACTIVE=false
 for arg in "$@"; do
     case "$arg" in
-        --vibe)
+        --vibe|--non-interactive)
             VIBE_MODE=true
+            ;;
+        --interactive)
+            FORCE_INTERACTIVE=true
             ;;
         --help|-h)
             echo ""
@@ -49,24 +53,47 @@ for arg in "$@"; do
             echo "Usage: ./configure.sh [options]"
             echo ""
             echo "Options:"
-            echo "  --vibe    Non-interactive mode with sensible defaults"
-            echo "  --help    Show this help message"
+            echo "  --vibe, --non-interactive  Non-interactive mode with sensible defaults"
+            echo "  --interactive              Force whiptail TUI mode (requires a TTY)"
+            echo "  --help                     Show this help message"
+            echo ""
+            echo "Environment Variables:"
+            echo "  ETH2_NON_INTERACTIVE=1     Force non-interactive mode"
             echo ""
             exit 0
             ;;
     esac
 done
 
+if [[ "$VIBE_MODE" == "true" && "$FORCE_INTERACTIVE" == "true" ]]; then
+    log_error "Choose only one mode: --non-interactive/--vibe OR --interactive"
+    exit 1
+fi
+
+if [[ "${ETH2_NON_INTERACTIVE:-}" =~ ^(1|true|TRUE|yes|YES)$ ]]; then
+    VIBE_MODE=true
+fi
+
+can_use_whiptail_tui() {
+    [[ -c /dev/tty ]] && [[ -r /dev/tty ]] && [[ -w /dev/tty ]] && [[ "${TERM:-}" != "dumb" ]]
+}
+
+if [[ "$VIBE_MODE" == "false" && "$FORCE_INTERACTIVE" == "false" ]] && ! can_use_whiptail_tui; then
+    log_warn "No usable TTY detected; auto-falling back to non-interactive mode."
+    VIBE_MODE=true
+fi
+
+if [[ "$FORCE_INTERACTIVE" == "true" ]] && ! can_use_whiptail_tui; then
+    log_error "Interactive mode requested, but no usable TTY is available."
+    log_error "Use --non-interactive (or set ETH2_NON_INTERACTIVE=1) instead."
+    exit 1
+fi
+
 # =============================================================================
 # HARDWARE & WHIPTAIL HELPERS (from common_functions.sh)
 # =============================================================================
 # Uses: detect_hardware_profile(), get_recommended_clients() from common_functions.sh
-# Uses: whiptail_msg(), whiptail_yesno() from common_functions.sh
-
-# Convenience aliases for backward compatibility
-show_msg() {
-    whiptail_msg "Eth2 Quick Start" "$1"
-}
+# Uses: whiptail_yesno() from common_functions.sh
 
 show_yesno() {
     whiptail_yesno "Eth2 Quick Start" "$1"
@@ -88,7 +115,7 @@ if [[ "$VIBE_MODE" == "true" ]]; then
     CONS_CLIENT="$REC_CONS"
     MEV_CHOICE="mev-boost"
     FEE_RECIPIENT="0x0000000000000000000000000000000000000000"
-    GRAFFITI="Eth2QuickStart"
+    GRAFITTI="Eth2QuickStart"
     
     log_info "Hardware profile: $HARDWARE_PROFILE"
     log_info "Network: $NETWORK"
@@ -110,7 +137,11 @@ else
     # Check if whiptail is installed
     if ! command -v whiptail &>/dev/null; then
         log_error "Whiptail not found. Installing..."
-        sudo apt-get update && sudo apt-get install -y whiptail
+        if command -v sudo &>/dev/null; then
+            sudo apt-get update && sudo apt-get install -y whiptail
+        else
+            apt-get update && apt-get install -y whiptail
+        fi
     fi
     
     # Welcome message (</dev/tty fixes OK button when run via "curl | bash")
@@ -175,9 +206,9 @@ else
     fi
     
     # 6. Graffiti
-    GRAFFITI=$(whiptail --title "Graffiti" --inputbox "Enter your validator graffiti:\n\n(This public note appears on blocks you propose)" 12 70 "Eth2QuickStart" 3>&1 1>&2 2>&3 </dev/tty)
-    if [[ $? -ne 0 ]] || [[ -z "$GRAFFITI" ]]; then 
-        GRAFFITI="Eth2QuickStart"
+    GRAFITTI=$(whiptail --title "Graffiti" --inputbox "Enter your validator graffiti:\n\n(This public note appears on blocks you propose)" 12 70 "Eth2QuickStart" 3>&1 1>&2 2>&3 </dev/tty)
+    if [[ $? -ne 0 ]] || [[ -z "$GRAFITTI" ]]; then 
+        GRAFITTI="Eth2QuickStart"
     fi
 fi
 
@@ -198,7 +229,7 @@ export ETH_NETWORK='$NETWORK'
 export FEE_RECIPIENT='$FEE_RECIPIENT'
 
 # Validator graffiti (shown on proposed blocks)
-export GRAFITTI='$GRAFFITI'
+export GRAFITTI='$GRAFITTI'
 
 # Selected Clients
 export EXEC_CLIENT='$EXEC_CLIENT'
@@ -429,7 +460,7 @@ echo "  Network:    $NETWORK"
 echo "  Execution:  $EXEC_CLIENT"
 echo "  Consensus:  $CONS_CLIENT"
 echo "  MEV:        $MEV_CHOICE"
-echo "  Graffiti:   $GRAFFITI"
+echo "  Graffiti:   $GRAFITTI"
 echo ""
 
 if [[ "$VIBE_MODE" != "true" ]]; then

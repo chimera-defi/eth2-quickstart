@@ -14,270 +14,40 @@ source "$PROJECT_ROOT/install/web/caddy_helpers.sh"
 require_root
 
 log_info "Starting Caddy security hardening..."
+backup_file=""
 
 # Backup original Caddyfile
 log_info "Creating backup of original Caddyfile..."
 if [[ -f /etc/caddy/Caddyfile ]]; then
-    sudo cp /etc/caddy/Caddyfile "/etc/caddy/Caddyfile.backup.$(date +%Y%m%d_%H%M%S)"
-    log_info "Backup created: /etc/caddy/Caddyfile.backup.$(date +%Y%m%d_%H%M%S)"
+    backup_file="/etc/caddy/Caddyfile.backup.$(date +%Y%m%d_%H%M%S)"
+    sudo cp /etc/caddy/Caddyfile "$backup_file"
+    log_info "Backup created: $backup_file"
 else
     log_error "Caddyfile not found at /etc/caddy/Caddyfile"
     exit 1
 fi
 
-# Create hardened Caddyfile (CI_E2E: minimal config without plugins; production: full with rate_limit)
-log_info "Creating hardened Caddyfile..."
-if [[ "${CI_E2E:-}" == "true" ]]; then
-    # Minimal hardening for default Caddy (no rate_limit, request_body, metrics - require plugins/different Caddy build)
-    cat > /tmp/caddy_hardened << 'CIEOF'
-{
-    auto_https off
-    servers {
-        protocols h1 h2 h3
-        strict_sni_host
-        max_header_size 1048576
-    }
-    admin off
+temp_config="/tmp/caddy_hardened_$$.Caddyfile"
+cleanup_temp() {
+    rm -f "$temp_config"
 }
+trap cleanup_temp EXIT
 
-http://$SERVER_NAME {
-    header {
-        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-        X-Frame-Options "DENY"
-        X-Content-Type-Options "nosniff"
-        X-XSS-Protection "1; mode=block"
-        Referrer-Policy "strict-origin-when-cross-origin"
-    }
-    redir https://$SERVER_NAME{uri} permanent
-}
-
-https://$SERVER_NAME {
-    tls internal
-    handle /ws* {
-        reverse_proxy $LH:$NETHERMIND_WS_PORT {
-            header_up Host {host}
-            header_up X-Real-IP {remote}
-            header_up X-Forwarded-For {remote}
-            header_up X-Forwarded-Proto {scheme}
-            header_up Connection "upgrade"
-            header_up Upgrade "websocket"
-        }
-    }
-    handle /rpc* {
-        reverse_proxy $LH:$NETHERMIND_HTTP_PORT {
-            header_up Host {host}
-            header_up X-Real-IP {remote}
-            header_up X-Forwarded-For {remote}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-    handle /admin* {
-        respond 403 "Access Denied"
-    }
-    handle /wp-admin* {
-        respond 403 "Access Denied"
-    }
-    handle /.env* {
-        respond 403 "Access Denied"
-    }
-    handle /config* {
-        respond 403 "Access Denied"
-    }
-    header {
-        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-        X-Frame-Options "DENY"
-        X-Content-Type-Options "nosniff"
-        X-XSS-Protection "1; mode=block"
-        Referrer-Policy "strict-origin-when-cross-origin"
-    }
-}
-
-:80 {
-    respond 403 "Access Denied"
-}
-:443 {
-    respond 403 "Access Denied"
-}
-CIEOF
+# Generate hardened Caddy config from the shared renderer used by installer
+log_info "Rendering hardened Caddy configuration from shared policy..."
+if [[ "${CI_E2E:-}" != "true" ]] && [[ -f "/etc/letsencrypt/live/$SERVER_NAME/fullchain.pem" ]] && [[ -f "/etc/letsencrypt/live/$SERVER_NAME/privkey.pem" ]]; then
+    create_caddy_config_manual_ssl "$SERVER_NAME" "$temp_config" "/etc/letsencrypt/live/$SERVER_NAME/fullchain.pem" "/etc/letsencrypt/live/$SERVER_NAME/privkey.pem"
 else
-    cat > /tmp/caddy_hardened << 'EOF'
-{
-    # Global options with security hardening
-    auto_https off
-    servers {
-        protocols h1 h2 h3
-        strict_sni_host
-        max_header_size 1048576
-    }
-    # Disable admin API for security
-    admin off
-    # Disable metrics by default
-    metrics off
-}
-
-# HTTP to HTTPS redirect with security headers
-http://$SERVER_NAME {
-    # Security headers for redirect
-    header {
-        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-        X-Frame-Options "DENY"
-        X-Content-Type-Options "nosniff"
-        X-XSS-Protection "1; mode=block"
-        Referrer-Policy "strict-origin-when-cross-origin"
-    }
-    redir https://$SERVER_NAME{uri} permanent
-}
-
-# Main HTTPS site with comprehensive security
-https://$SERVER_NAME {
-    # SSL/TLS configuration with security hardening
-    tls {
-        protocols tls1.2 tls1.3
-        ciphers ECDHE-ECDSA-AES256-GCM-SHA384 ECDHE-RSA-AES256-GCM-SHA384 ECDHE-ECDSA-CHACHA20-POLY1305 ECDHE-RSA-CHACHA20-POLY1305 ECDHE-ECDSA-AES128-GCM-SHA256 ECDHE-RSA-AES128-GCM-SHA256
-        curves X25519 P-256 P-384 P-521
-        alpn h2 http/1.1
-    }
-    
-    # Rate limiting with multiple zones
-    rate_limit {
-        zone api {
-            key {remote_host}
-            events 50
-            window 1m
-        }
-        zone ws {
-            key {remote_host}
-            events 20
-            window 1m
-        }
-    }
-    
-    # WebSocket proxy with enhanced security
-    handle /ws* {
-        rate_limit zone ws
-        reverse_proxy $LH:$NETHERMIND_WS_PORT {
-            header_up Host {host}
-            header_up X-Real-IP {remote}
-            header_up X-Forwarded-For {remote}
-            header_up X-Forwarded-Proto {scheme}
-            header_up Connection "upgrade"
-            header_up Upgrade "websocket"
-        }
-    }
-    
-    # HTTP proxy with rate limiting
-    handle /rpc* {
-        rate_limit zone api
-        reverse_proxy $LH:$NETHERMIND_HTTP_PORT {
-            header_up Host {host}
-            header_up X-Real-IP {remote}
-            header_up X-Forwarded-For {remote}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-    
-    # Block common attack patterns
-    handle /admin* {
-        respond 403 "Access Denied"
-    }
-    
-    handle /wp-admin* {
-        respond 403 "Access Denied"
-    }
-    
-    handle /.env* {
-        respond 403 "Access Denied"
-    }
-    
-    handle /config* {
-        respond 403 "Access Denied"
-    }
-    
-    # Comprehensive security headers (consistent with Nginx)
-    header {
-        # HSTS with preload
-        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-        
-        # Prevent clickjacking
-        X-Frame-Options "DENY"
-        
-        # Prevent MIME type sniffing
-        X-Content-Type-Options "nosniff"
-        
-        # XSS protection
-        X-XSS-Protection "1; mode=block"
-        
-        # Referrer policy
-        Referrer-Policy "strict-origin-when-cross-origin"
-        
-        # Content Security Policy (strict)
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' wss: https:; font-src 'self' data:; object-src 'none'; media-src 'self'; frame-src 'none'; base-uri 'self'; form-action 'self';"
-        
-        # Permissions Policy (consistent with Nginx)
-        Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), speaker=(), vibrate=(), fullscreen=(self), sync-xhr=()"
-        
-        # Remove server information
-        -Server
-        
-        # Cache control for sensitive endpoints
-        Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"
-        Pragma "no-cache"
-        Expires "0"
-    }
-    
-    # Enhanced logging with security focus
-    log {
-        output file /var/log/caddy/access.log {
-            roll_size 100mb
-            roll_keep 10
-            roll_keep_for 720h
-        }
-        format json {
-            time_format "2006-01-02T15:04:05Z07:00"
-            level INFO
-        }
-        level INFO
-    }
-    
-    # Request size limits
-    request_body {
-        max_size 10MB
-    }
-    
-    # Timeout configurations (consistent with Nginx)
-    timeouts {
-        read_timeout 30s           # Equivalent to Nginx client_body_timeout
-        read_header_timeout 30s    # Equivalent to Nginx client_header_timeout (matched to 30s)
-        write_timeout 30s          # Equivalent to Nginx send_timeout
-        idle_timeout 60s           # Equivalent to Nginx keepalive_timeout
-    }
-}
-
-# Block requests to unknown hosts
-:80 {
-    respond 403 "Access Denied"
-}
-
-:443 {
-    respond 403 "Access Denied"
-}
-EOF
+    create_caddy_config_auto_https "$SERVER_NAME" "$temp_config"
 fi
-
-# Replace placeholders (heredocs use quoted delimiter so vars are literal)
-sed -i "s/\$SERVER_NAME/$SERVER_NAME/g" /tmp/caddy_hardened
-sed -i "s/\$LH/${LH:-127.0.0.1}/g" /tmp/caddy_hardened
-sed -i "s/\$NETHERMIND_WS_PORT/${NETHERMIND_WS_PORT:-8546}/g" /tmp/caddy_hardened
-sed -i "s/\$NETHERMIND_HTTP_PORT/${NETHERMIND_HTTP_PORT:-8545}/g" /tmp/caddy_hardened
 
 # Install hardened configuration
 log_info "Installing hardened Caddyfile..."
-if ! sudo mv /tmp/caddy_hardened /etc/caddy/Caddyfile; then
+if ! sudo mv "$temp_config" /etc/caddy/Caddyfile; then
     log_error "Failed to install hardened Caddyfile"
     exit 1
 fi
 
-# Set proper permissions
 sudo chown caddy:caddy /etc/caddy/Caddyfile
 sudo chmod 644 /etc/caddy/Caddyfile
 
@@ -285,17 +55,17 @@ sudo chmod 644 /etc/caddy/Caddyfile
 if ! validate_caddy_config "/etc/caddy/Caddyfile"; then
     log_error "Hardened Caddyfile validation failed"
     log_info "Restoring backup..."
-    sudo cp /etc/caddy/Caddyfile.backup.* /etc/caddy/Caddyfile
+    [[ -n "$backup_file" ]] && sudo cp "$backup_file" /etc/caddy/Caddyfile
     exit 1
 fi
 
 # Restart Caddy with hardened configuration
 log_info "Restarting Caddy with hardened configuration..."
-if ! sudo systemctl restart caddy; then
+if ! restart_caddy_service; then
     log_error "Failed to restart Caddy with hardened configuration"
     log_info "Restoring backup..."
-    sudo cp /etc/caddy/Caddyfile.backup.* /etc/caddy/Caddyfile
-    sudo systemctl restart caddy
+    [[ -n "$backup_file" ]] && sudo cp "$backup_file" /etc/caddy/Caddyfile
+    restart_caddy_service || true
     exit 1
 fi
 
@@ -310,6 +80,72 @@ fi
 # Additional security measures
 log_info "Applying additional security measures..."
 
+setup_caddy_fail2ban() {
+    if ! command -v fail2ban-client >/dev/null 2>&1; then
+        log_warn "Fail2ban not installed; skipping Caddy fail2ban jail setup"
+        return 0
+    fi
+
+    log_info "Configuring fail2ban jails for Caddy abuse patterns..."
+    sudo mkdir -p /etc/fail2ban/filter.d
+
+    cat > /tmp/caddy-rpc-spam.conf << 'EOF'
+[Definition]
+failregex = ^.*"remote_ip":"<HOST>".*"uri":"\/(?!rpc|ws)[^"]*".*"status":(403|404).*
+ignoreregex =
+EOF
+    sudo mv /tmp/caddy-rpc-spam.conf /etc/fail2ban/filter.d/caddy-rpc-spam.conf
+
+    cat > /tmp/caddy-rate-limit.conf << 'EOF'
+[Definition]
+failregex = ^.*"remote_ip":"<HOST>".*"status":429.*
+ignoreregex =
+EOF
+    sudo mv /tmp/caddy-rate-limit.conf /etc/fail2ban/filter.d/caddy-rate-limit.conf
+
+    sudo touch /etc/fail2ban/jail.local
+
+    if ! sudo grep -q "^\[caddy-rpc-spam\]" /etc/fail2ban/jail.local; then
+        sudo tee -a /etc/fail2ban/jail.local >/dev/null << 'EOF'
+
+[caddy-rpc-spam]
+enabled = true
+port    = 80,443
+filter  = caddy-rpc-spam
+logpath = /var/log/caddy/access.log
+maxretry = 6
+findtime = 600
+bantime  = 86400
+EOF
+    fi
+
+    if ! sudo grep -q "^\[caddy-rate-limit\]" /etc/fail2ban/jail.local; then
+        sudo tee -a /etc/fail2ban/jail.local >/dev/null << 'EOF'
+
+[caddy-rate-limit]
+enabled = true
+port    = 80,443
+filter  = caddy-rate-limit
+logpath = /var/log/caddy/access.log
+maxretry = 20
+findtime = 600
+bantime  = 21600
+EOF
+    fi
+
+    if sudo systemctl list-unit-files 2>/dev/null | grep -q '^fail2ban\.service'; then
+        if sudo systemctl restart fail2ban; then
+            log_info "✓ Fail2ban restarted with Caddy jails"
+        else
+            log_warn "Fail2ban restart failed after Caddy jail setup"
+        fi
+    else
+        log_warn "Fail2ban service not present; Caddy jails added but not activated"
+    fi
+}
+
+setup_caddy_fail2ban
+
 # Create Caddy security monitoring script
 sudo tee /usr/local/bin/caddy_security_monitor.sh > /dev/null << 'EOF'
 #!/bin/bash
@@ -320,21 +156,17 @@ DATE=$(date '+%Y-%m-%d %H:%M:%S')
 
 echo "[$DATE] Caddy security monitoring check" >> "$LOG_FILE"
 
-# Check for suspicious requests
 if [[ -f /var/log/caddy/access.log ]]; then
-    # Check for common attack patterns
-    if grep -q "wp-admin\|admin\|config\|\.env" /var/log/caddy/access.log; then
+    if grep -q "wp-admin\|admin\|config\|\.env\|m3u8" /var/log/caddy/access.log; then
         echo "[$DATE] WARNING: Suspicious requests detected" >> "$LOG_FILE"
     fi
-    
-    # Check for high request rates
+
     recent_requests=$(grep "$(date '+%d/%b/%Y:%H')" /var/log/caddy/access.log | wc -l)
     if [[ $recent_requests -gt 1000 ]]; then
         echo "[$DATE] WARNING: High request rate detected: $recent_requests requests in the last hour" >> "$LOG_FILE"
     fi
 fi
 
-# Check Caddy process
 if ! pgrep -f caddy >/dev/null; then
     echo "[$DATE] ERROR: Caddy process not running" >> "$LOG_FILE"
 fi
@@ -345,16 +177,14 @@ EOF
 sudo chmod +x /usr/local/bin/caddy_security_monitor.sh
 
 # Add security monitoring to crontab
-(crontab -l 2>/dev/null; echo "*/5 * * * * /usr/local/bin/caddy_security_monitor.sh") | crontab - 2>/dev/null || true
+(crontab -l 2>/dev/null | grep -v caddy_security_monitor.sh; echo "*/5 * * * * /usr/local/bin/caddy_security_monitor.sh") | crontab - 2>/dev/null || true
 
 log_info "✓ Caddy security hardening completed!"
 log_info "Hardened features applied:"
-log_info "- Enhanced SSL/TLS configuration"
-log_info "- Comprehensive security headers"
-log_info "- Rate limiting on all endpoints"
-log_info "- Attack pattern blocking"
-log_info "- Request size limits"
-log_info "- Timeout configurations"
+log_info "- Shared edge routing policy render (same source as Nginx policy)"
+log_info "- RPC/WS method restrictions and spam-path filtering"
+log_info "- Fail2ban jails for Caddy spam/429 abuse patterns"
+log_info "- Security headers and timeouts"
 log_info "- Security monitoring"
 log_info "- Enhanced logging"
 

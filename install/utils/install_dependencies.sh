@@ -32,6 +32,7 @@ BASE_PACKAGES=(
     git
     tar
     gzip
+    unzip
     sudo
     jq
     openssl
@@ -57,7 +58,6 @@ TEST_PACKAGES=(
 # Client-specific deps (Ethereum PPA, Node.js, Bazel) are installed
 # by individual client scripts so we only pull what's actually needed.
 PHASE1_PACKAGES=(
-    unzip
     build-essential
     python3
     python3-pip
@@ -66,6 +66,7 @@ PHASE1_PACKAGES=(
     aide
     cron
     fail2ban
+    openssh-server
     snapd
     cmake
     libssl-dev
@@ -141,7 +142,7 @@ install_phase1() {
     install_packages "${PHASE1_PACKAGES[@]}"
 
     # Snap installs: Go and certbot (skip in Docker -- snap doesn't work in containers)
-    if ! is_docker && command -v snap &>/dev/null; then
+    if [[ "${CI_E2E:-}" != "true" ]] && ! is_docker && command -v snap &>/dev/null; then
         log_info "Installing Go via snap..."
         snap install --classic go
         ln -sf /snap/bin/go /usr/bin/go
@@ -195,7 +196,7 @@ install_production() {
     install_packages "${PHASE1_PACKAGES[@]}"
 
     # Snap installs (skip in Docker)
-    if ! is_docker && command -v snap &>/dev/null; then
+    if [[ "${CI_E2E:-}" != "true" ]] && ! is_docker && command -v snap &>/dev/null; then
         log_info "Installing Go via snap..."
         if [[ $EUID -eq 0 ]]; then
             snap install --classic go

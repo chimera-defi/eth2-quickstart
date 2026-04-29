@@ -1,45 +1,43 @@
 #!/bin/bash
 
 # System Setup Script - Phase 2
-# This script should be run as the non-root user
-# It will install:
-# 1. Geth
-# 2. Prysm
-# 3. Flashbots mev boost builder
-# 4. Nginx without SSL, exposing the geth RPC route. 
-#    (You can run `service nginx stop` to disable this)
-# Note: External ETH1 RPC calls expect SSL so you will have to 
-#       manually run: `sudo su`
-#       Followed by: 
-#       `./install/ssl/install_acme_ssl.sh`  or 
-#       `./install/ssl/install_ssl_certbot.sh` 
-#       to get SSL certs and configure NGINX properly
-#
-# Non-interactive (for CI/testing):
-#   ./run_2.sh --execution=geth --consensus=prysm --mev=mev-boost
-#   ./run_2.sh --execution=besu --consensus=lighthouse --mev=none --skip-deps
+# This script should be run as the non-root user.
+# It installs execution/consensus clients and optional MEV tooling.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 source "$SCRIPT_DIR/exports.sh"
 source "$SCRIPT_DIR/lib/common_functions.sh"
 
-LOG_DIR="$SCRIPT_DIR/logs"
-LOG_FILE="$LOG_DIR/run_2_$(date +%Y%m%d_%H%M%S).log"
-ensure_directory "$LOG_DIR"
-exec > >(tee -a "$LOG_FILE") 2>&1
-log_info "Log file: $LOG_FILE"
+print_usage() {
+    cat <<'EOF'
+Usage: ./run_2.sh [options]
 
-export DEBIAN_FRONTEND=noninteractive
-export DEBIAN_PRIORITY=critical
-export TZ=UTC
+Phase 2: client installation. Run as the configured non-root user after Phase 1 + reboot.
 
-# Parse flags for non-interactive mode
+Options:
+  --execution=NAME   Install execution client (geth, besu, erigon, nethermind, nimbus_eth1, reth, ethrex)
+  --consensus=NAME   Install consensus client (prysm, lighthouse, lodestar, teku, nimbus, grandine)
+  --mev=NAME         Install MEV (mev-boost, commit-boost, none)
+  --ethgas           Install ETHGas with Commit-Boost (requires --mev=commit-boost)
+  --skip-deps        Skip install_dependencies.sh (for CI when deps already installed)
+  --help             Show this help
+
+Examples:
+  ./run_2.sh
+  ./run_2.sh --execution=geth --consensus=prysm --mev=mev-boost
+  ./run_2.sh --execution=besu --consensus=teku --mev=none --skip-deps
+  ./run_2.sh --execution=geth --consensus=prysm --mev=commit-boost --ethgas
+EOF
+}
+
+# Parse flags for non-interactive mode and help before any side effects.
 EXECUTION_CLIENT=""
 CONSENSUS_CLIENT=""
 MEV_FLAG=""
 ETHGAS_FLAG=false
 SKIP_DEPS=false
+UNKNOWN_OPTIONS=()
 for arg in "$@"; do
     case "$arg" in
         --execution=*)
@@ -58,27 +56,31 @@ for arg in "$@"; do
             SKIP_DEPS=true
             ;;
         --help|-h)
-            echo "Usage: $0 [options]"
-            echo ""
-            echo "Options:"
-            echo "  --execution=NAME   Install execution client (geth, besu, erigon, nethermind, nimbus_eth1, reth, ethrex)"
-            echo "  --consensus=NAME   Install consensus client (prysm, lighthouse, lodestar, teku, nimbus, grandine)"
-            echo "  --mev=NAME         Install MEV (mev-boost, commit-boost, none)"
-            echo "  --ethgas           Install ETHGas with Commit-Boost (requires --mev=commit-boost)"
-            echo "  --skip-deps        Skip install_dependencies.sh (for CI when deps already installed)"
-            echo "  --help             Show this help"
-            echo ""
-            echo "Examples:"
-            echo "  $0                                    # Interactive mode"
-            echo "  $0 --execution=geth --consensus=prysm --mev=mev-boost"
-            echo "  $0 --execution=besu --consensus=teku --mev=none --skip-deps"
-            echo "  $0 --execution=geth --consensus=prysm --mev=commit-boost --ethgas"
+            print_usage
             exit 0
+            ;;
+        *)
+            UNKNOWN_OPTIONS+=("$arg")
             ;;
     esac
 done
+if [[ ${#UNKNOWN_OPTIONS[@]} -gt 0 ]]; then
+    echo "Unknown option(s): ${UNKNOWN_OPTIONS[*]}" >&2
+    print_usage >&2
+    exit 2
+fi
 FLAGS_MODE=false
 [[ -n "$EXECUTION_CLIENT" || -n "$CONSENSUS_CLIENT" || -n "$MEV_FLAG" ]] && FLAGS_MODE=true
+
+LOG_DIR="$SCRIPT_DIR/logs"
+LOG_FILE="$LOG_DIR/run_2_$(date +%Y%m%d_%H%M%S).log"
+ensure_directory "$LOG_DIR"
+exec > >(tee -a "$LOG_FILE") 2>&1
+log_info "Log file: $LOG_FILE"
+
+export DEBIAN_FRONTEND=noninteractive
+export DEBIAN_PRIORITY=critical
+export TZ=UTC
 
 # Check if running as correct user (non-root)
 check_user "$LOGIN_UNAME"
@@ -92,16 +94,6 @@ if ! check_system_compatibility; then
 fi
 log_info "This script will install Ethereum clients and services"
 
-# Start syncing prysm and geth
-# Geth takes a day
-# prysm takes 3-5. few hrs w/ the checkpt
-# Slightly faster via the screen cmds
-
-# You may want to run a different cmd via screen for more flexibility and faster sync
-# screen -d -m  geth --syncmode snap --http --http.addr 127.0.0.1 --cache=16384 --ipcdisable --maxpeers 500 --lightkdf --v5disc
-# cd prysm
-# screen -d -m ./prysm.sh beacon-chain --p2p-host-ip=$(curl -s v4.ident.me) --config-file=./prysm_conf_beacon_sync.yaml
-#  ./prysm.sh beacon-chain --checkpoint-block=$PWD/block_mainnet_altair_4620512-0xef9957e6a709223202ab00f4ee2435e1d42042ad35e160563015340df677feb0.ssz --checkpoint-state=$PWD/state_mainnet_altair_4620512-0xc1397f57149c99b3a2166d422a2ee50602e2a2c7da2e31d7ea740216b8fd99ab.ssz --genesis-state=$PWD/genesis.ssz --config-file=$PWD/prysm_beacon_conf.yaml --p2p-host-ip=88.99.65.230
 # Install user-level dependencies (Phase 2 -- no sudo apt-get)
 # System packages were installed by run_1.sh (Phase 1) as root.
 if [[ "$SKIP_DEPS" != "true" ]]; then
@@ -146,13 +138,24 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
         esac
     fi
     if [[ -n "$CONSENSUS_CLIENT" ]]; then
-        # eth1.service active != Engine API ready; consensus clients need 8551 listening
-        # Java (Besu, Teku) and Erigon can take 30-90s to open Engine API after process start
+        # eth1.service active != Engine API ready; consensus clients need 8551 listening.
+        # Some clients/environments can exceed 90s before authrpc binds, especially in CI.
         if [[ -n "$EXECUTION_CLIENT" ]]; then
-            log_info "Waiting for Engine API (port ${ENGINE_PORT:-8551}) before consensus install..."
-            if ! wait_for_engine_api 90; then
-                log_error "Engine API not ready — consensus client may fail to connect"
-                FAILED=1
+            ENGINE_WAIT_TIMEOUT="${ENGINE_API_WAIT_TIMEOUT:-90}"
+            if [[ "${CI_E2E:-false}" == "true" && "${ENGINE_API_WAIT_TIMEOUT:-}" == "" ]]; then
+                ENGINE_WAIT_TIMEOUT=180
+            fi
+
+            log_info "Waiting for Engine API (port ${ENGINE_PORT:-8551}, timeout ${ENGINE_WAIT_TIMEOUT}s) before consensus install..."
+            if ! wait_for_engine_api "$ENGINE_WAIT_TIMEOUT"; then
+                eth1_state="$(sudo systemctl is-active eth1 2>/dev/null || true)"
+                eth1_failed="$(sudo systemctl is-failed eth1 2>/dev/null || true)"
+                if [[ "$eth1_state" == "active" && "$eth1_failed" != "failed" ]]; then
+                    log_warn "Engine API not ready yet, but eth1 is active; continuing with consensus install (startup may complete during client setup)"
+                else
+                    log_error "Engine API not ready and eth1 unhealthy (state=${eth1_state:-unknown}, failed=${eth1_failed:-unknown})"
+                    FAILED=1
+                fi
             fi
         fi
         case "$CONSENSUS_CLIENT" in
@@ -165,9 +168,9 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
                 ;;
         esac
     fi
-    # Create dummy keys before Commit-Boost so signer can start during install (keys already in place)
-    # Requires: beacon (cl) running with --http on :5052, validator running — lighthouse.sh provides this
-    if [[ "${CI_E2E:-false}" == "true" && "$CONSENSUS_CLIENT" == "lighthouse" && "$MEV_FLAG" == "commit-boost" ]]; then
+    # Create dummy keys before Commit-Boost so signer can start during install (keys already in place).
+    # Supported by helper: lighthouse, prysm.
+    if [[ "${CI_E2E:-false}" == "true" && "$MEV_FLAG" == "commit-boost" ]]; then
         log_info "Creating dummy validator keys for Commit-Boost signer (before MEV install)"
         if [[ -f "$SCRIPT_DIR/test/lib/test_utils.sh" && -f "$SCRIPT_DIR/test/lib/e2e_dummy_validator_keys.sh" ]]; then
             LOG_PREFIX="E2E"
@@ -175,11 +178,15 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
             source "$SCRIPT_DIR/test/lib/test_utils.sh"
             # shellcheck source=test/lib/e2e_dummy_validator_keys.sh
             source "$SCRIPT_DIR/test/lib/e2e_dummy_validator_keys.sh"
-            if create_dummy_validator_keys "lighthouse"; then
+            if create_dummy_validator_keys "$CONSENSUS_CLIENT"; then
                 log_info "Dummy validator keys created — signer will start during Commit-Boost install"
             else
-                log_error "Dummy validator keys failed — Commit-Boost signer will not start"
-                FAILED=1
+                if [[ "$CONSENSUS_CLIENT" == "lighthouse" || "$CONSENSUS_CLIENT" == "prysm" ]]; then
+                    log_error "Dummy validator key generation failed for $CONSENSUS_CLIENT (required for Commit-Boost signer E2E coverage)"
+                    FAILED=1
+                else
+                    log_warn "Dummy validator key generation not available/failed for $CONSENSUS_CLIENT — signer may remain deferred"
+                fi
             fi
         else
             log_error "E2E dummy key scripts not found"
@@ -197,7 +204,8 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
                 if [[ "$ETHGAS_FLAG" == "true" ]]; then
                     echo ""
                     log_info "Installing ETHGas add-on..."
-                    log_warn "Building from Rust source (5-10 minutes)..."
+                    log_info "ETHGas uses prebuilt images by default when Docker daemon is available."
+                    log_info "CI_E2E harness may force source mode for containerized tests."
                     if ! run_install_script "$SCRIPT_DIR/install/mev/install_ethgas.sh" "ETHGas"; then
                         log_warn "Commit-Boost is still installed and functional without ETHGas"
                         FAILED=1

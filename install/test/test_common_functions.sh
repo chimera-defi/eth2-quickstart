@@ -56,7 +56,7 @@ run_test() {
 # Test 1: get_latest_release with valid repo
 test_get_latest_release_valid() {
     local version
-    version=$(get_latest_release "hyperledger/besu")
+    version=$(get_latest_release "besu-eth/besu")
     
     if [[ -n "$version" ]]; then
         echo "  Got version: $version"
@@ -225,6 +225,94 @@ test_getent_for_sudo_user() {
     fi
 }
 
+# Test 12: Canonical service registry contains expected services
+test_service_registry_contains_expected() {
+    local expected=("eth1" "cl" "validator" "mev" "commit-boost-pbs" "commit-boost-signer" "ethgas" "nginx" "caddy")
+    local service
+    local found
+    local existing
+
+    for service in "${expected[@]}"; do
+        found=false
+        for existing in "${ETH_ALL_SERVICES[@]}"; do
+            if [[ "$existing" == "$service" ]]; then
+                found=true
+                break
+            fi
+        done
+        if [[ "$found" != "true" ]]; then
+            echo "  ERROR: Missing service in ETH_ALL_SERVICES: $service"
+            return 1
+        fi
+    done
+
+    echo "  ETH_ALL_SERVICES contains expected service names"
+    return 0
+}
+
+# Test 13: New service helper functions exist
+test_service_helpers_exist() {
+    local funcs=(
+        "service_exists"
+        "service_enabled"
+        "service_active"
+        "start_all_services"
+        "restart_all_services"
+        "show_service_status"
+        "choose_mev_stack"
+    )
+    local fn
+    for fn in "${funcs[@]}"; do
+        if ! declare -f "$fn" >/dev/null 2>&1; then
+            echo "  ERROR: Missing function: $fn"
+            return 1
+        fi
+    done
+
+    echo "  Service helper functions exist"
+    return 0
+}
+
+# Test 14: choose_mev_stack prefers Commit-Boost over mev when both enabled
+test_choose_mev_stack_precedence() {
+    # Override service checks for deterministic test
+    service_exists() {
+        case "$1" in
+            commit-boost-pbs|commit-boost-signer|ethgas|mev) return 0 ;;
+            *) return 1 ;;
+        esac
+    }
+    service_enabled() {
+        case "$1" in
+            commit-boost-pbs|commit-boost-signer|ethgas|mev) return 0 ;;
+            *) return 1 ;;
+        esac
+    }
+
+    local stack
+    stack=$(choose_mev_stack)
+    stack=$(echo "$stack" | tr '\n' ' ' | xargs)
+    if [[ "$stack" == "commit-boost-pbs commit-boost-signer ethgas" ]]; then
+        echo "  choose_mev_stack precedence is correct: $stack"
+        return 0
+    fi
+
+    echo "  ERROR: unexpected stack result: $stack"
+    return 1
+}
+
+# Test 15: doctor checks mev service unit name (not mev-boost)
+test_doctor_mev_service_name() {
+    if grep -q 'record_service_health "mev" "MEV-Boost (mev)"' "$PROJECT_ROOT/install/utils/doctor.sh" && \
+       ! grep -q 'check_service "mev-boost"' "$PROJECT_ROOT/install/utils/doctor.sh"; then
+        echo "  doctor.sh uses correct mev service unit name"
+        return 0
+    fi
+
+    echo "  ERROR: doctor.sh MEV service check is inconsistent"
+    return 1
+}
+
 # Main test execution
 main() {
     echo "=========================================="
@@ -244,6 +332,10 @@ main() {
     run_test "download_file calls secure_download" test_download_file_calls_secure
     run_test "check_system_compatibility works without root" test_check_system_compatibility_nonroot
     run_test "getent for SUDO_USER home (regression)" test_getent_for_sudo_user
+    run_test "service registry contains expected units" test_service_registry_contains_expected
+    run_test "service helper functions exist" test_service_helpers_exist
+    run_test "choose_mev_stack precedence (regression)" test_choose_mev_stack_precedence
+    run_test "doctor uses mev unit name (regression)" test_doctor_mev_service_name
 
     # Print summary
     echo ""

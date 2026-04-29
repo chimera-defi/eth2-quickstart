@@ -72,6 +72,8 @@ test/
 ├── run_tests.sh            # Test runner for local (supports mocks)
 ├── ci_test_run_1.sh        # run_1 structure validation
 ├── ci_test_run_1_e2e.sh    # run_1 E2E (executes run_1.sh, verifies results)
+├── ci_test_docs_consistency.sh # Active docs link/legacy-reference consistency checks
+├── prysm_checkpoint_smoke.sh # Optional live Prysm checkpoint-sync smoke
 ├── run_e2e.sh             # Wrapper: Docker + systemd + ci_test_e2e.sh (--phase=1|2)
 ├── lib/
 │   ├── mock_functions.sh   # Mock implementations for safe local testing
@@ -90,6 +92,7 @@ test/
 6. **System integration** - Real apt, ufw, systemctl calls (Docker only)
 7. **Install script structure** - Proper shebang, sources, patterns
 8. **run_1 E2E** - Actually executes run_1.sh and verifies user creation, SSH, firewall, handoff file, etc.
+9. **Optional Prysm checkpoint smoke** - Verifies checkpoint bootstrap/fallback log behavior for Prysm (`test/prysm_checkpoint_smoke.sh`)
 
 ## CI Integration
 
@@ -101,7 +104,8 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 4. **run_1.sh E2E** - Actually runs run_1.sh and verifies results (systemd + openssh)
 5. **run_2.sh Structure** - Validates run_2.sh structure, configs
 6. **run_2.sh E2E** - Runs run_2.sh with default clients, verifies installs
-7. **e2e-client-matrix** - 6 client combos (besu+lighthouse+commit-boost, erigon+teku, etc.; geth+prysm in run-2-e2e)
+7. **Docs Consistency** - Validates active docs local links and retired legacy reference absence
+8. **e2e-client-matrix** - 6 client combos (besu+lighthouse+commit-boost, erigon+teku, etc.; geth+prysm in run-2-e2e)
 
 ### E2E Verification (No Tests Skipped)
 
@@ -113,6 +117,10 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
   - MEV-Boost: `_verify_service_active "mev"` when E2E_MEV=mev-boost
   - Commit-Boost: PBS, signer, ETHGas (if present)
 - **Caddy/Nginx**: Always installed and verified in Docker E2E (no skip)
+- **Prysm checkpoint smoke (optional)**:
+  - enable with `E2E_PRYSM_CHECKPOINT_SMOKE=true` when `E2E_CONS=prysm`
+  - strict mode (`PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG=true`) requires explicit checkpoint bootstrap log evidence
+  - default E2E smoke mode uses `PRYSM_CHECKPOINT_REQUIRE_DOWNLOAD_LOG=false` to reduce false negatives from short log windows
 
 ### CI_E2E Skips (Infrastructure-Required Only)
 
@@ -138,6 +146,7 @@ Previously we only verified binaries installed and MEV services active. We now *
 | `ci_test_run_1.sh` | Validates run_1.sh structure, syntax, functions, basic ops | root |
 | `ci_test_run_1_e2e.sh` | Executes run_1.sh and verifies results (run via run_e2e.sh --phase=1) | root |
 | `ci_test_run_2.sh` | Validates run_2.sh structure, syntax, configs, Geth install | testuser |
+| `ci_test_docs_consistency.sh` | Validates active doc links and retired legacy reference absence | n/a |
 
 **Note**: Full E2E testing with systemd services and snap packages requires special Docker setup. CI tests validate structure and components that work in standard Docker.
 
@@ -155,6 +164,22 @@ docker run --rm --privileged --user root eth-node-test /workspace/test/ci_test_r
 
 # Test run_2.sh (as testuser)
 docker run --rm --privileged eth-node-test /workspace/test/ci_test_run_2.sh
+
+# Optional: run phase-2 E2E with Prysm checkpoint smoke enabled
+E2E_CONSENSUS=prysm E2E_PRYSM_CHECKPOINT_SMOKE=true ./test/run_e2e.sh --phase=2
+```
+
+### Local non-root note for `ci_test_run_2.sh`
+
+`ci_test_run_2.sh` must run as a non-root user. If your repo is under `/root`, non-root users cannot access it directly.
+
+```bash
+# Example workaround: run from a temp copy owned by a non-root user
+TMP_REPO=/tmp/eth2-quickstart-ci-run2
+rm -rf "$TMP_REPO"
+cp -a /root/.openclaw/workspace/dev/eth2-quickstart/.worktrees/master "$TMP_REPO"
+chown -R abhishek:abhishek "$TMP_REPO"
+su -s /bin/bash abhishek -c "cd $TMP_REPO && bash test/ci_test_run_2.sh"
 ```
 
 ### Full End-to-End Testing

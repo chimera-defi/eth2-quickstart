@@ -174,25 +174,43 @@ whiptail_yesno() {
 # DOWNLOAD FUNCTIONS
 # =============================================================================
 
-# Get latest release version from GitHub
-# Uses GITHUB_TOKEN or GH_TOKEN if set (avoids 60/hr rate limit in CI)
-get_latest_release() {
+github_latest_release_json() {
     local repo="$1"
     local release_url="https://api.github.com/repos/${repo}/releases/latest"
-    local version
-    local curl_opts=(-sf)
+    local response=""
+    local curl_opts=(-sf --retry 3 --retry-delay 2 --retry-all-errors)
+    local attempt
     [[ -n "${GITHUB_TOKEN:-}${GH_TOKEN:-}" ]] && curl_opts+=(-H "Authorization: Bearer ${GITHUB_TOKEN:-$GH_TOKEN}")
-    
+
     if ! command_exists curl; then
         log_error "curl is not installed"
         return 1
     fi
-    
-    if ! version=$(curl "${curl_opts[@]}" "$release_url" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'); then
+
+    for attempt in 1 2 3; do
+        if response=$(curl "${curl_opts[@]}" "$release_url" 2>/dev/null) && [[ -n "$response" ]]; then
+            echo "$response"
+            return 0
+        fi
+        sleep "$attempt"
+    done
+
+    return 1
+}
+
+# Get latest release version from GitHub
+# Uses GITHUB_TOKEN or GH_TOKEN if set (avoids 60/hr rate limit in CI)
+get_latest_release() {
+    local repo="$1"
+    local version
+    local response
+
+    if ! response=$(github_latest_release_json "$repo"); then
         log_warn "Could not fetch latest release for $repo (API request failed)"
         return 1
     fi
-    
+
+    version=$(printf '%s\n' "$response" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
     if [[ -n "$version" ]]; then
         echo "$version"
         return 0
@@ -208,11 +226,14 @@ get_latest_release() {
 get_github_release_asset_url() {
     local repo="$1"
     local match_pattern="$2"
-    local release_url="https://api.github.com/repos/${repo}/releases/latest"
     local url
-    local curl_opts=(-sf)
-    [[ -n "${GITHUB_TOKEN:-}${GH_TOKEN:-}" ]] && curl_opts+=(-H "Authorization: Bearer ${GITHUB_TOKEN:-$GH_TOKEN}")
-    url=$(curl "${curl_opts[@]}" "$release_url" 2>/dev/null | grep -oE '"browser_download_url": "https://[^"]*'"${match_pattern}"'[^"]*"' | head -1 | sed 's/.*"\(https:\/\/[^"]*\)".*/\1/')
+    local response
+
+    if ! response=$(github_latest_release_json "$repo"); then
+        return 1
+    fi
+
+    url=$(printf '%s\n' "$response" | grep -oE '"browser_download_url": "https://[^"]*'"${match_pattern}"'[^"]*"' | head -1 | sed 's/.*"\(https:\/\/[^"]*\)".*/\1/')
     if [[ -n "$url" ]]; then
         echo "$url"
         return 0
@@ -388,6 +409,7 @@ enable_systemd_service() {
 # Enable and start systemd service
 enable_and_start_systemd_service() {
     local service_name="$1"
+    local start_timeout="${SYSTEMD_START_TIMEOUT_SEC:-120}"
     
     if ! enable_systemd_service "$service_name"; then
         return 1
@@ -399,9 +421,9 @@ enable_and_start_systemd_service() {
     if sudo systemctl is-active --quiet "$service_name"; then
         log_info "Started systemd service: $service_name"
     else
-        # Services like cl/validator may take 30-60s in CI (execution client init, checkpoint sync)
+        # Services like cl/validator can take longer in CI while execution/beacon dependencies settle.
         local elapsed=0
-        while [[ $elapsed -lt 60 ]]; do
+        while [[ $elapsed -lt "$start_timeout" ]]; do
             sleep 2
             elapsed=$((elapsed + 2))
             if sudo systemctl is-active --quiet "$service_name"; then
@@ -409,7 +431,11 @@ enable_and_start_systemd_service() {
                 return 0
             fi
         done
-        log_error "Failed to start systemd service: $service_name (waited 60s)"
+        log_error "Failed to start systemd service: $service_name (waited ${start_timeout}s)"
+        log_error "systemctl status ${service_name}:"
+        sudo systemctl status "$service_name" --no-pager -l 2>/dev/null | sed 's/^/  /' || true
+        log_error "Recent journalctl for ${service_name}:"
+        sudo journalctl -u "$service_name" -n 80 --no-pager 2>/dev/null | sed 's/^/  /' || true
         return 1
     fi
 }
@@ -421,16 +447,17 @@ enable_and_start_systemd_service() {
 wait_for_engine_api() {
     local timeout="${1:-90}"
     local port="${ENGINE_PORT:-8551}"
+    local host="${LH:-127.0.0.1}"
     local elapsed=0
     while [[ $elapsed -lt $timeout ]]; do
-        if ss -tln 2>/dev/null | grep -qE ":$port\b"; then
-            log_info "Engine API port $port listening (after ${elapsed}s)"
+        if _check_tcp_port_listening "$host" "$port"; then
+            log_info "Engine API listening on ${host}:${port} (after ${elapsed}s)"
             return 0
         fi
         sleep 2
         elapsed=$((elapsed + 2))
     done
-    log_error "Engine API port $port not listening after ${timeout}s (eth1 may still be initializing)"
+    log_error "Engine API ${host}:${port} not listening after ${timeout}s (eth1 may still be initializing)"
     log_error "Diagnostics: eth1 status=$(sudo systemctl is-active eth1 2>/dev/null || echo 'unknown')"
     log_error "Listening ports (ss -tln):"
     ss -tln 2>/dev/null | sed 's/^/  /' || true
@@ -439,23 +466,172 @@ wait_for_engine_api() {
     return 1
 }
 
+# Check whether a local TCP endpoint is accepting connections.
+# Uses ss when available; falls back to bash /dev/tcp probe for minimal images.
+_check_tcp_port_listening() {
+    local host="$1"
+    local port="$2"
+    if command -v ss >/dev/null 2>&1; then
+        if ss -tln 2>/dev/null | grep -qE "[[:space:]]${host}:${port}[[:space:]]"; then
+            return 0
+        fi
+        if [[ "$host" == "127.0.0.1" || "$host" == "localhost" ]]; then
+            if ss -tln 2>/dev/null | grep -qE ":${port}[[:space:]]"; then
+                return 0
+            fi
+        fi
+    fi
+
+    timeout 1 bash -c "</dev/tcp/${host}/${port}" >/dev/null 2>&1
+}
+
 # =============================================================================
 # SYSTEM MANAGEMENT FUNCTIONS
 # =============================================================================
 
+# Canonical service names used across install/update/maintenance scripts.
+ETH_CORE_SERVICES=("eth1" "cl" "validator")
+ETH_MEV_SERVICES=("mev" "commit-boost-pbs" "commit-boost-signer" "ethgas")
+ETH_WEB_SERVICES=("nginx" "caddy")
+ETH_ALL_SERVICES=("${ETH_CORE_SERVICES[@]}" "${ETH_MEV_SERVICES[@]}" "${ETH_WEB_SERVICES[@]}")
+
+service_exists() {
+    local service="$1"
+    systemctl list-unit-files 2>/dev/null | grep -q "^${service}\.service"
+}
+
+service_enabled() {
+    local service="$1"
+    systemctl is-enabled --quiet "$service" 2>/dev/null
+}
+
+service_active() {
+    local service="$1"
+    systemctl is-active --quiet "$service" 2>/dev/null
+}
+
+show_service_status() {
+    log_info "Service status summary:"
+    local service
+    for service in "${ETH_ALL_SERVICES[@]}"; do
+        local status
+        status=$(check_service_status "$service")
+        case "$status" in
+            running)   echo "  - $service: running" ;;
+            stopped)   echo "  - $service: stopped (enabled)" ;;
+            disabled)  echo "  - $service: disabled" ;;
+            *)         echo "  - $service: not installed" ;;
+        esac
+    done
+}
+
+start_service_if_installed() {
+    local service="$1"
+    if service_exists "$service"; then
+        log_info "Starting $service..."
+        sudo systemctl start "$service" || log_warn "Failed to start $service"
+    fi
+}
+
+restart_service_if_installed() {
+    local service="$1"
+    if service_exists "$service"; then
+        log_info "Restarting $service..."
+        sudo systemctl restart "$service" || log_warn "Failed to restart $service"
+    fi
+}
+
+stop_service_if_active() {
+    local service="$1"
+    if service_active "$service"; then
+        log_info "Stopping $service..."
+        sudo systemctl stop "$service" || log_warn "Failed to stop $service"
+    fi
+}
+
+choose_mev_stack() {
+    # Commit-Boost stack takes precedence when installed/enabled as it replaces mev.
+    if service_exists "commit-boost-pbs" && service_enabled "commit-boost-pbs"; then
+        local stack=("commit-boost-pbs")
+        if service_exists "commit-boost-signer" && service_enabled "commit-boost-signer"; then
+            stack+=("commit-boost-signer")
+        fi
+        if service_exists "ethgas" && service_enabled "ethgas"; then
+            stack+=("ethgas")
+        fi
+        echo "${stack[*]}"
+        return 0
+    fi
+
+    if service_exists "mev" && service_enabled "mev"; then
+        echo "mev"
+        return 0
+    fi
+
+    echo ""
+}
+
+start_all_services() {
+    log_info "Starting Ethereum services..."
+    local service
+
+    for service in "${ETH_CORE_SERVICES[@]}"; do
+        start_service_if_installed "$service"
+    done
+
+    local mev_stack
+    mev_stack=$(choose_mev_stack)
+    if [[ -n "$mev_stack" ]]; then
+        for service in $mev_stack; do
+            start_service_if_installed "$service"
+        done
+    fi
+
+    for service in "${ETH_WEB_SERVICES[@]}"; do
+        if service_exists "$service" && service_enabled "$service"; then
+            start_service_if_installed "$service"
+        fi
+    done
+
+    log_info "Service start sequence complete"
+}
+
+restart_all_services() {
+    log_info "Restarting Ethereum services..."
+    local service
+
+    for service in "${ETH_CORE_SERVICES[@]}"; do
+        restart_service_if_installed "$service"
+    done
+
+    local mev_stack
+    mev_stack=$(choose_mev_stack)
+    if [[ -n "$mev_stack" ]]; then
+        for service in $mev_stack; do
+            restart_service_if_installed "$service"
+        done
+    fi
+
+    for service in "${ETH_WEB_SERVICES[@]}"; do
+        if service_exists "$service"; then
+            restart_service_if_installed "$service"
+        fi
+    done
+
+    log_info "Service restart sequence complete"
+}
+
 # Stop all Ethereum services
 stop_all_services() {
     log_info "Stopping all Ethereum services..."
-    
-    local services=("eth1" "cl" "validator" "mev-boost" "nginx" "caddy")
-    
-    for service in "${services[@]}"; do
-        if systemctl is-active --quiet "$service" 2>/dev/null; then
-            log_info "Stopping $service..."
-            sudo systemctl stop "$service" || log_warn "Failed to stop $service"
+
+    local service
+    for service in "${ETH_ALL_SERVICES[@]}"; do
+        if service_exists "$service"; then
+            stop_service_if_active "$service"
         fi
     done
-    
+
     log_info "All services stopped"
 }
 

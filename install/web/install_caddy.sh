@@ -19,6 +19,14 @@ log_installation_start "Caddy"
 log_info "Server name: $SERVER_NAME"
 log_info "Login username: $LOGIN_UNAME"
 
+# Stop conflicting web services so Caddy can bind :80/:443 deterministically.
+for svc in nginx apache2; do
+    if sudo systemctl is-active --quiet "$svc" 2>/dev/null; then
+        log_info "Stopping conflicting service: $svc"
+        sudo systemctl stop "$svc" || true
+    fi
+done
+
 # Install Caddy
 install_caddy
 
@@ -27,6 +35,10 @@ setup_caddy_service
 
 # Create Caddy configuration
 log_info "Creating Caddy configuration..."
+export CADDY_INSTALL_FLOW=true
+if [[ "${CADDY_INSTALL_ENFORCE_RATE_LIMIT:-true}" == "true" ]]; then
+    log_info "Enforcing Caddy rate-limit availability during install flow"
+fi
 create_caddy_config_auto_https "$SERVER_NAME" "$HOME/caddy_conf_temp"
 
 # Install Caddy configuration
@@ -49,8 +61,15 @@ validate_caddy_config "/etc/caddy/Caddyfile"
 
 # Run Caddy hardening (sudo -E preserves CI_E2E for minimal config in Docker)
 log_info "Running Caddy security hardening..."
-if ! sudo -E "$SCRIPT_DIR/../security/caddy_harden.sh"; then
+if ! sudo -E bash "$SCRIPT_DIR/../security/caddy_harden.sh"; then
     log_error "Caddy hardening failed"
+    exit 1
+fi
+
+# Start/restart Caddy only after final config + hardening are in place
+log_info "Restarting Caddy with final configuration..."
+if ! restart_caddy_service; then
+    log_error "Failed to start Caddy service after configuration"
     exit 1
 fi
 

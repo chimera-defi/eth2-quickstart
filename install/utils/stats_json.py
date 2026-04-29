@@ -1,0 +1,490 @@
+#!/usr/bin/env python3
+"""Machine-readable monitoring and triage summary for eth2-quickstart."""
+
+from __future__ import annotations
+
+import json
+import os
+import sys
+from pathlib import Path
+from typing import Any
+
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from monitor_common import (  # noqa: E402
+    CORE_SERVICES,
+    READ_ONLY_COMMAND,
+    ROOT_DIR,
+    SERVICES,
+    duty_lines,
+    get_versions,
+    journal_lines,
+    now_iso,
+    parse_json_command,
+    recent_errors,
+    repo_status,
+    service_status,
+)
+
+
+FIXTURE_ENV = "ETH2QS_STATS_FIXTURE"
+
+
+def add_issue(
+    issues: list[dict[str, object]],
+    repair_preview: list[dict[str, object]],
+    *,
+    kind: str,
+    severity: str,
+    summary: str,
+    suggested_action: str,
+    service: str | None = None,
+    safe: bool = False,
+    command: str | None = None,
+    evidence: str | None = None,
+) -> None:
+    issue = {
+        "kind": kind,
+        "severity": severity,
+        "summary": summary,
+        "suggested_action": suggested_action,
+    }
+    if service:
+        issue["service"] = service
+    if evidence:
+        issue["evidence"] = evidence
+    issues.append(issue)
+    if command:
+        preview = {"action": kind, "safe": safe, "command": command}
+        if service:
+            preview["service"] = service
+        if preview not in repair_preview:
+            repair_preview.append(preview)
+
+
+def planner_follow_up(plan: dict[str, Any] | None) -> tuple[str | None, str | None]:
+    if not plan:
+        return None, None
+
+    next_action = str(plan.get("next_action", ""))
+    if next_action == "phase1":
+        return "./scripts/eth2qs.sh phase1", "Run phase 1 system hardening before expecting core services"
+    if next_action == "phase2":
+        return "./scripts/eth2qs.sh phase2", "Run phase 2 install/config after phase 1 completes"
+    if next_action == "monad_install":
+        return "./scripts/eth2qs.sh monad-install", "Complete the Monad install before expecting services"
+    if next_action == "relogin":
+        return None, "Log in as the operator user before continuing with install steps"
+    if next_action == "review":
+        return READ_ONLY_COMMAND, "Review doctor/stats/logs before making changes"
+    return None, None
+
+
+def matches_any(sample: str, patterns: tuple[str, ...]) -> bool:
+    return any(pattern in sample for pattern in patterns)
+
+
+def builder_restart_command(service_states: dict[str, str]) -> str | None:
+    for service in ("commit-boost-pbs", "mev"):
+        if service_states.get(service) in {"running", "stopped", "failed", "disabled"}:
+            return f"sudo systemctl restart {service}"
+    return None
+
+
+def classify_error_sample(
+    item: dict[str, object],
+    service_states: dict[str, str],
+    repair_preview: list[dict[str, object]],
+    issues: list[dict[str, object]],
+) -> bool:
+    sample = str(item["sample"]).lower()
+    service = str(item["service"])
+    evidence = str(item["sample"])
+
+    if matches_any(sample, ("connect: connection refused",)) and "18550" in sample:
+        builder_command = builder_restart_command(service_states)
+        add_issue(
+            issues,
+            repair_preview,
+            kind="mev_endpoint_unreachable",
+            severity="warn",
+            service=service,
+            summary="Consensus client cannot reach the builder/MEV endpoint",
+            suggested_action="Check MEV service health and restart the active MEV stack if needed",
+            safe=bool(builder_command),
+            command=builder_command,
+            evidence=evidence,
+        )
+        return True
+
+    if "address already in use" in sample:
+        add_issue(
+            issues,
+            repair_preview,
+            kind="port_conflict",
+            severity="fail",
+            service=service,
+            summary="A required port is already in use",
+            suggested_action="Inspect the conflicting listener before restarting services",
+            safe=True,
+            command=f"journalctl -u {service} -n 50 --no-pager",
+            evidence=evidence,
+        )
+        return True
+
+    if matches_any(
+        sample,
+        (
+            "peer database: resource temporarily unavailable",
+            "could not open node's peer database",
+        ),
+    ):
+        add_issue(
+            issues,
+            repair_preview,
+            kind="db_lock_or_dual_process",
+            severity="warn",
+            service=service,
+            summary="Client appears to have a locked database or duplicate process",
+            suggested_action="Stop duplicate processes and inspect the service journal before restart",
+            safe=True,
+            command=f"journalctl -u {service} -n 50 --no-pager",
+            evidence=evidence,
+        )
+        return True
+
+    if matches_any(
+        sample,
+        (
+            "wallet is not ready",
+            "no wallet found",
+            "could not create validator runner",
+        ),
+    ):
+        add_issue(
+            issues,
+            repair_preview,
+            kind="validator_wallet_missing",
+            severity="fail",
+            service=service,
+            summary="Validator service cannot start because the wallet or keys are missing",
+            suggested_action="Create/import the validator wallet or point the service at the correct wallet directory",
+            safe=True,
+            command=f"journalctl -u {service} -n 50 --no-pager",
+            evidence=evidence,
+        )
+        return True
+
+    if matches_any(
+        sample,
+        (
+            "unexpected argument",
+            "unknown argument",
+            "unrecognized option",
+        ),
+    ):
+        add_issue(
+            issues,
+            repair_preview,
+            kind="service_flag_mismatch",
+            severity="fail",
+            service=service,
+            summary="Service unit arguments do not match the installed binary",
+            suggested_action="Review the unit/config against the installed version before restarting or updating",
+            safe=False,
+            command="./scripts/eth2qs.sh update-all --git-only --backup",
+            evidence=evidence,
+        )
+        return True
+
+    if matches_any(sample, ("toml parse error", "yaml: unmarshal errors", "invalid configuration")):
+        add_issue(
+            issues,
+            repair_preview,
+            kind="config_parse_error",
+            severity="fail",
+            service=service,
+            summary="A service configuration file cannot be parsed",
+            suggested_action="Fix the generated config syntax before attempting another restart",
+            safe=True,
+            command=f"journalctl -u {service} -n 50 --no-pager",
+            evidence=evidence,
+        )
+        return True
+
+    if matches_any(
+        sample,
+        (
+            "failed to find and dial peers",
+            "no peers found",
+            "dial peers",
+        ),
+    ):
+        add_issue(
+            issues,
+            repair_preview,
+            kind="peer_connectivity_degraded",
+            severity="warn",
+            service=service,
+            summary="Consensus networking is degraded and peers are not being maintained",
+            suggested_action="Inspect networking, peer configuration, and sync reachability before restart",
+            safe=True,
+            command=f"sudo systemctl restart {service}",
+            evidence=evidence,
+        )
+        return True
+
+    count = int(item.get("count", 0))
+    if count >= 3:
+        add_issue(
+            issues,
+            repair_preview,
+            kind="recent_errors_detected",
+            severity="warn" if service in CORE_SERVICES else "info",
+            service=service,
+            summary=f"Recent error logs detected for {service}",
+            suggested_action="Inspect the journal before restarting or updating this service",
+            safe=True,
+            command=f"journalctl -u {service} -n 50 --no-pager",
+            evidence=evidence,
+        )
+        return True
+
+    return False
+
+
+def classify_issues(
+    service_states: dict[str, str],
+    error_summary: list[dict[str, object]],
+    doctor: dict[str, Any] | None,
+    plan: dict[str, Any] | None,
+    repo: dict[str, Any] | None,
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    issues: list[dict[str, object]] = []
+    repair_preview: list[dict[str, object]] = []
+    plan_state = str(plan.get("state", "")) if plan else ""
+    planner_command, planner_hint = planner_follow_up(plan)
+
+    for service, status in service_states.items():
+        if service in CORE_SERVICES and status in {"failed", "stopped"}:
+            add_issue(
+                issues,
+                repair_preview,
+                kind="restart_service",
+                severity="fail",
+                service=service,
+                summary=f"{service} is installed but not running",
+                suggested_action=f"Restart {service} and inspect logs if it fails again",
+                safe=True,
+                command=f"sudo systemctl restart {service}",
+            )
+        elif service in CORE_SERVICES and status == "disabled":
+            add_issue(
+                issues,
+                repair_preview,
+                kind="core_service_disabled",
+                severity="warn" if plan_state == "installed" else "info",
+                service=service,
+                summary=f"{service} is installed but disabled",
+                suggested_action=planner_hint or "Enable/restart the service only after confirming the host is fully configured",
+                safe=False,
+                command=None if planner_command else f"sudo systemctl restart {service}",
+            )
+        elif service in CORE_SERVICES and status == "not_installed":
+            add_issue(
+                issues,
+                repair_preview,
+                kind="core_service_missing",
+                severity="info" if plan_state.startswith("needs_") else "fail",
+                service=service,
+                summary=f"{service} is not installed",
+                suggested_action=planner_hint or "Use the planner/ensure path to complete installation",
+                safe=False,
+                command=planner_command or "./scripts/eth2qs.sh ensure",
+            )
+
+    if plan and plan_state not in {"", "installed"}:
+        add_issue(
+            issues,
+            repair_preview,
+            kind="planner_state",
+            severity="warn",
+            summary=f"Planner reports host state: {plan_state}",
+            suggested_action=planner_hint or str(plan.get("reason", "Review planner output before modifying services")),
+            safe=False,
+            command=planner_command,
+        )
+
+    for item in error_summary:
+        classify_error_sample(item, service_states, repair_preview, issues)
+
+    if doctor:
+        summary = doctor.get("summary", {})
+        status = str(summary.get("status", ""))
+        if status in {"warn", "fail"}:
+            add_issue(
+                issues,
+                repair_preview,
+                kind="doctor_summary",
+                severity=status,
+                summary=f"Doctor reports overall status: {status}",
+                suggested_action="Review doctor output before attempting restarts or updates",
+                safe=True,
+                command=READ_ONLY_COMMAND,
+            )
+        for check in doctor.get("checks", []):
+            name = str(check.get("name", ""))
+            details = str(check.get("details", ""))
+            if name.startswith("JWT secret:") and ("missing" in name.lower() or "not found" in details.lower()):
+                add_issue(
+                    issues,
+                    repair_preview,
+                    kind="jwt_missing",
+                    severity="fail",
+                    summary="JWT secret is missing",
+                    suggested_action="Restore or recreate the JWT secret before starting execution/consensus services",
+                    safe=True,
+                    command=READ_ONLY_COMMAND,
+                )
+                break
+
+    if repo and isinstance(repo.get("behind"), int) and repo["behind"] > 0:
+        add_issue(
+            issues,
+            repair_preview,
+            kind="repo_updates_available",
+            severity="info",
+            summary=f"Local checkout is behind {repo['upstream']} by {repo['behind']} commit(s)",
+            suggested_action="Review and apply the latest repo updates",
+            safe=False,
+            command="./scripts/eth2qs.sh update-all --git-only --backup",
+        )
+
+    return issues, repair_preview
+
+
+def overall_status(issues: list[dict[str, object]]) -> str:
+    severities = {issue["severity"] for issue in issues}
+    if "fail" in severities:
+        return "fail"
+    if "warn" in severities:
+        return "warn"
+    return "pass"
+
+
+def build_payload(*, service_names: list[str] | None = None) -> dict[str, Any]:
+    fixture = os.environ.get(FIXTURE_ENV)
+    if fixture:
+        return json.loads(fixture)
+
+    selected_services = service_names or SERVICES
+    service_states = {service: service_status(service) for service in selected_services}
+    errors = [item for item in (recent_errors(service) for service in selected_services) if item]
+    versions = get_versions()
+    doctor = parse_json_command(["bash", str(ROOT_DIR / "install/utils/doctor.sh"), "--json"])
+    plan = parse_json_command(["bash", str(ROOT_DIR / "install/utils/plan.sh"), "--json"])
+    repo = repo_status()
+    issues, repair_preview = classify_issues(service_states, errors, doctor, plan, repo)
+
+    summary = {
+        "status": overall_status(issues),
+        "services_total": len(service_states),
+        "services_running": sum(1 for state in service_states.values() if state == "running"),
+        "services_failed": sum(1 for state in service_states.values() if state == "failed"),
+        "services_stopped": sum(1 for state in service_states.values() if state == "stopped"),
+        "services_disabled": sum(1 for state in service_states.values() if state == "disabled"),
+        "services_not_installed": sum(1 for state in service_states.values() if state == "not_installed"),
+        "issues_detected": len(issues),
+    }
+
+    return {
+        "generated_at": now_iso(),
+        "summary": summary,
+        "service_states": service_states,
+        "versions": versions,
+        "recent_errors": errors,
+        "recent_time_till_duty": duty_lines(),
+        "issues": issues,
+        "repair_preview": repair_preview,
+        "doctor_summary": doctor.get("summary") if doctor else None,
+        "plan": plan,
+        "repo_status": repo,
+    }
+
+
+def print_human(payload: dict[str, Any]) -> None:
+    summary = payload["summary"]
+    print("=== Monitoring Summary ===")
+    print(f"Status: {summary['status']}")
+    print(
+        "Services: "
+        f"running={summary['services_running']} "
+        f"failed={summary['services_failed']} "
+        f"stopped={summary['services_stopped']} "
+        f"disabled={summary['services_disabled']} "
+        f"not_installed={summary['services_not_installed']}"
+    )
+    print(f"Issues detected: {summary['issues_detected']}")
+    print("")
+
+    print("=== Service States ===")
+    for service, state in payload["service_states"].items():
+        print(f"- {service}: {state}")
+    print("")
+
+    print("=== Top Issues ===")
+    issues = payload["issues"][:10]
+    if issues:
+        for issue in issues:
+            service = f" ({issue['service']})" if "service" in issue else ""
+            print(f"- [{issue['severity']}] {issue['kind']}{service}: {issue['summary']}")
+    else:
+        print("- none")
+    print("")
+
+    print("=== Repair Preview ===")
+    preview = payload["repair_preview"][:10]
+    if preview:
+        for item in preview:
+            service = f" [{item['service']}]" if "service" in item else ""
+            print(f"- {item['action']}{service}: {item['command']} (safe={item['safe']})")
+    else:
+        print("- none")
+    print("")
+
+    print("=== Versions ===")
+    for name, version in payload["versions"].items():
+        print(f"- {name}: {version}")
+    print("")
+
+    if payload["recent_time_till_duty"]:
+        print("=== Recent Validator Duty Lines ===")
+        for line in payload["recent_time_till_duty"]:
+            print(f"- {line}")
+        print("")
+
+    print("=== Recent Error Samples ===")
+    if payload["recent_errors"]:
+        for item in payload["recent_errors"][:10]:
+            print(f"- {item['service']} ({item['count']}): {item['sample']}")
+    else:
+        print("- none")
+
+
+def main() -> None:
+    if any(arg in {"-h", "--help"} for arg in sys.argv[1:]):
+        print("Usage: ./install/utils/stats.sh [--json]")
+        print("  --json    Output machine-readable monitoring and triage data")
+        return
+    payload = build_payload()
+    if "--json" in sys.argv[1:]:
+        print(json.dumps(payload, indent=2))
+        return
+    print_human(payload)
+
+
+if __name__ == "__main__":
+    main()

@@ -5,12 +5,12 @@ Workflows run only when relevant files change. Docs-only changes skip most CI.
 | Workflow | Triggers on | Skips |
 |----------|-------------|-------|
 | **ci.yml** | `**/*.sh`, `test/Dockerfile`, `test/docker-compose.yml`, `.github/workflows/ci.yml`, `.github/actions/**` | Docs, config, frontend |
-| **shellcheck.yml** | `**/*.sh`, `.github/workflows/shellcheck.yml` | Docs, config, frontend (sole shell validation; ci.yml has no shellcheck job) |
+| **shellcheck.yml** | `**/*.sh`, `README.md`, `docs/**`, `.github/workflows/shellcheck.yml` | Frontend, non-security config-only |
 | **frontend.yml** | `frontend/**`, `.github/workflows/frontend.yml` | Shell, docs, config |
 | **security.yml** | `install/security/**`, `configs/**`, `lib/common_functions.sh`, `docs/*security*`, `docs/validate_security_safe.sh` | Most changes |
 | **pr-checks.yml** | `frontend/**`, `**/*.sh`, `test/**`, `install/**`, `lib/**`, `configs/**`, `.github/**` | Docs-only |
 
-**Note:** security.yml runs on security-related doc changes (`docs/*security*`). Other docs-only changes skip ci, shellcheck, frontend, and pr-checks path filters.
+**Note:** docs changes now trigger `shellcheck.yml`, which also runs `test/ci_test_docs_consistency.sh` for active-doc link/legacy-reference checks. Heavy Docker integration in `ci.yml` still skips docs-only changes.
 
 ## Artifact retention
 

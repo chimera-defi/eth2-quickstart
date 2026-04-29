@@ -81,7 +81,7 @@ This document provides a comprehensive reference for all functions available in 
 #### `get_latest_release(repo)`
 **Purpose:** Get the latest release tag from a GitHub repository  
 **Parameters:** `repo` - GitHub repository in format "owner/repo"  
-**Usage:** `LATEST_VERSION=$(get_latest_release "hyperledger/besu")`  
+**Usage:** `LATEST_VERSION=$(get_latest_release "besu-eth/besu")`  
 **Returns:** Latest release tag (e.g., "v23.10.3")  
 **Note:** Uses GitHub API to fetch latest release information
 
