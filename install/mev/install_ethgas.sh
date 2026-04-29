@@ -50,9 +50,9 @@ fi
 log_info "Commit-Boost dependency verified"
 
 # ETHGas installation method:
-# - auto   (default): require prebuilt Docker image (no source fallback)
-# - docker: require prebuilt Docker image
-# - source: explicit source build (last resort)
+# - auto   (default): Docker image first, source build fallback
+# - docker: force Docker image
+# - source: force source build
 ETHGAS_INSTALL_METHOD="${ETHGAS_INSTALL_METHOD:-auto}"
 ETHGAS_INSTALL_METHOD="${ETHGAS_INSTALL_METHOD,,}"
 case "$ETHGAS_INSTALL_METHOD" in
@@ -79,21 +79,6 @@ can_use_docker() {
 }
 
 install_ethgas_source() {
-    local src_dir="$ETHGAS_DIR/src"
-    local install_bin_dir="$ETHGAS_DIR/bin"
-
-    # Source build requires a C toolchain and protoc for crates/build scripts.
-    if ! command -v cc >/dev/null 2>&1; then
-        log_info "C compiler not found, installing build-essential..."
-        sudo env DEBIAN_FRONTEND=noninteractive apt-get update -y
-        sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends build-essential pkg-config
-    fi
-    if ! command -v protoc >/dev/null 2>&1 || [[ ! -f /usr/include/google/protobuf/descriptor.proto ]]; then
-        log_info "protoc/headers missing, installing protobuf toolchain..."
-        sudo env DEBIAN_FRONTEND=noninteractive apt-get update -y
-        sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends protobuf-compiler libprotobuf-dev
-    fi
-
     # Verify Rust is available (installed centrally via install_dependencies.sh)
     [[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:${PATH:-}"
     if ! command -v cargo &> /dev/null; then
@@ -103,17 +88,14 @@ install_ethgas_source() {
     fi
     log_info "✓ Using Rust: $(rustc --version)"
 
-    # Clone ETHGas repository into a dedicated source directory.
-    log_info "Preparing ETHGas source directory..."
-    ensure_directory "$src_dir"
-    cd "$src_dir" || return 1
+    # Clone ETHGas repository
+    log_info "Cloning ETHGas repository..."
     if [[ -d ".git" ]]; then
         log_info "Updating existing ETHGas repository..."
         git fetch origin
         git checkout main
         git pull origin main
     else
-        log_info "Cloning ETHGas repository..."
         if ! git clone https://github.com/ethgas-developer/ethgas-preconf-commit-boost-module.git .; then
             log_error "Failed to clone ETHGas repository"
             return 1
@@ -137,15 +119,12 @@ install_ethgas_source() {
         return 1
     fi
 
-    if [[ ! -f "$src_dir/target/release/ethgas_commit" ]]; then
-        log_error "ETHGas binary not found at $src_dir/target/release/ethgas_commit"
+    if [[ ! -f "$ETHGAS_DIR/target/release/ethgas_commit" ]]; then
+        log_error "ETHGas binary not found at $ETHGAS_DIR/target/release/ethgas_commit"
         return 1
     fi
-    ensure_directory "$install_bin_dir"
-    cp "$src_dir/target/release/ethgas_commit" "$install_bin_dir/ethgas_commit"
-    chmod +x "$install_bin_dir/ethgas_commit"
+    chmod +x "$ETHGAS_DIR/target/release/ethgas_commit"
     ETHGAS_RUNTIME_MODE="source"
-    ETHGAS_BIN_PATH="$install_bin_dir/ethgas_commit"
     log_info "✓ ETHGas source build completed"
     return 0
 }
@@ -201,12 +180,15 @@ if [[ "$ETHGAS_INSTALL_METHOD" == "docker" ]]; then
 elif [[ "$ETHGAS_INSTALL_METHOD" == "source" ]]; then
     install_ethgas_source || exit 1
 else
-    if ! can_use_docker; then
-        log_error "ETHGas prebuilt install requires Docker daemon, but Docker is unavailable."
-        log_error "Use ETHGAS_INSTALL_METHOD=source only if you explicitly want source compilation."
-        exit 1
+    if can_use_docker; then
+        if ! install_ethgas_docker; then
+            log_warn "Docker image install failed, falling back to source build."
+            install_ethgas_source || exit 1
+        fi
+    else
+        log_info "Docker not available; using source build for ETHGas."
+        install_ethgas_source || exit 1
     fi
-    install_ethgas_docker || exit 1
 fi
 
 # ============================================================================
@@ -263,18 +245,11 @@ log_info "Creating systemd service..."
 if [[ "$ETHGAS_RUNTIME_MODE" == "docker" ]]; then
     ETHGAS_EXEC_START="docker run --rm --name ethgas --network host -e CB_MODULE_ID=ETHGAS_COMMIT -e CB_CONFIG=/etc/ethgas/ethgas.toml -e CB_SIGNER_URL=http://$COMMIT_BOOST_HOST:$COMMIT_BOOST_SIGNER_PORT -e CB_METRICS_PORT=$ETHGAS_METRICS_PORT -e CB_LOGS_DIR=/var/log/ethgas -v $CONFIG_DIR/ethgas.toml:/etc/ethgas/ethgas.toml:ro -v $ETHGAS_DIR/logs:/var/log/ethgas -v $ETHGAS_DIR/records:/app $ETHGAS_DOCKER_IMAGE"
 else
-    ETHGAS_EXEC_START="$ETHGAS_BIN_PATH --config $CONFIG_DIR/ethgas.toml"
+    ETHGAS_EXEC_START="$ETHGAS_DIR/target/release/ethgas_commit --config $CONFIG_DIR/ethgas.toml"
 fi
 
 # Create service with dependency on Commit-Boost
 create_systemd_service "ethgas" "ETHGas Preconfirmation Protocol" "$ETHGAS_EXEC_START" "$(whoami)" "always" "600" "5" "300" "network-online.target commit-boost-pbs.service commit-boost-signer.service" "network-online.target commit-boost-pbs.service commit-boost-signer.service"
-if [[ "$ETHGAS_RUNTIME_MODE" == "source" ]]; then
-    sudo sed -i '/^\[Service\]/a Environment="CB_MODULE_ID=ETHGAS_COMMIT"' /etc/systemd/system/ethgas.service
-    sudo sed -i '/^\[Service\]/a Environment="CB_CONFIG='"$CONFIG_DIR"'/ethgas.toml"' /etc/systemd/system/ethgas.service
-    sudo sed -i '/^\[Service\]/a Environment="CB_SIGNER_URL=http://'"$COMMIT_BOOST_HOST:$COMMIT_BOOST_SIGNER_PORT"'"' /etc/systemd/system/ethgas.service
-    sudo sed -i '/^\[Service\]/a Environment="CB_METRICS_PORT='"$ETHGAS_METRICS_PORT"'"' /etc/systemd/system/ethgas.service
-    sudo sed -i '/^\[Service\]/a Environment="CB_LOGS_DIR='"$ETHGAS_DIR"'/logs"' /etc/systemd/system/ethgas.service
-fi
 
 # Enable and start the service
 enable_and_start_systemd_service "ethgas"
@@ -290,7 +265,7 @@ ETHGas has been installed with the following configuration:
 
 Installation Directory: $ETHGAS_DIR
 Runtime Mode: $ETHGAS_RUNTIME_MODE
-Binary (source mode): ${ETHGAS_BIN_PATH:-N/A}
+Binary (source mode): $ETHGAS_DIR/target/release/ethgas_commit
 Docker image (docker mode): ${ETHGAS_DOCKER_IMAGE:-N/A}
 Configuration: $CONFIG_DIR/ethgas.toml
 Network: $ETHGAS_NETWORK

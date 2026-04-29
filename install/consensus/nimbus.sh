@@ -73,7 +73,6 @@ ensure_directory "$NIMBUS_DATA_DIR"
 # Create validator data directory
 VALIDATOR_DATA_DIR="$NIMBUS_DATA_DIR/validators"
 ensure_directory "$VALIDATOR_DATA_DIR"
-ensure_directory "$VALIDATOR_DATA_DIR/secrets"
 
 # Create temporary directory for custom configuration
 create_temp_config_dir
@@ -114,19 +113,29 @@ merge_client_config "Nimbus" "main" "$PROJECT_ROOT/configs/nimbus/nimbus_base.to
 # Clean up temporary files
 rm -rf ./tmp/
 
-# Create validator client configuration (diagnostic/reference only).
+# Create validator client configuration
 cat > "$NIMBUS_DIR/validator.toml" << EOF
-# Nimbus Validator Client Configuration (reference)
-beacon-node = "http://127.0.0.1:5052"
+# Nimbus Validator Client Configuration
+
+# Beacon node connection
+beacon-node = "http://$CONSENSUS_HOST:5052"
+
+# Validator settings
 validators-dir = "$VALIDATOR_DATA_DIR"
 secrets-dir = "$VALIDATOR_DATA_DIR/secrets"
 suggested-fee-recipient = "$FEE_RECIPIENT"
 graffiti = "$GRAFITTI"
+
+# Metrics
 metrics = true
 metrics-port = 8009
 metrics-address = "$CONSENSUS_HOST"
+
+# Logging
 log-level = "INFO"
 log-file = "$NIMBUS_DATA_DIR/validator_client.log"
+
+# Performance
 doppelganger-detection = true
 EOF
 
@@ -136,14 +145,14 @@ BEACON_EXEC_START="$NIMBUS_DIR/build/nimbus_beacon_node --config-file=$NIMBUS_DI
 create_systemd_service "cl" "Nimbus Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target eth1.service" "network-online.target eth1.service"
 
 # Create systemd service for validator
-VALIDATOR_EXEC_START="$NIMBUS_DIR/build/nimbus_validator_client --beacon-node=http://127.0.0.1:5052 --validators-dir=$VALIDATOR_DATA_DIR --secrets-dir=$VALIDATOR_DATA_DIR/secrets --suggested-fee-recipient=$FEE_RECIPIENT --graffiti=$GRAFITTI --metrics=true --metrics-port=8009 --metrics-address=$CONSENSUS_HOST --doppelganger-detection=true"
+VALIDATOR_EXEC_START="$NIMBUS_DIR/build/nimbus_validator_client --config-file=$NIMBUS_DIR/validator.toml"
 
 create_systemd_service "validator" "Nimbus Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target cl.service"
 
 enable_and_start_systemd_service "cl"
 enable_and_start_systemd_service "validator"
 
-log_installation_complete "Nimbus" "cl"
+log_installation_complete "Nimbus" "nimbus"
 log_info "Beacon node configuration: $NIMBUS_DIR/nimbus.toml"
 log_info "Validator configuration: $NIMBUS_DIR/validator.toml"
 log_info "Data directory: $NIMBUS_DATA_DIR"

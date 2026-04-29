@@ -1057,3 +1057,14 @@ Before committing frontend changes:
 **If you see npm commands in frontend context, STOP and convert to Bun.**
 
 This comprehensive rule set ensures consistent, maintainable, and secure code across the entire Ethereum node setup project.
+
+# SHARED_META_RULES_START
+## Shared Attribution & Meta Learnings (Propagated)
+
+- Commit author should be the active agent model identity.
+- Include `Co-authored-by: Chimera <chimera_defi@protonmail.com>` in commit trailers.
+- PR descriptions must include `**Agent:** <actual model name>` and `**Co-authored-by:** Chimera <chimera_defi@protonmail.com>`.
+- Never push directly to `main`/`master`; use a feature branch and PR.
+- Keep one task per PR.
+- Verify before marking done: run relevant tests/lint/checks or state what was not run.
+# SHARED_META_RULES_END
