@@ -11,6 +11,24 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/exports.sh"
 source "$SCRIPT_DIR/lib/common_functions.sh"
 
+# Help flag (before privilege checks so non-root users can inspect usage)
+for arg in "$@"; do
+    case "$arg" in
+        --help|-h)
+            cat <<'EOF'
+Usage: ./run_1.sh
+
+Phase 1: system hardening and secure user setup.
+Run as root (or via sudo), then reboot before Phase 2.
+
+Example:
+  sudo ./run_1.sh
+EOF
+            exit 0
+            ;;
+    esac
+done
+
 # Require root - re-exec with sudo if running as non-root (preserves SUDO_USER for key collection)
 require_sudo_or_root "$@"
 

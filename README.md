@@ -6,7 +6,7 @@
 [![Security Validation](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/security.yml/badge.svg)](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/security.yml)
 
 Get an ETH2 compatible RPC node setup in seconds!   
-Save at least 2 days compared to CoinCashew and Somersats guides using the automated scripts and included Prysm checkpoint state here!!   
+Save at least 2 days compared to CoinCashew and Somersats guides using the automated scripts and built-in checkpoint-sync configuration support.   
 With your own uncensored & unmetered RPC node!   
 And get ready for the ETH2 merge!
 
@@ -40,6 +40,83 @@ Additionally, by using a VPS, they can more easily offer a censorship resistant 
 
 ## Quickstart
 
+### One-Liner Bootstrap (Recommended for fresh hosts)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash
+```
+
+- The bootstrap installer now auto-falls back to non-interactive defaults when run via a pipe.
+- Force non-interactive explicitly:
+```bash
+curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash -s -- --non-interactive
+```
+- Force interactive TUI explicitly (requires a usable TTY):
+```bash
+curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash -s -- --interactive
+```
+
+### Unified Command Wrapper (Human + Agent Friendly)
+
+Use one stable entrypoint for common workflows:
+
+```bash
+./scripts/eth2qs.sh help
+./scripts/eth2qs.sh configure --non-interactive
+./scripts/eth2qs.sh client-options --json
+./scripts/eth2qs.sh phase1
+./scripts/eth2qs.sh phase2
+./scripts/eth2qs.sh monad-install
+./scripts/eth2qs.sh doctor --json
+./scripts/eth2qs.sh debug --json --service cl
+./scripts/eth2qs.sh stats --json
+./scripts/eth2qs.sh update-check --json
+./scripts/eth2qs.sh monitor export --json
+./scripts/eth2qs.sh repair
+./scripts/eth2qs.sh restart --smart
+```
+
+For agent integrations, the published skill source lives at `skills/eth2-quickstart/` and is intended to be used inside an `eth2-quickstart` checkout.
+The skill entrypoint is [`skills/eth2-quickstart/SKILL.md`](skills/eth2-quickstart/SKILL.md) and includes operator, sizing, safety, and improvement references for agent users.
+
+### For External Agents
+
+The skill is repo-aware: install it, then use it from inside an `eth2-quickstart` checkout.
+
+```bash
+# once published
+clawhub install eth2-quickstart
+
+# fallback: local workspace
+git clone --depth 1 https://github.com/chimera-defi/eth2-quickstart.git
+cd eth2-quickstart
+```
+
+- Raw-ingest fallback for agents that can load a text URL directly: [`llms.txt`](./llms.txt) and [`llms-full.txt`](./llms-full.txt)
+- Codex fallback: `python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py --repo chimera-defi/eth2-quickstart --path skills/eth2-quickstart`
+- Native tool fallback for Claude Code / Codex via MCP: [`mcp_server/run_eth2qs_mcp.sh`](mcp_server/run_eth2qs_mcp.sh) and [`skills/eth2-quickstart/references/mcp.md`](skills/eth2-quickstart/references/mcp.md)
+- Claude plugin packaging for local validation and marketplace-style install lives under [`.claude-plugin/`](./.claude-plugin/) and [`.claude/settings.json`](./.claude/settings.json)
+
+MCP quickstart:
+
+```bash
+python3 -m pip install mcp
+codex mcp add eth2-quickstart ./mcp_server/run_eth2qs_mcp.sh
+# or: claude mcp add eth2-quickstart -- ./mcp_server/run_eth2qs_mcp.sh
+# or: ./scripts/install_claude_eth2qs_mcp.sh
+```
+
+The MCP server can expose the core lifecycle directly: Phase 1 hardening, Phase 2 Ethereum client install, planner-driven install, health checks, logs, and safe cleanup.
+- For machine-readable client names and tested presets, use `./scripts/eth2qs.sh client-options --json`.
+- For machine-readable monitoring, issue classification, and repair previews, use `./scripts/eth2qs.sh stats --json`.
+- For structured per-service RCA, use `./scripts/eth2qs.sh debug --json --service <name>`.
+- For software freshness and repo drift, use `./scripts/eth2qs.sh update-check --json`.
+- For a compact bot/dashboard summary, use `./scripts/eth2qs.sh monitor export --json`.
+- For a bounded auto-repair preview/apply path, use `./scripts/eth2qs.sh repair` and `./scripts/eth2qs.sh repair --apply --confirm`.
+- For the command surface and safety rules, start with [`skills/eth2-quickstart/SKILL.md`](skills/eth2-quickstart/SKILL.md)
+
+This is a repo-backed operations skill, not a standalone blockchain package.
+
 ### Installation
 
 1. **Download and prepare**:
@@ -59,6 +136,7 @@ Additionally, by using a VPS, they can more easily offer a censorship resistant 
    
    - Upgrades Ubuntu and programs
    - Sets up firewalls and security hardening
+   - Snort IDS profile (enabled by default; disable via `ENABLE_SNORT=false` in `config/user_config.env`)
    - Creates non-root user (SSH key-only, migrates root's keys)
    - Installs required programs
 
@@ -70,31 +148,39 @@ Additionally, by using a VPS, they can more easily offer a censorship resistant 
 
 4. **Configure and install clients**:
    - Edit `exports.sh` with your settings
-   - Run `./select_clients.sh` for recommendations
+   - Run `./install/utils/select_clients.sh` for recommendations
    - Run `./run_2.sh` or install clients manually
 
 5. **Start services**:
    ```bash
-   sudo systemctl start eth1 cl validator mev
-   sudo systemctl status eth1 cl validator mev
+   ./install/utils/start.sh
+   ./install/utils/stats.sh
    ```
+
+### Service Unit Names (Canonical)
+
+Core units (installed by execution/consensus scripts):
+- `eth1.service` (execution client)
+- `cl.service` (consensus beacon node)
+- `validator.service` (validator client)
+
+MEV units (installed based on selection):
+- `mev.service` (MEV-Boost)
+- `commit-boost-pbs.service` (Commit-Boost PBS)
+- `commit-boost-signer.service` (Commit-Boost signer)
+- `ethgas.service` (optional, requires Commit-Boost)
+
+Web units (optional):
+- `nginx.service` (Nginx reverse proxy)
+- `caddy.service` (Caddy reverse proxy)
 
 ## Sync and Configure
 
-**Note: You may be able to skip this step now with checkpoint URLs added**
-
-1. **Sync Prysm instantly** using provided checkpoint files:
-   ```bash
-   sudo systemctl stop cl
-   sudo systemctl stop validator
-   $(echo $HOME)/prysm/prysm.sh cl --checkpoint-block=$PWD/prysm/block_mainnet_altair_4620512-0xef9957e6a709223202ab00f4ee2435e1d42042ad35e160563015340df677feb0.ssz --checkpoint-state=$PWD/prysm/state_mainnet_altair_4620512-0xc1397f57149c99b3a2166d422a2ee50602e2a2c7da2e31d7ea740216b8fd99ab.ssz --genesis-state=$PWD/prysm/genesis.ssz --config-file=$PWD/prysm/prysm_beacon_conf.yaml --p2p-host-ip=$(curl -s v4.ident.me)
-   ```
-   
-   **Restart services after sync:**
-   ```bash
-   sudo systemctl restart cl
-   sudo systemctl restart validator
-   ```
+1. **Prysm checkpoint sync is configured by default in this repo**:
+   - `install/consensus/prysm.sh` writes both:
+     - `checkpoint-sync-url: $PRYSM_CPURL`
+     - `genesis-beacon-api-url: $PRYSM_CPURL`
+   - This means initial beacon sync starts from a trusted checkpoint URL instead of syncing from genesis.
 
 2. **Set up validator** using Prysm documentation:
    - Create a `pass.txt` file in `~/prysm` with your wallet password
@@ -155,6 +241,7 @@ For detailed MEV setup, see [docs/MEV_GUIDE.md](docs/MEV_GUIDE.md).
 | **Nethermind** | C# | Enterprise-focused .NET client | Enterprise, advanced features | `nethermind.sh` |
 | **Besu** | Java | Apache 2.0 licensed, enterprise-ready | Private networks, compliance | `besu.sh` |
 | **Nimbus-eth1** | Nim | Lightweight, resource efficient | Raspberry Pi, low resources | `nimbus_eth1.sh` |
+| **Ethrex** | Rust | Experimental Rust execution client | Testing, client diversity | `ethrex.sh` |
 
 ### Consensus Clients (ETH2)
 | Client | Language | Description | Best For | Install Script |
@@ -238,8 +325,8 @@ Setup a secure uncensored outward facing Ethereum RPC for you and your friends! 
 
 ### Basic Setup
 ```bash
-./install_nginx.sh
-./install_ssl.sh
+./install/web/install_nginx.sh
+./install/ssl/install_acme_ssl.sh
 ```
 
 ### Verify RPC Endpoint
@@ -257,8 +344,8 @@ curl -X POST https://yourdomain.com/rpc --data '{"jsonrpc":"2.0","method":"eth_c
 3. **Configure Nginx**: Handle requests and provide RPC
 
 ### SSL Options
-- **ACME.sh**: `./install_acme_ssl.sh` (recommended)
-- **Certbot**: `./install_ssl_certbot.sh`
+- **ACME.sh**: `./install/ssl/install_acme_ssl.sh` (recommended)
+- **Certbot**: `./install/ssl/install_ssl_certbot.sh`
 
 ## Caddy Web Server (Alternative to Nginx)
 
@@ -278,13 +365,35 @@ sudo ./install_caddy_ssl.sh
 - **Automatic HTTPS**: Built-in Let's Encrypt integration
 - **HTTP/2 and HTTP/3**: Modern protocol support
 - **Security Headers**: Comprehensive security by default
-- **Rate Limiting**: Built-in rate limiting capabilities
+- **Rate Limiting**: Batteries-included (installer bootstraps Caddy with `rate_limit` module by default)
+- **Fail2ban Jails**: Default spam/429 ban rules for Caddy access logs
 - **Easy Configuration**: Simple Caddyfile syntax
 - **Security Hardening**: `./caddy_harden.sh` for enhanced security
+- **Shared Edge Policy**: Nginx + Caddy route/hardening policy is generated from `install/web/proxy_config_renderer.sh`
+
+### Shared Edge Tuning (Nginx + Caddy)
+Override in `config/user_config.env` when needed:
+- `EDGE_RPC_UPSTREAMS` / `EDGE_WS_UPSTREAMS`: comma-separated upstream backends (for fanout/failover).
+- `EDGE_LB_POLICY`: `least_conn` or `ip_hash`.
+- `EDGE_UPSTREAM_KEEPALIVE`: upstream keepalive pool size.
+- `EDGE_DNS_RESOLVER`: resolver list for hostname upstreams in Nginx (`resolve` mode).
+- `EDGE_ENABLE_COMPRESSION`: shared response compression toggle.
+- `EDGE_ENABLE_METRICS` + `EDGE_METRICS_PATH`: local-only metrics endpoint toggle/path (enabled by default).
+- `EDGE_TRUSTED_PROXIES`: trusted proxy CIDRs for forwarded client IP handling.
+- `EDGE_*_RATE_LIMIT_RPM` (`EDGE_RPC_RATE_LIMIT_RPM`, `EDGE_WS_RATE_LIMIT_RPM`, `EDGE_GENERAL_RATE_LIMIT_RPM`): shared anti-abuse rate limits used by both Nginx + Caddy renders.
+- `EDGE_*_BURST` (`EDGE_RPC_BURST`, `EDGE_WS_BURST`) + `EDGE_*_CONN_LIMIT_PER_IP` (`EDGE_RPC_CONN_LIMIT_PER_IP`, `EDGE_WS_CONN_LIMIT_PER_IP`): shared burst/connection ceilings for Nginx request shaping.
+- `EDGE_RPC_CACHE_MIN_USES`: Nginx RPC cache threshold.
+- `CADDY_LB_*`: Caddy retry/failover tuning (`CADDY_LB_RETRIES`, `CADDY_LB_TRY_DURATION`, `CADDY_LB_TRY_INTERVAL`, `CADDY_FAIL_DURATION`, `CADDY_MAX_FAILS`).
+- `CADDY_ENSURE_MODULES` + `CADDY_REQUIRED_MODULES` + `CADDY_REQUIRED_PACKAGES`: Caddy installer module bootstrap controls (default ensures `http.handlers.rate_limit,dns.providers.cloudflare` via `github.com/mholt/caddy-ratelimit,github.com/caddy-dns/cloudflare`).
+- `CADDY_INSTALL_ENFORCE_RATE_LIMIT`: force `install_caddy.sh` to fail if rate-limiting cannot be enabled (default `true`).
+- `CADDY_REQUIRE_RATE_LIMIT` / `CADDY_REQUIRE_DNS_CHALLENGE`: strict mode flags to fail render/install when required Caddy capabilities are unavailable.
 
 ### Test Caddy Installation
 Testing helpers were removed. Use:
 ```bash
+bash ./test/validate_review_guardrails.sh
+bash ./test/validate_nginx_config.sh
+bash ./test/validate_caddy_config.sh
 sudo caddy validate --config /etc/caddy/Caddyfile
 ```
 
@@ -294,7 +403,7 @@ sudo caddy validate --config /etc/caddy/Caddyfile
 | Configuration | Simple Caddyfile | Complex nginx.conf |
 | HTTPS | Automatic | Manual setup |
 | Security | Built-in headers | Manual configuration |
-| Rate Limiting | Built-in | Requires modules |
+| Rate Limiting | Enabled by default via installer-bundled `rate_limit` module | Built-in (`limit_req`/`limit_conn`) |
 | HTTP/3 | Native support | Requires modules |
 
 For detailed Caddy setup instructions, see [Caddy Installation Guide](docs/CADDY_INSTALLATION.md).
@@ -302,7 +411,7 @@ For detailed Caddy setup instructions, see [Caddy Installation Guide](docs/CADDY
 ### Features
 - **RPC/WS endpoints**: Secure access to Ethereum node
 - **SSL/TLS**: Automatic certificate management
-- **Rate limiting**: Protection against abuse
+- **Rate limiting**: Abuse protection enabled by default for both Caddy and Nginx
 - **Authentication**: JWT-based access control
 
 ## Security Features
@@ -405,43 +514,10 @@ Additionally, the beacon checkpoint states have been made available by Sharedsta
 
 ## Additional Documentation
 
-### Core Documentation
-- Scripts reference: [docs/SCRIPTS.md](docs/SCRIPTS.md)
-- Setup workflow: [docs/WORKFLOW.md](docs/WORKFLOW.md)
-- Terminology: [docs/GLOSSARY.md](docs/GLOSSARY.md)
-- Security guide: [docs/SECURITY_GUIDE.md](docs/SECURITY_GUIDE.md)
-
-### MEV Documentation
-- **MEV Guide**: [docs/MEV_GUIDE.md](docs/MEV_GUIDE.md) - Complete MEV setup and configuration
-- **MEV Quick Reference**: [docs/MEV_QUICK_REFERENCE.md](docs/MEV_QUICK_REFERENCE.md) - Quick commands and ports
-
-### Configuration & Development
-- Configuration guide: [docs/CONFIGURATION_GUIDE.md](docs/CONFIGURATION_GUIDE.md)
-- Shell scripting best practices: [docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md](docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md)
-
-### Marketing Website (Frontend)
-- Frontend quick start: [frontend/README.md](frontend/README.md) - Uses **Bun** for fast installs
-- Bun migration guide: [docs/FRONTEND_BUN_MIGRATION.md](docs/FRONTEND_BUN_MIGRATION.md)
-
-### Testing & Validation
-- **Pre-commit**: `./scripts/pre-commit.sh` — local CI simulation before pushing
-- CI path filtering: [docs/CI_WORKFLOWS.md](docs/CI_WORKFLOWS.md) — when each workflow runs
-- Shell script test results: [docs/SHELL_SCRIPT_TEST_RESULTS.md](docs/SHELL_SCRIPT_TEST_RESULTS.md)
-
-### Project Management
-- Commit message conventions: [docs/COMMIT_MESSAGES.md](docs/COMMIT_MESSAGES.md)
-- Development progress: [docs/progress.md](docs/progress.md)
-## 📚 **Common Functions Library**
-
-The project includes a comprehensive common functions library (`lib/common_functions.sh`) with 35 centralized functions for:
-- **Logging**: Consistent message formatting across all scripts
-- **Installation**: Standardized installation start/complete messages
-- **Configuration**: JSON, YAML, and TOML configuration merging
-- **Security**: User setup, SSH configuration, fail2ban setup
-- **System Services**: Systemd service creation and management
-- **File Operations**: Secure file downloading with retry logic
-- **System Checks**: Requirements and compatibility validation
-
-**📖 Full Reference:** See `docs/COMMON_FUNCTIONS_REFERENCE.md` for complete function documentation and usage examples.
-
-**✅ Status:** All functions implemented, tested, and ready for production use.
+- Canonical docs index: [docs/README.md](docs/README.md)
+- Current status and open gaps: [docs/STATUS.md](docs/STATUS.md)
+- Script reference: [docs/SCRIPTS.md](docs/SCRIPTS.md)
+- Agent skill listing copy: [docs/AGENT_SKILL_LISTING.md](docs/AGENT_SKILL_LISTING.md)
+- Frontend docs: [docs/FRONTEND.md](docs/FRONTEND.md) and [frontend/README.md](frontend/README.md)
+- Session continuity and follow-ups: [docs/agent-handoff.md](docs/agent-handoff.md)
+- Common functions reference: [docs/COMMON_FUNCTIONS_REFERENCE.md](docs/COMMON_FUNCTIONS_REFERENCE.md)

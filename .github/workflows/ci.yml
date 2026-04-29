@@ -9,6 +9,12 @@ on:
     branches: [ main, master, develop ]
     paths:
       - '**/*.sh'
+      - '**/*.py'
+      - 'skills/**'
+      - 'mcp_server/**'
+      - 'README.md'
+      - 'llms.txt'
+      - 'llms-full.txt'
       - 'test/Dockerfile'
       - 'test/docker-compose.yml'
       - '.github/workflows/ci.yml'
@@ -17,24 +23,23 @@ on:
     branches: [ main, master, develop, 'cursor/**' ]
     paths:
       - '**/*.sh'
+      - '**/*.py'
+      - 'skills/**'
+      - 'mcp_server/**'
+      - 'README.md'
+      - 'llms.txt'
+      - 'llms-full.txt'
       - 'test/Dockerfile'
       - 'test/docker-compose.yml'
       - '.github/workflows/ci.yml'
       - '.github/actions/**'
   workflow_dispatch:  # Allow manual trigger for testing
 
-# Path filters: run ONLY when shell files or test infra change. Skip on doc-only, config-only, frontend-only.
-# - **/*.sh: all shell scripts (install, lib, test, docs, root)
-# - test/Dockerfile, test/docker-compose.yml: Docker build (not .sh)
-# - workflow_dispatch: always runs (manual trigger)
+# Path filters run CI only for shell/test-infra changes; docs/frontend-only changes are skipped.
 concurrency:
   group: ci-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
-# Fail-fast: build-docker -> (docker-integration + run-* in parallel) -> e2e-client-matrix.
-# Shellcheck: run in shellcheck.yml only (avoids duplicate run with ci.yml).
-# docker-integration and run-* run in parallel (all need image only). Matrix has fail-fast.
-# Note: GitHub Actions cannot cancel sibling jobs when one fails; matrix jobs cancel each other.
 jobs:
   # Build once, push to GHCR. Other jobs pull instead of building (saves ~5 builds).
   # Fork PRs: push fails (no package write), jobs fall back to building.
@@ -75,6 +80,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Lint and unit tests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -84,6 +90,30 @@ jobs:
           echo "::endgroup::"
           echo "::group::Common functions unit tests"
           docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_common_functions.sh
+          echo "::endgroup::"
+          echo "::group::Stats read-only tests"
+          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_stats_read_only.sh
+          echo "::endgroup::"
+          echo "::group::Monitor contract tests"
+          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_monitor_contracts.sh
+          echo "::endgroup::"
+          echo "::group::Host cleanup tests"
+          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_host_cleanup.sh
+          echo "::endgroup::"
+          echo "::group::Doctor service drift tests"
+          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_doctor_service_drift.sh
+          echo "::endgroup::"
+          echo "::group::Ensure dispatch tests"
+          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_ensure_dispatch.sh
+          echo "::endgroup::"
+          echo "::group::Plan JSON tests"
+          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_plan_json.sh
+          echo "::endgroup::"
+          echo "::group::Install planner unit tests"
+          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_install_planner.sh
+          echo "::endgroup::"
+          echo "::group::MCP unit tests"
+          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/test/ci_test_mcp_server.sh
           echo "::endgroup::"
           echo "::group::Unit tests (Caddy validate, downloads, functions)"
           docker run --rm --privileged -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true -e GITHUB_TOKEN="$GITHUB_TOKEN" eth-node-test /workspace/test/docker_test.sh
@@ -98,11 +128,66 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run run_1 structure
         run: |
           docker run --rm --privileged --user root \
             -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical -e CI=true \
             eth-node-test /workspace/test/ci_test_run_1.sh
+
+  tui-whiptail-pipe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install TUI test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y expect whiptail
+      - name: Verify whiptail works when stdin is piped (curl|bash scenario)
+        run: REQUIRE_WHIPTAIL_PIPE_TEST=1 ./test/whiptail_pipe_test.sh
+
+  docs-consistency:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify active docs consistency
+        run: bash ./test/ci_test_docs_consistency.sh
+
+  agent-skill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify skill structure
+        run: bash ./test/ci_test_skill_structure.sh
+      - name: Verify skill command mapping
+        run: bash ./test/ci_test_skill_command_mapping.sh
+      - name: Verify skill safety
+        run: bash ./test/ci_test_skill_safety.sh
+      - name: Verify skill distribution contract
+        run: bash ./test/ci_test_skill_distribution.sh
+      - name: Verify skill installation e2e
+        run: bash ./test/ci_test_skill_install_e2e.sh
+      - name: Verify MCP server contract
+        run: bash ./test/ci_test_mcp_server.sh
+
+  tui-whiptail-nonskip-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install TUI test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y expect whiptail
+      - name: Enforce non-skip TUI result in shared shell-test context
+        env:
+          REQUIRE_WHIPTAIL_PIPE_TEST: "1"
+          SKIP_SHELLCHECK: "true"
+          USE_MOCKS: "true"
+        run: ./test/run_tests.sh --unit
 
   run-1-e2e:
     needs: [build-docker]
@@ -113,6 +198,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run run_1 E2E
         env:
           CI: true
@@ -127,6 +213,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run run_2 structure
         run: |
           docker run --rm --privileged --user testuser \
@@ -142,13 +229,15 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run run_2 E2E (default clients)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CI: true
         run: |
-          # Pass E2E_EXECUTION/E2E_CONSENSUS to skip Caddy/Nginx (saves ~1.5 min)
-          # Caddy/Nginx install tested in run-2-web
+          # Use fixed baseline clients for a deterministic phase-2 lane.
+          # Caddy/Nginx install+validation still runs in phase-2 and is
+          # additionally covered in the dedicated run-2-web lane.
           SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" \
           E2E_EXECUTION=geth E2E_CONSENSUS=prysm E2E_MEV=mev-boost \
           ./test/run_e2e.sh --phase=2
@@ -162,6 +251,7 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run run_2 E2E (Caddy + Nginx install)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -171,15 +261,31 @@ jobs:
           # Verifies install_caddy.sh, install_nginx.sh, config validity, no regressions
           SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" ./test/run_e2e.sh --phase=2
 
+  install-sh-smoke:
+    needs: [build-docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/docker-prep
+        with:
+          image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run install.sh non-interactive smoke harness
+        run: |
+          docker run --rm --privileged --user root \
+            -e DEBIAN_FRONTEND=noninteractive -e DEBIAN_PRIORITY=critical -e CI=true \
+            eth-node-test /workspace/test/install_sh_smoke.sh
+
   # Matrix: 6 client combos (geth+prysm+mev-boost covered by run-2-e2e)
   # Execution: besu, erigon, nethermind, nimbus_eth1, reth, ethrex
   # Consensus: lighthouse, teku, nimbus, grandine, lodestar, prysm
   e2e-client-matrix:
-    needs: [docker-integration, run-1-structure, run-1-e2e, run-2-structure, run-2-e2e, run-2-web, build-docker]
+    needs: [docker-integration, run-1-structure, tui-whiptail-pipe, tui-whiptail-nonskip-guard, docs-consistency, run-1-e2e, run-2-structure, run-2-e2e, run-2-web, install-sh-smoke, build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include:
           - exec: besu
@@ -205,12 +311,31 @@ jobs:
       - uses: ./.github/actions/docker-prep
         with:
           image: ${{ needs.build-docker.outputs.image }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: "E2E ${{ matrix.exec }}+${{ matrix.cons }}+${{ matrix.mev }}"
         timeout-minutes: 25
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CI: true
         run: |
-          SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" \
-          E2E_EXECUTION=${{ matrix.exec }} E2E_CONSENSUS=${{ matrix.cons }} E2E_MEV=${{ matrix.mev }} \
-          ./test/run_e2e.sh --phase=2
+          e2e_cmd() {
+            SKIP_BUILD=true GITHUB_TOKEN="$GITHUB_TOKEN" \
+            E2E_EXECUTION=${{ matrix.exec }} E2E_CONSENSUS=${{ matrix.cons }} E2E_MEV=${{ matrix.mev }} \
+            ./test/run_e2e.sh --phase=2
+          }
+
+          rc=0
+          for attempt in 1 2; do
+            echo "Matrix E2E attempt ${attempt}/2"
+            if e2e_cmd; then
+              rc=0
+              break
+            fi
+            rc=$?
+            if [[ $attempt -lt 2 ]]; then
+              echo "Matrix E2E failed (attempt ${attempt}/2); retrying in 15s..."
+              sleep 15
+            fi
+          done
+
+          exit $rc

@@ -17,6 +17,36 @@ require_root
 
 log_installation_start "Consolidated Security Suite"
 
+is_truthy() {
+    local value="${1:-}"
+    case "${value,,}" in
+        1|true|yes|y|on) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+detect_default_interface() {
+    local iface=""
+    iface=$(ip -o -4 route show to default 2>/dev/null | awk '{print $5; exit}')
+    if [[ -z "$iface" ]]; then
+        iface=$(ip -o link show 2>/dev/null | awk -F': ' '$2 != "lo" {print $2; exit}')
+    fi
+    echo "$iface"
+}
+
+detect_home_net_cidr() {
+    local iface="${1:-}"
+    local cidr=""
+    if [[ -n "$iface" ]]; then
+        cidr=$(ip -o -4 addr show dev "$iface" scope global 2>/dev/null | awk '{print $4; exit}')
+    fi
+    if [[ -z "$cidr" ]]; then
+        cidr="192.168.0.0/16"
+        log_warn "Unable to auto-detect SNORT_HOME_NET; falling back to $cidr"
+    fi
+    echo "$cidr"
+}
+
 # Function 1: Setup Firewall
 setup_firewall() {
     log_info "Setting up UFW firewall with comprehensive rules..."
@@ -36,10 +66,42 @@ setup_firewall() {
     # Open essential ports using common function
     # Use the configured SSH port (not hardcoded 22) to match sshd_config
     local SSH_PORT="${YourSSHPortNumber:-22}"
-    log_info "Opening ports for Ethereum clients and SSH (port $SSH_PORT)..."
-    setup_firewall_rules 30303 13000/tcp 12000/udp "$SSH_PORT/tcp" 443/tcp
 
-    # Block outbound connections to private/reserved networks to prevent netscan abuse
+    # TODO: firewall setup is no longer chain-agnostic now that multiple chains are
+    # supported. Consider extracting into a separate parameterized firewall phase
+    # (requiring sudo) in a future refactor, so Phase 1 can remain chain-agnostic.
+    local CHAIN_VAR="${CHAIN:-ethereum}"
+
+    if [[ "$CHAIN_VAR" == "monad" ]]; then
+        log_info "Opening SSH port $SSH_PORT for Monad operator access..."
+        # Monad P2P ports (8000/tcp, 8000/udp, 8001/tcp) and the iptables anti-spam rule
+        # are applied in monad_install.sh (Phase 2), where iptables-persistent is available
+        # to make the iptables rule persistent across reboots.
+        setup_firewall_rules "$SSH_PORT/tcp"
+        log_info "Monad firewall: SSH ($SSH_PORT) opened. P2P ports configured in monad_install.sh."
+
+    elif [[ "$CHAIN_VAR" == "ethereum" ]]; then
+        log_info "Opening ports for Ethereum clients and SSH (port $SSH_PORT)..."
+        setup_firewall_rules 30303 13000/tcp 12000/udp "$SSH_PORT/tcp" 443/tcp
+
+        # Block specific ports (updates from Prysm docs Feb '23)
+        log_info "Blocking specific ports for security..."
+        ufw deny in 4000/tcp || log_warn "Failed to deny port 4000/tcp"
+        ufw deny in 3500/tcp || log_warn "Failed to deny port 3500/tcp"
+        ufw deny in 8551/tcp || log_warn "Failed to deny port 8551/tcp"
+        ufw deny in 8545/tcp || log_warn "Failed to deny port 8545/tcp"
+
+        log_info "✓ Ethereum firewall ports configured!"
+        log_info "Allowed ports: $SSH_PORT (SSH), 443 (HTTPS), 30303 (Ethereum P2P), 12000/13000 (Prysm)"
+        log_info "Blocked inbound: 4000, 3500, 8551, 8545"
+
+    else
+        log_error "Unknown CHAIN value: '$CHAIN_VAR'. Valid values: ethereum, monad"
+        exit 1
+    fi
+
+    # Block outbound connections to private/reserved networks — universal for all chains.
+    # Prevents netscan abuse warnings regardless of whether running Ethereum or Monad.
     # Skip in Docker only: container gateway (172.17.0.1) is in 172.16.0.0/12; blocking would
     # break connectivity. On real servers we apply full rules. Docker E2E tests the rest.
     if ! is_docker; then
@@ -67,7 +129,7 @@ setup_firewall() {
             "240.0.0.0/4"          # Reserved for Future Use
             "255.255.255.255/32"   # Limited Broadcast
         )
-        
+
         # Known problematic subnets that trigger Hetzner abuse reports
         # These are public IP ranges where aggressive P2P discovery causes issues
         # Add subnets here as needed based on abuse reports
@@ -78,7 +140,7 @@ setup_firewall() {
         for network in "${private_networks[@]}"; do
             ufw deny out on any to "$network" || log_warn "Failed to block outbound to $network"
         done
-        
+
         # Block problematic subnets (public IPs that cause abuse reports)
         log_info "Blocking problematic subnets that trigger abuse reports..."
         for subnet in "${problematic_subnets[@]}"; do
@@ -88,21 +150,7 @@ setup_firewall() {
         log_info "Skipping private network blocks in container (would break Docker networking)"
     fi
 
-    # Block specific ports (updates from Prysm docs Feb '23)
-    log_info "Blocking specific ports for security..."
-    ufw deny in 4000/tcp || log_warn "Failed to deny port 4000/tcp"
-    ufw deny in 3500/tcp || log_warn "Failed to deny port 3500/tcp"
-    ufw deny in 8551/tcp || log_warn "Failed to deny port 8551/tcp"
-    ufw deny in 8545/tcp || log_warn "Failed to deny port 8545/tcp"
-
     log_info "✓ Firewall configuration completed!"
-    log_info "UFW firewall is now enabled with Ethereum client and security rules"
-    log_info "Allowed ports: $SSH_PORT (SSH), 443 (HTTPS), 30303 (Ethereum P2P), 12000/13000 (Prysm)"
-    if is_docker; then
-        log_info "Blocked: Specific ports (4000, 3500, 8551, 8545)"
-    else
-        log_info "Blocked: Private networks, problematic subnets (UDP), specific ports (4000, 3500, 8551, 8545)"
-    fi
 }
 
 # Function 2: Setup Fail2ban
@@ -113,26 +161,16 @@ setup_fail2ban() {
     local SSH_PORT="${YourSSHPortNumber:-22}"
     local MAX_RETRY="${maxretry:-3}"
 
-    # Install nginx-proxy filter (jail references it; nginx_harden adds more jails in run_2)
+    # Nginx-specific fail2ban filters/jails are owned by install/security/nginx_harden.sh.
+    # Phase 1 keeps fail2ban baseline focused on SSH hardening.
     ensure_directory /etc/fail2ban/filter.d
-    if [[ ! -f /etc/fail2ban/filter.d/nginx-proxy.conf ]]; then
-        cat > /etc/fail2ban/filter.d/nginx-proxy.conf << 'FILTER'
-# Block IPs trying to use server as proxy (matches e.g. "GET http://...")
-[Definition]
-failregex = ^<HOST> -.*GET http.*
-ignoreregex =
-FILTER
-        log_info "Created nginx-proxy fail2ban filter"
-    fi
 
     # Ensure log files exist - fail2ban jails fail to start if logpath is missing
-    ensure_directory /var/log/nginx
-    for logfile in /var/log/auth.log /var/log/nginx/access.log; do
-        if [[ ! -f "$logfile" ]]; then
-            touch "$logfile"
-            log_info "Created $logfile for fail2ban jail"
-        fi
-    done
+    local logfile="/var/log/auth.log"
+    if [[ ! -f "$logfile" ]]; then
+        touch "$logfile"
+        log_info "Created $logfile for fail2ban jail"
+    fi
 
     # Configure fail2ban jails (write mode — idempotent on re-run)
     log_info "Configuring fail2ban jails..."
@@ -140,13 +178,7 @@ FILTER
 # eth2-quickstart fail2ban configuration
 # Generated by consolidated_security.sh
 
-[nginx-proxy]
-enabled = true
-port = 80,443
-filter = nginx-proxy
-logpath = /var/log/nginx/access.log
-maxretry = 2
-bantime = 86400
+# Nginx jails are configured later by install/security/nginx_harden.sh
 
 [sshd]
 enabled = true
@@ -170,7 +202,95 @@ EOF
     log_info "✓ Fail2ban installation and configuration complete"
 }
 
-# Function 3: Setup AIDE
+# Function 3: Setup Snort IDS (enabled by default; can be disabled via ENABLE_SNORT=false)
+setup_snort() {
+    if ! is_truthy "${ENABLE_SNORT:-true}"; then
+        log_info "Snort IDS disabled via configuration (ENABLE_SNORT=false)"
+        return 0
+    fi
+
+    log_info "Setting up Snort IDS..."
+
+    local snort_iface="${SNORT_INTERFACE:-auto}"
+    local snort_home_net="${SNORT_HOME_NET:-}"
+    local snort_startup="${SNORT_STARTUP:-boot}"
+    local snort_disable_promisc="false"
+    if is_truthy "${SNORT_DISABLE_PROMISCUOUS:-true}"; then
+        snort_disable_promisc="true"
+    fi
+
+    if [[ "$snort_startup" != "boot" && "$snort_startup" != "manual" ]]; then
+        log_warn "Invalid SNORT_STARTUP='$snort_startup' (valid: boot|manual); defaulting to boot"
+        snort_startup="boot"
+    fi
+
+    if [[ -z "$snort_iface" || "$snort_iface" == "auto" ]]; then
+        snort_iface=$(detect_default_interface)
+    fi
+    if [[ -z "$snort_iface" ]]; then
+        snort_iface="eth0"
+        log_warn "Unable to auto-detect network interface; defaulting SNORT_INTERFACE=$snort_iface"
+    fi
+
+    if [[ -z "$snort_home_net" ]]; then
+        snort_home_net=$(detect_home_net_cidr "$snort_iface")
+    fi
+
+    if ! command -v debconf-set-selections >/dev/null 2>&1; then
+        log_error "debconf-set-selections is required for non-interactive Snort setup"
+        exit 1
+    fi
+
+    log_info "Preseeding Snort package config (iface=$snort_iface, HOME_NET=$snort_home_net, startup=$snort_startup)"
+    cat <<EOF | debconf-set-selections
+snort snort/startup select $snort_startup
+snort snort/interface string $snort_iface
+snort snort/address_range string $snort_home_net
+snort snort/disable_promiscuous boolean $snort_disable_promisc
+EOF
+
+    # Ubuntu/Debian package currently provides Snort 2.x.
+    install_dependencies snort snort-rules-default
+
+    local snort_debian_conf="/etc/snort/snort.debian.conf"
+    if [[ -f "$snort_debian_conf" ]]; then
+        if grep -q '^DEBIAN_SNORT_HOME_NET=' "$snort_debian_conf"; then
+            sed -i "s|^DEBIAN_SNORT_HOME_NET=.*|DEBIAN_SNORT_HOME_NET=\"$snort_home_net\"|" "$snort_debian_conf"
+        else
+            echo "DEBIAN_SNORT_HOME_NET=\"$snort_home_net\"" >> "$snort_debian_conf"
+        fi
+
+        if grep -q '^DEBIAN_SNORT_INTERFACE=' "$snort_debian_conf"; then
+            sed -i "s|^DEBIAN_SNORT_INTERFACE=.*|DEBIAN_SNORT_INTERFACE=\"$snort_iface\"|" "$snort_debian_conf"
+        else
+            echo "DEBIAN_SNORT_INTERFACE=\"$snort_iface\"" >> "$snort_debian_conf"
+        fi
+    fi
+
+    if command -v snort >/dev/null 2>&1; then
+        if snort -T -q -c /etc/snort/snort.conf >/tmp/snort-selftest.log 2>&1; then
+            log_info "✓ Snort configuration self-test passed"
+        else
+            log_warn "Snort self-test reported issues; see /tmp/snort-selftest.log"
+        fi
+    else
+        log_error "Snort command not found after installation"
+        exit 1
+    fi
+
+    if [[ "$snort_startup" == "boot" ]]; then
+        enable_and_start_systemd_service snort
+        if systemctl is-active --quiet snort 2>/dev/null; then
+            log_info "✓ Snort service running"
+        else
+            log_warn "Snort service not active - check: systemctl status snort"
+        fi
+    else
+        log_info "Snort configured for manual startup"
+    fi
+}
+
+# Function 4: Setup AIDE
 setup_aide() {
     log_info "Setting up AIDE file integrity monitoring..."
 
@@ -245,7 +365,7 @@ EOF
     log_info "✓ AIDE file integrity monitoring setup complete"
 }
 
-# Function 4: Security Verification
+# Function 5: Security Verification
 verify_security_setup() {
     log_info "Verifying security setup..."
 
@@ -284,6 +404,27 @@ verify_security_setup() {
         issues=$((issues + 1))
     fi
 
+    # Check Snort when enabled
+    if is_truthy "${ENABLE_SNORT:-true}"; then
+        log_info "Checking Snort service..."
+        if command -v snort >/dev/null 2>&1; then
+            log_info "✓ Snort is installed"
+            if [[ "${SNORT_STARTUP:-boot}" == "boot" ]]; then
+                if systemctl is-active --quiet snort 2>/dev/null; then
+                    log_info "✓ Snort service is running"
+                else
+                    log_warn "Snort installed but service is not active"
+                    issues=$((issues + 1))
+                fi
+            else
+                log_info "Snort startup mode is manual; service check skipped"
+            fi
+        else
+            log_error "✗ Snort is not installed"
+            issues=$((issues + 1))
+        fi
+    fi
+
     if [[ $issues -eq 0 ]]; then
         log_info "✓ All security features verified successfully"
     else
@@ -299,6 +440,7 @@ main() {
     # Run all security setup functions
     setup_firewall
     setup_fail2ban
+    setup_snort
     setup_aide
     
     # Verify security setup
@@ -308,6 +450,9 @@ main() {
     log_info "✓ Firewall configured with comprehensive rules"
     log_info "✓ Fail2ban intrusion prevention active"
     log_info "✓ AIDE file integrity monitoring scheduled"
+    if is_truthy "${ENABLE_SNORT:-true}"; then
+        log_info "✓ Snort IDS configured"
+    fi
     log_info "✓ All security features are now active and protecting your system"
     
     log_installation_complete "Consolidated Security Suite" "security-suite"

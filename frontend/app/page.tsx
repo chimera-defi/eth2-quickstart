@@ -1,6 +1,7 @@
 import { Hero } from '@/components/sections/Hero'
 import { Install } from '@/components/sections/Install'
 import { Workflow } from '@/components/sections/Workflow'
+import { Agents } from '@/components/sections/Agents'
 import { Features } from '@/components/sections/Features'
 import { CallToAction } from '@/components/sections/CallToAction'
 
@@ -14,6 +15,7 @@ export default function Home() {
       <Hero />
       <Install />
       <Workflow />
+      <Agents />
       <Features />
       <CallToAction />
     </>

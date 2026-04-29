@@ -1,0 +1,28 @@
+{
+  "name": "eth2-quickstart",
+  "version": "0.1.0",
+  "description": "Repo-backed Ethereum node operations for Claude Code via the canonical eth2qs wrapper and MCP server.",
+  "author": {
+    "name": "chimera-defi",
+    "url": "https://github.com/chimera-defi"
+  },
+  "homepage": "https://github.com/chimera-defi/eth2-quickstart",
+  "repository": "https://github.com/chimera-defi/eth2-quickstart",
+  "license": "MIT",
+  "keywords": [
+    "ethereum",
+    "validator",
+    "staking",
+    "mcp",
+    "claude-code",
+    "node-operations"
+  ],
+  "mcpServers": {
+    "eth2-quickstart": {
+      "command": "bash",
+      "args": [
+        "mcp_server/run_eth2qs_mcp.sh"
+      ]
+    }
+  }
+}

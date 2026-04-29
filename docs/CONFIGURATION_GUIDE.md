@@ -54,8 +54,7 @@ configs/
 │   └── grandine_base.toml      # TOML base configuration
 └── prysm/
     ├── prysm_beacon_conf.yaml      # YAML beacon base config
-    ├── prysm_validator_conf.yaml   # YAML validator base config
-    └── checkpoint_ssz/             # Checkpoint state files
+    └── prysm_validator_conf.yaml   # YAML validator base config
 ```
 
 ## Configuration Flow
@@ -98,7 +97,7 @@ rm -rf ./tmp/
 #### Nethermind (JSON)
 - **Base Config**: `configs/nethermind/nethermind_base.cfg`
 - **Custom Variables**: Memory, ports, fee recipient, graffiti
-- **Merge Strategy**: JSON concatenation (TODO: implement proper JSON merging with jq)
+- **Merge Strategy**: Generated JSON + base defaults (not yet standardized on schema-aware merge tooling)
 
 #### Besu (TOML)  
 - **Base Config**: `configs/besu/besu_base.toml`
@@ -135,7 +134,6 @@ rm -rf ./tmp/
 - **Base Configs**: 
   - `configs/prysm/prysm_beacon_conf.yaml`
   - `configs/prysm/prysm_validator_conf.yaml`
-  - `configs/prysm/prysm_beacon_sync_conf.yaml` (checkpoint sync)
 - **Custom Variables**: Data paths, ports, checkpoint URLs, validator settings, MEV configuration
 - **Merge Strategy**: YAML concatenation
 - **Version**: v6.1.2 with performance optimizations and monitoring
@@ -216,7 +214,7 @@ rm -rf ./tmp/
 
 ### For New Installations
 1. **Configure `exports.sh`**: Set all required variables before installation
-2. **Choose Clients**: Use `./select_clients.sh` for recommendations
+2. **Choose Clients**: Use `./install/utils/select_clients.sh` for recommendations
 3. **Run Install Scripts**: Execute client-specific installation scripts
 4. **Verify Configuration**: Check generated config files match expectations
 

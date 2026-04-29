@@ -34,7 +34,7 @@ source_exports
 # Structure validation only - no actual installs. E2E (actual execution) is in ci_test_e2e.sh
 # Test 1: Verify required files exist
 log_info "Test 1: Verify required files..."
-for file in run_2.sh exports.sh lib/common_functions.sh; do
+for file in run_2.sh exports.sh lib/common_functions.sh config/edge_policy.env; do
     assert_file_exists "$PROJECT_ROOT/$file" "$file"
 done
 
@@ -47,11 +47,79 @@ else
     exit 1
 fi
 
+# Test 2b: Verify --help exits before log side effects
+log_info "Test 2b: Verify run_2.sh --help is clean..."
+log_dir="$PROJECT_ROOT/logs"
+before_count=0
+if [[ -d "$log_dir" ]]; then
+    before_count=$(find "$log_dir" -maxdepth 1 -type f -name 'run_2_*.log' | wc -l)
+fi
+
+if bash "$PROJECT_ROOT/run_2.sh" --help | grep -q "Phase 2: client installation"; then
+    log_info "  ✓ --help output is available"
+else
+    log_error "  ✗ run_2.sh --help missing expected output"
+    exit 1
+fi
+
+after_count=0
+if [[ -d "$log_dir" ]]; then
+    after_count=$(find "$log_dir" -maxdepth 1 -type f -name 'run_2_*.log' | wc -l)
+fi
+if [[ "$after_count" -eq "$before_count" ]]; then
+    log_info "  ✓ --help does not create run_2 logs"
+else
+    log_error "  ✗ --help created a run_2 log file"
+    exit 1
+fi
+
+# Test 2c: Verify unknown options fail fast before log side effects
+log_info "Test 2c: Verify unknown options fail fast..."
+unknown_before_count=0
+if [[ -d "$log_dir" ]]; then
+    unknown_before_count=$(find "$log_dir" -maxdepth 1 -type f -name 'run_2_*.log' | wc -l)
+fi
+
+unknown_err_file="$(mktemp)"
+set +e
+bash "$PROJECT_ROOT/run_2.sh" --not-a-real-flag >/dev/null 2>"$unknown_err_file"
+unknown_exit=$?
+set -e
+
+if [[ "$unknown_exit" -eq 2 ]]; then
+    log_info "  ✓ Unknown option exits with code 2"
+else
+    log_error "  ✗ Unknown option exit code was $unknown_exit (expected 2)"
+    rm -f "$unknown_err_file"
+    exit 1
+fi
+
+if grep -q "Unknown option(s): --not-a-real-flag" "$unknown_err_file" && \
+   grep -q "Usage: ./run_2.sh" "$unknown_err_file"; then
+    log_info "  ✓ Unknown option prints error + usage"
+else
+    log_error "  ✗ Unknown option output missing expected error/usage text"
+    rm -f "$unknown_err_file"
+    exit 1
+fi
+rm -f "$unknown_err_file"
+
+unknown_after_count=0
+if [[ -d "$log_dir" ]]; then
+    unknown_after_count=$(find "$log_dir" -maxdepth 1 -type f -name 'run_2_*.log' | wc -l)
+fi
+if [[ "$unknown_after_count" -eq "$unknown_before_count" ]]; then
+    log_info "  ✓ Unknown options do not create run_2 logs"
+else
+    log_error "  ✗ Unknown option path created a run_2 log file"
+    exit 1
+fi
+
 # Test 3: Verify ALL install scripts exist and have valid syntax
 # Covers: execution (7), consensus (6), MEV (3), web (caddy, nginx), utils
 log_info "Test 3: Verify all install scripts (syntax)..."
 syntax_fail=0
-for script in "${CLIENT_SCRIPTS[@]}" "install/utils/install_dependencies.sh" "install/utils/select_clients.sh" "install/web/install_caddy.sh" "install/web/install_nginx.sh"; do
+for script in "${CLIENT_SCRIPTS[@]}" "install/utils/install_dependencies.sh" "install/utils/select_clients.sh" "install/web/install_caddy.sh" "install/web/install_nginx.sh" "install/web/proxy_config_renderer.sh" "config/edge_policy.env" "test/validate_proxy_policy_sync.sh" "test/validate_proxy_policy_toggles.sh" "test/validate_caddy_config.sh" "test/validate_nginx_config.sh" "test/validate_review_guardrails.sh"; do
     if [[ -f "$PROJECT_ROOT/$script" ]]; then
         if bash -n "$PROJECT_ROOT/$script" 2>/dev/null; then
             log_info "  ✓ $script"
@@ -80,6 +148,16 @@ fi
 # Test 5: Test key functions work
 log_info "Test 5: Test key functions..."
 
+# Service helper regressions (must exist for install/utils/*.sh commands)
+for fn in start_all_services restart_all_services show_service_status choose_mev_stack; do
+    if declare -f "$fn" >/dev/null 2>&1; then
+        log_info "  ✓ $fn exists"
+    else
+        log_error "  ✗ Missing function: $fn"
+        exit 1
+    fi
+done
+
 # Test validate_menu_choice
 if validate_menu_choice "1" 3; then
     log_info "  ✓ validate_menu_choice works"
@@ -95,6 +173,16 @@ if ensure_directory "$test_dir" && [[ -d "$test_dir" ]]; then
     rm -rf "$test_dir"
 else
     log_error "  ✗ ensure_directory failed"
+    exit 1
+fi
+
+# Test 5b: MEV service naming consistency in doctor utility
+log_info "Test 5b: Verify doctor MEV service naming..."
+if grep -q 'record_service_health "mev" "MEV-Boost (mev)"' "$PROJECT_ROOT/install/utils/doctor.sh" && \
+   ! grep -q 'record_service_health "mev-boost"' "$PROJECT_ROOT/install/utils/doctor.sh"; then
+    log_info "  ✓ doctor.sh checks mev unit name"
+else
+    log_error "  ✗ doctor.sh MEV service name mismatch"
     exit 1
 fi
 
@@ -139,6 +227,99 @@ config_files=(
 for config in "${config_files[@]}"; do
     assert_file_exists "$PROJECT_ROOT/$config" "$config" || exit 1
 done
+
+# Test 8: Besu config should not include deprecated/removed options
+log_info "Test 8: Verify Besu config compatibility..."
+if grep -q "fast-sync-min-peers" "$PROJECT_ROOT/configs/besu/besu_base.toml"; then
+    log_error "  ✗ configs/besu/besu_base.toml contains deprecated key: fast-sync-min-peers"
+    exit 1
+else
+    log_info "  ✓ Besu config does not include deprecated fast-sync-min-peers"
+fi
+
+# Test 9: Prysm install script must configure checkpoint URL-based sync
+log_info "Test 9: Verify Prysm checkpoint-sync URL configuration..."
+if grep -q "checkpoint-sync-url: \$PRYSM_CPURL" "$PROJECT_ROOT/install/consensus/prysm.sh" && \
+   grep -q "genesis-beacon-api-url: \$PRYSM_CPURL" "$PROJECT_ROOT/install/consensus/prysm.sh" && \
+   ! grep -q "checkpoint-block" "$PROJECT_ROOT/install/consensus/prysm.sh"; then
+    log_info "  ✓ Prysm script uses checkpoint URL config and no legacy SSZ checkpoint flags"
+else
+    log_error "  ✗ Prysm script checkpoint sync config is missing or contains legacy SSZ flag usage"
+    exit 1
+fi
+
+# Test 10: SSL scripts should call canonical install/web paths
+log_info "Test 10: Verify SSL script path correctness..."
+if grep -q "./install/web/install_nginx.sh" "$PROJECT_ROOT/install/ssl/install_acme_ssl.sh" && \
+   grep -q "./install/web/install_nginx_ssl.sh" "$PROJECT_ROOT/install/ssl/install_acme_ssl.sh" && \
+   grep -q "./install/web/install_nginx.sh" "$PROJECT_ROOT/install/ssl/install_ssl_certbot.sh" && \
+   grep -q "./install/web/install_nginx_ssl.sh" "$PROJECT_ROOT/install/ssl/install_ssl_certbot.sh"; then
+    log_info "  ✓ SSL scripts use canonical install/web script paths"
+else
+    log_error "  ✗ SSL scripts contain stale nginx script paths"
+    exit 1
+fi
+
+# Test 11: Shared proxy policy should render consistent Nginx/Caddy routes
+log_info "Test 11: Validate shared proxy policy rendering..."
+if bash "$PROJECT_ROOT/test/validate_proxy_policy_sync.sh"; then
+    log_info "  ✓ Shared proxy policy rendering passes"
+else
+    log_error "  ✗ Shared proxy policy rendering failed"
+    exit 1
+fi
+
+# Test 12: Shared proxy policy feature toggles should render correctly
+log_info "Test 12: Validate shared proxy policy toggles..."
+if bash "$PROJECT_ROOT/test/validate_proxy_policy_toggles.sh"; then
+    log_info "  ✓ Shared proxy policy toggle rendering passes"
+else
+    log_error "  ✗ Shared proxy policy toggle rendering failed"
+    exit 1
+fi
+
+# Test 13: Nginx hardening backups must not live in active include paths
+log_info "Test 13: Verify Nginx hardening backup safety..."
+nginx_harden_script="$PROJECT_ROOT/install/security/nginx_harden.sh"
+if grep -q 'backup_root="/etc/nginx/backups"' "$nginx_harden_script" && \
+   grep -Fq "default_backup_path=\"\$backup_root/sites-enabled-default." "$nginx_harden_script" && \
+   grep -Fq "nginx_conf_backup_path=\"\$backup_root/nginx.conf." "$nginx_harden_script" && \
+   grep -q 'restore_nginx_backups' "$nginx_harden_script" && \
+   ! grep -q '/etc/nginx/sites-enabled/default.backup' "$nginx_harden_script" && \
+   ! grep -q 'cp /etc/nginx/sites-enabled/default.backup.\*' "$nginx_harden_script" && \
+   ! grep -q 'cp /etc/nginx/nginx.conf.backup.\*' "$nginx_harden_script"; then
+    log_info "  ✓ Nginx hardening backup path/restore strategy is safe"
+else
+    log_error "  ✗ Nginx hardening backup strategy may reintroduce include collisions"
+    exit 1
+fi
+
+# Test 14: Generated Nginx config should pass native nginx -t validation
+log_info "Test 14: Validate Nginx renderer output with nginx -t..."
+if bash "$PROJECT_ROOT/test/validate_nginx_config.sh"; then
+    log_info "  ✓ Nginx renderer output validates"
+else
+    log_error "  ✗ Nginx renderer output validation failed"
+    exit 1
+fi
+
+# Test 15: Generated Caddy config should pass native caddy adapt/validate checks
+log_info "Test 15: Validate Caddy renderer output with caddy validate..."
+if bash "$PROJECT_ROOT/test/validate_caddy_config.sh"; then
+    log_info "  ✓ Caddy renderer output validates"
+else
+    log_error "  ✗ Caddy renderer output validation failed"
+    exit 1
+fi
+
+# Test 16: Review/security/regression guardrails should stay wired
+log_info "Test 16: Validate review guardrails..."
+if bash "$PROJECT_ROOT/test/validate_review_guardrails.sh"; then
+    log_info "  ✓ Review guardrails validated"
+else
+    log_error "  ✗ Review guardrails validation failed"
+    exit 1
+fi
 
 log_info "╔════════════════════════════════════════════════════════════════╗"
 log_info "║  run_2.sh - Structure PASSED                                  ║"

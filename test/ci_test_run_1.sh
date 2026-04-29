@@ -56,6 +56,15 @@ else
     exit 1
 fi
 
+# Test 3b: Verify --help is accessible without root side effects
+log_info "Test 3b: Verify run_1.sh --help output..."
+if bash "$PROJECT_ROOT/run_1.sh" --help | grep -q "Phase 1: system hardening"; then
+    log_info "  ✓ --help output is available"
+else
+    log_error "  ✗ run_1.sh --help missing expected output"
+    exit 1
+fi
+
 # Test 4: Source common functions and verify they load
 log_info "Test 4: Verify common functions..."
 source_common_functions
@@ -326,6 +335,115 @@ if grep -q 'install_dependencies.sh.*--production' "$PROJECT_ROOT/run_2.sh"; the
     exit 1
 else
     log_info "  run_2.sh does not call --production mode (correct)"
+fi
+
+# Test 26: Verify install.sh supports explicit interactive/non-interactive modes
+log_info "Test 26: Verify install.sh mode flags..."
+if grep -qE -- "--non-interactive|--interactive" "$PROJECT_ROOT/install.sh"; then
+    log_info "  install.sh exposes --non-interactive and --interactive flags"
+else
+    log_error "  install.sh must support explicit non-interactive/interactive mode flags!"
+    exit 1
+fi
+
+# Verify installer explicitly guards missing download tools.
+if grep -q "Neither curl nor wget is installed" "$PROJECT_ROOT/install.sh"; then
+    log_info "  install.sh fails fast when neither curl nor wget is available"
+else
+    log_error "  install.sh must guard for missing curl/wget prerequisites!"
+    exit 1
+fi
+
+# Test 27: Verify install.sh auto-fallbacks to non-interactive for piped stdin
+log_info "Test 27: Verify install.sh auto-fallback for curl|bash..."
+if grep -qE -- '!\s*-t 0' "$PROJECT_ROOT/install.sh" && grep -q "NON_INTERACTIVE=true" "$PROJECT_ROOT/install.sh"; then
+    log_info "  install.sh auto-fallbacks to non-interactive mode when stdin is piped"
+else
+    log_error "  install.sh must auto-fallback to non-interactive mode for piped stdin!"
+    exit 1
+fi
+
+# Keep interactive path simple: avoid script(1) PTY wrapper complexity.
+if grep -q "script -q -c" "$PROJECT_ROOT/install.sh"; then
+    log_error "  install.sh should not depend on script(1) PTY wrapper in interactive path"
+    exit 1
+else
+    log_info "  install.sh interactive path does not use script(1) PTY wrapper"
+fi
+
+# Test 28: Verify configure.sh supports fallback and explicit mode controls
+log_info "Test 28: Verify configure.sh mode controls..."
+if grep -qE -- "--non-interactive|--interactive" "$PROJECT_ROOT/install/utils/configure.sh" && \
+   grep -q "ETH2_NON_INTERACTIVE" "$PROJECT_ROOT/install/utils/configure.sh" && \
+   grep -q "auto-falling back to non-interactive mode" "$PROJECT_ROOT/install/utils/configure.sh"; then
+    log_info "  configure.sh has explicit mode flags, env override, and auto-fallback"
+else
+    log_error "  configure.sh mode handling incomplete (flags/env/auto-fallback required)!"
+    exit 1
+fi
+
+# Test 29: Verify unified wrapper entrypoint exists and is valid
+log_info "Test 29: Verify unified wrapper (scripts/eth2qs.sh)..."
+if [[ -f "$PROJECT_ROOT/scripts/eth2qs.sh" ]] && bash -n "$PROJECT_ROOT/scripts/eth2qs.sh"; then
+    log_info "  scripts/eth2qs.sh exists and syntax is valid"
+else
+    log_error "  scripts/eth2qs.sh missing or invalid"
+    exit 1
+fi
+if grep -q "doctor --json" "$PROJECT_ROOT/scripts/eth2qs.sh"; then
+    log_info "  unified wrapper documents machine-readable doctor output"
+else
+    log_error "  scripts/eth2qs.sh should expose doctor --json workflow"
+    exit 1
+fi
+
+# Test 30: Verify doctor supports JSON mode for agent consumption
+log_info "Test 30: Verify doctor --json output..."
+if grep -q -- "--json" "$PROJECT_ROOT/install/utils/doctor.sh"; then
+    log_info "  doctor.sh supports --json flag"
+else
+    log_error "  doctor.sh must support --json output mode"
+    exit 1
+fi
+doctor_json_output="$("$PROJECT_ROOT/install/utils/doctor.sh" --json || true)"
+if python3 -m json.tool >/dev/null 2>&1 <<<"$doctor_json_output"; then
+    log_info "  doctor --json emits valid JSON"
+else
+    log_error "  doctor --json output is not valid JSON"
+    exit 1
+fi
+
+# Test 31: Verify install.sh supports repo/ref overrides for smoke harnesses
+log_info "Test 31: Verify install.sh repo/ref override support..."
+if grep -q "ETH2_REPO_URL" "$PROJECT_ROOT/install.sh" && \
+   grep -q "ETH2_REF" "$PROJECT_ROOT/install.sh"; then
+    log_info "  install.sh supports ETH2_REPO_URL and ETH2_REF overrides"
+else
+    log_error "  install.sh must support ETH2_REPO_URL and ETH2_REF for smoke harness execution"
+    exit 1
+fi
+
+# Test 32: Verify Snort config defaults are present and enabled
+log_info "Test 32: Verify Snort defaults..."
+if grep -q "export ENABLE_SNORT='true'" "$PROJECT_ROOT/exports.sh" && \
+   grep -q "export SNORT_INTERFACE='auto'" "$PROJECT_ROOT/exports.sh" && \
+   grep -q "export SNORT_STARTUP='boot'" "$PROJECT_ROOT/exports.sh"; then
+    log_info "  Snort defaults are present and enabled-by-default"
+else
+    log_error "  exports.sh must define safe Snort defaults with default enablement"
+    exit 1
+fi
+
+# Test 33: Verify Snort setup is gated in consolidated security
+log_info "Test 33: Verify Snort gating in consolidated security..."
+if grep -q "^setup_snort()" "$PROJECT_ROOT/install/security/consolidated_security.sh" && \
+   grep -q 'ENABLE_SNORT:-true' "$PROJECT_ROOT/install/security/consolidated_security.sh" && \
+   grep -q "install_dependencies snort snort-rules-default" "$PROJECT_ROOT/install/security/consolidated_security.sh" && \
+   grep -q "setup_snort" "$PROJECT_ROOT/install/security/consolidated_security.sh"; then
+    log_info "  consolidated security script includes gated Snort setup"
+else
+    log_error "  consolidated security script missing gated Snort integration"
+    exit 1
 fi
 
 log_info "╔════════════════════════════════════════════════════════════════╗"
