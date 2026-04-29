@@ -7,7 +7,7 @@ tcp-port = 9000
 udp-port = 9000
 
 # Execution layer
-web3-url = ["http://$LH:$ENGINE_PORT"]
+web3-url = "http://$LH:$ENGINE_PORT"
 
 # REST API (required; JSON-RPC deprecated and removed)
 rest = true

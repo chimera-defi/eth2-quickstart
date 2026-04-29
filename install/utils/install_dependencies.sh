@@ -32,7 +32,6 @@ BASE_PACKAGES=(
     git
     tar
     gzip
-    unzip
     sudo
     jq
     openssl
@@ -58,6 +57,7 @@ TEST_PACKAGES=(
 # Client-specific deps (Ethereum PPA, Node.js, Bazel) are installed
 # by individual client scripts so we only pull what's actually needed.
 PHASE1_PACKAGES=(
+    unzip
     build-essential
     python3
     python3-pip

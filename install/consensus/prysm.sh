@@ -97,14 +97,9 @@ enable_and_start_systemd_service "cl"
 enable_and_start_systemd_service "validator"
 
 # Show completion information
-log_installation_complete "Prysm" "cl"
+log_installation_complete "Prysm" "cl" "$PRYSM_DIR/prysm_beacon_conf.yaml" "$PRYSM_DIR"
 
 # Display setup information
-display_client_setup_info "Prysm" "cl" "validator" "Prysm Beacon Node" "Prysm Validator Client"
-cat << EOF
-
-Useful commands:
+display_client_setup_info "Prysm" "cl" "$PRYSM_DIR/prysm_beacon_conf.yaml" "$PRYSM_DIR" "5051" "13000 (TCP) and 12000 (UDP)" "Useful commands:
 - Check Prysm version: $PRYSM_DIR/prysm.sh beacon-chain --version
-- Import validator keys: $PRYSM_DIR/prysm.sh validator accounts import --keys-dir=/path/to/keys
-
-EOF
+- Import validator keys: $PRYSM_DIR/prysm.sh validator accounts import --keys-dir=/path/to/keys"
