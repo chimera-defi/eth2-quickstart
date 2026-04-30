@@ -1,41 +1,15 @@
-# AGENTS.md
+# Agent Collaboration Rules
 
-This file defines persistent workflow guidance for coding agents working in this repo.
+<!-- SHARED_ATTRIBUTION_RULES_START -->
+## Shared Attribution & Meta Learnings
 
-## Default Start-Of-Work Routine
-1. Fetch latest remote state: `git fetch origin --prune`.
-2. Start from latest `origin/master` for new work:
-   - `git checkout -B master origin/master`
-   - create a new branch for the task.
-3. If pre-existing local changes are valuable, preserve them before syncing:
-   - use `git stash push -u -m "<context>"` or
-   - commit to a dedicated branch.
-4. Run relevant local validation before opening a PR.
-
-## Completion Quality Gate (Mandatory)
-- Before handoff/PR, always run and record:
-  - security audit,
-  - code review (including dead-code/cleanup pass),
-  - regression review (targeted + relevant end-to-end checks).
-- If any of the above cannot be run locally, explicitly document:
-  - what could not run,
-  - why it could not run,
-  - residual risk and follow-up.
-- Add the exact commands + outcomes to `docs/agent-handoff.md`.
-
-## Branch and PR Policy
-- Treat each new user task as new work: use a fresh branch.
-- Open a new PR for each distinct work item.
-- Do not stack unrelated changes into an existing PR.
-
-## Session Memory Pattern
-- Keep durable, human-readable context in repo files, not ephemeral chat memory.
-- Update `docs/agent-handoff.md` at the end of substantial work with:
-  - what changed,
-  - why,
-  - validation run,
-  - follow-ups.
-
-## Safety
-- Do not discard user work without explicit instruction.
-- Avoid destructive git operations unless explicitly requested.
+- Commit author should be the active agent model identity.
+- Commit trailer must include: `Co-authored-by: Chimera <chimera_defi@protonmail.com>`.
+- PR description must include:
+  - `**Agent:** <actual model name>`
+  - `**Co-authored-by:** Chimera <chimera_defi@protonmail.com>`
+- Never use placeholder model names; record the actual model used.
+- Never push directly to `main`/`master`; use a feature branch and PR.
+- Keep one task per PR for clear review and rollback.
+- Verify before claiming complete: run relevant tests/lint/checks or explicitly note what was not run.
+<!-- SHARED_ATTRIBUTION_RULES_END -->
