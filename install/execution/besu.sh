@@ -20,27 +20,6 @@ log_installation_start "Besu"
 # Check system requirements
 check_system_requirements 8 1000
 
-# Besu 26.x requires Java 21+.
-ensure_java21() {
-    local java_major=0
-    if command -v java >/dev/null 2>&1; then
-        java_major=$(java -version 2>&1 | awk -F '"' '/version/ {split($2, v, "."); print v[1]; exit}' || echo 0)
-    fi
-
-    if [[ "$java_major" -lt 21 ]]; then
-        log_info "Installing Java 21 runtime (required for current Besu releases)..."
-        sudo env DEBIAN_FRONTEND=noninteractive apt-get update -y
-        sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openjdk-21-jre-headless
-    fi
-
-    java_major=$(java -version 2>&1 | awk -F '"' '/version/ {split($2, v, "."); print v[1]; exit}' || echo 0)
-    if [[ "$java_major" -lt 21 ]]; then
-        log_error "Java 21+ is required for Besu. Detected Java major version: $java_major"
-        exit 1
-    fi
-}
-ensure_java21
-
 
 # Setup firewall rules for Besu
 setup_firewall_rules 30303 8545 8546 8551
@@ -53,14 +32,14 @@ cd "$BESU_DIR" || exit
 
 # Get latest release version
 log_info "Fetching latest Besu release..."
-LATEST_VERSION=$(get_latest_release "besu-eth/besu")
+LATEST_VERSION=$(get_latest_release "hyperledger/besu")
 if [[ -z "$LATEST_VERSION" ]]; then
     log_error "Could not fetch latest Besu version from GitHub"
     exit 1
 fi
 
 # Download Besu
-DOWNLOAD_URL="https://github.com/besu-eth/besu/releases/download/${LATEST_VERSION}/besu-${LATEST_VERSION}.tar.gz"
+DOWNLOAD_URL="https://github.com/hyperledger/besu/releases/download/${LATEST_VERSION}/besu-${LATEST_VERSION}.tar.gz"
 ARCHIVE_FILE="besu-${LATEST_VERSION}.tar.gz"
 
 log_info "Downloading Besu ${LATEST_VERSION}..."
@@ -92,10 +71,7 @@ ensure_directory "$BESU_DATA_DIR"
 # Create temporary directory for custom configuration
 create_temp_config_dir
 
-# Besu expects miner-extra-data as bytes (hex), max 32 bytes.
-GRAFFITI_TRUNC="${GRAFITTI:0:32}"
-GRAFFITI_HEX="$(printf '%s' "$GRAFFITI_TRUNC" | od -An -tx1 | tr -d ' \n')"
-
+# Create custom configuration variables file
 cat > ./tmp/besu_custom.toml << EOF
 # Besu Custom Configuration Variables
 
@@ -112,7 +88,9 @@ rpc-ws-port=${BESU_WS_PORT}
 engine-rpc-port=${BESU_ENGINE_PORT}
 engine-jwt-secret="$HOME/secrets/jwt.hex"
 
-miner-extra-data="0x${GRAFFITI_HEX}"
+# Mining settings (disabled for staking)
+miner-coinbase="$FEE_RECIPIENT"
+miner-extra-data="$GRAFITTI"
 EOF
 
 # Merge base configuration with custom settings
@@ -133,18 +111,13 @@ sudo sed -i "/\\[Service\\]/a Environment=JAVA_OPTS=\"$JAVA_OPTS\"" /etc/systemd
 # Enable and start the service
 enable_and_start_systemd_service "eth1"
 
-log_installation_complete "Besu" "eth1"
+log_installation_complete "Besu" "besu"
 log_info "Configuration file: $BESU_DIR/besu.toml"
 log_info "Data directory: $BESU_DATA_DIR"
 log_info "To check status: sudo systemctl status eth1"
 log_info "To view logs: journalctl -fu eth1"
 
 # Display sync information
-JAVA_VERSION_STR="not available in PATH"
-if command -v java >/dev/null 2>&1; then
-    JAVA_VERSION_STR="$(java -version 2>&1 | head -n1)"
-fi
-
 cat << EOF
 
 === Besu Sync Information ===
@@ -160,6 +133,6 @@ Key features:
 - Engine API for consensus client communication on port 8551
 - P2P networking on port 30303
 
-Java version: $JAVA_VERSION_STR
+Java version: $(java -version 2>&1 | head -n1)
 
 EOF
