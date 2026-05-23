@@ -1,13 +1,15 @@
 #!/bin/bash
 
 # Eth2 Quick Start — Validator Manager
-# Interactive tool for validator operations: voluntary exits and EIP-7251 consolidations.
+# Interactive tool for local validator operations: voluntary exits and EIP-7251
+# consolidations. Operates only on validators managed by this node.
 #
 # Usage:
-#   ./install/utils/validator_manage.sh [--exit | --consolidate] [--json]
-#   ./install/utils/validator_manage.sh          # interactive menu
+#   ./install/utils/validator_manage.sh            # interactive menu
+#   ./install/utils/validator_manage.sh --exit     # go straight to exit flow
+#   ./install/utils/validator_manage.sh --consolidate
 #
-# WARNING: Voluntary exit is IRREVERSIBLE. Exited validators cannot re-enter the active set.
+# WARNING: Voluntary exit is IRREVERSIBLE.
 
 set -euo pipefail
 
@@ -39,8 +41,8 @@ while [[ $# -gt 0 ]]; do
 Usage: ./install/utils/validator_manage.sh [options]
 
 Options:
-  --exit          Initiate voluntary exit for one or more validators
-  --consolidate   Consolidate two validators via EIP-7251
+  --exit          Initiate voluntary exit for one or more local validators
+  --consolidate   Consolidate two local validators via EIP-7251
   --help          Show this help
 
 Without options, an interactive menu is shown.
@@ -55,7 +57,7 @@ EOF
 done
 
 # =============================================================================
-# HELPERS (shared with validator_list.sh logic, inlined to keep scripts standalone)
+# CLIENT DETECTION
 # =============================================================================
 
 detect_client() {
@@ -84,97 +86,83 @@ detect_beacon_url() {
     echo "http://127.0.0.1:${port}"
 }
 
+# Returns the validator client binary path from the validator systemd service.
 get_client_binary() {
-    local client="$1"
     local exec_start
     exec_start=$(systemctl show validator --property=ExecStart --value 2>/dev/null || true)
-    case "$client" in
-        lighthouse)
-            # ExecStart starts with the binary path
-            echo "$exec_start" | awk '{print $1}' | head -1
-            ;;
-        prysm)
-            echo "$exec_start" | awk '{print $1}' | head -1
-            ;;
-        teku)
-            echo "$exec_start" | awk '{print $1}' | head -1
-            ;;
-        lodestar)
-            echo "$exec_start" | awk '{print $1}' | head -1
-            ;;
-        *)
-            echo ""
-            ;;
-    esac
+    echo "$exec_start" | awk '{print $1}' | head -1
 }
 
-# Fetches active validators from beacon node API, returns JSON array.
-fetch_validators() {
-    local beacon_url="$1"
-    local response
-    response=$(curl -sf --max-time 10 \
-        "${beacon_url}/eth/v1/beacon/states/head/validators?status=active_ongoing" \
-        2>/dev/null || true)
-    if [[ -z "$response" ]]; then
-        # Try without status filter as fallback
-        response=$(curl -sf --max-time 10 \
-            "${beacon_url}/eth/v1/beacon/states/head/validators" \
-            2>/dev/null || true)
-    fi
-    echo "${response:-{\"data\":[]}}"
-}
+# =============================================================================
+# LOCAL VALIDATOR LIST (delegates to validator_list.sh for correct discovery)
+# =============================================================================
 
-list_validators_interactive() {
-    local beacon_url="$1"
+# Calls validator_list.sh --json, writes result to $1, prints table to stdout.
+# Returns 1 if no local validators found.
+load_local_validators() {
+    local out_file="$1"
 
-    log_info "Fetching validators from beacon node..."
-
-    local tmpfile
-    tmpfile=$(mktemp /tmp/vmgr_XXXXXX.json)
-    # shellcheck disable=SC2064
-    trap "rm -f '$tmpfile'" EXIT
-
-    fetch_validators "$beacon_url" > "$tmpfile"
-
-    local count
-    count=$(python3 -c "
-import json, sys
-d = json.load(open(sys.argv[1]))
-print(len(d.get('data', [])))
-" "$tmpfile" 2>/dev/null || echo 0)
-
-    if [[ "$count" -eq 0 ]]; then
-        log_warn "No active validators found on this node."
+    if [[ ! -x "$SCRIPT_DIR/validator_list.sh" ]]; then
+        log_error "validator_list.sh not found or not executable at $SCRIPT_DIR"
         return 1
     fi
 
-    echo ""
-    printf "%-6s %-98s %-20s %s\n" "Index" "Public Key" "Status" "Balance (ETH)"
-    printf '%s\n' "$(printf '%.0s-' {1..140})"
+    local json
+    json=$("$SCRIPT_DIR/validator_list.sh" --json 2>/dev/null) || true
 
-    python3 - "$tmpfile" <<'EOF'
+    local count=0
+    if [[ -n "$json" ]]; then
+        count=$(python3 -c "
+import json, sys
+d = json.loads(sys.argv[1])
+print(len(d.get('validators', [])))
+" "$json" 2>/dev/null || echo 0)
+    fi
+
+    if [[ "$count" -eq 0 ]]; then
+        log_warn "No local validators found. Import keys and ensure the beacon node is synced."
+        return 1
+    fi
+
+    echo "$json" > "$out_file"
+    return 0
+}
+
+# Renders the validator table from the JSON file written by load_local_validators.
+print_local_validators() {
+    local data_file="$1"
+    python3 - "$data_file" <<'PYEOF'
 import json, sys
 with open(sys.argv[1]) as f:
-    data = json.load(f)
-for v in data.get("data", []):
+    d = json.load(f)
+rows = d.get("validators", [])
+if not rows:
+    print("  (none)")
+    sys.exit(0)
+hdr = f"  {'Index':<10} {'Public Key':<98} {'Status':<22} Balance (ETH)"
+print()
+print(hdr)
+print("  " + "-" * (len(hdr) - 2))
+for v in rows:
     idx    = v.get("index", "?")
     pubkey = v.get("validator", {}).get("pubkey", "?")
     status = v.get("status", "?")
     bal    = int(v.get("balance", 0)) / 1e9
-    print(f"{idx:<6} {pubkey:<98} {status:<20} {bal:.6f}")
-EOF
-    printf '%s\n' "$(printf '%.0s-' {1..140})"
-    printf "  %s active validator(s)\n\n" "$count"
-
-    echo "$tmpfile"  # caller can read this file if needed
+    print(f"  {idx:<10} {pubkey:<98} {status:<22} {bal:.6f}")
+print("  " + "-" * (len(hdr) - 2))
+print(f"  {len(rows)} validator(s)\n")
+PYEOF
 }
+
+# =============================================================================
+# SHARED HELPERS
+# =============================================================================
 
 confirm_destructive() {
     local prompt="$1"
-    echo ""
-    echo -e "  ${RED}⚠  WARNING: ${prompt}${NC}"
-    echo -e "  ${RED}   This action CANNOT be undone.${NC}"
-    echo ""
+    printf "\n"
+    printf "  %b⚠  WARNING: %s%b\n" "${RED}" "$prompt" "${NC}"
+    printf "  %bThis action CANNOT be undone.%b\n\n" "${RED}" "${NC}"
     read -rp "  Type 'yes' to confirm: " answer
     [[ "$answer" == "yes" ]]
 }
@@ -188,19 +176,23 @@ cmd_exit() {
     client=$(detect_client)
     local beacon_url
     beacon_url=$(detect_beacon_url)
+    local bin
+    bin=$(get_client_binary)
 
-    echo ""
+    printf "\n"
     log_info "=== Voluntary Validator Exit ==="
-    echo ""
-    echo "  Client   : ${client}"
-    echo "  Beacon   : ${beacon_url}"
-    echo ""
+    printf "  Client : %s\n  Beacon : %s\n\n" "$client" "$beacon_url"
 
-    list_validators_interactive "$beacon_url" || return 1
+    local tmpfile
+    tmpfile=$(mktemp /tmp/vmgr_XXXXXX.json)
+    # shellcheck disable=SC2064
+    trap "rm -f '$tmpfile'" EXIT
 
-    echo "  Enter validator indices or pubkeys to exit."
-    echo "  Separate multiple with spaces. Enter 'all' to exit all."
-    echo ""
+    load_local_validators "$tmpfile" || return 0
+    print_local_validators "$tmpfile"
+
+    printf "  Enter the validator index or pubkey to exit.\n"
+    printf "  Separate multiple with spaces. Enter 'all' to exit all local validators.\n\n"
     read -rp "  Selection: " selection
 
     if [[ -z "$selection" ]]; then
@@ -213,115 +205,124 @@ cmd_exit() {
         return 0
     fi
 
-    echo ""
-    _do_exit "$client" "$beacon_url" "$selection"
+    printf "\n"
+    _do_exit "$client" "$beacon_url" "$bin" "$selection"
 }
 
 _do_exit() {
     local client="$1"
     local beacon_url="$2"
-    local selection="$3"
-
-    local bin
-    bin=$(get_client_binary "$client")
+    local bin="$3"
+    local selection="$4"
 
     case "$client" in
         lighthouse)
             if [[ -z "$bin" ]]; then
                 log_error "Could not determine Lighthouse binary path."
+                _print_manual_exit_instructions "$client" "$beacon_url"
                 return 1
             fi
-            local wallet_dir
-            wallet_dir=$(dirname "$bin")
             local pass_file="$HOME/secrets/pass.txt"
-
+            # Lighthouse 4+: 'lighthouse account validator exit'
+            # --pubkeys accepts comma-separated list of 0x-prefixed pubkeys or indices
             if [[ "$selection" == "all" ]]; then
-                log_info "Initiating exit for all validators..."
+                log_info "Initiating exit for all local validators..."
                 "$bin" account validator exit \
                     --beacon-node "$beacon_url" \
-                    --datadir "$wallet_dir" \
-                    --password-file "$pass_file" \
-                    --no-confirmation
+                    --no-confirmation \
+                    --password-file "$pass_file"
             else
-                for sel in $selection; do
-                    log_info "Exiting validator: $sel"
-                    "$bin" account validator exit \
-                        --beacon-node "$beacon_url" \
-                        --datadir "$wallet_dir" \
-                        --password-file "$pass_file" \
-                        --no-confirmation \
-                        --pubkey "$sel" 2>/dev/null || \
-                    "$bin" account validator exit \
-                        --beacon-node "$beacon_url" \
-                        --datadir "$wallet_dir" \
-                        --password-file "$pass_file" \
-                        --no-confirmation
-                done
+                local pubkey_list
+                pubkey_list=$(echo "$selection" | tr ' ' ',')
+                log_info "Initiating exit for: $pubkey_list"
+                "$bin" account validator exit \
+                    --beacon-node "$beacon_url" \
+                    --no-confirmation \
+                    --password-file "$pass_file" \
+                    --pubkeys "$pubkey_list"
             fi
             ;;
 
         prysm)
             if [[ -z "$bin" ]]; then
                 log_error "Could not determine Prysm binary path."
+                _print_manual_exit_instructions "$client" "$beacon_url"
                 return 1
             fi
             local prysm_dir
             prysm_dir=$(dirname "$bin")
             local pass_file="$HOME/secrets/pass.txt"
+            # Prysm: --pubkeys accepts comma-separated 0x-prefixed pubkeys
+            local pubkey_args=""
+            if [[ "$selection" != "all" ]]; then
+                pubkey_args="--pubkeys=$(echo "$selection" | tr ' ' ',')"
+            fi
             log_info "Running Prysm voluntary exit..."
+            # shellcheck disable=SC2086
             "$bin" validator accounts voluntary-exit \
                 --wallet-dir="$prysm_dir/wallet" \
                 --wallet-password-file="$pass_file" \
                 --beacon-rpc-provider="127.0.0.1:4000" \
-                --accept-terms-of-use
+                --accept-terms-of-use \
+                $pubkey_args
             ;;
 
         teku)
             if [[ -z "$bin" ]]; then
                 log_error "Could not determine Teku binary path."
+                _print_manual_exit_instructions "$client" "$beacon_url"
                 return 1
             fi
-            local validator_data="$HOME/.local/share/teku/validator"
+            local validator_keys="$HOME/.local/share/teku/validator"
             log_info "Running Teku voluntary exit..."
-            "$bin" voluntary-exit \
-                --beacon-node-api-endpoint="$beacon_url" \
-                --validator-keys="$validator_data/keys:$validator_data/passwords"
+            if [[ "$selection" == "all" ]]; then
+                "$bin" voluntary-exit \
+                    --beacon-node-api-endpoint="$beacon_url" \
+                    --validator-keys="$validator_keys/keys:$validator_keys/passwords"
+            else
+                "$bin" voluntary-exit \
+                    --beacon-node-api-endpoint="$beacon_url" \
+                    --validator-public-key="$(echo "$selection" | tr ' ' ',')" \
+                    --validator-keys="$validator_keys/keys:$validator_keys/passwords"
+            fi
             ;;
 
         lodestar)
             if [[ -z "$bin" ]]; then
                 log_error "Could not determine Lodestar binary path."
+                _print_manual_exit_instructions "$client" "$beacon_url"
                 return 1
             fi
             log_info "Running Lodestar voluntary exit..."
+            local pubkey_args=""
+            if [[ "$selection" != "all" ]]; then
+                pubkey_args="--pubkeys=$(echo "$selection" | tr ' ' ',')"
+            fi
+            # shellcheck disable=SC2086
             "$bin" validator voluntary-exit \
                 --beaconNodes="$beacon_url" \
-                --dataDir="$HOME/lodestar"
+                --dataDir="$HOME/.local/share/lodestar" \
+                $pubkey_args
             ;;
 
         nimbus)
-            log_info "Running Nimbus voluntary exit..."
             local nimbus_bin
-            nimbus_bin=$(command -v nimbus_beacon_node 2>/dev/null || \
-                         find "$HOME/nimbus" -name "nimbus_beacon_node" -type f 2>/dev/null | head -1 || true)
+            nimbus_bin=$(find "$HOME/nimbus/build" -name "nimbus_beacon_node" -type f 2>/dev/null | head -1 || true)
             if [[ -z "$nimbus_bin" ]]; then
                 log_error "Nimbus binary not found."
                 _print_manual_exit_instructions "$client" "$beacon_url"
                 return 1
             fi
-            "$nimbus_bin" deposits exit \
-                --rest-url="$beacon_url" \
-                --validator="$selection"
-            ;;
-
-        grandine)
-            # Grandine exit via keymanager API (EIP-3030 DELETE /keystores triggers exit)
-            log_warn "Grandine does not expose a standalone exit CLI."
-            _print_manual_exit_instructions "$client" "$beacon_url"
+            log_info "Running Nimbus voluntary exit..."
+            for sel in $selection; do
+                "$nimbus_bin" deposits exit \
+                    --rest-url="$beacon_url" \
+                    --validator="$sel"
+            done
             ;;
 
         *)
-            log_warn "Unknown client '${client}'. Showing manual instructions."
+            log_warn "Client '${client}' — showing manual exit instructions."
             _print_manual_exit_instructions "$client" "$beacon_url"
             ;;
     esac
@@ -330,19 +331,13 @@ _do_exit() {
 _print_manual_exit_instructions() {
     local client="$1"
     local beacon_url="$2"
-    echo ""
-    echo "  Manual exit steps for ${client}:"
-    echo ""
-    echo "  1. Query your validator index:"
-    echo "     curl -s '${beacon_url}/eth/v1/beacon/states/head/validators?status=active' | python3 -m json.tool"
-    echo ""
-    echo "  2. Sign and broadcast a voluntary exit via the keymanager API:"
-    echo "     POST ${beacon_url}/eth/v1/beacon/pool/voluntary_exits"
-    echo "     (Requires a signed VoluntaryExit message — use your client's CLI or ethdo)"
-    echo ""
-    echo "  3. Using ethdo (universal tool):"
-    echo "     ethdo validator exit --validator=<index_or_pubkey> --connection=${beacon_url} --passphrase=<wallet_passphrase>"
-    echo ""
+    printf "\n  Manual exit steps for %s:\n\n" "$client"
+    printf "  Option A — ethdo (works with all clients):\n"
+    printf "    ethdo validator exit --validator=<index_or_pubkey> \\\\\n"
+    printf "      --connection=%s\n\n" "$beacon_url"
+    printf "  Install ethdo:  go install github.com/wealdtech/ethdo@latest\n\n"
+    printf "  Option B — Beacon API (requires signed VoluntaryExit message):\n"
+    printf "    POST %s/eth/v1/beacon/pool/voluntary_exits\n\n" "$beacon_url"
 }
 
 # =============================================================================
@@ -352,125 +347,112 @@ _print_manual_exit_instructions() {
 cmd_consolidate() {
     local beacon_url
     beacon_url=$(detect_beacon_url)
+    local el_rpc="http://127.0.0.1:8545"
 
-    echo ""
+    printf "\n"
     log_info "=== EIP-7251 Validator Consolidation ==="
-    echo ""
+    printf "\n"
     cat <<'EOF'
-  Consolidation merges two validators into one, combining their balances.
-  The target validator will receive the source validator's stake.
+  Consolidation merges two validators, moving the source stake into the target.
+  After consolidation the source validator exits automatically.
 
   Prerequisites:
     • Both validators must have 0x01 withdrawal credentials pointing to an
-      Ethereum address you control (the "withdrawal address").
-    • The withdrawal address submits the consolidation transaction.
-    • A dynamic fee must be paid to the consolidation contract.
-    • After consolidation, the source validator is exited automatically.
+      Ethereum address YOU control (the withdrawal address sends the TX).
+    • A dynamic fee is paid to the consolidation contract.
 
   Contract: 0x00431F263cE400f4455c2dCf564e53007Ca4bbBb (mainnet)
 
 EOF
 
-    list_validators_interactive "$beacon_url" || return 1
+    local tmpfile
+    tmpfile=$(mktemp /tmp/vmgr_XXXXXX.json)
+    # shellcheck disable=SC2064
+    trap "rm -f '$tmpfile'" EXIT
 
-    echo "  Enter the SOURCE validator pubkey (the one to be merged and exited):"
+    load_local_validators "$tmpfile" || return 0
+    print_local_validators "$tmpfile"
+
+    printf "  Enter the SOURCE validator pubkey (will be exited):\n"
     read -rp "  Source pubkey (0x...): " src_pubkey
-    echo ""
-    echo "  Enter the TARGET validator pubkey (the one that will receive the stake):"
+    printf "\n  Enter the TARGET validator pubkey (receives the stake):\n"
     read -rp "  Target pubkey (0x...): " tgt_pubkey
-    echo ""
+    printf "\n"
 
     if [[ -z "$src_pubkey" || -z "$tgt_pubkey" ]]; then
         log_warn "Both pubkeys are required. Aborting."
         return 0
     fi
 
-    # Normalize: ensure 0x prefix
+    # Normalise: ensure 0x prefix, strip spaces
+    src_pubkey="${src_pubkey// /}"
+    tgt_pubkey="${tgt_pubkey// /}"
     [[ "$src_pubkey" != 0x* ]] && src_pubkey="0x${src_pubkey}"
     [[ "$tgt_pubkey" != 0x* ]] && tgt_pubkey="0x${tgt_pubkey}"
 
-    # Query current fee from consolidation contract
-    local fee_hex=""
-    local el_rpc="http://127.0.0.1:8545"
+    # Query current fee from the consolidation contract (selector: fee() = 0x95600e7e)
+    local fee_hex
     fee_hex=$(curl -sf --max-time 5 \
         -X POST "$el_rpc" \
         -H "Content-Type: application/json" \
-        -d '{"jsonrpc":"2.0","method":"eth_call","params":[{"to":"'"${CONSOLIDATION_CONTRACT}"'","data":"0x95600e7e"},"latest"],"id":1}' \
-        2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('result','0x0'))" 2>/dev/null || true)
+        -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":\"${CONSOLIDATION_CONTRACT}\",\"data\":\"0x95600e7e\"},\"latest\"],\"id\":1}" \
+        2>/dev/null | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+print(d.get('result', '0x0'))
+" 2>/dev/null || echo "0x0")
 
     local fee_dec=0
-    if [[ -n "$fee_hex" && "$fee_hex" != "0x" ]]; then
+    if [[ -n "$fee_hex" && "$fee_hex" != "0x" && "$fee_hex" != "0x0" ]]; then
         fee_dec=$(python3 -c "print(int('${fee_hex}', 16))" 2>/dev/null || echo 0)
     fi
     local fee_eth
     fee_eth=$(python3 -c "print(f'{${fee_dec} / 1e18:.8f}')" 2>/dev/null || echo "unknown")
 
-    echo "  Consolidation parameters:"
-    echo "    Source pubkey : ${src_pubkey}"
-    echo "    Target pubkey : ${tgt_pubkey}"
-    echo "    Contract      : ${CONSOLIDATION_CONTRACT}"
-    echo "    Required fee  : ~${fee_eth} ETH (${fee_dec} wei)"
-    echo ""
-
-    # Build the calldata: source_pubkey_bytes (48) + target_pubkey_bytes (48) = 96 bytes
+    # Calldata: source_pubkey_bytes (48) + target_pubkey_bytes (48) = 96 bytes total
     local src_hex="${src_pubkey#0x}"
     local tgt_hex="${tgt_pubkey#0x}"
     local calldata="0x${src_hex}${tgt_hex}"
 
-    echo "  Transaction calldata:"
-    echo "    ${calldata}"
-    echo ""
+    printf "  Consolidation parameters:\n"
+    printf "    Source  : %s\n" "$src_pubkey"
+    printf "    Target  : %s\n" "$tgt_pubkey"
+    printf "    Contract: %s\n" "$CONSOLIDATION_CONTRACT"
+    printf "    Fee     : ~%s ETH (%s wei)\n\n" "$fee_eth" "$fee_dec"
+    printf "  Calldata: %s\n\n" "$calldata"
 
-    if command -v cast &>/dev/null; then
-        echo "  Ready-to-run cast command (requires --private-key of the withdrawal address):"
-        echo ""
-        echo "    cast send ${CONSOLIDATION_CONTRACT} \\"
-        echo "      --value ${fee_dec}wei \\"
-        echo "      --data ${calldata} \\"
-        echo "      --rpc-url ${el_rpc} \\"
-        echo "      --private-key <YOUR_WITHDRAWAL_ADDRESS_PRIVATE_KEY>"
-        echo ""
-        echo "  Or, if using a hardware wallet via cast:"
-        echo "    cast send ${CONSOLIDATION_CONTRACT} \\"
-        echo "      --value ${fee_dec}wei \\"
-        echo "      --data ${calldata} \\"
-        echo "      --rpc-url ${el_rpc} \\"
-        echo "      --ledger"
-        echo ""
+    printf "  Command to run (requires the withdrawal address private key):\n\n"
+    printf "    cast send %s \\\\\n" "$CONSOLIDATION_CONTRACT"
+    printf "      --value %swei \\\\\n" "$fee_dec"
+    printf "      --data %s \\\\\n" "$calldata"
+    printf "      --rpc-url %s \\\\\n" "$el_rpc"
+    printf "      --private-key <WITHDRAWAL_ADDRESS_PRIVATE_KEY>\n\n"
 
-        if ! confirm_destructive "Consolidation permanently exits the source validator. Proceed with cast send?"; then
-            log_warn "Aborted. Run the cast command above manually when ready."
-            return 0
-        fi
-
-        read -rsp "  Private key of withdrawal address (input hidden): " priv_key
-        echo ""
-        if [[ -z "$priv_key" ]]; then
-            log_warn "No private key provided. Aborting."
-            return 0
-        fi
-
-        log_info "Submitting consolidation transaction..."
-        cast send "${CONSOLIDATION_CONTRACT}" \
-            --value "${fee_dec}wei" \
-            --data "${calldata}" \
-            --rpc-url "${el_rpc}" \
-            --private-key "${priv_key}"
-
-        log_info "Transaction submitted. Monitor the source validator status for an exit."
-    else
-        log_warn "'cast' (Foundry) is not installed. Run the transaction manually:"
-        echo ""
-        echo "  Install Foundry:  curl -L https://foundry.paradigm.xyz | bash && foundryup"
-        echo ""
-        echo "  Then run:"
-        echo "    cast send ${CONSOLIDATION_CONTRACT} \\"
-        echo "      --value ${fee_dec}wei \\"
-        echo "      --data ${calldata} \\"
-        echo "      --rpc-url ${el_rpc} \\"
-        echo "      --private-key <YOUR_WITHDRAWAL_ADDRESS_PRIVATE_KEY>"
-        echo ""
+    if ! command -v cast &>/dev/null; then
+        log_warn "'cast' not found. Install Foundry: curl -L https://foundry.paradigm.xyz | bash && foundryup"
+        return 0
     fi
+
+    if ! confirm_destructive "Consolidation permanently exits the source validator."; then
+        log_warn "Aborted. Run the cast command above manually when ready."
+        return 0
+    fi
+
+    read -rsp "  Private key of withdrawal address (hidden): " priv_key
+    printf "\n"
+    if [[ -z "$priv_key" ]]; then
+        log_warn "No private key provided. Aborting."
+        return 0
+    fi
+
+    log_info "Submitting consolidation transaction..."
+    cast send "${CONSOLIDATION_CONTRACT}" \
+        --value "${fee_dec}wei" \
+        --data "${calldata}" \
+        --rpc-url "${el_rpc}" \
+        --private-key "${priv_key}"
+
+    log_info "Transaction submitted. Monitor the source validator for a pending exit."
 }
 
 # =============================================================================
@@ -485,40 +467,25 @@ show_menu() {
     local vc_status
     vc_status=$(systemctl is-active validator 2>/dev/null || echo "inactive")
 
-    echo ""
-    echo "╔══════════════════════════════════════════════════════╗"
-    echo "║         Eth2 Quick Start — Validator Manager         ║"
-    echo "╚══════════════════════════════════════════════════════╝"
-    echo ""
+    printf "\n"
+    printf "╔══════════════════════════════════════════════════════╗\n"
+    printf "║         Eth2 Quick Start — Validator Manager         ║\n"
+    printf "╚══════════════════════════════════════════════════════╝\n\n"
     printf "  Client    : %s\n" "$client"
     printf "  Validator : %s\n" "$vc_status"
-    printf "  Beacon    : %s\n" "$beacon_url"
-    echo ""
-    echo "  [1] List active validators"
-    echo "  [2] Voluntary exit (irreversible)"
-    echo "  [3] Consolidate validators (EIP-7251)"
-    echo "  [q] Quit"
-    echo ""
+    printf "  Beacon    : %s\n\n" "$beacon_url"
+    printf "  [1] List local validators\n"
+    printf "  [2] Voluntary exit  (irreversible)\n"
+    printf "  [3] Consolidate validators  (EIP-7251)\n"
+    printf "  [q] Quit\n\n"
     read -rp "  Choice: " choice
 
     case "$choice" in
-        1)
-            "$SCRIPT_DIR/validator_list.sh"
-            ;;
-        2)
-            cmd_exit
-            ;;
-        3)
-            cmd_consolidate
-            ;;
-        q|Q|quit|exit)
-            echo "  Bye."
-            exit 0
-            ;;
-        *)
-            log_warn "Invalid choice: ${choice}"
-            show_menu
-            ;;
+        1) "$SCRIPT_DIR/validator_list.sh" ;;
+        2) cmd_exit ;;
+        3) cmd_consolidate ;;
+        q|Q|quit) printf "  Bye.\n"; exit 0 ;;
+        *) log_warn "Invalid choice: ${choice}"; show_menu ;;
     esac
 }
 
@@ -528,15 +495,9 @@ show_menu() {
 
 main() {
     case "$ACTION" in
-        exit)
-            cmd_exit
-            ;;
-        consolidate)
-            cmd_consolidate
-            ;;
-        "")
-            show_menu
-            ;;
+        exit)        cmd_exit ;;
+        consolidate) cmd_consolidate ;;
+        "")          show_menu ;;
     esac
 }
 
