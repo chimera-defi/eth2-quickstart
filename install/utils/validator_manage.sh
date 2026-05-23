@@ -76,8 +76,11 @@ detect_beacon_url() {
     local exec_start
     exec_start=$(systemctl show cl --property=ExecStart --value 2>/dev/null || true)
     local port="5052"
-    echo "$exec_start" | grep -qi "teku"     && port="5051" || true
-    echo "$exec_start" | grep -qi "lodestar" && port="9596" || true
+    if echo "$exec_start" | grep -qi "teku"; then
+        port="5051"
+    elif echo "$exec_start" | grep -qi "lodestar"; then
+        port="9596"
+    fi
     echo "http://127.0.0.1:${port}"
 }
 
