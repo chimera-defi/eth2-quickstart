@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Eth2 Quick Start — Validator List
-# Lists all validator keys managed by the local validator client,
+# Lists validator keys managed by the local validator client,
 # cross-referenced with the beacon node API for live status and balance.
 #
 # Usage: ./install/utils/validator_list.sh [--json]
@@ -47,20 +47,13 @@ detect_client() {
         echo "unknown"
         return
     fi
-    if echo "$exec_start" | grep -qi "lighthouse"; then
-        echo "lighthouse"
-    elif echo "$exec_start" | grep -qi "prysm"; then
-        echo "prysm"
-    elif echo "$exec_start" | grep -qi "teku"; then
-        echo "teku"
-    elif echo "$exec_start" | grep -qi "lodestar"; then
-        echo "lodestar"
-    elif echo "$exec_start" | grep -qi "nimbus"; then
-        echo "nimbus"
-    elif echo "$exec_start" | grep -qi "grandine"; then
-        echo "grandine"
-    else
-        echo "unknown"
+    if echo "$exec_start"   | grep -qi "lighthouse"; then echo "lighthouse"
+    elif echo "$exec_start" | grep -qi "prysm";      then echo "prysm"
+    elif echo "$exec_start" | grep -qi "teku";       then echo "teku"
+    elif echo "$exec_start" | grep -qi "lodestar";   then echo "lodestar"
+    elif echo "$exec_start" | grep -qi "nimbus";     then echo "nimbus"
+    elif echo "$exec_start" | grep -qi "grandine";   then echo "grandine"
+    else echo "unknown"
     fi
 }
 
@@ -108,12 +101,14 @@ find_pubkeys() {
             )
             ;;
         lodestar)
+            # Path set by lodestar.sh: $HOME/.local/share/lodestar/validators/keystores
             search_dirs=(
+                "$HOME/.local/share/lodestar/validators/keystores"
                 "$HOME/lodestar/keystores"
-                "$HOME/.lodestar/keystores"
             )
             ;;
         nimbus)
+            # Path set by nimbus.sh: $HOME/.local/share/nimbus/validators
             search_dirs=(
                 "$HOME/.local/share/nimbus/validators"
                 "$HOME/nimbus/validators"
@@ -126,25 +121,31 @@ find_pubkeys() {
             )
             ;;
         *)
-            # Fallback: scan all likely locations
+            # Fallback: scan all known locations
             search_dirs=(
                 "$HOME/.lighthouse/mainnet/validators"
                 "$HOME/.lighthouse/validators"
                 "$HOME/lighthouse/validators"
                 "$HOME/.local/share/teku/validator/keys"
-                "$HOME/lodestar/keystores"
-                "$HOME/grandine/validators"
-                "$HOME/nimbus/validators"
+                "$HOME/.local/share/lodestar/validators/keystores"
+                "$HOME/.local/share/nimbus/validators"
+                "$HOME/.local/share/grandine/validator/keystores"
             )
             ;;
     esac
 
     for dir in "${search_dirs[@]}"; do
         [[ -d "$dir" ]] || continue
-        # Find JSON keystores with a pubkey field (EIP-2335)
         while IFS= read -r -d '' f; do
             local pubkey
-            pubkey=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('pubkey',''))" "$f" 2>/dev/null || true)
+            pubkey=$(python3 -c "
+import json, sys
+try:
+    d = json.load(open(sys.argv[1]))
+    print(d.get('pubkey', ''))
+except Exception:
+    pass
+" "$f" 2>/dev/null || true)
             [[ -n "$pubkey" ]] && echo "$pubkey"
         done < <(find "$dir" -maxdepth 4 -name "*.json" -print0 2>/dev/null)
     done | sort -u
@@ -154,33 +155,34 @@ find_pubkeys() {
 # BEACON API QUERY
 # =============================================================================
 
-# Queries beacon node for one or more validator pubkeys.
-# Accepts pubkeys as newline-separated stdin.
-# Outputs raw JSON from the beacon API.
+# Queries beacon node for a list of validator pubkeys (max ~100 at a time to
+# stay within URL length limits). Writes merged JSON to the given output file.
 query_beacon_validators() {
     local beacon_url="$1"
-    shift
+    local out_file="$2"
+    shift 2
     local pubkeys=("$@")
 
     if [[ ${#pubkeys[@]} -eq 0 ]]; then
-        echo '{"data":[]}'
+        echo '{"data":[]}' > "$out_file"
         return
     fi
 
-    # Build comma-separated id list
+    # Build id= query string with 0x-prefixed pubkeys
     local ids
-    ids=$(IFS=,; echo "${pubkeys[*]/#/0x}")
+    ids=$(printf "0x%s," "${pubkeys[@]}")
+    ids="${ids%,}"
 
     local response
     response=$(curl -sf \
-        --max-time 10 \
+        --max-time 15 \
         "${beacon_url}/eth/v1/beacon/states/head/validators?id=${ids}" \
         2>/dev/null || true)
 
     if [[ -z "$response" ]]; then
-        echo '{"data":[]}'
+        echo '{"data":[]}' > "$out_file"
     else
-        echo "$response"
+        echo "$response" > "$out_file"
     fi
 }
 
@@ -188,43 +190,36 @@ query_beacon_validators() {
 # DISPLAY
 # =============================================================================
 
-gwei_to_eth() {
-    python3 -c "print(f'{int(\"$1\") / 1e9:.6f}')" 2>/dev/null || echo "?"
-}
-
 print_table() {
-    local data="$1"
+    local data_file="$1"
 
-    local count
-    count=$(python3 -c "import json,sys; d=json.loads(sys.argv[1]); print(len(d.get('data',[])))" "$data" 2>/dev/null || echo 0)
-
-    if [[ "$count" -eq 0 ]]; then
-        log_warn "No validators found via beacon API. They may be pending or the node may still be syncing."
-        return
-    fi
-
-    printf "\n%-12s %-98s %-15s %-15s %s\n" \
-        "Index" "Public Key" "Status" "Balance (ETH)" "Eff. Balance (ETH)"
-    printf '%s\n' "$(printf '%.0s-' {1..155})"
-
-    python3 - "$data" <<'EOF'
+    python3 - "$data_file" <<'PYEOF'
 import json, sys
 
 with open(sys.argv[1]) as f:
-    data = json.load(f)
+    raw = json.load(f)
 
-for v in data.get("data", []):
-    idx   = v.get("index", "?")
-    pubk  = v.get("validator", {}).get("pubkey", "?")
-    short = pubk[:10] + "..." + pubk[-8:] if len(pubk) > 18 else pubk
-    full  = pubk
+rows = raw.get("data", [])
+if not rows:
+    print("  No validator data returned from beacon node.")
+    print("  The node may still be syncing or no keys are imported yet.")
+    sys.exit(0)
+
+hdr = f"{'Index':<12} {'Public Key':<98} {'Status':<22} {'Balance (ETH)':<16} Eff. Balance (ETH)"
+print()
+print(hdr)
+print("-" * len(hdr))
+for v in rows:
+    idx    = v.get("index", "?")
+    pubkey = v.get("validator", {}).get("pubkey", "?")
     status = v.get("status", "?")
     bal    = int(v.get("balance", 0)) / 1e9
     eff    = int(v.get("validator", {}).get("effective_balance", 0)) / 1e9
-    print(f"{idx:<12} {full:<98} {status:<15} {bal:<15.6f} {eff:.6f}")
-EOF
-    printf '%s\n' "$(printf '%.0s-' {1..155})"
-    printf "  %d validator(s) found\n\n" "$count"
+    print(f"{idx:<12} {pubkey:<98} {status:<22} {bal:<16.6f} {eff:.6f}")
+print("-" * len(hdr))
+print(f"  {len(rows)} validator(s)")
+print()
+PYEOF
 }
 
 # =============================================================================
@@ -250,7 +245,6 @@ main() {
             echo '{"client":"'"$client"'","beacon_url":"'"$beacon_url"'","validators":[],"error":"no_keystores_found"}'
         else
             log_warn "No keystore files found for client '${client}'."
-            echo "  Searched in the standard keystore directories."
             echo "  Import validator keys first, then re-run this command."
         fi
         return
@@ -265,20 +259,19 @@ main() {
     # shellcheck disable=SC2064
     trap "rm -f '$tmpfile'" EXIT
 
-    query_beacon_validators "$beacon_url" "${pubkeys[@]}" > "$tmpfile"
+    query_beacon_validators "$beacon_url" "$tmpfile" "${pubkeys[@]}"
 
     if [[ "$JSON_OUTPUT" == "true" ]]; then
-        python3 - "$tmpfile" "$client" "$beacon_url" <<'EOF'
+        python3 - "$tmpfile" "$client" "$beacon_url" <<'PYEOF'
 import json, sys
 with open(sys.argv[1]) as f:
     raw = json.load(f)
-out = {
+print(json.dumps({
     "client": sys.argv[2],
     "beacon_url": sys.argv[3],
     "validators": raw.get("data", [])
-}
-print(json.dumps(out, indent=2))
-EOF
+}, indent=2))
+PYEOF
     else
         print_table "$tmpfile"
     fi
