@@ -110,21 +110,25 @@ load_local_validators() {
     local json
     json=$("$SCRIPT_DIR/validator_list.sh" --json 2>/dev/null) || true
 
-    local count=0
-    if [[ -n "$json" ]]; then
-        count=$(python3 -c "
-import json, sys
-d = json.loads(sys.argv[1])
-print(len(d.get('validators', [])))
-" "$json" 2>/dev/null || echo 0)
+    if [[ -z "$json" ]]; then
+        log_warn "No local validators found. Import keys and ensure the beacon node is synced."
+        return 1
     fi
+
+    # Write to file before counting — avoids argv length limits with large validator sets.
+    echo "$json" > "$out_file"
+
+    local count=0
+    count=$(python3 -c "
+import json, sys
+d = json.load(open(sys.argv[1]))
+print(len(d.get('validators', [])))
+" "$out_file" 2>/dev/null || echo 0)
 
     if [[ "$count" -eq 0 ]]; then
         log_warn "No local validators found. Import keys and ensure the beacon node is synced."
         return 1
     fi
-
-    echo "$json" > "$out_file"
     return 0
 }
 
@@ -306,10 +310,20 @@ _do_exit() {
             ;;
 
         nimbus)
-            local nimbus_bin
-            nimbus_bin=$(find "$HOME/nimbus/build" -name "nimbus_beacon_node" -type f 2>/dev/null | head -1 || true)
+            # Exits use nimbus_beacon_node, not the validator client.
+            # Derive it from the validator service binary path (same build dir), then
+            # fall back to a search under the default nimbus home.
+            local nimbus_bin=""
+            if [[ -n "$bin" ]]; then
+                local build_dir
+                build_dir=$(dirname "$bin")
+                [[ -x "$build_dir/nimbus_beacon_node" ]] && nimbus_bin="$build_dir/nimbus_beacon_node"
+            fi
             if [[ -z "$nimbus_bin" ]]; then
-                log_error "Nimbus binary not found."
+                nimbus_bin=$(find "$HOME/nimbus/build" -name "nimbus_beacon_node" -type f 2>/dev/null | head -1 || true)
+            fi
+            if [[ -z "$nimbus_bin" ]]; then
+                log_error "Nimbus beacon node binary not found."
                 _print_manual_exit_instructions "$client" "$beacon_url"
                 return 1
             fi
