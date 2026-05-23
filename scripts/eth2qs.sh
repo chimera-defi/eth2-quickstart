@@ -38,6 +38,10 @@ Operations:
   cleanup-host [args...]  Purge root-managed node data dirs (requires root, preserves secrets)
   update-all [args...]    Comprehensive updater
 
+Validator:
+  validators [--json]               List active validators with index, status, and balance
+  validator-manage [--exit|--consolidate]   Manage validators: voluntary exits or EIP-7251 consolidations
+
 Utility:
   help                    Show this help text
 
@@ -56,6 +60,11 @@ Examples:
   ./scripts/eth2qs.sh restart --smart
   ./scripts/eth2qs.sh logs --run2 -n 200
   sudo ./scripts/eth2qs.sh cleanup-host --dry-run
+  ./scripts/eth2qs.sh validators
+  ./scripts/eth2qs.sh validators --json
+  ./scripts/eth2qs.sh validator-manage
+  ./scripts/eth2qs.sh validator-manage --exit
+  ./scripts/eth2qs.sh validator-manage --consolidate
 EOF
 }
 
@@ -142,6 +151,12 @@ case "$cmd" in
         ;;
     update-all)
         run_cmd "$ROOT_DIR/install/utils/update_all.sh" "$@"
+        ;;
+    validators)
+        run_cmd "$ROOT_DIR/install/utils/validator_list.sh" "$@"
+        ;;
+    validator-manage)
+        run_cmd "$ROOT_DIR/install/utils/validator_manage.sh" "$@"
         ;;
     *)
         echo "Unknown command: $cmd" >&2
