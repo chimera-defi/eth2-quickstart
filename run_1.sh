@@ -16,15 +16,58 @@ for arg in "$@"; do
     case "$arg" in
         --help|-h)
             cat <<'EOF'
-Usage: ./run_1.sh
+Usage: ./run_1.sh [OPTIONS]
 
 Phase 1: system hardening and secure user setup.
 Run as root (or via sudo), then reboot before Phase 2.
 
-Example:
+Options:
+  --use-modular-hardening    Use the standalone modular hardening script
+                             (allows independent hardening on existing servers)
+  --preserve-ssh-port        Keep current SSH port (for use with modular hardening)
+  --skip-user-creation       Skip user creation (for hardening existing servers)
+  --help, -h                 Show this help message
+
+Examples:
+  # Standard Phase 1 setup
   sudo ./run_1.sh
+
+  # Use modular hardening (recommended for existing servers)
+  sudo ./run_1.sh --use-modular-hardening --preserve-ssh-port
+
+  # Harden existing server without user creation
+  sudo ./run_1.sh --use-modular-hardening --skip-user-creation --preserve-ssh-port
+
+Note: For standalone server hardening without Phase 1 setup, you can also use:
+  ./install/security/harden_server.sh --preserve-port --non-interactive
 EOF
             exit 0
+            ;;
+    esac
+done
+
+# Parse additional flags
+USE_MODULAR_HARDENING=false
+PRESERVE_SSH_PORT=false
+SKIP_USER_CREATION=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --use-modular-hardening)
+            USE_MODULAR_HARDENING=true
+            shift
+            ;;
+        --preserve-ssh-port)
+            PRESERVE_SSH_PORT=true
+            shift
+            ;;
+        --skip-user-creation)
+            SKIP_USER_CREATION=true
+            shift
+            ;;
+        *)
+            # Skip unknown flags (they might be for require_sudo_or_root re-exec)
+            shift
             ;;
     esac
 done
@@ -100,9 +143,13 @@ chmod +x "$SCRIPT_DIR/install/utils/install_dependencies.sh"
 
 # Create user with sudo + SSH key migration BEFORE hardening SSH
 # SSH key-only auth (no password) - more secure
-log_info "Setting up user: $LOGIN_UNAME"
-setup_secure_user "$LOGIN_UNAME" "" "$COLLECTED_KEYS_FILE"
-rm -f "$COLLECTED_KEYS_FILE"
+if [[ "$SKIP_USER_CREATION" != "true" ]]; then
+    log_info "Setting up user: $LOGIN_UNAME"
+    setup_secure_user "$LOGIN_UNAME" "" "$COLLECTED_KEYS_FILE"
+    rm -f "$COLLECTED_KEYS_FILE"
+else
+    log_info "Skipping user creation (--skip-user-creation flag set)"
+fi
 
 # Preserve DEBIAN_* through sudo so Phase 2 apt/dpkg stay noninteractive (no tzdata/NTP prompts)
 if [[ ! -f /etc/sudoers.d/99-noninteractive ]]; then
@@ -111,20 +158,52 @@ if [[ ! -f /etc/sudoers.d/99-noninteractive ]]; then
     log_info "Sudo configured for non-interactive apt"
 fi
 
-# Harden SSH (after user exists with keys)
-configure_ssh "$YourSSHPortNumber" "$SCRIPT_DIR"
+# Hardening: Use modular approach if requested, otherwise use existing inline approach
+if [[ "$USE_MODULAR_HARDENING" == "true" ]]; then
+    log_info "Using modular hardening approach..."
+    
+    # Build arguments for harden_server.sh
+    HARDEN_ARGS=()
+    HARDEN_ARGS+=(--non-interactive)  # run_1.sh is already interactive at the start
+    
+    if [[ "$PRESERVE_SSH_PORT" == "true" ]]; then
+        HARDEN_ARGS+=(--preserve-port)
+    fi
+    
+    # Call the standalone hardening script
+    log_info "Calling standalone hardening script with: ${HARDEN_ARGS[*]}"
+    chmod +x "$SCRIPT_DIR/install/security/harden_server.sh"
+    
+    # Set environment variables for the hardening script
+    export PRESERVE_SSH_PORT="$PRESERVE_SSH_PORT"
+    export SSH_PORT="$YourSSHPortNumber"
+    
+    if "$SCRIPT_DIR/install/security/harden_server.sh" "${HARDEN_ARGS[@]}"; then
+        log_info "Modular hardening completed successfully"
+    else
+        log_error "Modular hardening failed"
+        exit 1
+    fi
+else
+    # Original inline hardening approach (backward compatible)
+    log_info "Using standard hardening approach..."
+    
+    # Harden SSH (after user exists with keys)
+    configure_ssh "$YourSSHPortNumber" "$SCRIPT_DIR"
 
-# Firewall, fail2ban, AIDE
-log_info "Running consolidated security setup..."
-chmod +x "$SCRIPT_DIR/install/security/consolidated_security.sh"
-"$SCRIPT_DIR/install/security/consolidated_security.sh"
+    # Firewall, fail2ban, AIDE
+    log_info "Running consolidated security setup..."
+    chmod +x "$SCRIPT_DIR/install/security/consolidated_security.sh"
+    "$SCRIPT_DIR/install/security/consolidated_security.sh"
 
-# OS hardening: sysctl, shared memory, disable unnecessary services
-apply_network_security
-setup_security_monitoring
+    # OS hardening: sysctl, shared memory, disable unnecessary services
+    apply_network_security
+    setup_security_monitoring
+fi
 
 # Update AIDE db to include all files we just installed (security_monitor.sh, etc.)
 # So the first aide_check won't report false changes
+# This applies to both modular and standard hardening approaches
 if command -v aide &>/dev/null && [[ -f /var/lib/aide/aide.db ]]; then
     log_info "Updating AIDE database with installed files..."
     if aide --config=/etc/aide/aide.conf --update 2>/dev/null; then
@@ -137,23 +216,40 @@ fi
 
 # Copy eth2-quickstart to new user's home so they can run Phase 2 after reboot
 # Without this, the new user cannot find the folder (e.g. if it was in /root/.eth2-quickstart)
-USER_INSTALL_DIR="/home/$LOGIN_UNAME/eth2-quickstart"
-SCRIPT_REAL="$(realpath "$SCRIPT_DIR" 2>/dev/null || echo "$SCRIPT_DIR")"
-DEST_REAL="$(realpath "$USER_INSTALL_DIR" 2>/dev/null || echo "$USER_INSTALL_DIR")"
-if [[ "$SCRIPT_REAL" == "$DEST_REAL" ]]; then
-    log_info "eth2-quickstart already at $USER_INSTALL_DIR (idempotent)"
-    chown -R "$LOGIN_UNAME:$LOGIN_UNAME" "$USER_INSTALL_DIR"
+if [[ "$SKIP_USER_CREATION" != "true" ]]; then
+    USER_INSTALL_DIR="/home/$LOGIN_UNAME/eth2-quickstart"
+    SCRIPT_REAL="$(realpath "$SCRIPT_DIR" 2>/dev/null || echo "$SCRIPT_DIR")"
+    DEST_REAL="$(realpath "$USER_INSTALL_DIR" 2>/dev/null || echo "$USER_INSTALL_DIR")"
+    if [[ "$SCRIPT_REAL" == "$DEST_REAL" ]]; then
+        log_info "eth2-quickstart already at $USER_INSTALL_DIR (idempotent)"
+        chown -R "$LOGIN_UNAME:$LOGIN_UNAME" "$USER_INSTALL_DIR"
+    else
+        rm -rf "$USER_INSTALL_DIR"
+        cp -a "$SCRIPT_DIR" "$USER_INSTALL_DIR"
+        chown -R "$LOGIN_UNAME:$LOGIN_UNAME" "$USER_INSTALL_DIR"
+        log_info "eth2-quickstart copied to ~/eth2-quickstart for user $LOGIN_UNAME"
+    fi
 else
-    rm -rf "$USER_INSTALL_DIR"
-    cp -a "$SCRIPT_DIR" "$USER_INSTALL_DIR"
-    chown -R "$LOGIN_UNAME:$LOGIN_UNAME" "$USER_INSTALL_DIR"
-    log_info "eth2-quickstart copied to ~/eth2-quickstart for user $LOGIN_UNAME"
+    log_info "Skipping eth2-quickstart copy (user creation skipped)"
 fi
 
 # Generate and save handoff information (auto-detects server IP)
-generate_handoff_info "$LOGIN_UNAME" "" "" "$YourSSHPortNumber"
+# Skip handoff generation if user creation was skipped (not applicable for existing servers)
+if [[ "$SKIP_USER_CREATION" != "true" ]]; then
+    generate_handoff_info "$LOGIN_UNAME" "" "" "$YourSSHPortNumber"
+else
+    log_info "Skipping handoff info generation (user creation skipped)"
+    log_info "Server hardening completed on existing server"
+    log_info "No reboot required for hardening-only mode"
+fi
 
 log_info "=== SETUP COMPLETE ==="
-log_info "Reboot required: sudo reboot"
-log_info "Handoff info saved to /root/handoff_info.txt"
+
+if [[ "$SKIP_USER_CREATION" != "true" ]]; then
+    log_info "Reboot required: sudo reboot"
+    log_info "Handoff info saved to /root/handoff_info.txt"
+else
+    log_info "Hardening complete - no reboot required (user creation skipped)"
+fi
+
 log_info "Log: $LOG_FILE (view: ./install/utils/view_logs.sh --run1)"
