@@ -9,7 +9,6 @@
 #   ./harden_server.sh --dry-run          # Preview changes without applying
 #   ./harden_server.sh --preserve-port    # Keep current SSH port
 #   ./harden_server.sh --skip-ssh         # Skip SSH hardening
-#   ./harden_server.sh --skip-firewall    # Skip firewall hardening
 #   ./harden_server.sh --non-interactive  # Run without prompts
 
 set -Eeuo pipefail
