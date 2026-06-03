@@ -25,7 +25,6 @@ They are also available through the unified `eth2qs.sh` wrapper.
 # Set the keystore password via the ETHQS_KEYSTORE_PASSWORD env var (preferred) or interactive prompt.
 ETHQS_KEYSTORE_PASSWORD=... ./scripts/eth2qs.sh validator-deploy \
   --num-validators 1 --withdrawal-type 0x02 --withdrawal-address 0xYourAddr --import-keys
-
 # Go straight to voluntary exit flow
 ./scripts/eth2qs.sh validator-exit
 ./install/utils/validator_exit.sh
@@ -33,12 +32,10 @@ ETHQS_KEYSTORE_PASSWORD=... ./scripts/eth2qs.sh validator-deploy \
 # Go straight to 0x02 validator creation flow
 ./scripts/eth2qs.sh validator-create-0x02
 ./install/utils/validator_create_0x02.sh
-
 # Preview / generate / submit BLS-to-execution changes for 0x00 validators
 ./scripts/eth2qs.sh validator-withdrawal-changes --dry-run --generate --submit --yes
 ./scripts/eth2qs.sh validator-withdrawal-changes --generate --submit --yes
 ./install/utils/validator_withdrawal_changes.sh --dry-run --generate --submit --yes
-
 # Interactive management menu (exit / consolidate)
 ./scripts/eth2qs.sh validator-manage
 ./install/utils/validator_manage.sh
@@ -148,7 +145,6 @@ withdrawable.
    at `/eth/v1/beacon/pool/bls_to_execution_changes`.
 6. Works with the repo's Prysm + geth stack as long as the beacon REST API is
    reachable from the node running the helper.
-
 ## `validator_manage.sh` — Operations
 
 ### 1. Voluntary Exit

@@ -51,6 +51,51 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Require that a command exists.
+require_cmd() {
+    local cmd="$1"
+    if ! command_exists "$cmd"; then
+        log_error "missing required command: $cmd"
+        return 2
+    fi
+}
+
+# Filter crontab content to remove entries containing a marker.
+cron_filter_by_marker() {
+    local marker="$1"
+    awk -v marker="$marker" 'index($0, marker) == 0'
+}
+
+# Remove all cron entries containing a marker if any are present.
+cron_remove_by_marker() {
+    local marker="$1"
+    local existing_crontab filtered_crontab
+
+    existing_crontab="$(crontab -l 2>/dev/null || true)"
+    filtered_crontab="$(printf '%s\n' "$existing_crontab" | cron_filter_by_marker "$marker")"
+
+    if [[ "$filtered_crontab" == "$existing_crontab" ]]; then
+        return 0
+    fi
+
+    printf '%s\n' "$filtered_crontab" | crontab -
+}
+
+# Replace entries containing a marker with a single desired line.
+cron_replace_by_marker() {
+    local marker="$1"
+    local cron_line="$2"
+    local existing_crontab filtered_crontab
+
+    existing_crontab="$(crontab -l 2>/dev/null || true)"
+    filtered_crontab="$(printf '%s\n' "$existing_crontab" | cron_filter_by_marker "$marker")"
+
+    {
+        printf '%s\n' "$filtered_crontab"
+        printf '%s\n' "$cron_line"
+    } | awk 'NF' | crontab -
+}
+
 # Check if running inside Docker/container (/.dockerenv or cgroup)
 is_docker() {
     [[ -f /.dockerenv ]] || grep -qE 'docker|containerd' /proc/1/cgroup 2>/dev/null
