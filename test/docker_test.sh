@@ -183,6 +183,42 @@ else
     record_test "Review guardrails validate" "SKIP"
 fi
 
+# Validator helper smoke checks
+if [[ -f "$PROJECT_ROOT/install/utils/validator_exit.sh" ]]; then
+    if bash "$PROJECT_ROOT/install/utils/validator_exit.sh" --help 2>&1 | grep -q "0x00/0x01"; then
+        record_test "validator_exit.sh help smoke" "PASS"
+    else
+        record_test "validator_exit.sh help smoke" "FAIL"
+        log_error "validator_exit.sh --help did not advertise the exit checklist"
+        print_test_summary
+        exit 1
+    fi
+else
+    record_test "validator_exit.sh help smoke" "SKIP"
+fi
+
+if [[ -f "$PROJECT_ROOT/install/utils/validator_create_0x02.sh" ]]; then
+    if bash "$PROJECT_ROOT/install/utils/validator_create_0x02.sh" --help 2>&1 | grep -q "0x02"; then
+        record_test "validator_create_0x02.sh help smoke" "PASS"
+    else
+        record_test "validator_create_0x02.sh help smoke" "FAIL"
+        log_error "validator_create_0x02.sh --help did not advertise the compounding entry flow"
+        print_test_summary
+        exit 1
+    fi
+else
+    record_test "validator_create_0x02.sh help smoke" "SKIP"
+fi
+
+if bash "$PROJECT_ROOT/scripts/eth2qs.sh" help 2>&1 | grep -Eq 'validator-exit|validator-create-0x02'; then
+    record_test "eth2qs wrapper exposes validator helpers" "PASS"
+else
+    record_test "eth2qs wrapper exposes validator helpers" "FAIL"
+    log_error "eth2qs.sh help is missing validator helper commands"
+    print_test_summary
+    exit 1
+fi
+
 # =============================================================================
 # PHASE 4: Function Unit Tests (Real System Calls)
 # =============================================================================

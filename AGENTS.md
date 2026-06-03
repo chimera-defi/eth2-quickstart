@@ -78,3 +78,9 @@ Before marking any task complete, verify the change set against the repository's
 - Perform a security audit for any change that touches deployment, secrets, network exposure, or privilege boundaries.
 - Perform a regression review for any change that can alter install flows, service behavior, or generated configs.
 - If a required check could not run, say exactly what was skipped and why.
+
+## Meta Learnings
+
+- New `install/utils` helpers should be wired into `scripts/eth2qs.sh`, documented in `docs/SCRIPTS.md`, and covered by at least one structure or Docker smoke test.
+- Validator exit helpers should reuse the local validator inventory path and delegate client-specific exit logic to `validator_manage.sh`.
+- Validator entry helpers should prefer an explicit command template when the deposit CLI is not installed locally so operators still get a usable offline checklist.

@@ -1,7 +1,7 @@
 # Validator Management
 
-Two standalone helper scripts for managing validators on this node.
-Both are also available through the unified `eth2qs.sh` wrapper.
+Several standalone helper scripts for managing validators on this node.
+They are also available through the unified `eth2qs.sh` wrapper.
 
 ---
 
@@ -16,13 +16,17 @@ Both are also available through the unified `eth2qs.sh` wrapper.
 ./scripts/eth2qs.sh validators --json
 ./install/utils/validator_list.sh --json
 
+# Go straight to voluntary exit flow
+./scripts/eth2qs.sh validator-exit
+./install/utils/validator_exit.sh
+
+# Go straight to 0x02 validator creation flow
+./scripts/eth2qs.sh validator-create-0x02
+./install/utils/validator_create_0x02.sh
+
 # Interactive management menu (exit / consolidate)
 ./scripts/eth2qs.sh validator-manage
 ./install/utils/validator_manage.sh
-
-# Go straight to voluntary exit flow
-./scripts/eth2qs.sh validator-manage --exit
-./install/utils/validator_manage.sh --exit
 
 # Go straight to consolidation flow (EIP-7251)
 ./scripts/eth2qs.sh validator-manage --consolidate
@@ -77,6 +81,29 @@ keystore files exist on this machine are shown.
 ```
 
 ---
+
+## `validator_exit.sh` — Focused Exit Flow
+
+This helper wraps the existing exit path, but it starts with a targeted checklist
+for legacy validators.
+
+1. Shows the current local validator inventory via `validator_list.sh`.
+2. Reminds you that `0x00` validators need credential upgrades before any
+   withdrawals can be swept.
+3. Hands off to `validator_manage.sh --exit` for the interactive client-specific
+   exit flow.
+
+## `validator_create_0x02.sh` — Compounding Entry Flow
+
+This helper is the matching entry path for modern validators.
+
+1. Prints the offline key-generation checklist.
+2. Shows the current local validator inventory so you can compare against the
+   node you are about to import into.
+3. Launches the local deposit CLI if available, or prints the exact command
+   template when you are running the tool manually.
+4. Reminds you to select compounding / `0x02` withdrawal credentials during the
+   deposit CLI prompts.
 
 ## `validator_manage.sh` — Operations
 
