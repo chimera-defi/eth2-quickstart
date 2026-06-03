@@ -1,5 +1,5 @@
 # PR Response State
-last_run: 2026-06-03T19:15
+last_run: 2026-06-03T20:15
 
 prs:
   - number: 178
@@ -21,3 +21,5 @@ prs:
     notes: >
       AWS Amplify Console Web Preview failure — external deployment preview,
       not a code CI check. Not actionable by automated fix.
+      NOTE: Etc-mono-repo main branch is protected (requires PR); state file
+      cannot be written directly — tracked here until that changes.
