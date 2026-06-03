@@ -1,16 +1,17 @@
 # PR Response State
-last_run: 2026-06-03T15:45
+last_run: 2026-06-03T19:15
 
 prs:
   - number: 178
     repo: chimera-defi/eth2-quickstart
-    last_activity: "2026-06-03T15:17:43Z"
+    last_activity: "2026-06-03T18:20:07Z"
     attempt_count: 1
     status: fixed
     notes: >
-      Amended commit message to feat(validators) conventional format and added
-      0x00/0x01 to validator_exit.sh usage() to fix docker-integration smoke test.
-      Force-pushed to validator-helper-flows. CI re-triggered.
+      All 22 CI checks green as of 2026-06-03T18:40. Fix applied in prior run:
+      amended commit to feat(validators) format, added 0x00/0x01 to
+      validator_exit.sh usage() to pass docker-integration smoke test.
+      Awaiting human merge.
 
   - number: 297
     repo: chimera-defi/Etc-mono-repo
