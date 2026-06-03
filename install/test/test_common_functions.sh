@@ -313,6 +313,85 @@ test_doctor_mev_service_name() {
     return 1
 }
 
+# Test 16: require_cmd returns the documented exit code for missing commands
+test_require_cmd_missing() {
+    local output rc
+    output="$(bash -c '
+        set -Eeuo pipefail
+        source "$1"
+        require_cmd command_that_should_not_exist_12345
+    ' _ "$PROJECT_ROOT/lib/common_functions.sh" 2>&1)" || rc=$?
+
+    if [[ "${rc:-0}" -ne 2 ]]; then
+        echo "  ERROR: require_cmd returned ${rc:-0} instead of 2"
+        printf '%s\n' "$output"
+        return 1
+    fi
+
+    if [[ "$output" != *"missing required command"* ]]; then
+        echo "  ERROR: require_cmd did not print the standard error"
+        printf '%s\n' "$output"
+        return 1
+    fi
+
+    echo "  require_cmd reports missing commands with exit code 2"
+    return 0
+}
+
+# Test 17: cron helpers replace and remove lines by marker
+test_cron_helpers_by_marker() {
+    local temp_root fake_bin state_file output
+    temp_root="$(mktemp -d)"
+    fake_bin="$temp_root/bin"
+    state_file="$temp_root/crontab.state"
+    mkdir -p "$fake_bin"
+
+    cat > "$fake_bin/crontab" <<'EOF'
+#!/bin/bash
+set -Eeuo pipefail
+state_file="${CRONTAB_STATE_FILE:?missing CRONTAB_STATE_FILE}"
+case "${1:-}" in
+    -l)
+        if [[ -f "$state_file" ]]; then
+            cat "$state_file"
+        fi
+        ;;
+    -)
+        cat > "$state_file"
+        ;;
+    *)
+        cat "$1" > "$state_file"
+        ;;
+esac
+EOF
+    chmod +x "$fake_bin/crontab"
+
+    PATH="$fake_bin:$PATH" CRONTAB_STATE_FILE="$state_file" bash -c '
+        set -Eeuo pipefail
+        source "$1"
+        printf "%s\n" "0 1 * * * keep-this # other" "15 9 * * * old # eth2qs-cli-pr-watch" > "$2"
+        cron_replace_by_marker "eth2qs-cli-pr-watch" "30 9 * * * new # eth2qs-cli-pr-watch"
+        cron_remove_by_marker "eth2qs-cli-pr-watch"
+        cat "$2"
+    ' _ "$PROJECT_ROOT/lib/common_functions.sh" "$state_file" > "$temp_root/output.txt"
+
+    output="$(cat "$temp_root/output.txt")"
+    rm -rf "$temp_root"
+
+    if [[ "$output" != *"0 1 * * * keep-this # other"* ]]; then
+        echo "  ERROR: cron helper removed unrelated lines"
+        return 1
+    fi
+
+    if [[ "$output" == *"eth2qs-cli-pr-watch"* ]]; then
+        echo "  ERROR: cron helper did not remove marker lines"
+        return 1
+    fi
+
+    echo "  cron helpers replace and remove marker lines correctly"
+    return 0
+}
+
 # Main test execution
 main() {
     echo "=========================================="
@@ -336,6 +415,8 @@ main() {
     run_test "service helper functions exist" test_service_helpers_exist
     run_test "choose_mev_stack precedence (regression)" test_choose_mev_stack_precedence
     run_test "doctor uses mev unit name (regression)" test_doctor_mev_service_name
+    run_test "require_cmd missing command returns 2" test_require_cmd_missing
+    run_test "cron helpers replace/remove by marker" test_cron_helpers_by_marker
 
     # Print summary
     echo ""

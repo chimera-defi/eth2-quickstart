@@ -136,6 +136,22 @@ if [[ $syntax_fail -gt 0 ]]; then
     exit 1
 fi
 
+if [[ -f "$PROJECT_ROOT/install/utils/validator_withdrawal_changes.sh" ]]; then
+    if bash "$PROJECT_ROOT/install/utils/validator_withdrawal_changes.sh" --help 2>&1 | grep -Eq "0x00|BLS-to-execution"; then
+        log_info "  ✓ validator_withdrawal_changes.sh help smoke"
+    else
+        log_error "  ✗ validator_withdrawal_changes.sh --help did not advertise the withdrawal change flow"
+        exit 1
+    fi
+fi
+
+if bash "$PROJECT_ROOT/scripts/eth2qs.sh" help 2>&1 | grep -Eq 'validator-exit|validator-create-0x02'; then
+    log_info "  ✓ eth2qs wrapper exposes validator helpers"
+else
+    log_error "  ✗ eth2qs.sh help is missing validator helper commands"
+    exit 1
+fi
+
 # Test 4: Verify common functions can be sourced
 log_info "Test 4: Verify functions load correctly..."
 if bash -c "source '$PROJECT_ROOT/exports.sh' && source '$PROJECT_ROOT/lib/common_functions.sh' && declare -f log_info >/dev/null" 2>/dev/null; then
