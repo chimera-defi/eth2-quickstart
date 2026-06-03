@@ -52,6 +52,11 @@ Use `scripts/eth2qs.sh` as a stable command entrypoint for both humans and AI ag
 `monitor export --json` is the compact summary surface for bots, dashboards, cron jobs, or alert relays, and `monitor snapshot` writes a local history entry under `~/.eth2qs-monitor/`.
 `repair` is the bounded apply surface. It previews allowlisted targeted restarts by default and requires `--apply --confirm` before making changes.
 
+Validator helpers:
+- `./scripts/eth2qs.sh validator-exit` for the focused exit checklist and client-specific voluntary exit flow.
+- `./scripts/eth2qs.sh validator-create-0x02` for the 0x02 entry checklist and deposit CLI launcher.
+- `./scripts/eth2qs.sh validator-manage` for the combined exit / consolidation menu.
+
 ## Environment Configuration (exports.sh)
 
 Key variables:

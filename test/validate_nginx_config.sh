@@ -26,8 +26,6 @@ NGINX_CONF="$NGINX_ETC/nginx.conf"
 NGINX_POLICY="$NGINX_ETC/conf.d/eth2-edge-policy.conf"
 NGINX_SITE="$NGINX_ETC/sites-enabled/default"
 
-trap 'rm -rf "$VALIDATE_ROOT"' EXIT
-
 mkdir -p "$NGINX_ETC/conf.d" "$NGINX_ETC/sites-enabled"
 
 create_nginx_config "${SERVER_NAME:-rpc.sharedtools.org}" "$NGINX_SITE"
@@ -36,6 +34,27 @@ render_nginx_http_policy_file "$NGINX_POLICY"
 has_passwordless_sudo() {
     command -v sudo &>/dev/null && sudo -n true 2>/dev/null
 }
+
+cleanup_validate_root() {
+    if [[ ! -d "$VALIDATE_ROOT" ]]; then
+        return 0
+    fi
+
+    if [[ "$(id -u)" -eq 0 ]]; then
+        rm -rf "$VALIDATE_ROOT"
+        return 0
+    fi
+
+    if has_passwordless_sudo; then
+        sudo rm -rf "$VALIDATE_ROOT"
+        return 0
+    fi
+
+    chmod -R u+w "$VALIDATE_ROOT" 2>/dev/null || true
+    rm -rf "$VALIDATE_ROOT" 2>/dev/null || true
+}
+
+trap cleanup_validate_root EXIT
 
 if [[ "$(id -u)" -ne 0 ]] && ! has_passwordless_sudo; then
     local_cache_root="$VALIDATE_ROOT/var/cache/nginx"

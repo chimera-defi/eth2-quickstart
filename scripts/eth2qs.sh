@@ -40,6 +40,8 @@ Operations:
 
 Validator:
   validators [--json]               List active validators with index, status, and balance
+  validator-exit                   Exit local validators using the managed exit flow
+  validator-create-0x02            Create modern compounding validators with 0x02 credentials
   validator-manage [--exit|--consolidate]   Manage validators: voluntary exits or EIP-7251 consolidations
 
 Utility:
@@ -62,6 +64,8 @@ Examples:
   sudo ./scripts/eth2qs.sh cleanup-host --dry-run
   ./scripts/eth2qs.sh validators
   ./scripts/eth2qs.sh validators --json
+  ./scripts/eth2qs.sh validator-exit
+  ./scripts/eth2qs.sh validator-create-0x02
   ./scripts/eth2qs.sh validator-manage
   ./scripts/eth2qs.sh validator-manage --exit
   ./scripts/eth2qs.sh validator-manage --consolidate
@@ -154,6 +158,12 @@ case "$cmd" in
         ;;
     validators)
         run_cmd "$ROOT_DIR/install/utils/validator_list.sh" "$@"
+        ;;
+    validator-exit)
+        run_cmd "$ROOT_DIR/install/utils/validator_exit.sh" "$@"
+        ;;
+    validator-create-0x02)
+        run_cmd "$ROOT_DIR/install/utils/validator_create_0x02.sh" "$@"
         ;;
     validator-manage)
         run_cmd "$ROOT_DIR/install/utils/validator_manage.sh" "$@"
