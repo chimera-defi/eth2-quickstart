@@ -1,36 +1,23 @@
 # PR Response State
-last_run: 2026-06-04T17:15
+last_run: 2026-06-04T18:15
 
 prs:
   - number: 177
     repo: chimera-defi/eth2-quickstart
-    last_activity: "2026-05-30T18:09:50Z"
+    last_activity: "2026-06-04T02:26:05Z"
     attempt_count: 1
-    status: fixed
+    status: skipped
     notes: >
-      Fixed SC2155 in harden_server.sh (backup_config: declare local vars
-      separately) and added ## Completion Quality Gate (Mandatory) section
-      to AGENTS.md required by validate_review_guardrails.sh.
-      Commit 5e81f3f. Awaiting CI rerun.
+      All 23 CI checks green as of 2026-06-04T02:46. No CHANGES_REQUESTED.
+      Previous fix (5e81f3f) resolved SC2155 + AGENTS.md quality gate.
+      State updated to reflect green status. Awaiting human merge.
 
   - number: 178
     repo: chimera-defi/eth2-quickstart
     last_activity: "2026-06-03T18:20:07Z"
     attempt_count: 1
-    status: fixed
+    status: skipped
     notes: >
-      All 22 CI checks green as of 2026-06-03T18:40. Fix applied in prior run:
-      amended commit to feat(validators) format, added 0x00/0x01 to
-      validator_exit.sh usage() to pass docker-integration smoke test.
-      Awaiting human merge.
-
-  - number: 297
-    repo: chimera-defi/Etc-mono-repo
-    last_activity: "2026-06-03T10:14:29Z"
-    attempt_count: 0
-    status: needs_human
-    notes: >
-      AWS Amplify Console Web Preview failure — external deployment preview,
-      not a code CI check. Not actionable by automated fix.
-      NOTE: Etc-mono-repo main branch is protected (requires PR); state file
-      cannot be written directly — tracked here until that changes.
+      All 22 CI checks green as of 2026-06-03T18:40. No CHANGES_REQUESTED.
+      Fix applied in prior run: feat(validators) format + 0x00/0x01 to
+      validator_exit.sh usage(). Awaiting human merge.
