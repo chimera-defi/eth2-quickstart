@@ -26,6 +26,7 @@ Use this when the agent needs to improve its future performance in this repo wit
 - Local end-to-end validation for validator flow changes should include a real execution/consensus pair when available; the validated combo for this branch was Geth + Prysm via `./test/run_e2e.sh --phase=2`.
 - BLS-to-execution change workflows should surface withdrawal credential type in the validator inventory, then use the official deposit CLI to generate signed messages and the beacon REST API to submit them.
 - For production-key safety, rehearse the withdrawal-change flow with a fixture-backed `--validators-json` file and stubbed deposit/curl commands before touching live keys.
+- Withdrawal-change helpers should support `--dry-run`, stage-by-stage preview output, and a live Prysm + geth smoke test in the phase-2 container so agents can validate the exact operator path before production.
 
 ## Rules
 

@@ -1,0 +1,38 @@
+{
+  "client": "prysm",
+  "beacon_url": "http://127.0.0.1:5052",
+  "generated_at_utc": "2026-06-04T00:00:00Z",
+  "beacon_query_status": "ok",
+  "validators": [
+    {
+      "index": "101",
+      "balance": "32000000000",
+      "status": "active_ongoing",
+      "validator": {
+        "pubkey": "0xaaaabbbbccccddddeeeeffff0000111122223333444455556666777788889999",
+        "withdrawal_credentials": "0x00aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "effective_balance": "32000000000"
+      }
+    },
+    {
+      "index": "102",
+      "balance": "33000000000",
+      "status": "active_ongoing",
+      "validator": {
+        "pubkey": "0xbbbbccccddddeeeeffff0000111122223333444455556666777788889999aaaa",
+        "withdrawal_credentials": "0x01bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "effective_balance": "32000000000"
+      }
+    },
+    {
+      "index": "103",
+      "balance": "34000000000",
+      "status": "active_ongoing",
+      "validator": {
+        "pubkey": "0xccccddddeeeeffff0000111122223333444455556666777788889999aaaabbbb",
+        "withdrawal_credentials": "0x02cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "effective_balance": "32000000000"
+      }
+    }
+  ]
+}

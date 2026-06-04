@@ -11,8 +11,9 @@ Canonical command surface:
 - Run Phase 2 install: `./scripts/eth2qs.sh phase2 --execution=geth --consensus=prysm --mev=mev-boost`
 - Run explicit Monad install: `./scripts/eth2qs.sh monad-install`
 - List active validators on the current node: `./scripts/eth2qs.sh validators --json`
+- Show validator inventory freshness and withdrawal status in the JSON output: `./scripts/eth2qs.sh validators --json`
 - Focused exit checklist / client-specific voluntary exit flow: `./scripts/eth2qs.sh validator-exit`
-- Generate or submit BLS-to-execution changes for 0x00 validators: `./scripts/eth2qs.sh validator-withdrawal-changes --generate --submit --yes`
+- Preview, generate, or submit BLS-to-execution changes for 0x00 validators: `./scripts/eth2qs.sh validator-withdrawal-changes --dry-run --generate --submit --yes`
 - Focused 0x02 compounding validator creation flow: `./scripts/eth2qs.sh validator-create-0x02`
 - Combined validator menu for exits and consolidations: `./scripts/eth2qs.sh validator-manage`
 - Health/status: `./scripts/eth2qs.sh doctor --json`

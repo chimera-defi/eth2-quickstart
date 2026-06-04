@@ -40,6 +40,7 @@ BEACON_URL_OVERRIDE=""
 SELECTED_INDICES=""
 SELECTED_WITHDRAWAL_CREDENTIALS=""
 GENERATED_OUTPUT_DIR=""
+DRY_RUN=false
 
 usage() {
     cat <<'USAGE'
@@ -52,6 +53,7 @@ Options:
   --generate                  Generate BLS-to-execution change JSON files.
   --submit                    Submit generated JSON files to the beacon node.
   --yes                       Skip the final confirmation prompt before submit.
+  --dry-run                   Print the planned actions without writing or submitting.
   --withdrawal-address <addr> Execution address to write into the change message.
   --mnemonic-file <path>      File containing the withdrawal mnemonic.
   --mnemonic-password-file <path>
@@ -116,6 +118,35 @@ with open(output_path, 'w') as fh:
     json.dump(raw, fh, indent=2)
     fh.write('\n')
 PYEOF
+}
+
+list_json_files() {
+    local data_dir="$1"
+    if [[ ! -d "$data_dir" ]]; then
+        return 0
+    fi
+    find "$data_dir" -maxdepth 1 -type f -name '*.json' | sort
+}
+
+format_command() {
+    printf '%q ' "$@"
+    printf '\n'
+}
+
+cleanup_stale_staging_dirs() {
+    if [[ ! -d "$OUT_DIR" ]]; then
+        return 0
+    fi
+
+    local removed=0
+    while IFS= read -r -d '' dir; do
+        rm -rf "$dir"
+        removed=$((removed + 1))
+    done < <(find "$OUT_DIR" -mindepth 1 -maxdepth 1 -type d -name 'run-*' -mtime +7 -print0 2>/dev/null || true)
+
+    if [[ "$removed" -gt 0 ]]; then
+        log_info "Removed $removed stale staging director$( [[ "$removed" -eq 1 ]] && echo 'y' || echo 'ies' )."
+    fi
 }
 
 print_inventory_table() {
@@ -227,6 +258,8 @@ generate_changes() {
         mnemonic_password=$(read_file_or_prompt "Mnemonic password" "$MNEMONIC_PASSWORD_FILE" true) || return 1
     fi
 
+    cleanup_stale_staging_dirs
+
     local target_dir="$OUT_DIR"
     if [[ -d "$OUT_DIR" ]] && find "$OUT_DIR" -maxdepth 1 -type f -name '*.json' -print -quit | grep -q .; then
         target_dir="$(mktemp -d "$OUT_DIR/run-XXXXXX")"
@@ -252,6 +285,57 @@ generate_changes() {
     "$launcher" "${args[@]}"
 }
 
+preview_generation() {
+    local launcher="$1"
+    local target_dir_hint="$2"
+
+    log_info "Dry run: generation is disabled, but the planned command is:"
+    if [[ -n "$launcher" ]]; then
+        format_command "$launcher" \
+            generate-bls-to-execution-change \
+            --bls_to_execution_changes_folder="$target_dir_hint" \
+            --chain="$CHAIN" \
+            --mnemonic="<hidden>" \
+            --validator_indices="$SELECTED_INDICES" \
+            --bls_withdrawal_credentials_list="$SELECTED_WITHDRAWAL_CREDENTIALS" \
+            --execution_address="$WITHDRAWAL_ADDRESS"
+    else
+        log_warn "Deposit CLI not found; install deposit.sh or deposit before generating for real."
+    fi
+}
+
+preview_submission() {
+    local input_dir="$1"
+    local beacon_url="$2"
+
+    if [[ -z "$beacon_url" ]]; then
+        log_warn "Dry run: beacon URL is empty, submission cannot be previewed."
+        return 0
+    fi
+
+    mapfile -t files < <(list_json_files "$input_dir")
+    if [[ ${#files[@]} -eq 0 ]]; then
+        if [[ -n "$SELECTED_INDICES" ]]; then
+            local idx
+            IFS=',' read -r -a idxs <<< "$SELECTED_INDICES"
+            log_info "Dry run: submission would target these generated files:"
+            for idx in "${idxs[@]}"; do
+                [[ -n "$idx" ]] || continue
+                printf '  %s\n' "bls_to_execution_change-${idx}.json"
+            done
+        else
+            log_warn "Dry run: no JSON files are available to submit."
+        fi
+        return 0
+    fi
+
+    log_info "Dry run: submission would POST these files to ${beacon_url}/eth/v1/beacon/pool/bls_to_execution_changes:"
+    local file
+    for file in "${files[@]}"; do
+        printf '  %s\n' "$(basename "$file")"
+    done
+}
+
 submit_changes() {
     local input_dir="$1"
     local beacon_url="$2"
@@ -270,21 +354,46 @@ submit_changes() {
         esac
     fi
 
-    mapfile -t files < <(find "$input_dir" -maxdepth 1 -type f -name '*.json' | sort)
+    mapfile -t files < <(list_json_files "$input_dir")
     if [[ ${#files[@]} -eq 0 ]]; then
         log_error "No JSON files found in $input_dir"
         return 1
     fi
 
+    local submitted=0
+    local failed=0
     local file
     for file in "${files[@]}"; do
         log_info "Submitting $(basename "$file")"
-        curl -sf \
+        local response_file http_code
+        response_file=$(mktemp /tmp/vwc_submit_XXXXXX.response)
+        http_code=$(curl -sS \
             -X POST \
             -H "Content-Type: application/json" \
             --data-binary "@$file" \
-            "$beacon_url/eth/v1/beacon/pool/bls_to_execution_changes"
+            -o "$response_file" \
+            -w '%{http_code}' \
+            "$beacon_url/eth/v1/beacon/pool/bls_to_execution_changes" || true)
+
+        if [[ "$http_code" =~ ^2[0-9][0-9]$ ]]; then
+            submitted=$((submitted + 1))
+            log_info "Accepted $(basename "$file") (HTTP $http_code)"
+        else
+            failed=$((failed + 1))
+            log_error "Beacon rejected $(basename "$file") (HTTP ${http_code:-none})"
+            if [[ -s "$response_file" ]]; then
+                sed 's/^/  /' "$response_file" >&2
+            fi
+        fi
+        rm -f "$response_file"
     done
+
+    if [[ "$failed" -gt 0 ]]; then
+        log_error "Submission summary: $submitted accepted, $failed failed."
+        return 1
+    fi
+
+    log_info "Submission summary: $submitted accepted, 0 failed."
 }
 
 main() {
@@ -300,6 +409,9 @@ main() {
                 ;;
             --submit)
                 SUBMIT=true
+                ;;
+            --dry-run)
+                DRY_RUN=true
                 ;;
             --yes)
                 YES=true
@@ -394,6 +506,13 @@ PYEOF
     log_info "Detected consensus client: ${client}"
     log_info "Beacon API: ${beacon_url}"
     log_info "Credential filter: ${SELECTOR}"
+    log_info "Inventory snapshot: $(python3 - "$selected_file" <<'PYEOF'
+import json, sys
+with open(sys.argv[1]) as fh:
+    raw = json.load(fh)
+print(raw.get('generated_at_utc', 'unknown'))
+PYEOF
+)"
 
     print_inventory_table "$selected_file"
 
@@ -445,8 +564,40 @@ PYEOF
         log_warn "This helper is intended for 0x00 validators; selection '$SELECTOR' may not require a withdrawal change."
     fi
 
+    if [[ "$DRY_RUN" == true ]]; then
+        local launcher=""
+        if [[ "$GENERATE" == true ]]; then
+            launcher=$(detect_deposit_launcher 2>/dev/null || true)
+        fi
+
+        log_info "Dry run: no files will be written or submitted."
+        log_info "Would affect ${count} validator(s): ${SELECTED_INDICES}"
+
+        if [[ "$GENERATE" == true ]]; then
+            local planned_dir="$OUT_DIR"
+            if [[ -d "$OUT_DIR" ]] && find "$OUT_DIR" -maxdepth 1 -type f -name '*.json' -print -quit | grep -q .; then
+                log_info "Would stage into a fresh run-* directory under $OUT_DIR because JSON files already exist there."
+            else
+                log_info "Would stage into $planned_dir."
+            fi
+            preview_generation "$launcher" "$planned_dir"
+        fi
+
+        if [[ "$SUBMIT" == true ]]; then
+            preview_submission "${GENERATED_OUTPUT_DIR:-$OUT_DIR}" "$beacon_url"
+        fi
+        return 0
+    fi
+
     if [[ "$GENERATE" == true ]]; then
         generate_changes
+        local generated_count
+        generated_count=$(list_json_files "${GENERATED_OUTPUT_DIR:-$OUT_DIR}" | wc -l | tr -d ' ')
+        if [[ "$generated_count" -eq 0 ]]; then
+            log_error "Generation completed but no JSON files were produced."
+            return 1
+        fi
+        log_info "Generated $generated_count JSON file(s) in ${GENERATED_OUTPUT_DIR:-$OUT_DIR}"
     fi
 
     if [[ "$SUBMIT" == true ]]; then

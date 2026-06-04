@@ -32,44 +32,7 @@ setup_fake_env() {
     temp_root="$(mktemp -d)"
     mkdir -p "$temp_root/bin"
 
-    cat > "$temp_root/validators.json" <<'JSON'
-{
-  "client": "prysm",
-  "beacon_url": "http://127.0.0.1:5052",
-  "validators": [
-    {
-      "index": "101",
-      "balance": "32000000000",
-      "status": "active_ongoing",
-      "validator": {
-        "pubkey": "0xaaaabbbbccccddddeeeeffff0000111122223333444455556666777788889999",
-        "withdrawal_credentials": "0x00aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        "effective_balance": "32000000000"
-      }
-    },
-    {
-      "index": "102",
-      "balance": "33000000000",
-      "status": "active_ongoing",
-      "validator": {
-        "pubkey": "0xbbbbccccddddeeeeffff0000111122223333444455556666777788889999aaaa",
-        "withdrawal_credentials": "0x01bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-        "effective_balance": "32000000000"
-      }
-    },
-    {
-      "index": "103",
-      "balance": "34000000000",
-      "status": "active_ongoing",
-      "validator": {
-        "pubkey": "0xccccddddeeeeffff0000111122223333444455556666777788889999aaaabbbb",
-        "withdrawal_credentials": "0x02cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-        "effective_balance": "32000000000"
-      }
-    }
-  ]
-}
-JSON
+    cp "$SCRIPT_DIR/fixtures/validator_withdrawal_changes_inventory.json" "$temp_root/validators.json"
 
     cat > "$temp_root/bin/deposit.sh" <<'EOF'
 #!/bin/bash
@@ -118,6 +81,34 @@ assert_contains() {
     local needle="$1"
     local file="$2"
     grep -qF -- "$needle" "$file"
+}
+
+assert_file_empty() {
+    local file="$1"
+    [[ ! -e "$file" || ! -s "$file" ]]
+}
+
+# shellcheck disable=SC2317
+test_dry_run_reports_without_invoking_tools() {
+    local temp_root output deposit_log curl_log
+    temp_root="$(setup_fake_env)"
+    deposit_log="$temp_root/deposit.log"
+    curl_log="$temp_root/curl.log"
+
+    output="$(PATH="$temp_root/bin:$PATH" "$PROJECT_ROOT/install/utils/validator_withdrawal_changes.sh"         --validators-json "$temp_root/validators.json"         --credential-type 0x00         --dry-run         --generate         --submit         --yes         --withdrawal-address 0x1111111111111111111111111111111111111111         --mnemonic-file "$temp_root/mnemonic.txt"         --mnemonic-password-file "$temp_root/password.txt"         --out-dir "$temp_root/generated"         --deposit-tool deposit-sh         --beacon-url http://127.0.0.1:5052)"
+
+    printf '%s
+' "$output" | grep -q "Dry run: no files will be written or submitted."
+    printf '%s
+' "$output" | grep -q "Would affect 1 validator(s): 101"
+    printf '%s
+' "$output" | grep -q "generate-bls-to-execution-change"
+    printf '%s
+' "$output" | grep -q "bls_to_execution_change-101.json"
+    assert_file_empty "$deposit_log"
+    assert_file_empty "$curl_log"
+
+    rm -rf "$temp_root"
 }
 
 # shellcheck disable=SC2317
@@ -172,6 +163,7 @@ echo "=========================================="
 echo "Validator Withdrawal Change Test Suite"
 echo "=========================================="
 
+run_test "dry run reports without invoking tools" test_dry_run_reports_without_invoking_tools
 run_test "inventory shows withdrawal types" test_inventory_shows_withdrawal_types
 run_test "generate and submit 0x00 changes" test_generate_and_submit_0x00_changes
 
