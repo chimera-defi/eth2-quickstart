@@ -210,6 +210,19 @@ else
     record_test "validator_create_0x02.sh help smoke" "SKIP"
 fi
 
+if [[ -f "$PROJECT_ROOT/install/utils/validator_withdrawal_changes.sh" ]]; then
+    if bash "$PROJECT_ROOT/install/utils/validator_withdrawal_changes.sh" --help 2>&1 | grep -Eq "0x00|BLS-to-execution"; then
+        record_test "validator_withdrawal_changes.sh help smoke" "PASS"
+    else
+        record_test "validator_withdrawal_changes.sh help smoke" "FAIL"
+        log_error "validator_withdrawal_changes.sh --help did not advertise the withdrawal change flow"
+        print_test_summary
+        exit 1
+    fi
+else
+    record_test "validator_withdrawal_changes.sh help smoke" "SKIP"
+fi
+
 if bash "$PROJECT_ROOT/scripts/eth2qs.sh" help 2>&1 | grep -Eq 'validator-exit|validator-create-0x02'; then
     record_test "eth2qs wrapper exposes validator helpers" "PASS"
 else

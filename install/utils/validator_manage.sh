@@ -143,7 +143,7 @@ rows = d.get("validators", [])
 if not rows:
     print("  (none)")
     sys.exit(0)
-hdr = f"  {'Index':<10} {'Public Key':<98} {'Status':<22} Balance (ETH)"
+hdr = f"  {'Index':<10} {'Public Key':<98} {'Status':<22} Balance (ETH) {'WCred'}"
 print()
 print(hdr)
 print("  " + "-" * (len(hdr) - 2))
@@ -152,7 +152,9 @@ for v in rows:
     pubkey = v.get("validator", {}).get("pubkey", "?")
     status = v.get("status", "?")
     bal    = int(v.get("balance", 0)) / 1e9
-    print(f"  {idx:<10} {pubkey:<98} {status:<22} {bal:.6f}")
+    cred   = v.get("validator", {}).get("withdrawal_credentials", "") or ""
+    wcred  = cred[:4].lower() if cred.startswith("0x") and len(cred) >= 4 else "?"
+    print(f"  {idx:<10} {pubkey:<98} {status:<22} {bal:.6f} {wcred}")
 print("  " + "-" * (len(hdr) - 2))
 print(f"  {len(rows)} validator(s)\n")
 PYEOF

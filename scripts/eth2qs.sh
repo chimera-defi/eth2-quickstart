@@ -43,6 +43,7 @@ Validator:
   validator-exit                   Exit local validators using the managed exit flow
   validator-create-0x02            Create modern compounding validators with 0x02 credentials
   validator-manage [--exit|--consolidate]   Manage validators: voluntary exits or EIP-7251 consolidations
+  validator-withdrawal-changes      Generate or submit BLS-to-execution changes for 0x00 validators
 
 Utility:
   help                    Show this help text
@@ -69,6 +70,7 @@ Examples:
   ./scripts/eth2qs.sh validator-manage
   ./scripts/eth2qs.sh validator-manage --exit
   ./scripts/eth2qs.sh validator-manage --consolidate
+  ./scripts/eth2qs.sh validator-withdrawal-changes --generate --submit --yes
 EOF
 }
 
@@ -167,6 +169,9 @@ case "$cmd" in
         ;;
     validator-manage)
         run_cmd "$ROOT_DIR/install/utils/validator_manage.sh" "$@"
+        ;;
+    validator-withdrawal-changes)
+        run_cmd "$ROOT_DIR/install/utils/validator_withdrawal_changes.sh" "$@"
         ;;
     *)
         echo "Unknown command: $cmd" >&2

@@ -205,7 +205,7 @@ if not rows:
     print("  The node may still be syncing or no keys are imported yet.")
     sys.exit(0)
 
-hdr = f"{'Index':<12} {'Public Key':<98} {'Status':<22} {'Balance (ETH)':<16} Eff. Balance (ETH)"
+hdr = f"{'Index':<12} {'Public Key':<98} {'Status':<22} {'Balance (ETH)':<16} {'WCred'} Eff. Balance (ETH)"
 print()
 print(hdr)
 print("-" * len(hdr))
@@ -214,8 +214,10 @@ for v in rows:
     pubkey = v.get("validator", {}).get("pubkey", "?")
     status = v.get("status", "?")
     bal    = int(v.get("balance", 0)) / 1e9
+    cred   = v.get("validator", {}).get("withdrawal_credentials", "") or ""
+    wcred  = cred[:4].lower() if cred.startswith("0x") and len(cred) >= 4 else "?"
     eff    = int(v.get("validator", {}).get("effective_balance", 0)) / 1e9
-    print(f"{idx:<12} {pubkey:<98} {status:<22} {bal:<16.6f} {eff:.6f}")
+    print(f"{idx:<12} {pubkey:<98} {status:<22} {bal:<16.6f} {wcred:<8} {eff:.6f}")
 print("-" * len(hdr))
 print(f"  {len(rows)} validator(s)")
 print()
