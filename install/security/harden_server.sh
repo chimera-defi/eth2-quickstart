@@ -153,11 +153,13 @@ backup_config() {
     if [[ ! -f "$config_file" ]]; then
         return 0
     fi
-    
-    local backup_dir="/root/backups/hardening_$(date +%Y%m%d_%H%M%S)"
+
+    local backup_dir
+    backup_dir="/root/backups/hardening_$(date +%Y%m%d_%H%M%S)"
     mkdir -p "$backup_dir"
-    
-    local backup_file="$backup_dir/$(basename "$config_file").backup"
+
+    local backup_file
+    backup_file="$backup_dir/$(basename "$config_file").backup"
     cp "$config_file" "$backup_file"
     log_info "Backed up $config_file to $backup_file"
 }
@@ -166,7 +168,7 @@ backup_config() {
 restore_config() {
     local config_file="$1"
     local backup_file="$2"
-    
+
     if [[ -f "$backup_file" ]]; then
         cp "$backup_file" "$config_file"
         log_info "Restored $config_file from $backup_file"
@@ -185,11 +187,11 @@ harden_ssh() {
     fi
 
     log_info "=== SSH Hardening Module ==="
-    
+
     local current_ssh_port
     current_ssh_port=$(detect_current_ssh_port)
     log_info "Current SSH port: $current_ssh_port"
-    
+
     if [[ "$PRESERVE_SSH_PORT" == "true" ]]; then
         SSH_PORT="$current_ssh_port"
         log_info "Preserving current SSH port: $SSH_PORT"
@@ -200,27 +202,27 @@ harden_ssh() {
             log_warn "Ensure you can connect on port $SSH_PORT before running this"
         fi
     fi
-    
+
     if [[ "$INTERACTIVE" == "true" ]]; then
         if ! whiptail_yesno "SSH Hardening" "Configure SSH hardening on port $SSH_PORT?\n\nThis will:\n- Deploy hardened SSH configuration\n- Set SSH banner\n- Change port to $SSH_PORT (unless preserved)\n\nContinue?" 12 70; then
             log_info "SSH hardening skipped by user"
             return 0
         fi
     fi
-    
+
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] Would configure SSH hardening on port $SSH_PORT"
         return 0
     fi
-    
+
     if [[ "$BACKUP_CONFIGS" == "true" ]]; then
         backup_config /etc/ssh/sshd_config
     fi
-    
+
     # Use existing configure_ssh function
     if configure_ssh "$SSH_PORT" "$PROJECT_ROOT"; then
         log_info "✓ SSH hardening completed"
-        
+
         if [[ "$VALIDATE_AFTER" == "true" ]]; then
             if sshd -t 2>/dev/null; then
                 log_info "✓ SSH configuration validated"
@@ -243,19 +245,19 @@ harden_firewall() {
     fi
 
     log_info "=== Firewall Hardening Module ==="
-    
+
     if [[ "$INTERACTIVE" == "true" ]]; then
         if ! whiptail_yesno "Firewall Hardening" "Configure UFW firewall with security rules?\n\nThis will:\n- Set default deny incoming, allow outgoing\n- Open SSH port $SSH_PORT\n- Configure chain-specific ports\n- Block outbound to private networks\n\nContinue?" 12 70; then
             log_info "Firewall hardening skipped by user"
             return 0
         fi
     fi
-    
+
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] Would configure UFW firewall"
         return 0
     fi
-    
+
     # Use existing consolidated_security.sh for firewall
     # We'll call just the firewall function if we extract it, or call the whole script
     log_info "Running consolidated security setup (includes firewall)..."
@@ -271,12 +273,12 @@ harden_fail2ban() {
     fi
 
     log_info "=== Fail2ban Hardening Module ==="
-    
+
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] Would configure fail2ban"
         return 0
     fi
-    
+
     # Fail2ban is included in consolidated_security.sh
     # This is a placeholder for if we extract it separately
     log_info "Fail2ban hardening included in consolidated security"
@@ -290,19 +292,19 @@ harden_snort() {
     fi
 
     log_info "=== Snort IDS Module ==="
-    
+
     if [[ "$INTERACTIVE" == "true" ]]; then
         if ! whiptail_yesno "Snort IDS" "Install and configure Snort intrusion detection?\n\nThis will:\n- Install Snort and rules\n- Configure network interface\n- Set up IDS monitoring\n\nContinue?" 12 70; then
             log_info "Snort IDS skipped by user"
             return 0
         fi
     fi
-    
+
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] Would install and configure Snort IDS"
         return 0
     fi
-    
+
     # Snort is included in consolidated_security.sh
     log_info "Snort IDS included in consolidated security"
 }
@@ -315,19 +317,19 @@ harden_aide() {
     fi
 
     log_info "=== AIDE File Integrity Monitoring Module ==="
-    
+
     if [[ "$INTERACTIVE" == "true" ]]; then
         if ! whiptail_yesno "AIDE Monitoring" "Install and configure AIDE file integrity monitoring?\n\nThis will:\n- Install AIDE package\n- Initialize integrity database\n- Schedule daily checks\n\nContinue?" 12 70; then
             log_info "AIDE monitoring skipped by user"
             return 0
         fi
     fi
-    
+
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] Would install and configure AIDE"
         return 0
     fi
-    
+
     # AIDE is included in consolidated_security.sh
     log_info "AIDE monitoring included in consolidated security"
 }
@@ -340,19 +342,19 @@ harden_network() {
     fi
 
     log_info "=== Network Security Hardening Module ==="
-    
+
     if [[ "$INTERACTIVE" == "true" ]]; then
         if ! whiptail_yesno "Network Security" "Apply network security hardening?\n\nThis will:\n- Restrict shared memory\n- Disable unnecessary services\n- Configure kernel security parameters\n- Apply sysctl hardening\n\nContinue?" 12 70; then
             log_info "Network security hardening skipped by user"
             return 0
         fi
     fi
-    
+
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] Would apply network security hardening"
         return 0
     fi
-    
+
     # Use existing apply_network_security function
     if apply_network_security; then
         log_info "✓ Network security hardening completed"
@@ -370,19 +372,19 @@ harden_monitoring() {
     fi
 
     log_info "=== Security Monitoring Module ==="
-    
+
     if [[ "$INTERACTIVE" == "true" ]]; then
         if ! whiptail_yesno "Security Monitoring" "Set up security monitoring?\n\nThis will:\n- Install security monitoring script\n- Configure cron job for periodic checks\n- Set up log rotation\n\nContinue?" 12 70; then
             log_info "Security monitoring skipped by user"
             return 0
         fi
     fi
-    
+
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] Would set up security monitoring"
         return 0
     fi
-    
+
     # Use existing setup_security_monitoring function
     if setup_security_monitoring; then
         log_info "✓ Security monitoring setup completed"
@@ -398,11 +400,11 @@ main() {
     log_info "Project root: $PROJECT_ROOT"
     log_info "Dry-run mode: $DRY_RUN"
     log_info "Interactive mode: $INTERACTIVE"
-    
+
     if [[ "$DRY_RUN" == "true" ]]; then
         log_warn "DRY-RUN MODE: No changes will be applied"
     fi
-    
+
     # Display configuration
     echo ""
     log_info "Configuration:"
@@ -414,17 +416,17 @@ main() {
     log_info "  Network Security: $HARDEN_NETWORK"
     log_info "  Security Monitoring: $HARDEN_MONITORING"
     echo ""
-    
+
     if [[ "$INTERACTIVE" == "true" ]]; then
         if ! whiptail_yesno "Confirm Hardening" "Proceed with server hardening using the above configuration?" 10 60; then
             log_info "Hardening cancelled by user"
             exit 0
         fi
     fi
-    
+
     # Run hardening modules
     local failed_modules=()
-    
+
     harden_ssh || failed_modules+=("SSH")
     harden_firewall || failed_modules+=("Firewall")
     harden_fail2ban || failed_modules+=("Fail2ban")
@@ -432,11 +434,11 @@ main() {
     harden_aide || failed_modules+=("AIDE")
     harden_network || failed_modules+=("Network")
     harden_monitoring || failed_modules+=("Monitoring")
-    
+
     # Summary
     echo ""
     log_info "=== Hardening Summary ==="
-    
+
     if [[ ${#failed_modules[@]} -eq 0 ]]; then
         log_info "✓ All hardening modules completed successfully"
         if [[ "$DRY_RUN" == "true" ]]; then
