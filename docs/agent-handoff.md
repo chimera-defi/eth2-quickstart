@@ -7,6 +7,26 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (Validator lifecycle helpers and local geth/Prysm E2E, 2026-06-04)
+
+- Added focused validator lifecycle wrappers on top of the shared inventory surface:
+  - `./scripts/eth2qs.sh validators --json` lists active validators with index, status, and balance.
+  - `./scripts/eth2qs.sh validator-exit` prints the 0x00/0x01 exit checklist and hands off to the managed voluntary-exit flow.
+  - `./scripts/eth2qs.sh validator-create-0x02` prints the 0x02 compounding checklist and can launch a local deposit CLI with `--compounding`.
+  - `./scripts/eth2qs.sh validator-manage` remains the combined exit / consolidation menu.
+- Reused the local validator inventory path in both the exit and compounding helpers so operators see the current node state before taking action.
+- Validated the helper flow locally with the repo's existing E2E tooling on Geth + Prysm:
+  - `bash test/ci_test_run_2.sh`
+  - `bash test/run_e2e.sh --phase=2`
+  - `bash -n install/utils/validator_exit.sh install/utils/validator_create_0x02.sh scripts/eth2qs.sh test/ci_test_run_2.sh test/docker_test.sh test/validate_nginx_config.sh`
+  - `shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 install/utils/validator_exit.sh install/utils/validator_create_0x02.sh scripts/eth2qs.sh test/ci_test_run_2.sh test/docker_test.sh test/validate_nginx_config.sh`
+- Repo guidance updates:
+  - added validator helper routing to `skills/eth2-quickstart/SKILL.md`
+  - added the validator commands to `skills/eth2-quickstart/references/commands.md`
+  - added a durable learning note to `skills/eth2-quickstart/references/improvement.md`
+- Review note:
+  - the PR commit-message rule failed only because of an earlier non-conventional commit subject; rebasing and renaming it to `fix(validators): pass compounding flag to deposit CLI` fixed the gate locally.
+
 ## Latest Update (Batteries-included Caddy guardrails pass, 2026-04-20)
 
 - Upgraded Caddy install behavior to make edge guardrails batteries-included by default:
