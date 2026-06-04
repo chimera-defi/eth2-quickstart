@@ -84,3 +84,4 @@ Before marking any task complete, verify the change set against the repository's
 - New `install/utils` helpers should be wired into `scripts/eth2qs.sh`, documented in `docs/SCRIPTS.md`, and covered by at least one structure or Docker smoke test.
 - Validator exit helpers should reuse the local validator inventory path and delegate client-specific exit logic to `validator_manage.sh`.
 - Validator entry helpers should prefer an explicit command template when the deposit CLI is not installed locally so operators still get a usable offline checklist.
+- Withdrawal-change helpers should support a no-side-effect `--dry-run` preview and a fixture-backed smoke test path so agents can rehearse the workflow in the live geth + Prysm container before touching production keys.

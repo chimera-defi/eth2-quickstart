@@ -24,9 +24,10 @@ They are also available through the unified `eth2qs.sh` wrapper.
 ./scripts/eth2qs.sh validator-create-0x02
 ./install/utils/validator_create_0x02.sh
 
-# Generate / submit BLS-to-execution changes for 0x00 validators
+# Preview / generate / submit BLS-to-execution changes for 0x00 validators
+./scripts/eth2qs.sh validator-withdrawal-changes --dry-run --generate --submit --yes
 ./scripts/eth2qs.sh validator-withdrawal-changes --generate --submit --yes
-./install/utils/validator_withdrawal_changes.sh --generate --submit --yes
+./install/utils/validator_withdrawal_changes.sh --dry-run --generate --submit --yes
 
 # Interactive management menu (exit / consolidate)
 ./scripts/eth2qs.sh validator-manage
@@ -47,6 +48,7 @@ They are also available through the unified `eth2qs.sh` wrapper.
 4. Queries the local beacon node API (`/eth/v1/beacon/states/head/validators`)
    filtered to those public keys only.
 5. Displays a table with validator index, pubkey, status, balance, withdrawal credential type, and effective balance.
+6. Emits inventory freshness metadata in the JSON output (`generated_at_utc`, `beacon_query_status`) so operators can tell when the snapshot was taken and whether the beacon query succeeded.
 
 **Nothing is read from the network validator set** — only validators whose
 keystore files exist on this machine are shown.
@@ -68,6 +70,8 @@ keystore files exist on this machine are shown.
 {
   "client": "lighthouse",
   "beacon_url": "http://127.0.0.1:5052",
+  "generated_at_utc": "2026-06-04T00:00:00Z",
+  "beacon_query_status": "ok",
   "validators": [
     {
       "index": "123456",
@@ -116,13 +120,15 @@ first step before a later voluntary exit if you want the validator to become
 withdrawable.
 
 1. Shows the current local validator inventory, including withdrawal credential
-   type.
+   type and inventory freshness metadata.
 2. Filters the inventory to the selected credential type (default `0x00`).
-3. Uses the official deposit CLI to generate signed BLS-to-execution change
+3. Supports `--dry-run` so operators can preview the exact signing and submit
+   commands without writing or POSTing anything.
+4. Uses the official deposit CLI to generate signed BLS-to-execution change
    JSON files from a withdrawal mnemonic and execution address.
-4. Optionally POSTs the generated JSON files to the local beacon node REST API
+5. Optionally POSTs the generated JSON files to the local beacon node REST API
    at `/eth/v1/beacon/pool/bls_to_execution_changes`.
-5. Works with the repo's Prysm + geth stack as long as the beacon REST API is
+6. Works with the repo's Prysm + geth stack as long as the beacon REST API is
    reachable from the node running the helper.
 
 ## `validator_manage.sh` — Operations

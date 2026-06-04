@@ -3,6 +3,16 @@
 Use this file to preserve context across sessions.
 
 ## Active Defaults
+## Latest Update (Withdrawal helper dry-run and live Prysm/geth smoke, 2026-06-04)
+
+- Added a dry-run path to `./scripts/eth2qs.sh validator-withdrawal-changes` so operators can preview the exact signing and submission commands without writing or POSTing anything.
+- The validator inventory now includes freshness metadata in JSON (`generated_at_utc`, `beacon_query_status`) so agents can tell when the snapshot was taken and whether the beacon query succeeded.
+- Added a fixture-backed smoke test for the withdrawal helper and wired it into the phase-2 E2E flow so the helper is exercised in the live Prysm + geth container.
+- Repo guidance updates:
+  - tightened the validator management docs for dry-run usage and inventory freshness
+  - added the new dry-run command to the script reference and agent skill command list
+  - recorded the rehearsal pattern in the skill improvement notes
+
 - Start new work from latest `origin/master`.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
