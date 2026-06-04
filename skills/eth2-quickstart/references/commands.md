@@ -10,6 +10,10 @@ Canonical command surface:
 - Run Phase 1 hardening: `sudo ./scripts/eth2qs.sh phase1`
 - Run Phase 2 install: `./scripts/eth2qs.sh phase2 --execution=geth --consensus=prysm --mev=mev-boost`
 - Run explicit Monad install: `./scripts/eth2qs.sh monad-install`
+- List active validators on the current node: `./scripts/eth2qs.sh validators --json`
+- Focused exit checklist / client-specific voluntary exit flow: `./scripts/eth2qs.sh validator-exit`
+- Focused 0x02 compounding validator creation flow: `./scripts/eth2qs.sh validator-create-0x02`
+- Combined validator menu for exits and consolidations: `./scripts/eth2qs.sh validator-manage`
 - Health/status: `./scripts/eth2qs.sh doctor --json`
 - Monitoring/triage: `./scripts/eth2qs.sh stats --json`
 - Structured service debug: `./scripts/eth2qs.sh debug --json --service cl`
