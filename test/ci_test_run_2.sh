@@ -119,7 +119,7 @@ fi
 # Covers: execution (7), consensus (6), MEV (3), web (caddy, nginx), utils
 log_info "Test 3: Verify all install scripts (syntax)..."
 syntax_fail=0
-for script in "${CLIENT_SCRIPTS[@]}" "install/utils/install_dependencies.sh" "install/utils/select_clients.sh" "install/utils/validator_exit.sh" "install/utils/validator_create_0x02.sh" "install/web/install_caddy.sh" "install/web/install_nginx.sh" "install/web/proxy_config_renderer.sh" "config/edge_policy.env" "test/validate_proxy_policy_sync.sh" "test/validate_proxy_policy_toggles.sh" "test/validate_caddy_config.sh" "test/validate_nginx_config.sh" "test/validate_review_guardrails.sh"; do
+for script in "${CLIENT_SCRIPTS[@]}" "install/utils/install_dependencies.sh" "install/utils/select_clients.sh" "install/utils/validator_exit.sh" "install/utils/validator_create_0x02.sh" "install/utils/validator_withdrawal_changes.sh" "install/web/install_caddy.sh" "install/web/install_nginx.sh" "install/web/proxy_config_renderer.sh" "config/edge_policy.env" "test/validate_proxy_policy_sync.sh" "test/validate_proxy_policy_toggles.sh" "test/validate_caddy_config.sh" "test/validate_nginx_config.sh" "test/validate_review_guardrails.sh"; do
     if [[ -f "$PROJECT_ROOT/$script" ]]; then
         if bash -n "$PROJECT_ROOT/$script" 2>/dev/null; then
             log_info "  ✓ $script"

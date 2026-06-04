@@ -55,6 +55,7 @@ Use `scripts/eth2qs.sh` as a stable command entrypoint for both humans and AI ag
 Validator helpers:
 - `./scripts/eth2qs.sh validator-exit` for the focused exit checklist and client-specific voluntary exit flow.
 - `./scripts/eth2qs.sh validator-create-0x02` for the 0x02 entry checklist and deposit CLI launcher.
+- `./scripts/eth2qs.sh validator-withdrawal-changes` for BLS-to-execution credential changes on `0x00` validators.
 - `./scripts/eth2qs.sh validator-manage` for the combined exit / consolidation menu.
 
 ## Environment Configuration (exports.sh)

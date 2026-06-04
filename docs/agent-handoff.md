@@ -7,6 +7,18 @@ Use this file to preserve context across sessions.
 - Preserve valuable uncommitted work before syncing (stash or branch).
 - Use a fresh branch + fresh PR for each new task.
 
+## Latest Update (Withdrawal credential changes and safe rehearsal path, 2026-06-04)
+
+- Added a dedicated BLS-to-execution helper for `0x00` validators: `./scripts/eth2qs.sh validator-withdrawal-changes`.
+- The local validator inventory now shows withdrawal credential type so agents can see `0x00`, `0x01`, and `0x02` at a glance before taking action.
+- The helper is designed for safe rehearsal with `--validators-json`, stubbed deposit CLI, and stubbed beacon POSTs before live usage.
+- The tested flow for this branch now includes: `bash test/ci_test_run_2.sh`, `bash test/run_e2e.sh --phase=2`, and a fixture-driven helper test that stubs signing/submission.
+- Repo guidance updates:
+  - added validator withdrawal-change routing to `skills/eth2-quickstart/SKILL.md`
+  - added the command to `skills/eth2-quickstart/references/commands.md`
+  - added durable learning notes to `skills/eth2-quickstart/references/improvement.md`
+
+
 ## Latest Update (Validator lifecycle helpers and local geth/Prysm E2E, 2026-06-04)
 
 - Added focused validator lifecycle wrappers on top of the shared inventory surface:
