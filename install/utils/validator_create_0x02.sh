@@ -91,6 +91,7 @@ print_command_preview() {
         launcher="$launcher_detected"
     fi
     local cmd=("$launcher" "$MODE")
+    cmd+=("--compounding")
     cmd+=("--num_validators=$NUM_VALIDATORS")
     cmd+=("--mnemonic_language=$MNEMONIC_LANGUAGE")
     cmd+=("--chain=$CHAIN")
@@ -145,6 +146,7 @@ launch_deposit_tool() {
 
     local args=()
     args+=("$MODE")
+    args+=("--compounding")
     args+=("--num_validators=$NUM_VALIDATORS")
     args+=("--mnemonic_language=$MNEMONIC_LANGUAGE")
     args+=("--chain=$CHAIN")
