@@ -21,7 +21,7 @@ Use this when the agent needs to improve its future performance in this repo wit
 
 ## Durable learnings observed in this repo
 
-- Validator lifecycle work should expose a read-only inventory command first, then branch into focused exit or compounding flows. The current surface is `./scripts/eth2qs.sh validators --json`, `validator-exit`, `validator-create-0x02`, `validator-withdrawal-changes`, and `validator-manage`.
+- Validator lifecycle work should expose a read-only inventory command first, then branch into focused exit or compounding flows. The current surface is `./scripts/eth2qs.sh validators --json`, `validator-exit`, `validator-withdrawal-changes`, `validator-create-0x02`, and `validator-manage`.
 - New `install/utils` validator helpers should reuse the local inventory path, keep offline command templates useful when client tooling is absent, and document the wrapper commands in both the skill and `docs/SCRIPTS.md`.
 - Local end-to-end validation for validator flow changes should include a real execution/consensus pair when available; the validated combo for this branch was Geth + Prysm via `./test/run_e2e.sh --phase=2`.
 - BLS-to-execution change workflows should surface withdrawal credential type in the validator inventory, then use the official deposit CLI to generate signed messages and the beacon REST API to submit them.
