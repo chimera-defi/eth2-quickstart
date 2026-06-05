@@ -23,6 +23,7 @@ if [[ -f "$ROOT_DIR/config/user_config.env" ]]; then
 fi
 
 JSON_OUTPUT=false
+BEACON_QUERY_STATUS="ok"
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --json) JSON_OUTPUT=true ;;
@@ -164,6 +165,7 @@ query_beacon_validators() {
     local pubkeys=("$@")
 
     if [[ ${#pubkeys[@]} -eq 0 ]]; then
+        BEACON_QUERY_STATUS="no_pubkeys"
         echo '{"data":[]}' > "$out_file"
         return
     fi
@@ -173,15 +175,14 @@ query_beacon_validators() {
     ids=$(printf "0x%s," "${pubkeys[@]}")
     ids="${ids%,}"
 
-    local response
-    response=$(curl -sf \
-        --max-time 15 \
-        "${beacon_url}/eth/v1/beacon/states/head/validators?id=${ids}" \
-        2>/dev/null || true)
+    local response curl_rc=0
+    response=$(curl -sS         --max-time 15         "${beacon_url}/eth/v1/beacon/states/head/validators?id=${ids}"         2>/dev/null) || curl_rc=$?
 
-    if [[ -z "$response" ]]; then
+    if [[ $curl_rc -ne 0 || -z "$response" ]]; then
+        BEACON_QUERY_STATUS="failed"
         echo '{"data":[]}' > "$out_file"
     else
+        BEACON_QUERY_STATUS="ok"
         echo "$response" > "$out_file"
     fi
 }
@@ -205,7 +206,7 @@ if not rows:
     print("  The node may still be syncing or no keys are imported yet.")
     sys.exit(0)
 
-hdr = f"{'Index':<12} {'Public Key':<98} {'Status':<22} {'Balance (ETH)':<16} Eff. Balance (ETH)"
+hdr = f"{'Index':<12} {'Public Key':<98} {'Status':<22} {'Balance (ETH)':<16} {'WCred'} Eff. Balance (ETH)"
 print()
 print(hdr)
 print("-" * len(hdr))
@@ -214,8 +215,10 @@ for v in rows:
     pubkey = v.get("validator", {}).get("pubkey", "?")
     status = v.get("status", "?")
     bal    = int(v.get("balance", 0)) / 1e9
+    cred   = v.get("validator", {}).get("withdrawal_credentials", "") or ""
+    wcred  = cred[:4].lower() if cred.startswith("0x") and len(cred) >= 4 else "?"
     eff    = int(v.get("validator", {}).get("effective_balance", 0)) / 1e9
-    print(f"{idx:<12} {pubkey:<98} {status:<22} {bal:<16.6f} {eff:.6f}")
+    print(f"{idx:<12} {pubkey:<98} {status:<22} {bal:<16.6f} {wcred:<8} {eff:.6f}")
 print("-" * len(hdr))
 print(f"  {len(rows)} validator(s)")
 print()
@@ -231,10 +234,13 @@ main() {
     client=$(detect_client)
     local beacon_url
     beacon_url=$(detect_beacon_url)
+    local generated_at_utc
+    generated_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
     if [[ "$JSON_OUTPUT" == "false" ]]; then
         log_info "Detected consensus client: ${client}"
         log_info "Beacon API: ${beacon_url}"
+        log_info "Inventory snapshot: ${generated_at_utc}"
         log_info "Scanning for validator keystores..."
     fi
 
@@ -242,7 +248,7 @@ main() {
 
     if [[ ${#pubkeys[@]} -eq 0 ]]; then
         if [[ "$JSON_OUTPUT" == "true" ]]; then
-            echo '{"client":"'"$client"'","beacon_url":"'"$beacon_url"'","validators":[],"error":"no_keystores_found"}'
+            echo '{"client":"'"$client"'","beacon_url":"'"$beacon_url"'","generated_at_utc":"'"$generated_at_utc"'","beacon_query_status":"no_keystores_found","validators":[],"error":"no_keystores_found"}'
         else
             log_warn "No keystore files found for client '${client}'."
             echo "  Import validator keys first, then re-run this command."
@@ -262,17 +268,22 @@ main() {
     query_beacon_validators "$beacon_url" "$tmpfile" "${pubkeys[@]}"
 
     if [[ "$JSON_OUTPUT" == "true" ]]; then
-        python3 - "$tmpfile" "$client" "$beacon_url" <<'PYEOF'
+        python3 - "$tmpfile" "$client" "$beacon_url" "$generated_at_utc" "$BEACON_QUERY_STATUS" <<'PYEOF'
 import json, sys
 with open(sys.argv[1]) as f:
     raw = json.load(f)
 print(json.dumps({
     "client": sys.argv[2],
     "beacon_url": sys.argv[3],
+    "generated_at_utc": sys.argv[4],
+    "beacon_query_status": sys.argv[5],
     "validators": raw.get("data", [])
 }, indent=2))
 PYEOF
     else
+        if [[ "$BEACON_QUERY_STATUS" == "failed" ]]; then
+            log_warn "Beacon query failed; showing only local keystores that matched."
+        fi
         print_table "$tmpfile"
     fi
 }

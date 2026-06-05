@@ -1,7 +1,7 @@
 # Validator Management
 
-Two standalone helper scripts for managing validators on this node.
-Both are also available through the unified `eth2qs.sh` wrapper.
+Several standalone helper scripts for managing validators on this node.
+They are also available through the unified `eth2qs.sh` wrapper.
 
 ---
 
@@ -16,13 +16,22 @@ Both are also available through the unified `eth2qs.sh` wrapper.
 ./scripts/eth2qs.sh validators --json
 ./install/utils/validator_list.sh --json
 
+# Go straight to voluntary exit flow
+./scripts/eth2qs.sh validator-exit
+./install/utils/validator_exit.sh
+
+# Go straight to 0x02 validator creation flow
+./scripts/eth2qs.sh validator-create-0x02
+./install/utils/validator_create_0x02.sh
+
+# Preview / generate / submit BLS-to-execution changes for 0x00 validators
+./scripts/eth2qs.sh validator-withdrawal-changes --dry-run --generate --submit --yes
+./scripts/eth2qs.sh validator-withdrawal-changes --generate --submit --yes
+./install/utils/validator_withdrawal_changes.sh --dry-run --generate --submit --yes
+
 # Interactive management menu (exit / consolidate)
 ./scripts/eth2qs.sh validator-manage
 ./install/utils/validator_manage.sh
-
-# Go straight to voluntary exit flow
-./scripts/eth2qs.sh validator-manage --exit
-./install/utils/validator_manage.sh --exit
 
 # Go straight to consolidation flow (EIP-7251)
 ./scripts/eth2qs.sh validator-manage --consolidate
@@ -38,8 +47,8 @@ Both are also available through the unified `eth2qs.sh` wrapper.
 3. Extracts the public key from each keystore's JSON.
 4. Queries the local beacon node API (`/eth/v1/beacon/states/head/validators`)
    filtered to those public keys only.
-5. Displays a table with validator index, pubkey, status, balance, and
-   effective balance.
+5. Displays a table with validator index, pubkey, status, balance, withdrawal credential type, and effective balance.
+6. Emits inventory freshness metadata in the JSON output (`generated_at_utc`, `beacon_query_status`) so operators can tell when the snapshot was taken and whether the beacon query succeeded.
 
 **Nothing is read from the network validator set** — only validators whose
 keystore files exist on this machine are shown.
@@ -61,6 +70,8 @@ keystore files exist on this machine are shown.
 {
   "client": "lighthouse",
   "beacon_url": "http://127.0.0.1:5052",
+  "generated_at_utc": "2026-06-04T00:00:00Z",
+  "beacon_query_status": "ok",
   "validators": [
     {
       "index": "123456",
@@ -77,6 +88,48 @@ keystore files exist on this machine are shown.
 ```
 
 ---
+
+## `validator_exit.sh` — Focused Exit Flow
+
+This helper wraps the existing exit path, but it starts with a targeted checklist
+for legacy validators.
+
+1. Shows the current local validator inventory via `validator_list.sh`.
+2. Reminds you that `0x00` validators need credential upgrades before any
+   withdrawals can be swept.
+3. Hands off to `validator_manage.sh --exit` for the interactive client-specific
+   exit flow.
+
+## `validator_create_0x02.sh` — Compounding Entry Flow
+
+This helper is the matching entry path for modern validators.
+
+1. Prints the offline key-generation checklist.
+2. Shows the current local validator inventory so you can compare against the
+   node you are about to import into.
+3. Launches the local deposit CLI if available, or prints the exact command
+   template when you are running the tool manually.
+4. Reminds you to select compounding / `0x02` withdrawal credentials during the
+   deposit CLI prompts.
+
+## `validator_withdrawal_changes.sh` — BLS-to-Execution Change Flow
+
+This helper generates and optionally submits signed BLS-to-execution change
+messages for validators that still use `0x00` withdrawal credentials. It is the
+first step before a later voluntary exit if you want the validator to become
+withdrawable.
+
+1. Shows the current local validator inventory, including withdrawal credential
+   type and inventory freshness metadata.
+2. Filters the inventory to the selected credential type (default `0x00`).
+3. Supports `--dry-run` so operators can preview the exact signing and submit
+   commands without writing or POSTing anything.
+4. Uses the official deposit CLI to generate signed BLS-to-execution change
+   JSON files from a withdrawal mnemonic and execution address.
+5. Optionally POSTs the generated JSON files to the local beacon node REST API
+   at `/eth/v1/beacon/pool/bls_to_execution_changes`.
+6. Works with the repo's Prysm + geth stack as long as the beacon REST API is
+   reachable from the node running the helper.
 
 ## `validator_manage.sh` — Operations
 
@@ -179,6 +232,11 @@ The scripts auto-detect the correct port from the `cl` systemd service.
 **"No validator data returned from beacon node"**
 - The beacon node may still be syncing. Check with `./scripts/eth2qs.sh doctor`.
 - Verify the beacon node is reachable: `curl -s http://127.0.0.1:5052/eth/v1/node/syncing`
+
+**Withdrawal change generation fails**
+- The helper needs the withdrawal mnemonic, the optional mnemonic password, and a valid execution address.
+- If you are using Prysm, make sure the beacon REST API is reachable from the node running the helper.
+- Use `--validators-json` with a fixture if you want to rehearse the flow without touching live keys.
 
 **Exit command fails with unknown flag**
 - Client versions change CLI flags. If the auto-detected command fails,
