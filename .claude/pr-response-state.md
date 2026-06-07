@@ -1,5 +1,5 @@
 # PR Response State
-last_run: 2026-06-07T19:45
+last_run: 2026-06-07T21:15
 
 prs:
   - number: 177
@@ -35,8 +35,8 @@ prs:
     attempt_count: 0
     status: skipped
     notes: >
-      feat(utils): add teardown.sh. All 22 CI checks green. COMMENTED review
-      state (not CHANGES_REQUESTED). Awaiting human review/merge.
+      feat(utils): add teardown.sh. All 22 CI checks green. No CHANGES_REQUESTED.
+      Awaiting human review/merge.
 
   - number: 181
     repo: chimera-defi/eth2-quickstart
@@ -45,6 +45,7 @@ prs:
     status: needs_human
     notes: >
       chore(skills): add token-reduce skill symlink. docker-integration CI
-      FAILED: ghcr.io login timed out (context deadline exceeded) — transient
-      network error, not a code problem. All other 12 checks passed.
-      No CHANGES_REQUESTED. Retry CI or wait for next run.
+      FAILED: ghcr.io login timed out (context deadline exceeded) — confirmed
+      transient network error via job logs. All other 12 checks pass.
+      No CHANGES_REQUESTED. CI rerun_failed_jobs returned 403 (integration
+      lacks permission). Human must manually re-run CI or wait for next push.
