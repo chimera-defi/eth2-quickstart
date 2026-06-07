@@ -100,8 +100,11 @@ confirm_teardown() {
 
 stop_and_disable_services() {
     log_info "Stopping and disabling Ethereum systemd services..."
+    # Intentionally excludes ETH_WEB_SERVICES (nginx, caddy) — web servers are
+    # optional infrastructure that may serve non-test sites on the same host.
+    local teardown_services=("${ETH_CORE_SERVICES[@]}" "${ETH_MEV_SERVICES[@]}")
     local service
-    for service in "${ETH_ALL_SERVICES[@]}"; do
+    for service in "${teardown_services[@]}"; do
         if service_active "$service"; then
             log_info "Stopping $service..."
             if [[ "$DRY_RUN" == "false" ]]; then
@@ -126,7 +129,13 @@ kill_orphaned_processes() {
     local name found_any=false
     for name in "${CLIENT_PROCESS_NAMES[@]}"; do
         local pids
-        pids=$(pgrep -x "$name" 2>/dev/null || true)
+        # Linux truncates comm to 15 chars; pgrep -x matches comm exactly.
+        # For names longer than 15 chars, fall back to pgrep -f (full cmdline match).
+        if [[ "${#name}" -gt 15 ]]; then
+            pids=$(pgrep -f "$name" 2>/dev/null || true)
+        else
+            pids=$(pgrep -x "$name" 2>/dev/null || true)
+        fi
         if [[ -n "$pids" ]]; then
             found_any=true
             log_warn "Orphaned process found: $name (PIDs: $pids)"
