@@ -16,11 +16,17 @@
 #   3. Removes systemd unit files and reloads daemon
 #   4. Purges all blockchain data directories (via purge_ethereum_data.sh)
 
+set -Eeuo pipefail
+IFS=$'\n\t'
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_ROOT" || exit 1
 
 source "$PROJECT_ROOT/lib/common_functions.sh"
+if [[ -f "$PROJECT_ROOT/exports.sh" ]]; then
+    source "$PROJECT_ROOT/exports.sh"
+fi
 
 # Unit files installed by run_2.sh
 UNIT_FILES=(
