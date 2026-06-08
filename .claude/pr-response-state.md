@@ -40,15 +40,14 @@ prs:
 
   - number: 181
     repo: chimera-defi/eth2-quickstart
-    last_activity: "2026-06-07T19:18:33Z"
+    last_activity: "2026-06-08T15:53:45Z"
     attempt_count: 0
-    status: needs_human
+    status: merged
     notes: >
-      chore(skills): add token-reduce skill symlink. docker-integration CI
-      FAILED: ghcr.io login timed out (context deadline exceeded) — confirmed
-      transient network error via job logs. All other 12 checks pass.
-      No CHANGES_REQUESTED. No new activity since last run (updatedAt unchanged).
-      CI re-run requires human action — agent lacks rerun permission (403).
+      chore(skills): add token-reduce skill symlink. MERGED by chimera-defi on
+      2026-06-08T15:53:43Z. The docker-integration CI failure (transient ghcr.io
+      login timeout) resolved on its own; all 18 CI checks passed before merge.
+      Archived for history.
 
   - number: 182
     repo: chimera-defi/eth2-quickstart
