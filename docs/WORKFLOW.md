@@ -74,3 +74,25 @@ curl -X POST http://$(curl -s v4.ident.me)/rpc \
 - UFW denies inbound 8545/8551 by default; expose RPC only via Nginx if needed
 - Consider disabling root SSH login after confirming stability
 - All services bind to localhost only for security
+
+12) Teardown (development/testing cleanup)
+After a testing session, always run teardown before stepping away. Skipping this leaves
+services consuming CPU (100-300%), RAM (20-50 GB), and accumulating chain data (1+ TB/month).
+
+```bash
+# Preview what will be removed (no changes made)
+./install/utils/teardown.sh --dry-run
+
+# Full teardown: stop services, kill orphaned processes, remove unit files, purge data
+./install/utils/teardown.sh --confirm
+
+# Also reclaim Docker build cache and dangling test images (~15-30 GB typical)
+docker system prune -f
+```
+
+What teardown cleans up:
+- All Ethereum systemd services (eth1, cl, validator, mev, commit-boost*)
+- Any orphaned client processes not under systemd (erigon, prysm, lighthouse, etc.)
+- Systemd unit files from /etc/systemd/system/
+- All chain data directories (each client stores 4-1200 GB depending on sync progress)
+- Validator keys and secrets in ~/secrets/ are always preserved
