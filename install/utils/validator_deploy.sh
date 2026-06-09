@@ -231,11 +231,22 @@ generate_keys() {
     log_info "Generating $num_validators validator key(s) with withdrawal type $withdrawal_type..."
     log_info "Output directory: $output_subdir"
 
+    # NOTE: ethstaker-deposit-cli's --non_interactive mode takes --keystore_password
+    # as an argument, so the value is briefly visible in the child process command
+    # line (e.g. `ps`) for the duration of key generation. This is a limitation of
+    # the upstream tool's non-interactive interface; the mnemonic itself is never
+    # echoed and all generated files are locked to 600 below.
+
+    # Lock down the output dir + generation log up front: the log can capture
+    # secret material emitted by the deposit CLI.
+    chmod 700 "$output_dir" 2>/dev/null || true
     # Run deposit CLI (capture output but don't echo mnemonic)
     if ! "${deposit_cmd[@]}" > "$output_dir/generation.log" 2>&1; then
+        chmod 600 "$output_dir/generation.log" 2>/dev/null || true
         log_error "Key generation failed. Check $output_dir/generation.log for details."
         return 1
     fi
+    chmod 600 "$output_dir/generation.log" 2>/dev/null || true
 
     # Secure the output directory
     chmod 700 "$output_subdir"
