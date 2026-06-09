@@ -26,8 +26,10 @@ monitoring-host: $CONSENSUS_HOST
 blob-save-fsync: true
 
 # MEV/Builder Configuration
-# Builder is auto-enabled when http-mev-relay is set
-http-mev-relay: http://$MEV_HOST:$MEV_PORT
+# Builder is auto-enabled when http-mev-relay is set.
+# Disabled by default — uncomment the line below to route blocks through your MEV relay
+# (only after the MEV service, e.g. mev-boost, is installed and running):
+# http-mev-relay: http://$MEV_HOST:$MEV_PORT
 # Minimum bid to accept from builders (default: 0)
 # 2000000 Gwei = 0.002 ETH - filters out low-value blocks
 min-builder-bid: 2000000
