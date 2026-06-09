@@ -1,5 +1,5 @@
 # PR Response State
-last_run: 2026-06-09T08:15
+last_run: 2026-06-09T09:45
 
 prs:
   - number: 177
@@ -75,13 +75,14 @@ prs:
 
   - number: 184
     repo: chimera-defi/eth2-quickstart
-    last_activity: "2026-06-09T07:42:23Z"
-    attempt_count: 0
-    status: skipped
+    last_activity: "2026-06-09T09:23:39Z"
+    attempt_count: 1
+    status: fixed
     notes: >
       Agent-grade validator management: list/filter/modify/deploy + MCP wiring.
-      All 22 CI checks green (e2e-client-matrix x6, docker-integration,
-      install-sh-smoke, run-1/2-structure, run-1/2-e2e, run-2-web,
-      shellcheck-extended, docs-consistency, agent-skill, tui-whiptail-*,
-      build-docker, Commit Message Format, changes — all success).
-      No CHANGES_REQUESTED. Awaiting human review/merge.
+      New push at 09:23Z triggered CI; run-2-web failed: Prysm FATALs on startup
+      because mainnet.checkpoint.sigp.io TLS cert expired 2026-06-07T06:52:15Z
+      causing _verify_service_active cl 60 to time out. Fixed in 6fbef685:
+      updated all 5 checkpoint URL variables (PRYSM_CPURL, TEKU_CHECKPOINT_URL,
+      LODESTAR_CHECKPOINT_URL, LIGHTHOUSE_CHECKPOINT_URL, GRANDINE_CHECKPOINT_URL)
+      to beaconstate.ethstaker.cc. Comment posted. Awaiting CI re-run and human merge.
