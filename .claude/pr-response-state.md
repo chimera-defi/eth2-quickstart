@@ -1,5 +1,5 @@
 # PR Response State
-last_run: 2026-06-09T06:15
+last_run: 2026-06-09T07:15
 
 prs:
   - number: 177
@@ -61,12 +61,13 @@ prs:
 
   - number: 183
     repo: chimera-defi/eth2-quickstart
-    last_activity: "2026-06-09T05:12:24Z"
-    attempt_count: 1
+    last_activity: "2026-06-09T05:22:11Z"
+    attempt_count: 2
     status: fixed
     notes: >
-      Security & quality audit PR. run-2-e2e CI failure: Prysm crash-loop because
-      mainnet.checkpoint.sigp.io TLS cert expired 2026-06-07T06:52:15Z.
-      Fixed in commit 74abaa2: updated PRYSM_CPURL and all *_CHECKPOINT_URL vars
-      in exports.sh to checkpoint-sync.ethpandaops.io (EF PandaOps, actively
-      maintained). Comment posted on PR. Awaiting CI re-run and human review/merge.
+      Security & quality audit PR. Attempt 1 (74abaa2): fixed PRYSM_CPURL/checkpoint
+      URLs. Attempt 2 (f174020): fixed run-2-e2e and run-2-web CI failure caused by
+      caddyserver.com/api/download SSL timeout (5-min hang) in GitHub Actions runners.
+      Added CADDY_ENSURE_MODULES=false export before Caddy install block in
+      test/ci_test_e2e.sh so stock APT Caddy is used in CI. Comment posted.
+      Awaiting CI re-run and human review/merge.
