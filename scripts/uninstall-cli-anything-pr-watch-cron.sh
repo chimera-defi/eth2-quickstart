@@ -26,6 +26,10 @@ cron_marker="$DEFAULT_CRON_MARKER"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --cron-marker)
+      if [[ $# -lt 2 ]]; then
+        echo "Error: option $1 requires a value" >&2
+        exit 2
+      fi
       cron_marker="$2"
       shift 2
       ;;
