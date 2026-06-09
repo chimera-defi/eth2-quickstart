@@ -46,7 +46,7 @@ if [[ -z "$LATEST_VERSION" ]]; then
 fi
 
 # Download Teku
-DOWNLOAD_URL="https://github.com/ConsenSys/teku/releases/download/${LATEST_VERSION}/teku-${LATEST_VERSION}.tar.gz"
+DOWNLOAD_URL="https://artifacts.consensys.net/public/teku/raw/names/teku.tar.gz/versions/${LATEST_VERSION}/teku-${LATEST_VERSION}.tar.gz"
 ARCHIVE_FILE="teku-${LATEST_VERSION}.tar.gz"
 
 log_info "Downloading Teku ${LATEST_VERSION}..."
