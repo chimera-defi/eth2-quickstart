@@ -74,7 +74,7 @@ PHASE1_PACKAGES=(
     libtinfo6
     libprotobuf-dev
     pkg-config
-    openjdk-17-jdk
+    openjdk-25-jdk
     libclang-dev
     nginx
     apache2-utils

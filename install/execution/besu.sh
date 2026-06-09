@@ -32,14 +32,14 @@ cd "$BESU_DIR" || exit
 
 # Get latest release version
 log_info "Fetching latest Besu release..."
-LATEST_VERSION=$(get_latest_release "hyperledger/besu")
+LATEST_VERSION=$(get_latest_release "besu-eth/besu")
 if [[ -z "$LATEST_VERSION" ]]; then
     log_error "Could not fetch latest Besu version from GitHub"
     exit 1
 fi
 
 # Download Besu
-DOWNLOAD_URL="https://github.com/hyperledger/besu/releases/download/${LATEST_VERSION}/besu-${LATEST_VERSION}.tar.gz"
+DOWNLOAD_URL="https://github.com/besu-eth/besu/releases/download/${LATEST_VERSION}/besu-${LATEST_VERSION}.tar.gz"
 ARCHIVE_FILE="besu-${LATEST_VERSION}.tar.gz"
 
 log_info "Downloading Besu ${LATEST_VERSION}..."
