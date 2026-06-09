@@ -24,12 +24,40 @@ fi
 
 JSON_OUTPUT=false
 BEACON_QUERY_STATUS="ok"
+MIN_BALANCE=""
+MAX_BALANCE=""
+WITHDRAWAL_TYPE=""
+STATUS_FILTER=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --json) JSON_OUTPUT=true ;;
+        --min-balance)
+            [[ $# -ge 2 ]] || { echo "Error: --min-balance requires a value (ETH)" >&2; exit 2; }
+            MIN_BALANCE="$2"; shift ;;
+        --max-balance)
+            [[ $# -ge 2 ]] || { echo "Error: --max-balance requires a value (ETH)" >&2; exit 2; }
+            MAX_BALANCE="$2"; shift ;;
+        --withdrawal-type)
+            [[ $# -ge 2 ]] || { echo "Error: --withdrawal-type requires a value (0x00|0x01|0x02)" >&2; exit 2; }
+            WITHDRAWAL_TYPE="${2,,}"
+            case "$WITHDRAWAL_TYPE" in
+                0x00|0x01|0x02) ;;
+                *) echo "Error: --withdrawal-type must be 0x00, 0x01, or 0x02" >&2; exit 2 ;;
+            esac
+            shift ;;
+        --status)
+            [[ $# -ge 2 ]] || { echo "Error: --status requires a value (e.g. active_ongoing)" >&2; exit 2; }
+            STATUS_FILTER="$2"; shift ;;
         --help|-h)
-            echo "Usage: ./install/utils/validator_list.sh [--json]"
-            echo "  --json    Machine-readable JSON output"
+            cat <<'EOF'
+Usage: ./install/utils/validator_list.sh [options]
+  --json                     Machine-readable JSON output
+  --min-balance <eth>        Only validators with balance >= this (ETH)
+  --max-balance <eth>        Only validators with balance <= this (ETH)
+  --withdrawal-type <type>   Filter by withdrawal credentials prefix: 0x00 (BLS),
+                             0x01 (execution address), 0x02 (compounding)
+  --status <substr>          Filter by status substring (e.g. active_ongoing)
+EOF
             exit 0
             ;;
         *) echo "Unknown option: $1" >&2; exit 1 ;;
@@ -266,6 +294,24 @@ main() {
     trap "rm -f '$tmpfile'" EXIT
 
     query_beacon_validators "$beacon_url" "$tmpfile" "${pubkeys[@]}"
+
+    # Apply optional filters (balance / withdrawal type / status) to the beacon
+    # data in place, so both table and JSON output reflect the same filtered set.
+    if [[ -n "$MIN_BALANCE" || -n "$MAX_BALANCE" || -n "$WITHDRAWAL_TYPE" || -n "$STATUS_FILTER" ]]; then
+        local filter_args=()
+        [[ -n "$MIN_BALANCE" ]]     && filter_args+=(--min-balance "$MIN_BALANCE")
+        [[ -n "$MAX_BALANCE" ]]     && filter_args+=(--max-balance "$MAX_BALANCE")
+        [[ -n "$WITHDRAWAL_TYPE" ]] && filter_args+=(--withdrawal-type "$WITHDRAWAL_TYPE")
+        [[ -n "$STATUS_FILTER" ]]   && filter_args+=(--status "$STATUS_FILTER")
+        local filter_err
+        if filter_err=$(python3 "$SCRIPT_DIR/validator_filter.py" "$tmpfile" "${filter_args[@]}" 2>&1 1>"${tmpfile}.f"); then
+            mv "${tmpfile}.f" "$tmpfile"
+        else
+            rm -f "${tmpfile}.f"
+            log_error "Validator filter failed (filters not applied): ${filter_err}"
+            exit 1
+        fi
+    fi
 
     if [[ "$JSON_OUTPUT" == "true" ]]; then
         python3 - "$tmpfile" "$client" "$beacon_url" "$generated_at_utc" "$BEACON_QUERY_STATUS" <<'PYEOF'

@@ -15,3 +15,6 @@ logs/
 status/*.json
 
 .DS_store
+
+# Python bytecode cache
+__pycache__/

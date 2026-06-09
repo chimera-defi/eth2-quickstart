@@ -36,6 +36,14 @@ They are also available through the unified `eth2qs.sh` wrapper.
 # Go straight to consolidation flow (EIP-7251)
 ./scripts/eth2qs.sh validator-manage --consolidate
 ./install/utils/validator_manage.sh --consolidate
+
+# Go straight to EIP-7002 exit/withdrawal flow
+./scripts/eth2qs.sh validator-manage --eip7002-exit
+./install/utils/validator_manage.sh --eip7002-exit
+
+# Go straight to withdrawal credential change flow
+./scripts/eth2qs.sh validator-manage --withdraw-change
+./install/utils/validator_manage.sh --withdraw-change
 ```
 
 ---
@@ -179,9 +187,9 @@ balances. The source validator exits; its stake moves to the target.
 - Both validators must have `0x01` withdrawal credentials pointing to an
   Ethereum address you control.
 - You need the private key of that withdrawal address to sign the transaction.
-- A dynamic fee is required (queried live from the contract).
+- A dynamic fee is required (queried live from the contract using `eth_call` with empty calldata).
 
-**Contract:** `0x00431F263cE400f4455c2dCf564e53007Ca4bbBb` (mainnet)
+**Contract:** `0x0000BBdDc7CE488642fb579F8B00f3a590007251` (mainnet)
 
 The consolidation flow:
 
@@ -195,7 +203,7 @@ The consolidation flow:
 
 ```bash
 # The script prints the exact command — copy and run it yourself:
-cast send 0x00431F263cE400f4455c2dCf564e53007Ca4bbBb \
+cast send 0x0000BBdDc7CE488642fb579F8B00f3a590007251 \
   --value <fee_wei>wei \
   --data 0x<source_pubkey_hex><target_pubkey_hex> \
   --rpc-url http://127.0.0.1:8545 \
@@ -206,6 +214,42 @@ curl -L https://foundry.paradigm.xyz | bash && foundryup
 ```
 
 ---
+
+### 3. EIP-7002 EL-triggered exit/withdrawal
+
+`validator_manage.sh --eip7002-exit` builds the EIP-7002 payload (`validator_pubkey || amount`) and prints the exact `cast send` command before execution.
+
+```bash
+cast send 0x00000961Ef480Eb55e80D19ad83579A64c007002 \
+  --value <fee_wei>wei \
+  --data 0x<validator_pubkey_hex><amount_u64_gwei_be_hex> \
+  --rpc-url http://127.0.0.1:8545 \
+  --from <WITHDRAWAL_ADDRESS>
+```
+
+`amount_u64_gwei_be_hex` is the withdrawal amount in gwei encoded as an 8-byte big-endian integer.
+`amount = 0` requests a full voluntary exit.
+
+### 4. Withdrawal credential change
+
+- `0x00 -> 0x01`: `ethdo validator credentials set`:
+
+```bash
+ethdo validator credentials set \
+  --validator <index_or_pubkey> \
+  --withdrawal-address <address> \
+  --connection http://127.0.0.1:5052
+```
+
+- `0x01 -> 0x02`: self-consolidation (source and target are the same pubkey) using `cast`.
+
+```bash
+cast send 0x0000BBdDc7CE488642fb579F8B00f3a590007251 \
+  --value <fee_wei>wei \
+  --data 0x<source_pubkey_hex><source_pubkey_hex> \
+  --rpc-url http://127.0.0.1:8545 \
+  --private-key <WITHDRAWAL_ADDRESS_PRIVATE_KEY>
+```
 
 ## Beacon API Ports by Client
 

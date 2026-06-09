@@ -39,6 +39,8 @@ from mcp_server.eth2qs_mcp_tools import (  # noqa: E402
     stats_json,
     stop,
     update_check_json,
+    validators_list,
+    validator_op_preview,
 )
 
 try:
@@ -207,6 +209,33 @@ def eth2qs_cleanup_host_dry_run() -> dict:
 def eth2qs_monad_install(confirm: bool = False, confirmation_token: str = "") -> dict:
     """Run the explicit Monad install path. Requires confirm=true and confirmation_token='apply'."""
     return monad_install(confirm=confirm, confirmation_token=confirmation_token)
+
+
+@mcp.tool(name="eth2qs_validators")
+def eth2qs_validators(
+    min_balance: float | None = None,
+    max_balance: float | None = None,
+    withdrawal_type: str | None = None,
+    status: str | None = None,
+) -> dict:
+    """Read-only: list local validators with index/status/balance/withdrawal
+    credentials. Optional filters: min_balance/max_balance (ETH),
+    withdrawal_type (0x00 BLS / 0x01 execution / 0x02 compounding), status substring."""
+    return validators_list(
+        min_balance=min_balance,
+        max_balance=max_balance,
+        withdrawal_type=withdrawal_type,
+        status=status,
+    )
+
+
+@mcp.tool(name="eth2qs_validator_op_preview")
+def eth2qs_validator_op_preview(operation: str) -> dict:
+    """Read-only: return the exact node CLI command for a funds-affecting validator
+    operation (exit, withdrawal-change, consolidate, eip7002-exit, create-0x02,
+    deploy). These are NOT executed via MCP (irreversible, need secrets); run the
+    returned command on the node CLI where it prompts for confirmation."""
+    return validator_op_preview(operation=operation)
 
 
 if __name__ == "__main__":  # pragma: no cover
