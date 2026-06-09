@@ -8,9 +8,10 @@
 enable-doppelganger: true
 enable-slashing-protection-history-pruning: true
 
-# MEV/Builder Registration (non-default)
-# Enables periodic validator registration with builder network
-enable-builder: true
+# MEV/Builder Registration
+# Disabled by default — uncomment to enable periodic validator registration with the builder
+# network (pair with http-mev-relay in the beacon config, only after the MEV service is running):
+# enable-builder: true
 
 # Note on defaults we're NOT overriding:
 # - suggested-gas-limit: 60M (intentionally high = "use max available")
