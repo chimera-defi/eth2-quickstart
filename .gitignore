@@ -14,4 +14,10 @@ logs/
 # CI poll snapshots
 status/*.json
 
+# Audit working artifacts (raw delegate output; committed report lives in docs/audit/)
+artifacts/
+
+# Python bytecode cache
+__pycache__/
+
 .DS_store
