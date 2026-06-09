@@ -1,5 +1,5 @@
 # PR Response State
-last_run: 2026-06-08T20:15
+last_run: 2026-06-09T06:15
 
 prs:
   - number: 177
@@ -58,3 +58,15 @@ prs:
       docs(dream): 2026-06-07 consolidation pass. Branch: dream/2026-06-07.
       0 CI check runs (no CI workflows configured for dream/* branches).
       No CHANGES_REQUESTED. mergeable_state: clean. Awaiting human review/merge.
+
+  - number: 183
+    repo: chimera-defi/eth2-quickstart
+    last_activity: "2026-06-09T05:12:24Z"
+    attempt_count: 1
+    status: fixed
+    notes: >
+      Security & quality audit PR. run-2-e2e CI failure: Prysm crash-loop because
+      mainnet.checkpoint.sigp.io TLS cert expired 2026-06-07T06:52:15Z.
+      Fixed in commit 74abaa2: updated PRYSM_CPURL and all *_CHECKPOINT_URL vars
+      in exports.sh to checkpoint-sync.ethpandaops.io (EF PandaOps, actively
+      maintained). Comment posted on PR. Awaiting CI re-run and human review/merge.
