@@ -315,5 +315,5 @@ For issues or questions:
 
 - [Main Documentation](README.md)
 - [Workflow Documentation](WORKFLOW.md)
-- [Security Documentation](docs/verify_security.sh)
-- [Configuration Guide](docs/CONFIGURATION_GUIDE.md)
+- [Security Documentation](verify_security.sh)
+- [Configuration Guide](CONFIGURATION_GUIDE.md)

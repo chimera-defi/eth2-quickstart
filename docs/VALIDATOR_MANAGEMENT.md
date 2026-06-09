@@ -16,6 +16,16 @@ They are also available through the unified `eth2qs.sh` wrapper.
 ./scripts/eth2qs.sh validators --json
 ./install/utils/validator_list.sh --json
 
+# Filter by balance (ETH), withdrawal type (0x00 BLS / 0x01 execution / 0x02 compounding), or status
+./scripts/eth2qs.sh validators --json --min-balance 32 --withdrawal-type 0x01
+./scripts/eth2qs.sh validators --withdrawal-type 0x02            # compounding validators only
+./scripts/eth2qs.sh validators --max-balance 32 --status active_ongoing
+
+# Deploy validators + generate keys and deposit_data.json (0x01 or 0x02 compounding)
+# Set the keystore password via the ETHQS_KEYSTORE_PASSWORD env var (preferred) or interactive prompt.
+ETHQS_KEYSTORE_PASSWORD=... ./scripts/eth2qs.sh validator-deploy \
+  --num-validators 1 --withdrawal-type 0x02 --withdrawal-address 0xYourAddr --import-keys
+
 # Go straight to voluntary exit flow
 ./scripts/eth2qs.sh validator-exit
 ./install/utils/validator_exit.sh
@@ -250,6 +260,60 @@ cast send 0x0000BBdDc7CE488642fb579F8B00f3a590007251 \
   --rpc-url http://127.0.0.1:8545 \
   --private-key <WITHDRAWAL_ADDRESS_PRIVATE_KEY>
 ```
+
+## `validator_deploy.sh` — Key Generation & Deposit
+
+Generates validator keystores + `deposit_data.json` by wrapping
+[`ethstaker-deposit-cli`](https://github.com/eth-educators/ethstaker-deposit-cli),
+optionally imports the keys into the detected client, and **prints the deposit
+command for manual submission** (it never submits the on-chain deposit for you).
+
+```bash
+ETHQS_KEYSTORE_PASSWORD=... ./scripts/eth2qs.sh validator-deploy \
+  --num-validators 2 \
+  --withdrawal-type 0x02 \                 # 0x01 (execution address) or 0x02 (compounding)
+  --withdrawal-address 0xYourWithdrawalAddr \
+  --import-keys                            # optional: import into the running client
+```
+
+- Provide the keystore password via the `ETHQS_KEYSTORE_PASSWORD` env var or the
+  interactive prompt. The `--keystore-password` flag works but is discouraged
+  (visible in process listings / shell history).
+- Mnemonic and keys are never echoed; generated files are written `600` under
+  `$HOME/secrets`. **Back up the mnemonic offline before funding.**
+- `ethstaker-deposit-cli` and `ethdo` are installed by
+  `install/utils/install_dependencies.sh`; if absent, the script prints manual
+  install + command instructions instead of failing hard.
+
+## Filtering the validator list
+
+`validators` / `validator_list.sh` accept filters that apply to both the table
+and `--json` output:
+
+| Flag | Meaning |
+|------|---------|
+| `--min-balance <eth>` | Only validators with balance ≥ this (ETH) |
+| `--max-balance <eth>` | Only validators with balance ≤ this (ETH) |
+| `--withdrawal-type <t>` | `0x00` (BLS), `0x01` (execution address), `0x02` (compounding) |
+| `--status <substr>` | Status substring, e.g. `active_ongoing`, `exited` |
+
+The withdrawal type is matched against the prefix of each validator's
+`withdrawal_credentials`.
+
+## Agent access (MCP)
+
+For agents (Claude Code / Codex) the MCP server exposes:
+
+- **`eth2qs_validators(min_balance, max_balance, withdrawal_type, status)`** —
+  read-only validator inventory with the same filters as the CLI.
+- **`eth2qs_validator_op_preview(operation)`** — read-only; returns the exact node
+  CLI command for a funds-affecting operation (`exit`, `withdrawal-change`,
+  `consolidate`, `eip7002-exit`, `create-0x02`, `deploy`).
+
+**Funds-affecting validator operations are intentionally NOT executed via MCP.**
+They are irreversible and require secrets/keys, so they run only on the node CLI
+where they prompt for confirmation. The MCP surface lets an agent inspect and
+plan; a human (or the CLI) performs the actual mutation.
 
 ## Beacon API Ports by Client
 

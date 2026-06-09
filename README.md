@@ -74,6 +74,14 @@ Use one stable entrypoint for common workflows:
 ./scripts/eth2qs.sh monitor export --json
 ./scripts/eth2qs.sh repair
 ./scripts/eth2qs.sh restart --smart
+
+# Validator management (full guide: docs/VALIDATOR_MANAGEMENT.md)
+./scripts/eth2qs.sh validators --json --withdrawal-type 0x01 --min-balance 32
+./scripts/eth2qs.sh validator-deploy --num-validators 1 --withdrawal-type 0x02 --withdrawal-address 0xYourAddr
+./scripts/eth2qs.sh validator-exit
+./scripts/eth2qs.sh validator-withdrawal-changes          # 0x00 -> 0x01 (BLS-to-execution)
+./scripts/eth2qs.sh validator-manage --consolidate        # EIP-7251 (incl. 0x01 -> 0x02 compounding)
+./scripts/eth2qs.sh validator-manage --eip7002-exit       # EIP-7002 EL-triggered exit/withdrawal
 ```
 
 For agent integrations, the published skill source lives at `skills/eth2-quickstart/` and is intended to be used inside an `eth2-quickstart` checkout.
@@ -113,6 +121,7 @@ The MCP server can expose the core lifecycle directly: Phase 1 hardening, Phase 
 - For software freshness and repo drift, use `./scripts/eth2qs.sh update-check --json`.
 - For a compact bot/dashboard summary, use `./scripts/eth2qs.sh monitor export --json`.
 - For a bounded auto-repair preview/apply path, use `./scripts/eth2qs.sh repair` and `./scripts/eth2qs.sh repair --apply --confirm`.
+- For validator inventory + filtering from an agent, use the read-only MCP tool `eth2qs_validators` (filters: `min_balance`/`max_balance` ETH, `withdrawal_type` 0x00/0x01/0x02, `status`). Funds-affecting operations (exit, withdrawal-credential change, consolidation, EIP-7002 exit, deploy) are exposed read-only via `eth2qs_validator_op_preview`, which returns the exact node CLI command to run — they are **never executed via MCP**. Run those on the node CLI (they prompt for confirmation). Full guide: [`docs/VALIDATOR_MANAGEMENT.md`](docs/VALIDATOR_MANAGEMENT.md).
 - For the command surface and safety rules, start with [`skills/eth2-quickstart/SKILL.md`](skills/eth2-quickstart/SKILL.md)
 
 This is a repo-backed operations skill, not a standalone blockchain package.
