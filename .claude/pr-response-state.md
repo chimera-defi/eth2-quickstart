@@ -1,5 +1,5 @@
 # PR Response State
-last_run: 2026-06-09T09:45
+last_run: 2026-06-09T10:15
 
 prs:
   - number: 177
@@ -45,9 +45,7 @@ prs:
     status: merged
     notes: >
       chore(skills): add token-reduce skill symlink. MERGED by chimera-defi on
-      2026-06-08T15:53:43Z. The docker-integration CI failure (transient ghcr.io
-      login timeout) resolved on its own; all 18 CI checks passed before merge.
-      Archived for history.
+      2026-06-08T15:53:43Z. Archived for history.
 
   - number: 182
     repo: chimera-defi/eth2-quickstart
@@ -70,19 +68,19 @@ prs:
       caddyserver.com/api/download SSL timeout (5-min hang) in GitHub Actions runners.
       Added CADDY_ENSURE_MODULES=false export before Caddy install block in
       test/ci_test_e2e.sh so stock APT Caddy is used in CI. Comment posted.
-      2026-06-09T08:15 run: last_activity unchanged (2026-06-09T06:23:18Z), status
-      fixed — no new activity. Awaiting human review/merge.
+      No new activity since 2026-06-09T06:23. Awaiting human review/merge.
 
   - number: 184
     repo: chimera-defi/eth2-quickstart
-    last_activity: "2026-06-09T09:23:39Z"
+    last_activity: "2026-06-09T10:23:18Z"
     attempt_count: 1
     status: fixed
     notes: >
       Agent-grade validator management: list/filter/modify/deploy + MCP wiring.
-      New push at 09:23Z triggered CI; run-2-web failed: Prysm FATALs on startup
-      because mainnet.checkpoint.sigp.io TLS cert expired 2026-06-07T06:52:15Z
-      causing _verify_service_active cl 60 to time out. Fixed in 6fbef685:
-      updated all 5 checkpoint URL variables (PRYSM_CPURL, TEKU_CHECKPOINT_URL,
-      LODESTAR_CHECKPOINT_URL, LIGHTHOUSE_CHECKPOINT_URL, GRANDINE_CHECKPOINT_URL)
-      to beaconstate.ethstaker.cc. Comment posted. Awaiting CI re-run and human merge.
+      Previous fix (6fbef685): updated all 5 checkpoint URL variables to
+      beaconstate.ethstaker.cc after mainnet.checkpoint.sigp.io TLS cert expired.
+      All 22 CI checks green as of 2026-06-09T10:44Z (6 e2e-client-matrix combos,
+      run-1-e2e, run-2-e2e, run-2-web, docker-integration, shellcheck-extended,
+      build-docker, tui-*, docs-consistency, agent-skill, Commit Message Format,
+      changes — all success). Last delta (10:23Z) was agent's own comment.
+      Awaiting human review/merge.
