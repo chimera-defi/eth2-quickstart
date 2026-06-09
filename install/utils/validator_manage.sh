@@ -464,6 +464,17 @@ EOF
     [[ "$src_pubkey" != 0x* ]] && src_pubkey="0x${src_pubkey}"
     [[ "$tgt_pubkey" != 0x* ]] && tgt_pubkey="0x${tgt_pubkey}"
 
+    # Validate exact BLS pubkey format (0x + 96 hex) before building calldata,
+    # so a malformed input can't produce a bad request that wastes the fee.
+    if [[ ! "$src_pubkey" =~ ^0x[0-9A-Fa-f]{96}$ ]]; then
+        log_warn "Invalid source pubkey format. Expected 0x + 96 hex chars."
+        return 0
+    fi
+    if [[ ! "$tgt_pubkey" =~ ^0x[0-9A-Fa-f]{96}$ ]]; then
+        log_warn "Invalid target pubkey format. Expected 0x + 96 hex chars."
+        return 0
+    fi
+
     # Query current fee from the consolidation contract (empty calldata returns fee)
     local fee_dec
     fee_dec=$(query_system_contract_fee "$CONSOLIDATION_CONTRACT" "$el_rpc")
