@@ -1,5 +1,5 @@
 # PR Response State
-last_run: 2026-06-12T05:16
+last_run: 2026-06-12T14:19
 
 prs:
   - number: 177
@@ -77,6 +77,6 @@ prs:
       Agent-grade validator management: list/filter/modify/deploy + MCP wiring.
       All 22 CI checks green (6 e2e-client-matrix combos, run-1-e2e, run-2-e2e,
       run-2-web, docker-integration, shellcheck-extended, build-docker, tui-*,
-      docs-consistency, agent-skill, Commit Message Format, changes — all success).
+      docs-consistency, agent-skill, Commit Message Format, changes - all success).
       Codex review: COMMENTED only (not CHANGES_REQUESTED). No action needed.
       Awaiting human review/merge.
