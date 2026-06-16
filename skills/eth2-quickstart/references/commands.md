@@ -13,7 +13,7 @@ Canonical command surface:
 - List active validators on the current node: `./scripts/eth2qs.sh validators --json`
 - Filter validators by balance / withdrawal type / status: `./scripts/eth2qs.sh validators --json --min-balance 32 --withdrawal-type 0x01 --status active_ongoing` (withdrawal-type: 0x00 BLS / 0x01 execution / 0x02 compounding)
 - Read-only validator listing for agents (MCP): tool `eth2qs_validators(min_balance, max_balance, withdrawal_type, status)`
-- Deploy validators + generate keys/deposit data (0x01 or 0x02): `./scripts/eth2qs.sh validator-deploy --num-validators 1 --withdrawal-type 0x02 --withdrawal-address 0xYourAddr` (set keystore password via `ETHQS_KEYSTORE_PASSWORD`; prints the deposit command, no auto-submit)
+- Deploy validators + generate keys/deposit data (0x01 or 0x02): `./scripts/eth2qs.sh validator-deploy --num-validators 1 --withdrawal-type 0x02 --amount 64 --withdrawal-address 0xYourAddr` (set keystore password via `ETHQS_KEYSTORE_PASSWORD`; `--amount` 32-2048 ETH for 0x02 only; prints the client import command and the deposit command, no auto-submit)
 - Focused exit checklist / client-specific voluntary exit flow: `./scripts/eth2qs.sh validator-exit`
 - Preview, generate, or submit BLS-to-execution changes for 0x00 validators: `./scripts/eth2qs.sh validator-withdrawal-changes --dry-run --generate --submit --yes`
 - Focused 0x02 compounding validator creation flow: `./scripts/eth2qs.sh validator-create-0x02`

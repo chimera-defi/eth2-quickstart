@@ -265,22 +265,29 @@ cast send 0x0000BBdDc7CE488642fb579F8B00f3a590007251 \
 
 Generates validator keystores + `deposit_data.json` by wrapping
 [`ethstaker-deposit-cli`](https://github.com/eth-educators/ethstaker-deposit-cli),
-optionally imports the keys into the detected client, and **prints the deposit
-command for manual submission** (it never submits the on-chain deposit for you).
+shows the exact client-specific **import command** for the detected client, and
+**prints the deposit command for manual submission** (it never submits the
+on-chain deposit for you).
 
 ```bash
 ETHQS_KEYSTORE_PASSWORD=... ./scripts/eth2qs.sh validator-deploy \
   --num-validators 2 \
   --withdrawal-type 0x02 \                 # 0x01 (execution address) or 0x02 (compounding)
+  --amount 64 \                            # optional, 0x02 only: 32-2048 ETH (default 32)
   --withdrawal-address 0xYourWithdrawalAddr \
-  --import-keys                            # optional: import into the running client
+  --import-keys                            # optional: print the client import command
 ```
 
 - Provide the keystore password via the `ETHQS_KEYSTORE_PASSWORD` env var or the
   interactive prompt. The `--keystore-password` flag works but is discouraged
   (visible in process listings / shell history).
-- Mnemonic and keys are never echoed; generated files are written `600` under
-  `$HOME/secrets`. **Back up the mnemonic offline before funding.**
+- Mnemonic and keys are never echoed to the terminal; generated files are written
+  `600` under `$HOME/secrets`. The mnemonic is captured in
+  `<output-dir>/generation.log` (mode 600) — **back it up offline, then delete
+  the log, before funding.**
+- `--import-keys` does not silently copy files: most clients require their own
+  import command (prysm/lighthouse/nimbus/lodestar) or password-file pairs
+  (teku), so the script prints the exact command to run instead.
 - `ethstaker-deposit-cli` and `ethdo` are installed by
   `install/utils/install_dependencies.sh`; if absent, the script prints manual
   install + command instructions instead of failing hard.
