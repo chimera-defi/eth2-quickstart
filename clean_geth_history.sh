@@ -1,5 +1,6 @@
 #!/bin/bash
-source ./exports.sh
+# shellcheck source=exports.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/exports.sh"
 
 # ---------------------------------------------------------------------------
 # clean_geth_history.sh - reclaim disk by pruning geth's ancient freezer
