@@ -39,10 +39,12 @@ Operations:
   update-all [args...]    Comprehensive updater
 
 Validator:
-  validators [--json]               List active validators with index, status, and balance
+  validators [--json] [--min-balance N] [--max-balance N] [--withdrawal-type 0x00|0x01|0x02] [--status S]
+                                   List active validators (filter by balance / withdrawal type / status)
   validator-exit                   Exit local validators using the managed exit flow
   validator-create-0x02            Create modern compounding validators with 0x02 credentials
-  validator-manage [--exit|--consolidate]   Manage validators: voluntary exits or EIP-7251 consolidations
+  validator-deploy [opts]          Generate validator keys + deposit_data.json (0x01 or 0x02), import, print deposit cmd
+  validator-manage [--exit|--consolidate|--eip7002-exit|--withdraw-change]   Manage validators: exits, EIP-7251/7002, credential changes
   validator-withdrawal-changes      Generate or submit BLS-to-execution changes for 0x00 validators
 
 Utility:
@@ -166,6 +168,9 @@ case "$cmd" in
         ;;
     validator-create-0x02)
         run_cmd "$ROOT_DIR/install/utils/validator_create_0x02.sh" "$@"
+        ;;
+    validator-deploy)
+        run_cmd "$ROOT_DIR/install/utils/validator_deploy.sh" "$@"
         ;;
     validator-manage)
         run_cmd "$ROOT_DIR/install/utils/validator_manage.sh" "$@"
