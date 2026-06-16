@@ -30,6 +30,10 @@ fi
 SECRETS_DIR="$HOME/secrets"
 DEPOSIT_CLI_NAME="ethstaker-deposit-cli"
 DEPOSIT_CLI_VENV_DIR="$HOME/.${DEPOSIT_CLI_NAME}-venv"
+# Persistent source checkout: the CLI resolves its intl/*.json text files
+# relative to the working directory (pip does not package them), so it must be
+# RUN from its own source tree — upstream's supported usage.
+DEPOSIT_CLI_SRC_DIR="$HOME/.${DEPOSIT_CLI_NAME}"
 DEPOSIT_CLI_REPO="https://github.com/ethstaker/ethstaker-deposit-cli.git"
 WITHDRAWAL_TYPE=""
 NUM_VALIDATORS=""
@@ -37,7 +41,9 @@ WITHDRAWAL_ADDRESS=""
 KEYSTORE_PASSWORD=""
 OUTPUT_DIR=""
 IMPORT_KEYS=false
+INSTALL_DEPS=false
 NON_INTERACTIVE=false
+AMOUNT=""
 
 # =============================================================================
 # CLIENT DETECTION (reuse from validator_list.sh)
@@ -111,9 +117,8 @@ confirm_destructive() {
 install_deposit_cli() {
     log_info "Installing $DEPOSIT_CLI_NAME..."
 
-    # Check if already installed
-    if [[ -d "$DEPOSIT_CLI_VENV_DIR" ]]; then
-        log_info "$DEPOSIT_CLI_NAME already installed at $DEPOSIT_CLI_VENV_DIR"
+    if check_deposit_cli; then
+        log_info "$DEPOSIT_CLI_NAME already installed (source: $DEPOSIT_CLI_SRC_DIR, venv: $DEPOSIT_CLI_VENV_DIR)"
         return 0
     fi
 
@@ -128,37 +133,37 @@ install_deposit_cli() {
         return 1
     fi
 
-    # Create temporary directory for clone
-    local tmp_dir
-    tmp_dir=$(mktemp -d)
-    # shellcheck disable=SC2064
-    trap "rm -rf '$tmp_dir'" EXIT
-
-    log_info "Cloning $DEPOSIT_CLI_NAME repository..."
-    if ! git clone --depth 1 "$DEPOSIT_CLI_REPO" "$tmp_dir/repo" 2>/dev/null; then
-        log_error "Failed to clone $DEPOSIT_CLI_NAME repository"
-        return 1
+    # Persistent clone: the CLI must be RUN from its source tree (intl/*.json are
+    # resolved relative to the working directory and are not packaged by pip).
+    if [[ ! -d "$DEPOSIT_CLI_SRC_DIR/.git" ]]; then
+        rm -rf "$DEPOSIT_CLI_SRC_DIR"
+        log_info "Cloning $DEPOSIT_CLI_NAME repository to $DEPOSIT_CLI_SRC_DIR..."
+        if ! git clone --depth 1 "$DEPOSIT_CLI_REPO" "$DEPOSIT_CLI_SRC_DIR" 2>/dev/null; then
+            log_error "Failed to clone $DEPOSIT_CLI_NAME repository"
+            return 1
+        fi
     fi
 
-    log_info "Creating virtual environment..."
-    python3 -m venv "$DEPOSIT_CLI_VENV_DIR"
+    if [[ ! -x "$DEPOSIT_CLI_VENV_DIR/bin/python" ]]; then
+        log_info "Creating virtual environment..."
+        python3 -m venv "$DEPOSIT_CLI_VENV_DIR"
+    fi
 
-    log_info "Installing $DEPOSIT_CLI_NAME..."
-    # shellcheck disable=SC1090
-    source "$DEPOSIT_CLI_VENV_DIR/bin/activate"
-    if ! pip install -e "$tmp_dir/repo" &>/dev/null; then
+    log_info "Installing $DEPOSIT_CLI_NAME dependencies into the venv..."
+    if ! "$DEPOSIT_CLI_VENV_DIR/bin/pip" install "$DEPOSIT_CLI_SRC_DIR" > /dev/null 2>&1; then
         log_error "Failed to install $DEPOSIT_CLI_NAME"
-        deactivate
+        # Remove the half-built venv so check_deposit_cli does not false-positive later.
+        rm -rf "$DEPOSIT_CLI_VENV_DIR"
         return 1
     fi
-    deactivate
 
-    log_info "$DEPOSIT_CLI_NAME installed successfully at $DEPOSIT_CLI_VENV_DIR"
+    log_info "$DEPOSIT_CLI_NAME installed (source: $DEPOSIT_CLI_SRC_DIR, venv: $DEPOSIT_CLI_VENV_DIR)"
     return 0
 }
 
 check_deposit_cli() {
-    if [[ -d "$DEPOSIT_CLI_VENV_DIR" && -x "$DEPOSIT_CLI_VENV_DIR/bin/python" ]]; then
+    # Need BOTH the venv (deps) and the source tree (intl text files).
+    if [[ -x "$DEPOSIT_CLI_VENV_DIR/bin/python" && -d "$DEPOSIT_CLI_SRC_DIR/ethstaker_deposit/intl" ]]; then
         return 0
     fi
     return 1
@@ -183,20 +188,24 @@ generate_keys() {
 
     if ! check_deposit_cli; then
         log_error "$DEPOSIT_CLI_NAME not installed. Run with --install-deps first, or install manually:"
-        printf "\n  Manual installation:\n"
-        printf "    git clone %s /tmp/ethstaker-deposit-cli\n" "$DEPOSIT_CLI_REPO"
-        printf "    cd /tmp/ethstaker-deposit-cli\n"
-        printf "    python3 -m venv venv\n"
-        printf "    ./venv/bin/pip install -e .\n"
-        printf "    ./venv/bin/python -m ethstaker_deposit --non_interactive new-mnemonic --help\n\n"
+        printf "\n  Manual installation (must be RUN from the source tree):\n"
+        printf "    git clone --depth 1 %s %s\n" "$DEPOSIT_CLI_REPO" "$DEPOSIT_CLI_SRC_DIR"
+        printf "    python3 -m venv %s\n" "$DEPOSIT_CLI_VENV_DIR"
+        printf "    %s/bin/pip install %s\n" "$DEPOSIT_CLI_VENV_DIR" "$DEPOSIT_CLI_SRC_DIR"
+        printf "    cd %s && %s/bin/python -m ethstaker_deposit --non_interactive new-mnemonic --help\n\n" "$DEPOSIT_CLI_SRC_DIR" "$DEPOSIT_CLI_VENV_DIR"
         return 1
     fi
 
-    # Build command based on withdrawal type
+    # Build command based on withdrawal type. --non_interactive does NOT
+    # suppress missing-option prompts, so pass every choice explicitly
+    # (notably the mnemonic word-list language, which otherwise prompts and
+    # aborts when stdin is not a TTY).
     deposit_cmd=(
         "$cli_python" -m ethstaker_deposit
+        --language english
         --non_interactive
         new-mnemonic
+        --mnemonic_language english
         --num_validators "$num_validators"
         --chain mainnet
         --keystore_password "$keystore_password"
@@ -219,7 +228,7 @@ generate_keys() {
             deposit_cmd+=(
                 --withdrawal_address "$withdrawal_address"
                 --compounding
-                --amount 32
+                --amount "${AMOUNT:-32}"
             )
             ;;
         *)
@@ -240,8 +249,9 @@ generate_keys() {
     # Lock down the output dir + generation log up front: the log can capture
     # secret material emitted by the deposit CLI.
     chmod 700 "$output_dir" 2>/dev/null || true
-    # Run deposit CLI (capture output but don't echo mnemonic)
-    if ! "${deposit_cmd[@]}" > "$output_dir/generation.log" 2>&1; then
+    # Run deposit CLI from its source tree (intl text files resolve from CWD);
+    # capture output but don't echo mnemonic. output_dir is absolute.
+    if ! ( cd "$DEPOSIT_CLI_SRC_DIR" && "${deposit_cmd[@]}" > "$output_dir/generation.log" 2>&1 ); then
         chmod 600 "$output_dir/generation.log" 2>/dev/null || true
         log_error "Key generation failed. Check $output_dir/generation.log for details."
         return 1
@@ -263,39 +273,46 @@ generate_keys() {
 import_keys_to_client() {
     local client="$1"
     local keystore_dir="$2"
-    local password="$3"
 
-    local client_keystore_dir
-    client_keystore_dir=$(get_client_keystore_dir "$client")
-
-    if [[ -z "$client_keystore_dir" ]]; then
-        log_warn "Unknown client '$client'. Cannot auto-import keys."
-        log_info "Manual import required. Copy keystores from $keystore_dir to your client's keystore directory."
+    if [[ -z "$client" || "$client" == "unknown" ]]; then
+        log_warn "No validator client detected. Import the keystores manually from: $keystore_dir"
         return 0
     fi
 
-    if [[ "$client" == "unknown" ]]; then
-        log_warn "No validator client detected. Cannot auto-import keys."
-        log_info "Manual import required. Copy keystores from $keystore_dir to your client's keystore directory."
-        return 0
-    fi
-
-    log_info "Importing keys to $client client at $client_keystore_dir"
-
-    ensure_directory "$client_keystore_dir"
-
-    # Copy keystores
-    if ! cp -r "$keystore_dir"/* "$client_keystore_dir"/ 2>/dev/null; then
-        log_error "Failed to copy keystores to $client_keystore_dir"
-        return 1
-    fi
-
-    # Set permissions
-    chmod 700 "$client_keystore_dir"
-    find "$client_keystore_dir" -type f -exec chmod 600 {} \;
-
-    log_info "Keys imported successfully. Restart validator service to activate."
-    log_info "  sudo systemctl restart validator"
+    # Most clients require their own import command — a bare file copy does NOT
+    # activate keys for prysm/lighthouse/nimbus/lodestar, and teku needs matching
+    # password files. Print the exact client command instead of pretending a copy
+    # worked (preview-first, consistent with the rest of this repo).
+    log_info "Detected client: $client"
+    log_info "Generated keystores are staged at: $keystore_dir"
+    printf "\n  Run the import for %s (it prompts for the keystore password):\n\n" "$client"
+    case "$client" in
+        lighthouse)
+            printf "    lighthouse account validator import --network mainnet --directory %s\n" "$keystore_dir"
+            ;;
+        prysm)
+            printf "    prysm.sh validator accounts import --mainnet --keys-dir=%s\n" "$keystore_dir"
+            ;;
+        teku)
+            printf "    # Teku loads keystore/password-file pairs from its keys dir:\n"
+            printf "    cp %s/keystore-*.json %s/\n" "$keystore_dir" "$(get_client_keystore_dir teku)"
+            printf "    # then create a matching <keystore-name>.txt password file per keystore\n"
+            ;;
+        lodestar)
+            printf "    lodestar validator import --dataDir \$HOME/.local/share/lodestar --importKeystores %s\n" "$keystore_dir"
+            ;;
+        nimbus)
+            printf "    nimbus_beacon_node deposits import --data-dir=\$HOME/.local/share/nimbus %s\n" "$keystore_dir"
+            ;;
+        grandine)
+            printf "    cp %s/keystore-*.json %s/\n" "$keystore_dir" "$(get_client_keystore_dir grandine)"
+            ;;
+        *)
+            printf "    # See your client's documentation for keystore import.\n"
+            ;;
+    esac
+    printf "\n"
+    log_info "After importing, restart the validator service: sudo systemctl restart validator"
 }
 
 # =============================================================================
@@ -347,19 +364,27 @@ Options:
   --withdrawal-address <addr>    Execution withdrawal address (required for 0x01 and 0x02)
   --keystore-password <pwd>      Password for keystore encryption [required]
   --output-dir <dir>             Output directory for keystores [default: $HOME/secrets/validator_keys_<timestamp>]
-  --import-keys                  Import generated keys into detected consensus client
-  --install-deps                 Install ethstaker-deposit-cli if not present
+  --amount <eth>                 Deposit amount in ETH for 0x02 compounding (32-2048, default 32)
+  --import-keys                  Print the exact client-specific import command for the generated keys
+  --install-deps                 Install ethstaker-deposit-cli if missing, then continue (standalone if no other args)
   --non-interactive              Skip confirmation prompts
   --help, -h                     Show this help message
 
+The keystore password is taken from the ETHQS_KEYSTORE_PASSWORD env var or an
+interactive prompt; --keystore-password also works but is discouraged (visible
+in process listings and shell history).
+
 Examples:
   # Generate 1 validator with execution withdrawal (0x01)
-  ./validator_deploy.sh --num-validators 1 --withdrawal-type 0x01 \\
-    --withdrawal-address 0x1234... --keystore-password mypass --install-deps
+  ETHQS_KEYSTORE_PASSWORD=... ./validator_deploy.sh --num-validators 1 \\
+    --withdrawal-type 0x01 --withdrawal-address 0x1234... --install-deps
 
-  # Generate 2 compounding validators (0x02) and import keys
-  ./validator_deploy.sh --num-validators 2 --withdrawal-type 0x02 \\
-    --withdrawal-address 0x1234... --keystore-password mypass --import-keys --install-deps
+  # Generate 2 compounding validators (0x02, 64 ETH each) and show import commands
+  ETHQS_KEYSTORE_PASSWORD=... ./validator_deploy.sh --num-validators 2 \\
+    --withdrawal-type 0x02 --amount 64 --withdrawal-address 0x1234... --import-keys
+
+  # Install the deposit CLI only
+  ./validator_deploy.sh --install-deps
 
 EOF
 }
@@ -401,8 +426,12 @@ main() {
                 IMPORT_KEYS=true
                 ;;
             --install-deps)
-                install_deposit_cli
-                exit $?
+                INSTALL_DEPS=true
+                ;;
+            --amount)
+                [[ $# -ge 2 ]] || { echo "Error: --amount requires a value (ETH, 32-2048, 0x02 only)" >&2; exit 2; }
+                AMOUNT="$2"
+                shift
                 ;;
             --non-interactive)
                 NON_INTERACTIVE=true
@@ -419,6 +448,30 @@ main() {
         esac
         shift
     done
+
+    # Install tooling first if requested. Standalone mode: --install-deps with no
+    # generation args installs and exits cleanly.
+    if [[ "$INSTALL_DEPS" == "true" ]]; then
+        if ! install_deposit_cli; then
+            exit 1
+        fi
+        if [[ -z "$NUM_VALIDATORS" && -z "$WITHDRAWAL_TYPE" ]]; then
+            log_info "Dependencies installed. Re-run with --num-validators/--withdrawal-type to deploy validators."
+            exit 0
+        fi
+    fi
+
+    # Validate --amount (compounding only; 0x01 deposits are fixed at 32 ETH)
+    if [[ -n "$AMOUNT" ]]; then
+        if [[ "$WITHDRAWAL_TYPE" != "0x02" ]]; then
+            log_error "--amount is only valid with --withdrawal-type 0x02 (compounding)"
+            exit 1
+        fi
+        if [[ ! "$AMOUNT" =~ ^[0-9]+$ ]] || (( AMOUNT < 32 || AMOUNT > 2048 )); then
+            log_error "--amount must be an integer between 32 and 2048 (ETH)"
+            exit 1
+        fi
+    fi
 
     # Validate required arguments
     if [[ -z "$NUM_VALIDATORS" ]]; then
@@ -457,6 +510,9 @@ main() {
         timestamp=$(date +%Y%m%d_%H%M%S)
         OUTPUT_DIR="$SECRETS_DIR/validator_keys_$timestamp"
     fi
+    # Generation runs with CWD inside the deposit-cli source tree, so the
+    # output directory must be absolute.
+    OUTPUT_DIR=$(realpath -m "$OUTPUT_DIR")
 
     # Ensure secrets directory exists
     ensure_directory "$SECRETS_DIR"
@@ -480,13 +536,11 @@ main() {
         exit 1
     fi
 
-    # Import keys if requested
+    # Show client-specific import instructions if requested
     if [[ "$IMPORT_KEYS" == "true" ]]; then
         local client
         client=$(detect_client)
-        if ! import_keys_to_client "$client" "$keystore_dir" "$KEYSTORE_PASSWORD"; then
-            log_warn "Key import failed, but keys were generated successfully"
-        fi
+        import_keys_to_client "$client" "$keystore_dir"
     fi
 
     # Print deposit command
@@ -494,8 +548,8 @@ main() {
 
     log_info "Validator deployment complete!"
     log_info "Keystore directory: $keystore_dir"
-    log_info "Mnemonic and secrets are stored in: $OUTPUT_DIR"
-    log_warn "Keep your mnemonic and password secure. Never share them."
+    log_info "The mnemonic and full CLI output were captured in: $OUTPUT_DIR/generation.log (mode 600)"
+    log_warn "Back up the mnemonic OFFLINE now, then delete generation.log. Never share the mnemonic or password."
 }
 
 main "$@"
