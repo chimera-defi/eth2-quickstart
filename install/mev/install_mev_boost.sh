@@ -113,6 +113,40 @@ patch_consensus_mev_builder() {
         patched=1
     fi
 
+    local teku_config="$HOME/teku/beacon.yaml"
+    if [[ -f "$teku_config" ]] && grep -q 'builder-registration-default-enabled: false' "$teku_config"; then
+        sed -i 's/builder-registration-default-enabled: false/builder-registration-default-enabled: true/' "$teku_config"
+        log_info "Teku: enabled builder-registration-default-enabled in $teku_config"
+        patched=1
+    fi
+
+    local nimbus_config="$HOME/nimbus/nimbus.toml"
+    if [[ -f "$nimbus_config" ]] && grep -q '^payload-builder = false' "$nimbus_config"; then
+        sed -i 's/^payload-builder = false$/payload-builder = true/' "$nimbus_config"
+        log_info "Nimbus: enabled payload-builder in $nimbus_config"
+        patched=1
+    fi
+
+    local lodestar_config="$HOME/lodestar/beacon.config.json"
+    if [[ -f "$lodestar_config" ]]; then
+        if python3 -c "
+import json, sys
+with open(sys.argv[1]) as f: c = json.load(f)
+if isinstance(c.get('builder'), dict) and c['builder'].get('enabled') is False:
+    c['builder']['enabled'] = True
+    with open(sys.argv[1], 'w') as f: json.dump(c, f, indent=2)
+    sys.exit(0)
+sys.exit(1)
+" "$lodestar_config" 2>/dev/null; then
+            log_info "Lodestar: enabled builder in $lodestar_config"
+            patched=1
+        fi
+    fi
+
+    if [[ "$patched" -eq 0 ]]; then
+        log_warn "No consensus client config found — install a consensus client first, then enable the MEV builder flag in its config manually."
+    fi
+
     if [[ "$patched" -eq 1 ]]; then
         log_info "MEV builder enabled in consensus config(s) — restarting affected services..."
         if systemctl is-active --quiet cl 2>/dev/null; then
