@@ -21,3 +21,6 @@ artifacts/
 __pycache__/
 
 .DS_store
+
+# Agent-local skill symlinks (absolute paths; not portable across machines)
+skills/token-reduce
