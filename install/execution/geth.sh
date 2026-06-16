@@ -52,8 +52,12 @@ export GETH_CMD="/usr/bin/geth --cache=$GETH_CACHE --syncmode snap \
 --ws --ws.addr $LH --ws.origins \"*\" --ws.api=\"web3, eth, net, engine\" \
 --authrpc.addr $LH --authrpc.port $ENGINE_PORT --authrpc.jwtsecret=$HOME/secrets/jwt.hex \
 --miner.etherbase=$FEE_RECIPIENT --miner.extradata=$GRAFITTI \
+--history.chain postmerge \
 --maxpeers 50 --txpool.globalslots 10000 --txpool.globalqueue 5000 \
 --metrics --metrics.addr $LH --metrics.port $METRICS_PORT"
+# --history.chain postmerge: don't keep pre-merge block bodies/receipts in the
+# ancient freezer (saves ~500-800G on a staking node). To reclaim space on an
+# already-synced node, run clean_geth_history.sh. See HANDOFF_diskcleanup.md.
 
 
 ensure_directory "$HOME/secrets"
