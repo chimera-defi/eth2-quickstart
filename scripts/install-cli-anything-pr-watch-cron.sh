@@ -46,22 +46,42 @@ disable_on_closed="true"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --repo)
+      if [[ $# -lt 2 ]]; then
+        echo "Error: option $1 requires a value" >&2
+        exit 2
+      fi
       repo="$2"
       shift 2
       ;;
     --pr)
+      if [[ $# -lt 2 ]]; then
+        echo "Error: option $1 requires a value" >&2
+        exit 2
+      fi
       pr_number="$2"
       shift 2
       ;;
     --schedule)
+      if [[ $# -lt 2 ]]; then
+        echo "Error: option $1 requires a value" >&2
+        exit 2
+      fi
       schedule="$2"
       shift 2
       ;;
     --state-dir)
+      if [[ $# -lt 2 ]]; then
+        echo "Error: option $1 requires a value" >&2
+        exit 2
+      fi
       state_dir="$2"
       shift 2
       ;;
     --autofix-cmd)
+      if [[ $# -lt 2 ]]; then
+        echo "Error: option $1 requires a value" >&2
+        exit 2
+      fi
       autofix_cmd="$2"
       shift 2
       ;;
@@ -74,6 +94,10 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --cron-marker)
+      if [[ $# -lt 2 ]]; then
+        echo "Error: option $1 requires a value" >&2
+        exit 2
+      fi
       CRON_MARKER="$2"
       shift 2
       ;;
