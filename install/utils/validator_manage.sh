@@ -518,11 +518,10 @@ EOF
     fi
 
     log_info "Submitting consolidation transaction..."
-    cast send "${CONSOLIDATION_CONTRACT}" \
+    ETH_PRIVATE_KEY="${priv_key}" cast send "${CONSOLIDATION_CONTRACT}" \
         --value "${fee_dec}wei" \
         --data "${calldata}" \
-        --rpc-url "${el_rpc}" \
-        --private-key "${priv_key}"
+        --rpc-url "${el_rpc}"
 
     log_info "Transaction submitted. Monitor the source validator for a pending exit."
 }
@@ -680,6 +679,9 @@ EOF
             printf "\n  Command to run:\n\n"
             printf "    ethdo validator credentials set --validator %s --withdrawal-address %s --connection %s\n\n" \
                 "$selection" "$withdrawal_addr" "$beacon_url"
+            printf "  Note: ethdo needs the validator MNEMONIC to sign this change; it will\n"
+            printf "  prompt for it interactively (or accepts --mnemonic). Never paste the\n"
+            printf "  mnemonic into shell history or scripts.\n\n"
 
             if ! confirm_destructive "BLS-to-execution credential update cannot be reverted automatically."; then
                 log_warn "Aborted."
@@ -742,11 +744,10 @@ EOF
             fi
 
             log_info "Submitting self-consolidation transaction..."
-            cast send "$CONSOLIDATION_CONTRACT" \
+            ETH_PRIVATE_KEY="${priv_key}" cast send "$CONSOLIDATION_CONTRACT" \
                 --value "${fee_dec}wei" \
                 --data "${calldata}" \
-                --rpc-url "$el_rpc" \
-                --private-key "$priv_key"
+                --rpc-url "$el_rpc"
             ;;
         *)
             log_warn "Invalid choice: $flow"
