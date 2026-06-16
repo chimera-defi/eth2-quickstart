@@ -36,6 +36,14 @@ source ./exports.sh
 
 set -euo pipefail
 
+# If run as root (e.g. via sudo) without an explicit GETH_DATADIR, $HOME resolves
+# to /root and the default datadir would be /root/.ethereum — the wrong location.
+# Derive the correct path from LOGIN_UNAME (set in exports.sh) instead.
+if [[ "${EUID:-$(id -u)}" -eq 0 && -z "${GETH_DATADIR:-}" ]]; then
+    GETH_DATADIR="/home/${LOGIN_UNAME}/.ethereum"
+    echo "NOTE: running as root — using GETH_DATADIR=$GETH_DATADIR (from LOGIN_UNAME=$LOGIN_UNAME)"
+    echo "      Override with: GETH_DATADIR=/custom/path $0"
+fi
 GETH_DATADIR="${GETH_DATADIR:-$HOME/.ethereum}"
 SERVICE_FILE="/etc/systemd/system/eth1.service"
 
