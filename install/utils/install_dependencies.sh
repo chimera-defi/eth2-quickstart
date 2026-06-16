@@ -110,6 +110,125 @@ apt_update() {
 }
 
 # =============================================================================
+# VALIDATOR TOOL INSTALLATION
+# =============================================================================
+
+# Install ethdo (validator management tool)
+# Graceful: if installation fails, script continues and prints manual instructions
+install_ethdo() {
+    log_info "Installing ethdo (validator management tool)..."
+
+    # Check if Go is available
+    if ! command -v go &>/dev/null; then
+        log_warn "Go not found. Skipping ethdo installation."
+        log_info "Manual install: go install github.com/wealdtech/ethdo@latest"
+        return 0
+    fi
+
+    # Check if already installed
+    if command -v ethdo &>/dev/null; then
+        log_info "ethdo already installed: $(ethdo --version 2>/dev/null || echo 'unknown')"
+        return 0
+    fi
+
+    # Install ethdo
+    if go install github.com/wealdtech/ethdo@latest &>/dev/null; then
+        # Ensure GOPATH/bin is in PATH
+        local go_bin
+        go_bin="$(go env GOPATH)/bin"
+        if [[ -d "$go_bin" ]] && [[ ":$PATH:" != *":$go_bin:"* ]]; then
+            export PATH="$go_bin:$PATH"
+            echo "export PATH=\"$go_bin:\$PATH\"" >> "$HOME/.bashrc" 2>/dev/null || true
+        fi
+        log_info "ethdo installed successfully"
+    else
+        log_warn "Failed to install ethdo via Go"
+        log_info "Manual install: go install github.com/wealdtech/ethdo@latest"
+    fi
+}
+
+# Install ethstaker-deposit-cli (validator key generation tool)
+# Graceful: if installation fails, script continues and prints manual instructions
+install_ethstaker_deposit_cli() {
+    log_info "Installing ethstaker-deposit-cli (validator key generation tool)..."
+
+    local deposit_cli_name="ethstaker-deposit-cli"
+    local venv_dir="$HOME/.${deposit_cli_name}-venv"
+    local repo_url="https://github.com/ethstaker/ethstaker-deposit-cli.git"
+
+    # Check if already installed
+    if [[ -d "$venv_dir" && -x "$venv_dir/bin/python" ]]; then
+        log_info "$deposit_cli_name already installed at $venv_dir"
+        return 0
+    fi
+
+    # Check Python requirements
+    if ! command -v python3 &>/dev/null; then
+        log_warn "python3 not found. Skipping $deposit_cli_name installation."
+        log_info "Manual install: git clone $repo_url && python3 -m venv venv && ./venv/bin/pip install -e ."
+        return 0
+    fi
+
+    if ! python3 -c "import venv" &>/dev/null; then
+        log_warn "python3-venv not found. Skipping $deposit_cli_name installation."
+        log_info "Manual install: sudo apt-get install python3-venv"
+        log_info "Then: git clone $repo_url && python3 -m venv venv && ./venv/bin/pip install -e ."
+        return 0
+    fi
+
+    # Create temporary directory for clone
+    local tmp_dir
+    tmp_dir=$(mktemp -d)
+    # shellcheck disable=SC2064
+    trap "rm -rf '$tmp_dir'" EXIT
+
+    log_info "Cloning $deposit_cli_name repository..."
+    if ! git clone --depth 1 "$repo_url" "$tmp_dir/repo" 2>/dev/null; then
+        log_warn "Failed to clone $deposit_cli_name repository"
+        log_info "Manual install: git clone $repo_url && python3 -m venv venv && ./venv/bin/pip install -e ."
+        return 0
+    fi
+
+    log_info "Creating virtual environment at $venv_dir..."
+    if ! python3 -m venv "$venv_dir" 2>/dev/null; then
+        log_warn "Failed to create virtual environment"
+        log_info "Manual install: git clone $repo_url && python3 -m venv venv && ./venv/bin/pip install -e ."
+        return 0
+    fi
+
+    log_info "Installing $deposit_cli_name..."
+    # shellcheck disable=SC1090
+    if ! source "$venv_dir/bin/activate" 2>/dev/null; then
+        log_warn "Failed to activate virtual environment"
+        return 0
+    fi
+
+    if ! pip install -e "$tmp_dir/repo" &>/dev/null; then
+        log_warn "Failed to install $deposit_cli_name"
+        deactivate 2>/dev/null || true
+        log_info "Manual install: git clone $repo_url && python3 -m venv venv && ./venv/bin/pip install -e ."
+        return 0
+    fi
+    deactivate 2>/dev/null || true
+
+    # Secure the venv directory
+    chmod 700 "$venv_dir"
+
+    log_info "$deposit_cli_name installed successfully at $venv_dir"
+}
+
+# Install validator tools (ethdo + ethstaker-deposit-cli)
+# Called from Phase 2 (user-level)
+install_validator_tools() {
+    log_info "Installing validator management tools..."
+
+    install_ethdo
+    install_ethstaker_deposit_cli
+
+    log_info "Validator tools installation complete"
+}
+
+# =============================================================================
 # INSTALLATION MODES
 # =============================================================================
 
@@ -164,7 +283,7 @@ install_phase1() {
 }
 
 # Phase 2: User-level tools only (runs as eth user from run_2.sh)
-# Installs Rust (per-user, in $HOME/.cargo). No sudo apt-get calls.
+# Installs Rust (per-user, in $HOME/.cargo) and validator tools. No sudo apt-get calls.
 install_phase2() {
     log_info "Installing Phase 2 user-level tools..."
 
@@ -181,6 +300,9 @@ install_phase2() {
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y > /dev/null 2>&1
         [[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:${PATH:-}"
     fi
+
+    # Validator tools (ethdo + ethstaker-deposit-cli)
+    install_validator_tools
 
     log_info "Phase 2 user-level tools installed successfully!"
 }
@@ -221,6 +343,9 @@ install_production() {
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y > /dev/null 2>&1
         [[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:${PATH:-}"
     fi
+
+    # Validator tools (ethdo + ethstaker-deposit-cli)
+    install_validator_tools
 
     # Time sync (skip in Docker)
     if ! is_docker && command -v timedatectl &>/dev/null; then

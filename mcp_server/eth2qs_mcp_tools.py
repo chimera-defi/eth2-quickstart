@@ -251,6 +251,69 @@ def monad_install(*, confirm: bool = False, confirmation_token: str = "") -> Dic
     return _eth2qs("monad-install")
 
 
+def _validate_withdrawal_type(value: Optional[str]) -> Optional[str]:
+    if not value:
+        return None
+    v = value.lower()
+    if v not in ("0x00", "0x01", "0x02"):
+        raise ValueError("withdrawal_type must be 0x00, 0x01, or 0x02")
+    return v
+
+
+def validators_list(
+    *,
+    min_balance: Optional[float] = None,
+    max_balance: Optional[float] = None,
+    withdrawal_type: Optional[str] = None,
+    status: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Read-only: list local validators (index, status, balance, withdrawal
+    credentials), optionally filtered by balance (ETH), withdrawal type
+    (0x00/0x01/0x02), or status substring."""
+    args = ["validators", "--json"]
+    if min_balance is not None:
+        args += ["--min-balance", str(float(min_balance))]
+    if max_balance is not None:
+        args += ["--max-balance", str(float(max_balance))]
+    wt = _validate_withdrawal_type(withdrawal_type)
+    if wt:
+        args += ["--withdrawal-type", wt]
+    if status:
+        args += ["--status", str(status)]
+    return _eth2qs(*args)
+
+
+VALIDATOR_OPS = {
+    "exit": "validator-exit",
+    "withdrawal-change": "validator-withdrawal-changes",
+    "consolidate": "validator-manage --consolidate",
+    "eip7002-exit": "validator-manage --eip7002-exit",
+    "create-0x02": "validator-create-0x02",
+    "deploy": "validator-deploy",
+}
+
+
+def validator_op_preview(*, operation: str) -> Dict[str, Any]:
+    """Read-only: returns the exact node CLI command for a funds-affecting
+    validator operation. These operations are intentionally NOT executed via
+    MCP — they are irreversible and require secrets/keys; run them on the node
+    CLI where they prompt for confirmation interactively."""
+    if operation not in VALIDATOR_OPS:
+        raise ValueError("operation must be one of: " + ", ".join(sorted(VALIDATOR_OPS)))
+    return {
+        "operation": operation,
+        "preview": True,
+        "executed": False,
+        "note": (
+            "Irreversible/funds-affecting validator operations are not executed "
+            "via MCP. Run the command below on the node; it prompts for "
+            "confirmation (and any secrets) interactively."
+        ),
+        "cli_command": f"./scripts/eth2qs.sh {VALIDATOR_OPS[operation]}",
+        "wrapper": str(eth2qs_path()),
+    }
+
+
 TOOL_NAMES = (
     "eth2qs_info",
     "eth2qs_help",
@@ -276,6 +339,8 @@ TOOL_NAMES = (
     "eth2qs_clean_data_dry_run",
     "eth2qs_cleanup_host_dry_run",
     "eth2qs_monad_install",
+    "eth2qs_validators",
+    "eth2qs_validator_op_preview",
 )
 
 
@@ -303,6 +368,8 @@ def server_info() -> Dict[str, Any]:
                 "eth2qs_logs",
                 "eth2qs_clean_data_dry_run",
                 "eth2qs_cleanup_host_dry_run",
+                "eth2qs_validators",
+                "eth2qs_validator_op_preview",
             ],
             "mutating_confirm_required": [
                 "eth2qs_ensure_apply",
@@ -339,6 +406,8 @@ def server_info() -> Dict[str, Any]:
                 "confirmation_token": "apply",
             },
             "eth2qs_repair_apply": {"confirm": True, "confirmation_token": "apply"},
+            "eth2qs_validators": {"withdrawal_type": "0x01", "min_balance": 32},
+            "eth2qs_validator_op_preview": {"operation": "exit"},
             "eth2qs_clean_data_dry_run": {},
         },
     }

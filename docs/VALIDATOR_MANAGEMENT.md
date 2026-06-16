@@ -16,6 +16,16 @@ They are also available through the unified `eth2qs.sh` wrapper.
 ./scripts/eth2qs.sh validators --json
 ./install/utils/validator_list.sh --json
 
+# Filter by balance (ETH), withdrawal type (0x00 BLS / 0x01 execution / 0x02 compounding), or status
+./scripts/eth2qs.sh validators --json --min-balance 32 --withdrawal-type 0x01
+./scripts/eth2qs.sh validators --withdrawal-type 0x02            # compounding validators only
+./scripts/eth2qs.sh validators --max-balance 32 --status active_ongoing
+
+# Deploy validators + generate keys and deposit_data.json (0x01 or 0x02 compounding)
+# Set the keystore password via the ETHQS_KEYSTORE_PASSWORD env var (preferred) or interactive prompt.
+ETHQS_KEYSTORE_PASSWORD=... ./scripts/eth2qs.sh validator-deploy \
+  --num-validators 1 --withdrawal-type 0x02 --withdrawal-address 0xYourAddr --import-keys
+
 # Go straight to voluntary exit flow
 ./scripts/eth2qs.sh validator-exit
 ./install/utils/validator_exit.sh
@@ -36,6 +46,14 @@ They are also available through the unified `eth2qs.sh` wrapper.
 # Go straight to consolidation flow (EIP-7251)
 ./scripts/eth2qs.sh validator-manage --consolidate
 ./install/utils/validator_manage.sh --consolidate
+
+# Go straight to EIP-7002 exit/withdrawal flow
+./scripts/eth2qs.sh validator-manage --eip7002-exit
+./install/utils/validator_manage.sh --eip7002-exit
+
+# Go straight to withdrawal credential change flow
+./scripts/eth2qs.sh validator-manage --withdraw-change
+./install/utils/validator_manage.sh --withdraw-change
 ```
 
 ---
@@ -179,9 +197,9 @@ balances. The source validator exits; its stake moves to the target.
 - Both validators must have `0x01` withdrawal credentials pointing to an
   Ethereum address you control.
 - You need the private key of that withdrawal address to sign the transaction.
-- A dynamic fee is required (queried live from the contract).
+- A dynamic fee is required (queried live from the contract using `eth_call` with empty calldata).
 
-**Contract:** `0x00431F263cE400f4455c2dCf564e53007Ca4bbBb` (mainnet)
+**Contract:** `0x0000BBdDc7CE488642fb579F8B00f3a590007251` (mainnet)
 
 The consolidation flow:
 
@@ -195,7 +213,7 @@ The consolidation flow:
 
 ```bash
 # The script prints the exact command — copy and run it yourself:
-cast send 0x00431F263cE400f4455c2dCf564e53007Ca4bbBb \
+cast send 0x0000BBdDc7CE488642fb579F8B00f3a590007251 \
   --value <fee_wei>wei \
   --data 0x<source_pubkey_hex><target_pubkey_hex> \
   --rpc-url http://127.0.0.1:8545 \
@@ -206,6 +224,96 @@ curl -L https://foundry.paradigm.xyz | bash && foundryup
 ```
 
 ---
+
+### 3. EIP-7002 EL-triggered exit/withdrawal
+
+`validator_manage.sh --eip7002-exit` builds the EIP-7002 payload (`validator_pubkey || amount`) and prints the exact `cast send` command before execution.
+
+```bash
+cast send 0x00000961Ef480Eb55e80D19ad83579A64c007002 \
+  --value <fee_wei>wei \
+  --data 0x<validator_pubkey_hex><amount_u64_gwei_be_hex> \
+  --rpc-url http://127.0.0.1:8545 \
+  --from <WITHDRAWAL_ADDRESS>
+```
+
+`amount_u64_gwei_be_hex` is the withdrawal amount in gwei encoded as an 8-byte big-endian integer.
+`amount = 0` requests a full voluntary exit.
+
+### 4. Withdrawal credential change
+
+- `0x00 -> 0x01`: `ethdo validator credentials set`:
+
+```bash
+ethdo validator credentials set \
+  --validator <index_or_pubkey> \
+  --withdrawal-address <address> \
+  --connection http://127.0.0.1:5052
+```
+
+- `0x01 -> 0x02`: self-consolidation (source and target are the same pubkey) using `cast`.
+
+```bash
+cast send 0x0000BBdDc7CE488642fb579F8B00f3a590007251 \
+  --value <fee_wei>wei \
+  --data 0x<source_pubkey_hex><source_pubkey_hex> \
+  --rpc-url http://127.0.0.1:8545 \
+  --private-key <WITHDRAWAL_ADDRESS_PRIVATE_KEY>
+```
+
+## `validator_deploy.sh` — Key Generation & Deposit
+
+Generates validator keystores + `deposit_data.json` by wrapping
+[`ethstaker-deposit-cli`](https://github.com/eth-educators/ethstaker-deposit-cli),
+optionally imports the keys into the detected client, and **prints the deposit
+command for manual submission** (it never submits the on-chain deposit for you).
+
+```bash
+ETHQS_KEYSTORE_PASSWORD=... ./scripts/eth2qs.sh validator-deploy \
+  --num-validators 2 \
+  --withdrawal-type 0x02 \                 # 0x01 (execution address) or 0x02 (compounding)
+  --withdrawal-address 0xYourWithdrawalAddr \
+  --import-keys                            # optional: import into the running client
+```
+
+- Provide the keystore password via the `ETHQS_KEYSTORE_PASSWORD` env var or the
+  interactive prompt. The `--keystore-password` flag works but is discouraged
+  (visible in process listings / shell history).
+- Mnemonic and keys are never echoed; generated files are written `600` under
+  `$HOME/secrets`. **Back up the mnemonic offline before funding.**
+- `ethstaker-deposit-cli` and `ethdo` are installed by
+  `install/utils/install_dependencies.sh`; if absent, the script prints manual
+  install + command instructions instead of failing hard.
+
+## Filtering the validator list
+
+`validators` / `validator_list.sh` accept filters that apply to both the table
+and `--json` output:
+
+| Flag | Meaning |
+|------|---------|
+| `--min-balance <eth>` | Only validators with balance ≥ this (ETH) |
+| `--max-balance <eth>` | Only validators with balance ≤ this (ETH) |
+| `--withdrawal-type <t>` | `0x00` (BLS), `0x01` (execution address), `0x02` (compounding) |
+| `--status <substr>` | Status substring, e.g. `active_ongoing`, `exited` |
+
+The withdrawal type is matched against the prefix of each validator's
+`withdrawal_credentials`.
+
+## Agent access (MCP)
+
+For agents (Claude Code / Codex) the MCP server exposes:
+
+- **`eth2qs_validators(min_balance, max_balance, withdrawal_type, status)`** —
+  read-only validator inventory with the same filters as the CLI.
+- **`eth2qs_validator_op_preview(operation)`** — read-only; returns the exact node
+  CLI command for a funds-affecting operation (`exit`, `withdrawal-change`,
+  `consolidate`, `eip7002-exit`, `create-0x02`, `deploy`).
+
+**Funds-affecting validator operations are intentionally NOT executed via MCP.**
+They are irreversible and require secrets/keys, so they run only on the node CLI
+where they prompt for confirmation. The MCP surface lets an agent inspect and
+plan; a human (or the CLI) performs the actual mutation.
 
 ## Beacon API Ports by Client
 
