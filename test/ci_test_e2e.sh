@@ -276,6 +276,9 @@ if [[ "$PHASE" == "2" ]]; then
 
     # Caddy and Nginx — always install in Docker E2E (no skip)
     log_header "Installing and verifying Caddy"
+    # caddyserver.com/api/download is blocked from GitHub Actions runners; test
+    # with the stock APT-installed Caddy binary instead of the custom module build.
+    export CADDY_ENSURE_MODULES=false
     if ! run_script_with_log "/tmp/caddy_e2e_$$.log" "$PROJECT_ROOT/install/web/install_caddy.sh"; then
         record_test "install_caddy" "FAIL"
         dump_log_tail "/tmp/caddy_e2e_$$.log" 50 "  "

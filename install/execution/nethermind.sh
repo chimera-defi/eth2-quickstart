@@ -77,11 +77,11 @@ cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
   "JsonRpc": {
     "Enabled": true,
     "Timeout": 20000,
-    "Host": "'$LH'",
+    "Host": "$LH",
     "Port": ${NETHERMIND_HTTP_PORT},
     "WebSocketsPort": ${NETHERMIND_WS_PORT},
     "JwtSecretFile": "$HOME/secrets/jwt.hex",
-    "EngineHost": "'$LH'",
+    "EngineHost": "$LH",
     "EnginePort": ${NETHERMIND_ENGINE_PORT},
     "EnabledModules": ["Admin", "Eth", "Net", "Web3", "Engine"]
   },
@@ -93,7 +93,7 @@ cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
     "NodeName": "Nethermind",
     "PushGatewayUrl": "",
     "IntervalSeconds": 5,
-    "ExposeHost": "'$LH'",
+    "ExposeHost": "$LH",
     "ExposePort": 6060
   },
   "Sync": {

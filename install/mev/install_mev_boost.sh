@@ -87,5 +87,43 @@ create_systemd_service "mev" "MEV Boost Service" "$EXEC_START" "$(whoami)" "alwa
 # Enable and start the service
 enable_and_start_systemd_service "mev"
 
+# Patch deployed consensus client configs: the base configs disable the MEV builder
+# by default.  Now that the relay is running, uncomment the relevant lines and
+# restart any running consensus service so it picks up the builder endpoint.
+patch_consensus_mev_builder() {
+    local patched=0
+
+    local prysm_beacon="$HOME/prysm/prysm_beacon_conf.yaml"
+    local prysm_validator="$HOME/prysm/prysm_validator_conf.yaml"
+    if [[ -f "$prysm_beacon" ]] && grep -q '^# http-mev-relay:' "$prysm_beacon"; then
+        sed -i 's/^# \(http-mev-relay:.*\)$/\1/' "$prysm_beacon"
+        log_info "Prysm beacon: enabled http-mev-relay in $prysm_beacon"
+        patched=1
+    fi
+    if [[ -f "$prysm_validator" ]] && grep -q '^# enable-builder:' "$prysm_validator"; then
+        sed -i 's/^# \(enable-builder:.*\)$/\1/' "$prysm_validator"
+        log_info "Prysm validator: enabled enable-builder in $prysm_validator"
+        patched=1
+    fi
+
+    local grandine_config="$HOME/grandine/grandine.toml"
+    if [[ -f "$grandine_config" ]] && grep -q '^# builder_' "$grandine_config"; then
+        sed -i 's/^# \(builder_boost_factor .*\)$/\1/; s/^# \(builder_endpoint .*\)$/\1/' "$grandine_config"
+        log_info "Grandine: enabled builder settings in $grandine_config"
+        patched=1
+    fi
+
+    if [[ "$patched" -eq 1 ]]; then
+        log_info "MEV builder enabled in consensus config(s) — restarting affected services..."
+        if systemctl is-active --quiet cl 2>/dev/null; then
+            sudo systemctl restart cl
+        fi
+        if systemctl is-active --quiet validator 2>/dev/null; then
+            sudo systemctl restart validator
+        fi
+    fi
+}
+patch_consensus_mev_builder
+
 # Show completion information
 log_installation_complete "MEV Boost" "mev" "" "$MEV_BOOST_DIR"

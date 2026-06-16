@@ -150,8 +150,8 @@ if [[ "$FLAGS_MODE" == "true" ]]; then
             if ! wait_for_engine_api "$ENGINE_WAIT_TIMEOUT"; then
                 eth1_state="$(sudo systemctl is-active eth1 2>/dev/null || true)"
                 eth1_failed="$(sudo systemctl is-failed eth1 2>/dev/null || true)"
-                if [[ "$eth1_state" == "active" && "$eth1_failed" != "failed" ]]; then
-                    log_warn "Engine API not ready yet, but eth1 is active; continuing with consensus install (startup may complete during client setup)"
+                if [[ ( "$eth1_state" == "active" || "$eth1_state" == "activating" ) && "$eth1_failed" != "failed" ]]; then
+                    log_warn "Engine API not ready yet, but eth1 is ${eth1_state} (not failed); continuing with consensus install. Heavyweight ELs (e.g. Besu on the JVM) can bind authrpc after this gate; the consensus client retries the Engine API, and service health is verified later."
                 else
                     log_error "Engine API not ready and eth1 unhealthy (state=${eth1_state:-unknown}, failed=${eth1_failed:-unknown})"
                     FAILED=1
