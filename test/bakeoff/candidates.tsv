@@ -1,0 +1,12 @@
+geth	prysm
+besu	prysm
+erigon	prysm
+nethermind	prysm
+nimbus_eth1	prysm
+reth	prysm
+ethrex	prysm
+geth	lighthouse
+geth	teku
+geth	nimbus
+geth	lodestar
+geth	grandine
