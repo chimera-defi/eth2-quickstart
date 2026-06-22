@@ -21,6 +21,15 @@ log_installation_start "Besu"
 check_system_requirements 8 1000
 
 
+# Besu 25.x requires Java 25+. Install it if not already present.
+if ! java -version 2>&1 | grep -q '"25\.'; then
+    log_info "Installing openjdk-25-jdk-headless (required by Besu 25.x)..."
+    if ! sudo apt-get install -y openjdk-25-jdk-headless; then
+        log_error "Failed to install Java 25; Besu 25.x will not run on older JVMs"
+        exit 1
+    fi
+fi
+
 # Setup firewall rules for Besu
 setup_firewall_rules 30303 8545 8546 8551
 
@@ -87,10 +96,6 @@ rpc-ws-port=${BESU_WS_PORT}
 # Engine API settings
 engine-rpc-port=${BESU_ENGINE_PORT}
 engine-jwt-secret="$HOME/secrets/jwt.hex"
-
-# Mining settings (disabled for staking)
-miner-coinbase="$FEE_RECIPIENT"
-miner-extra-data="$GRAFITTI"
 EOF
 
 # Merge base configuration with custom settings

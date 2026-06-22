@@ -29,13 +29,11 @@ engine-host-allowlist=["localhost","$LH"]
 # Sync settings
 sync-mode="SNAP"
 
-# Mining settings (disabled for staking)
-miner-enabled=false
-
 # Performance optimizations
-tx-pool-max-size=10000
-tx-pool-hash-limit=1000000
-tx-pool-retention-hours=13
+# tx-pool-max-size, tx-pool-hash-limit, tx-pool-retention-hours removed:
+# incompatible with besu 25.x layered tx pool implementation.
+# miner-enabled, miner-coinbase, miner-extra-data removed: post-merge besu
+# delegates fee recipient / graffiti entirely to the consensus client.
 
 # Metrics and monitoring
 metrics-enabled=true
