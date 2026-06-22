@@ -72,14 +72,14 @@ crashed="no"
 if [[ "$install_rc" -eq 0 ]]; then
   end_at=$(( $(date +%s) + window ))
   while [[ "$(date +%s)" -lt "$end_at" ]]; do
-    bakeoff_write_sample "$out" "$REPO_ROOT"
+    bakeoff_write_sample "$out" "$REPO_ROOT" || log_warn "$pair: sample write failed"
     if ! bakeoff_services_alive; then
       crashed="yes"
       log_warn "$pair: a service is no longer active during the window"
     fi
     sleep "$interval"
   done
-  bakeoff_write_sample "$out" "$REPO_ROOT"
+  bakeoff_write_sample "$out" "$REPO_ROOT" || log_warn "$pair: sample write failed"
 fi
 echo "service_crash_observed=$crashed" >> "$out/env.txt"
 
