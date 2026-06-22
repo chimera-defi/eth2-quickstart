@@ -12,7 +12,14 @@ cap_unit() {
     log_warn "Unit $unit not present; skipping caps"
     return 0
   fi
-  sudo systemctl set-property --runtime "$unit" "$@"
+  local prop
+  for prop in "$@"; do
+    if sudo systemctl set-property --runtime "$unit" "$prop" 2>/dev/null; then
+      log_info "  $unit $prop"
+    else
+      log_warn "  could not set $prop on $unit (skipped)"
+    fi
+  done
 }
 
 case "$action" in
