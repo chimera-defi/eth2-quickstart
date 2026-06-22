@@ -76,7 +76,7 @@ bakeoff_write_sample() {
   local out_dir="$1" repo_root="$2" tmp_dir
   tmp_dir="$out_dir/tmp"
   mkdir -p "$tmp_dir"
-  bakeoff_snapshot_disk "$tmp_dir/disk.tsv"
+  bakeoff_snapshot_disk "$tmp_dir/disk.tsv" || true
   bakeoff_probe_execution_sync > "$tmp_dir/execution-sync.json" || true
   bakeoff_probe_beacon_sync   > "$tmp_dir/beacon-sync.json"   || true
   bakeoff_snapshot_processes  > "$tmp_dir/processes.json"     || true
@@ -86,7 +86,7 @@ bakeoff_write_sample() {
   local alive="down"
   if bakeoff_services_alive; then alive="up"; fi
 
-  jq -n \
+  if ! jq -cn \
     --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     --arg alive "$alive" \
     --rawfile disk "$tmp_dir/disk.tsv" \
@@ -104,5 +104,8 @@ bakeoff_write_sample() {
       processes: (($processes | fromjson?) // []),
       doctor: (($doctor | fromjson?) // {raw: $doctor}),
       stats: (($stats | fromjson?) // {raw: $stats})
-    }' >> "$out_dir/samples.jsonl"
+    }' >> "$out_dir/samples.jsonl"; then
+    log_warn "sample write failed (non-fatal)"
+    return 0
+  fi
 }
