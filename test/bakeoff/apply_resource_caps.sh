@@ -18,8 +18,8 @@ cap_unit() {
 case "$action" in
   apply)
     log_info "Applying runtime resource caps (node stack <= 8 cores / 36G)"
-    cap_unit eth1.service CPUQuota=600% MemoryMax=24G MemoryHigh=22G IOWeight=50 Nice=10
-    cap_unit cl.service   CPUQuota=200% MemoryMax=12G MemoryHigh=11G IOWeight=50 Nice=10
+    cap_unit eth1.service CPUQuota=600% MemoryMax=24G MemoryHigh=22G IOWeight=50
+    cap_unit cl.service   CPUQuota=200% MemoryMax=12G MemoryHigh=11G IOWeight=50
     ;;
   clear)
     log_info "Clearing runtime resource caps"
