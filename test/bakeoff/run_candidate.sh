@@ -39,6 +39,10 @@ mkdir -p "$out/tmp"
   echo "install_timeout=$install_timeout"
 } > "$out/env.txt"
 
+# Candidate isolation: ensure no prior client survives into this candidate.
+sudo systemctl stop eth1.service cl.service validator.service 2>/dev/null || true
+sudo systemctl disable eth1.service cl.service validator.service 2>/dev/null || true
+
 # Pre-install clean + baseline.
 ./scripts/eth2qs.sh clean-data --dry-run > "$out/cleanup-before-dry-run.log" 2>&1 || true
 ./scripts/eth2qs.sh clean-data --confirm > "$out/cleanup-before-confirm.log" 2>&1
