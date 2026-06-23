@@ -100,43 +100,26 @@ ensure_directory "$GRANDINE_DATA_DIR"
 VALIDATOR_DATA_DIR="$GRANDINE_DATA_DIR/validators"
 ensure_directory "$VALIDATOR_DATA_DIR"
 
-# Create temporary directory for custom configuration
-create_temp_config_dir
-
-# Create custom configuration variables file (YAML format required by grandine)
-cat > ./tmp/grandine_custom.yaml << EOF
-# Grandine per-install configuration — merged with base at install time
-
-data_dir: "$GRANDINE_DATA_DIR"
-
-eth1_rpc_urls:
-  - "http://$LH:$ENGINE_PORT"
-
-jwt_secret: "$HOME/secrets/jwt.hex"
-
-target_peers: $MAX_PEERS
-
-http_address: "$CONSENSUS_HOST"
-http_port: ${GRANDINE_REST_PORT}
-
-checkpoint_sync_url: "$GRANDINE_CHECKPOINT_URL"
-
-suggested_fee_recipient: "$FEE_RECIPIENT"
-graffiti: "$GRAFITTI"
-
-metrics_address: "$CONSENSUS_HOST"
-metrics_port: 8008
-EOF
-
-# Merge base configuration with custom settings
-merge_client_config "Grandine" "main" "$PROJECT_ROOT/configs/grandine/grandine_base.yaml" "./tmp/grandine_custom.yaml" "$GRANDINE_DIR/grandine.yaml"
-
-# Clean up temporary files
-rm -rf ./tmp/
-
-
-# Create systemd service for beacon node
-BEACON_EXEC_START="$GRANDINE_DIR/grandine --configuration-file $GRANDINE_DIR/grandine.yaml"
+# Build ExecStart with explicit CLI flags.
+# grandine's --configuration-file loads a chain spec, not node settings;
+# node settings must be real CLI flags or they are silently ignored.
+BEACON_EXEC_START="$GRANDINE_DIR/grandine \
+  --network mainnet \
+  --data-dir $GRANDINE_DATA_DIR \
+  --eth1-rpc-urls http://$LH:$ENGINE_PORT \
+  --jwt-secret $HOME/secrets/jwt.hex \
+  --http-address $CONSENSUS_HOST \
+  --http-port $GRANDINE_REST_PORT \
+  --metrics \
+  --metrics-address $CONSENSUS_HOST \
+  --metrics-port 8008 \
+  --checkpoint-sync-url $GRANDINE_CHECKPOINT_URL \
+  --suggested-fee-recipient $FEE_RECIPIENT \
+  --graffiti $GRAFITTI \
+  --target-peers $MAX_PEERS \
+  --listen-address 0.0.0.0 \
+  --libp2p-port 9000 \
+  --discovery-port 9000"
 
 create_systemd_service "cl" "Grandine Ethereum Consensus Client" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target eth1.service" "network-online.target eth1.service"
 
