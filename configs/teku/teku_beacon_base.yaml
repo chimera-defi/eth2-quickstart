@@ -21,15 +21,13 @@ rest-api-cors-origins: ["*"]
 
 # Logging
 log-destination: "CONSOLE"
-log-level: "INFO"
+logging: "INFO"
 
-# Builder/MEV settings
+# Builder/MEV settings (builder-endpoint wired; registration + blinded enabled per-install when MEV active)
 builder-endpoint: "http://$MEV_HOST:$MEV_PORT"
-builder-registration-default-enabled: false
 
 # Performance optimizations
 validators-early-attestations-enabled: true
-validators-proposer-blinded-blocks-enabled: true
 
 # Monitoring
 metrics-enabled: true
