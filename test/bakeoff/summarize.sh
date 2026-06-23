@@ -15,11 +15,11 @@ results_doc="$REPO_ROOT/docs/CLIENT_BAKEOFF_RESULTS.md"
     [[ -d "$dir" ]] || continue
     pair="$(basename "$dir")"
     execution="${pair%%__*}"; consensus="${pair##*__}"
-    install_code="$(grep -E '^install_exit_code=' "$dir/env.txt" 2>/dev/null | tail -1 | cut -d= -f2-)"
-    crash="$(grep -E '^service_crash_observed=' "$dir/env.txt" 2>/dev/null | tail -1 | cut -d= -f2-)"
+    install_code="$(grep -E '^install_exit_code=' "$dir/env.txt" 2>/dev/null | tail -1 | cut -d= -f2-)" || true
+    crash="$(grep -E '^service_crash_observed=' "$dir/env.txt" 2>/dev/null | tail -1 | cut -d= -f2-)" || true
     sample_count="$(wc -l < "$dir/samples.jsonl" 2>/dev/null || echo 0)"
     last_doctor="$(tail -1 "$dir/samples.jsonl" 2>/dev/null | jq -r '.doctor.summary.status // "unknown"' 2>/dev/null || echo unknown)"
-    last_disk="$(tail -1 "$dir/samples.jsonl" 2>/dev/null | jq -r '.disk_tsv' 2>/dev/null | awk -F'\t' 'NR>1 && $2 ~ /^[0-9]+$/ {s+=$2} END{print s+0}')"
+    last_disk="$(tail -1 "$dir/samples.jsonl" 2>/dev/null | jq -r '.disk_tsv' 2>/dev/null | awk -F'\t' 'NR>1 && $2 ~ /^[0-9]+$/ {s+=$2} END{print s+0}')" || true
     residual="$(awk -F'\t' 'NR>1 && $2 ~ /^[0-9]+$/ {s+=$2} END{print s+0}' "$dir/disk-after-cleanup.tsv" 2>/dev/null || echo 0)"
     echo "$pair,$execution,$consensus,${install_code:-missing},${crash:-unknown},$sample_count,$last_doctor,${last_disk:-0},${residual:-0}"
   done
