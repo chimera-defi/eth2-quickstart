@@ -267,7 +267,7 @@ extract_archive() {
             fi
             ;;
         *.zip)
-            unzip -q "$archive_file" -d "$dest_dir"
+            unzip -qo "$archive_file" -d "$dest_dir"
             extract_result=$?
             ;;
         *)
