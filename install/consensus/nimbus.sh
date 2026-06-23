@@ -138,6 +138,24 @@ VALIDATOR_EXEC_START="$NIMBUS_DIR/build/nimbus_validator_client --config-file=$N
 
 create_systemd_service "validator" "Nimbus Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target cl.service"
 
+# Bootstrap checkpoint state before first start.
+# trustedNodeSync is a one-shot subcommand, not a runtime config key — adding a
+# URL to nimbus.toml has no effect; the DB must be populated before the service
+# starts. Skip if the DB already exists (idempotent on reinstall).
+NIMBUS_DB_DIR="$NIMBUS_DATA_DIR/db"
+if [[ ! -d "$NIMBUS_DB_DIR" ]]; then
+  log_info "Running nimbus trustedNodeSync from $NIMBUS_CHECKPOINT_URL ..."
+  if ! "$NIMBUS_DIR/build/nimbus_beacon_node" trustedNodeSync \
+      --network=mainnet \
+      --data-dir="$NIMBUS_DATA_DIR" \
+      --trusted-node-url="$NIMBUS_CHECKPOINT_URL" \
+      --backfill=false; then
+    log_warn "trustedNodeSync failed — nimbus will genesis-sync (degraded)"
+  fi
+else
+  log_info "Nimbus DB already exists at $NIMBUS_DB_DIR — skipping trustedNodeSync"
+fi
+
 enable_and_start_systemd_service "cl"
 enable_and_start_systemd_service "validator"
 

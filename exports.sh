@@ -137,6 +137,7 @@ export GRANDINE_REST_PORT=5052
 export TEKU_CHECKPOINT_URL="https://beaconstate.ethstaker.cc"
 export LODESTAR_CHECKPOINT_URL="https://beaconstate.ethstaker.cc"
 export LIGHTHOUSE_CHECKPOINT_URL="https://beaconstate.ethstaker.cc"
+export NIMBUS_CHECKPOINT_URL="https://beaconstate.ethstaker.cc"
 export GRANDINE_CHECKPOINT_URL="https://beaconstate.ethstaker.cc"
 
 # ============================================================================
