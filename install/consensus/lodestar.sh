@@ -76,10 +76,6 @@ cat > ./tmp/lodestar_beacon_custom.json << EOF
 {
   "dataDir": "$LODESTAR_DATA_DIR/beacon",
   "targetPeers": $MAX_PEERS,
-  "execution": {
-    "urls": ["http://$LH:$ENGINE_PORT"],
-    "jwtSecretFile": "$HOME/secrets/jwt.hex"
-  },
   "rest": {
     "port": ${LODESTAR_REST_PORT}
   },
@@ -88,7 +84,6 @@ cat > ./tmp/lodestar_beacon_custom.json << EOF
   },
   "checkpointSyncUrl": "$LODESTAR_CHECKPOINT_URL",
   "suggestedFeeRecipient": "$FEE_RECIPIENT",
-  "graffiti": "$GRAFITTI",
   "logFile": "$LODESTAR_DATA_DIR/beacon.log"
 }
 EOF
@@ -97,8 +92,6 @@ EOF
 cat > ./tmp/lodestar_validator_custom.json << EOF
 {
   "dataDir": "$LODESTAR_DATA_DIR/validator",
-  "keystoresDir": "$VALIDATOR_DATA_DIR/keystores",
-  "secretsDir": "$VALIDATOR_DATA_DIR/secrets",
   "beaconNodes": ["http://$CONSENSUS_HOST:${LODESTAR_REST_PORT}"],
   "suggestedFeeRecipient": "$FEE_RECIPIENT",
   "graffiti": "$GRAFITTI",
@@ -124,12 +117,14 @@ fi
 rm -rf ./tmp/
 
 # Create systemd service for beacon node
-BEACON_EXEC_START="$LODESTAR_BIN beacon --paramsFile $LODESTAR_DIR/beacon.config.json"
+# --rcConfig loads node options (checkpointSyncUrl, dataDir, execution.urls…);
+# --paramsFile is the chain-spec preset file and silently ignores node options.
+BEACON_EXEC_START="$LODESTAR_BIN beacon --network mainnet --rcConfig $LODESTAR_DIR/beacon.config.json --execution.urls http://$LH:$ENGINE_PORT --jwtSecret $HOME/secrets/jwt.hex"
 
 create_systemd_service "cl" "Lodestar Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target eth1.service" "network-online.target eth1.service"
 
 # Create systemd service for validator
-VALIDATOR_EXEC_START="$LODESTAR_BIN validator --paramsFile $LODESTAR_DIR/validator.config.json"
+VALIDATOR_EXEC_START="$LODESTAR_BIN validator --network mainnet --rcConfig $LODESTAR_DIR/validator.config.json"
 
 create_systemd_service "validator" "Lodestar Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target cl.service"
 
