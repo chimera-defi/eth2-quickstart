@@ -67,7 +67,7 @@ chmod +x "$RETH_DIR/reth"
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create systemd service
-EXEC_START="$RETH_DIR/reth node --http --http.addr 127.0.0.1 --http.port 8545 --http.api eth,net,web3"
+EXEC_START="$RETH_DIR/reth node --http --http.addr $LH --http.port 8545 --http.api eth,net,web3 --authrpc.addr $LH --authrpc.port $ENGINE_PORT --authrpc.jwtsecret $HOME/secrets/jwt.hex --datadir $HOME/.local/share/reth"
 
 create_systemd_service "eth1" "Reth Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "6000" "10" "3000"
 
