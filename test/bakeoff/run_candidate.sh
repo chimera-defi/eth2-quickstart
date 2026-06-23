@@ -44,8 +44,8 @@ sudo systemctl stop eth1.service cl.service validator.service 2>/dev/null || tru
 sudo systemctl disable eth1.service cl.service validator.service 2>/dev/null || true
 
 # Pre-install clean + baseline.
-./scripts/eth2qs.sh clean-data --dry-run > "$out/cleanup-before-dry-run.log" 2>&1 || true
-./scripts/eth2qs.sh clean-data --confirm > "$out/cleanup-before-confirm.log" 2>&1
+./scripts/eth2qs.sh clean-data --dry-run < /dev/null > "$out/cleanup-before-dry-run.log" 2>&1 || true
+./scripts/eth2qs.sh clean-data --confirm < /dev/null > "$out/cleanup-before-confirm.log" 2>&1
 bakeoff_snapshot_disk "$out/disk-before.tsv"
 avail_bytes="$(df -B1 --output=avail / | tail -1 | tr -d ' ')"
 min_disk="${ETH2QS_BAKEOFF_MIN_DISK_BYTES:-1717986918400}"   # 1.6 TiB floor
@@ -139,8 +139,8 @@ journalctl -u validator -n 300 --no-pager > "$out/journal-validator.log" 2>&1 ||
 
 # Clear caps + post-run cleanup.
 "$caps" clear >> "$out/resource-caps.log" 2>&1 || true
-./scripts/eth2qs.sh clean-data --dry-run > "$out/cleanup-dry-run.log" 2>&1 || true
-./scripts/eth2qs.sh clean-data --confirm > "$out/cleanup-confirm.log" 2>&1 || true
+./scripts/eth2qs.sh clean-data --dry-run < /dev/null > "$out/cleanup-dry-run.log" 2>&1 || true
+./scripts/eth2qs.sh clean-data --confirm < /dev/null > "$out/cleanup-confirm.log" 2>&1 || true
 bakeoff_snapshot_disk "$out/disk-after-cleanup.tsv"
 
 echo "ended_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$out/env.txt"
