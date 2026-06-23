@@ -1,0 +1,16 @@
+# Grandine Base Configuration (YAML)
+# Used with --configuration-file flag; merged with per-install custom settings.
+# TOML is not accepted by grandine's --configuration-file flag.
+
+network: mainnet
+
+# P2P - bind all interfaces so external peers can connect
+listen_address: 0.0.0.0
+libp2p_port: 9000
+discovery_port: 9000
+
+# Metrics enabled globally; address/port set per-install in custom config
+metrics: true
+
+# Reduce empty slot tolerance for faster detection of stalls
+max_empty_slots: 50

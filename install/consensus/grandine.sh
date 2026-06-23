@@ -103,42 +103,40 @@ ensure_directory "$VALIDATOR_DATA_DIR"
 # Create temporary directory for custom configuration
 create_temp_config_dir
 
-# Create custom configuration variables file
-cat > ./tmp/grandine_custom.toml << EOF
-# Grandine Custom Configuration Variables
+# Create custom configuration variables file (YAML format required by grandine)
+cat > ./tmp/grandine_custom.yaml << EOF
+# Grandine per-install configuration — merged with base at install time
 
-# Network settings
-target_peers = $MAX_PEERS
+data_dir: "$GRANDINE_DATA_DIR"
 
-# Data directory
-data_dir = "$GRANDINE_DATA_DIR"
+eth1_rpc_urls:
+  - "http://$LH:$ENGINE_PORT"
 
-# Execution layer
-jwt_secret_path = "$HOME/secrets/jwt.hex"
+jwt_secret: "$HOME/secrets/jwt.hex"
 
-# HTTP API
-http_api_listen_address = "$CONSENSUS_HOST:${GRANDINE_REST_PORT}"
+target_peers: $MAX_PEERS
 
-# Checkpoint sync
-checkpoint_sync_url = "$GRANDINE_CHECKPOINT_URL"
+http_address: "$CONSENSUS_HOST"
+http_port: ${GRANDINE_REST_PORT}
 
-# Metrics
-metrics_listen_address = "$CONSENSUS_HOST:8008"
+checkpoint_sync_url: "$GRANDINE_CHECKPOINT_URL"
 
-# Validator settings
-suggested_fee_recipient = "$FEE_RECIPIENT"
-graffiti = "$GRAFITTI"
+suggested_fee_recipient: "$FEE_RECIPIENT"
+graffiti: "$GRAFITTI"
+
+metrics_address: "$CONSENSUS_HOST"
+metrics_port: 8008
 EOF
 
 # Merge base configuration with custom settings
-merge_client_config "Grandine" "main" "$PROJECT_ROOT/configs/grandine/grandine_base.toml" "./tmp/grandine_custom.toml" "$GRANDINE_DIR/grandine.toml"
+merge_client_config "Grandine" "main" "$PROJECT_ROOT/configs/grandine/grandine_base.yaml" "./tmp/grandine_custom.yaml" "$GRANDINE_DIR/grandine.yaml"
 
 # Clean up temporary files
 rm -rf ./tmp/
 
 
 # Create systemd service for beacon node
-BEACON_EXEC_START="$GRANDINE_DIR/grandine --configuration-file $GRANDINE_DIR/grandine.toml"
+BEACON_EXEC_START="$GRANDINE_DIR/grandine --configuration-file $GRANDINE_DIR/grandine.yaml"
 
 create_systemd_service "cl" "Grandine Ethereum Consensus Client" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target eth1.service" "network-online.target eth1.service"
 
