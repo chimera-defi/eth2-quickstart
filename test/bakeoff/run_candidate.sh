@@ -51,6 +51,15 @@ bakeoff_snapshot_disk "$out/disk-before.tsv"
 ./scripts/eth2qs.sh doctor --json > "$out/doctor-before.json" 2>&1 || true
 ./scripts/eth2qs.sh stats  --json > "$out/stats-before.json"  2>&1 || true
 
+# Authenticate GitHub API to avoid 60/hr unauthenticated rate limit.
+if [[ -z "${GITHUB_TOKEN:-}" && -z "${GH_TOKEN:-}" ]] && command -v gh &>/dev/null; then
+  _gh_tok="$(gh auth token 2>/dev/null || true)"
+  if [[ -n "$_gh_tok" ]]; then
+    export GITHUB_TOKEN="$_gh_tok"
+  fi
+  unset _gh_tok
+fi
+
 # Install (real; bounded by timeout).
 set +e
 timeout "$install_timeout" /usr/bin/time -v -o "$out/install-time.txt" \
