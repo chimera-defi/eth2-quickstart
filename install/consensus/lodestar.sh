@@ -21,14 +21,6 @@ log_installation_start "Lodestar"
 # Check system requirements
 check_system_requirements 16 1000
 
-# Lodestar requires Node.js -- install if not present
-if ! command -v node &>/dev/null; then
-    log_info "Node.js not found, installing Node.js LTS..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nodejs
-fi
-log_info "Using Node.js $(node --version)"
-
 # Setup firewall rules for Lodestar
 setup_firewall_rules 9000 9596
 
@@ -38,17 +30,30 @@ ensure_directory "$LODESTAR_DIR"
 
 cd "$LODESTAR_DIR" || exit
 
-# Install Lodestar locally (avoids npm -g which requires root)
-log_info "Installing Lodestar via npm..."
-if ! npm install @chainsafe/lodestar; then
-    log_error "Failed to install Lodestar via npm. Please check your Node.js installation and try again."
+# Download pre-built Lodestar binary (avoids pnpm/npm workspace catalog issues)
+log_info "Resolving Lodestar release binary URL..."
+LODESTAR_DOWNLOAD_URL="$(get_github_release_asset_url "ChainSafe/lodestar" "lodestar-.*-linux-amd64\\.tar\\.gz" || true)"
+if [[ -z "$LODESTAR_DOWNLOAD_URL" ]]; then
+    log_error "Could not find Lodestar linux-amd64 binary release from GitHub"
     exit 1
 fi
 
-# Use local lodestar binary
-LODESTAR_BIN="$LODESTAR_DIR/node_modules/.bin/lodestar"
+LODESTAR_ARCHIVE="$(basename "${LODESTAR_DOWNLOAD_URL%%\?*}")"
+log_info "Downloading Lodestar binary..."
+if ! download_file "$LODESTAR_DOWNLOAD_URL" "$LODESTAR_ARCHIVE"; then
+    log_error "Failed to download Lodestar"
+    exit 1
+fi
+
+if ! extract_archive "$LODESTAR_ARCHIVE" "$LODESTAR_DIR" 0; then
+    log_error "Failed to extract Lodestar archive"
+    exit 1
+fi
+rm -f "$LODESTAR_ARCHIVE"
+
+LODESTAR_BIN="$LODESTAR_DIR/lodestar"
 if [[ ! -x "$LODESTAR_BIN" ]]; then
-    log_error "Lodestar binary not found at $LODESTAR_BIN"
+    log_error "Lodestar binary not found at $LODESTAR_BIN after extraction"
     exit 1
 fi
 
@@ -164,8 +169,7 @@ Key features:
 - Doppelganger protection for validator safety
 - Comprehensive logging and monitoring
 
-Node.js version: $(node --version)
-NPM version: $(npm --version)
+Lodestar version: $($LODESTAR_BIN --version 2>/dev/null || echo "unknown")
 
 Useful commands:
 - Check Lodestar version: $LODESTAR_BIN --version
