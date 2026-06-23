@@ -47,6 +47,12 @@ sudo systemctl disable eth1.service cl.service validator.service 2>/dev/null || 
 ./scripts/eth2qs.sh clean-data --dry-run > "$out/cleanup-before-dry-run.log" 2>&1 || true
 ./scripts/eth2qs.sh clean-data --confirm > "$out/cleanup-before-confirm.log" 2>&1
 bakeoff_snapshot_disk "$out/disk-before.tsv"
+avail_bytes="$(df -B1 --output=avail / | tail -1 | tr -d ' ')"
+min_disk="${ETH2QS_BAKEOFF_MIN_DISK_BYTES:-1717986918400}"   # 1.6 TiB floor
+if [[ "${avail_bytes:-0}" -lt "$min_disk" ]]; then
+  log_error "$pair: only ${avail_bytes} bytes free on / (< ${min_disk} required). Aborting before sync."
+  exit 3
+fi
 ./scripts/eth2qs.sh plan   --json > "$out/plan-before.json"   2>&1 || true
 ./scripts/eth2qs.sh doctor --json > "$out/doctor-before.json" 2>&1 || true
 ./scripts/eth2qs.sh stats  --json > "$out/stats-before.json"  2>&1 || true
@@ -84,16 +90,29 @@ systemctl status eth1 cl validator --no-pager -l > "$out/service-status.txt" 2>&
 crashed="no"
 if [[ "$install_rc" -eq 0 ]]; then
   end_at=$(( $(date +%s) + window ))
+  synced_streak=0
   while [[ "$(date +%s)" -lt "$end_at" ]]; do
     bakeoff_write_sample "$out" "$REPO_ROOT" || log_warn "$pair: sample write failed"
     if ! bakeoff_services_alive; then
       crashed="yes"
       log_warn "$pair: a service is no longer active during the window"
     fi
+    if bakeoff_is_synced; then
+      synced_streak=$((synced_streak + 1))
+    else
+      synced_streak=0
+    fi
+    if [[ "$synced_streak" -ge 2 ]]; then
+      bakeoff_snapshot_disk "$out/disk-synced.tsv"
+      echo "synced_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$out/env.txt"
+      echo "fully_synced=yes" >> "$out/env.txt"
+      break
+    fi
     sleep "$interval"
   done
   bakeoff_write_sample "$out" "$REPO_ROOT" || log_warn "$pair: sample write failed"
 fi
+grep -q '^fully_synced=' "$out/env.txt" || echo "fully_synced=no" >> "$out/env.txt"
 echo "service_crash_observed=$crashed" >> "$out/env.txt"
 
 # Logs + repair preview.

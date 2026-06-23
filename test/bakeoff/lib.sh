@@ -110,3 +110,14 @@ bakeoff_write_sample() {
     return 0
   fi
 }
+
+bakeoff_is_synced() {
+  # Returns 0 only when the node is fully synced to head.
+  local b e
+  b="$(bakeoff_probe_beacon_sync)"; e="$(bakeoff_probe_execution_sync)"
+  # Beacon: data present, sync_distance<=4, not optimistic, EL not offline.
+  echo "$b" | jq -e '.data and (.data.sync_distance|tonumber) <= 4 and (.data.is_optimistic==false) and (.data.el_offline==false)' >/dev/null 2>&1 || return 1
+  # Execution: eth_syncing must be boolean false (fully synced, not an object).
+  echo "$e" | jq -e '.result == false' >/dev/null 2>&1 || return 1
+  return 0
+}
