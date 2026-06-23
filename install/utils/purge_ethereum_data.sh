@@ -36,6 +36,7 @@ DATA_DIRS=(
 
     # Consensus clients
     "$HOME/.local/share/prysm"          # Prysm data
+    "$HOME/.eth2"                       # Prysm data (actual runtime path)
     "$HOME/.lighthouse"                 # Lighthouse
     "$HOME/.local/share/teku"           # Teku
     "$HOME/.local/share/nimbus"         # Nimbus

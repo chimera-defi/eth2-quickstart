@@ -13,6 +13,7 @@ BAKEOFF_DATA_DIRS=(
   "$HOME/.local/share/nimbus-eth1"
   "$HOME/ethrex/data"
   "$HOME/.local/share/prysm"
+  "$HOME/.eth2"
   "$HOME/.lighthouse"
   "$HOME/.local/share/teku"
   "$HOME/.local/share/nimbus"
