@@ -80,8 +80,8 @@ bakeoff_write_sample() {
   bakeoff_probe_execution_sync > "$tmp_dir/execution-sync.json" || true
   bakeoff_probe_beacon_sync   > "$tmp_dir/beacon-sync.json"   || true
   bakeoff_snapshot_processes  > "$tmp_dir/processes.json"     || true
-  ( cd "$repo_root" && ./scripts/eth2qs.sh doctor --json ) > "$tmp_dir/doctor.json" 2>&1 || true
-  ( cd "$repo_root" && ./scripts/eth2qs.sh stats  --json ) > "$tmp_dir/stats.json"  2>&1 || true
+  ( cd "$repo_root" && timeout 30 ./scripts/eth2qs.sh doctor --json ) > "$tmp_dir/doctor.json" 2>&1 || true
+  ( cd "$repo_root" && timeout 30 ./scripts/eth2qs.sh stats  --json ) > "$tmp_dir/stats.json"  2>&1 || true
 
   local alive="down"
   if bakeoff_services_alive; then alive="up"; fi
