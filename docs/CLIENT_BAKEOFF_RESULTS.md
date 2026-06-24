@@ -9,7 +9,7 @@ _Stage A (triage) synthesized from `artifacts/client-bakeoff-2026-06-22/` on 202
   - geth × CLs: lighthouse, teku, nimbus, lodestar, grandine
 - **Two stages:**
   - **Stage A — triage (this doc):** does each candidate install, checkpoint-sync, and authenticate the Engine API? ~5-min observation window per candidate, 60s sampling.
-  - **Stage B — full sync (pending):** sync-to-completion to measure final synced disk footprint for viable candidates.
+  - **Stage B — full sync (in progress):** sync-to-completion to measure final synced disk footprint for viable candidates.
 - **Execution:** strictly sequential, ONE candidate at a time on this shared semi-prod host. Resource-capped to protect co-resident agents. MEV: none. No validator keys. Destructive data-clean gated by `ETH2QS_BAKEOFF_CONFIRMED=yes` (secrets/validator material preserved).
 - **Pass criterion (Stage A):** beacon `head_slot` reaches the network tip (~14.6M) via checkpoint import on the first sample (`is_optimistic=true`), `el_offline=false` (Engine-API JWT handshake succeeded), and `sync_distance` trending to 0 — i.e. the CL is live-tracking a validating EL.
 
@@ -67,8 +67,12 @@ Stage A establishes **viability**, not a final pick: all 12 client pairs install
 
 ## Final synced disk footprint (Stage B)
 
-_Pending. Per-client final synced disk size recorded here once Stage B completes._
+_In progress (run_id `client-bakeoff-stageB-2026-06-23`). Sequential, one candidate at a time; rows added as each candidate reaches a verdict. Footprint = final synced datadir size (EL + CL); secrets/validator material excluded._
 
-| Candidate | Sync time | Final disk footprint | Notes |
-| --- | --- | --- | --- |
-| _tbd_ | | | |
+| Candidate | Result | Sync time | Final disk footprint (EL + CL) | Notes |
+| --- | --- | --- | --- | --- |
+| geth__prysm | ✅ synced | ~8h28m | **1.13 TiB** — geth 1,245,128,582,247 B + prysm 654,985,849 B | Baseline. snap-sync EL hands prysm an already-validated head, so there is no large optimistic gap to close. fully_synced=yes, no crash. |
+| erigon__prysm | ❌ no-sync | n/a (terminated) | ~1.21 TiB\* — erigon 1,333,017,755,599 B + prysm 1,646,160,347 B | \*Partial, captured at a near-tip **frozen** head — NOT a clean synced datadir. erigon3 OtterSync + checkpoint-synced prysm deadlock: the EL execution head freezes a few thousand blocks behind tip while the beacon stays `is_optimistic=true`; neither side issues the `forkchoiceUpdated` that would close the >96-block backward-download gap. Raising the CL CPU cap 200%→600% advanced the head ~5k blocks then re-froze — confirming a genuine gap-close deadlock, not resource starvation. Terminated per operator decision ("record no-sync, move on"). See artifact `findings.md`. |
+| reth__prysm | ⏳ running | — | — | Launched 2026-06-24. Rust staged-sync — monitored for the same gap-close signature. |
+
+_Remaining (queued, one at a time): nethermind, besu, nimbus_eth1, ethrex (× prysm); then geth × lighthouse, teku, nimbus, lodestar, grandine._
