@@ -90,7 +90,10 @@ create_systemd_service "cl" "Prysm Ethereum Consensus Client (Beacon Node)" "$BE
 
 # Pin USE_PRYSM_VERSION to the locally cached binary so prysm.sh skips the live
 # version check against prysmaticlabs.com (fails with 403 on rate-limited hosts).
-PRYSM_PINNED="$(find "$PRYSM_DIR/dist/" -maxdepth 1 -name 'beacon-chain-v*-linux-amd64' ! -name '*.sha256' ! -name '*.sig' 2>/dev/null | sed 's|.*/beacon-chain-||; s|-linux-amd64||' | sort -V | tail -1)"
+PRYSM_PINNED=""
+if [[ -d "$PRYSM_DIR/dist" ]]; then
+  PRYSM_PINNED="$(find "$PRYSM_DIR/dist/" -maxdepth 1 -name 'beacon-chain-v*-linux-amd64' ! -name '*.sha256' ! -name '*.sig' 2>/dev/null | sed 's|.*/beacon-chain-||; s|-linux-amd64||' | sort -V | tail -1 || true)"
+fi
 if [[ -n "${PRYSM_PINNED:-}" ]]; then
   sudo sed -i "/^\[Service\]/a Environment=\"USE_PRYSM_VERSION=${PRYSM_PINNED}\"" /etc/systemd/system/cl.service
   log_info "Pinned prysm beacon to $PRYSM_PINNED (bypasses live version check)"
