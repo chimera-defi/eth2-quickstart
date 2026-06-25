@@ -93,16 +93,16 @@ verify_client_config "install/consensus/teku.sh" "configs/teku/teku_validator_ba
 verify_client_config "install/consensus/nimbus.sh" "configs/nimbus/nimbus_base.toml" "Nimbus"
 verify_client_config "install/consensus/lodestar.sh" "configs/lodestar/lodestar_beacon_base.json" "Lodestar"
 verify_client_config "install/consensus/lodestar.sh" "configs/lodestar/lodestar_validator_base.json" "Lodestar"
-verify_client_config "install/consensus/grandine.sh" "configs/grandine/grandine_base.toml" "Grandine"
 
 echo ""
-echo "Lighthouse: No config files (uses CLI flags)"
+echo "Lighthouse/Grandine: No config files (use CLI flags only)"
 pass "Lighthouse: Uses LIGHTHOUSE_CHECKPOINT_URL, ENGINE_PORT from exports.sh"
+pass "Grandine: Uses CLI flags in ExecStart (no --configuration-file)"
 
 # Config syntax validation
 echo ""
 echo "=== Config Syntax Validation ==="
-for config in configs/besu/besu_base.toml configs/prysm/prysm_beacon_conf.yaml configs/teku/teku_beacon_base.yaml configs/lodestar/lodestar_beacon_base.json configs/nimbus/nimbus_base.toml configs/grandine/grandine_base.toml; do
+for config in configs/besu/besu_base.toml configs/prysm/prysm_beacon_conf.yaml configs/teku/teku_beacon_base.yaml configs/lodestar/lodestar_beacon_base.json configs/nimbus/nimbus_base.toml; do
     if [[ -f "$PROJECT_ROOT/$config" ]]; then
         case "$config" in
             *.json)
