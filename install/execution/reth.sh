@@ -67,7 +67,9 @@ chmod +x "$RETH_DIR/reth"
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create systemd service
-EXEC_START="$RETH_DIR/reth node --http --http.addr $LH --http.port 8545 --http.api eth,net,web3 --authrpc.addr $LH --authrpc.port $ENGINE_PORT --authrpc.jwtsecret $HOME/secrets/jwt.hex --datadir $HOME/.local/share/reth"
+# --full runs a pruned full node (~1.2 TiB), not reth's default archive (~2.8 TiB):
+# keeps full block/receipt history but prunes historical state changesets+indices.
+EXEC_START="$RETH_DIR/reth node --full --http --http.addr $LH --http.port 8545 --http.api eth,net,web3 --authrpc.addr $LH --authrpc.port $ENGINE_PORT --authrpc.jwtsecret $HOME/secrets/jwt.hex --datadir $HOME/.local/share/reth"
 
 create_systemd_service "eth1" "Reth Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "6000" "10" "3000"
 
