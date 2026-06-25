@@ -21,14 +21,6 @@ log_installation_start "Lodestar"
 # Check system requirements
 check_system_requirements 16 1000
 
-# Lodestar requires Node.js -- install if not present
-if ! command -v node &>/dev/null; then
-    log_info "Node.js not found, installing Node.js LTS..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nodejs
-fi
-log_info "Using Node.js $(node --version)"
-
 # Setup firewall rules for Lodestar
 setup_firewall_rules 9000 9596
 
@@ -38,17 +30,30 @@ ensure_directory "$LODESTAR_DIR"
 
 cd "$LODESTAR_DIR" || exit
 
-# Install Lodestar locally (avoids npm -g which requires root)
-log_info "Installing Lodestar via npm..."
-if ! npm install @chainsafe/lodestar; then
-    log_error "Failed to install Lodestar via npm. Please check your Node.js installation and try again."
+# Download pre-built Lodestar binary (avoids pnpm/npm workspace catalog issues)
+log_info "Resolving Lodestar release binary URL..."
+LODESTAR_DOWNLOAD_URL="$(get_github_release_asset_url "ChainSafe/lodestar" "lodestar-.*-linux-amd64\\.tar\\.gz" || true)"
+if [[ -z "$LODESTAR_DOWNLOAD_URL" ]]; then
+    log_error "Could not find Lodestar linux-amd64 binary release from GitHub"
     exit 1
 fi
 
-# Use local lodestar binary
-LODESTAR_BIN="$LODESTAR_DIR/node_modules/.bin/lodestar"
+LODESTAR_ARCHIVE="$(basename "${LODESTAR_DOWNLOAD_URL%%\?*}")"
+log_info "Downloading Lodestar binary..."
+if ! download_file "$LODESTAR_DOWNLOAD_URL" "$LODESTAR_ARCHIVE"; then
+    log_error "Failed to download Lodestar"
+    exit 1
+fi
+
+if ! extract_archive "$LODESTAR_ARCHIVE" "$LODESTAR_DIR" 0; then
+    log_error "Failed to extract Lodestar archive"
+    exit 1
+fi
+rm -f "$LODESTAR_ARCHIVE"
+
+LODESTAR_BIN="$LODESTAR_DIR/lodestar"
 if [[ ! -x "$LODESTAR_BIN" ]]; then
-    log_error "Lodestar binary not found at $LODESTAR_BIN"
+    log_error "Lodestar binary not found at $LODESTAR_BIN after extraction"
     exit 1
 fi
 
@@ -71,10 +76,6 @@ cat > ./tmp/lodestar_beacon_custom.json << EOF
 {
   "dataDir": "$LODESTAR_DATA_DIR/beacon",
   "targetPeers": $MAX_PEERS,
-  "execution": {
-    "urls": ["http://$LH:$ENGINE_PORT"],
-    "jwtSecretFile": "$HOME/secrets/jwt.hex"
-  },
   "rest": {
     "port": ${LODESTAR_REST_PORT}
   },
@@ -83,7 +84,6 @@ cat > ./tmp/lodestar_beacon_custom.json << EOF
   },
   "checkpointSyncUrl": "$LODESTAR_CHECKPOINT_URL",
   "suggestedFeeRecipient": "$FEE_RECIPIENT",
-  "graffiti": "$GRAFITTI",
   "logFile": "$LODESTAR_DATA_DIR/beacon.log"
 }
 EOF
@@ -92,8 +92,6 @@ EOF
 cat > ./tmp/lodestar_validator_custom.json << EOF
 {
   "dataDir": "$LODESTAR_DATA_DIR/validator",
-  "keystoresDir": "$VALIDATOR_DATA_DIR/keystores",
-  "secretsDir": "$VALIDATOR_DATA_DIR/secrets",
   "beaconNodes": ["http://$CONSENSUS_HOST:${LODESTAR_REST_PORT}"],
   "suggestedFeeRecipient": "$FEE_RECIPIENT",
   "graffiti": "$GRAFITTI",
@@ -119,12 +117,14 @@ fi
 rm -rf ./tmp/
 
 # Create systemd service for beacon node
-BEACON_EXEC_START="$LODESTAR_BIN beacon --paramsFile $LODESTAR_DIR/beacon.config.json"
+# --rcConfig loads node options (checkpointSyncUrl, dataDir, execution.urls…);
+# --paramsFile is the chain-spec preset file and silently ignores node options.
+BEACON_EXEC_START="$LODESTAR_BIN beacon --network mainnet --rcConfig $LODESTAR_DIR/beacon.config.json --execution.urls http://$LH:$ENGINE_PORT --jwtSecret $HOME/secrets/jwt.hex"
 
 create_systemd_service "cl" "Lodestar Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target eth1.service" "network-online.target eth1.service"
 
 # Create systemd service for validator
-VALIDATOR_EXEC_START="$LODESTAR_BIN validator --paramsFile $LODESTAR_DIR/validator.config.json"
+VALIDATOR_EXEC_START="$LODESTAR_BIN validator --network mainnet --rcConfig $LODESTAR_DIR/validator.config.json"
 
 create_systemd_service "validator" "Lodestar Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target cl.service"
 
@@ -164,8 +164,7 @@ Key features:
 - Doppelganger protection for validator safety
 - Comprehensive logging and monitoring
 
-Node.js version: $(node --version)
-NPM version: $(npm --version)
+Lodestar version: $($LODESTAR_BIN --version 2>/dev/null || echo "unknown")
 
 Useful commands:
 - Check Lodestar version: $LODESTAR_BIN --version
