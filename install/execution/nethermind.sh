@@ -83,7 +83,7 @@ cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
     "JwtSecretFile": "$HOME/secrets/jwt.hex",
     "EngineHost": "$LH",
     "EnginePort": ${NETHERMIND_ENGINE_PORT},
-    "EnabledModules": ["Admin", "Eth", "Net", "Web3", "Engine"]
+    "EnabledModules": ["Admin", "Eth", "Net", "Web3"]
   },
   "EthStats": {
     "Enabled": false

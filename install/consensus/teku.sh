@@ -100,7 +100,6 @@ ee-jwt-secret-file: "$HOME/secrets/jwt.hex"
 rest-api-port: ${TEKU_REST_PORT}
 
 # Checkpoint sync
-initial-state-url: "$TEKU_CHECKPOINT_URL/eth/v2/debug/beacon/states/finalized"
 checkpoint-sync-url: "$TEKU_CHECKPOINT_URL"
 
 # Metrics and monitoring

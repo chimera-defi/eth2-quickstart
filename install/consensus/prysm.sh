@@ -88,10 +88,26 @@ BEACON_EXEC_START="$PRYSM_DIR/prysm.sh beacon-chain --config-file=$PRYSM_DIR/pry
 
 create_systemd_service "cl" "Prysm Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target eth1.service" "network-online.target eth1.service"
 
+# Pin USE_PRYSM_VERSION to the locally cached binary so prysm.sh skips the live
+# version check against prysmaticlabs.com (fails with 403 on rate-limited hosts).
+PRYSM_PINNED=""
+if [[ -d "$PRYSM_DIR/dist" ]]; then
+  PRYSM_PINNED="$(find "$PRYSM_DIR/dist/" -maxdepth 1 -name 'beacon-chain-v*-linux-amd64' ! -name '*.sha256' ! -name '*.sig' 2>/dev/null | sed 's|.*/beacon-chain-||; s|-linux-amd64||' | sort -V | tail -1 || true)"
+fi
+if [[ -n "${PRYSM_PINNED:-}" ]]; then
+  sudo sed -i "/^\[Service\]/a Environment=\"USE_PRYSM_VERSION=${PRYSM_PINNED}\"" /etc/systemd/system/cl.service
+  log_info "Pinned prysm beacon to $PRYSM_PINNED (bypasses live version check)"
+fi
+
 # Create systemd service for validator
 VALIDATOR_EXEC_START="$PRYSM_DIR/prysm.sh validator --config-file=$PRYSM_DIR/prysm_validator_conf.yaml"
 
 create_systemd_service "validator" "Prysm Ethereum Validator Client" "$VALIDATOR_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target cl.service" "network-online.target cl.service"
+
+if [[ -n "${PRYSM_PINNED:-}" ]]; then
+  sudo sed -i "/^\[Service\]/a Environment=\"USE_PRYSM_VERSION=${PRYSM_PINNED}\"" /etc/systemd/system/validator.service
+  log_info "Pinned prysm validator to $PRYSM_PINNED (bypasses live version check)"
+fi
 
 enable_and_start_systemd_service "cl"
 enable_and_start_systemd_service "validator"
