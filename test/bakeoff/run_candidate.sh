@@ -137,6 +137,8 @@ journalctl -u validator -n 300 --no-pager > "$out/journal-validator.log" 2>&1 ||
   echo "- Review install.log, doctor-after-install.json, debug-*.json, repair-preview.txt, journals."
 } > "$out/findings.md"
 
+bakeoff_snapshot_disk "$out/disk-final.tsv"   # pre-cleanup footprint (synced OR capped)
+
 # Clear caps + post-run cleanup.
 "$caps" clear >> "$out/resource-caps.log" 2>&1 || true
 ./scripts/eth2qs.sh clean-data --dry-run < /dev/null > "$out/cleanup-dry-run.log" 2>&1 || true
