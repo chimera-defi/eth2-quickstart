@@ -58,6 +58,18 @@ ensure_directory "$HOME/.local/share/nethermind/nethermind_db"
 # Create temporary directory for custom configuration
 create_temp_config_dir
 
+# Fetch the latest finalized block to use as a real snap pivot (post-merge, so TTD is fixed).
+# A zero pivot makes SnapSync degenerate to a full fast-sync from genesis.
+_nmd_pivot_json="$(curl -s --max-time 15 -H 'Content-Type: application/json' \
+  --data '{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["finalized",false],"id":1}' \
+  https://cloudflare-eth.com 2>/dev/null || true)"
+NETHERMIND_PIVOT_NUMBER="$(printf '%s' "$_nmd_pivot_json" | python3 -c \
+  'import json,sys; b=json.load(sys.stdin)["result"]; print(int(b["number"],16))' 2>/dev/null || echo 0)"
+NETHERMIND_PIVOT_HASH="$(printf '%s' "$_nmd_pivot_json" | python3 -c \
+  'import json,sys; b=json.load(sys.stdin)["result"]; print(b["hash"])' 2>/dev/null || \
+  echo '0x0000000000000000000000000000000000000000000000000000000000000000')"
+log_info "Nethermind snap pivot: block ${NETHERMIND_PIVOT_NUMBER} (${NETHERMIND_PIVOT_HASH})"
+
 # Create custom configuration with variables
 cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
 {
@@ -98,11 +110,13 @@ cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
   },
   "Sync": {
     "SnapSync": true,
-    "PivotNumber": 0,
-    "PivotHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "PivotTotalDifficulty": "0",
+    "PivotNumber": ${NETHERMIND_PIVOT_NUMBER},
+    "PivotHash": "${NETHERMIND_PIVOT_HASH}",
+    "PivotTotalDifficulty": "58750000000000000000000",
     "FastBlocks": true,
     "UseGethLimitsInFastBlocks": false,
+    "AncientBodiesBarrier": 15537394,
+    "AncientReceiptsBarrier": 15537394,
     "SnapSyncCatchUpHeightDelta": 10000000000
   },
   "Bloom": {
