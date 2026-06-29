@@ -58,6 +58,12 @@ ensure_directory "$HOME/.local/share/nethermind/nethermind_db"
 # Create temporary directory for custom configuration
 create_temp_config_dir
 
+# Detect external IP via shared helper (safe fallback chain; no-op if all fail).
+NETHERMIND_EXTERNAL_IP="$(detect_external_ip)"
+if [[ -z "$NETHERMIND_EXTERNAL_IP" ]]; then
+    log_warn "Could not detect external IP — nethermind will advertise no ExternalIp (degraded peering)"
+fi
+
 # Fetch the latest finalized block to use as a real snap pivot (post-merge, so TTD is fixed).
 # A zero pivot makes SnapSync degenerate to a full fast-sync from genesis.
 _nmd_pivot_json="$(curl -s --max-time 15 -H 'Content-Type: application/json' \
@@ -87,7 +93,7 @@ cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
   "Network": {
     "DiscoveryPort": 30303,
     "P2PPort": 30303,
-    "ExternalIp": "$(curl -s v4.ident.me)"
+    "ExternalIp": "${NETHERMIND_EXTERNAL_IP}"
   },
   "JsonRpc": {
     "Enabled": true,
