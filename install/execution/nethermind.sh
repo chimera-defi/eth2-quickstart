@@ -62,7 +62,10 @@ create_temp_config_dir
 # A zero pivot makes SnapSync degenerate to a full fast-sync from genesis.
 _nmd_pivot_json="$(curl -s --max-time 15 -H 'Content-Type: application/json' \
   --data '{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["finalized",false],"id":1}' \
-  https://cloudflare-eth.com 2>/dev/null || true)"
+  https://ethereum.publicnode.com 2>/dev/null || \
+  curl -s --max-time 15 -H 'Content-Type: application/json' \
+  --data '{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["finalized",false],"id":1}' \
+  https://rpc.flashbots.net 2>/dev/null || true)"
 NETHERMIND_PIVOT_NUMBER="$(printf '%s' "$_nmd_pivot_json" | python3 -c \
   'import json,sys; b=json.load(sys.stdin)["result"]; print(int(b["number"],16))' 2>/dev/null || echo 0)"
 NETHERMIND_PIVOT_HASH="$(printf '%s' "$_nmd_pivot_json" | python3 -c \
