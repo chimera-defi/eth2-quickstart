@@ -56,6 +56,21 @@ is_docker() {
     [[ -f /.dockerenv ]] || grep -qE 'docker|containerd' /proc/1/cgroup 2>/dev/null
 }
 
+# Detect this host's external/public IPv4 address at install time.
+# Tries three independent endpoints with a 10s timeout each; validates the
+# result is a well-formed IPv4 before echoing it. Echoes nothing on failure
+# so callers can safely test -z and fall back gracefully.
+detect_external_ip() {
+    local ip
+    for _url in https://v4.ident.me https://api.ipify.org https://ifconfig.me/ip; do
+        ip="$(curl -s -m 10 "$_url" 2>/dev/null | tr -d '[:space:]' || true)"
+        if echo "$ip" | grep -qE '^([0-9]{1,3}\.){3}[0-9]{1,3}$'; then
+            echo "$ip"
+            return 0
+        fi
+    done
+}
+
 # Ensure /root/.ssh/authorized_keys exists when in Docker and empty (E2E only; is_docker guard)
 # Dockerfile/ci_test keys may not persist with systemd-as-init; run_1 creates as fallback
 ensure_docker_e2e_keys() {
