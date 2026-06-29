@@ -80,6 +80,12 @@ ensure_directory "$BESU_DATA_DIR"
 # Create temporary directory for custom configuration
 create_temp_config_dir
 
+# Detect external IP for P2P advertisement (base template defaults to 127.0.0.1).
+BESU_EXTERNAL_IP="$(detect_external_ip)"
+if [[ -z "$BESU_EXTERNAL_IP" ]]; then
+    log_warn "Could not detect external IP — besu will advertise loopback for P2P (degraded peering)"
+fi
+
 # Create custom configuration variables file
 cat > ./tmp/besu_custom.toml << EOF
 # Besu Custom Configuration Variables
@@ -87,7 +93,7 @@ cat > ./tmp/besu_custom.toml << EOF
 # Data storage
 data-path="$BESU_DATA_DIR"
 
-# JSON-RPC settings  
+# JSON-RPC settings
 rpc-http-port=${BESU_HTTP_PORT}
 
 # WebSocket settings
@@ -97,6 +103,13 @@ rpc-ws-port=${BESU_WS_PORT}
 engine-rpc-port=${BESU_ENGINE_PORT}
 engine-jwt-secret="$HOME/secrets/jwt.hex"
 EOF
+
+# Inject p2p-host only when detection succeeded (non-empty); avoids writing
+# an empty or 0.0.0.0 advertised host, which would be no better than the default.
+if [[ -n "$BESU_EXTERNAL_IP" ]]; then
+    echo "p2p-host=\"$BESU_EXTERNAL_IP\"" >> ./tmp/besu_custom.toml
+    log_info "Besu P2P host set to external IP: $BESU_EXTERNAL_IP"
+fi
 
 # Merge base configuration with custom settings
 merge_client_config "Besu" "main" "$PROJECT_ROOT/configs/besu/besu_base.toml" "./tmp/besu_custom.toml" "$BESU_DIR/besu.toml"
