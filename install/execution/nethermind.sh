@@ -59,9 +59,15 @@ ensure_directory "$HOME/.local/share/nethermind/nethermind_db"
 create_temp_config_dir
 
 # Detect external IP via shared helper (safe fallback chain; no-op if all fail).
-NETHERMIND_EXTERNAL_IP="$(detect_external_ip)"
-if [[ -z "$NETHERMIND_EXTERNAL_IP" ]]; then
-    log_warn "Could not detect external IP — nethermind will advertise no ExternalIp (degraded peering)"
+# `|| true` guards set -e: the substitution must not abort the install if detection
+# fails — we degrade gracefully instead (besu.sh follows the same guarded pattern).
+NETHERMIND_EXTERNAL_IP="$(detect_external_ip || true)"
+if [[ -n "$NETHERMIND_EXTERNAL_IP" ]]; then
+    NETHERMIND_EXTERNAL_IP_LINE="    \"ExternalIp\": \"${NETHERMIND_EXTERNAL_IP}\","
+    log_info "Nethermind advertising external IP for P2P: ${NETHERMIND_EXTERNAL_IP}"
+else
+    NETHERMIND_EXTERNAL_IP_LINE=""
+    log_warn "Could not detect external IP — omitting ExternalIp; nethermind will rely on its own NAT/discovery detection (may yield degraded peering)"
 fi
 
 # Fetch the latest finalized block to use as a real snap pivot (post-merge, so TTD is fixed).
@@ -77,7 +83,21 @@ NETHERMIND_PIVOT_NUMBER="$(printf '%s' "$_nmd_pivot_json" | python3 -c \
 NETHERMIND_PIVOT_HASH="$(printf '%s' "$_nmd_pivot_json" | python3 -c \
   'import json,sys; b=json.load(sys.stdin)["result"]; print(b["hash"])' 2>/dev/null || \
   echo '0x0000000000000000000000000000000000000000000000000000000000000000')"
-log_info "Nethermind snap pivot: block ${NETHERMIND_PIVOT_NUMBER} (${NETHERMIND_PIVOT_HASH})"
+
+# Only write a pivot if we fetched a real, recent finalized block. On failure we OMIT
+# PivotNumber/PivotHash rather than write 0 — a zero pivot degenerates SnapSync into a
+# genesis fast-sync. With no pivot, SnapSync bootstraps from the consensus client's
+# forkchoice once peers connect (safe fallback: dynamic value, sane default on failure).
+NETHERMIND_PIVOT_BLOCK=""
+if [[ "$NETHERMIND_PIVOT_NUMBER" =~ ^[0-9]+$ ]] && [[ "$NETHERMIND_PIVOT_NUMBER" -gt 0 ]] \
+   && [[ "$NETHERMIND_PIVOT_HASH" =~ ^0x[0-9a-fA-F]{64}$ ]] \
+   && [[ "$NETHERMIND_PIVOT_HASH" != "0x0000000000000000000000000000000000000000000000000000000000000000" ]]; then
+    NETHERMIND_PIVOT_BLOCK="    \"PivotNumber\": ${NETHERMIND_PIVOT_NUMBER},
+    \"PivotHash\": \"${NETHERMIND_PIVOT_HASH}\","
+    log_info "Nethermind snap pivot: block ${NETHERMIND_PIVOT_NUMBER} (${NETHERMIND_PIVOT_HASH})"
+else
+    log_warn "Could not fetch a finalized snap pivot — omitting PivotNumber/PivotHash; SnapSync will bootstrap its pivot from the consensus client forkchoice once peers connect (slower start, NOT a genesis fast-sync)"
+fi
 
 # Create custom configuration with variables
 cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
@@ -92,8 +112,8 @@ cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
   },
   "Network": {
     "DiscoveryPort": 30303,
-    "P2PPort": 30303,
-    "ExternalIp": "${NETHERMIND_EXTERNAL_IP}"
+${NETHERMIND_EXTERNAL_IP_LINE}
+    "P2PPort": 30303
   },
   "JsonRpc": {
     "Enabled": true,
@@ -119,8 +139,7 @@ cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
   },
   "Sync": {
     "SnapSync": true,
-    "PivotNumber": ${NETHERMIND_PIVOT_NUMBER},
-    "PivotHash": "${NETHERMIND_PIVOT_HASH}",
+${NETHERMIND_PIVOT_BLOCK}
     "PivotTotalDifficulty": "58750000000000000000000",
     "FastBlocks": true,
     "UseGethLimitsInFastBlocks": false,
