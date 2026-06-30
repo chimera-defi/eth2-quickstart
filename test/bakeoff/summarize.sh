@@ -5,7 +5,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$REPO_ROOT/lib/common_functions.sh"
 
 artifact_root="$REPO_ROOT/artifacts/client-bakeoff-2026-06-22"
-results_doc="$REPO_ROOT/docs/CLIENT_BAKEOFF_RESULTS.md"
+# Machine-generated results skeleton lands here (gitignored), NOT in the curated doc.
+generated_doc="$artifact_root/CLIENT_BAKEOFF_RESULTS.generated.md"
 [[ -d "$artifact_root" ]] || { log_error "No artifact root at $artifact_root"; exit 1; }
 
 # Machine-readable summary.
@@ -62,7 +63,9 @@ results_doc="$REPO_ROOT/docs/CLIENT_BAKEOFF_RESULTS.md"
   done
 } > "$artifact_root/report.md"
 
-# Committed, durable, human-readable results doc synthesized from artifacts.
+# Machine-generated results SKELETON. Writes to the gitignored artifact root, NOT
+# docs/CLIENT_BAKEOFF_RESULTS.md — that doc is hand-curated (blog source-of-truth)
+# and must never be overwritten by this script.
 {
   echo "# Eth2 Client Bake-off Results"
   echo
@@ -95,6 +98,6 @@ results_doc="$REPO_ROOT/docs/CLIENT_BAKEOFF_RESULTS.md"
   echo "## Changes driven by this bake-off"
   echo
   echo "<!-- Reviewer: list repo fixes (install scripts, config tuning) landed as a result. 'None' if clean. -->"
-} > "$results_doc"
+} > "$generated_doc"
 
-log_info "Wrote $artifact_root/summary.csv, report.md, and $results_doc"
+log_info "Wrote $artifact_root/summary.csv, report.md, and $generated_doc"
