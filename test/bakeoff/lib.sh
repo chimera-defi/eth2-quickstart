@@ -117,7 +117,14 @@ bakeoff_is_synced() {
   b="$(bakeoff_probe_beacon_sync)"; e="$(bakeoff_probe_execution_sync)"
   # Beacon: data present, sync_distance<=4, not optimistic, EL not offline.
   echo "$b" | jq -e '.data and (.data.sync_distance|tonumber) <= 4 and (.data.is_optimistic==false) and (.data.el_offline==false)' >/dev/null 2>&1 || return 1
-  # Execution: eth_syncing must be boolean false (fully synced, not an object).
-  echo "$e" | jq -e '.result == false' >/dev/null 2>&1 || return 1
+  # Execution: synced when eth_syncing is boolean false OR when it returns a
+  # progress object where currentBlock==highestBlock (nethermind-style caught-up).
+  # highestBlock != "0x0" guards against the pre-sync zero state.
+  echo "$e" | jq -e '
+    (.result == false)
+    or ( ((.result|type) == "object")
+         and (.result.currentBlock == .result.highestBlock)
+         and (.result.highestBlock != "0x0") )
+  ' >/dev/null 2>&1 || return 1
   return 0
 }
