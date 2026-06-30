@@ -81,7 +81,8 @@ ensure_directory "$BESU_DATA_DIR"
 create_temp_config_dir
 
 # Detect external IP for P2P advertisement (base template defaults to 127.0.0.1).
-BESU_EXTERNAL_IP="$(detect_external_ip)"
+# `|| true` guards set -e: detection failure must degrade gracefully, not abort install.
+BESU_EXTERNAL_IP="$(detect_external_ip || true)"
 if [[ -z "$BESU_EXTERNAL_IP" ]]; then
     log_warn "Could not detect external IP — besu will advertise loopback for P2P (degraded peering)"
 fi
