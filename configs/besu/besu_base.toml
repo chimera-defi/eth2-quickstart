@@ -4,7 +4,6 @@
 # Network settings
 network="mainnet"
 p2p-port=30303
-p2p-host="127.0.0.1"
 discovery-enabled=true
 max-peers=50
 
