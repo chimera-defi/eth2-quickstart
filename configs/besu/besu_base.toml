@@ -2,9 +2,13 @@
 # Current as of Besu 24.x — BONSAI + SNAP are default (24.3+)
 
 # Network settings
+# NOTE: p2p-host (the advertised P2P host) is intentionally NOT set here. besu.sh
+# injects the detected external IP at install time; pinning it to loopback in the base
+# both reintroduces the loopback-peering bug and produces a DUPLICATE p2p-host key
+# (besu's strict TOML parser rejects duplicates -> exit 2 crash-loop). On detection
+# failure besu falls back to its own default.
 network="mainnet"
 p2p-port=30303
-p2p-host="127.0.0.1"
 discovery-enabled=true
 max-peers=50
 
