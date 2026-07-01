@@ -9,6 +9,10 @@ udp-port = 30303
 
 # Post-merge history pruning: drop expired pre-merge block bodies + receipts
 # (geth `--history.chain postmerge` analogue; safe for a staking node, saves disk).
+# Efficacy note: some nimbus-eth1 versions only prune expired bodies/receipts online
+# and require an era1 archive import for complete pre-merge removal. This flag was
+# set and verified on bake-off run client-bakeoff-stageB-2026-06-23.
+# Do NOT add --history-expiry / history-expiry — that pulls a Portal Network dependency.
 prune = true
 
 # JSON-RPC settings (rpc-port/rpc-address in custom config)
