@@ -11,7 +11,7 @@ generated_doc="$artifact_root/CLIENT_BAKEOFF_RESULTS.generated.md"
 
 # Machine-readable summary.
 {
-  echo "pair,execution,consensus,install_exit_code,crash,sample_count,last_doctor_status,last_disk_bytes,residual_bytes"
+  echo "pair,execution,consensus,install_exit_code,crash,sample_count,last_doctor_status,last_disk_bytes,residual_bytes,config_optimal,config_optimal_detail"
   for dir in "$artifact_root"/*__*; do
     [[ -d "$dir" ]] || continue
     pair="$(basename "$dir")"
@@ -29,7 +29,9 @@ generated_doc="$artifact_root/CLIENT_BAKEOFF_RESULTS.generated.md"
       last_disk="$(tail -1 "$dir/samples.jsonl" 2>/dev/null | jq -r '.disk_tsv' 2>/dev/null | awk -F'\t' 'NR>1 && $2 ~ /^[0-9]+$/ {s+=$2} END{print s+0}')" || true
     fi
     residual="$(awk -F'\t' 'NR>1 && $2 ~ /^[0-9]+$/ {s+=$2} END{print s+0}' "$dir/disk-after-cleanup.tsv" 2>/dev/null || echo 0)"
-    echo "$pair,$execution,$consensus,${install_code:-missing},${crash:-unknown},$sample_count,$last_doctor,${last_disk:-0},${residual:-0}"
+    cfg_optimal="$(grep -E '^config_optimal=' "$dir/env.txt" 2>/dev/null | tail -1 | cut -d= -f2-)" || true
+    cfg_detail="$(grep -E '^config_optimal_detail=' "$dir/env.txt" 2>/dev/null | tail -1 | cut -d= -f2-)" || true
+    echo "$pair,$execution,$consensus,${install_code:-missing},${crash:-unknown},$sample_count,$last_doctor,${last_disk:-0},${residual:-0},${cfg_optimal:-unknown},${cfg_detail:-}"
   done
 } > "$artifact_root/summary.csv"
 
@@ -78,11 +80,19 @@ generated_doc="$artifact_root/CLIENT_BAKEOFF_RESULTS.generated.md"
   echo "- Strictly sequential, resource-capped (eth1 600%/24G, cl 200%/12G) to protect co-resident agents."
   echo "- MEV: none. No validator keys."
   echo
-  echo "## Results"
+  echo "## Results (optimal config only)"
   echo
   echo '| Pair | Install | Crash | Samples | Last doctor | Last disk (bytes) | Residual after cleanup |'
   echo '| --- | --- | --- | --- | --- | --- | --- |'
-  awk -F, 'NR>1{printf "| %s | %s | %s | %s | %s | %s | %s |\n",$1,$4,$5,$6,$7,$8,$9}' "$artifact_root/summary.csv"
+  awk -F, 'NR>1 && $10!="no" {printf "| %s | %s | %s | %s | %s | %s | %s |\n",$1,$4,$5,$6,$7,$8,$9}' "$artifact_root/summary.csv"
+  echo
+  echo "## Superseded — non-optimal config (excluded from ranking)"
+  echo
+  echo "_Rows below were recorded with a missing history-prune flag. Footprints are NOT comparable to the optimal rows above._"
+  echo
+  echo '| Pair | Install | Crash | Samples | Last doctor | Last disk (bytes) | Config detail |'
+  echo '| --- | --- | --- | --- | --- | --- | --- |'
+  awk -F, 'NR>1 && $10=="no" {printf "| %s | %s | %s | %s | %s | %s | %s |\n",$1,$4,$5,$6,$7,$8,$11}' "$artifact_root/summary.csv" || true
   echo
   echo "## Recommendation"
   echo

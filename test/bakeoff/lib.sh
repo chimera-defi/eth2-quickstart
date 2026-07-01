@@ -128,3 +128,140 @@ bakeoff_is_synced() {
   ' >/dev/null 2>&1 || return 1
   return 0
 }
+
+# bakeoff_check_config_optimal <el> <cl> <out_dir>
+#
+# Inspects the running config (via systemctl cat) for history-prune tokens.
+# Writes config_optimal=yes|no and config_optimal_detail=<...> to <out_dir>/env.txt.
+# On a miss: touches <out_dir>/.config-not-optimal and logs an error.
+# Never aborts the run — always returns 0.
+#
+# Token table (must stay in sync with WS2/WS3 flags):
+#   EL:
+#     geth        -> --history.chain (postmerge)
+#     nethermind  -> AncientBodiesBarrier AND PivotNumber != 0
+#     erigon      -> prune.mode=full  (or prune.mode = full)
+#     reth        -> --prune.bodies.pre-merge AND --prune.receipts.pre-merge
+#     besu        -> history-expiry-prune=true
+#     nimbus_eth1 -> prune = true
+#     ethrex      -> optimal-by-absence: no lever; check --syncmode snap present
+#   CL:
+#     prysm       -> --beacon-db-pruning or beacon-db-pruning:
+#     lighthouse  -> checkpoint-sync-url (default prune ok)
+#     teku        -> data-storage-mode.*minimal  (case-insensitive)
+#     nimbus      -> history.*prune  (default but checked if explicit)
+#     lodestar    -> pruneHistory.*true
+#     grandine    -> --prune-storage
+bakeoff_check_config_optimal() {
+  local el="$1" cl="$2" out_dir="$3"
+  local el_exec cl_exec el_conf cl_conf
+  local miss_tokens="" found_tokens="" optimal="yes" detail=""
+
+  # Collect running ExecStart lines from systemd units.
+  el_exec="$(systemctl cat eth1.service 2>/dev/null | grep -i ExecStart || true)"
+  cl_exec="$(systemctl cat cl.service   2>/dev/null | grep -i ExecStart || true)"
+
+  # Also pull any config files referenced on the ExecStart lines.
+  local el_conf_path cl_conf_path
+  el_conf_path="$(echo "$el_exec" | grep -oP '(?<=--config-file[= ])\S+' | head -1 || true)"
+  cl_conf_path="$(echo "$cl_exec" | grep -oP '(?<=--config-file[= ])\S+' | head -1 || true)"
+  if [[ -n "$el_conf_path" && -f "$el_conf_path" ]]; then el_conf="$(cat "$el_conf_path")"; else el_conf=""; fi
+  if [[ -n "$cl_conf_path" && -f "$cl_conf_path" ]]; then cl_conf="$(cat "$cl_conf_path")"; else cl_conf=""; fi
+
+  # Helper: check a token in exec+conf combined text; append to found/miss lists.
+  # NOTE: pattern is passed after `--` so leading-dash patterns (e.g. --prune-storage)
+  # are treated as the PATTERN operand, not misparsed as a grep option (which would
+  # otherwise exit 2 and be silently swallowed by the 2>/dev/null as a false "miss").
+  _has_token() {
+    local label="$1" pattern="$2" haystack="$3"
+    if echo "$haystack" | grep -qP -- "$pattern" 2>/dev/null; then
+      found_tokens="${found_tokens:+$found_tokens,}$label"
+    else
+      miss_tokens="${miss_tokens:+$miss_tokens,}$label"
+      optimal="no"
+    fi
+  }
+
+  # --- EL checks ---
+  local el_combined="$el_exec $el_conf"
+  case "$el" in
+    geth)
+      _has_token "geth:history.chain" 'history\.chain' "$el_combined"
+      ;;
+    nethermind)
+      _has_token "nethermind:AncientBodiesBarrier" 'AncientBodiesBarrier' "$el_combined"
+      # PivotNumber must be non-zero (zero pivot means snap is inert)
+      local pivot
+      pivot="$(echo "$el_combined" | grep -oP 'PivotNumber\s*[=:]\s*\K[0-9]+' | head -1 || echo "0")"
+      if [[ "${pivot:-0}" -gt 0 ]]; then
+        found_tokens="${found_tokens:+$found_tokens,}nethermind:PivotNumber=$pivot"
+      else
+        miss_tokens="${miss_tokens:+$miss_tokens,}nethermind:PivotNumber!=0"
+        optimal="no"
+      fi
+      ;;
+    erigon)
+      _has_token "erigon:prune.mode=full" 'prune\.mode\s*=\s*full' "$el_combined"
+      ;;
+    reth)
+      _has_token "reth:prune.bodies.pre-merge"   '--prune\.bodies\.pre-merge'   "$el_combined"
+      _has_token "reth:prune.receipts.pre-merge" '--prune\.receipts\.pre-merge' "$el_combined"
+      ;;
+    besu)
+      _has_token "besu:history-expiry-prune=true" 'history-expiry-prune\s*=\s*true' "$el_combined"
+      ;;
+    nimbus_eth1)
+      _has_token "nimbus_eth1:prune=true" 'prune\s*=\s*true' "$el_combined"
+      ;;
+    ethrex)
+      # ethrex has no history-prune lever; optimal == snap sync present.
+      _has_token "ethrex:syncmode=snap" 'syncmode\s*[= ]\s*snap' "$el_combined"
+      ;;
+    *)
+      found_tokens="${found_tokens:+$found_tokens,}el:$el=unchecked"
+      ;;
+  esac
+
+  # --- CL checks ---
+  local cl_combined="$cl_exec $cl_conf"
+  case "$cl" in
+    prysm)
+      _has_token "prysm:beacon-db-pruning" 'beacon-db-pruning' "$cl_combined"
+      ;;
+    lighthouse)
+      _has_token "lighthouse:checkpoint-sync-url" 'checkpoint-sync-url' "$cl_combined"
+      ;;
+    teku)
+      _has_token "teku:data-storage-mode=minimal" 'data-storage-mode[=: ]+["\047]?[Mm]inimal' "$cl_combined"
+      ;;
+    nimbus)
+      # Checkpoint sync is the primary check; history=prune if explicitly set.
+      _has_token "nimbus:checkpoint-sync" 'trustedNodeSync|checkpoint-sync-url|--trusted-node-url' "$cl_combined"
+      ;;
+    lodestar)
+      _has_token "lodestar:pruneHistory=true" 'pruneHistory.*true|chain\.pruneHistory' "$cl_combined"
+      ;;
+    grandine)
+      _has_token "grandine:prune-storage" '--prune-storage' "$cl_combined"
+      ;;
+    *)
+      found_tokens="${found_tokens:+$found_tokens,}cl:$cl=unchecked"
+      ;;
+  esac
+
+  # Build detail string.
+  detail="found=${found_tokens:-none};missed=${miss_tokens:-none}"
+
+  # Write to env.txt.
+  {
+    echo "config_optimal=$optimal"
+    echo "config_optimal_detail=$detail"
+  } >> "$out_dir/env.txt"
+
+  if [[ "$optimal" != "yes" ]]; then
+    touch "$out_dir/.config-not-optimal"
+    log_error "config not optimal for ${el}/${cl}: $detail"
+  fi
+
+  return 0
+}
