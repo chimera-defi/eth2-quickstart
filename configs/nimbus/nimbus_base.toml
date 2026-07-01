@@ -32,3 +32,6 @@ payload-builder-url = "http://$MEV_HOST:$MEV_PORT"
 
 # Safety
 doppelganger-detection = true
+
+# History retention (prune is the default; set explicitly for clarity and gate checks).
+history = "prune"

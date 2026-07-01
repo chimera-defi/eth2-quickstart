@@ -116,6 +116,7 @@ BEACON_EXEC_START="$GRANDINE_DIR/grandine \
   --checkpoint-sync-url $GRANDINE_CHECKPOINT_URL \
   --suggested-fee-recipient $FEE_RECIPIENT \
   --graffiti $GRAFITTI \
+  --prune-storage \
   --target-peers $MAX_PEERS \
   --listen-address 0.0.0.0 \
   --libp2p-port 9000 \
