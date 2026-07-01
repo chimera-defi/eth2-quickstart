@@ -72,17 +72,31 @@ fi
 
 # Fetch the latest finalized block to use as a real snap pivot (post-merge, so TTD is fixed).
 # A zero pivot makes SnapSync degenerate to a full fast-sync from genesis.
-_nmd_pivot_json="$(curl -s --max-time 15 -H 'Content-Type: application/json' \
-  --data '{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["finalized",false],"id":1}' \
-  https://ethereum.publicnode.com 2>/dev/null || \
-  curl -s --max-time 15 -H 'Content-Type: application/json' \
-  --data '{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["finalized",false],"id":1}' \
-  https://rpc.flashbots.net 2>/dev/null || true)"
-NETHERMIND_PIVOT_NUMBER="$(printf '%s' "$_nmd_pivot_json" | python3 -c \
-  'import json,sys; b=json.load(sys.stdin)["result"]; print(int(b["number"],16))' 2>/dev/null || echo 0)"
-NETHERMIND_PIVOT_HASH="$(printf '%s' "$_nmd_pivot_json" | python3 -c \
-  'import json,sys; b=json.load(sys.stdin)["result"]; print(b["hash"])' 2>/dev/null || \
-  echo '0x0000000000000000000000000000000000000000000000000000000000000000')"
+# Each endpoint is validated independently: a 200-OK JSON-RPC error body (missing .result,
+# or .result.number missing/empty) is treated as a failure and the next endpoint is tried.
+# Transport failure (curl non-zero) also falls through to the next endpoint.
+# If ALL endpoints fail, NETHERMIND_PIVOT_NUMBER stays 0 and NETHERMIND_PIVOT_HASH stays empty.
+NETHERMIND_PIVOT_NUMBER=0
+NETHERMIND_PIVOT_HASH=""
+_nmd_pivot_rpc_data='{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["finalized",false],"id":1}'
+for _nmd_url in "https://ethereum.publicnode.com" "https://rpc.flashbots.net"; do
+    _nmd_json="$(curl -s --max-time 15 -H 'Content-Type: application/json' \
+        --data "$_nmd_pivot_rpc_data" "$_nmd_url" 2>/dev/null || true)"
+    # Validate: .result must exist and .result.number must be a non-empty hex string.
+    # A JSON-RPC error body has no .result key; we use .get() so KeyError becomes empty string.
+    _nmd_parsed="$(printf '%s' "$_nmd_json" | python3 -c \
+        'import json,sys
+r=(json.load(sys.stdin) if sys.stdin else {}).get("result") or {}
+n=r.get("number",""); h=r.get("hash","")
+print(str(int(n,16))+" "+h if n and h else "")
+' 2>/dev/null || true)"
+    if [[ -n "$_nmd_parsed" ]]; then
+        NETHERMIND_PIVOT_NUMBER="${_nmd_parsed%% *}"
+        NETHERMIND_PIVOT_HASH="${_nmd_parsed##* }"
+        break
+    fi
+    log_warn "Nethermind pivot: endpoint ${_nmd_url} returned unusable response, trying next"
+done
 
 # Only write a pivot if we fetched a real, recent finalized block. On failure we OMIT
 # PivotNumber/PivotHash rather than write 0 — a zero pivot degenerates SnapSync into a
