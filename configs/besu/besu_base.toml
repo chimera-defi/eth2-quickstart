@@ -33,6 +33,12 @@ engine-host-allowlist=["localhost","$LH"]
 # Sync settings
 sync-mode="SNAP"
 
+# Post-merge history pruning (geth --history.chain postmerge analogue).
+# On besu 26.6.x the flag is marked deprecated but is the only online history-prune
+# lever available; it prunes pre-merge block bodies+receipts to keep footprint
+# comparable to geth/nethermind. A non-deprecated replacement is expected in 27.x.
+history-expiry-prune=true
+
 # Performance optimizations
 # tx-pool-max-size, tx-pool-hash-limit, tx-pool-retention-hours removed:
 # incompatible with besu 25.x layered tx pool implementation.
