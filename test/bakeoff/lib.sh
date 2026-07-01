@@ -140,7 +140,7 @@ bakeoff_is_synced() {
 #   EL:
 #     geth        -> --history.chain (postmerge)
 #     nethermind  -> AncientBodiesBarrier AND PivotNumber != 0
-#     erigon      -> prune.mode=full  (or prune.mode = full)
+#     erigon      -> prune.mode: "full"  (YAML colon form; also matches "= full")
 #     reth        -> --prune.bodies.pre-merge AND --prune.receipts.pre-merge
 #     besu        -> history-expiry-prune=true
 #     nimbus_eth1 -> prune = true
@@ -208,7 +208,10 @@ bakeoff_check_config_optimal() {
       fi
       ;;
     erigon)
-      _has_token "erigon:prune.mode=full" 'prune\.mode\s*=\s*full' "$el_combined"
+      # erigon writes YAML "prune.mode: \"full\"" (colon, quoted), not "=" — match both
+      # separator styles and optional quotes so this doesn't false-miss like the
+      # --config path-extraction bug did.
+      _has_token "erigon:prune.mode=full" 'prune\.mode\s*[:=]\s*"?full"?' "$el_combined"
       ;;
     reth)
       _has_token "reth:prune.bodies.pre-merge"   '--prune\.bodies\.pre-merge'   "$el_combined"
