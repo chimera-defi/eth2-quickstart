@@ -1,5 +1,5 @@
 # Teku Beacon Node Base Configuration
-# Current as of Teku 25.x — data-storage-mode: prune
+# Current as of Teku 25.x — data-storage-mode: minimal (prunes historic blocks too)
 
 # Network
 network: "mainnet"
@@ -8,8 +8,9 @@ p2p-port: 9000
 p2p-discovery-enabled: true
 p2p-peer-lower-bound: 64
 
-# Data storage
-data-storage-mode: "prune"
+# Data storage: minimal prunes finalized blocks beyond MIN_EPOCHS_FOR_BLOCK_REQUESTS
+# (valid values: ARCHIVE, PRUNE, MINIMAL — case-insensitive on teku 25.x).
+data-storage-mode: "minimal"
 
 # Execution layer connection
 ee-endpoint: "http://$LH:$ENGINE_PORT"
