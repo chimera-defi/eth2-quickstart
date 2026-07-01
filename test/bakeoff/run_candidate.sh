@@ -86,6 +86,10 @@ echo "install_exit_code=$install_rc" >> "$out/env.txt"
 ./scripts/eth2qs.sh debug   --json --service cl   > "$out/debug-cl-after-install.json"   2>&1 || true
 systemctl status eth1 cl validator --no-pager -l > "$out/service-status.txt" 2>&1 || true
 
+# Config-optimality gate: checks running config for history-prune tokens.
+# Non-blocking — flags non-optimal rows without aborting the run.
+bakeoff_check_config_optimal "$execution" "$consensus" "$out" || true
+
 # Observation window (skipped if install failed).
 crashed="no"
 if [[ "$install_rc" -eq 0 ]]; then
