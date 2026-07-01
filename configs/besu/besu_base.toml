@@ -19,7 +19,7 @@ data-storage-format="BONSAI"
 rpc-http-enabled=true
 rpc-http-host="$LH"
 rpc-http-cors-origins=["*"]
-rpc-http-api=["ADMIN","ETH","NET","WEB3","ENGINE"]
+rpc-http-api=["ADMIN","ETH","NET","WEB3"]
 
 # WebSocket settings
 rpc-ws-enabled=true
