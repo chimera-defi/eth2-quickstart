@@ -7,6 +7,10 @@ network = ["mainnet"]
 tcp-port = 30303
 udp-port = 30303
 
+# Post-merge history pruning: drop expired pre-merge block bodies + receipts
+# (geth `--history.chain postmerge` analogue; safe for a staking node, saves disk).
+prune = true
+
 # JSON-RPC settings (rpc-port/rpc-address in custom config)
 # rpc-enabled deprecated — presence of rpc-port enables RPC
 
