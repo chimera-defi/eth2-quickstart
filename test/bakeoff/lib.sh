@@ -149,7 +149,8 @@ bakeoff_is_synced() {
 #     prysm       -> --beacon-db-pruning or beacon-db-pruning:
 #     lighthouse  -> checkpoint-sync-url (default prune ok)
 #     teku        -> data-storage-mode.*minimal  (case-insensitive)
-#     nimbus      -> history.*prune  (default but checked if explicit)
+#     nimbus      -> history.*prune  (persistent config; checkpoint-sync is a
+#                    one-shot bootstrap step, out of scope for this gate)
 #     lodestar    -> pruneHistory.*true
 #     grandine    -> --prune-storage
 bakeoff_check_config_optimal() {
@@ -162,9 +163,11 @@ bakeoff_check_config_optimal() {
   cl_exec="$(systemctl cat cl.service   2>/dev/null | grep -i ExecStart || true)"
 
   # Also pull any config files referenced on the ExecStart lines.
+  # Most clients pass --config-file, but lodestar uses --rcConfig
+  # (install/consensus/lodestar.sh) — match both so cl_conf isn't silently empty.
   local el_conf_path cl_conf_path
-  el_conf_path="$(echo "$el_exec" | grep -oP '(?<=--config-file[= ])\S+' | head -1 || true)"
-  cl_conf_path="$(echo "$cl_exec" | grep -oP '(?<=--config-file[= ])\S+' | head -1 || true)"
+  el_conf_path="$(echo "$el_exec" | grep -oP '(?<=--config-file[= ])\S+|(?<=--rcConfig[= ])\S+' | head -1 || true)"
+  cl_conf_path="$(echo "$cl_exec" | grep -oP '(?<=--config-file[= ])\S+|(?<=--rcConfig[= ])\S+' | head -1 || true)"
   if [[ -n "$el_conf_path" && -f "$el_conf_path" ]]; then el_conf="$(cat "$el_conf_path")"; else el_conf=""; fi
   if [[ -n "$cl_conf_path" && -f "$cl_conf_path" ]]; then cl_conf="$(cat "$cl_conf_path")"; else cl_conf=""; fi
 
@@ -175,9 +178,9 @@ bakeoff_check_config_optimal() {
   _has_token() {
     local label="$1" pattern="$2" haystack="$3"
     if echo "$haystack" | grep -qP -- "$pattern" 2>/dev/null; then
-      found_tokens="${found_tokens:+$found_tokens,}$label"
+      found_tokens="${found_tokens:+$found_tokens;}$label"
     else
-      miss_tokens="${miss_tokens:+$miss_tokens,}$label"
+      miss_tokens="${miss_tokens:+$miss_tokens;}$label"
       optimal="no"
     fi
   }
@@ -194,9 +197,9 @@ bakeoff_check_config_optimal() {
       local pivot
       pivot="$(echo "$el_combined" | grep -oP 'PivotNumber\s*[=:]\s*\K[0-9]+' | head -1 || echo "0")"
       if [[ "${pivot:-0}" -gt 0 ]]; then
-        found_tokens="${found_tokens:+$found_tokens,}nethermind:PivotNumber=$pivot"
+        found_tokens="${found_tokens:+$found_tokens;}nethermind:PivotNumber=$pivot"
       else
-        miss_tokens="${miss_tokens:+$miss_tokens,}nethermind:PivotNumber!=0"
+        miss_tokens="${miss_tokens:+$miss_tokens;}nethermind:PivotNumber!=0"
         optimal="no"
       fi
       ;;
@@ -218,7 +221,7 @@ bakeoff_check_config_optimal() {
       _has_token "ethrex:syncmode=snap" 'syncmode\s*[= ]\s*snap' "$el_combined"
       ;;
     *)
-      found_tokens="${found_tokens:+$found_tokens,}el:$el=unchecked"
+      found_tokens="${found_tokens:+$found_tokens;}el:$el=unchecked"
       ;;
   esac
 
@@ -235,8 +238,13 @@ bakeoff_check_config_optimal() {
       _has_token "teku:data-storage-mode=minimal" 'data-storage-mode[=: ]+["\047]?[Mm]inimal' "$cl_combined"
       ;;
     nimbus)
-      # Checkpoint sync is the primary check; history=prune if explicitly set.
-      _has_token "nimbus:checkpoint-sync" 'trustedNodeSync|checkpoint-sync-url|--trusted-node-url' "$cl_combined"
+      # trustedNodeSync/--trusted-node-url only appear in the one-shot bootstrap
+      # subcommand run before the service starts (install/consensus/nimbus.sh) —
+      # never in the persistent ExecStart or nimbus.toml — so they can't be
+      # observed here and checkpoint sync is out of scope for this "is the
+      # running config optimal" gate. Check the persistent history-prune
+      # setting instead (configs/nimbus/nimbus_base.toml sets history = "prune").
+      _has_token "nimbus:history=prune" 'history\s*=\s*"?prune"?' "$cl_combined"
       ;;
     lodestar)
       _has_token "lodestar:pruneHistory=true" 'pruneHistory.*true|chain\.pruneHistory' "$cl_combined"
@@ -245,7 +253,7 @@ bakeoff_check_config_optimal() {
       _has_token "grandine:prune-storage" '--prune-storage' "$cl_combined"
       ;;
     *)
-      found_tokens="${found_tokens:+$found_tokens,}cl:$cl=unchecked"
+      found_tokens="${found_tokens:+$found_tokens;}cl:$cl=unchecked"
       ;;
   esac
 
