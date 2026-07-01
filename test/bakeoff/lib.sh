@@ -197,9 +197,12 @@ bakeoff_check_config_optimal() {
       ;;
     nethermind)
       _has_token "nethermind:AncientBodiesBarrier" 'AncientBodiesBarrier' "$el_combined"
-      # PivotNumber must be non-zero (zero pivot means snap is inert)
+      # PivotNumber must be non-zero (zero pivot means snap is inert). Nethermind's
+      # actual config is quoted JSON ("PivotNumber": 15900000,) — an optional closing
+      # quote must be matched between the key and the separator, or this NEVER extracts
+      # (always falls back to 0, always false-flagging nethermind as non-optimal).
       local pivot
-      pivot="$(echo "$el_combined" | grep -oP 'PivotNumber\s*[=:]\s*\K[0-9]+' | head -1 || echo "0")"
+      pivot="$(echo "$el_combined" | grep -oP 'PivotNumber"?\s*[=:]\s*"?\K[0-9]+' | head -1 || echo "0")"
       if [[ "${pivot:-0}" -gt 0 ]]; then
         found_tokens="${found_tokens:+$found_tokens;}nethermind:PivotNumber=$pivot"
       else
