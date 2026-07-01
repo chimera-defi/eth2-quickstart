@@ -163,11 +163,15 @@ bakeoff_check_config_optimal() {
   cl_exec="$(systemctl cat cl.service   2>/dev/null | grep -i ExecStart || true)"
 
   # Also pull any config files referenced on the ExecStart lines.
-  # Most clients pass --config-file, but lodestar uses --rcConfig
-  # (install/consensus/lodestar.sh) — match both so cl_conf isn't silently empty.
+  # Most clients pass --config-file, lodestar uses --rcConfig, and erigon uses a
+  # plain --config (install/execution/erigon.sh) — match all three so el_conf/cl_conf
+  # aren't silently empty. "--config" is a prefix of "--config-file", but PCRE
+  # lookbehind is position-anchored: for "--config-file=x" the char right after
+  # "--config" is "-" (not "=" or space), so "(?<=--config[= ])" never fires there —
+  # no ambiguity between the two alternatives.
   local el_conf_path cl_conf_path
-  el_conf_path="$(echo "$el_exec" | grep -oP '(?<=--config-file[= ])\S+|(?<=--rcConfig[= ])\S+' | head -1 || true)"
-  cl_conf_path="$(echo "$cl_exec" | grep -oP '(?<=--config-file[= ])\S+|(?<=--rcConfig[= ])\S+' | head -1 || true)"
+  el_conf_path="$(echo "$el_exec" | grep -oP '(?<=--config-file[= ])\S+|(?<=--rcConfig[= ])\S+|(?<=--config[= ])\S+' | head -1 || true)"
+  cl_conf_path="$(echo "$cl_exec" | grep -oP '(?<=--config-file[= ])\S+|(?<=--rcConfig[= ])\S+|(?<=--config[= ])\S+' | head -1 || true)"
   if [[ -n "$el_conf_path" && -f "$el_conf_path" ]]; then el_conf="$(cat "$el_conf_path")"; else el_conf=""; fi
   if [[ -n "$cl_conf_path" && -f "$cl_conf_path" ]]; then cl_conf="$(cat "$cl_conf_path")"; else cl_conf=""; fi
 
