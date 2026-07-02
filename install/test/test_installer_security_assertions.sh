@@ -6,7 +6,7 @@
 #   A) HTTP RPC exposes only intended modules (no Engine/auth namespace on 8545)
 #   B) Auth/Engine RPC is local + JWT-protected, uses $HOME/secrets/jwt.hex
 #   C) Pruned-history clients (reth/besu/nethermind) carry the expected flags/keys;
-#      an archive-only state query would fail — documented expectation asserted via config
+#      config-level assertion that prune flags are present (not a runtime query check)
 #   D) External-IP helper: detection failure does NOT abort install; leaves a warning + safe default
 #
 # Run: bash install/test/test_installer_security_assertions.sh
@@ -38,18 +38,29 @@ test_nethermind_http_no_engine() {
     return 1
 }
 
-# A2: Besu base config — rpc-http-api must not contain ENGINE
-test_besu_http_no_engine() {
+# A2: Besu base config — neither rpc-http-api nor rpc-ws-api must contain ENGINE
+test_besu_no_engine_on_user_rpc() {
     local file="$PROJECT_ROOT/configs/besu/besu_base.toml"
+    local ok=0
     if grep -q "^rpc-http-api=" "$file"; then
         if grep "^rpc-http-api=" "$file" | grep -qi '"ENGINE"'; then
             log_error "besu_base.toml rpc-http-api exposes ENGINE on HTTP RPC"
-            return 1
+            ok=1
         fi
-        return 0
+    else
+        log_error "besu_base.toml: rpc-http-api line not found"
+        ok=1
     fi
-    log_error "besu_base.toml: rpc-http-api line not found"
-    return 1
+    if grep -q "^rpc-ws-api=" "$file"; then
+        if grep "^rpc-ws-api=" "$file" | grep -qi '"ENGINE"'; then
+            log_error "besu_base.toml rpc-ws-api exposes ENGINE on WS RPC"
+            ok=1
+        fi
+    else
+        log_error "besu_base.toml: rpc-ws-api line not found"
+        ok=1
+    fi
+    return $ok
 }
 
 # A3: Reth — http.api must not contain engine/auth
@@ -128,10 +139,10 @@ test_reth_engine_local_jwt() {
 }
 
 # ---------------------------------------------------------------------------
-# C. Pruned-history clients carry the expected prune flags (negative archive assertion)
-#    These clients do NOT store full pre-merge history; an eth_getBlockByNumber on an
-#    ancient pre-merge block would return null (not an error, but no state/receipts).
-#    We assert the prune flags are present so the expectation is explicit and locked down.
+# C. Pruned-history clients carry the expected prune flags
+#    Config-level assertion: prune flags are present in installer config/scripts.
+#    This locks down the expectation that these clients run pruned, not archive.
+#    Runtime behaviour (e.g. null receipts for ancient blocks) is not tested here.
 # ---------------------------------------------------------------------------
 
 # C1: Reth runs with --full and pre-merge body/receipt prune flags
@@ -227,10 +238,10 @@ else
     record_test "nethermind HTTP RPC: no Engine namespace on user port" "FAIL"
 fi
 
-if test_besu_http_no_engine; then
-    record_test "besu HTTP RPC: no ENGINE in rpc-http-api" "PASS"
+if test_besu_no_engine_on_user_rpc; then
+    record_test "besu user RPC: no ENGINE in rpc-http-api or rpc-ws-api" "PASS"
 else
-    record_test "besu HTTP RPC: no ENGINE in rpc-http-api" "FAIL"
+    record_test "besu user RPC: no ENGINE in rpc-http-api or rpc-ws-api" "FAIL"
 fi
 
 if test_reth_http_no_engine; then
