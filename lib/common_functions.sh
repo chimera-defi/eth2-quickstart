@@ -61,7 +61,7 @@ is_docker() {
 # result is a well-formed IPv4 before echoing it. Echoes nothing on failure
 # so callers can safely test -z and fall back gracefully.
 detect_external_ip() {
-    local ip
+    local ip _url
     for _url in https://v4.ident.me https://api.ipify.org https://ifconfig.me/ip; do
         ip="$(curl -s -m 10 "$_url" 2>/dev/null | tr -d '[:space:]' || true)"
         if echo "$ip" | grep -qE '^([0-9]{1,3}\.){3}[0-9]{1,3}$'; then
