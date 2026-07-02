@@ -24,7 +24,7 @@ rpc-http-api=["ADMIN","ETH","NET","WEB3"]
 # WebSocket settings
 rpc-ws-enabled=true
 rpc-ws-host="$LH"
-rpc-ws-api=["WEB3","ETH","NET","ENGINE"]
+rpc-ws-api=["WEB3","ETH","NET"]
 
 # Engine API settings (for consensus client communication)
 engine-rpc-enabled=true
