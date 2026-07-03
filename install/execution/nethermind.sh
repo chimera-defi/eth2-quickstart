@@ -138,7 +138,7 @@ ${NETHERMIND_EXTERNAL_IP_LINE}
     "JwtSecretFile": "$HOME/secrets/jwt.hex",
     "EngineHost": "$LH",
     "EnginePort": ${NETHERMIND_ENGINE_PORT},
-    "EnabledModules": ["Admin", "Eth", "Net", "Web3"]
+    "EnabledModules": ["Eth", "Net", "Web3"]
   },
   "EthStats": {
     "Enabled": false
@@ -152,14 +152,15 @@ ${NETHERMIND_EXTERNAL_IP_LINE}
     "ExposePort": 6060
   },
   "Sync": {
+    "FastSync": true,
     "SnapSync": true,
 ${NETHERMIND_PIVOT_BLOCK}
-    "PivotTotalDifficulty": "58750000000000000000000",
+    "PivotTotalDifficulty": "58750003716598352816469",
     "FastBlocks": true,
     "UseGethLimitsInFastBlocks": false,
     "AncientBodiesBarrier": 15537394,
     "AncientReceiptsBarrier": 15537394,
-    "SnapSyncCatchUpHeightDelta": 10000000000
+    "FastSyncCatchUpHeightDelta": 10000000000
   },
   "Bloom": {
     "IndexLevelBucketSizes": [4, 8, 8]
