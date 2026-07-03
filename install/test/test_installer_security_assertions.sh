@@ -23,39 +23,62 @@ log_header "EL Installer Security Assertions"
 # A. HTTP RPC must NOT expose Engine/auth namespace on user-facing port
 # ---------------------------------------------------------------------------
 
-# A1: Nethermind — EnabledModules must not contain Engine
+# A1: Nethermind — EnabledModules must not contain Engine, Admin, or Debug
+#     Checked in BOTH the installer script AND the base config template.
 test_nethermind_http_no_engine() {
-    local file="$PROJECT_ROOT/install/execution/nethermind.sh"
-    # Extract the EnabledModules line and check it doesn't contain "Engine"
-    if grep -q '"EnabledModules"' "$file"; then
-        if grep '"EnabledModules"' "$file" | grep -qi '"engine"'; then
-            log_error "nethermind.sh EnabledModules exposes Engine on HTTP RPC"
-            return 1
+    local sh="$PROJECT_ROOT/install/execution/nethermind.sh"
+    local cfg="$PROJECT_ROOT/configs/nethermind/nethermind_base.cfg"
+    local ok=0
+    for file in "$sh" "$cfg"; do
+        local label
+        label="$(basename "$file")"
+        if grep -q '"EnabledModules"' "$file"; then
+            if grep '"EnabledModules"' "$file" | grep -qi '"engine"'; then
+                log_error "$label EnabledModules exposes Engine on HTTP RPC"
+                ok=1
+            fi
+            if grep '"EnabledModules"' "$file" | grep -qi '"admin"'; then
+                log_error "$label EnabledModules exposes Admin on HTTP RPC"
+                ok=1
+            fi
+            if grep '"EnabledModules"' "$file" | grep -qi '"debug"'; then
+                log_error "$label EnabledModules exposes Debug on HTTP RPC"
+                ok=1
+            fi
+        else
+            log_error "$label: EnabledModules not found"
+            ok=1
         fi
-        return 0
-    fi
-    log_error "nethermind.sh: EnabledModules not found"
-    return 1
+    done
+    return $ok
 }
 
-# A2: Besu base config — neither rpc-http-api nor rpc-ws-api must contain ENGINE
+# A2: Besu base config — rpc-http-api and rpc-ws-api must not contain ENGINE, ADMIN, or DEBUG
 test_besu_no_engine_on_user_rpc() {
     local file="$PROJECT_ROOT/configs/besu/besu_base.toml"
     local ok=0
     if grep -q "^rpc-http-api=" "$file"; then
-        if grep "^rpc-http-api=" "$file" | grep -qi '"ENGINE"'; then
-            log_error "besu_base.toml rpc-http-api exposes ENGINE on HTTP RPC"
-            ok=1
-        fi
+        local http_line
+        http_line="$(grep "^rpc-http-api=" "$file")"
+        for module in ENGINE ADMIN DEBUG; do
+            if echo "$http_line" | grep -qi "\"${module}\""; then
+                log_error "besu_base.toml rpc-http-api exposes ${module} on HTTP RPC"
+                ok=1
+            fi
+        done
     else
         log_error "besu_base.toml: rpc-http-api line not found"
         ok=1
     fi
     if grep -q "^rpc-ws-api=" "$file"; then
-        if grep "^rpc-ws-api=" "$file" | grep -qi '"ENGINE"'; then
-            log_error "besu_base.toml rpc-ws-api exposes ENGINE on WS RPC"
-            ok=1
-        fi
+        local ws_line
+        ws_line="$(grep "^rpc-ws-api=" "$file")"
+        for module in ENGINE ADMIN DEBUG; do
+            if echo "$ws_line" | grep -qi "\"${module}\""; then
+                log_error "besu_base.toml rpc-ws-api exposes ${module} on WS RPC"
+                ok=1
+            fi
+        done
     else
         log_error "besu_base.toml: rpc-ws-api line not found"
         ok=1
@@ -171,6 +194,48 @@ test_nethermind_pruned_flags_present() {
     local ok=0
     grep -q "AncientBodiesBarrier" "$file" || { log_error "nethermind.sh: AncientBodiesBarrier missing"; ok=1; }
     grep -q "AncientReceiptsBarrier" "$file" || { log_error "nethermind.sh: AncientReceiptsBarrier missing"; ok=1; }
+    return $ok
+}
+
+# C4: Nethermind PivotTotalDifficulty must equal the pivot block's frozen TD, not the TTD threshold.
+#     Also asserts FastSyncCatchUpHeightDelta is present (valid key) and SnapSyncCatchUpHeightDelta
+#     is absent (renamed/invalid key). Both checks run in BOTH the installer script AND the base cfg.
+NETHERMIND_CORRECT_PIVOT_TD="58750003716598352816469"
+NETHERMIND_WRONG_PIVOT_TD="58750000000000000000000"
+
+test_nethermind_pivot_and_catchup_keys() {
+    local sh="$PROJECT_ROOT/install/execution/nethermind.sh"
+    local cfg="$PROJECT_ROOT/configs/nethermind/nethermind_base.cfg"
+    local ok=0
+    for file in "$sh" "$cfg"; do
+        local label
+        label="$(basename "$file")"
+        # PivotTotalDifficulty must equal the frozen pivot block TD
+        if grep -q "PivotTotalDifficulty" "$file"; then
+            if ! grep "PivotTotalDifficulty" "$file" | grep -q "${NETHERMIND_CORRECT_PIVOT_TD}"; then
+                log_error "$label: PivotTotalDifficulty is not the correct frozen pivot TD (${NETHERMIND_CORRECT_PIVOT_TD})"
+                ok=1
+            fi
+            # Must NOT be the TTD threshold (wrong value — degrades to full genesis sync)
+            if grep "PivotTotalDifficulty" "$file" | grep -q "${NETHERMIND_WRONG_PIVOT_TD}\""; then
+                log_error "$label: PivotTotalDifficulty is the TTD threshold, not the pivot block TD"
+                ok=1
+            fi
+        else
+            log_error "$label: PivotTotalDifficulty key not found"
+            ok=1
+        fi
+        # FastSyncCatchUpHeightDelta (valid key) must be present
+        if ! grep -q "FastSyncCatchUpHeightDelta" "$file"; then
+            log_error "$label: FastSyncCatchUpHeightDelta missing (valid key, required for post-merge fast-sync)"
+            ok=1
+        fi
+        # SnapSyncCatchUpHeightDelta (renamed/non-existent key) must be absent
+        if grep -q "SnapSyncCatchUpHeightDelta" "$file"; then
+            log_error "$label: SnapSyncCatchUpHeightDelta present (invalid key — should be FastSyncCatchUpHeightDelta)"
+            ok=1
+        fi
+    done
     return $ok
 }
 
@@ -308,6 +373,12 @@ if test_nethermind_external_ip_warns; then
     record_test "nethermind: log_warn on external IP detection failure" "PASS"
 else
     record_test "nethermind: log_warn on external IP detection failure" "FAIL"
+fi
+
+if test_nethermind_pivot_and_catchup_keys; then
+    record_test "nethermind: correct PivotTotalDifficulty + FastSyncCatchUpHeightDelta (both files)" "PASS"
+else
+    record_test "nethermind: correct PivotTotalDifficulty + FastSyncCatchUpHeightDelta (both files)" "FAIL"
 fi
 
 print_test_summary
