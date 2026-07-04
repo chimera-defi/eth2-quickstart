@@ -14,6 +14,8 @@ source "$PROJECT_ROOT/lib/common_functions.sh"
 # Get script directories
 get_script_directories
 
+CLIENT_GRAFFITI="$(printf '%s' "Teku ${GRAFITTI}" | head -c 32)"
+
 log_installation_start "Teku"
 
 
@@ -106,7 +108,7 @@ checkpoint-sync-url: "$TEKU_CHECKPOINT_URL"
 metrics-port: 8008
 
 # Validator settings
-validators-graffiti: "$GRAFITTI"
+validators-graffiti: "$CLIENT_GRAFFITI"
 validators-proposer-default-fee-recipient: "$FEE_RECIPIENT"
 EOF
 
@@ -119,7 +121,7 @@ beacon-node-api-endpoint: "http://$CONSENSUS_HOST:${TEKU_REST_PORT}"
 
 # Validator settings
 validator-keys: "$VALIDATOR_DATA_DIR/keys:$VALIDATOR_DATA_DIR/passwords"
-validators-graffiti: "$GRAFITTI"
+validators-graffiti: "$CLIENT_GRAFFITI"
 validators-proposer-default-fee-recipient: "$FEE_RECIPIENT"
 
 # Data storage
