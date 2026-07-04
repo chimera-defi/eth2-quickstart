@@ -14,6 +14,8 @@ source "$PROJECT_ROOT/lib/common_functions.sh"
 # Get script directories
 get_script_directories
 
+CLIENT_GRAFFITI="$(printf '%s' "Prysm ${GRAFITTI}" | head -c 32)"
+
 log_installation_start "Prysm"
 
 
@@ -71,7 +73,7 @@ EOF
 
 # Create custom validator configuration variables
 cat > ./tmp/prysm_validator_custom.yaml << EOF
-graffiti: $GRAFITTI
+graffiti: $CLIENT_GRAFFITI
 suggested-fee-recipient: $FEE_RECIPIENT
 wallet-password-file: $HOME/secrets/pass.txt
 EOF

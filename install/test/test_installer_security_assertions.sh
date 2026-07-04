@@ -294,6 +294,71 @@ test_nethermind_external_ip_warns() {
 }
 
 # ---------------------------------------------------------------------------
+# E. Per-client graffiti: each CL installer must use composed CLIENT_GRAFFITI
+# ---------------------------------------------------------------------------
+
+# E1: Each CL script defines CLIENT_GRAFFITI and the graffiti field references $CLIENT_GRAFFITI
+test_client_graffiti_defined() {
+    local ok=0
+
+    local f="$PROJECT_ROOT/install/consensus/grandine.sh"
+    grep -q 'CLIENT_GRAFFITI=' "$f" || { log_error "grandine.sh: CLIENT_GRAFFITI not defined"; ok=1; }
+    # shellcheck disable=SC2016
+    grep -qF -- '--graffiti \"$CLIENT_GRAFFITI\"' "$f" || { log_error "grandine.sh: --graffiti does not use escaped \$CLIENT_GRAFFITI"; ok=1; }
+
+    f="$PROJECT_ROOT/install/consensus/prysm.sh"
+    grep -q 'CLIENT_GRAFFITI=' "$f" || { log_error "prysm.sh: CLIENT_GRAFFITI not defined"; ok=1; }
+    # shellcheck disable=SC2016
+    grep -qF 'graffiti: $CLIENT_GRAFFITI' "$f" || { log_error "prysm.sh: graffiti field does not use \$CLIENT_GRAFFITI"; ok=1; }
+
+    f="$PROJECT_ROOT/install/consensus/nimbus.sh"
+    grep -q 'CLIENT_GRAFFITI=' "$f" || { log_error "nimbus.sh: CLIENT_GRAFFITI not defined"; ok=1; }
+    local nimbus_count
+    # shellcheck disable=SC2016
+    nimbus_count="$(grep -cF 'graffiti = "$CLIENT_GRAFFITI"' "$f" || true)"
+    [[ "$nimbus_count" -ge 2 ]] || { log_error "nimbus.sh: expected >= 2 graffiti lines with \$CLIENT_GRAFFITI, found $nimbus_count"; ok=1; }
+
+    f="$PROJECT_ROOT/install/consensus/teku.sh"
+    grep -q 'CLIENT_GRAFFITI=' "$f" || { log_error "teku.sh: CLIENT_GRAFFITI not defined"; ok=1; }
+    local teku_count
+    # shellcheck disable=SC2016
+    teku_count="$(grep -cF 'validators-graffiti: "$CLIENT_GRAFFITI"' "$f" || true)"
+    [[ "$teku_count" -ge 2 ]] || { log_error "teku.sh: expected >= 2 validators-graffiti lines with \$CLIENT_GRAFFITI, found $teku_count"; ok=1; }
+
+    f="$PROJECT_ROOT/install/consensus/lodestar.sh"
+    grep -q 'CLIENT_GRAFFITI=' "$f" || { log_error "lodestar.sh: CLIENT_GRAFFITI not defined"; ok=1; }
+    # shellcheck disable=SC2016
+    grep -qF '"graffiti": "$CLIENT_GRAFFITI"' "$f" || { log_error "lodestar.sh: graffiti field does not use \$CLIENT_GRAFFITI"; ok=1; }
+
+    return $ok
+}
+
+# E2: Composed CLIENT_GRAFFITI for each client is <= 32 bytes and contains the client name
+test_client_graffiti_length() {
+    local ok=0
+    local grafitti_val
+    grafitti_val="$(grep '^export GRAFITTI=' "$PROJECT_ROOT/exports.sh" | cut -d'"' -f2)"
+    if [[ -z "$grafitti_val" ]]; then
+        log_error "Could not extract GRAFITTI value from exports.sh"
+        return 1
+    fi
+    for name in Grandine Prysm Nimbus Teku Lodestar; do
+        local composed len
+        composed="$(printf '%s' "${name} ${grafitti_val}" | head -c 32)"
+        len="$(printf '%s' "$composed" | wc -c)"
+        if [[ "$len" -gt 32 ]]; then
+            log_error "CLIENT_GRAFFITI for $name is ${len} bytes (>32): '$composed'"
+            ok=1
+        fi
+        if [[ "$composed" != "${name}"* ]]; then
+            log_error "CLIENT_GRAFFITI for $name does not start with client name: '$composed'"
+            ok=1
+        fi
+    done
+    return $ok
+}
+
+# ---------------------------------------------------------------------------
 # Run all tests
 # ---------------------------------------------------------------------------
 
@@ -379,6 +444,18 @@ if test_nethermind_pivot_and_catchup_keys; then
     record_test "nethermind: correct PivotTotalDifficulty + FastSyncCatchUpHeightDelta (both files)" "PASS"
 else
     record_test "nethermind: correct PivotTotalDifficulty + FastSyncCatchUpHeightDelta (both files)" "FAIL"
+fi
+
+if test_client_graffiti_defined; then
+    record_test "CL graffiti: CLIENT_GRAFFITI defined; field uses \$CLIENT_GRAFFITI in all 5 scripts" "PASS"
+else
+    record_test "CL graffiti: CLIENT_GRAFFITI defined; field uses \$CLIENT_GRAFFITI in all 5 scripts" "FAIL"
+fi
+
+if test_client_graffiti_length; then
+    record_test "CL graffiti: composed value is <=32 bytes and contains client name" "PASS"
+else
+    record_test "CL graffiti: composed value is <=32 bytes and contains client name" "FAIL"
 fi
 
 print_test_summary

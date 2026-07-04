@@ -14,6 +14,8 @@ source "$PROJECT_ROOT/lib/common_functions.sh"
 # Get script directories
 get_script_directories
 
+CLIENT_GRAFFITI="$(printf '%s' "Lodestar ${GRAFITTI}" | head -c 32)"
+
 # Start installation
 log_installation_start "Lodestar"
 
@@ -94,7 +96,7 @@ cat > ./tmp/lodestar_validator_custom.json << EOF
   "dataDir": "$LODESTAR_DATA_DIR/validator",
   "beaconNodes": ["http://$CONSENSUS_HOST:${LODESTAR_REST_PORT}"],
   "suggestedFeeRecipient": "$FEE_RECIPIENT",
-  "graffiti": "$GRAFITTI",
+  "graffiti": "$CLIENT_GRAFFITI",
   "metrics": {
     "port": 8009
   },
