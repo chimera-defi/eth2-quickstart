@@ -90,11 +90,15 @@ BEACON_EXEC_START="$PRYSM_DIR/prysm.sh beacon-chain --config-file=$PRYSM_DIR/pry
 
 create_systemd_service "cl" "Prysm Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target eth1.service" "network-online.target eth1.service"
 
-# Pin USE_PRYSM_VERSION to the locally cached binary so prysm.sh skips the live
-# version check against prysmaticlabs.com (fails with 403 on rate-limited hosts).
-PRYSM_PINNED=""
-if [[ -d "$PRYSM_DIR/dist" ]]; then
+# Resolve the prysm version to pin. Prefer the latest published release from the
+# GitHub API (avoids the prysmaticlabs.com live version check, which 403s on
+# rate-limited hosts); fall back to the newest locally cached binary only if the
+# API is unreachable. Pinning to newest-cached alone silently goes stale — a
+# stale v7.1.5 pin once stalled a besu sync ~30h until manually bumped to v7.1.6.
+PRYSM_PINNED="$(get_latest_release "prysmaticlabs/prysm" 2>/dev/null || true)"
+if [[ -z "${PRYSM_PINNED:-}" && -d "$PRYSM_DIR/dist" ]]; then
   PRYSM_PINNED="$(find "$PRYSM_DIR/dist/" -maxdepth 1 -name 'beacon-chain-v*-linux-amd64' ! -name '*.sha256' ! -name '*.sig' 2>/dev/null | sed 's|.*/beacon-chain-||; s|-linux-amd64||' | sort -V | tail -1 || true)"
+  [[ -n "${PRYSM_PINNED:-}" ]] && log_warn "prysm GitHub release lookup failed; falling back to newest cached binary $PRYSM_PINNED"
 fi
 if [[ -n "${PRYSM_PINNED:-}" ]]; then
   sudo sed -i "/^\[Service\]/a Environment=\"USE_PRYSM_VERSION=${PRYSM_PINNED}\"" /etc/systemd/system/cl.service
