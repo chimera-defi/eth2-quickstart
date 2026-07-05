@@ -96,6 +96,13 @@ create_systemd_service "cl" "Prysm Ethereum Consensus Client (Beacon Node)" "$BE
 # API is unreachable. Pinning to newest-cached alone silently goes stale — a
 # stale v7.1.5 pin once stalled a besu sync ~30h until manually bumped to v7.1.6.
 PRYSM_PINNED="$(get_latest_release "prysmaticlabs/prysm" 2>/dev/null || true)"
+# get_latest_release() prints diagnostics to stdout when the GitHub API is
+# rate-limited/unparseable (fresh CI containers); those would otherwise be
+# captured above as a bogus "version". Only accept a real vX.Y tag — anything
+# else falls through to the cached-binary fallback / no-pin.
+if [[ ! "${PRYSM_PINNED:-}" =~ ^v[0-9]+\.[0-9]+ ]]; then
+  PRYSM_PINNED=""
+fi
 if [[ -z "${PRYSM_PINNED:-}" && -d "$PRYSM_DIR/dist" ]]; then
   PRYSM_PINNED="$(find "$PRYSM_DIR/dist/" -maxdepth 1 -name 'beacon-chain-v*-linux-amd64' ! -name '*.sha256' ! -name '*.sig' 2>/dev/null | sed 's|.*/beacon-chain-||; s|-linux-amd64||' | sort -V | tail -1 || true)"
   [[ -n "${PRYSM_PINNED:-}" ]] && log_warn "prysm GitHub release lookup failed; falling back to newest cached binary $PRYSM_PINNED"
