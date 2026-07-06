@@ -36,8 +36,8 @@ if [[ -n "$anchor_el" ]]; then
   fi
   # Confirm Engine API port 8551 is accepting connections (401 = auth required = OK).
   _engine_http="$(curl -sS --max-time 3 -o /dev/null -w '%{http_code}' http://127.0.0.1:8551 2>/dev/null || true)"
-  if [[ ! "$_engine_http" =~ ^[0-9]{3}$ ]]; then
-    log_error "Anchor EL ($anchor_el) Engine API port 8551 is not responding (got: '$_engine_http'). Wait for EL before running CL sweep."
+  if [[ ! "$_engine_http" =~ ^[1-5][0-9]{2}$ ]]; then
+    log_error "Anchor EL ($anchor_el) Engine API port 8551 is not responding (HTTP code '$_engine_http'; need 1xx-5xx). Wait for EL before running CL sweep."
     exit 3
   fi
   log_info "Anchor EL ($anchor_el) Engine API 8551 is responding (HTTP $_engine_http)."
