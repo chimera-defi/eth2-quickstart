@@ -31,6 +31,11 @@ case "$action" in
   clear)
     log_info "Clearing runtime resource caps"
     for unit in eth1.service cl.service; do
+      # In anchor mode, keep eth1 caps consistent across the sweep; revert cl only.
+      if [[ "$unit" == "eth1.service" && -n "${ETH2QS_BAKEOFF_ANCHOR_EL:-}" ]]; then
+        log_info "  Skipping revert of $unit (anchor mode: ETH2QS_BAKEOFF_ANCHOR_EL=${ETH2QS_BAKEOFF_ANCHOR_EL})"
+        continue
+      fi
       if systemctl cat "$unit" >/dev/null 2>&1; then
         sudo systemctl revert "$unit" >/dev/null 2>&1 || true
       fi
