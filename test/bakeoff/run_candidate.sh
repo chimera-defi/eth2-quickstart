@@ -16,9 +16,35 @@ interval="${ETH2QS_BAKEOFF_SAMPLE_INTERVAL_SECONDS:-120}"
 install_timeout="${ETH2QS_BAKEOFF_INSTALL_TIMEOUT:-90m}"
 caps="$REPO_ROOT/test/bakeoff/apply_resource_caps.sh"
 
+# Anchor mode: when set, preserves this EL across the entire CL sweep.
+anchor_el="${ETH2QS_BAKEOFF_ANCHOR_EL:-}"
+
 if [[ "${ETH2QS_BAKEOFF_CONFIRMED:-}" != "yes" ]]; then
   log_error "Refusing destructive bake-off. Set ETH2QS_BAKEOFF_CONFIRMED=yes after operator confirms this is not a production validator host."
   exit 2
+fi
+
+# Anchor-mode precondition: verify the anchor EL is running and synced.
+if [[ -n "$anchor_el" ]]; then
+  if [[ "$execution" != "$anchor_el" ]]; then
+    log_error "Anchor mismatch: ETH2QS_BAKEOFF_ANCHOR_EL=$anchor_el but execution arg=$execution. Aborting."
+    exit 3
+  fi
+  if ! systemctl is-active --quiet eth1.service; then
+    log_error "Anchor EL (eth1.service=$anchor_el) is not active. Start it before running anchor mode."
+    exit 3
+  fi
+  _el_sync="$(bakeoff_probe_execution_sync 2>/dev/null || true)"
+  if ! echo "$_el_sync" | jq -e '
+    (.result == false)
+    or ( ((.result|type) == "object")
+         and (.result.currentBlock == .result.highestBlock)
+         and (.result.highestBlock != "0x0") )
+  ' >/dev/null 2>&1; then
+    log_error "Anchor EL ($anchor_el) is not yet synced (eth_syncing returned: $_el_sync). Wait for EL sync before running CL sweep."
+    exit 3
+  fi
+  log_info "Anchor mode: EL=$anchor_el is active and synced. Cycling CL only."
 fi
 
 if [[ -f "$out/.done" && "${ETH2QS_BAKEOFF_FORCE:-}" != "yes" ]]; then
@@ -37,15 +63,33 @@ mkdir -p "$out/tmp"
   echo "sync_window_seconds=$window"
   echo "sample_interval_seconds=$interval"
   echo "install_timeout=$install_timeout"
+  if [[ -n "$anchor_el" ]]; then
+    echo "harness_mode=anchor"
+    echo "anchor_el=$anchor_el"
+  else
+    echo "harness_mode=full"
+  fi
 } > "$out/env.txt"
 
 # Candidate isolation: ensure no prior client survives into this candidate.
-sudo systemctl stop eth1.service cl.service validator.service 2>/dev/null || true
-sudo systemctl disable eth1.service cl.service validator.service 2>/dev/null || true
+if [[ -n "$anchor_el" ]]; then
+  # Anchor mode: stop/disable ONLY CL+validator; preserve the anchor EL.
+  sudo systemctl stop cl.service validator.service 2>/dev/null || true
+  sudo systemctl disable cl.service validator.service 2>/dev/null || true
+else
+  sudo systemctl stop eth1.service cl.service validator.service 2>/dev/null || true
+  sudo systemctl disable eth1.service cl.service validator.service 2>/dev/null || true
+fi
 
 # Pre-install clean + baseline.
-./scripts/eth2qs.sh clean-data --dry-run < /dev/null > "$out/cleanup-before-dry-run.log" 2>&1 || true
-./scripts/eth2qs.sh clean-data --confirm < /dev/null > "$out/cleanup-before-confirm.log" 2>&1
+if [[ -n "$anchor_el" ]]; then
+  # Anchor mode: purge CL datadirs only; never touch the EL anchor.
+  ./scripts/eth2qs.sh clean-data --scope=consensus --dry-run < /dev/null > "$out/cleanup-before-dry-run.log" 2>&1 || true
+  ./scripts/eth2qs.sh clean-data --scope=consensus --confirm < /dev/null > "$out/cleanup-before-confirm.log" 2>&1
+else
+  ./scripts/eth2qs.sh clean-data --dry-run < /dev/null > "$out/cleanup-before-dry-run.log" 2>&1 || true
+  ./scripts/eth2qs.sh clean-data --confirm < /dev/null > "$out/cleanup-before-confirm.log" 2>&1
+fi
 bakeoff_snapshot_disk "$out/disk-before.tsv"
 avail_bytes="$(df -B1 --output=avail / | tail -1 | tr -d ' ')"
 min_disk="${ETH2QS_BAKEOFF_MIN_DISK_BYTES:-1717986918400}"   # 1.6 TiB floor
@@ -68,9 +112,16 @@ fi
 
 # Install (real; bounded by timeout).
 set +e
-timeout "$install_timeout" /usr/bin/time -v -o "$out/install-time.txt" \
-  ./scripts/eth2qs.sh phase2 --execution="$execution" --consensus="$consensus" --mev=none \
-  > "$out/install.log" 2>&1
+if [[ -n "$anchor_el" ]]; then
+  # Anchor mode: install CL only; anchor EL is already running.
+  timeout "$install_timeout" /usr/bin/time -v -o "$out/install-time.txt" \
+    ./scripts/eth2qs.sh phase2 --consensus="$consensus" --mev=none \
+    > "$out/install.log" 2>&1
+else
+  timeout "$install_timeout" /usr/bin/time -v -o "$out/install-time.txt" \
+    ./scripts/eth2qs.sh phase2 --execution="$execution" --consensus="$consensus" --mev=none \
+    > "$out/install.log" 2>&1
+fi
 install_rc=$?
 set -e
 echo "install_exit_code=$install_rc" >> "$out/env.txt"
@@ -145,8 +196,14 @@ bakeoff_snapshot_disk "$out/disk-final.tsv"   # pre-cleanup footprint (synced OR
 
 # Clear caps + post-run cleanup.
 "$caps" clear >> "$out/resource-caps.log" 2>&1 || true
-./scripts/eth2qs.sh clean-data --dry-run < /dev/null > "$out/cleanup-dry-run.log" 2>&1 || true
-./scripts/eth2qs.sh clean-data --confirm < /dev/null > "$out/cleanup-confirm.log" 2>&1 || true
+if [[ -n "$anchor_el" ]]; then
+  # Anchor mode: purge CL datadirs only; preserve the EL anchor for the next CL.
+  ./scripts/eth2qs.sh clean-data --scope=consensus --dry-run < /dev/null > "$out/cleanup-dry-run.log" 2>&1 || true
+  ./scripts/eth2qs.sh clean-data --scope=consensus --confirm < /dev/null > "$out/cleanup-confirm.log" 2>&1 || true
+else
+  ./scripts/eth2qs.sh clean-data --dry-run < /dev/null > "$out/cleanup-dry-run.log" 2>&1 || true
+  ./scripts/eth2qs.sh clean-data --confirm < /dev/null > "$out/cleanup-confirm.log" 2>&1 || true
+fi
 bakeoff_snapshot_disk "$out/disk-after-cleanup.tsv"
 
 echo "ended_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$out/env.txt"
