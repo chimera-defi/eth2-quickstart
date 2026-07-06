@@ -2,7 +2,7 @@
 
 # Ethereum Data Purge Script
 # Removes default Ethereum node data/state directories while preserving keys/secrets
-# Usage: ./purge_ethereum_data.sh [--confirm] [--dry-run]
+# Usage: ./purge_ethereum_data.sh [--confirm] [--dry-run] [--host] [--scope=all|consensus|execution]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -23,9 +23,8 @@ DRY_RUN=false
 CONFIRM_ACTION=false
 HOST_MODE=false
 
-# Default data/state directories to purge
-DATA_DIRS=(
-    # Execution clients
+# Default data/state directories to purge — partitioned by layer for --scope support.
+EL_DATA_DIRS=(
     "$HOME/.ethereum"                    # Geth
     "$HOME/.local/share/nethermind"      # Nethermind
     "$HOME/.local/share/besu"           # Besu
@@ -33,8 +32,9 @@ DATA_DIRS=(
     "$HOME/.local/share/reth"           # Reth
     "$HOME/.local/share/nimbus-eth1"   # Nimbus execution client
     "$HOME/ethrex/data"                 # Ethrex
+)
 
-    # Consensus clients
+CL_DATA_DIRS=(
     "$HOME/.local/share/prysm"          # Prysm data
     "$HOME/.eth2"                       # Prysm data (actual runtime path)
     "$HOME/.lighthouse"                 # Lighthouse
@@ -42,11 +42,26 @@ DATA_DIRS=(
     "$HOME/.local/share/nimbus"         # Nimbus
     "$HOME/.local/share/lodestar"       # Lodestar
     "$HOME/.local/share/grandine"       # Grandine
-    
-    # MEV components with local state/logs
+)
+
+MEV_DATA_DIRS=(
     "$HOME/mev-boost"                   # MEV-Boost
     "$HOME/commit-boost"                # Commit-Boost
     "$HOME/ethgas"                      # ETHGas
+)
+
+# Composed at runtime based on --scope (default: all three, same order as before).
+DATA_DIRS=()
+
+HOST_EL_DATA_DIRS=(
+    "/root/.ethereum"
+    "/root/ethrex"
+)
+
+HOST_CL_DATA_DIRS=(
+    "/root/.eth2"
+    "/root/prysm"
+    "/root/lodestar"
 )
 
 HOST_DATA_DIRS=(
@@ -56,6 +71,13 @@ HOST_DATA_DIRS=(
     "/root/lodestar"
     "/root/ethrex"
 )
+
+# Scope of purge: all (default), consensus (CL only), execution (EL + MEV).
+SCOPE="all"
+
+# Service groupings for scoped stop/disable.
+EL_SERVICES=("eth1")
+CL_SERVICES=("cl" "validator")
 
 # Paths that are always preserved (keys, secrets, passwords)
 PRESERVE_PATHS=(
@@ -75,8 +97,8 @@ HOST_PRESERVE_PATHS=(
     "/root/.eth2/network-keys"
 )
 
-# Services to manage
-SERVICES=("${ETH_ALL_SERVICES[@]}")
+# Services to manage (composed per --scope after arg parsing).
+SERVICES=()
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -93,11 +115,22 @@ while [[ $# -gt 0 ]]; do
             HOST_MODE=true
             shift
             ;;
+        --scope=*)
+            SCOPE="${1#--scope=}"
+            if [[ "$SCOPE" != "all" && "$SCOPE" != "consensus" && "$SCOPE" != "execution" ]]; then
+                log_error "Invalid --scope value: $SCOPE (valid: all|consensus|execution)"
+                exit 1
+            fi
+            shift
+            ;;
         --help|-h)
-            echo "Usage: $0 [--confirm] [--dry-run] [--host]"
-            echo "  --confirm    Skip confirmation prompt"
-            echo "  --dry-run    Show what would be deleted"
-            echo "  --host       Include root-managed custom datadirs and stale client installs"
+            echo "Usage: $0 [--confirm] [--dry-run] [--host] [--scope=all|consensus|execution]"
+            echo "  --confirm              Skip confirmation prompt"
+            echo "  --dry-run              Show what would be deleted"
+            echo "  --host                 Include root-managed custom datadirs and stale client installs"
+            echo "  --scope=all            Purge all layers: EL + CL + MEV (default, backward-compat)"
+            echo "  --scope=consensus      Purge CL datadirs only (use with anchor EL mode)"
+            echo "  --scope=execution      Purge EL + MEV datadirs only"
             exit 0
             ;;
         *)
@@ -106,6 +139,24 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Compose DATA_DIRS and SERVICES from partitions based on --scope.
+# Runs AFTER arg parsing so --scope is resolved. PRESERVE_PATHS, --dry-run,
+# --host, and all downstream logic remain unchanged.
+case "$SCOPE" in
+  consensus)
+    DATA_DIRS=("${CL_DATA_DIRS[@]}")
+    SERVICES=("${CL_SERVICES[@]}")
+    ;;
+  execution)
+    DATA_DIRS=("${EL_DATA_DIRS[@]}" "${MEV_DATA_DIRS[@]}")
+    SERVICES=("${EL_SERVICES[@]}")
+    ;;
+  all|*)
+    DATA_DIRS=("${EL_DATA_DIRS[@]}" "${CL_DATA_DIRS[@]}" "${MEV_DATA_DIRS[@]}")
+    SERVICES=("${ETH_ALL_SERVICES[@]}")
+    ;;
+esac
 
 append_unique_paths() {
     local array_name="$1"
@@ -128,7 +179,17 @@ if [[ "$HOST_MODE" == "true" ]]; then
         log_error "Host cleanup must be run as root."
         exit 1
     fi
-    append_unique_paths DATA_DIRS "${HOST_DATA_DIRS[@]}"
+    case "$SCOPE" in
+      consensus)
+        append_unique_paths DATA_DIRS "${HOST_CL_DATA_DIRS[@]}"
+        ;;
+      execution)
+        append_unique_paths DATA_DIRS "${HOST_EL_DATA_DIRS[@]}"
+        ;;
+      all|*)
+        append_unique_paths DATA_DIRS "${HOST_DATA_DIRS[@]}"
+        ;;
+    esac
     append_unique_paths PRESERVE_PATHS "${HOST_PRESERVE_PATHS[@]}"
 else
     check_user "$LOGIN_UNAME"
