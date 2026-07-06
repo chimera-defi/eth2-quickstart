@@ -6,7 +6,7 @@ source "$REPO_ROOT/test/bakeoff/lib.sh"
 
 # Extract the $HOME/... entries from purge_ethereum_data.sh DATA_DIRS block.
 # shellcheck disable=SC2016
-purge_list="$(awk '/^DATA_DIRS=\(/{f=1;next} /^\)/{f=0} f' \
+purge_list="$(awk '/^(EL|CL|MEV)_DATA_DIRS=\(/{f=1;next} /^\)/{f=0} f' \
   "$REPO_ROOT/install/utils/purge_ethereum_data.sh" \
   | grep -oE '\$HOME[^"]*' | sort -u)"
 # shellcheck disable=SC2016

@@ -64,6 +64,9 @@ bash install/test/test_ensure_dispatch.sh
 bash install/test/test_plan_json.sh
 bash install/test/test_install_planner.sh
 
+echo "=== Bakeoff data-dirs sync check ==="
+bash test/bakeoff/test_data_dirs_sync.sh
+
 echo "=== Docs consistency ==="
 bash test/ci_test_docs_consistency.sh
 
