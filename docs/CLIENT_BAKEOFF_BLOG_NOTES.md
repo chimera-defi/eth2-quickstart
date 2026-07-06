@@ -21,9 +21,11 @@ prysm datadir is ~0.65–1.68 GB, negligible against an EL's hundreds of GB).
 2. **Speed winner: ethrex ~2h16m** — the fastest cold sync in the entire field, by a wide margin
    (next is geth at ~8.5h). A ~0%-adoption minimalist Rust client (Lambda Class) beat everyone on speed.
 3. **The twist — ethrex's restart-resync cliff:** ethrex is fastest to sync but **throws away its entire
-   synced state and re-syncs from scratch (~2h) after any downtime longer than ~25 minutes.** This
-   operability tax is a strong candidate explanation for why a client with the *best* cold-sync numbers has
-   *near-zero* real-world adoption. (See §3 — this is the most novel finding of the campaign.)
+   synced state and re-syncs from scratch (~2h) after a long enough downtime.** The re-snap itself is
+   directly verified (2h16m cold sync + a 2h11m re-snap both observed); the exact gap threshold that trips
+   it is **approximate (~25 min, inferred — not yet bisected; pending test #35).** This operability tax is a
+   strong candidate explanation for why a client with the *best* cold-sync numbers has *near-zero* real-world
+   adoption. (See §3 — this is the most novel finding of the campaign.)
 4. **Restart resilience is a real, differentiating axis** — not just "does it sync" but "what happens after
    a restart." The clients split into three distinct behaviors (§3). This axis is underreported and is
    arguably more decision-relevant for operators than raw cold-sync numbers.
@@ -37,7 +39,7 @@ prysm datadir is ~0.65–1.68 GB, negligible against an EL's hundreds of GB).
 | EL | Status | Sync time | Footprint | Sync mode | Mainnet share | One-line verdict |
 |----|--------|-----------|-----------|-----------|--------------|------------------|
 | **nethermind** | ✅ synced | ~14.5h | **~251 GiB** | snap + AncientBarrier prune | 36.0% | **Disk winner.** Pruned-comparable. |
-| **ethrex** | ✅ synced | **~2h16m** | ~286 GiB at sync → **416 GiB** (2026-07-06, growing) | snap (v19.0.0) | 0.0% | **Speed winner.** Un-pruned + serves ~no history → limitation note, not ranked on disk. Restart cliff (§3). |
+| **ethrex** | ✅ synced | **~2h16m** | ~286 GiB at sync → **~467 GiB** (2026-07-06, still growing even at tip) | snap (v19.0.0) | 0.0% | **Speed winner.** Un-pruned + serves ~no history → limitation note, not ranked on disk. Restart cliff (§3). |
 | **geth** | ✅ synced | ~8h28m | ~1.13 TiB | snap + `--history.chain postmerge` | 44.9% | Baseline. Rock-solid, resumes cleanly. |
 | **besu** | ✅ synced (un-pruned) | ~19h18m | ~1.08 TiB (un-pruned) | snap / Bonsai | 17.4% | Synced, but pruned re-run deadlocked twice → limitation note (§4). |
 | **reth** | ⏳ 72h cap | did not finish | ~0.98 TiB @ ~21% | full-sync-only (no snap) | 1.5% | Client limitation: no snap → too slow for 3-day window. |
@@ -48,12 +50,12 @@ prysm datadir is ~0.65–1.68 GB, negligible against an EL's hundreds of GB).
 
 - **Disk (pruned-comparable only — the honest ranking):** nethermind ~251 GiB → geth ~1.13 TiB. Only these
   two produced a pruned-comparable final footprint.
-- **Disk (raw, all synced ELs, context only):** nethermind 251 GiB < ethrex ~416 GiB (growing) < besu 1.08 TiB
+- **Disk (raw, all synced ELs, context only):** nethermind 251 GiB < ethrex ~467 GiB (growing) < besu 1.08 TiB
   (un-pruned) < geth 1.13 TiB. ethrex's footprint was ~286 GiB at sync completion but it prunes nothing — the
-  datadir keeps growing while the node runs (re-measured 403 GiB then 416 GiB on 2026-07-06) *and* it serves
-  almost no history (block lookups below head return `null`). So it is neither compact nor a full-history
-  archive; it is kept OUT of the official ranking because its footprint is un-prunable and not steady-state
-  (not apples-to-apples with a pruned node).
+  datadir keeps growing **even at the chain tip with `eth_syncing=false`** (re-measured 403 → 416 → ~467 GiB
+  across 2026-07-06, ~10 GiB/hr) *and* it serves almost no history (block lookups below head return `null`).
+  So it is neither compact nor a full-history archive; it is kept OUT of the official ranking because its
+  footprint is un-prunable and not steady-state (not apples-to-apples with a pruned node).
 - **Sync speed (all synced ELs):** ethrex ~2h16m < geth ~8h28m < nethermind ~14.5h < besu ~19h18m. The two
   full-sync-only clients (reth, nimbus_eth1) never finish inside the 72h window.
 
@@ -67,10 +69,12 @@ gap?" is a first-class question the bake-off surfaced. Three distinct behaviors 
 
 1. **Graceful resume** — the client comes back up, imports the blocks it missed during the gap, and keeps
    its existing state on disk. No re-download, minutes to catch up.
-   - **geth** (design-level expectation, to be empirically re-verified in the CL-sweep prep), **nethermind**,
-     **reth**. This is what a production operator expects and what makes a client operationally boring (good).
-2. **Re-snap cliff** — after a gap beyond a threshold (~25 min for ethrex), the client **discards its fully
-   synced state and re-syncs from scratch.**
+   - **geth**, **nethermind**, **reth** — all three placed here on **design-level expectation, not directly
+     measured** in this campaign (none had its restart-with-gap behavior bisected; to be empirically
+     re-verified in the CL-sweep prep). This is what a production operator expects and what makes a client
+     operationally boring (good).
+2. **Re-snap cliff** — after a gap beyond a threshold (**~25 min for ethrex — approximate/inferred, not yet
+   bisected; pending test #35**), the client **discards its fully synced state and re-syncs from scratch.**
    - **ethrex** (verified, §3a below). Fast the first time, brutal on every subsequent restart.
 3. **Mid-sync deadlock** — if the CL stops driving the engine during an *in-progress* snap sync, the EL's
    pivot block ages out of the network's servable-state window and the sync wedges irrecoverably; the
@@ -114,8 +118,9 @@ best-in-field cold-sync numbers — "great benchmark, painful to actually run."
   **separate resilience/operability finding**, presented alongside, not folded into, the cold-sync number.
 - **Reproduced independently on 2026-07-06:** a second restart triggered another full re-snap of **2h11m**
   (`SNAP SYNC STARTED` 01:58:29Z → complete 04:09:37Z; eth1 start 01:57:05Z) — a second measured data point for
-  the cliff. The re-snapped datadir then rebuilt *past* the original 286 GiB to 403→416 GiB (un-pruned, still
-  growing), confirming ethrex's footprint is not a fixed, reproducible number.
+  the cliff. The re-snapped datadir then rebuilt *past* the original 286 GiB to 403 → 416 → ~467 GiB (un-pruned,
+  still growing **even at the chain tip with `eth_syncing=false`**, ~10 GiB/hr on 2026-07-06), confirming
+  ethrex's footprint is not a fixed, reproducible number.
 
 ---
 
@@ -190,8 +195,9 @@ trustworthy. The bake-off's credibility rests on this gate.
 - **nethermind** — the disk champion at ~251 GiB (4.5× smaller than geth), ~14.5h sync, clean restart
   behavior. 36% share. The pick when disk is the constraint.
 - **ethrex** — the sprinter with a glass jaw. Fastest cold sync (~2h16m), but an un-pruned datadir that keeps
-  growing while it runs (~286 GiB at sync → 416 GiB on 2026-07-06) while serving *almost no history*, plus the
-  restart-resync cliff (§3), makes it operationally costly. Fascinating, young (v19.0.0), one to watch.
+  growing **even at the chain tip with `eth_syncing=false`** (~286 GiB at sync → ~467 GiB on 2026-07-06,
+  ~10 GiB/hr) while serving *almost no history*, plus the restart-resync cliff (§3), makes it operationally
+  costly. Fascinating, young (v19.0.0), one to watch.
 - **besu** — enterprise Java client; does sync (~19h un-pruned) but its snap sync is fragile to CL outages
   (§4) and the pruned-comparable number never landed. Careful operational handling required.
 - **reth** — high-performance Rust, but full-sync-only means it can't finish a mainnet sync in 3 days.
