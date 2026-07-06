@@ -163,6 +163,7 @@ crashed="no"
 if [[ "$install_rc" -eq 0 ]]; then
   end_at=$(( $(date +%s) + window ))
   synced_streak=0
+  anchor_miss_streak=0
   while [[ "$(date +%s)" -lt "$end_at" ]]; do
     bakeoff_write_sample "$out" "$REPO_ROOT" || log_warn "$pair: sample write failed"
     if ! bakeoff_services_alive; then
@@ -172,17 +173,30 @@ if [[ "$install_rc" -eq 0 ]]; then
     # Anchor-only watchdog: detect if the anchor EL dropped into a re-snap.
     # DETECTION ONLY — never restarts or kills anything.
     if [[ -n "$anchor_el" ]] && [[ ! -f "$out/.anchor-poisoned" ]]; then
-      if systemctl is-active --quiet eth1.service 2>/dev/null; then
+      anchor_miss="no"
+      if ! systemctl is-active --quiet eth1.service 2>/dev/null; then
+        # Anchor EL not running at all — in anchor mode this invalidates the row.
+        anchor_miss="yes"
+      else
         _snap_check="$(cat "$out/tmp/execution-sync.json" 2>/dev/null || true)"
+        # Non-empty payload that does NOT parse as "synced" is a miss.
         if [[ -n "$_snap_check" ]] && ! echo "$_snap_check" | jq -e '
           (.result == false)
           or ( ((.result|type) == "object")
                and (.result.currentBlock == .result.highestBlock)
                and (.result.highestBlock != "0x0") )
         ' >/dev/null 2>&1; then
-          touch "$out/.anchor-poisoned"
-          log_error "anchor EL $anchor_el lost sync (re-snap?) at $(date -u +%Y-%m-%dT%H:%M:%SZ): CL row invalid"
+          anchor_miss="yes"
         fi
+      fi
+      if [[ "$anchor_miss" == "yes" ]]; then
+        anchor_miss_streak=$((anchor_miss_streak + 1))
+      else
+        anchor_miss_streak=0
+      fi
+      if [[ "$anchor_miss_streak" -ge 2 ]]; then
+        touch "$out/.anchor-poisoned"
+        log_error "anchor EL $anchor_el lost $anchor_miss_streak consecutive samples at $(date -u +%Y-%m-%dT%H:%M:%SZ): row invalid"
       fi
     fi
     if bakeoff_is_synced; then
