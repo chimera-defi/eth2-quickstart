@@ -39,9 +39,20 @@ _fmt_hm() {
   printf '%dh%02dm' $(( s / 3600 )) $(( (s % 3600) / 60 ))
 }
 
+# Extract EL and CL directory basenames from purge_ethereum_data.sh (awk parse;
+# never source it — it calls main which would run the purge pipeline).
+# shellcheck disable=SC2016
+_el_basenames="$(awk '/^EL_DATA_DIRS=\(/{f=1;next} /^\)/{f=0} f' \
+  "$REPO_ROOT/install/utils/purge_ethereum_data.sh" \
+  | grep -oE '"[^"]*"' | tr -d '"' | xargs -I{} basename "{}" | sort -u || true)"
+# shellcheck disable=SC2016
+_cl_basenames="$(awk '/^CL_DATA_DIRS=\(/{f=1;next} /^\)/{f=0} f' \
+  "$REPO_ROOT/install/utils/purge_ethereum_data.sh" \
+  | grep -oE '"[^"]*"' | tr -d '"' | xargs -I{} basename "{}" | sort -u || true)"
+
 # Machine-readable summary.
 {
-  echo "pair,execution,consensus,install_exit_code,crash,sample_count,last_doctor_status,last_disk_bytes,residual_bytes,config_optimal,config_optimal_detail,fully_synced,sync_duration,sync_only,last_el_block"
+  echo "pair,execution,consensus,install_exit_code,crash,sample_count,last_doctor_status,last_disk_bytes,residual_bytes,config_optimal,config_optimal_detail,fully_synced,sync_duration,sync_only,last_el_block,el_bytes,cl_bytes,anchor_synced"
   for dir in "$artifact_root"/*__*; do
     [[ -d "$dir" ]] || continue
     pair="$(basename "$dir")"
@@ -82,7 +93,24 @@ _fmt_hm() {
     leb_hex="$(tail -1 "$dir/samples.jsonl" 2>/dev/null | jq -r '.execution_sync.result.currentBlock? // empty' 2>/dev/null || true)"
     if [[ "$leb_hex" =~ ^0x[0-9a-fA-F]+$ ]]; then last_el_block=$(( 16#${leb_hex#0x} )); else last_el_block="-"; fi
 
-    echo "$pair,$execution,$consensus,${install_code:-missing},${crash:-unknown},$sample_count,$last_doctor,${last_disk:-0},${residual:-0},${cfg_optimal:-unknown},${cfg_detail:-},${_synced:-unknown},$sync_dur_h,$sync_only_h,$last_el_block"
+    # Per-layer disk bytes: partition disk TSV rows by EL vs CL basenames.
+    # Uses the same TSV file as last_disk (prefer disk-synced > disk-final).
+    # Exact basename match; nimbus-eth1 vs nimbus are distinct.
+    _disk_tsv_file=""
+    if [[ "${_synced:-}" == "yes" && -f "$dir/disk-synced.tsv" ]]; then
+      _disk_tsv_file="$dir/disk-synced.tsv"
+    elif [[ -f "$dir/disk-final.tsv" ]]; then
+      _disk_tsv_file="$dir/disk-final.tsv"
+    fi
+    if [[ -n "$_disk_tsv_file" ]]; then
+      el_bytes="$(awk -F'\t' -v bases="$_el_basenames" 'BEGIN{n=split(bases,a,"\n")} NR>1 && $2~/^[0-9]+$/ {b=gensub(/.*\//,"",1,$1); for(i=1;i<=n;i++) if(b==a[i]){s+=$2; break}} END{print s+0}' "$_disk_tsv_file" || echo 0)"
+      cl_bytes="$(awk -F'\t' -v bases="$_cl_basenames" 'BEGIN{n=split(bases,a,"\n")} NR>1 && $2~/^[0-9]+$/ {b=gensub(/.*\//,"",1,$1); for(i=1;i<=n;i++) if(b==a[i]){s+=$2; break}} END{print s+0}' "$_disk_tsv_file" || echo 0)"
+    else
+      el_bytes=0; cl_bytes=0
+    fi
+    anchor_synced="$(grep -E '^anchor_synced=' "$dir/env.txt" 2>/dev/null | tail -1 | cut -d= -f2-)" || true
+
+    echo "$pair,$execution,$consensus,${install_code:-missing},${crash:-unknown},$sample_count,$last_doctor,${last_disk:-0},${residual:-0},${cfg_optimal:-unknown},${cfg_detail:-},${_synced:-unknown},$sync_dur_h,$sync_only_h,$last_el_block,${el_bytes:-0},${cl_bytes:-0},${anchor_synced:-n/a}"
   done
 } > "$artifact_root/summary.csv"
 
@@ -135,7 +163,7 @@ _fmt_hm() {
   echo
   echo '| Pair | Install | Crash | Samples | Sync time | Last disk (bytes) | Residual after cleanup |'
   echo '| --- | --- | --- | --- | --- | --- | --- |'
-  awk -F, 'NR>1 && $10=="yes" {printf "| %s | %s | %s | %s | %s | %s | %s |\n",$1,$4,$5,$6,$13,$8,$9}' "$artifact_root/summary.csv" || true
+  awk -F, 'NR>1 && $10=="yes" && $18!="no" {printf "| %s | %s | %s | %s | %s | %s | %s |\n",$1,$4,$5,$6,$13,$8,$9}' "$artifact_root/summary.csv" || true
   echo
   echo "## Superseded — non-optimal config (excluded from ranking)"
   echo
