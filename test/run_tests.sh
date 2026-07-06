@@ -535,6 +535,16 @@ run_unit_tests() {
         log_test "SKIP" "test_install_planner.sh: file not found"
     fi
 
+    if [[ -f "$PROJECT_ROOT/test/bakeoff/test_data_dirs_sync.sh" ]]; then
+        if bash "$PROJECT_ROOT/test/bakeoff/test_data_dirs_sync.sh"; then
+            log_test "PASS" "test_data_dirs_sync.sh: all tests passed"
+        else
+            log_test "FAIL" "test_data_dirs_sync.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_data_dirs_sync.sh: file not found"
+    fi
+
     if [[ -f "$PROJECT_ROOT/test/ci_test_mcp_server.sh" ]]; then
         if bash "$PROJECT_ROOT/test/ci_test_mcp_server.sh"; then
             log_test "PASS" "ci_test_mcp_server.sh: all tests passed"
