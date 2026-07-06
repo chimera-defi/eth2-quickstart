@@ -17,7 +17,7 @@ for arg in "$@"; do
 done
 [[ "$stage" == "triage" || "$stage" == "full" ]] || { echo "Usage: run_bakeoff.sh --stage=triage|full [--only=a__b,...] [--force]" >&2; exit 1; }
 
-artifact_root="$REPO_ROOT/artifacts/client-bakeoff-2026-06-22"
+artifact_root="$REPO_ROOT/artifacts/${ETH2QS_BAKEOFF_RUN_ID:-client-bakeoff-2026-06-22}"
 manifest="$REPO_ROOT/test/bakeoff/candidates.tsv"
 user_cfg="$REPO_ROOT/config/user_config.env"
 bake_cfg="$REPO_ROOT/config/bakeoff.env"
