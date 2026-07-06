@@ -24,7 +24,7 @@ if [[ "${ETH2QS_BAKEOFF_CONFIRMED:-}" != "yes" ]]; then
   exit 2
 fi
 
-# Anchor-mode precondition: verify the anchor EL is running and synced.
+# Anchor-mode precondition: verify the anchor EL is running, listening on 8551, and synced.
 if [[ -n "$anchor_el" ]]; then
   if [[ "$execution" != "$anchor_el" ]]; then
     log_error "Anchor mismatch: ETH2QS_BAKEOFF_ANCHOR_EL=$anchor_el but execution arg=$execution. Aborting."
@@ -34,14 +34,31 @@ if [[ -n "$anchor_el" ]]; then
     log_error "Anchor EL (eth1.service=$anchor_el) is not active. Start it before running anchor mode."
     exit 3
   fi
-  _el_sync="$(bakeoff_probe_execution_sync 2>/dev/null || true)"
-  if ! echo "$_el_sync" | jq -e '
-    (.result == false)
-    or ( ((.result|type) == "object")
-         and (.result.currentBlock == .result.highestBlock)
-         and (.result.highestBlock != "0x0") )
-  ' >/dev/null 2>&1; then
-    log_error "Anchor EL ($anchor_el) is not yet synced (eth_syncing returned: $_el_sync). Wait for EL sync before running CL sweep."
+  # Confirm Engine API port 8551 is accepting connections (401 = auth required = OK).
+  _engine_http="$(curl -sS --max-time 3 -o /dev/null -w '%{http_code}' http://127.0.0.1:8551 2>/dev/null || true)"
+  if [[ ! "$_engine_http" =~ ^[0-9]{3}$ ]]; then
+    log_error "Anchor EL ($anchor_el) Engine API port 8551 is not responding (got: '$_engine_http'). Wait for EL before running CL sweep."
+    exit 3
+  fi
+  log_info "Anchor EL ($anchor_el) Engine API 8551 is responding (HTTP $_engine_http)."
+  # Bounded retry (~10s): wait for anchor EL eth_syncing==false before proceeding.
+  _anchor_synced=false
+  for _retry in 1 2 3 4 5; do
+    _el_sync="$(bakeoff_probe_execution_sync 2>/dev/null || true)"
+    if echo "$_el_sync" | jq -e '
+      (.result == false)
+      or ( ((.result|type) == "object")
+           and (.result.currentBlock == .result.highestBlock)
+           and (.result.highestBlock != "0x0") )
+    ' >/dev/null 2>&1; then
+      _anchor_synced=true
+      break
+    fi
+    log_info "Anchor EL ($anchor_el) not yet synced (attempt $_retry/5, retrying in 2s)…"
+    sleep 2
+  done
+  if [[ "$_anchor_synced" != "true" ]]; then
+    log_error "Anchor EL ($anchor_el) is not yet synced after retries (eth_syncing returned: $_el_sync). Wait for EL sync before running CL sweep."
     exit 3
   fi
   log_info "Anchor mode: EL=$anchor_el is active and synced. Cycling CL only."
@@ -152,6 +169,22 @@ if [[ "$install_rc" -eq 0 ]]; then
       crashed="yes"
       log_warn "$pair: a service is no longer active during the window"
     fi
+    # Anchor-only watchdog: detect if the anchor EL dropped into a re-snap.
+    # DETECTION ONLY — never restarts or kills anything.
+    if [[ -n "$anchor_el" ]] && [[ ! -f "$out/.anchor-poisoned" ]]; then
+      if systemctl is-active --quiet eth1.service 2>/dev/null; then
+        _snap_check="$(cat "$out/tmp/execution-sync.json" 2>/dev/null || true)"
+        if [[ -n "$_snap_check" ]] && ! echo "$_snap_check" | jq -e '
+          (.result == false)
+          or ( ((.result|type) == "object")
+               and (.result.currentBlock == .result.highestBlock)
+               and (.result.highestBlock != "0x0") )
+        ' >/dev/null 2>&1; then
+          touch "$out/.anchor-poisoned"
+          log_error "anchor EL $anchor_el lost sync (re-snap?) at $(date -u +%Y-%m-%dT%H:%M:%SZ): CL row invalid"
+        fi
+      fi
+    fi
     if bakeoff_is_synced; then
       synced_streak=$((synced_streak + 1))
     else
@@ -169,6 +202,15 @@ if [[ "$install_rc" -eq 0 ]]; then
 fi
 grep -q '^fully_synced=' "$out/env.txt" || echo "fully_synced=no" >> "$out/env.txt"
 echo "service_crash_observed=$crashed" >> "$out/env.txt"
+# Anchor finalize gate: record anchor_synced=yes|no only when running in anchor mode.
+# Non-anchor runs write nothing here; summarize.sh reads missing as n/a (unset behavior unchanged).
+if [[ -n "$anchor_el" ]]; then
+  if [[ -f "$out/.anchor-poisoned" ]]; then
+    echo "anchor_synced=no" >> "$out/env.txt"
+  else
+    echo "anchor_synced=yes" >> "$out/env.txt"
+  fi
+fi
 
 # Logs + repair preview.
 journalctl -u eth1 -n 700 --no-pager > "$out/journal-eth1.log" 2>&1 || true
