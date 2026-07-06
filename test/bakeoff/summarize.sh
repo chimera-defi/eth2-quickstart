@@ -135,7 +135,7 @@ _fmt_hm() {
   echo
   echo '| Pair | Install | Crash | Samples | Sync time | Last disk (bytes) | Residual after cleanup |'
   echo '| --- | --- | --- | --- | --- | --- | --- |'
-  awk -F, 'NR>1 && $10!="no" {printf "| %s | %s | %s | %s | %s | %s | %s |\n",$1,$4,$5,$6,$13,$8,$9}' "$artifact_root/summary.csv"
+  awk -F, 'NR>1 && $10=="yes" {printf "| %s | %s | %s | %s | %s | %s | %s |\n",$1,$4,$5,$6,$13,$8,$9}' "$artifact_root/summary.csv" || true
   echo
   echo "## Superseded — non-optimal config (excluded from ranking)"
   echo
@@ -144,6 +144,14 @@ _fmt_hm() {
   echo '| Pair | Install | Crash | Samples | Sync time | Last disk (bytes) | Config detail |'
   echo '| --- | --- | --- | --- | --- | --- | --- |'
   awk -F, 'NR>1 && $10=="no" {printf "| %s | %s | %s | %s | %s | %s | %s |\n",$1,$4,$5,$6,$13,$8,$11}' "$artifact_root/summary.csv" || true
+  echo
+  echo "## Pre-gate — unknown config (no post-sync verdict recorded)"
+  echo
+  echo "_Rows below have no config_optimal verdict (pre-gate or Stage-A only). Footprints are preliminary and excluded from ranking._"
+  echo
+  echo '| Pair | Install | Crash | Samples | Sync time | Last disk (bytes) | Config detail |'
+  echo '| --- | --- | --- | --- | --- | --- | --- |'
+  awk -F, 'NR>1 && $10!="yes" && $10!="no" {printf "| %s | %s | %s | %s | %s | %s | %s |\n",$1,$4,$5,$6,$13,$8,$11}' "$artifact_root/summary.csv" || true
   echo
   echo "## Recommendation"
   echo
