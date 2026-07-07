@@ -125,6 +125,27 @@ Only **geth** (~1.13 TiB) and **nethermind** (~251 GiB) produced a final footpri
 | erigon | ~1.21 TiB frozen partial | ❌ no | Structural no-sync: erigon3 OtterSync + checkpoint-synced-prysm optimistic gap-close deadlock. Not a synced datadir. |
 | ethrex | ~286 GiB at sync → **~467 GiB (2026-07-06, still growing even at tip)** — 306,564,007,339 B at sync; live 500,952,726,301 B (`eth_syncing=false`, ~10 GiB/hr) | ✅ yes (~2h16m, fully validated) | ethrex **synced cleanly and fastest in the field (~2h16m snap).** No history-prune lever (`--syncmode snap` only; no state-prune flag). Footprint is un-pruned and **NOT full-history** — it serves ~no history (`eth_getBlockByNumber` `null` below head, verified 2026-07-06) yet keeps growing **even at the chain tip with `eth_syncing=false`** (286 → ~467 GiB, ~10 GiB/hr), so it is **NOT comparable** to pruned geth (~1.13 TiB) or nethermind (~251 GiB). config_optimal=yes (snap is optimal-by-absence; 1 stale-pivot auto-healed). service_crash_observed=no. |
 
+## Operational viability — which clients would we actually run (Stage B + CL matrix synthesis)
+
+The disk ranking answers "smallest," but production also asks "will it survive restarts, upgrades, and weeks of uptime?" Under that operational lens the field narrows sharply — and the two layers tell opposite stories: the **EL layer is where the operational risk lives; the CL layer is basically solved.**
+
+**Execution clients — two clear picks, one qualified third:**
+
+- **geth and nethermind are the only two that cleared the full operational bar** here: snap-sync to a validating tip, a working history-prune lever (so the disk number is apples-to-apples), clean restart-resume, and the two largest, most battle-tested codebases. **nethermind** wins on disk (~251 GiB, ~4.5× leaner than geth) and improves client diversity as a minority client; **geth** is the conservative default (largest ecosystem, most docs, cleanest ~8h28m snap). If you run one EL for the long haul, run one of these two.
+- **besu** is a viable enterprise third — it *did* snap-sync to a fully validated head — but with two asterisks: our run was un-pruned (history-inflated ~1.08 TiB, no pruned-comparable number), and its snap sync is **fragile to a prolonged CL outage** (a stalled CL ages the pivot out of the servable-state window → `SnapSyncChainDownloader` thread death, observed twice, un-recoverable). Runnable in a shop that keeps its CL current and watches the pivot; not a set-and-forget solo-staker pick.
+- **The rest each missed the bar for a specific, documented reason — not a blanket "bad client":**
+  - **ethrex** — fastest cold sync in the whole field (~2h16m) but the *wrong* long-run profile, exactly as flagged: no prune lever, datadir grows unbounded even at tip (~10 GiB/hr, 286 → ~467 GiB), and it **re-snaps from scratch after any >~25-min downtime**. Snap speed is a trap here — fast to stand up, painful to *operate* (every upgrade/restart/maintenance window costs a full ~2h re-sync, and the disk just keeps climbing). Young client (v19.0.0); may improve.
+  - **reth, nimbus_eth1** — full-sync-only (no snap) in the mode we tested; can't reach tip inside a practical window on this host. This is a time-to-sync limit under our snap-to-tip bar, **not** a verdict on the clients in every context (reth in particular is widely run elsewhere).
+  - **erigon** — deadlocked against checkpoint-synced prysm on this host (structural, reproducible), so no synced datadir.
+
+**Consensus clients — the healthy half: all five we swept are operationally effective.** Every CL (lighthouse, lodestar, grandine, teku, nimbus) checkpoint-synced to a validating head in ~22–23 min, `config_optimal=yes`, zero crashes, against a live anchor. Unlike the EL layer, none of them *failed* — so the choice is footprint + preference, not survivability:
+
+- Disk order (the only differentiator): **lighthouse (~739 MB) < lodestar (~827 MB) < grandine (~946 MB) < teku (~2.1 GB) < nimbus (~5.0 GB).**
+- Two small operational caveats: **teku** needs a generously sized JVM heap on a shared host (undersized, its GC pressure spilled onto co-resident services and poisoned a first run); **grandine** needs `--prune-storage` or it stores every state. **nimbus** is simply the heaviest (~6.8× lighthouse) but otherwise clean.
+- Cross-cutting CL lesson (learned from prysm, the constant anchor): **keep the CL binary current.** A stale prysm v7.1.5 pin stalled ~28h on a PeerDAS/data-column bug and is precisely what aged out besu's pivot. Binary freshness is an operational requirement, not a nicety.
+
+**Bottom line:** on the EL side a real long-running node comes down to **geth or nethermind** (besu if you're an enterprise shop that keeps its CL healthy); on the CL side **any of the five works**, with **lighthouse** the lean default. Fast initial sync (ethrex) and small archive-context footprints do not by themselves make a client operationally viable — durability across restarts and uptime is the deciding axis, and that is an EL-layer problem.
+
 ## Gotchas & lessons learned
 
 - **Stage-A triage is blind to a stalled EL.** Triage only checks that the CL reaches tip and the Engine-API JWT handshake works. A node whose CL checkpoint-syncs optimistically PASSES triage even with 0 EL peers and a frozen execution head (nethermind hid a 13.3h zero-progress stall this way). A sync-health verdict must combine peer-count>0 + EL-head advancing + beacon `sync_distance` — never `sync_distance` alone.
