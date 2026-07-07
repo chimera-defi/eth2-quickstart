@@ -69,6 +69,13 @@ if [[ -f "$out/.done" && "${ETH2QS_BAKEOFF_FORCE:-}" != "yes" ]]; then
   exit 0
 fi
 
+# FORCE re-run: clear stale poison markers so the anchor watchdog re-evaluates from scratch.
+# Without this, a prior .anchor-poisoned bypasses the watchdog entirely (line 175 guard),
+# then finalization falsely writes anchor_synced=no for an otherwise-clean run.
+if [[ "${ETH2QS_BAKEOFF_FORCE:-}" == "yes" ]]; then
+  rm -f "$out/.anchor-poisoned" "$out/.done"
+fi
+
 cd "$REPO_ROOT"
 mkdir -p "$out/tmp"
 
