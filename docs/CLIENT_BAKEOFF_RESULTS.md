@@ -61,7 +61,7 @@ Installer/harness fixes landed on the bake-off branch as a direct result of tria
 
 Stage A establishes **viability**, not a final pick: all 12 client pairs install, checkpoint-sync, and authenticate the Engine API on this host. The final recommendation depends on Stage B's synced disk footprint and sync-time metrics.
 
-- Recommended execution client: _pending Stage B footprint_
+- Recommended execution client: **nethermind** — smallest fully-synced, pruned-comparable footprint (~251 GiB, 4.6× leaner than geth's 1.13 TiB) via its Bonsai flat-DB + snap sync, and a minority client so choosing it improves mainnet client diversity. **geth** is the conservative default: largest ecosystem, most docs, cleanest ~8h28m snap sync — but 1.13 TiB. **ethrex** had the fastest sync in the field (~2h16m) yet its datadir keeps growing at tip and isn't pruned-comparable, so it's promising-but-early. besu synced cleanly but un-pruned (1.08 TiB, history-inflated); reth and nimbus_eth1 are full-sync-only (multi-day, capped partial here); erigon deadlocked against checkpoint-synced prysm on this host.
 - Recommended consensus client: **lighthouse** — smallest synced footprint (~739 MB), checkpoint-syncs in ~22 min, blob pruning on by default. lodestar (~827 MB) and grandine (~946 MB, with `--prune-storage`) are close seconds; teku (~2.1 GB) and nimbus (~5.0 GB) are heavier. All five checkpoint-sync in ~22–23 min, so footprint is the differentiator.
 - Stage-A note: geth, besu, nimbus_eth1, ethrex passed with zero installer changes and zero REST contention — the cleanest out-of-the-box ELs against Prysm.
 
