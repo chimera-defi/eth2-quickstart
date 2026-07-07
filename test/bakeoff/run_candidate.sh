@@ -90,6 +90,8 @@ mkdir -p "$out/tmp"
   if [[ -n "$anchor_el" ]]; then
     echo "harness_mode=anchor"
     echo "anchor_el=$anchor_el"
+  elif [[ "${ETH2QS_BAKEOFF_KEEP_EL:-}" == "yes" ]]; then
+    echo "harness_mode=establish"
   else
     echo "harness_mode=full"
   fi
@@ -259,8 +261,9 @@ bakeoff_snapshot_disk "$out/disk-final.tsv"   # pre-cleanup footprint (synced OR
 
 # Clear caps + post-run cleanup.
 "$caps" clear >> "$out/resource-caps.log" 2>&1 || true
-if [[ -n "$anchor_el" ]]; then
-  # Anchor mode: purge CL datadirs only; preserve the EL anchor for the next CL.
+if [[ -n "$anchor_el" || "${ETH2QS_BAKEOFF_KEEP_EL:-}" == "yes" ]]; then
+  # Anchor mode / establish mode: purge CL datadirs only; preserve the EL
+  # (anchor EL serves the CL sweep; establish EL becomes the next anchor).
   ./scripts/eth2qs.sh clean-data --scope=consensus --dry-run < /dev/null > "$out/cleanup-dry-run.log" 2>&1 || true
   ./scripts/eth2qs.sh clean-data --scope=consensus --confirm < /dev/null > "$out/cleanup-confirm.log" 2>&1 || true
 else
