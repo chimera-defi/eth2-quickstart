@@ -6,7 +6,7 @@ _Stage A (triage) synthesized from `artifacts/client-bakeoff-2026-06-22/` on 202
 
 - **Baseline-anchored coverage (12 candidates):** every execution client vs fixed Prysm (7 ELs), plus every other consensus client vs fixed Geth (5 CLs). This isolates each client against a known-good counterpart instead of testing every NxM pair.
   - ELs × prysm: geth, erigon, reth, nethermind, besu, nimbus_eth1, ethrex
-  - geth × CLs: lighthouse, teku, nimbus, lodestar, grandine
+  - CLs × fixed anchor EL: lighthouse, teku, nimbus, lodestar, grandine (anchor = **ethrex**, already synced at tip; EL/CL decoupling makes the anchor choice immaterial, so the originally-planned geth×CL re-run was skipped)
 - **Two stages:**
   - **Stage A — triage (this doc):** does each candidate install, checkpoint-sync, and authenticate the Engine API? ~5-min observation window per candidate, 60s sampling.
   - **Stage B — full sync (in progress):** sync-to-completion to measure final synced disk footprint for viable candidates.
@@ -62,7 +62,7 @@ Installer/harness fixes landed on the bake-off branch as a direct result of tria
 Stage A establishes **viability**, not a final pick: all 12 client pairs install, checkpoint-sync, and authenticate the Engine API on this host. The final recommendation depends on Stage B's synced disk footprint and sync-time metrics.
 
 - Recommended execution client: _pending Stage B footprint_
-- Recommended consensus client: _pending Stage B footprint_
+- Recommended consensus client: **lighthouse** — smallest synced footprint (~739 MB), checkpoint-syncs in ~22 min, blob pruning on by default. lodestar (~827 MB) and grandine (~946 MB, with `--prune-storage`) are close seconds; teku (~2.1 GB) and nimbus (~5.0 GB) are heavier. All five checkpoint-sync in ~22–23 min, so footprint is the differentiator.
 - Stage-A note: geth, besu, nimbus_eth1, ethrex passed with zero installer changes and zero REST contention — the cleanest out-of-the-box ELs against Prysm.
 
 ## Sync-mode & disk-flag audit (2026-06-25)
@@ -94,7 +94,24 @@ _In progress (run_id `client-bakeoff-stageB-2026-06-23`). Sequential, one candid
 | besu__prysm | ✅ **synced** (un-pruned); pruned re-run abandoned | ~19h18m | **~1.08 TiB (un-pruned)** — besu 1,189,836,723,674 B + prysm 1,682,488,084 B | **besu synced successfully.** The 2026-06-30 run snap-synced cleanly to a fully validating head (~50 peers, prysm `is_optimistic=false` at 2026-07-01T01:37:10Z → ~19h18m, fully_synced=yes) — a working, production-viable node. The limitation is **disk-comparability only:** this run had no history pruning → its 1.08 TiB is history-inflated and **NOT pruned-comparable** to geth/nethermind. A pruned re-run (`history-expiry-prune=true`, 2026-07-04) to get a comparable number **deadlocked twice and was abandoned** (operator: "Stop; accept limitation note", 2026-07-05 — see the besu snap-sync deadlock gotcha below; the deadlock trigger was a stale-CL stall, **not** a besu sync failure). So besu's disk number is shown as a client-limitation and excluded from the pruned-comparable ranking, but besu **did** sync. |
 | ethrex__prysm | ✅ synced | ~2h16m (snap) | **~286 GiB at sync → ~467 GiB (2026-07-06, still growing even at tip)** — 306,564,007,339 B at sync; live 500,952,726,301 B (`eth_syncing=false`, ~10 GiB/hr) | Snap-synced to a fully validating head in ~2h16m — **fastest EL sync in the field.** 50 peers throughout. 1 automatic stale-pivot update (block 25,469,233→25,469,696) self-healed in ~4 min with no intervention (ethrex clock-based detection, as designed). No crash (service_crash_observed=no, install_exit_code=0). Footprint is un-pruned and **NOT full-history** — ethrex serves ~no history (`eth_getBlockByNumber` returns `null` below head; verified 2026-07-06 at blocks 1/1M/21.6M/~head-7k) yet the datadir keeps growing **even at the chain tip with `eth_syncing=false`** (286 GiB at sync → ~467 GiB, ~10 GiB/hr on 2026-07-06); not pruned-comparable; see client limitations. ethrex v19.0.0. fully_synced=yes, hit_72h_cap=no. |
 
-_Remaining (one at a time): geth × lighthouse, teku, nimbus, lodestar, grandine._
+### Consensus-client matrix — ✅ COMPLETE (anchor = ethrex, run_id `client-bakeoff-clsweep-2026-07-06`)
+
+The CL matrix holds the **execution client constant** and cycles the consensus client, the mirror of the EL scorecard above. The constant anchor is **ethrex** (not geth as first planned): ethrex was already synced at mainnet tip from its EL run, so reusing it as the fixed anchor saved a multi-day re-sync. Because the EL and CL are decoupled across the Engine API (the CL datadir is <1% of the EL and does not depend on which EL it pairs with), the anchor choice does **not** bias the CL comparison — so a redundant geth×CL re-run was **skipped by decision (2026-07-07)**. The ethrex anchor stayed active and `eth_syncing=false` (~502 GB, never restarted) across all five runs; each run cycled only `cl`+`validator`.
+
+All five CLs **checkpoint-synced to a fully validating head in ~22–23 min**, `config_optimal=yes`, `anchor_synced=yes`, `service_crash_observed=no`. Sync **time** is effectively tied (checkpoint sync dominates), so **the CL datadir footprint is the differentiator.**
+
+| CL | Result | Sync time | CL datadir footprint | Disk-optimal lever |
+| --- | --- | --- | --- | --- |
+| **lighthouse** | ✅ synced | ~22m | **773,282,157 B (~739 MB)** ← **smallest** | `checkpoint-sync-url` (blob-prune default) |
+| **lodestar** | ✅ synced | ~22m | **867,829,601 B (~827 MB)** | `chain.pruneHistory=true` |
+| **grandine** | ✅ synced | ~22m | **1,343,716,523 B (~946 MB on disk)** | `--prune-storage` (CRITICAL — stores all states without it) |
+| **teku** | ✅ synced | ~22m | **2,160,709,791 B (~2.1 GB)** | `data-storage-mode=minimal` |
+| **nimbus** | ✅ synced | ~23m | **5,302,005,871 B (~5.0 GB)** ← **largest (6.8×)** | `history=prune` |
+
+**CL disk ranking (smaller = better, all config-optimal + checkpoint-synced): lighthouse (~739 MB) < lodestar (~827 MB) < grandine (~946 MB) < teku (~2.1 GB) < nimbus (~5.0 GB).**
+
+- **teku required a re-run.** Its first attempt (pre-`TEKU_CACHE=8192m`) JVM-OOM-starved the shared host, took 64 min to sync, and briefly blipped the anchor → `anchor_synced=no` (recorded, discarded as `env.txt.poisoned-run1`). The re-run with `TEKU_CACHE` raised to 8192m (commit `bf043aa`) synced clean in 22 min with a healthy anchor. Lesson: teku's JVM heap must be sized generously on a shared host or its GC pressure spills onto co-resident services. The valid 2.1 GB row is the re-run.
+- **All CL footprints are <1% of the ethrex anchor's ~502 GB EL datadir** → confirms EL/CL decoupling: consensus-client choice does not move the EL disk ranking, and vice-versa.
 
 ### Client limitations — shown separately, NOT in the pruned-comparable ranking
 
