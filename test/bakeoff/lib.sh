@@ -31,8 +31,13 @@ bakeoff_snapshot_disk() {
     local path bytes human
     for path in "${BAKEOFF_DATA_DIRS[@]}"; do
       if [[ -e "$path" ]]; then
-        bytes="$(du -sb "$path" 2>/dev/null | awk '{print $1}')"
-        human="$(du -sh "$path" 2>/dev/null | awk '{print $1}')"
+        # du may exit non-zero on a vanishing file when a live datadir (e.g. an
+        # anchor EL mid snapshot-regen) churns during the walk. It still prints
+        # the grand total, so `|| true` keeps the number while stopping pipefail
+        # from propagating a fatal exit into unguarded callers (run_candidate.sh
+        # disk-synced/disk-final snapshots). See campaign notes: grandine 5/5.
+        bytes="$(du -sb "$path" 2>/dev/null | awk '{print $1}' || true)"
+        human="$(du -sh "$path" 2>/dev/null | awk '{print $1}' || true)"
         printf '%s\t%s\t%s\n' "$path" "${bytes:-0}" "${human:-0}"
       fi
     done
