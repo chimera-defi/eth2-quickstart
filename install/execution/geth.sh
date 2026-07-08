@@ -45,7 +45,7 @@ if ! command -v geth &>/dev/null; then
     log_error "Geth binary not found after installation"
     exit 1
 fi
-log_info "Geth installed: $(geth version | head -1)"
+log_info "Geth installed: $(geth version </dev/null 2>&1 | head -1)"
 
 export GETH_CMD="/usr/bin/geth --cache=$GETH_CACHE --syncmode snap \
 --http --http.addr $LH --http.corsdomain \"*\" --http.vhosts=* --http.api=\"admin,eth,net,web3,engine\" \
