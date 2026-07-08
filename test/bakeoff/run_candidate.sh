@@ -46,10 +46,22 @@ if [[ -n "$anchor_el" ]]; then
   for _retry in 1 2 3 4 5; do
     _el_sync="$(bakeoff_probe_execution_sync 2>/dev/null || true)"
     if echo "$_el_sync" | jq -e '
+      def h2n:
+        if . == null then 0
+        else (ltrimstr("0x")
+              | if . == "" then 0
+                else reduce (explode[]) as $c (0;
+                       . * 16 + (
+                         if   $c >= 48 and $c <= 57  then $c - 48
+                         elif $c >= 97 and $c <= 102 then $c - 87
+                         elif $c >= 65 and $c <= 70  then $c - 55
+                         else 0 end))
+                end)
+        end;
       (.result == false)
       or ( ((.result|type) == "object")
-           and (.result.currentBlock == .result.highestBlock)
-           and (.result.highestBlock != "0x0") )
+           and (.result.highestBlock != "0x0")
+           and ((.result.currentBlock | h2n) >= (.result.highestBlock | h2n)) )
     ' >/dev/null 2>&1; then
       _anchor_synced=true
       break
@@ -191,10 +203,22 @@ if [[ "$install_rc" -eq 0 ]]; then
         _snap_check="$(cat "$out/tmp/execution-sync.json" 2>/dev/null || true)"
         # Non-empty payload that does NOT parse as "synced" is a miss.
         if [[ -n "$_snap_check" ]] && ! echo "$_snap_check" | jq -e '
+          def h2n:
+            if . == null then 0
+            else (ltrimstr("0x")
+                  | if . == "" then 0
+                    else reduce (explode[]) as $c (0;
+                           . * 16 + (
+                             if   $c >= 48 and $c <= 57  then $c - 48
+                             elif $c >= 97 and $c <= 102 then $c - 87
+                             elif $c >= 65 and $c <= 70  then $c - 55
+                             else 0 end))
+                    end)
+            end;
           (.result == false)
           or ( ((.result|type) == "object")
-               and (.result.currentBlock == .result.highestBlock)
-               and (.result.highestBlock != "0x0") )
+               and (.result.highestBlock != "0x0")
+               and ((.result.currentBlock | h2n) >= (.result.highestBlock | h2n)) )
         ' >/dev/null 2>&1; then
           anchor_miss="yes"
         fi
