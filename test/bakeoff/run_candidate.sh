@@ -138,15 +138,16 @@ fi
 
 # Install (real; bounded by timeout).
 set +e
+# </dev/null: installs are non-interactive; prevents SIGTTIN stop when run in a background process group (detached tmux).
 if [[ -n "$anchor_el" ]]; then
   # Anchor mode: install CL only; anchor EL is already running.
   timeout "$install_timeout" /usr/bin/time -v -o "$out/install-time.txt" \
     ./scripts/eth2qs.sh phase2 --consensus="$consensus" --mev=none \
-    > "$out/install.log" 2>&1
+    </dev/null > "$out/install.log" 2>&1
 else
   timeout "$install_timeout" /usr/bin/time -v -o "$out/install-time.txt" \
     ./scripts/eth2qs.sh phase2 --execution="$execution" --consensus="$consensus" --mev=none \
-    > "$out/install.log" 2>&1
+    </dev/null > "$out/install.log" 2>&1
 fi
 install_rc=$?
 set -e
