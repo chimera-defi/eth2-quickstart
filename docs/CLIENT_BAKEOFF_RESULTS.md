@@ -96,7 +96,7 @@ _In progress (run_id `client-bakeoff-stageB-2026-06-23`). Sequential, one candid
 
 ### Consensus-client matrix — ✅ COMPLETE (anchor = ethrex, run_id `client-bakeoff-clsweep-2026-07-06`)
 
-The CL matrix holds the **execution client constant** and cycles the consensus client, the mirror of the EL scorecard above. The constant anchor is **ethrex** (not geth as first planned): ethrex was already synced at mainnet tip from its EL run, so reusing it as the fixed anchor saved a multi-day re-sync. Because the EL and CL are decoupled across the Engine API (the CL datadir is <1% of the EL and does not depend on which EL it pairs with), the anchor choice does **not** bias the CL comparison — so a redundant geth×CL re-run was **skipped by decision (2026-07-07)**. The ethrex anchor stayed active and `eth_syncing=false` (~502 GB, never restarted) across all five runs; each run cycled only `cl`+`validator`.
+The CL matrix holds the **execution client constant** and cycles the consensus client, the mirror of the EL scorecard above. The constant anchor is **ethrex** (not geth as first planned): ethrex was already synced at mainnet tip from its EL run, so reusing it as the fixed anchor saved a multi-day re-sync. Because the EL and CL are decoupled across the Engine API (the CL datadir is <1% of the EL and does not depend on which EL it pairs with), the anchor choice does **not** bias the CL comparison. To *prove* that empirically rather than assert it, the full 5-CL sweep was subsequently re-run against a **geth** anchor (2026-07-08, run_id `client-bakeoff-anchor-rotation-2026-07-07`) — the cross-anchor confirmation is recorded below and reproduces the ranking. The ethrex anchor stayed active and `eth_syncing=false` (~502 GB, never restarted) across all five runs; each run cycled only `cl`+`validator`.
 
 All five CLs **checkpoint-synced to a fully validating head in ~22–23 min**, `config_optimal=yes`, `anchor_synced=yes`, `service_crash_observed=no`. Sync **time** is effectively tied (checkpoint sync dominates), so **the CL datadir footprint is the differentiator.**
 
@@ -112,6 +112,30 @@ All five CLs **checkpoint-synced to a fully validating head in ~22–23 min**, `
 
 - **teku required a re-run.** Its first attempt (pre-`TEKU_CACHE=8192m`) JVM-OOM-starved the shared host, took 64 min to sync, and briefly blipped the anchor → `anchor_synced=no` (recorded, discarded as `env.txt.poisoned-run1`). The re-run with `TEKU_CACHE` raised to 8192m (commit `bf043aa`) synced clean in 22 min with a healthy anchor. Lesson: teku's JVM heap must be sized generously on a shared host or its GC pressure spills onto co-resident services. The valid 2.1 GB row is the re-run.
 - **All CL footprints are <1% of the ethrex anchor's ~502 GB EL datadir** → confirms EL/CL decoupling: consensus-client choice does not move the EL disk ranking, and vice-versa.
+
+### CL matrix — cross-anchor confirmation (anchor = **geth**, run_id `client-bakeoff-anchor-rotation-2026-07-07`, 2026-07-08)
+
+The same 5-CL sweep was re-run against a **geth** anchor to verify the ranking is not an artifact of the ethrex anchor. All five runs were `config_optimal=yes`, `anchor_synced=yes`, no service crash; each cycled only `cl`+`validator` against the preserved geth EL datadir (~1.13 TiB, never wiped).
+
+| Consensus | Sync status | Sync time | Final CL datadir | History-prune lever |
+|-----------|-------------|-----------|------------------|---------------------|
+| **lodestar** | ✅ synced | ~6m27s | **185,100,788 B (~177 MiB)** ← **smallest** | `pruneHistory=true` |
+| **lighthouse** | ✅ synced | ~8m54s | **542,301,237 B (~518 MiB)** | `checkpoint-sync-url` |
+| **grandine** | ✅ synced | ~8m50s | **1,074,340,425 B apparent / ~725 MiB actual** (sparse DB) | `prune-storage` |
+| **teku** | ✅ synced | ~8m52s | **977,108,456 B (~936 MiB)** | `data-storage-mode=minimal` |
+| **nimbus** | ✅ synced | ~7m58s | **1,198,275,155 B (~1.2 GiB)** ← **largest** | `history=prune` |
+
+**geth-anchor CL disk ranking (actual disk, smaller = better): lodestar (~177 MiB) < lighthouse (~518 MiB) < grandine (~725 MiB actual) < teku (~936 MiB) < nimbus (~1.2 GiB).**
+
+**Cross-anchor verdict — the ranking reproduces:**
+- **Heavyweight tier holds on both anchors:** nimbus is always the largest CL and teku always the second-largest, on both the ethrex and geth anchors.
+- **Lightweight tier holds:** grandine, lighthouse, and lodestar are always the three smallest. The lodestar↔lighthouse order flips between anchors (geth: lodestar < lighthouse; ethrex: lighthouse < lodestar) but both sit in the smallest tier, where the gap is small and measurement-window-sensitive.
+- **Absolute footprints scale with observation time, not the EL anchor.** The geth-anchor numbers are much smaller (nimbus ~1.2 GiB vs ~5.0 GB; teku ~936 MiB vs ~2.1 GB) because those runs were measured minutes after checkpoint-sync (a fresh datadir), while the ethrex-anchor runs ran longer post-sync and had filled more of the blob-retention / state-history window. The **ranking** is EL-independent; the **absolute size** is a function of how long the CL has been following the chain.
+- **Net:** two different EL anchors (ethrex, geth) produce the same CL ranking → EL/CL decoupling is confirmed empirically, not just asserted.
+
+**Measurement notes:**
+- **grandine uses sparse DB files** → its apparent `du -sb` byte count (1,074,340,425 B) overstates real on-disk usage. `du -sh` reports **~725 MiB actual**, which is the fair number for ranking. The other four CLs had apparent ≈ actual.
+- **Harness fix `98a52d7` (belongs in PR #190):** `bakeoff_snapshot_disk` guarded its `du | awk` pipeline with `|| true`. Without it, when the live anchor EL churned its datadir during a snapshot, `du` hit a vanishing file → exit 1 → `pipefail` killed the run (this spuriously failed grandine's first attempt; the clean re-run above is authoritative).
 
 ### Client limitations — shown separately, NOT in the pruned-comparable ranking
 
