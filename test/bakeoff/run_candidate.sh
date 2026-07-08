@@ -130,7 +130,15 @@ else
 fi
 bakeoff_snapshot_disk "$out/disk-before.tsv"
 avail_bytes="$(df -B1 --output=avail / | tail -1 | tr -d ' ')"
-min_disk="${ETH2QS_BAKEOFF_MIN_DISK_BYTES:-1717986918400}"   # 1.6 TiB floor
+# Anchor mode reuses the already-synced EL on disk (only the CL is new), so the full
+# EL+CL floor does not apply; a 1.6 TiB floor would falsely abort every anchor CL sweep
+# once the anchor EL occupies the disk. Use a CL-sized floor in anchor mode. An explicit
+# ETH2QS_BAKEOFF_MIN_DISK_BYTES override still wins in both modes.
+if [[ -n "$anchor_el" ]]; then
+  min_disk="${ETH2QS_BAKEOFF_MIN_DISK_BYTES:-429496729600}"    # 400 GiB floor: anchor CL-only
+else
+  min_disk="${ETH2QS_BAKEOFF_MIN_DISK_BYTES:-1717986918400}"   # 1.6 TiB floor: full EL+CL sync
+fi
 if [[ "${avail_bytes:-0}" -lt "$min_disk" ]]; then
   log_error "$pair: only ${avail_bytes} bytes free on / (< ${min_disk} required). Aborting before sync."
   exit 3
