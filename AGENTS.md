@@ -38,7 +38,7 @@
 - Check telemetry regularly with `./skills/devin-delegate/scripts/devin_delegate_telemetry.py summary --days 14`
 <!-- devin-delegate:end -->
 
-## Completion Quality Gate
+## Completion Quality Gate (Mandatory)
 
 - Run the relevant tests, lint checks, or CI-equivalent validation for changed files
 - Run a security audit for deployment, secrets, network exposure, or privilege boundary changes
