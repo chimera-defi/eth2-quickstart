@@ -377,7 +377,7 @@ sudo ./install_caddy_ssl.sh
 - **Rate Limiting**: Batteries-included (installer bootstraps Caddy with `rate_limit` module by default)
 - **Fail2ban Jails**: Default spam/429 ban rules for Caddy access logs
 - **Easy Configuration**: Simple Caddyfile syntax
-- **Security Hardening**: `./caddy_harden.sh` for enhanced security
+- **Security Hardening**: `./install/security/caddy_harden.sh` for enhanced security
 - **Shared Edge Policy**: Nginx + Caddy route/hardening policy is generated from `install/web/proxy_config_renderer.sh`
 
 ### Shared Edge Tuning (Nginx + Caddy)
