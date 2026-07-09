@@ -146,7 +146,6 @@ After cloning, `install.sh` launches `install/utils/configure.sh` to generate ph
 - `docs/SECURITY_GUIDE.md`
 - `docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md`
 - `docs/CI_WORKFLOWS.md`
-- `docs/CI_TROUBLESHOOTING.md`
 - `docs/COMMIT_MESSAGES.md`
 - `docs/WORKFLOW.md`
 - `docs/agent-handoff.md`
