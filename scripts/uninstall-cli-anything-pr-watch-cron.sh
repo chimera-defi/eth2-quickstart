@@ -51,7 +51,6 @@ after="$(printf '%s\n' "$before" | cron_filter_by_marker "$cron_marker")"
 
 if [[ "$before" == "$after" ]]; then
   echo "no matching cron entry found for marker: $cron_marker"
-  rm -f "$tmpfile"
   exit 0
 fi
 
