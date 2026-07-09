@@ -149,6 +149,6 @@ After cloning, `install.sh` launches `install/utils/configure.sh` to generate ph
 - `docs/CI_TROUBLESHOOTING.md`
 - `docs/COMMIT_MESSAGES.md`
 - `docs/WORKFLOW.md`
+- `docs/agent-handoff.md`
 - `docs/GLOSSARY.md`
 - `frontend/README.md`
-

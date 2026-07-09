@@ -3,6 +3,13 @@
 Use this file to preserve context across sessions.
 
 ## Active Defaults
+## Latest Update (Geth disk cleanup handoff folded into agent handoff, 2026-07-09)
+
+- Moved the one-off disk cleanup handoff out of the repo root and into this durable handoff log.
+- Relocated the maintenance helper to `install/utils/clean_geth_history.sh`.
+- Guidance stays the same: use `geth prune-history --history.chain postmerge` for the PBSS freezer on already-synced nodes; `geth snapshot prune-state` is the wrong tool here.
+- The node remains offline during pruning, so run it in a low-duty window and restart `eth1` afterward.
+
 ## Latest Update (Withdrawal helper dry-run and live Prysm/geth smoke, 2026-06-04)
 
 - Added a dry-run path to `./scripts/eth2qs.sh validator-withdrawal-changes` so operators can preview the exact signing and submission commands without writing or POSTing anything.

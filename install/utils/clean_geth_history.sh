@@ -1,11 +1,15 @@
 #!/bin/bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT" || exit 1
 # shellcheck source=exports.sh
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/exports.sh"
+source "$PROJECT_ROOT/exports.sh"
 
 # ---------------------------------------------------------------------------
 # clean_geth_history.sh - reclaim disk by pruning geth's ancient freezer
 # ---------------------------------------------------------------------------
-# WHY THIS EXISTS (see HANDOFF_diskcleanup.md for the full story):
+# WHY THIS EXISTS (see docs/agent-handoff.md for the full story):
 #
 #   `geth snapshot prune-state` DOES NOT WORK on this node and never will.
 #   Our geth runs the path-based state scheme (PBSS), and geth refuses
@@ -32,7 +36,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/exports.sh"
 #   4. restarts geth and reports disk reclaimed.
 #
 # Run inside screen/tmux - the prune on ~1.2T takes a while:
-#   screen -S geth-prune ./clean_geth_history.sh
+#   screen -S geth-prune ./install/utils/clean_geth_history.sh
 # ---------------------------------------------------------------------------
 
 set -euo pipefail
