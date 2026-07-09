@@ -73,8 +73,7 @@ sudo ./install_caddy_ssl.sh
 Applies comprehensive security hardening:
 
 ```bash
-cd install/security
-sudo ./caddy_harden.sh
+sudo ./install/security/caddy_harden.sh
 ```
 
 **Security Features:**
