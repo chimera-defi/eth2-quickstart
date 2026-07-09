@@ -8,6 +8,12 @@ DEFAULT_STATE_DIR="${HOME}/.eth2qs-pr-watch"
 DEFAULT_ACTIONABLE_REGEX='blocker|request[[:space:]]+changes|should[[:space:]]+fix|must[[:space:]]+fix|please[[:space:]]+fix|needs?[[:space:]]+fix|merge[[:space:]]+conflict|rebase|failing'
 DEFAULT_CRON_MARKER="eth2qs-cli-pr-watch"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# shellcheck source=../lib/common_functions.sh
+source "$ROOT_DIR/lib/common_functions.sh"
+
 usage() {
   cat <<'EOF'
 usage: ./scripts/check-cli-anything-pr.sh [options]
@@ -36,26 +42,6 @@ env overrides:
   ETH2QS_PR_WATCH_DISABLE_CRON_ON_CLOSED
   ETH2QS_PR_WATCH_CRON_MARKER
 EOF
-}
-
-require_cmd() {
-  local cmd="$1"
-  if ! command -v "$cmd" >/dev/null 2>&1; then
-    echo "missing required command: $cmd" >&2
-    exit 2
-  fi
-}
-
-remove_cron_entry() {
-  local marker="$1"
-  require_cmd crontab
-  require_cmd mktemp
-  require_cmd awk
-  local tmpfile
-  tmpfile="$(mktemp)"
-  crontab -l 2>/dev/null | awk -v marker="$marker" 'index($0, marker) == 0' > "$tmpfile" || true
-  crontab "$tmpfile"
-  rm -f "$tmpfile"
 }
 
 repo="${ETH2QS_PR_WATCH_REPO:-$DEFAULT_REPO}"
@@ -158,7 +144,7 @@ pr_state="$(jq -r '.state // "unknown"' <<<"$pr_meta")"
 pr_merged_at="$(jq -r '.merged_at // ""' <<<"$pr_meta")"
 
 if [[ "$disable_cron_on_closed" == "true" && "$pr_state" != "open" ]]; then
-  remove_cron_entry "$cron_marker"
+  cron_remove_by_marker "$cron_marker"
   jq -n \
     --arg checked_at "$checked_at" \
     --arg repo "$repo" \

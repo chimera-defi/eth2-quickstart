@@ -51,7 +51,7 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Require that a command exists.
+# Check if required command exists, printing a consistent error on failure.
 require_cmd() {
     local cmd="$1"
     if ! command_exists "$cmd"; then
@@ -81,7 +81,7 @@ cron_remove_by_marker() {
     printf '%s\n' "$filtered_crontab" | crontab -
 }
 
-# Replace entries containing a marker with a single desired line.
+# Replace cron entries containing a marker with a single desired line.
 cron_replace_by_marker() {
     local marker="$1"
     local cron_line="$2"
@@ -99,21 +99,6 @@ cron_replace_by_marker() {
 # Check if running inside Docker/container (/.dockerenv or cgroup)
 is_docker() {
     [[ -f /.dockerenv ]] || grep -qE 'docker|containerd' /proc/1/cgroup 2>/dev/null
-}
-
-# Detect this host's external/public IPv4 address at install time.
-# Tries three independent endpoints with a 10s timeout each; validates the
-# result is a well-formed IPv4 before echoing it. Echoes nothing on failure
-# so callers can safely test -z and fall back gracefully.
-detect_external_ip() {
-    local ip _url
-    for _url in https://v4.ident.me https://api.ipify.org https://ifconfig.me/ip; do
-        ip="$(curl -s -m 10 "$_url" 2>/dev/null | tr -d '[:space:]' || true)"
-        if echo "$ip" | grep -qE '^([0-9]{1,3}\.){3}[0-9]{1,3}$'; then
-            echo "$ip"
-            return 0
-        fi
-    done
 }
 
 # Ensure /root/.ssh/authorized_keys exists when in Docker and empty (E2E only; is_docker guard)
@@ -327,7 +312,7 @@ extract_archive() {
             fi
             ;;
         *.zip)
-            unzip -qo "$archive_file" -d "$dest_dir"
+            unzip -q "$archive_file" -d "$dest_dir"
             extract_result=$?
             ;;
         *)

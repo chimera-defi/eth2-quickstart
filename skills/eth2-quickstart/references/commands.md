@@ -16,6 +16,7 @@ Canonical command surface:
 - Deploy validators + generate keys/deposit data (0x01 or 0x02): `./scripts/eth2qs.sh validator-deploy --num-validators 1 --withdrawal-type 0x02 --amount 64 --withdrawal-address 0xYourAddr` (set keystore password via `ETHQS_KEYSTORE_PASSWORD`; `--amount` 32-2048 ETH for 0x02 only; prints the client import command and the deposit command, no auto-submit)
 - Focused exit checklist / client-specific voluntary exit flow: `./scripts/eth2qs.sh validator-exit`
 - Preview, generate, or submit BLS-to-execution changes for 0x00 validators: `./scripts/eth2qs.sh validator-withdrawal-changes --dry-run --generate --submit --yes`
+- Focused 0x01 standard validator creation flow: `./scripts/eth2qs.sh validator-create-0x01`
 - Focused 0x02 compounding validator creation flow: `./scripts/eth2qs.sh validator-create-0x02`
 - Combined validator menu (exit / consolidate / EIP-7002 exit / withdrawal-credential change): `./scripts/eth2qs.sh validator-manage [--exit|--consolidate|--eip7002-exit|--withdraw-change]`
 - Agent preview of a funds-affecting validator op (MCP, returns the CLI command, never executes): tool `eth2qs_validator_op_preview(operation)` where operation is exit|withdrawal-change|consolidate|eip7002-exit|create-0x02|deploy
