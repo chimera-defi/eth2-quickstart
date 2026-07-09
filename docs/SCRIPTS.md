@@ -62,6 +62,9 @@ Validator helpers:
 - `./scripts/eth2qs.sh validator-withdrawal-changes --generate --submit --yes` to generate and POST signed BLS-to-execution changes on `0x00` validators.
 - `./scripts/eth2qs.sh validator-manage` for the combined exit / consolidation menu.
 
+Maintenance utilities:
+- `./install/utils/clean_geth_history.sh` to prune geth's ancient freezer on an already-synced node and keep `eth1.service` pinned to `--history.chain postmerge`.
+
 ## Environment Configuration (exports.sh)
 
 Key variables:

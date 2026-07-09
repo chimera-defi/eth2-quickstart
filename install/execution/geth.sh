@@ -58,7 +58,8 @@ export GETH_CMD="/usr/bin/geth --cache=$GETH_CACHE --syncmode snap \
 # built-in miner; fee recipient is set by the consensus client (MEV / vanilla).
 # --history.chain postmerge: don't keep pre-merge block bodies/receipts in the
 # ancient freezer (saves ~500-800G on a staking node). To reclaim space on an
-# already-synced node, run clean_geth_history.sh. See HANDOFF_diskcleanup.md.
+# already-synced node, run install/utils/clean_geth_history.sh. See
+# docs/agent-handoff.md.
 # --http.api / --ws.api: no spaces after commas (systemd ExecStart splits on spaces).
 
 
