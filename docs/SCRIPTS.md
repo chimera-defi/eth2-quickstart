@@ -25,6 +25,7 @@ Override target PR with `--repo` and `--pr` when needed.
 `check-cli-anything-pr.sh` stores state under `~/.eth2qs-pr-watch/`, reports new actionable feedback, and can optionally trigger an autofix command.
 `install-cli-anything-pr-watch-cron.sh` installs an idempotent daily cron entry that runs the check script, appends logs to `~/.eth2qs-pr-watch/cron.log`, and auto-removes itself when the watched PR closes/merges.
 `uninstall-cli-anything-pr-watch-cron.sh` removes existing watch entries by cron marker.
+The three PR-watch scripts share `lib/common_functions.sh` for command validation and cron cleanup.
 `status/poll_ci.sh` snapshots open PR CI/review state into `status/ci-summary.json` and runs one PR-watch check each poll cycle.
 
 ## Unified Wrapper (Recommended)
@@ -54,6 +55,7 @@ Use `scripts/eth2qs.sh` as a stable command entrypoint for both humans and AI ag
 
 Validator helpers:
 - `./scripts/eth2qs.sh validator-exit` for the focused exit checklist and client-specific voluntary exit flow.
+- `./scripts/eth2qs.sh validator-create-0x01` for the standard 0x01 entry checklist and deposit CLI launcher.
 - `./scripts/eth2qs.sh validator-create-0x02` for the 0x02 entry checklist and deposit CLI launcher.
 - `./scripts/eth2qs.sh validator-deploy --num-validators 1 --withdrawal-type 0x01|0x02` for key generation, import, and deposit-data creation.
 - `./scripts/eth2qs.sh validator-withdrawal-changes --dry-run --generate --submit --yes` to preview BLS-to-execution credential changes on `0x00` validators without executing them.

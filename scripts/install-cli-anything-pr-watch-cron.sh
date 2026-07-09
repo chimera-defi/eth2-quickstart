@@ -7,6 +7,12 @@ DEFAULT_SCHEDULE="15 9 * * *"
 DEFAULT_STATE_DIR="${HOME}/.eth2qs-pr-watch"
 CRON_MARKER="eth2qs-cli-pr-watch"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# shellcheck source=../lib/common_functions.sh
+source "$ROOT_DIR/lib/common_functions.sh"
+
 usage() {
   cat <<'EOF'
 usage: ./scripts/install-cli-anything-pr-watch-cron.sh [options]
@@ -26,14 +32,6 @@ notes:
   - installer is idempotent (replaces existing eth2qs watch entry)
   - cron writes output to ~/.eth2qs-pr-watch/cron.log by default
 EOF
-}
-
-require_cmd() {
-  local cmd="$1"
-  if ! command -v "$cmd" >/dev/null 2>&1; then
-    echo "missing required command: $cmd" >&2
-    exit 2
-  fi
 }
 
 repo="$DEFAULT_REPO"
@@ -140,14 +138,7 @@ fi
 
 cron_line="${schedule} ${cron_env}${watch_script} --repo ${repo} --pr ${pr_number} --state-dir ${state_dir} ${disable_flag} >> ${log_file} 2>&1 # ${CRON_MARKER}"
 
-tmpfile="$(mktemp)"
-{
-  crontab -l 2>/dev/null | awk -v marker="$CRON_MARKER" 'index($0, marker) == 0' || true
-  echo "$cron_line"
-} > "$tmpfile"
-
-crontab "$tmpfile"
-rm -f "$tmpfile"
+cron_replace_by_marker "$CRON_MARKER" "$cron_line"
 
 echo "installed cron entry:"
 echo "$cron_line"

@@ -24,46 +24,21 @@ fi
 
 JSON_OUTPUT=false
 BEACON_QUERY_STATUS="ok"
-MIN_BALANCE=""
-MAX_BALANCE=""
-WITHDRAWAL_TYPE=""
-STATUS_FILTER=""
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --json) JSON_OUTPUT=true ;;
-        --min-balance)
-            [[ $# -ge 2 ]] || { echo "Error: --min-balance requires a value (ETH)" >&2; exit 2; }
-            MIN_BALANCE="$2"; shift ;;
-        --max-balance)
-            [[ $# -ge 2 ]] || { echo "Error: --max-balance requires a value (ETH)" >&2; exit 2; }
-            MAX_BALANCE="$2"; shift ;;
-        --withdrawal-type)
-            [[ $# -ge 2 ]] || { echo "Error: --withdrawal-type requires a value (0x00|0x01|0x02)" >&2; exit 2; }
-            WITHDRAWAL_TYPE="${2,,}"
-            case "$WITHDRAWAL_TYPE" in
-                0x00|0x01|0x02) ;;
-                *) echo "Error: --withdrawal-type must be 0x00, 0x01, or 0x02" >&2; exit 2 ;;
-            esac
-            shift ;;
-        --status)
-            [[ $# -ge 2 ]] || { echo "Error: --status requires a value (e.g. active_ongoing)" >&2; exit 2; }
-            STATUS_FILTER="$2"; shift ;;
-        --help|-h)
-            cat <<'EOF'
-Usage: ./install/utils/validator_list.sh [options]
-  --json                     Machine-readable JSON output
-  --min-balance <eth>        Only validators with balance >= this (ETH)
-  --max-balance <eth>        Only validators with balance <= this (ETH)
-  --withdrawal-type <type>   Filter by withdrawal credentials prefix: 0x00 (BLS),
-                             0x01 (execution address), 0x02 (compounding)
-  --status <substr>          Filter by status substring (e.g. active_ongoing)
-EOF
-            exit 0
-            ;;
-        *) echo "Unknown option: $1" >&2; exit 1 ;;
-    esac
-    shift
-done
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --json) JSON_OUTPUT=true ;;
+            --help|-h)
+                echo "Usage: ./install/utils/validator_list.sh [--json]"
+                echo "  --json    Machine-readable JSON output"
+                exit 0
+                ;;
+            *) echo "Unknown option: $1" >&2; exit 1 ;;
+        esac
+        shift
+    done
+fi
 
 # =============================================================================
 # CLIENT DETECTION
@@ -103,6 +78,25 @@ detect_beacon_url() {
 # KEYSTORE DISCOVERY
 # =============================================================================
 
+normalize_pubkey() {
+    local pubkey="${1// /}"
+    pubkey="${pubkey#0x}"
+    pubkey="${pubkey#0X}"
+    printf '%s\n' "$pubkey"
+}
+
+find_prysm_pubkeys_via_cli() {
+    local prysm_cli="$HOME/prysm/prysm.sh"
+    local wallet_dir="$HOME/.eth2validators/prysm-wallet-v2"
+    local password_file="$HOME/secrets/pass.txt"
+
+    [[ -x "$prysm_cli" ]] || return 0
+    [[ -d "$wallet_dir" ]] || return 0
+    [[ -f "$password_file" ]] || return 0
+
+    "$prysm_cli" validator accounts list         --wallet-dir "$wallet_dir"         --wallet-password-file "$password_file"         --accept-terms-of-use 2>/dev/null         | grep -oE '0x[0-9a-fA-F]{96}'         | sed 's/^0x//'         | sort -u
+}
+
 # Searches well-known client keystore directories for EIP-2335 keystore files.
 # Prints one pubkey per line (without 0x prefix).
 find_pubkeys() {
@@ -121,6 +115,8 @@ find_pubkeys() {
             search_dirs=(
                 "$HOME/prysm"
                 "$HOME/.ethereum/prysm"
+                "$HOME/.eth2validators/prysm-wallet-v2/direct/accounts"
+                "$HOME/.eth2validators/prysm-wallet-v2"
             )
             ;;
         teku)
@@ -163,21 +159,43 @@ find_pubkeys() {
             ;;
     esac
 
-    for dir in "${search_dirs[@]}"; do
-        [[ -d "$dir" ]] || continue
-        while IFS= read -r -d '' f; do
-            local pubkey
-            pubkey=$(python3 -c "
+    {
+        for dir in "${search_dirs[@]}"; do
+            [[ -d "$dir" ]] || continue
+            while IFS= read -r -d '' f; do
+                local pubkeys
+                pubkeys=$(python3 -c "
 import json, sys
+
+
+def walk(node):
+    if isinstance(node, dict):
+        for key, value in node.items():
+            normalized_key = str(key).lower().replace('-', '_')
+            if normalized_key in ('pubkey', 'pub_key', 'public_key', 'validator_pubkey') and isinstance(value, str):
+                print(value)
+            else:
+                walk(value)
+    elif isinstance(node, list):
+        for item in node:
+            walk(item)
+
 try:
     d = json.load(open(sys.argv[1]))
-    print(d.get('pubkey', ''))
+    walk(d)
 except Exception:
     pass
 " "$f" 2>/dev/null || true)
-            [[ -n "$pubkey" ]] && echo "$pubkey"
-        done < <(find "$dir" -maxdepth 4 -name "*.json" -print0 2>/dev/null)
-    done | sort -u
+                while IFS= read -r pubkey; do
+                    [[ -n "$pubkey" ]] && normalize_pubkey "$pubkey"
+                done <<< "$pubkeys"
+            done < <(find "$dir" -maxdepth 4 -name "*.json" -print0 2>/dev/null)
+        done
+
+        if [[ "$client" == "prysm" ]]; then
+            find_prysm_pubkeys_via_cli
+        fi
+    } | sort -u
 }
 
 # =============================================================================
@@ -198,9 +216,22 @@ query_beacon_validators() {
         return
     fi
 
+    local normalized_pubkeys=()
+    local pubkey
+    for pubkey in "${pubkeys[@]}"; do
+        pubkey="$(normalize_pubkey "$pubkey")"
+        [[ -n "$pubkey" ]] && normalized_pubkeys+=("$pubkey")
+    done
+
+    if [[ ${#normalized_pubkeys[@]} -eq 0 ]]; then
+        BEACON_QUERY_STATUS="no_pubkeys"
+        echo '{"data":[]}' > "$out_file"
+        return
+    fi
+
     # Build id= query string with 0x-prefixed pubkeys
     local ids
-    ids=$(printf "0x%s," "${pubkeys[@]}")
+    ids=$(printf "0x%s," "${normalized_pubkeys[@]}")
     ids="${ids%,}"
 
     local response curl_rc=0
@@ -212,6 +243,63 @@ query_beacon_validators() {
     else
         BEACON_QUERY_STATUS="ok"
         echo "$response" > "$out_file"
+    fi
+}
+
+query_beacon_validators_batched() {
+    local beacon_url="$1"
+    local out_file="$2"
+    shift 2
+    local pubkeys=("$@")
+
+    if [[ ${#pubkeys[@]} -eq 0 ]]; then
+        BEACON_QUERY_STATUS="no_pubkeys"
+        echo '{"data":[]}' > "$out_file"
+        return
+    fi
+
+    local batch_size=100
+    local batch_dir
+    batch_dir=$(mktemp -d /tmp/vlist_batches_XXXXXX)
+    local batch_files=()
+    local saw_success=false
+    local saw_failure=false
+
+    local start=0
+    while [[ $start -lt ${#pubkeys[@]} ]]; do
+        local batch=("${pubkeys[@]:start:batch_size}")
+        local batch_file="$batch_dir/batch_${#batch_files[@]}.json"
+        query_beacon_validators "$beacon_url" "$batch_file" "${batch[@]}"
+        batch_files+=("$batch_file")
+        if [[ "$BEACON_QUERY_STATUS" == "ok" ]]; then
+            saw_success=true
+        elif [[ "$BEACON_QUERY_STATUS" == "failed" ]]; then
+            saw_failure=true
+        fi
+        start=$((start + batch_size))
+    done
+
+    python3 - "$out_file" "${batch_files[@]}" <<'PYEOF'
+import json, sys
+merged = []
+for path in sys.argv[2:]:
+    try:
+        with open(path) as f:
+            merged.extend(json.load(f).get('data', []))
+    except Exception:
+        pass
+with open(sys.argv[1], 'w') as f:
+    json.dump({'data': merged}, f)
+PYEOF
+
+    rm -rf "$batch_dir"
+
+    if [[ "$saw_failure" == true && "$saw_success" == true ]]; then
+        BEACON_QUERY_STATUS="partial"
+    elif [[ "$saw_failure" == true ]]; then
+        BEACON_QUERY_STATUS="failed"
+    else
+        BEACON_QUERY_STATUS="ok"
     fi
 }
 
@@ -293,25 +381,7 @@ main() {
     # shellcheck disable=SC2064
     trap "rm -f '$tmpfile'" EXIT
 
-    query_beacon_validators "$beacon_url" "$tmpfile" "${pubkeys[@]}"
-
-    # Apply optional filters (balance / withdrawal type / status) to the beacon
-    # data in place, so both table and JSON output reflect the same filtered set.
-    if [[ -n "$MIN_BALANCE" || -n "$MAX_BALANCE" || -n "$WITHDRAWAL_TYPE" || -n "$STATUS_FILTER" ]]; then
-        local filter_args=()
-        [[ -n "$MIN_BALANCE" ]]     && filter_args+=(--min-balance "$MIN_BALANCE")
-        [[ -n "$MAX_BALANCE" ]]     && filter_args+=(--max-balance "$MAX_BALANCE")
-        [[ -n "$WITHDRAWAL_TYPE" ]] && filter_args+=(--withdrawal-type "$WITHDRAWAL_TYPE")
-        [[ -n "$STATUS_FILTER" ]]   && filter_args+=(--status "$STATUS_FILTER")
-        local filter_err
-        if filter_err=$(python3 "$SCRIPT_DIR/validator_filter.py" "$tmpfile" "${filter_args[@]}" 2>&1 1>"${tmpfile}.f"); then
-            mv "${tmpfile}.f" "$tmpfile"
-        else
-            rm -f "${tmpfile}.f"
-            log_error "Validator filter failed (filters not applied): ${filter_err}"
-            exit 1
-        fi
-    fi
+    query_beacon_validators_batched "$beacon_url" "$tmpfile" "${pubkeys[@]}"
 
     if [[ "$JSON_OUTPUT" == "true" ]]; then
         python3 - "$tmpfile" "$client" "$beacon_url" "$generated_at_utc" "$BEACON_QUERY_STATUS" <<'PYEOF'
@@ -327,11 +397,13 @@ print(json.dumps({
 }, indent=2))
 PYEOF
     else
-        if [[ "$BEACON_QUERY_STATUS" == "failed" ]]; then
-            log_warn "Beacon query failed; showing only local keystores that matched."
+        if [[ "$BEACON_QUERY_STATUS" == "failed" || "$BEACON_QUERY_STATUS" == "partial" ]]; then
+            log_warn "Beacon query returned incomplete data; showing what matched locally."
         fi
         print_table "$tmpfile"
     fi
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi

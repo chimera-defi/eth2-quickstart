@@ -249,15 +249,31 @@ if [[ "$PHASE" == "2" ]]; then
         _verify_service_active "validator" 60
     fi
 
-    if [[ "$E2E_EXEC" == "geth" && "$E2E_CONS" == "prysm" ]]; then
-        log_header "Running validator withdrawal change helper smoke test"
-        if bash "$PROJECT_ROOT/install/test/test_validator_withdrawal_changes.sh"; then
-            record_test "validator withdrawal change helper smoke" "PASS"
-        else
-            record_test "validator withdrawal change helper smoke" "FAIL"
-            print_test_summary
-            exit 1
-        fi
+    log_header "Running validator withdrawal change helper smoke test"
+    if bash "$PROJECT_ROOT/install/test/test_validator_withdrawal_changes.sh"; then
+        record_test "validator withdrawal change helper smoke" "PASS"
+    else
+        record_test "validator withdrawal change helper smoke" "FAIL"
+        print_test_summary
+        exit 1
+    fi
+
+    log_header "Running validator 0x01 creation helper smoke test"
+    if bash "$PROJECT_ROOT/install/test/test_validator_create_0x01.sh"; then
+        record_test "validator 0x01 creation helper smoke" "PASS"
+    else
+        record_test "validator 0x01 creation helper smoke" "FAIL"
+        print_test_summary
+        exit 1
+    fi
+
+    log_header "Running validator 0x02 creation helper smoke test"
+    if bash "$PROJECT_ROOT/install/test/test_validator_create_0x02.sh"; then
+        record_test "validator 0x02 creation helper smoke" "PASS"
+    else
+        record_test "validator 0x02 creation helper smoke" "FAIL"
+        print_test_summary
+        exit 1
     fi
 
     # Optional live Prysm checkpoint-sync smoke (opt-in).
