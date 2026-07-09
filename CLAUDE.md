@@ -122,7 +122,7 @@ Never weaken the security model.
 ## Bootstrap
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | bash
 ```
 
 After cloning, `install.sh` launches `install/utils/configure.sh` to generate phase scripts and persist choices in `config/user_config.env`.
