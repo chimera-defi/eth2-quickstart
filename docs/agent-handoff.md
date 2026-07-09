@@ -2,7 +2,6 @@
 
 Use this file to preserve context across sessions.
 
-## Active Defaults
 ## Latest Update (Geth disk cleanup handoff folded into agent handoff, 2026-07-09)
 
 - Moved the one-off disk cleanup handoff out of the repo root and into this durable handoff log.
