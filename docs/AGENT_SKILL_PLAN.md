@@ -15,9 +15,9 @@ Build this in two layers:
    - Add concise references for workflows, safety, and command mapping
    - Reuse existing repo entrypoints such as `scripts/eth2qs.sh`, `install.sh`, `run_1.sh`, `run_2.sh`, `install/utils/doctor.sh`, and `install/utils/purge_ethereum_data.sh`
 
-2. **Secondary**: publishable metadata/package for external agent registries
-   - Add `agents/openai.yaml` for UI-facing skill metadata
-   - Optionally package the same skill for ClawHub or another skill registry after the local skill is stable
+2. **Secondary**: keep future registry packaging separate from the repo skill
+   - Avoid registry-specific metadata in the repo skill unless a follow-up PR explicitly needs it
+   - If registry packaging is revisited later, keep it separate from the repo-owned skill content
 
 ## Non-Recommendation
 
@@ -78,12 +78,16 @@ The first skill should not:
 ```text
 skills/eth2-quickstart/
 ├── SKILL.md
-├── agents/openai.yaml
 └── references/
     ├── workflow.md
     ├── commands.md
     ├── safety.md
-    └── clients.md
+    ├── operator.md
+    ├── outputs.md
+    ├── examples.md
+    ├── mcp.md
+    ├── improvement.md
+    └── sizing.md
 ```
 
 ## Phase Plan
@@ -92,7 +96,6 @@ skills/eth2-quickstart/
 
 - Create the skill directory contract before writing the skill:
   - `skills/eth2-quickstart/SKILL.md`
-  - `skills/eth2-quickstart/agents/openai.yaml`
   - `skills/eth2-quickstart/references/*.md`
 - Add a lightweight repo test that verifies:
   - required skill files exist
@@ -108,17 +111,20 @@ The first implementation PR should create exactly these files:
 ```text
 skills/eth2-quickstart/
 ├── SKILL.md
-├── agents/openai.yaml
 └── references/
     ├── workflow.md
     ├── commands.md
     ├── safety.md
-    └── outputs.md
+    ├── operator.md
+    ├── outputs.md
+    ├── examples.md
+    ├── mcp.md
+    ├── improvement.md
+    └── sizing.md
 ```
 
 File responsibilities:
 - `SKILL.md`: trigger metadata, intent routing, when to load each reference
-- `agents/openai.yaml`: UI-facing display metadata only
 - `references/workflow.md`: install vs operate vs diagnose vs clean decision tree
 - `references/commands.md`: canonical mapping to `scripts/eth2qs.sh`, `install.sh`, `run_1.sh`, `run_2.sh`, and utility scripts
 - `references/safety.md`: destructive boundaries, secrets policy, reboot/root boundaries
@@ -152,9 +158,8 @@ The first implementation PR should not add:
 
 ### Phase 3: Registry packaging
 
-- Add `agents/openai.yaml`
-- Validate the skill can be installed through a registry flow such as ClawHub
-- Only after that, decide whether a separate installer/distribution wrapper is still useful
+- Keep registry packaging out of the repo skill by default
+- If a registry flow is needed later, build it in a separate PR after the local skill stays green
 
 ## TDD Shape
 
@@ -165,7 +170,7 @@ Implementation order:
 2. Add the minimal skill skeleton and make the test pass.
 3. Add reference files and command-mapping checks.
 4. Add negative checks for unsafe installer patterns.
-5. Add registry metadata only after the local skill passes the repo tests.
+5. Revisit registry packaging only in a separate PR if needed.
 
 Acceptance tests for the implementation PR:
 - skill structure test passes locally and in CI
