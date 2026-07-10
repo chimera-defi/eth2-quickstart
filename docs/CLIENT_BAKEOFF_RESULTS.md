@@ -6,7 +6,7 @@ _Stage A (triage) synthesized from `artifacts/client-bakeoff-2026-06-22/` on 202
 
 - **Baseline-anchored coverage (12 candidates):** every execution client vs fixed Prysm (7 ELs), plus every other consensus client vs fixed Geth (5 CLs). This isolates each client against a known-good counterpart instead of testing every NxM pair.
   - ELs × prysm: geth, erigon, reth, nethermind, besu, nimbus_eth1, ethrex
-  - geth × CLs: lighthouse, teku, nimbus, lodestar, grandine
+  - CLs × fixed anchor EL: lighthouse, teku, nimbus, lodestar, grandine (anchor = **ethrex**, already synced at tip; EL/CL decoupling makes the anchor choice immaterial, so the originally-planned geth×CL re-run was skipped)
 - **Two stages:**
   - **Stage A — triage (this doc):** does each candidate install, checkpoint-sync, and authenticate the Engine API? ~5-min observation window per candidate, 60s sampling.
   - **Stage B — full sync (in progress):** sync-to-completion to measure final synced disk footprint for viable candidates.
@@ -61,8 +61,8 @@ Installer/harness fixes landed on the bake-off branch as a direct result of tria
 
 Stage A establishes **viability**, not a final pick: all 12 client pairs install, checkpoint-sync, and authenticate the Engine API on this host. The final recommendation depends on Stage B's synced disk footprint and sync-time metrics.
 
-- Recommended execution client: _pending Stage B footprint_
-- Recommended consensus client: _pending Stage B footprint_
+- Recommended execution client: **nethermind** — smallest fully-synced, pruned-comparable footprint (~251 GiB, 4.6× leaner than geth's 1.13 TiB) via its Bonsai flat-DB + snap sync, and a minority client so choosing it improves mainnet client diversity. **geth** is the conservative default: largest ecosystem, most docs, cleanest ~8h28m snap sync — but 1.13 TiB. **ethrex** had the fastest sync in the field (~2h16m) yet its datadir keeps growing at tip, it re-syncs from scratch (~2h) after any >~25-min downtime (see the restart-resync cliff below), and it isn't pruned-comparable — promising-but-early. besu synced cleanly but un-pruned (1.08 TiB, history-inflated); reth and nimbus_eth1 are full-sync-only (multi-day, capped partial here); erigon deadlocked against checkpoint-synced prysm on this host.
+- Recommended consensus client: **lighthouse** — smallest synced footprint (~739 MB), checkpoint-syncs in ~22 min, blob pruning on by default. lodestar (~827 MB) and grandine (~946 MB, with `--prune-storage`) are close seconds; teku (~2.1 GB) and nimbus (~5.0 GB) are heavier. All five checkpoint-sync in ~22–23 min, so footprint is the differentiator.
 - Stage-A note: geth, besu, nimbus_eth1, ethrex passed with zero installer changes and zero REST contention — the cleanest out-of-the-box ELs against Prysm.
 
 ## Sync-mode & disk-flag audit (2026-06-25)
@@ -76,7 +76,7 @@ Before letting the slow full-sync ELs run, we audited every execution client to 
 | nethermind | `SnapSync: true` + `FastBlocks: true` | ✅ optimal | Snap on; Halite/Paprika flat storage is the modern default. |
 | ethrex | `--syncmode snap` | ✅ optimal | Snap is the only efficient mode it exposes. |
 | erigon | OtterSync (default) + `prune.mode: "full"` | ✅ disk-optimal | `prune.mode: full` is the smallest erigon3 footprint. (Separately deadlocks → no-sync; see erigon row.) |
-| nimbus_eth1 | fast-sync (default) | ✅ acceptable | No dedicated post-merge-prune lever; fast-sync is its efficient default. |
+| nimbus_eth1 | fast-sync (default) + `prune = true` | ⚠️ unverified | Config sets `prune = true` (DB state prune, commit `0a1730f`), but its effect on **pre-merge history** is **contested and unverified**: binary `--help` claims it prunes expired bodies/receipts, while nimbus docs say pre-merge history needs a separate era1 export. The node never reached tip (full-sync-only), so we could not confirm the flag's disk effect either way. |
 | reth | **was archive (no flag)** → now `--full` | ⚠️ **fixed 2026-06-25** | The **only misconfigured EL.** Default reth = archive (~2.8 TiB). `--full` = pruned full node (~1.2 TiB): keeps full block/receipt history, prunes historical state changesets+indices (retains last ~10k blocks). Committed `fix(reth): run pruned full node (--full)`; reth__prysm relaunched. |
 
 **Net effect:** all seven ELs now run their disk-optimal sync mode. Six were already correct out of the box; reth was archive-by-default and is the one change this audit produced. Footprint comparisons across ELs are therefore apples-to-apples on configuration (the snap-vs-full *time* asterisk from the method section still applies — full-sync ELs execute all ~25M blocks, so time-to-sync is not comparable to geth's snap baseline, but final footprint is).
@@ -94,7 +94,48 @@ _In progress (run_id `client-bakeoff-stageB-2026-06-23`). Sequential, one candid
 | besu__prysm | ✅ **synced** (un-pruned); pruned re-run abandoned | ~19h18m | **~1.08 TiB (un-pruned)** — besu 1,189,836,723,674 B + prysm 1,682,488,084 B | **besu synced successfully.** The 2026-06-30 run snap-synced cleanly to a fully validating head (~50 peers, prysm `is_optimistic=false` at 2026-07-01T01:37:10Z → ~19h18m, fully_synced=yes) — a working, production-viable node. The limitation is **disk-comparability only:** this run had no history pruning → its 1.08 TiB is history-inflated and **NOT pruned-comparable** to geth/nethermind. A pruned re-run (`history-expiry-prune=true`, 2026-07-04) to get a comparable number **deadlocked twice and was abandoned** (operator: "Stop; accept limitation note", 2026-07-05 — see the besu snap-sync deadlock gotcha below; the deadlock trigger was a stale-CL stall, **not** a besu sync failure). So besu's disk number is shown as a client-limitation and excluded from the pruned-comparable ranking, but besu **did** sync. |
 | ethrex__prysm | ✅ synced | ~2h16m (snap) | **~286 GiB at sync → ~467 GiB (2026-07-06, still growing even at tip)** — 306,564,007,339 B at sync; live 500,952,726,301 B (`eth_syncing=false`, ~10 GiB/hr) | Snap-synced to a fully validating head in ~2h16m — **fastest EL sync in the field.** 50 peers throughout. 1 automatic stale-pivot update (block 25,469,233→25,469,696) self-healed in ~4 min with no intervention (ethrex clock-based detection, as designed). No crash (service_crash_observed=no, install_exit_code=0). Footprint is un-pruned and **NOT full-history** — ethrex serves ~no history (`eth_getBlockByNumber` returns `null` below head; verified 2026-07-06 at blocks 1/1M/21.6M/~head-7k) yet the datadir keeps growing **even at the chain tip with `eth_syncing=false`** (286 GiB at sync → ~467 GiB, ~10 GiB/hr on 2026-07-06); not pruned-comparable; see client limitations. ethrex v19.0.0. fully_synced=yes, hit_72h_cap=no. |
 
-_Remaining (one at a time): geth × lighthouse, teku, nimbus, lodestar, grandine._
+### Consensus-client matrix — ✅ COMPLETE (anchor = ethrex, run_id `client-bakeoff-clsweep-2026-07-06`)
+
+The CL matrix holds the **execution client constant** and cycles the consensus client, the mirror of the EL scorecard above. The constant anchor is **ethrex** (not geth as first planned): ethrex was already synced at mainnet tip from its EL run, so reusing it as the fixed anchor saved a multi-day re-sync. Because the EL and CL are decoupled across the Engine API (the CL datadir is <1% of the EL and does not depend on which EL it pairs with), the anchor choice does **not** bias the CL comparison. To *prove* that empirically rather than assert it, the full 5-CL sweep was subsequently re-run against a **geth** anchor (2026-07-08, run_id `client-bakeoff-anchor-rotation-2026-07-07`) — the cross-anchor confirmation is recorded below and reproduces the ranking. The ethrex anchor stayed active and `eth_syncing=false` (~502 GB, never restarted) across all five runs; each run cycled only `cl`+`validator`.
+
+All five CLs **checkpoint-synced to a fully validating head in ~22–23 min**, `config_optimal=yes`, `anchor_synced=yes`, `service_crash_observed=no`. Sync **time** is effectively tied (checkpoint sync dominates), so **the CL datadir footprint is the differentiator.**
+
+| CL | Result | Sync time | CL datadir footprint | Disk-optimal lever |
+| --- | --- | --- | --- | --- |
+| **lighthouse** | ✅ synced | ~22m | **773,282,157 B (~739 MB)** ← **smallest** | `checkpoint-sync-url` (blob-prune default) |
+| **lodestar** | ✅ synced | ~22m | **867,829,601 B (~827 MB)** | `chain.pruneHistory=true` |
+| **grandine** | ✅ synced | ~22m | **1,343,716,523 B (~946 MB on disk)** | `--prune-storage` (CRITICAL — stores all states without it) |
+| **teku** | ✅ synced | ~22m | **2,160,709,791 B (~2.1 GB)** | `data-storage-mode=minimal` |
+| **nimbus** | ✅ synced | ~23m | **5,302,005,871 B (~5.0 GB)** ← **largest (6.8×)** | `history=prune` |
+
+**CL disk ranking (smaller = better, all config-optimal + checkpoint-synced): lighthouse (~739 MB) < lodestar (~827 MB) < grandine (~946 MB) < teku (~2.1 GB) < nimbus (~5.0 GB).**
+
+- **teku required a re-run.** Its first attempt (pre-`TEKU_CACHE=8192m`) JVM-OOM-starved the shared host, took 64 min to sync, and briefly blipped the anchor → `anchor_synced=no` (recorded, discarded as `env.txt.poisoned-run1`). The re-run with `TEKU_CACHE` raised to 8192m (commit `bf043aa`) synced clean in 22 min with a healthy anchor. Lesson: teku's JVM heap must be sized generously on a shared host or its GC pressure spills onto co-resident services. The valid 2.1 GB row is the re-run.
+- **All CL footprints are <1% of the ethrex anchor's ~502 GB EL datadir** → confirms EL/CL decoupling: consensus-client choice does not move the EL disk ranking, and vice-versa.
+
+### CL matrix — cross-anchor confirmation (anchor = **geth**, run_id `client-bakeoff-anchor-rotation-2026-07-07`, 2026-07-08)
+
+The same 5-CL sweep was re-run against a **geth** anchor to verify the ranking is not an artifact of the ethrex anchor. All five runs were `config_optimal=yes`, `anchor_synced=yes`, no service crash; each cycled only `cl`+`validator` against the preserved geth EL datadir (~1.13 TiB, never wiped).
+
+| Consensus | Sync status | Sync time | Final CL datadir | History-prune lever |
+|-----------|-------------|-----------|------------------|---------------------|
+| **lodestar** | ✅ synced | ~6m27s | **185,100,788 B (~177 MiB)** ← **smallest** | `pruneHistory=true` |
+| **lighthouse** | ✅ synced | ~8m54s | **542,301,237 B (~518 MiB)** | `checkpoint-sync-url` |
+| **grandine** | ✅ synced | ~8m50s | **1,074,340,425 B apparent / ~725 MiB actual** (sparse DB) | `prune-storage` |
+| **teku** | ✅ synced | ~8m52s | **977,108,456 B (~936 MiB)** | `data-storage-mode=minimal` |
+| **nimbus** | ✅ synced | ~7m58s | **1,198,275,155 B (~1.2 GiB)** ← **largest** | `history=prune` |
+
+**geth-anchor CL disk ranking (actual disk, smaller = better): lodestar (~177 MiB) < lighthouse (~518 MiB) < grandine (~725 MiB actual) < teku (~936 MiB) < nimbus (~1.2 GiB).**
+
+**Cross-anchor verdict — the ranking reproduces:**
+- **Heavyweight tier holds on both anchors:** nimbus is always the largest CL and teku always the second-largest, on both the ethrex and geth anchors.
+- **Lightweight tier holds:** grandine, lighthouse, and lodestar are always the three smallest. The lodestar↔lighthouse order flips between anchors (geth: lodestar < lighthouse; ethrex: lighthouse < lodestar) but both sit in the smallest tier, where the gap is small and measurement-window-sensitive.
+- **Absolute footprints scale with observation time, not the EL anchor.** The geth-anchor numbers are much smaller (nimbus ~1.2 GiB vs ~5.0 GB; teku ~936 MiB vs ~2.1 GB) because those runs were measured minutes after checkpoint-sync (a fresh datadir), while the ethrex-anchor runs ran longer post-sync and had filled more of the blob-retention / state-history window. The **ranking** is EL-independent; the **absolute size** is a function of how long the CL has been following the chain.
+- **Net:** two different EL anchors (ethrex, geth) produce the same CL ranking → EL/CL decoupling is confirmed empirically, not just asserted.
+
+**Measurement notes:**
+- **grandine uses sparse DB files** → its apparent `du -sb` byte count (1,074,340,425 B) overstates real on-disk usage. `du -sh` reports **~725 MiB actual**, which is the fair number for ranking. The other four CLs had apparent ≈ actual.
+- **Harness fix `98a52d7` (belongs in PR #190):** `bakeoff_snapshot_disk` guarded its `du | awk` pipeline with `|| true`. Without it, when the live anchor EL churned its datadir during a snapshot, `du` hit a vanishing file → exit 1 → `pipefail` killed the run (this spuriously failed grandine's first attempt; the clean re-run above is authoritative).
 
 ### Client limitations — shown separately, NOT in the pruned-comparable ranking
 
@@ -104,9 +145,30 @@ Only **geth** (~1.13 TiB) and **nethermind** (~251 GiB) produced a final footpri
 | --- | --- | --- | --- |
 | besu | ~1.08 TiB (un-pruned) | ✅ yes (~19h18m, fully validated) | besu **synced fine** — the un-pruned run just isn't disk-comparable (history-inflated), and the pruned re-run to fix that deadlocked twice and was abandoned (stale-pivot → `SnapSyncChainDownloader` thread death; root-caused to a ~28h prysm-v7.1.5 CL stall, **not** a besu fault — see gotcha below). |
 | reth | ~0.98 TiB partial (72h-capped) | ⏳ partial | `--full`-only (no snap); sequential full block execution can't finish mainnet inside the 72h cap. Speed-bound, not config-bound. |
-| nimbus_eth1 | ~21 GB partial | ⏳ partial | Full-sync-only (no snap); era1 import path. Service exited ~21.6h in at ~block 2.5M/25.4M — never near tip. |
+| nimbus_eth1 | ~21 GB partial | ⏳ partial | Full-sync-only (no snap); era1 import path. Service exited ~21.6h in at ~block 2.5M/25.4M — never near tip. Its `prune = true` flag (post-merge history-prune analogue) could **not be verified** because the node never synced — efficacy is contested (era1-dependent per docs); recorded here as an open question, not a measured result. |
 | erigon | ~1.21 TiB frozen partial | ❌ no | Structural no-sync: erigon3 OtterSync + checkpoint-synced-prysm optimistic gap-close deadlock. Not a synced datadir. |
 | ethrex | ~286 GiB at sync → **~467 GiB (2026-07-06, still growing even at tip)** — 306,564,007,339 B at sync; live 500,952,726,301 B (`eth_syncing=false`, ~10 GiB/hr) | ✅ yes (~2h16m, fully validated) | ethrex **synced cleanly and fastest in the field (~2h16m snap).** No history-prune lever (`--syncmode snap` only; no state-prune flag). Footprint is un-pruned and **NOT full-history** — it serves ~no history (`eth_getBlockByNumber` `null` below head, verified 2026-07-06) yet keeps growing **even at the chain tip with `eth_syncing=false`** (286 → ~467 GiB, ~10 GiB/hr), so it is **NOT comparable** to pruned geth (~1.13 TiB) or nethermind (~251 GiB). config_optimal=yes (snap is optimal-by-absence; 1 stale-pivot auto-healed). service_crash_observed=no. |
+
+## Operational viability — which clients would we actually run (Stage B + CL matrix synthesis)
+
+The disk ranking answers "smallest," but production also asks "will it survive restarts, upgrades, and weeks of uptime?" Under that operational lens the field narrows sharply — and the two layers tell opposite stories: the **EL layer is where the operational risk lives; the CL layer is basically solved.**
+
+**Execution clients — two clear picks, one qualified third:**
+
+- **geth and nethermind are the only two that cleared the full operational bar** here: snap-sync to a validating tip, a working history-prune lever (so the disk number is apples-to-apples), clean restart-resume, and the two largest, most battle-tested codebases. **nethermind** wins on disk (~251 GiB, ~4.5× leaner than geth) and improves client diversity as a minority client; **geth** is the conservative default (largest ecosystem, most docs, cleanest ~8h28m snap). If you run one EL for the long haul, run one of these two.
+- **besu** is a viable enterprise third — it *did* snap-sync to a fully validated head — but with two asterisks: our run was un-pruned (history-inflated ~1.08 TiB, no pruned-comparable number), and its snap sync is **fragile to a prolonged CL outage** (a stalled CL ages the pivot out of the servable-state window → `SnapSyncChainDownloader` thread death, observed twice, un-recoverable). Runnable in a shop that keeps its CL current and watches the pivot; not a set-and-forget solo-staker pick.
+- **The rest each missed the bar for a specific, documented reason — not a blanket "bad client":**
+  - **ethrex** — fastest cold sync in the whole field (~2h16m) but the *wrong* long-run profile, exactly as flagged: no prune lever, datadir grows unbounded even at tip (~10 GiB/hr, 286 → ~467 GiB), and it **re-snaps from scratch after any >~25-min downtime**. Snap speed is a trap here — fast to stand up, painful to *operate* (every upgrade/restart/maintenance window costs a full ~2h re-sync, and the disk just keeps climbing). Young client (v19.0.0); may improve.
+  - **reth, nimbus_eth1** — full-sync-only (no snap) in the mode we tested; can't reach tip inside a practical window on this host. This is a time-to-sync limit under our snap-to-tip bar, **not** a verdict on the clients in every context (reth in particular is widely run elsewhere).
+  - **erigon** — deadlocked against checkpoint-synced prysm on this host (structural, reproducible), so no synced datadir.
+
+**Consensus clients — the healthy half: all five we swept are operationally effective.** Every CL (lighthouse, lodestar, grandine, teku, nimbus) checkpoint-synced to a validating head in ~22–23 min, `config_optimal=yes`, zero crashes, against a live anchor. Unlike the EL layer, none of them *failed* — so the choice is footprint + preference, not survivability:
+
+- Disk order (the only differentiator): **lighthouse (~739 MB) < lodestar (~827 MB) < grandine (~946 MB) < teku (~2.1 GB) < nimbus (~5.0 GB).**
+- Two small operational caveats: **teku** needs a generously sized JVM heap on a shared host (undersized, its GC pressure spilled onto co-resident services and poisoned a first run); **grandine** needs `--prune-storage` or it stores every state. **nimbus** is simply the heaviest (~6.8× lighthouse) but otherwise clean.
+- Cross-cutting CL lesson (learned from prysm, the constant anchor): **keep the CL binary current.** A stale prysm v7.1.5 pin stalled ~28h on a PeerDAS/data-column bug and is precisely what aged out besu's pivot. Binary freshness is an operational requirement, not a nicety.
+
+**Bottom line:** on the EL side a real long-running node comes down to **geth or nethermind** (besu if you're an enterprise shop that keeps its CL healthy); on the CL side **any of the five works**, with **lighthouse** the lean default. Fast initial sync (ethrex) and small archive-context footprints do not by themselves make a client operationally viable — durability across restarts and uptime is the deciding axis, and that is an EL-layer problem.
 
 ## Gotchas & lessons learned
 
@@ -119,6 +181,10 @@ Only **geth** (~1.13 TiB) and **nethermind** (~251 GiB) produced a final footpri
 - **besu snap sync is two tracks:** block-import reaches head first (a premature "done" signal), but world-state download/heal (Bonsai) is the real bottleneck and where the footprint balloons.
 
 - **besu snap-sync deadlocks if the CL stalls long enough (stability finding, 2026-07-05).** The besu pruned re-run deadlocked **twice** and was abandoned. Chain: a **prysm v7.1.5** data-column-sidecar/PeerDAS bug stalled the CL ~28h (besu logged `Execution engine not called in 120 seconds` continuously) → with no `forkchoiceUpdated` driving it, besu's snap-sync **pivot block aged out** of the network's servable-state window (full nodes serve state for only ~128 recent blocks ≈ 25 min) → world-state heal became un-completable → besu threw `java.lang.IllegalStateException: The pivot block number has not increased` in `SnapSyncChainDownloader.consumePivotUpdate`, cancelled the download, and the downloader **thread died without restarting**. The process stayed alive and answered RPC while the sync engine was dead (datadir frozen, zero DB writes). A restart resumed on the SAME persisted stale pivot and re-deadlocked identically. **Takeaways:** keep the CL binary current before a long besu snap-sync (the stall came from a stale prysm pin); besu answering `eth_blockNumber` ≠ besu syncing (watch DB writes); and this is the prime motivation for the harness stall-watchdog (auto-restart/fail on 0-DB-write-while-unsynced instead of spinning to the 72h cap).
+
+- **ethrex re-snaps from scratch after a >~25-min downtime (operational cliff, v19.0.0).** A routine restart with a ~1.5–2h gap made ethrex **discard its fully-synced 286 GiB state and start a fresh snap sync from near-genesis** (datadir collapsed 286 GiB → ~9 GiB → climbing; journal `SNAP SYNC STARTED` → `PHASE 1/8: BLOCK HEADERS` from ~198k/25.47M; `eth_blockNumber`=`0x0` throughout). Root cause: after the gap ethrex's old head aged out of the network's ~128-block (~25 min) servable-state window, so when prysm drove `forkchoiceUpdated` to the current head, ethrex re-pivoted to a full snap rather than importing the missed gap — contrast **geth**, which resumes by importing the missed blocks and keeps its state. Two measured re-sync costs: **~2h16m (cold) + ~2h11m (post-downtime re-snap)**; the re-snapped datadir then rebuilt *past* the old 286 GiB. **Blog through-line:** a client that full-re-syncs after any >~25-min downtime (upgrades, crashes, maintenance) is operationally painful — a strong candidate explanation for ethrex's ~0% adoption despite the field's fastest cold sync. Caveats: observed on a young client (v19.0.0, may improve); the exact graceful-resume→full-resync threshold is not precisely characterized (only that ~1.5–2h triggers it, and <~25 min *should* resume but is untested); this does **not** change the recorded sync-time result (2h16m, captured at synced time).
+
+- **Client distribution is a WEAK/NUANCED predictor of syncability.** The tempting story — low/zero-share clients all struggle — is only half true. erigon (deadlock), reth & nimbus_eth1 (full-sync-only, can't finish in 72h) did struggle, but **ethrex (~0% share, Lambda Class) synced FASTEST in the whole field (~2h16m).** The real driver is **snap-sync availability + client robustness** (ethrex has both: snap + clock-based stale-pivot self-healing), not market share per se. Don't overclaim the correlation in the blog — ethrex's un-pruned, growing footprint keeps it out of the disk ranking, so speed (not size) is its claim.
 
 - **Loopback-P2P class of bug.** besu AND nethermind both defaulted P2P advertising to `127.0.0.1` → degraded/zero peering. Fixed (remove loopback `p2p-host` / inject routable `ExternalIp`). geth/erigon/reth/ethrex/nimbus_eth1 bind externally by default.
 

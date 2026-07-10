@@ -46,10 +46,22 @@ if [[ -n "$anchor_el" ]]; then
   for _retry in 1 2 3 4 5; do
     _el_sync="$(bakeoff_probe_execution_sync 2>/dev/null || true)"
     if echo "$_el_sync" | jq -e '
+      def h2n:
+        if . == null then 0
+        else (ltrimstr("0x")
+              | if . == "" then 0
+                else reduce (explode[]) as $c (0;
+                       . * 16 + (
+                         if   $c >= 48 and $c <= 57  then $c - 48
+                         elif $c >= 97 and $c <= 102 then $c - 87
+                         elif $c >= 65 and $c <= 70  then $c - 55
+                         else 0 end))
+                end)
+        end;
       (.result == false)
       or ( ((.result|type) == "object")
-           and (.result.currentBlock == .result.highestBlock)
-           and (.result.highestBlock != "0x0") )
+           and (.result.highestBlock != "0x0")
+           and ((.result.currentBlock | h2n) >= (.result.highestBlock | h2n)) )
     ' >/dev/null 2>&1; then
       _anchor_synced=true
       break
@@ -69,6 +81,13 @@ if [[ -f "$out/.done" && "${ETH2QS_BAKEOFF_FORCE:-}" != "yes" ]]; then
   exit 0
 fi
 
+# FORCE re-run: clear stale poison markers so the anchor watchdog re-evaluates from scratch.
+# Without this, a prior .anchor-poisoned bypasses the watchdog entirely (line 175 guard),
+# then finalization falsely writes anchor_synced=no for an otherwise-clean run.
+if [[ "${ETH2QS_BAKEOFF_FORCE:-}" == "yes" ]]; then
+  rm -f "$out/.anchor-poisoned" "$out/.done"
+fi
+
 cd "$REPO_ROOT"
 mkdir -p "$out/tmp"
 
@@ -83,6 +102,8 @@ mkdir -p "$out/tmp"
   if [[ -n "$anchor_el" ]]; then
     echo "harness_mode=anchor"
     echo "anchor_el=$anchor_el"
+  elif [[ "${ETH2QS_BAKEOFF_KEEP_EL:-}" == "yes" ]]; then
+    echo "harness_mode=establish"
   else
     echo "harness_mode=full"
   fi
@@ -109,7 +130,15 @@ else
 fi
 bakeoff_snapshot_disk "$out/disk-before.tsv"
 avail_bytes="$(df -B1 --output=avail / | tail -1 | tr -d ' ')"
-min_disk="${ETH2QS_BAKEOFF_MIN_DISK_BYTES:-1717986918400}"   # 1.6 TiB floor
+# Anchor mode reuses the already-synced EL on disk (only the CL is new), so the full
+# EL+CL floor does not apply; a 1.6 TiB floor would falsely abort every anchor CL sweep
+# once the anchor EL occupies the disk. Use a CL-sized floor in anchor mode. An explicit
+# ETH2QS_BAKEOFF_MIN_DISK_BYTES override still wins in both modes.
+if [[ -n "$anchor_el" ]]; then
+  min_disk="${ETH2QS_BAKEOFF_MIN_DISK_BYTES:-429496729600}"    # 400 GiB floor: anchor CL-only
+else
+  min_disk="${ETH2QS_BAKEOFF_MIN_DISK_BYTES:-1717986918400}"   # 1.6 TiB floor: full EL+CL sync
+fi
 if [[ "${avail_bytes:-0}" -lt "$min_disk" ]]; then
   log_error "$pair: only ${avail_bytes} bytes free on / (< ${min_disk} required). Aborting before sync."
   exit 3
@@ -129,15 +158,16 @@ fi
 
 # Install (real; bounded by timeout).
 set +e
+# </dev/null: installs are non-interactive; prevents SIGTTIN stop when run in a background process group (detached tmux).
 if [[ -n "$anchor_el" ]]; then
   # Anchor mode: install CL only; anchor EL is already running.
   timeout "$install_timeout" /usr/bin/time -v -o "$out/install-time.txt" \
     ./scripts/eth2qs.sh phase2 --consensus="$consensus" --mev=none \
-    > "$out/install.log" 2>&1
+    </dev/null > "$out/install.log" 2>&1
 else
   timeout "$install_timeout" /usr/bin/time -v -o "$out/install-time.txt" \
     ./scripts/eth2qs.sh phase2 --execution="$execution" --consensus="$consensus" --mev=none \
-    > "$out/install.log" 2>&1
+    </dev/null > "$out/install.log" 2>&1
 fi
 install_rc=$?
 set -e
@@ -181,10 +211,22 @@ if [[ "$install_rc" -eq 0 ]]; then
         _snap_check="$(cat "$out/tmp/execution-sync.json" 2>/dev/null || true)"
         # Non-empty payload that does NOT parse as "synced" is a miss.
         if [[ -n "$_snap_check" ]] && ! echo "$_snap_check" | jq -e '
+          def h2n:
+            if . == null then 0
+            else (ltrimstr("0x")
+                  | if . == "" then 0
+                    else reduce (explode[]) as $c (0;
+                           . * 16 + (
+                             if   $c >= 48 and $c <= 57  then $c - 48
+                             elif $c >= 97 and $c <= 102 then $c - 87
+                             elif $c >= 65 and $c <= 70  then $c - 55
+                             else 0 end))
+                    end)
+            end;
           (.result == false)
           or ( ((.result|type) == "object")
-               and (.result.currentBlock == .result.highestBlock)
-               and (.result.highestBlock != "0x0") )
+               and (.result.highestBlock != "0x0")
+               and ((.result.currentBlock | h2n) >= (.result.highestBlock | h2n)) )
         ' >/dev/null 2>&1; then
           anchor_miss="yes"
         fi
@@ -252,8 +294,9 @@ bakeoff_snapshot_disk "$out/disk-final.tsv"   # pre-cleanup footprint (synced OR
 
 # Clear caps + post-run cleanup.
 "$caps" clear >> "$out/resource-caps.log" 2>&1 || true
-if [[ -n "$anchor_el" ]]; then
-  # Anchor mode: purge CL datadirs only; preserve the EL anchor for the next CL.
+if [[ -n "$anchor_el" || "${ETH2QS_BAKEOFF_KEEP_EL:-}" == "yes" ]]; then
+  # Anchor mode / establish mode: purge CL datadirs only; preserve the EL
+  # (anchor EL serves the CL sweep; establish EL becomes the next anchor).
   ./scripts/eth2qs.sh clean-data --scope=consensus --dry-run < /dev/null > "$out/cleanup-dry-run.log" 2>&1 || true
   ./scripts/eth2qs.sh clean-data --scope=consensus --confirm < /dev/null > "$out/cleanup-confirm.log" 2>&1 || true
 else
