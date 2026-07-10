@@ -147,6 +147,7 @@ validator keys. Resource-capped via systemd (`CPUQuota`/`MemoryMax`) to protect 
 ### E1. Stage A triage is blind to a silently-stalled EL
 - **Issue:** a node whose CL checkpoint-syncs and whose Engine API authenticates **passes install triage** even if the EL has 0 peers and never backfills state — the CL just follows the live head optimistically forever. nethermind (D3) passed Stage A and still hadn't synced 13h into Stage B.
 - **Takeaway:** "installs + authenticates + CL reaches tip" ≠ "the EL is actually syncing." A real sync gate must verify the EL is downloading/executing historical state (peers + head progress), not just that the live head is followed.
+- **Mitigation (implemented, #31 / PR #190):** an opt-in stall-watchdog in `run_candidate.sh` — set `ETH2QS_BAKEOFF_STALL_RESTART=yes` and if the unit under test makes no forward progress (EL block number / CL `head_slot` flat) for `ETH2QS_BAKEOFF_STALL_SAMPLES` polls (default 10), it does up to `ETH2QS_BAKEOFF_STALL_MAX_RESTARTS` bounded restarts (default 3) of *only that unit*, then writes `.stalled` + `stall_failed=yes` and fails the row instead of spinning to the 72h cap. Detection-only by default (opt-in), and it never touches any unit other than the one under test.
 
 ### E2. Footprint over-count — MAX sample vs LAST sample
 - **Issue:** we initially reported reth's partial footprint as the **max** across all samples (1.06 TiB) — but that caught a transient DB-compaction peak. The settled near-cap value was **~0.97 TiB**.
