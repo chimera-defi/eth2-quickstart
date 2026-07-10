@@ -14,6 +14,9 @@ out="$artifact_root/$pair"
 window="${ETH2QS_BAKEOFF_SYNC_WINDOW_SECONDS:-5400}"
 interval="${ETH2QS_BAKEOFF_SAMPLE_INTERVAL_SECONDS:-120}"
 install_timeout="${ETH2QS_BAKEOFF_INSTALL_TIMEOUT:-90m}"
+stall_restart="${ETH2QS_BAKEOFF_STALL_RESTART:-no}"
+stall_samples="${ETH2QS_BAKEOFF_STALL_SAMPLES:-10}"
+stall_max_restarts="${ETH2QS_BAKEOFF_STALL_MAX_RESTARTS:-3}"
 caps="$REPO_ROOT/test/bakeoff/apply_resource_caps.sh"
 
 # Anchor mode: when set, preserves this EL across the entire CL sweep.
@@ -194,6 +197,9 @@ if [[ "$install_rc" -eq 0 ]]; then
   end_at=$(( $(date +%s) + window ))
   synced_streak=0
   anchor_miss_streak=0
+  no_progress_streak=0
+  stall_restarts=0
+  prev_progress=""
   while [[ "$(date +%s)" -lt "$end_at" ]]; do
     bakeoff_write_sample "$out" "$REPO_ROOT" || log_warn "$pair: sample write failed"
     if ! bakeoff_services_alive; then
@@ -239,6 +245,72 @@ if [[ "$install_rc" -eq 0 ]]; then
       if [[ "$anchor_miss_streak" -ge 2 ]]; then
         touch "$out/.anchor-poisoned"
         log_error "anchor EL $anchor_el lost $anchor_miss_streak consecutive samples at $(date -u +%Y-%m-%dT%H:%M:%SZ): row invalid"
+      fi
+    fi
+    # Stall-watchdog: opt-in auto-restart of a stuck EL/CL (bounded).
+    # Entirely inert unless ETH2QS_BAKEOFF_STALL_RESTART=yes.
+    if [[ "$stall_restart" == "yes" ]]; then
+      if [[ -n "$anchor_el" ]]; then
+        stall_unit="cl.service"
+        cur_progress="$(jq -r '.data.head_slot // empty' "$out/tmp/beacon-sync.json" 2>/dev/null || true)"
+        # Fallback: decreasing sync_distance also counts as forward progress.
+        if [[ -z "$cur_progress" ]]; then
+          cur_progress="$(jq -r 'if .data.sync_distance then (100000000 - (.data.sync_distance | tonumber)) else empty end' "$out/tmp/beacon-sync.json" 2>/dev/null || true)"
+        fi
+      else
+        stall_unit="eth1.service"
+        cur_progress="$(jq -r '
+          def h2n:
+            if . == null then empty
+            else (ltrimstr("0x")
+                  | if . == "" then empty
+                    else reduce (explode[]) as $c (0;
+                           . * 16 + (
+                             if   $c >= 48 and $c <= 57  then $c - 48
+                             elif $c >= 97 and $c <= 102 then $c - 87
+                             elif $c >= 65 and $c <= 70  then $c - 55
+                             else 0 end))
+                    end)
+            end;
+          if .result == false then empty
+          elif ((.result|type) == "object") then (.result.currentBlock | h2n | tostring)
+          else empty
+          end
+        ' "$out/tmp/execution-sync.json" 2>/dev/null || true)"
+      fi
+      # Determine if already synced this sample (reset streak; never stall when synced).
+      if bakeoff_is_synced; then
+        no_progress_streak=0
+      elif [[ -z "$prev_progress" ]] && [[ -n "$cur_progress" ]]; then
+        # First valid reading: treat as baseline, not a stall.
+        no_progress_streak=0
+      elif [[ -n "$prev_progress" ]] && [[ -n "$cur_progress" ]] && [[ "$cur_progress" -gt "$prev_progress" ]] 2>/dev/null; then
+        # Progress detected.
+        no_progress_streak=0
+      else
+        no_progress_streak=$((no_progress_streak + 1))
+      fi
+      # Only update prev_progress when we have a valid reading.
+      if [[ -n "$cur_progress" ]]; then
+        prev_progress="$cur_progress"
+      fi
+      if [[ "$no_progress_streak" -ge "$stall_samples" ]]; then
+        if [[ "$stall_restarts" -lt "$stall_max_restarts" ]]; then
+          stall_restarts=$((stall_restarts + 1))
+          no_progress_streak=0
+          log_warn "$pair: stall-watchdog: restarting $stall_unit (restart $stall_restarts/$stall_max_restarts) at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          if sudo systemctl restart "$stall_unit"; then
+            log_warn "$pair: stall-watchdog: $stall_unit restarted successfully"
+          else
+            log_warn "$pair: stall-watchdog: $stall_unit restart failed (will retry next stall)"
+          fi
+        else
+          touch "$out/.stalled"
+          log_error "$pair: stall-watchdog: $stall_unit made no progress after $stall_restarts restarts at $(date -u +%Y-%m-%dT%H:%M:%SZ): row invalid"
+          echo "stall_restarts=$stall_restarts" >> "$out/env.txt"
+          echo "stall_failed=yes" >> "$out/env.txt"
+          break
+        fi
       fi
     fi
     if bakeoff_is_synced; then
