@@ -14,6 +14,38 @@ prysm datadir is ~0.65–1.68 GB, negligible against an EL's hundreds of GB).
 
 ---
 
+## 0. CHECKPOINT STATUS — partial blog, safe to resume (2026-07-11)
+
+**This is a mid-campaign safety checkpoint pushed to `test/client-bakeoff-harness` (PR #190).** The EL
+scorecard (7/7) and the CL matrix (both anchors) below are **final and of-record**; exactly one test
+(nimbus_eth1 anchor) is still running. If this session crashes, another agent can resume the blog from this
+file + [`CLIENT_BAKEOFF_RESULTS.md`](CLIENT_BAKEOFF_RESULTS.md) (raw data) on this branch, plus the
+`project_bakeoff_resume_state.md` memory.
+
+**REMAINING items (operator's list, reconciled to ground truth):**
+- **ethrex restart cliff — ✅ DONE (this session).** Bisected via controlled `stop eth1` → wait → `start`
+  with a live prysm driving forkchoice: **12 min / 68 blk, 20 min / 108 blk, and 23 min / 124 blk all
+  RESUMED cleanly** (imported the missed blocks, datadir intact, head climbed back to tip); **26 min /
+  132 blk STUCK** (canonical head froze, `eth_syncing.currentBlock=0x0`, journal `Failed to fetch headers
+  for sync head — peer(s) queried but did not serve headers`, no datadir collapse in-window). **Cliff edge =
+  ~128 blk ≈ 24–25 min** — the ~128-block servable window. Recorded in the results doc §3a; headline #3 / §3
+  below updated accordingly.
+- **nimbus_eth1 anchor full-sync gamble — ▶ RUNNING.** Launched 2026-07-11 in detached tmux
+  `bakeoff_nimbuseth1` (run_id `client-bakeoff-nimbuseth1-2026-07-11`, 72h cap). nimbus_eth1 is
+  full-sync-only (no snap); it built + started cleanly (NRestarts=0) and is in beacon-sync header download
+  (multi-week ETA) → it will **not** reach tip inside 72h → expect a **partial footprint as a
+  client-limitation**, nimbus CL sweep auto-skipped. Terminal expected ~2026-07-14. Fill the nimbus_eth1 EL
+  row + capsule when it lands, then finalize the blog.
+- **besu Stage B — ✅ DONE (with limitation), NOT a remaining test.** besu snap-synced to a fully validated
+  head (~19h18m, un-pruned **~1.08 TiB**); the pruned re-run for a comparable disk number deadlocked twice
+  and was **operator-abandoned** (2026-07-05, "accept limitation note"). Recorded as a client-limitation
+  (excluded from the pruned-comparable disk ranking). See §4.
+
+**Net: only nimbus_eth1 is still running.** The blog is complete except for the nimbus_eth1 terminal partial
+number and final polish. **Do not re-launch ethrex or besu — both are done.**
+
+---
+
 ## 1. Headline findings (lead with these)
 
 1. **Disk winner: Nethermind ~251 GiB** — ~4.5× smaller than geth's ~1.13 TiB, the smallest of any client
@@ -23,9 +55,11 @@ prysm datadir is ~0.65–1.68 GB, negligible against an EL's hundreds of GB).
 3. **The twist — ethrex's restart-resync cliff:** ethrex is fastest to sync but **throws away its entire
    synced state and re-syncs from scratch (~2h) after a long enough downtime.** The re-snap itself is
    directly verified (2h16m cold sync + a 2h11m re-snap both observed); the exact gap threshold that trips
-   it is **approximate (~25 min, inferred — not yet bisected; pending test #35).** This operability tax is a
-   strong candidate explanation for why a client with the *best* cold-sync numbers has *near-zero* real-world
-   adoption. (See §3 — this is the most novel finding of the campaign.)
+   it is now **bisected to ~128 blocks ≈ 24–25 min** (2026-07-11: 23 min / 124 blk resumed cleanly,
+   26 min / 132 blk stuck) — the true trigger is **header-fetch failure** once the gap exceeds the
+   ~128-block servable window, not state expiry. This operability tax is a strong candidate explanation for
+   why a client with the *best* cold-sync numbers has *near-zero* real-world adoption. (See §3 — this is the
+   most novel finding of the campaign.)
 4. **Restart resilience is a real, differentiating axis** — not just "does it sync" but "what happens after
    a restart." The clients split into three distinct behaviors (§3). This axis is underreported and is
    arguably more decision-relevant for operators than raw cold-sync numbers.
@@ -73,8 +107,10 @@ gap?" is a first-class question the bake-off surfaced. Three distinct behaviors 
      measured** in this campaign (none had its restart-with-gap behavior bisected; to be empirically
      re-verified in the CL-sweep prep). This is what a production operator expects and what makes a client
      operationally boring (good).
-2. **Re-snap cliff** — after a gap beyond a threshold (**~25 min for ethrex — approximate/inferred, not yet
-   bisected; pending test #35**), the client **discards its fully synced state and re-syncs from scratch.**
+2. **Re-snap cliff** — after a gap beyond a threshold (**~128 blocks ≈ 24–25 min for ethrex — bisected
+   2026-07-11: 23 min / 124 blk resumed, 26 min / 132 blk stuck**), the client first **stalls with a
+   disconnected head** (peers won't serve the gap headers) and, at larger gaps, **discards its fully synced
+   state and re-syncs from scratch.**
    - **ethrex** (verified, §3a below). Fast the first time, brutal on every subsequent restart.
 3. **Mid-sync deadlock** — if the CL stops driving the engine during an *in-progress* snap sync, the EL's
    pivot block ages out of the network's servable-state window and the sync wedges irrecoverably; the
@@ -111,9 +147,12 @@ best-in-field cold-sync numbers — "great benchmark, painful to actually run."
 
 **Fairness caveats (state these; do not overclaim):**
 - Observed on **v19.0.0** — ethrex is a young client and this may improve in future releases.
-- The exact downtime threshold that flips graceful-resume → full-resync is not precisely characterized
-  (only that ~1.5–2h triggers it; a sub-25-min restart *should* resume gracefully but is untested — that
-  test is queued as campaign task #35).
+- The exact downtime threshold is now **bisected (2026-07-11, task #35 done):** gaps of 12 min / 68 blk,
+  20 min / 108 blk and 23 min / 124 blk all resumed cleanly, while 26 min / 132 blk stuck (head froze,
+  `Failed to fetch headers for sync head`). So the cliff edge is **~128 blocks ≈ 24–25 min** — the
+  ~128-block servable window. The stuck disconnected-head is the *onset*; the full datadir-collapse re-snap
+  is what the ~1.5–2h gap escalated to. The mechanism is **header-fetch failure beyond the servable window**,
+  not state expiry per se.
 - This does NOT change the recorded **sync-time** result (2h16m, captured at synced time) — the cliff is a
   **separate resilience/operability finding**, presented alongside, not folded into, the cold-sync number.
 - **Reproduced independently on 2026-07-06:** a second restart triggered another full re-snap of **2h11m**
@@ -205,15 +244,24 @@ trustworthy. The bake-off's credibility rests on this gate.
 - **nimbus_eth1** — lightweight Nim, also full-sync-only (no snap); exited mid-sync. Same limitation class.
 - **erigon** — the one hard deadlock; OtterSync + checkpoint-synced CL wedged with zero progress.
 
-## 9. Open data — CL matrix (not yet run)
-The EL sweep is complete; the CL matrix (**lighthouse, teku, nimbus-CL, lodestar, grandine**) is next, run
-against a constant anchor EL. Per operator decision (2026-07-06), the anchor is **ethrex-first** — reusing
-the already-synced ethrex datadir so the CL sweep starts with zero anchor-sync cost — with
-**geth/nethermind/besu as fallback re-run anchors** for any CL that fails or stalls with ethrex. The
-enabling constraint (from §3): ethrex must stay running continuously and never idle >~25 min between CL
-candidates, or it pays the ~2h re-snap. CL config fixes are already committed so the matrix will be fair.
-This section is a placeholder — fill in the CL scorecard (footprint + sync time + verdict per CL) as the
-matrix completes.
+## 9. CL matrix — ✅ COMPLETE (both anchors, ranking reproduced)
+The CL matrix (**lighthouse, teku, nimbus-CL, lodestar, grandine**) is done and of-record — full scorecard
+in [`CLIENT_BAKEOFF_RESULTS.md`](CLIENT_BAKEOFF_RESULTS.md). All five CLs **checkpoint-synced to a fully
+validating head in ~22–23 min** (`config_optimal=yes`, `anchor_synced=yes`, zero crashes), so sync *time* is
+effectively tied and **CL datadir footprint is the differentiator.** It was run against two anchors to prove
+EL/CL decoupling:
+- **ethrex anchor** (run_id `client-bakeoff-clsweep-2026-07-06`) — reused the already-synced ethrex datadir
+  at tip (zero anchor-sync cost); all five CL footprints are <1% of the ~502 GB EL datadir.
+- **geth anchor** cross-anchor confirmation (run_id `client-bakeoff-anchor-rotation-2026-07-07`, 2026-07-08).
+  **geth-anchor CL disk ranking (smaller = better): lodestar (~177 MiB) < lighthouse (~518 MiB) <
+  grandine (~725 MiB) < teku (~936 MiB) < nimbus (~1.2 GiB).**
+
+**Cross-anchor verdict — the ranking reproduces:** the heavyweight tier (nimbus largest, teku second) and
+the lightweight tier (lodestar / lighthouse / grandine smallest) hold on both anchors; only the
+lodestar↔lighthouse order flips within the smallest tier. Absolute sizes scale with post-sync observation
+time, not the EL anchor. Two different EL anchors → the same CL ranking = **EL/CL decoupling confirmed
+empirically.** (The nimbus_eth1 anchor now running is a *third* EL anchor, but as a full-sync-only client it
+won't reach tip in 72h → it yields a partial EL footprint, not a new CL sweep.)
 
 ---
 
