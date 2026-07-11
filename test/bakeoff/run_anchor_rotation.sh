@@ -42,7 +42,7 @@ fi
 # Establish + CL-sweep runs need a real multi-hour sync window, not run_candidate.sh's
 # 5400s smoke default: a 90-min window makes a multi-hour EL sync report fully_synced=no
 # and silently skip the CL sweep. An explicit caller override still wins.
-export ETH2QS_BAKEOFF_SYNC_WINDOW_SECONDS="${ETH2QS_BAKEOFF_SYNC_WINDOW_SECONDS:-432000}"
+export ETH2QS_BAKEOFF_SYNC_WINDOW_SECONDS="${ETH2QS_BAKEOFF_SYNC_WINDOW_SECONDS:-259200}"
 
 # ---------------------------------------------------------------------------
 # Artifact dir + summary log

@@ -22,6 +22,19 @@ cap_unit() {
   done
 }
 
+clear_unit_caps() {
+  local unit="$1"
+  if ! systemctl cat "$unit" >/dev/null 2>&1; then
+    log_warn "Unit $unit not present; skipping cap clear"
+    return 0
+  fi
+
+  # Do not use `revert`: these services are custom units, and that command
+  # can remove unit overrides/definitions. Reset only the runtime properties
+  # this harness sets.
+  cap_unit "$unit" CPUQuota=infinity MemoryMax=infinity MemoryHigh=infinity IOWeight=100
+}
+
 case "$action" in
   apply)
     log_info "Applying runtime resource caps (node stack <= 8 cores / 36G)"
@@ -36,9 +49,7 @@ case "$action" in
         log_info "  Skipping revert of $unit (anchor mode: ETH2QS_BAKEOFF_ANCHOR_EL=${ETH2QS_BAKEOFF_ANCHOR_EL})"
         continue
       fi
-      if systemctl cat "$unit" >/dev/null 2>&1; then
-        sudo systemctl revert "$unit" >/dev/null 2>&1 || true
-      fi
+      clear_unit_caps "$unit"
     done
     ;;
   *)
