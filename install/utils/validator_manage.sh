@@ -8,8 +8,6 @@
 #   ./install/utils/validator_manage.sh            # interactive menu
 #   ./install/utils/validator_manage.sh --exit     # go straight to exit flow
 #   ./install/utils/validator_manage.sh --consolidate
-#   ./install/utils/validator_manage.sh --eip7002-exit
-#   ./install/utils/validator_manage.sh --withdraw-change
 #
 # WARNING: Voluntary exit is IRREVERSIBLE.
 
@@ -30,39 +28,42 @@ if [[ -f "$ROOT_DIR/config/user_config.env" ]]; then
 fi
 
 # EIP-7251 consolidation request contract (mainnet)
-CONSOLIDATION_CONTRACT="0x0000BBdDc7CE488642fb579F8B00f3a590007251"
-WITHDRAWAL_CONTRACT="0x00000961Ef480Eb55e80D19ad83579A64c007002"
+DEFAULT_CONSOLIDATION_CONTRACT_MAINNET="0x0000BBdDc7CE488642fb579F8B00f3a590007251"
+CONSOLIDATION_CHAIN="${CONSOLIDATION_CHAIN:-${ETH_NETWORK:-mainnet}}"
+if [[ -z "${CONSOLIDATION_CONTRACT:-}" && "${CONSOLIDATION_CHAIN,,}" == "mainnet" ]]; then
+    CONSOLIDATION_CONTRACT="$DEFAULT_CONSOLIDATION_CONTRACT_MAINNET"
+fi
 
 ACTION=""
+CONSOLIDATE_DRY_RUN=false
 
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --exit)        ACTION="exit" ;;
-        --consolidate) ACTION="consolidate" ;;
-        --eip7002-exit) ACTION="eip7002_exit" ;;
-        --withdraw-change) ACTION="withdraw_change" ;;
-        --help|-h)
-            cat <<'EOF'
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --exit)        ACTION="exit" ;;
+            --consolidate) ACTION="consolidate" ;;
+            --dry-run)     CONSOLIDATE_DRY_RUN=true ;;
+            --help|-h)
+                cat <<'EOF'
 Usage: ./install/utils/validator_manage.sh [options]
 
 Options:
   --exit          Initiate voluntary exit for one or more local validators
   --consolidate   Consolidate two local validators via EIP-7251
-  --eip7002-exit  Trigger EIP-7002 exit/withdrawal
-  --withdraw-change
-                  Switch validator withdrawal credentials (0x00->0x01 and 0x01->0x02)
+  --dry-run       Preview consolidation without importing keys or sending TXs
   --help          Show this help
 
 Without options, an interactive menu is shown.
 
 WARNING: Voluntary exit is permanent and irreversible.
 EOF
-            exit 0
-            ;;
-        *) echo "Unknown option: $1" >&2; exit 1 ;;
-    esac
-    shift
-done
+                exit 0
+                ;;
+            *) echo "Unknown option: $1" >&2; exit 1 ;;
+        esac
+        shift
+    done
+fi
 
 # =============================================================================
 # CLIENT DETECTION
@@ -92,6 +93,24 @@ detect_beacon_url() {
         port="9596"
     fi
     echo "http://127.0.0.1:${port}"
+}
+
+resolve_prysm_beacon_rpc_provider() {
+    local beacon_url="$1"
+
+    if [[ -n "${PRYSM_BEACON_RPC_PROVIDER:-}" ]]; then
+        printf '%s\n' "$PRYSM_BEACON_RPC_PROVIDER"
+        return 0
+    fi
+
+    local host_port="${beacon_url#*://}"
+    host_port="${host_port%%/*}"
+    local host="${host_port%:*}"
+    if [[ "$host" == "$host_port" ]]; then
+        host="127.0.0.1"
+    fi
+
+    printf '%s:4000\n' "$host"
 }
 
 # Returns the validator client binary path from the validator systemd service.
@@ -145,6 +164,7 @@ print_local_validators() {
     local data_file="$1"
     python3 - "$data_file" <<'PYEOF'
 import json, sys
+
 with open(sys.argv[1]) as f:
     d = json.load(f)
 rows = d.get("validators", [])
@@ -156,15 +176,109 @@ print()
 print(hdr)
 print("  " + "-" * (len(hdr) - 2))
 for v in rows:
-    idx    = v.get("index", "?")
+    idx = v.get("index", "?")
     pubkey = v.get("validator", {}).get("pubkey", "?")
     status = v.get("status", "?")
-    bal    = int(v.get("balance", 0)) / 1e9
-    cred   = v.get("validator", {}).get("withdrawal_credentials", "") or ""
-    wcred  = cred[:4].lower() if cred.startswith("0x") and len(cred) >= 4 else "?"
+    bal = int(v.get("balance", 0)) / 1e9
+    cred = v.get("validator", {}).get("withdrawal_credentials", "") or ""
+    wcred = cred[:4].lower() if cred.startswith("0x") and len(cred) >= 4 else "?"
     print(f"  {idx:<10} {pubkey:<98} {status:<22} {bal:.6f} {wcred}")
 print("  " + "-" * (len(hdr) - 2))
 print(f"  {len(rows)} validator(s)\n")
+PYEOF
+}
+
+validate_consolidation_selection() {
+    local data_file="$1"
+    local source_pubkey="$2"
+    local target_pubkey="$3"
+
+    python3 - "$data_file" "$source_pubkey" "$target_pubkey" <<'PYEOF'
+import json, sys
+
+data_file, source_pubkey, target_pubkey = sys.argv[1:4]
+source_pubkey = source_pubkey.strip().lower()
+target_pubkey = target_pubkey.strip().lower()
+if not source_pubkey.startswith('0x'):
+    source_pubkey = '0x' + source_pubkey
+if not target_pubkey.startswith('0x'):
+    target_pubkey = '0x' + target_pubkey
+
+with open(data_file) as fh:
+    raw = json.load(fh)
+rows = raw.get('validators', [])
+inventory = set()
+for row in rows:
+    pubkey = str(row.get('validator', {}).get('pubkey', '')).strip().lower()
+    if pubkey:
+        inventory.add(pubkey if pubkey.startswith('0x') else '0x' + pubkey)
+
+errors = []
+if source_pubkey == target_pubkey:
+    errors.append('Source and target pubkeys must be different.')
+if source_pubkey not in inventory:
+    errors.append(f'Source pubkey not found in local inventory: {source_pubkey}')
+if target_pubkey not in inventory:
+    errors.append(f'Target pubkey not found in local inventory: {target_pubkey}')
+
+if errors:
+    for error in errors:
+        sys.stderr.write(error + '\n')
+    sys.exit(1)
+PYEOF
+}
+
+resolve_selection_to_pubkeys() {
+    local data_file="$1"
+    local selection="$2"
+
+    python3 - "$data_file" "$selection" <<'PYEOF'
+import json, sys
+
+data_file, selection = sys.argv[1:3]
+with open(data_file) as fh:
+    raw = json.load(fh)
+rows = raw.get('validators', [])
+by_index = {}
+by_pubkey = {}
+ordered = []
+for row in rows:
+    idx = str(row.get('index', '')).strip()
+    pubkey = str(row.get('validator', {}).get('pubkey', '')).strip()
+    if pubkey:
+        normalized = pubkey if pubkey.startswith('0x') else f'0x{pubkey}'
+        by_pubkey[normalized.lower()] = normalized
+        ordered.append(normalized)
+    if idx and idx not in ('None', '?') and pubkey:
+        by_index[idx] = by_pubkey[normalized.lower()]
+
+sel = selection.strip()
+if sel.lower() == 'all':
+    print(','.join(ordered))
+    sys.exit(0)
+
+items = [item for item in sel.replace(',', ' ').split() if item]
+resolved = []
+seen = set()
+missing = []
+for item in items:
+    pubkey = by_index.get(item)
+    if pubkey is None:
+        pubkey = by_pubkey.get(item.lower())
+    if pubkey is None:
+        missing.append(item)
+        continue
+    key = pubkey.lower()
+    if key not in seen:
+        seen.add(key)
+        resolved.append(pubkey)
+
+if missing:
+    sys.stderr.write('Unknown validator selection token(s): %s\n' % ', '.join(missing))
+    sys.stderr.write('Use the displayed index or pubkey for a local validator.\n')
+    sys.exit(1)
+
+print(','.join(resolved))
 PYEOF
 }
 
@@ -179,56 +293,6 @@ confirm_destructive() {
     printf "  %bThis action CANNOT be undone.%b\n\n" "${RED}" "${NC}"
     read -rp "  Type 'yes' to confirm: " answer
     [[ "$answer" == "yes" ]]
-}
-
-normalize_hex_input() {
-    local value="$1"
-    value="${value// /}"
-    [[ -z "$value" ]] && return 0
-    [[ "$value" == 0x* ]] || value="0x${value}"
-    printf "%s" "$value"
-}
-
-query_system_contract_fee() {
-    local contract="$1"
-    local el_rpc="$2"
-    local response
-    local fee_hex="0x0"
-
-    response=$(curl -sf --max-time 5 \
-        -X POST "$el_rpc" \
-        -H "Content-Type: application/json" \
-        -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":\"${contract}\",\"data\":\"0x\"},\"latest\"],\"id\":1}") || { echo "0"; return 0; }
-
-    fee_hex=$(printf "%s" "$response" | \
-        python3 -c "import json, sys; d = json.load(sys.stdin); print(d.get('result', '0x0'))" 2>/dev/null || true)
-
-    [[ -z "$fee_hex" || "$fee_hex" == "null" ]] && fee_hex="0x0"
-
-    python3 -c "print(int('${fee_hex}', 16))" 2>/dev/null || echo 0
-}
-
-get_validator_pubkey() {
-    local data_file="$1"
-    local selector="$2"
-
-    python3 - "$data_file" "$selector" <<'PY'
-import json
-import sys
-
-with open(sys.argv[1]) as f:
-    data = json.load(f)
-selector = sys.argv[2].strip().lower()
-
-for v in data.get("validators", []):
-    index = str(v.get("index", ""))
-    pubkey = (v.get("validator", {}).get("pubkey", "") or "").lower()
-    if selector == index.lower() or selector == pubkey:
-        print(pubkey)
-        sys.exit(0)
-
-sys.exit(1)
-PY
 }
 
 # =============================================================================
@@ -264,20 +328,34 @@ cmd_exit() {
         return 0
     fi
 
+    local resolved_pubkeys
+    if ! resolved_pubkeys=$(resolve_selection_to_pubkeys "$tmpfile" "$selection"); then
+        return 1
+    fi
+    if [[ -z "$resolved_pubkeys" ]]; then
+        log_warn "No validators resolved from the selected input. Aborting."
+        return 0
+    fi
+
     if ! confirm_destructive "Voluntary exit is permanent. Validators cannot re-enter the active set."; then
         log_warn "Aborted by user."
         return 0
     fi
 
     printf "\n"
-    _do_exit "$client" "$beacon_url" "$bin" "$selection"
+    _do_exit "$client" "$beacon_url" "$bin" "$resolved_pubkeys"
 }
 
 _do_exit() {
     local client="$1"
     local beacon_url="$2"
     local bin="$3"
-    local selection="$4"
+    local pubkey_csv="$4"
+
+    if [[ -z "$pubkey_csv" ]]; then
+        log_error "No resolved validator pubkeys were provided."
+        return 1
+    fi
 
     case "$client" in
         lighthouse)
@@ -289,22 +367,8 @@ _do_exit() {
             local pass_file="$HOME/secrets/pass.txt"
             # Lighthouse 4+: 'lighthouse account validator exit'
             # --pubkeys accepts comma-separated list of 0x-prefixed pubkeys or indices
-            if [[ "$selection" == "all" ]]; then
-                log_info "Initiating exit for all local validators..."
-                "$bin" account validator exit \
-                    --beacon-node "$beacon_url" \
-                    --no-confirmation \
-                    --password-file "$pass_file"
-            else
-                local pubkey_list
-                pubkey_list=$(echo "$selection" | tr ' ' ',')
-                log_info "Initiating exit for: $pubkey_list"
-                "$bin" account validator exit \
-                    --beacon-node "$beacon_url" \
-                    --no-confirmation \
-                    --password-file "$pass_file" \
-                    --pubkeys "$pubkey_list"
-            fi
+            log_info "Initiating exit for: $pubkey_csv"
+            "$bin" account validator exit                 --beacon-node "$beacon_url"                 --no-confirmation                 --password-file "$pass_file"                 --pubkeys "$pubkey_csv"
             ;;
 
         prysm)
@@ -316,19 +380,11 @@ _do_exit() {
             local prysm_dir
             prysm_dir=$(dirname "$bin")
             local pass_file="$HOME/secrets/pass.txt"
-            # Prysm: --pubkeys accepts comma-separated 0x-prefixed pubkeys
-            local pubkey_args=""
-            if [[ "$selection" != "all" ]]; then
-                pubkey_args="--pubkeys=$(echo "$selection" | tr ' ' ',')"
-            fi
+            local prysm_beacon_rpc_provider
+            prysm_beacon_rpc_provider=$(resolve_prysm_beacon_rpc_provider "$beacon_url")
             log_info "Running Prysm voluntary exit..."
             # shellcheck disable=SC2086
-            "$bin" validator accounts voluntary-exit \
-                --wallet-dir="$prysm_dir/wallet" \
-                --wallet-password-file="$pass_file" \
-                --beacon-rpc-provider="127.0.0.1:4000" \
-                --accept-terms-of-use \
-                $pubkey_args
+            "$bin" validator accounts voluntary-exit                 --wallet-dir="$prysm_dir/wallet"                 --wallet-password-file="$pass_file"                 --beacon-rpc-provider="$prysm_beacon_rpc_provider"                 --accept-terms-of-use                 --pubkeys="$pubkey_csv"
             ;;
 
         teku)
@@ -339,16 +395,7 @@ _do_exit() {
             fi
             local validator_keys="$HOME/.local/share/teku/validator"
             log_info "Running Teku voluntary exit..."
-            if [[ "$selection" == "all" ]]; then
-                "$bin" voluntary-exit \
-                    --beacon-node-api-endpoint="$beacon_url" \
-                    --validator-keys="$validator_keys/keys:$validator_keys/passwords"
-            else
-                "$bin" voluntary-exit \
-                    --beacon-node-api-endpoint="$beacon_url" \
-                    --validator-public-key="$(echo "$selection" | tr ' ' ',')" \
-                    --validator-keys="$validator_keys/keys:$validator_keys/passwords"
-            fi
+            "$bin" voluntary-exit                 --beacon-node-api-endpoint="$beacon_url"                 --validator-public-key="$pubkey_csv"                 --validator-keys="$validator_keys/keys:$validator_keys/passwords"
             ;;
 
         lodestar)
@@ -358,15 +405,8 @@ _do_exit() {
                 return 1
             fi
             log_info "Running Lodestar voluntary exit..."
-            local pubkey_args=""
-            if [[ "$selection" != "all" ]]; then
-                pubkey_args="--pubkeys=$(echo "$selection" | tr ' ' ',')"
-            fi
             # shellcheck disable=SC2086
-            "$bin" validator voluntary-exit \
-                --beaconNodes="$beacon_url" \
-                --dataDir="$HOME/.local/share/lodestar" \
-                $pubkey_args
+            "$bin" validator voluntary-exit                 --beaconNodes="$beacon_url"                 --dataDir="$HOME/.local/share/lodestar"                 --pubkeys="$pubkey_csv"
             ;;
 
         nimbus)
@@ -388,10 +428,11 @@ _do_exit() {
                 return 1
             fi
             log_info "Running Nimbus voluntary exit..."
-            for sel in $selection; do
-                "$nimbus_bin" deposits exit \
-                    --rest-url="$beacon_url" \
-                    --validator="$sel"
+            local sel
+            IFS=',' read -r -a pubkeys <<< "$pubkey_csv"
+            for sel in "${pubkeys[@]}"; do
+                [[ -n "$sel" ]] || continue
+                "$nimbus_bin" deposits exit                     --rest-url="$beacon_url"                     --validator="$sel"
             done
             ;;
 
@@ -418,15 +459,80 @@ _print_manual_exit_instructions() {
 # EIP-7251 CONSOLIDATION
 # =============================================================================
 
+resolve_consolidation_contract() {
+    local contract="${CONSOLIDATION_CONTRACT:-}"
+    if [[ -n "$contract" ]]; then
+        printf '%s\n' "$contract"
+        return 0
+    fi
+
+    if [[ "${CONSOLIDATION_CHAIN,,}" == "mainnet" ]]; then
+        printf '%s\n' "$DEFAULT_CONSOLIDATION_CONTRACT_MAINNET"
+        return 0
+    fi
+
+    log_error "No consolidation contract is configured for chain '${CONSOLIDATION_CHAIN}'. Set CONSOLIDATION_CONTRACT in config/user_config.env or exports.sh before using a non-mainnet network."
+    return 1
+}
+
+query_execution_chain_id_hex() {
+    local el_rpc="$1"
+    curl -sf --max-time 5         -X POST "$el_rpc"         -H "Content-Type: application/json"         -d '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}'         2>/dev/null | python3 -c "
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    print(d.get('result', '0x0'))
+except Exception:
+    print('0x0')
+"
+}
+
+prepare_consolidation_signer() {
+    local priv_key="$1"
+    local keystore_dir="$2"
+    local password_file="$3"
+
+    if ! command -v cast &>/dev/null; then
+        log_warn "'cast' not found. Install Foundry: curl -L https://foundry.paradigm.xyz | bash && foundryup"
+        return 1
+    fi
+
+    local wallet_password
+    wallet_password=$(python3 -c "import secrets; print(secrets.token_hex(16))")
+
+    local account_name
+    account_name="consolidation-$(date +%s)-$$"
+
+    if ! printf '%s\n%s\n' "$priv_key" "$wallet_password" | cast wallet import --interactive --keystore-dir "$keystore_dir" "$account_name" >/dev/null; then
+        log_error "Failed to import the withdrawal key into a temporary keystore."
+        return 1
+    fi
+
+    printf '%s' "$wallet_password" > "$password_file"
+
+    local keystore_path
+    keystore_path=$(find "$keystore_dir" -maxdepth 1 -type f -name '*.json' -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n 1 | cut -d' ' -f2-)
+    if [[ -z "$keystore_path" ]]; then
+        log_error "Temporary keystore import completed but no keystore file was found."
+        return 1
+    fi
+
+    printf '%s\n' "$keystore_path"
+}
+
 cmd_consolidate() {
     local beacon_url
     beacon_url=$(detect_beacon_url)
     local el_rpc="http://127.0.0.1:8545"
+    local consolidation_contract
+    consolidation_contract=$(resolve_consolidation_contract) || return 1
 
-    printf "\n"
+    printf "
+"
     log_info "=== EIP-7251 Validator Consolidation ==="
-    printf "\n"
-    cat <<'EOF'
+    printf "
+"
+    cat <<EOF
   Consolidation merges two validators, moving the source stake into the target.
   After consolidation the source validator exits automatically.
 
@@ -434,8 +540,11 @@ cmd_consolidate() {
     • Both validators must have 0x01 withdrawal credentials pointing to an
       Ethereum address YOU control (the withdrawal address sends the TX).
     • A dynamic fee is paid to the consolidation contract.
+    • The withdrawal key is imported into a temporary keystore so it does not
+      appear in the send command line.
 
-  Contract: 0x0000BBdDc7CE488642fb579F8B00f3a590007251 (mainnet)
+  Chain    : ${CONSOLIDATION_CHAIN}
+  Contract : ${consolidation_contract}
 
 EOF
 
@@ -447,11 +556,15 @@ EOF
     load_local_validators "$tmpfile" || return 0
     print_local_validators "$tmpfile"
 
-    printf "  Enter the SOURCE validator pubkey (will be exited):\n"
+    printf "  Enter the SOURCE validator pubkey (will be exited):
+"
     read -rp "  Source pubkey (0x...): " src_pubkey
-    printf "\n  Enter the TARGET validator pubkey (receives the stake):\n"
+    printf "
+  Enter the TARGET validator pubkey (receives the stake):
+"
     read -rp "  Target pubkey (0x...): " tgt_pubkey
-    printf "\n"
+    printf "
+"
 
     if [[ -z "$src_pubkey" || -z "$tgt_pubkey" ]]; then
         log_warn "Both pubkeys are required. Aborting."
@@ -464,296 +577,115 @@ EOF
     [[ "$src_pubkey" != 0x* ]] && src_pubkey="0x${src_pubkey}"
     [[ "$tgt_pubkey" != 0x* ]] && tgt_pubkey="0x${tgt_pubkey}"
 
-    # Validate exact BLS pubkey format (0x + 96 hex) before building calldata,
-    # so a malformed input can't produce a bad request that wastes the fee.
-    if [[ ! "$src_pubkey" =~ ^0x[0-9A-Fa-f]{96}$ ]]; then
-        log_warn "Invalid source pubkey format. Expected 0x + 96 hex chars."
-        return 0
-    fi
-    if [[ ! "$tgt_pubkey" =~ ^0x[0-9A-Fa-f]{96}$ ]]; then
-        log_warn "Invalid target pubkey format. Expected 0x + 96 hex chars."
-        return 0
+    if ! validate_consolidation_selection "$tmpfile" "$src_pubkey" "$tgt_pubkey"; then
+        return 1
     fi
 
-    # Query current fee from the consolidation contract (empty calldata returns fee)
-    local fee_dec
-    fee_dec=$(query_system_contract_fee "$CONSOLIDATION_CONTRACT" "$el_rpc")
+    local chain_id_hex
+    chain_id_hex=$(query_execution_chain_id_hex "$el_rpc") || chain_id_hex="0x0"
+    local chain_id_dec
+    chain_id_dec=$(python3 -c "print(int('${chain_id_hex}', 16))" 2>/dev/null || echo 0)
+
+    if [[ "$consolidation_contract" == "$DEFAULT_CONSOLIDATION_CONTRACT_MAINNET" && "$chain_id_dec" -ne 1 ]]; then
+        log_error "Mainnet consolidation contract requires chainId 1, but the connected execution layer reported chainId ${chain_id_dec}. Set CONSOLIDATION_CHAIN/CONSOLIDATION_CONTRACT explicitly before using a non-mainnet network."
+        return 1
+    fi
+
+    log_info "Connected execution chainId: ${chain_id_dec}"
+
+    # EIP-7251 fee getter is selected by zero-length calldata.
+    local fee_hex
+    local fee_body
+    fee_body=$(cat <<EOF
+{"jsonrpc":"2.0","method":"eth_call","params":[{"to":"${consolidation_contract}","data":"0x"},"latest"],"id":1}
+EOF
+)
+    fee_hex=$(curl -sf --max-time 5         -X POST "$el_rpc"         -H "Content-Type: application/json"         -d "$fee_body"         2>/dev/null | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+print(d.get('result', '0x0'))
+" 2>/dev/null || echo "0x0")
+
+    local fee_dec=0
+    if [[ -n "$fee_hex" && "$fee_hex" != "0x" && "$fee_hex" != "0x0" ]]; then
+        fee_dec=$(python3 -c "print(int('${fee_hex}', 16))" 2>/dev/null || echo 0)
+    fi
     local fee_eth
-    fee_eth=$(python3 -c "print(${fee_dec} / 1e18)")
+    fee_eth=$(python3 -c "print(f'{${fee_dec} / 1e18:.8f}')" 2>/dev/null || echo "unknown")
 
     # Calldata: source_pubkey_bytes (48) + target_pubkey_bytes (48) = 96 bytes total
     local src_hex="${src_pubkey#0x}"
     local tgt_hex="${tgt_pubkey#0x}"
     local calldata="0x${src_hex}${tgt_hex}"
 
-    printf "  Consolidation parameters:\n"
-    printf "    Source  : %s\n" "$src_pubkey"
-    printf "    Target  : %s\n" "$tgt_pubkey"
-    printf "    Contract: %s\n" "$CONSOLIDATION_CONTRACT"
-    printf "    Fee     : ~%s ETH (%s wei)\n\n" "$fee_eth" "$fee_dec"
-    printf "  Calldata: %s\n\n" "$calldata"
+    printf "  Consolidation parameters:
+"
+    printf "    Source  : %s
+" "$src_pubkey"
+    printf "    Target  : %s
+" "$tgt_pubkey"
+    printf "    Chain   : %s
+" "$CONSOLIDATION_CHAIN"
+    printf "    Contract: %s
+" "$consolidation_contract"
+    printf "    Fee     : ~%s ETH (%s wei)
 
-    printf "  Command to run (requires the withdrawal address private key):\n\n"
-    printf "    cast send %s \\\\\n" "$CONSOLIDATION_CONTRACT"
-    printf "      --value %swei \\\\\n" "$fee_dec"
-    printf "      --data %s \\\\\n" "$calldata"
-    printf "      --rpc-url %s \\\\\n" "$el_rpc"
-    printf "      --private-key <WITHDRAWAL_ADDRESS_PRIVATE_KEY>\n\n"
+" "$fee_eth" "$fee_dec"
+    printf "  Calldata: %s
 
-    if ! command -v cast &>/dev/null; then
-        log_warn "'cast' not found. Install Foundry: curl -L https://foundry.paradigm.xyz | bash && foundryup"
+" "$calldata"
+
+    printf "  Command to run (imports the withdrawal key into a temporary keystore):
+
+"
+    printf "    cast wallet import --interactive --keystore-dir <TEMP_DIR> <ACCOUNT_NAME>
+"
+    printf "    cast send %s \
+" "$consolidation_contract"
+    printf "      --value %swei \
+" "$fee_dec"
+    printf "      --data %s \
+" "$calldata"
+    printf "      --rpc-url %s \
+" "$el_rpc"
+    printf "      --keystore <TEMP_KEYSTORE> \
+"
+    printf "      --password-file <TEMP_PASSWORD_FILE>
+
+"
+
+    if [[ "$CONSOLIDATE_DRY_RUN" == "true" ]]; then
+        log_info "Dry run requested. No keystore import or transaction will be sent."
         return 0
     fi
 
     if ! confirm_destructive "Consolidation permanently exits the source validator."; then
-        log_warn "Aborted. Run the cast command above manually when ready."
+        log_warn "Aborted. Run the temp-keystore flow above manually when ready."
         return 0
     fi
 
-    read -rsp "  Private key of withdrawal address (hidden): " priv_key
-    printf "\n"
+    read -rsp "  Private key of withdrawal address (hidden; imported into a temp keystore): " priv_key
+    printf "
+"
     if [[ -z "$priv_key" ]]; then
         log_warn "No private key provided. Aborting."
         return 0
     fi
 
-    log_info "Submitting consolidation transaction..."
-    ETH_PRIVATE_KEY="${priv_key}" cast send "${CONSOLIDATION_CONTRACT}" \
-        --value "${fee_dec}wei" \
-        --data "${calldata}" \
-        --rpc-url "${el_rpc}"
+    local signer_keystore_dir
+    signer_keystore_dir=$(mktemp -d /tmp/vmgr_keystore_XXXXXX)
+    local signer_password_file
+    signer_password_file="$signer_keystore_dir/password.txt"
+    # shellcheck disable=SC2064
+    trap "rm -rf '$tmpfile' '$signer_keystore_dir'" EXIT
+
+    local signer_keystore_path
+    signer_keystore_path=$(prepare_consolidation_signer "$priv_key" "$signer_keystore_dir" "$signer_password_file") || return 1
+
+    log_info "Submitting consolidation transaction via temporary keystore..."
+    cast send "${consolidation_contract}"         --value "${fee_dec}wei"         --data "${calldata}"         --rpc-url "${el_rpc}"         --keystore "${signer_keystore_path}"         --password-file "${signer_password_file}"
 
     log_info "Transaction submitted. Monitor the source validator for a pending exit."
-}
-
-# =============================================================================
-# EIP-7002 EL-TRIGGERED EXIT/WITHDRAWAL
-# =============================================================================
-
-cmd_eip7002_exit() {
-    local el_rpc="http://127.0.0.1:8545"
-    local amount_hex
-    local src_pubkey
-    local amount_gwei
-    local withdrawal_addr
-    local fee_dec
-    local fee_eth
-    local calldata
-
-    printf "\n"
-    log_info "=== EIP-7002 Withdrawal/Exit Trigger ==="
-    printf "\n"
-    cat <<'EOF'
-  This flow submits an EL-triggered withdrawal/exit via the official 7002 contract.
-
-  Request payload format:
-    validator_pubkey (48-byte) || amount (8-byte big-endian gwei)
-
-  Amount = 0 indicates full exit.
-
-  Contract: 0x00000961Ef480Eb55e80D19ad83579A64c007002 (mainnet)
-
-EOF
-
-    printf "  Enter the validator pubkey (0x...): "
-    read -r src_pubkey
-    printf "\n"
-    printf "  Enter amount in gwei (0 = full exit): "
-    read -r amount_gwei
-    printf "\n"
-    printf "  Enter the withdrawal address sender (for --from): "
-    read -r withdrawal_addr
-
-    src_pubkey=$(normalize_hex_input "$src_pubkey")
-    if [[ -z "$src_pubkey" || ! "$src_pubkey" =~ ^0x[0-9A-Fa-f]{96}$ ]]; then
-        log_warn "Invalid source pubkey format. Expected 0x + 96 hex chars."
-        return 0
-    fi
-    if [[ -z "$withdrawal_addr" || ! "$withdrawal_addr" =~ ^0x[0-9A-Fa-f]{40}$ ]]; then
-        log_warn "Invalid withdrawal address."
-        return 0
-    fi
-    if [[ -z "$amount_gwei" ]]; then
-        amount_gwei=0
-    fi
-    if [[ ! "$amount_gwei" =~ ^[0-9]+$ ]]; then
-        log_warn "Amount must be a decimal non-negative integer (gwei)."
-        return 0
-    fi
-
-    amount_hex=$(python3 -c "
-import sys
-amount = int(sys.argv[1])
-if amount < 0 or amount >= (1 << 64):
-    raise ValueError
-print(f'{amount:016x}')
-" "$amount_gwei" 2>/dev/null) || {
-        log_warn "Amount must be a u64 gwei value (0 <= amount < 2^64)."
-        return 0
-    }
-
-    fee_dec=$(query_system_contract_fee "$WITHDRAWAL_CONTRACT" "$el_rpc")
-    fee_eth=$(python3 -c "print(${fee_dec} / 1e18)")
-    calldata="0x${src_pubkey#0x}${amount_hex}"
-
-    printf "\n  Command to run:\n\n"
-    printf "    cast send %s \\\n" "$WITHDRAWAL_CONTRACT"
-    printf "      --value %swei \\\n" "$fee_dec"
-    printf "      --data %s \\\n" "$calldata"
-    printf "      --rpc-url %s \\\n" "$el_rpc"
-    printf "      --from %s\n\n" "$withdrawal_addr"
-    printf "  Estimated fee: ~%s ETH (%s wei)\n\n" "$fee_eth" "$fee_dec"
-
-    if ! command -v cast &>/dev/null; then
-        log_warn "'cast' not found. Install Foundry: curl -L https://foundry.paradigm.xyz | bash && foundryup"
-        return 0
-    fi
-
-    if ! confirm_destructive "This action submits an irreversible EL-triggered withdrawal/exit."; then
-        log_warn "Aborted."
-        return 0
-    fi
-
-    cast send "$WITHDRAWAL_CONTRACT" \
-        --value "${fee_dec}wei" \
-        --data "${calldata}" \
-        --rpc-url "$el_rpc" \
-        --from "$withdrawal_addr"
-}
-
-# =============================================================================
-# WITHDRAWAL-CREDENTIAL CHANGE
-# =============================================================================
-
-cmd_withdraw_change() {
-    local beacon_url
-    beacon_url=$(detect_beacon_url)
-    local el_rpc="http://127.0.0.1:8545"
-    local selection
-    local flow
-
-    printf "\n"
-    log_info "=== Withdrawal Credential Change ==="
-    printf "\n"
-    cat <<'EOF'
-  Select one validator and perform one of:
-    1) 0x00 -> 0x01 (BLS-to-execution credential change via ethdo)
-    2) 0x01 -> 0x02 (self-consolidation, source == target)
-
-EOF
-
-    local tmpfile
-    tmpfile=$(mktemp /tmp/vmgr_XXXXXX.json)
-    # shellcheck disable=SC2064
-    trap "rm -f '$tmpfile'" EXIT
-
-    load_local_validators "$tmpfile" || return 0
-    print_local_validators "$tmpfile"
-
-    printf "  Enter validator index or pubkey to update:\n"
-    read -rp "  Selection: " selection
-    if [[ -z "$selection" ]]; then
-        log_warn "No selection made. Aborting."
-        return 0
-    fi
-
-    printf "\n  Choose flow:\n"
-    printf "  [1] 0x00 -> 0x01 (ethdo credentials set)\n"
-    printf "  [2] 0x01 -> 0x02 (self-consolidation)\n"
-    read -rp "  Choice: " flow
-
-    case "$flow" in
-        1)
-            local withdrawal_addr
-            printf "\n  Enter new withdrawal address (0x...): "
-            read -rp "" withdrawal_addr
-            if [[ ! "$withdrawal_addr" =~ ^0x[0-9A-Fa-f]{40}$ ]]; then
-                log_warn "Invalid withdrawal address."
-                return 0
-            fi
-            if ! command -v ethdo &>/dev/null; then
-                log_warn "'ethdo' not found. Install with: go install github.com/wealdtech/ethdo@latest"
-                return 0
-            fi
-
-            printf "\n  Command to run:\n\n"
-            printf "    ethdo validator credentials set --validator %s --withdrawal-address %s --connection %s\n\n" \
-                "$selection" "$withdrawal_addr" "$beacon_url"
-            printf "  Note: ethdo needs the validator MNEMONIC to sign this change; it will\n"
-            printf "  prompt for it interactively (or accepts --mnemonic). Never paste the\n"
-            printf "  mnemonic into shell history or scripts.\n\n"
-
-            if ! confirm_destructive "BLS-to-execution credential update cannot be reverted automatically."; then
-                log_warn "Aborted."
-                return 0
-            fi
-
-            log_info "Submitting withdrawal credentials update..."
-            ethdo validator credentials set \
-                --validator "$selection" \
-                --withdrawal-address "$withdrawal_addr" \
-                --connection "$beacon_url"
-            ;;
-        2)
-            local source_pubkey
-            local fee_dec
-            local fee_eth
-            local calldata
-            local priv_key
-
-            if [[ "$selection" == [0-9]* ]]; then
-                source_pubkey=$(get_validator_pubkey "$tmpfile" "$selection") || {
-                    log_warn "Could not resolve validator pubkey from selection: $selection"
-                    return 0
-                }
-            else
-                source_pubkey=$(normalize_hex_input "$selection")
-            fi
-            if [[ -z "$source_pubkey" || ! "$source_pubkey" =~ ^0x[0-9A-Fa-f]{96}$ ]]; then
-                log_warn "Source pubkey could not be normalized to 0x + 96 hex chars."
-                return 0
-            fi
-
-            fee_dec=$(query_system_contract_fee "$CONSOLIDATION_CONTRACT" "$el_rpc")
-            fee_eth=$(python3 -c "print(${fee_dec} / 1e18)")
-            calldata="0x${source_pubkey#0x}${source_pubkey#0x}"
-
-            printf "\n  Self-consolidation command to run (source == target):\n\n"
-            printf "    cast send %s \\\n" "$CONSOLIDATION_CONTRACT"
-            printf "      --value %swei \\\n" "$fee_dec"
-            printf "      --data %s \\\n" "$calldata"
-            printf "      --rpc-url %s \\\n" "$el_rpc"
-            printf "      --private-key <WITHDRAWAL_ADDRESS_PRIVATE_KEY>\n\n"
-            printf "  Estimated fee: ~%s ETH (%s wei)\n\n" "$fee_eth" "$fee_dec"
-
-            if ! command -v cast &>/dev/null; then
-                log_warn "'cast' not found. Install Foundry: curl -L https://foundry.paradigm.xyz | bash && foundryup"
-                return 0
-            fi
-
-            if ! confirm_destructive "Self-consolidation upgrades 0x01 withdrawal credentials to 0x02 and exits the source validator."; then
-                log_warn "Aborted."
-                return 0
-            fi
-
-            read -rsp "  Private key of withdrawal address (hidden): " priv_key
-            printf "\n"
-            if [[ -z "$priv_key" ]]; then
-                log_warn "No private key provided. Aborting."
-                return 0
-            fi
-
-            log_info "Submitting self-consolidation transaction..."
-            ETH_PRIVATE_KEY="${priv_key}" cast send "$CONSOLIDATION_CONTRACT" \
-                --value "${fee_dec}wei" \
-                --data "${calldata}" \
-                --rpc-url "$el_rpc"
-            ;;
-        *)
-            log_warn "Invalid choice: $flow"
-            return 0
-            ;;
-    esac
 }
 
 # =============================================================================
@@ -778,8 +710,6 @@ show_menu() {
     printf "  [1] List local validators\n"
     printf "  [2] Voluntary exit  (irreversible)\n"
     printf "  [3] Consolidate validators  (EIP-7251)\n"
-    printf "  [4] EIP-7002 exit / withdrawal\n"
-    printf "  [5] Withdrawal credential change\n"
     printf "  [q] Quit\n\n"
     read -rp "  Choice: " choice
 
@@ -787,8 +717,6 @@ show_menu() {
         1) "$SCRIPT_DIR/validator_list.sh" ;;
         2) cmd_exit ;;
         3) cmd_consolidate ;;
-        4) cmd_eip7002_exit ;;
-        5) cmd_withdraw_change ;;
         q|Q|quit) printf "  Bye.\n"; exit 0 ;;
         *) log_warn "Invalid choice: ${choice}"; show_menu ;;
     esac
@@ -802,10 +730,10 @@ main() {
     case "$ACTION" in
         exit)        cmd_exit ;;
         consolidate) cmd_consolidate ;;
-        eip7002_exit) cmd_eip7002_exit ;;
-        withdraw_change) cmd_withdraw_change ;;
         "")          show_menu ;;
     esac
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi

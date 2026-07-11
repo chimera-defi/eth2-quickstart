@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# Eth2 Quick Start — 0x02 Validator Creation Helper
-# Focused operator checklist and launcher for modern compounding validators.
+# Eth2 Quick Start — 0x01 Validator Creation Helper
+# Focused operator checklist and launcher for standard non-compounding validators.
 # The script prints the checklist, shows the current local validator inventory,
 # and can launch the official deposit CLI if one is available.
 #
 # Usage:
-#   ./install/utils/validator_create_0x02.sh
-#   ./install/utils/validator_create_0x02.sh --launch
-#   ./scripts/eth2qs.sh validator-create-0x02 --launch
+#   ./install/utils/validator_create_0x01.sh
+#   ./install/utils/validator_create_0x01.sh --launch
+#   ./scripts/eth2qs.sh validator-create-0x01 --launch
 
 set -euo pipefail
 
@@ -37,7 +37,7 @@ EXECUTION_ADDRESS=""
 
 usage() {
     cat <<'EOF'
-Usage: ./install/utils/validator_create_0x02.sh [options]
+Usage: ./install/utils/validator_create_0x01.sh [options]
 
 Options:
   --launch                    Launch the detected deposit CLI interactively.
@@ -53,7 +53,7 @@ Options:
   --help                      Show this help.
 
 This helper prints the offline key-generation checklist and, when launched,
-starts the official deposit CLI so you can select 0x02 / compounding
+starts the official deposit CLI so you can select 0x01 / standard
 withdrawal credentials during the CLI prompts.
 EOF
 }
@@ -61,13 +61,13 @@ EOF
 show_entry_checklist() {
     cat <<'EOF'
 
-=== 0x02 Validator Entry Checklist ===
+=== 0x01 Validator Entry Checklist ===
 
 - Use an offline or otherwise isolated machine for key generation.
 - Generate a new mnemonic unless you intentionally want to derive from a
   secure existing mnemonic.
 - Use a withdrawal address you control and can recover.
-- Choose compounding / 0x02 withdrawal credentials in the deposit tool.
+- Choose standard / 0x01 withdrawal credentials in the deposit tool.
 - Save the keystore passwords, mnemonic backup, and deposit_data file securely.
 - Verify the deposit contract address before sending ETH.
 - After deposit, import the keystores into the validator client on the node.
@@ -91,7 +91,6 @@ print_command_preview() {
         launcher="$launcher_detected"
     fi
     local cmd=("$launcher" "$MODE")
-    cmd+=("--compounding")
     cmd+=("--num_validators=$NUM_VALIDATORS")
     cmd+=("--mnemonic_language=$MNEMONIC_LANGUAGE")
     cmd+=("--chain=$CHAIN")
@@ -104,7 +103,7 @@ print_command_preview() {
     printf "Recommended command template:\n\n"
     printf "  %s\n\n" "${cmd[*]}"
     printf "If your installed deposit CLI asks for withdrawal credential type, select\n"
-    printf "the compounding / 0x02 option.\n\n"
+    printf "the standard / 0x01 option.\n\n"
 }
 
 find_deposit_launcher() {
@@ -146,7 +145,6 @@ launch_deposit_tool() {
 
     local args=()
     args+=("$MODE")
-    args+=("--compounding")
     args+=("--num_validators=$NUM_VALIDATORS")
     args+=("--mnemonic_language=$MNEMONIC_LANGUAGE")
     args+=("--chain=$CHAIN")

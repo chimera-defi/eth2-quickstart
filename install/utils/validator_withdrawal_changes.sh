@@ -40,6 +40,7 @@ BEACON_URL_OVERRIDE=""
 SELECTED_INDICES=""
 SELECTED_WITHDRAWAL_CREDENTIALS=""
 GENERATED_OUTPUT_DIR=""
+MANIFEST_FILENAME=".eth2qs-withdrawal-manifest"
 DRY_RUN=false
 
 usage() {
@@ -126,6 +127,79 @@ list_json_files() {
         return 0
     fi
     find "$data_dir" -maxdepth 1 -type f -name '*.json' | sort
+}
+
+write_generation_manifest() {
+    local target_dir="$1"
+    local manifest_path="$target_dir/$MANIFEST_FILENAME"
+
+    python3 - "$manifest_path" "$CHAIN" "$SELECTOR" "$SELECTED_INDICES" "$SELECTED_WITHDRAWAL_CREDENTIALS" "$WITHDRAWAL_ADDRESS" <<'PYEOF'
+import json, sys
+from datetime import datetime, timezone
+
+manifest_path, chain, selector, selected_indices, selected_credentials, withdrawal_address = sys.argv[1:7]
+manifest = {
+    'generated_at_utc': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+    'tool': 'validator_withdrawal_changes',
+    'chain': chain,
+    'selector': selector,
+    'validator_indices': selected_indices,
+    'withdrawal_credentials': selected_credentials,
+    'withdrawal_address': withdrawal_address,
+    'expected_files': [
+        f'bls_to_execution_change-{idx}.json'
+        for idx in selected_indices.split(',')
+        if idx
+    ],
+}
+with open(manifest_path, 'w') as fh:
+    json.dump(manifest, fh, indent=2, sort_keys=True)
+    fh.write('\n')
+PYEOF
+}
+
+validate_submission_manifest() {
+    local input_dir="$1"
+    local manifest_path="$input_dir/$MANIFEST_FILENAME"
+
+    if [[ ! -f "$manifest_path" ]]; then
+        log_error "Missing generation manifest in $input_dir. Run --generate first and submit from the generated staging directory."
+        return 1
+    fi
+
+    python3 - "$manifest_path" "$SELECTOR" "$CHAIN" "$SELECTED_INDICES" "$SELECTED_WITHDRAWAL_CREDENTIALS" "$WITHDRAWAL_ADDRESS" "$input_dir" <<'PYEOF'
+import json, os, sys
+
+manifest_path, selector, chain, selected_indices, selected_credentials, withdrawal_address, input_dir = sys.argv[1:8]
+with open(manifest_path) as fh:
+    manifest = json.load(fh)
+
+errors = []
+expected = {
+    'chain': chain,
+    'selector': selector,
+    'validator_indices': selected_indices,
+    'withdrawal_credentials': selected_credentials,
+}
+if withdrawal_address:
+    expected['withdrawal_address'] = withdrawal_address
+for key, value in expected.items():
+    if str(manifest.get(key, '')) != str(value):
+        errors.append(f"{key} mismatch: manifest={manifest.get(key, '')!r} current={value!r}")
+
+expected_files = sorted(manifest.get('expected_files', []))
+actual_files = sorted(
+    entry for entry in os.listdir(input_dir)
+    if entry.endswith('.json') and entry != os.path.basename(manifest_path)
+)
+if expected_files != actual_files:
+    errors.append(f"file set mismatch: expected={expected_files!r} actual={actual_files!r}")
+
+if errors:
+    for error in errors:
+        sys.stderr.write(error + '\n')
+    sys.exit(1)
+PYEOF
 }
 
 format_command() {
@@ -283,6 +357,7 @@ generate_changes() {
 
     log_info "Generating BLS-to-execution changes with $launcher"
     "$launcher" "${args[@]}"
+    write_generation_manifest "$target_dir" || return 1
 }
 
 preview_generation() {
@@ -344,6 +419,8 @@ submit_changes() {
         log_error "Beacon URL is required to submit changes."
         return 1
     fi
+
+    validate_submission_manifest "$input_dir" || return 1
 
     if [[ "$YES" != true ]]; then
         printf '\n'
@@ -506,52 +583,58 @@ PYEOF
     log_info "Detected consensus client: ${client}"
     log_info "Beacon API: ${beacon_url}"
     log_info "Credential filter: ${SELECTOR}"
-    log_info "Inventory snapshot: $(python3 - "$selected_file" <<'PYEOF'
+    local beacon_query_status
+    beacon_query_status=$(python3 - "$selected_file" <<'PYEOF'
+import json, sys
+with open(sys.argv[1]) as fh:
+    raw = json.load(fh)
+print(raw.get('beacon_query_status', 'unknown'))
+PYEOF
+)
+    local inventory_snapshot
+    inventory_snapshot=$(python3 - "$selected_file" <<'PYEOF'
 import json, sys
 with open(sys.argv[1]) as fh:
     raw = json.load(fh)
 print(raw.get('generated_at_utc', 'unknown'))
 PYEOF
-)"
+)
+    log_info "Inventory snapshot: ${inventory_snapshot}"
+    if [[ "$beacon_query_status" != "ok" ]]; then
+        log_warn "Validator inventory beacon query status: $beacon_query_status"
+        log_warn "The snapshot may be incomplete or stale."
+    fi
 
     print_inventory_table "$selected_file"
 
-    local count
-    count=$(python3 - "$selected_file" <<'PYEOF'
+    local selection_snapshot
+    selection_snapshot=$(python3 - "$selected_file" <<'PYEOF'
 import json, sys
 with open(sys.argv[1]) as fh:
     raw = json.load(fh)
-print(len(raw.get('validators', [])))
+rows = raw.get('validators', [])
+indices = []
+creds = []
+for v in rows:
+    idx = str(v.get('index', '')).strip()
+    if idx not in ('', 'None', '?'):
+        indices.append(idx)
+    cred = v.get('validator', {}).get('withdrawal_credentials', '') or ''
+    if cred:
+        creds.append(cred)
+print('|'.join([
+    str(len(rows)),
+    ','.join(indices),
+    ','.join(creds),
+]))
 PYEOF
 )
+    local count indices credentials
+    IFS='|' read -r count indices credentials <<< "$selection_snapshot"
     if [[ "$count" -eq 0 ]]; then
         log_warn "No validators matched credential filter '$SELECTOR'."
         return 0
     fi
-
-    local indices
-    indices=$(python3 - "$selected_file" <<'PYEOF'
-import json, sys
-with open(sys.argv[1]) as fh:
-    raw = json.load(fh)
-vals = raw.get('validators', [])
-print(','.join(str(v.get('index')) for v in vals if str(v.get('index')) not in ('', 'None')))
-PYEOF
-)
-    local credentials
-    credentials=$(python3 - "$selected_file" <<'PYEOF'
-import json, sys
-with open(sys.argv[1]) as fh:
-    raw = json.load(fh)
-vals = raw.get('validators', [])
-creds = []
-for v in vals:
-    cred = v.get('validator', {}).get('withdrawal_credentials', '') or ''
-    if cred:
-        creds.append(cred)
-print(','.join(creds))
-PYEOF
-)
     SELECTED_INDICES="$indices"
     SELECTED_WITHDRAWAL_CREDENTIALS="$credentials"
 
@@ -572,6 +655,11 @@ PYEOF
 
         log_info "Dry run: no files will be written or submitted."
         log_info "Would affect ${count} validator(s): ${SELECTED_INDICES}"
+        if [[ -n "$beacon_url" ]]; then
+            if ! curl -sf --max-time 5 "$beacon_url/eth/v1/node/health" >/dev/null 2>&1; then
+                log_warn "Beacon URL does not appear reachable right now: $beacon_url"
+            fi
+        fi
 
         if [[ "$GENERATE" == true ]]; then
             local planned_dir="$OUT_DIR"

@@ -62,6 +62,7 @@ EOF
 set -Eeuo pipefail
 : "${MOCK_CURL_LOG:?missing MOCK_CURL_LOG}"
 echo "[MOCK] curl $*" >> "$MOCK_CURL_LOG"
+printf '200'
 exit 0
 EOF
 
@@ -127,6 +128,62 @@ test_inventory_shows_withdrawal_types() {
 }
 
 # shellcheck disable=SC2317
+test_submit_requires_generation_manifest() {
+    local temp_root output curl_log out_dir
+    temp_root="$(setup_fake_env)"
+    curl_log="$temp_root/curl.log"
+    out_dir="$temp_root/stale"
+    mkdir -p "$out_dir"
+    printf '{"mock":true}\n' > "$out_dir/bls_to_execution_change-101.json"
+
+    set +e
+    output="$(MOCK_CURL_LOG="$curl_log" PATH="$temp_root/bin:$PATH" "$PROJECT_ROOT/install/utils/validator_withdrawal_changes.sh"         --validators-json "$temp_root/validators.json"         --credential-type 0x00         --submit         --yes         --out-dir "$out_dir"         --deposit-tool deposit-sh         --beacon-url http://127.0.0.1:5052 2>&1)"
+    local rc=$?
+    set -e
+
+    [[ $rc -ne 0 ]]
+    printf '%s
+' "$output" | grep -q 'Missing generation manifest'
+    assert_file_empty "$curl_log"
+
+    rm -rf "$temp_root"
+}
+
+# shellcheck disable=SC2317
+test_submit_only_accepts_manifest_withdrawal_address() {
+    local temp_root output curl_log out_dir
+    temp_root="$(setup_fake_env)"
+    curl_log="$temp_root/curl.log"
+    out_dir="$temp_root/generated"
+    mkdir -p "$out_dir"
+    printf '{"mock":true}\n' > "$out_dir/bls_to_execution_change-101.json"
+    cat > "$out_dir/.eth2qs-withdrawal-manifest" <<'JSONEOF'
+{
+  "chain": "mainnet",
+  "selector": "0x00",
+  "validator_indices": "101",
+  "withdrawal_credentials": "0x00aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "withdrawal_address": "0x1111111111111111111111111111111111111111",
+  "expected_files": ["bls_to_execution_change-101.json"]
+}
+JSONEOF
+
+    output="$(MOCK_CURL_LOG="$curl_log" PATH="$temp_root/bin:$PATH" "$PROJECT_ROOT/install/utils/validator_withdrawal_changes.sh" \
+        --validators-json "$temp_root/validators.json" \
+        --credential-type 0x00 \
+        --submit \
+        --yes \
+        --out-dir "$out_dir" \
+        --deposit-tool deposit-sh \
+        --beacon-url http://127.0.0.1:5052)"
+
+    printf '%s\n' "$output" | grep -q "Submitting bls_to_execution_change-101.json"
+    assert_contains "/eth/v1/beacon/pool/bls_to_execution_changes" "$curl_log"
+
+    rm -rf "$temp_root"
+}
+
+# shellcheck disable=SC2317
 test_generate_and_submit_0x00_changes() {
     local temp_root output deposit_log curl_log out_dir
     temp_root="$(setup_fake_env)"
@@ -165,6 +222,8 @@ echo "=========================================="
 
 run_test "dry run reports without invoking tools" test_dry_run_reports_without_invoking_tools
 run_test "inventory shows withdrawal types" test_inventory_shows_withdrawal_types
+run_test "submit requires generation manifest" test_submit_requires_generation_manifest
+run_test "submit only accepts manifest withdrawal address" test_submit_only_accepts_manifest_withdrawal_address
 run_test "generate and submit 0x00 changes" test_generate_and_submit_0x00_changes
 
 echo ""
