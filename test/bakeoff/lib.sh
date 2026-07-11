@@ -153,7 +153,7 @@ bakeoff_is_synced() {
 #   CL:
 #     prysm       -> --beacon-db-pruning or beacon-db-pruning:
 #     lighthouse  -> checkpoint-sync-url (default prune ok)
-#     teku        -> data-storage-mode.*minimal  (case-insensitive)
+#     teku        -> data-storage-mode minimal or prune (case-insensitive)
 #     nimbus      -> history.*prune  (persistent config; checkpoint-sync is a
 #                    one-shot bootstrap step, out of scope for this gate)
 #     lodestar    -> pruneHistory.*true
@@ -250,7 +250,7 @@ bakeoff_check_config_optimal() {
       _has_token "lighthouse:checkpoint-sync-url" 'checkpoint-sync-url' "$cl_combined"
       ;;
     teku)
-      _has_token "teku:data-storage-mode=minimal" 'data-storage-mode[=: ]+["\047]?[Mm]inimal' "$cl_combined"
+      _has_token "teku:data-storage-mode=minimal-or-prune" 'data-storage-mode[=: ]+["\047]?([Mm]inimal|[Pp]rune)' "$cl_combined"
       ;;
     nimbus)
       # trustedNodeSync/--trusted-node-url only appear in the one-shot bootstrap
