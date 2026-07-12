@@ -1,4 +1,4 @@
-# Disk cleanup handoff — geth state bloat / freezer pruning
+# Geth disk prune — reclaiming freezer space
 
 _Last updated: 2026-06-16_
 
@@ -9,7 +9,7 @@ _Last updated: 2026-06-16_
 - `geth snapshot prune-state` **does not work and never will** on this node —
   it's the wrong tool for our setup.
 - The fix is **`geth prune-history --history.chain postmerge`**, wrapped in
-  [`clean_geth_history.sh`](./clean_geth_history.sh).
+  [`clean_geth_history.sh`](../clean_geth_history.sh).
 - There is **only one geth database**. A whole-disk scan found exactly one
   `chaindata` + one `ancient`. No second/duplicate db.
 
