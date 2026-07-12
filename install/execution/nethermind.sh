@@ -58,6 +58,61 @@ ensure_directory "$HOME/.local/share/nethermind/nethermind_db"
 # Create temporary directory for custom configuration
 create_temp_config_dir
 
+# Detect external IP via shared helper (safe fallback chain; no-op if all fail).
+# `|| true` guards set -e: the substitution must not abort the install if detection
+# fails — we degrade gracefully instead (besu.sh follows the same guarded pattern).
+NETHERMIND_EXTERNAL_IP="$(detect_external_ip || true)"
+if [[ -n "$NETHERMIND_EXTERNAL_IP" ]]; then
+    NETHERMIND_EXTERNAL_IP_LINE="    \"ExternalIp\": \"${NETHERMIND_EXTERNAL_IP}\","
+    log_info "Nethermind advertising external IP for P2P: ${NETHERMIND_EXTERNAL_IP}"
+else
+    NETHERMIND_EXTERNAL_IP_LINE=""
+    log_warn "Could not detect external IP — omitting ExternalIp; nethermind will rely on its own NAT/discovery detection (may yield degraded peering)"
+fi
+
+# Fetch the latest finalized block to use as a real snap pivot (post-merge, so TTD is fixed).
+# A zero pivot makes SnapSync degenerate to a full fast-sync from genesis.
+# Each endpoint is validated independently: a 200-OK JSON-RPC error body (missing .result,
+# or .result.number missing/empty) is treated as a failure and the next endpoint is tried.
+# Transport failure (curl non-zero) also falls through to the next endpoint.
+# If ALL endpoints fail, NETHERMIND_PIVOT_NUMBER stays 0 and NETHERMIND_PIVOT_HASH stays empty.
+NETHERMIND_PIVOT_NUMBER=0
+NETHERMIND_PIVOT_HASH=""
+_nmd_pivot_rpc_data='{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["finalized",false],"id":1}'
+for _nmd_url in "https://ethereum.publicnode.com" "https://rpc.flashbots.net"; do
+    _nmd_json="$(curl -s --max-time 15 -H 'Content-Type: application/json' \
+        --data "$_nmd_pivot_rpc_data" "$_nmd_url" 2>/dev/null || true)"
+    # Validate: .result must exist and .result.number must be a non-empty hex string.
+    # A JSON-RPC error body has no .result key; we use .get() so KeyError becomes empty string.
+    _nmd_parsed="$(printf '%s' "$_nmd_json" | python3 -c \
+        'import json,sys
+r=(json.load(sys.stdin) if sys.stdin else {}).get("result") or {}
+n=r.get("number",""); h=r.get("hash","")
+print(str(int(n,16))+" "+h if n and h else "")
+' 2>/dev/null || true)"
+    if [[ -n "$_nmd_parsed" ]]; then
+        NETHERMIND_PIVOT_NUMBER="${_nmd_parsed%% *}"
+        NETHERMIND_PIVOT_HASH="${_nmd_parsed##* }"
+        break
+    fi
+    log_warn "Nethermind pivot: endpoint ${_nmd_url} returned unusable response, trying next"
+done
+
+# Only write a pivot if we fetched a real, recent finalized block. On failure we OMIT
+# PivotNumber/PivotHash rather than write 0 — a zero pivot degenerates SnapSync into a
+# genesis fast-sync. With no pivot, SnapSync bootstraps from the consensus client's
+# forkchoice once peers connect (safe fallback: dynamic value, sane default on failure).
+NETHERMIND_PIVOT_BLOCK=""
+if [[ "$NETHERMIND_PIVOT_NUMBER" =~ ^[0-9]+$ ]] && [[ "$NETHERMIND_PIVOT_NUMBER" -gt 0 ]] \
+   && [[ "$NETHERMIND_PIVOT_HASH" =~ ^0x[0-9a-fA-F]{64}$ ]] \
+   && [[ "$NETHERMIND_PIVOT_HASH" != "0x0000000000000000000000000000000000000000000000000000000000000000" ]]; then
+    NETHERMIND_PIVOT_BLOCK="    \"PivotNumber\": ${NETHERMIND_PIVOT_NUMBER},
+    \"PivotHash\": \"${NETHERMIND_PIVOT_HASH}\","
+    log_info "Nethermind snap pivot: block ${NETHERMIND_PIVOT_NUMBER} (${NETHERMIND_PIVOT_HASH})"
+else
+    log_warn "Could not fetch a finalized snap pivot — omitting PivotNumber/PivotHash; SnapSync will bootstrap its pivot from the consensus client forkchoice once peers connect (slower start, NOT a genesis fast-sync)"
+fi
+
 # Create custom configuration with variables
 cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
 {
@@ -71,8 +126,8 @@ cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
   },
   "Network": {
     "DiscoveryPort": 30303,
-    "P2PPort": 30303,
-    "LocalIp": "127.0.0.1"
+${NETHERMIND_EXTERNAL_IP_LINE}
+    "P2PPort": 30303
   },
   "JsonRpc": {
     "Enabled": true,
@@ -83,7 +138,7 @@ cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
     "JwtSecretFile": "$HOME/secrets/jwt.hex",
     "EngineHost": "$LH",
     "EnginePort": ${NETHERMIND_ENGINE_PORT},
-    "EnabledModules": ["Admin", "Eth", "Net", "Web3"]
+    "EnabledModules": ["Eth", "Net", "Web3"]
   },
   "EthStats": {
     "Enabled": false
@@ -97,13 +152,15 @@ cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
     "ExposePort": 6060
   },
   "Sync": {
+    "FastSync": true,
     "SnapSync": true,
-    "PivotNumber": 0,
-    "PivotHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "PivotTotalDifficulty": "0",
+${NETHERMIND_PIVOT_BLOCK}
+    "PivotTotalDifficulty": "58750003716598352816469",
     "FastBlocks": true,
     "UseGethLimitsInFastBlocks": false,
-    "SnapSyncCatchUpHeightDelta": 10000000000
+    "AncientBodiesBarrier": 15537394,
+    "AncientReceiptsBarrier": 15537394,
+    "FastSyncCatchUpHeightDelta": 10000000000
   },
   "Bloom": {
     "IndexLevelBucketSizes": [4, 8, 8]

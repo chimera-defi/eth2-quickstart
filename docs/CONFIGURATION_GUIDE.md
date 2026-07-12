@@ -98,11 +98,31 @@ rm -rf ./tmp/
 - **Base Config**: `configs/nethermind/nethermind_base.cfg`
 - **Custom Variables**: Memory, ports, fee recipient, graffiti
 - **Merge Strategy**: Generated JSON + base defaults (not yet standardized on schema-aware merge tooling)
+- **History mode**: **Pruned full node** (not archive). `AncientBodiesBarrier: 15537394` and
+  `AncientReceiptsBarrier: 15537394` drop pre-merge block bodies and receipts. Recent state
+  is fully present; historical state queries before the merge block (e.g. `eth_getBalance` at
+  an ancient block number, `debug_traceTransaction` on a pre-merge tx) will return `null` or
+  an error. If your use-case requires archive state, run Nethermind without the Ancient barriers
+  and without `SnapSync` (use a full `FastSync` or `Archive` config).
 
-#### Besu (TOML)  
+#### Besu (TOML)
 - **Base Config**: `configs/besu/besu_base.toml`
 - **Custom Variables**: Memory, ports, data path, mining settings
 - **Merge Strategy**: TOML concatenation
+- **History mode**: **Pruned full node** (not archive). `history-expiry-prune=true` removes
+  pre-merge block bodies and receipts (Besu 26.x lever; a non-deprecated replacement is expected
+  in 27.x). Historical state queries for ancient blocks will return `null`. For archive state,
+  omit `history-expiry-prune` and use `data-storage-format="FOREST"` (deprecated but still
+  available; BONSAI does not support archive queries in all versions).
+
+#### Reth (Rust)
+- **No base config file** — flags are passed on the `reth node` command line by `reth.sh`.
+- **History mode**: **Pruned full node** (not archive). `--full` enables pruned-full mode (reth
+  default is archive). `--prune.bodies.pre-merge` and `--prune.receipts.pre-merge` additionally
+  drop pre-merge block bodies and receipts for post-merge parity with geth
+  `--history.chain postmerge`. Ancient pre-merge state queries will return `null`. For archive
+  state, remove all `--full` and `--prune.*` flags; note this requires significantly more disk
+  (~2.8 TiB vs ~1 TiB for pruned-full as of mid-2026).
 
 ### Consensus Clients
 

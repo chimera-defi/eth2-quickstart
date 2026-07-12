@@ -2,9 +2,13 @@
 # Current as of Besu 24.x — BONSAI + SNAP are default (24.3+)
 
 # Network settings
+# NOTE: p2p-host (the advertised P2P host) is intentionally NOT set here. besu.sh
+# injects the detected external IP at install time; pinning it to loopback in the base
+# both reintroduces the loopback-peering bug and produces a DUPLICATE p2p-host key
+# (besu's strict TOML parser rejects duplicates -> exit 2 crash-loop). On detection
+# failure besu falls back to its own default.
 network="mainnet"
 p2p-port=30303
-p2p-host="127.0.0.1"
 discovery-enabled=true
 max-peers=50
 
@@ -15,12 +19,12 @@ data-storage-format="BONSAI"
 rpc-http-enabled=true
 rpc-http-host="$LH"
 rpc-http-cors-origins=["*"]
-rpc-http-api=["ADMIN","ETH","NET","WEB3","ENGINE"]
+rpc-http-api=["ETH","NET","WEB3"]
 
 # WebSocket settings
 rpc-ws-enabled=true
 rpc-ws-host="$LH"
-rpc-ws-api=["WEB3","ETH","NET","ENGINE"]
+rpc-ws-api=["WEB3","ETH","NET"]
 
 # Engine API settings (for consensus client communication)
 engine-rpc-enabled=true
@@ -28,6 +32,12 @@ engine-host-allowlist=["localhost","$LH"]
 
 # Sync settings
 sync-mode="SNAP"
+
+# Post-merge history pruning (geth --history.chain postmerge analogue).
+# On besu 26.6.x the flag is marked deprecated but is the only online history-prune
+# lever available; it prunes pre-merge block bodies+receipts to keep footprint
+# comparable to geth/nethermind. A non-deprecated replacement is expected in 27.x.
+history-expiry-prune=true
 
 # Performance optimizations
 # tx-pool-max-size, tx-pool-hash-limit, tx-pool-retention-hours removed:
