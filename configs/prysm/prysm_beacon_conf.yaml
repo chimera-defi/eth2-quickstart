@@ -38,3 +38,8 @@ min-builder-bid: 2000000
 disable-broadcast-slashings: true
 enable-discovery-reboot: true
 ignore-unviable-attestations: true
+
+# DB pruning: prune beacon DB beyond MIN_EPOCHS_FOR_BLOCK_REQUESTS duration.
+# Without this the DB grows linearly on long-running nodes.
+# Verified flag against: prysm.sh beacon-chain --help on installed binary.
+beacon-db-pruning: true
