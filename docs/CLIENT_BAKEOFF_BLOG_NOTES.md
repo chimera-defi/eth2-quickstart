@@ -14,13 +14,13 @@ prysm datadir is ~0.65–1.68 GB, negligible against an EL's hundreds of GB).
 
 ---
 
-## 0. CHECKPOINT STATUS — partial blog, safe to resume (2026-07-11)
+## 0. CAMPAIGN COMPLETE — all tests finished (2026-07-14)
 
-**This is a mid-campaign safety checkpoint pushed to `test/client-bakeoff-harness` (PR #190).** The EL
-scorecard (7/7) and the CL matrix (both anchors) below are **final and of-record**; exactly one test
-(nimbus_eth1 anchor) is still running. If this session crashes, another agent can resume the blog from this
-file + [`CLIENT_BAKEOFF_RESULTS.md`](CLIENT_BAKEOFF_RESULTS.md) (raw data) on this branch, plus the
-`project_bakeoff_resume_state.md` memory.
+**All bake-off tests are now complete.** The EL scorecard (7/7), the CL matrix (both anchors), the ethrex
+restart cliff, and the final nimbus_eth1 anchor are **final and of-record**. The publishable writeup lives at
+[`CLIENT_BAKEOFF_BLOG.md`](CLIENT_BAKEOFF_BLOG.md); raw data in
+[`CLIENT_BAKEOFF_RESULTS.md`](CLIENT_BAKEOFF_RESULTS.md). This §0 block was originally a mid-campaign safety
+checkpoint (2026-07-11) and is retained for provenance.
 
 **REMAINING items (operator's list, reconciled to ground truth):**
 - **ethrex restart cliff — ✅ DONE (this session).** Bisected via controlled `stop eth1` → wait → `start`
@@ -30,19 +30,21 @@ file + [`CLIENT_BAKEOFF_RESULTS.md`](CLIENT_BAKEOFF_RESULTS.md) (raw data) on th
   for sync head — peer(s) queried but did not serve headers`, no datadir collapse in-window). **Cliff edge =
   ~128 blk ≈ 24–25 min** — the ~128-block servable window. Recorded in the results doc §3a; headline #3 / §3
   below updated accordingly.
-- **nimbus_eth1 anchor full-sync gamble — ▶ RUNNING.** Launched 2026-07-11 in detached tmux
-  `bakeoff_nimbuseth1` (run_id `client-bakeoff-nimbuseth1-2026-07-11`, 72h cap). nimbus_eth1 is
-  full-sync-only (no snap); it built + started cleanly (NRestarts=0) and is in beacon-sync header download
-  (multi-week ETA) → it will **not** reach tip inside 72h → expect a **partial footprint as a
-  client-limitation**, nimbus CL sweep auto-skipped. Terminal expected ~2026-07-14. Fill the nimbus_eth1 EL
-  row + capsule when it lands, then finalize the blog.
+- **nimbus_eth1 anchor full-sync gamble — ✅ DONE (client-limitation).** Ran 2026-07-11→13 (run_id
+  `client-bakeoff-nimbuseth1-2026-07-11`), hit the **72h governance cap** at 2026-07-13T23:12Z. Full-sync-only
+  (no snap): ran **72h continuously with 0 restarts** (NRestarts=0, 20–25 peers) and reached **~40 GB datadir
+  @ ~21.6%** (head 5,509,858 / target 25,505,378, eta ~1w3d still remaining) → never neared tip, recorded as a
+  **client-limitation** (outside the pruned-comparable ranking), nimbus CL sweep auto-skipped as expected.
+  **Bonus result:** `prune = true` is **empirically confirmed pruning online** (journal `Pruning history …
+  pruned=N` logged continuously during import), settling the previously-contested lever. EL row + capsule
+  filled in §4/results; blog finalized.
 - **besu Stage B — ✅ DONE (with limitation), NOT a remaining test.** besu snap-synced to a fully validated
   head (~19h18m, un-pruned **~1.08 TiB**); the pruned re-run for a comparable disk number deadlocked twice
   and was **operator-abandoned** (2026-07-05, "accept limitation note"). Recorded as a client-limitation
   (excluded from the pruned-comparable disk ranking). See §4.
 
-**Net: only nimbus_eth1 is still running.** The blog is complete except for the nimbus_eth1 terminal partial
-number and final polish. **Do not re-launch ethrex or besu — both are done.**
+**Net: all tests complete.** The publishable blog is written at [`CLIENT_BAKEOFF_BLOG.md`](CLIENT_BAKEOFF_BLOG.md).
+**Do not re-launch any client — the campaign is done.**
 
 ---
 
@@ -77,7 +79,7 @@ number and final polish. **Do not re-launch ethrex or besu — both are done.**
 | **geth** | ✅ synced | ~8h28m | ~1.13 TiB | snap + `--history.chain postmerge` | 44.9% | Baseline. Rock-solid, resumes cleanly. |
 | **besu** | ✅ synced (un-pruned) | ~19h18m | ~1.08 TiB (un-pruned) | snap / Bonsai | 17.4% | Synced, but pruned re-run deadlocked twice → limitation note (§4). |
 | **reth** | ⏳ 72h cap | did not finish | ~0.98 TiB @ ~21% | full-sync-only (no snap) | 1.5% | Client limitation: no snap → too slow for 3-day window. |
-| **nimbus_eth1** | ❌ closed | ~21.6h (partial) | ~21 GiB @ ~10% | full-sync-only (no snap) | ~0% | Client limitation: no snap; exited mid-sync. |
+| **nimbus_eth1** | ⏳ 72h cap | did not finish (0 restarts) | ~40 GB @ ~21.6% | full-sync-only (no snap) | ~0% | Client limitation: no snap → too slow for 3-day window. `prune=true` confirmed pruning online. |
 | **erigon** | ❌ no-sync | deadlocked | no result | erigon3 OtterSync | 0.0% | Hard deadlock (§4). No footprint. |
 
 ### Rankings
