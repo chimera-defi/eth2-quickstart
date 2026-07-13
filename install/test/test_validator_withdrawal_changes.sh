@@ -18,7 +18,17 @@ run_test() {
     echo ""
     echo "=== Test $TEST_COUNT: $test_name ==="
 
-    if "$test_func"; then
+    # Run the test with -e active as a PLAIN subshell statement. Invoking it
+    # via `if "$test_func"` disables set -e inside the function, so a failing
+    # assertion would not fail the test (the function returns its last
+    # command's status, usually the cleanup `rm -rf`). Save/restore errexit.
+    local _rc _e_was=0
+    [[ $- == *e* ]] && _e_was=1
+    set +e
+    ( set -euo pipefail; "$test_func" )
+    _rc=$?
+    [[ $_e_was -eq 1 ]] && set -e
+    if [[ $_rc -eq 0 ]]; then
         echo "PASS: $test_name"
         PASS_COUNT=$((PASS_COUNT + 1))
     else
@@ -49,11 +59,15 @@ for arg in "$@"; do
 done
 mkdir -p "$out_dir"
 python3 - "$out_dir" "$indices" <<'PYEOF'
-import os, sys
+import json, os, sys
 out_dir, indices = sys.argv[1:3]
-for idx in [i for i in indices.split(',') if i]:
-    with open(os.path.join(out_dir, f'bls_to_execution_change-{idx}.json'), 'w') as fh:
-        fh.write('{"mock": true, "index": "%s"}\n' % idx)
+idxs = [i for i in indices.split(',') if i]
+# Mirror the real staking-deposit-cli: ONE timestamped file for ALL validators,
+# not one file per index. Fixed epoch keeps the assertion deterministic.
+path = os.path.join(out_dir, 'bls_to_execution_change-1700000000.json')
+with open(path, 'w') as fh:
+    json.dump({'mock': True, 'validator_indices': idxs}, fh)
+    fh.write('\n')
 PYEOF
 EOF
 
@@ -208,10 +222,10 @@ test_generate_and_submit_0x00_changes() {
     assert_contains "generate-bls-to-execution-change" "$deposit_log"
     assert_contains "--validator_indices=101" "$deposit_log"
     assert_contains "--execution_address=0x1111111111111111111111111111111111111111" "$deposit_log"
-    test -f "$out_dir/bls_to_execution_change-101.json"
+    test -f "$out_dir/bls_to_execution_change-1700000000.json"
     assert_contains "/eth/v1/beacon/pool/bls_to_execution_changes" "$curl_log"
 
-    printf '%s\n' "$output" | grep -q "Submitting bls_to_execution_change-101.json"
+    printf '%s\n' "$output" | grep -q "Submitting bls_to_execution_change-1700000000.json"
 
     rm -rf "$temp_root"
 }

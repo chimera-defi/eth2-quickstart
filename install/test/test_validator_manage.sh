@@ -18,7 +18,17 @@ run_test() {
     echo ""
     echo "=== Test $TEST_COUNT: $test_name ==="
 
-    if "$test_func"; then
+    # Run the test with -e active as a PLAIN subshell statement. Invoking it
+    # via `if "$test_func"` disables set -e inside the function, so a failing
+    # assertion would not fail the test (the function returns its last
+    # command's status, usually the cleanup `rm -rf`). Save/restore errexit.
+    local _rc _e_was=0
+    [[ $- == *e* ]] && _e_was=1
+    set +e
+    ( set -euo pipefail; "$test_func" )
+    _rc=$?
+    [[ $_e_was -eq 1 ]] && set -e
+    if [[ $_rc -eq 0 ]]; then
         echo "PASS: $test_name"
         PASS_COUNT=$((PASS_COUNT + 1))
     else
@@ -244,7 +254,7 @@ EOF
 
     output="$(HOME="$temp_root" PRYSM_LOG_FILE="$prysm_log" bash "$runner" 2>&1)"
 
-    grep -Fq -- "--beacon-rpc-provider=127.0.0.1:4900" "$prysm_log"
+    grep -Fq -- "--beacon-rpc-provider=127.0.0.1:4000" "$prysm_log"
     grep -Fq -- "--wallet-dir=$temp_bin/wallet" "$prysm_log"
     grep -Fq -- "--pubkeys=$pubkey_csv" "$prysm_log"
     [[ -n "$output" ]]

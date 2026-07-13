@@ -18,7 +18,17 @@ run_test() {
     echo ""
     echo "=== Test $TEST_COUNT: $test_name ==="
 
-    if "$test_func"; then
+    # Run the test with -e active as a PLAIN subshell statement. Invoking it
+    # via `if "$test_func"` disables set -e inside the function, so a failing
+    # assertion would not fail the test (the function returns its last
+    # command's status, usually the cleanup `rm -rf`). Save/restore errexit.
+    local _rc _e_was=0
+    [[ $- == *e* ]] && _e_was=1
+    set +e
+    ( set -euo pipefail; "$test_func" )
+    _rc=$?
+    [[ $_e_was -eq 1 ]] && set -e
+    if [[ $_rc -eq 0 ]]; then
         echo "PASS: $test_name"
         PASS_COUNT=$((PASS_COUNT + 1))
     else

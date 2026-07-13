@@ -134,10 +134,21 @@ write_generation_manifest() {
     local manifest_path="$target_dir/$MANIFEST_FILENAME"
 
     python3 - "$manifest_path" "$CHAIN" "$SELECTOR" "$SELECTED_INDICES" "$SELECTED_WITHDRAWAL_CREDENTIALS" "$WITHDRAWAL_ADDRESS" <<'PYEOF'
-import json, sys
+import json, os, sys
 from datetime import datetime, timezone
 
 manifest_path, chain, selector, selected_indices, selected_credentials, withdrawal_address = sys.argv[1:7]
+# Record the files the deposit CLI actually wrote, by globbing the staging dir
+# (this runs right after generation). The real staking-deposit-cli emits a
+# single timestamped bls_to_execution_change-<epoch>.json for ALL validators,
+# not one file per index -- reconstructing per-index names here would never
+# match at submit time and would abort the whole flow.
+target_dir = os.path.dirname(manifest_path) or '.'
+manifest_name = os.path.basename(manifest_path)
+expected_files = sorted(
+    entry for entry in os.listdir(target_dir)
+    if entry.endswith('.json') and entry != manifest_name
+)
 manifest = {
     'generated_at_utc': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
     'tool': 'validator_withdrawal_changes',
@@ -146,11 +157,7 @@ manifest = {
     'validator_indices': selected_indices,
     'withdrawal_credentials': selected_credentials,
     'withdrawal_address': withdrawal_address,
-    'expected_files': [
-        f'bls_to_execution_change-{idx}.json'
-        for idx in selected_indices.split(',')
-        if idx
-    ],
+    'expected_files': expected_files,
 }
 with open(manifest_path, 'w') as fh:
     json.dump(manifest, fh, indent=2, sort_keys=True)

@@ -18,7 +18,17 @@ run_test() {
     echo ""
     echo "=== Test $TEST_COUNT: $test_name ==="
 
-    if "$test_func"; then
+    # Run the test with -e active as a PLAIN subshell statement. Invoking it
+    # via `if "$test_func"` disables set -e inside the function, so a failing
+    # assertion would not fail the test (the function returns its last
+    # command's status, usually the cleanup `rm -rf`). Save/restore errexit.
+    local _rc _e_was=0
+    [[ $- == *e* ]] && _e_was=1
+    set +e
+    ( set -euo pipefail; "$test_func" )
+    _rc=$?
+    [[ $_e_was -eq 1 ]] && set -e
+    if [[ $_rc -eq 0 ]]; then
         echo "PASS: $test_name"
         PASS_COUNT=$((PASS_COUNT + 1))
     else
@@ -39,7 +49,7 @@ test_query_beacon_validators_normalizes_prefixed_pubkeys() {
 set -euo pipefail
 source "$PROJECT_ROOT/install/utils/validator_list.sh"
 curl() {
-    printf '%s\n' "$*" >> "$temp_root/url.log"
+    printf '%s\n' "\$*" >> "$temp_root/url.log"
     cat <<'JSONEOF'
 {"data":[{"index":"1","balance":"32000000000","validator":{"pubkey":"0x1111111111111111111111111111111111111111111111111111111111111111","withdrawal_credentials":"0x0100000000000000000000000000000000000000000000000000000000000000"}}]}
 JSONEOF
@@ -74,7 +84,7 @@ source "$PROJECT_ROOT/install/utils/validator_list.sh"
 CALLS_FILE="$temp_root/calls.txt"
 : > "\$CALLS_FILE"
 query_beacon_validators() {
-    echo "\$#" >> "\$CALLS_FILE"
+    echo "\$(( \$# - 2 ))" >> "\$CALLS_FILE"
     local out_file="\$2"
     local row_count="\$(( \$# - 2 ))"
     python3 - "\$out_file" "\$row_count" <<'PYEOF'
@@ -189,8 +199,8 @@ EOF
         HOME="$2" find_pubkeys prysm
     ' _ "$PROJECT_ROOT/install/utils/validator_list.sh" "$temp_root")"
 
-    [[ "$output" == "$pubkey_a"$'
-'"$pubkey_b" ]]
+    [[ "$output" == "${pubkey_a#0x}"$'
+'"${pubkey_b#0x}" ]]
 
     rm -rf "$temp_root"
 }
