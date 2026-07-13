@@ -24,12 +24,17 @@ if [[ -f "$ROOT_DIR/config/user_config.env" ]]; then
     source "$ROOT_DIR/config/user_config.env" 2>/dev/null || true
 fi
 
+AUTO_CONFIRM=false
+
 usage() {
     cat <<'EOF'
-Usage: ./install/utils/validator_exit.sh
+Usage: ./install/utils/validator_exit.sh [--yes|-y]
 
 Prints the exit checklist for 0x00/0x01 legacy validators and then hands off
 to the existing interactive exit flow in validator_manage.sh.
+
+Options:
+  --yes, -y   Skip the confirmation prompt and enter the exit flow directly
 EOF
 }
 
@@ -61,19 +66,25 @@ show_local_inventory() {
 }
 
 main() {
-    case "${1:-}" in
-        -h|--help)
-            usage
-            exit 0
-            ;;
-        "")
-            ;;
-        *)
-            echo "Unknown option: $1" >&2
-            usage >&2
-            exit 1
-            ;;
-    esac
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h|--help)
+                usage
+                exit 0
+                ;;
+            -y|--yes)
+                AUTO_CONFIRM=true
+                ;;
+            "")
+                ;;
+            *)
+                echo "Unknown option: $1" >&2
+                usage >&2
+                exit 1
+                ;;
+        esac
+        shift
+    done
 
     show_exit_checklist
     show_local_inventory
@@ -83,7 +94,13 @@ main() {
         exit 1
     fi
 
-    printf "\n"
+    if [[ "$AUTO_CONFIRM" == true ]]; then
+        log_info "Skipping confirmation prompt because --yes was supplied."
+        exec "$SCRIPT_DIR/validator_manage.sh" --exit
+    fi
+
+    printf '
+'
     read -rp "Proceed to the interactive exit flow? [y/N] " answer
     case "$answer" in
         y|Y|yes|YES)
@@ -95,4 +112,6 @@ main() {
     esac
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi
