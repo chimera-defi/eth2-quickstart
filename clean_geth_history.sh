@@ -5,7 +5,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/exports.sh"
 # ---------------------------------------------------------------------------
 # clean_geth_history.sh - reclaim disk by pruning geth's ancient freezer
 # ---------------------------------------------------------------------------
-# WHY THIS EXISTS (see HANDOFF_diskcleanup.md for the full story):
+# WHY THIS EXISTS (see docs/GETH_DISK_PRUNE.md for the full story):
 #
 #   `geth snapshot prune-state` DOES NOT WORK on this node and never will.
 #   Our geth runs the path-based state scheme (PBSS), and geth refuses
