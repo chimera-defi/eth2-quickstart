@@ -18,7 +18,13 @@ run_test() {
     echo ""
     echo "=== Test $test_count: $test_name ==="
 
-    if "$test_func"; then
+    local _rc _e_was=0
+    [[ $- == *e* ]] && _e_was=1
+    set +e
+    ( set -euo pipefail; "$test_func" )
+    _rc=$?
+    [[ $_e_was -eq 1 ]] && set -e
+    if [[ $_rc -eq 0 ]]; then
         echo "PASS: $test_name"
         pass_count=$((pass_count + 1))
     else
@@ -135,7 +141,11 @@ test_doctor_reports_service_unit_drift_in_json() {
     local temp_root output
     temp_root="$(setup_fake_repo)"
 
-    output="$(PATH="$temp_root/bin:$PATH" "$temp_root/install/utils/doctor.sh" --json)"
+    # doctor.sh --json exits non-zero whenever the overall status is "fail" —
+    # e.g. a small CI runner fails the disk-space minimum. This test only cares
+    # about the service-unit-drift check, so capture the JSON regardless of exit
+    # code rather than letting a failing environment check abort the assertion.
+    output="$(PATH="$temp_root/bin:$PATH" "$temp_root/install/utils/doctor.sh" --json)" || true
 
     if ! jq -e '.checks[] | select(.name == "Execution client (eth1): Service unit drift detected" and .status == "warn") | .details == "Unit expects ethrex but runtime is geth"' >/dev/null <<< "$output"; then
         rm -rf "$temp_root"
