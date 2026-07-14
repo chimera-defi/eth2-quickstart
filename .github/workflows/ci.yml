@@ -118,6 +118,9 @@ jobs:
           echo "::group::MCP unit tests"
           docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/test/ci_test_mcp_server.sh
           echo "::endgroup::"
+          echo "::group::Bakeoff data-dirs sync check"
+          docker run --rm eth-node-test bash /workspace/test/bakeoff/test_data_dirs_sync.sh
+          echo "::endgroup::"
           echo "::group::Unit tests (Caddy validate, downloads, functions)"
           docker run --rm --privileged -e USE_MOCKS=false -e CI=true -e SKIP_SHELLCHECK=true -e GITHUB_TOKEN="$GITHUB_TOKEN" eth-node-test /workspace/test/docker_test.sh
           echo "::endgroup::"
