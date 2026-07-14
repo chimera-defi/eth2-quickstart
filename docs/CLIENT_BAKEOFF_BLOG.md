@@ -66,7 +66,7 @@ Two things keep it out of the winners' circle:
 
 Cold-sync numbers tell you how a node behaves *once*, on day one. But operators restart nodes constantly — upgrades, config changes, crashes, host maintenance. "What happens after a restart with a gap?" is a first-class operational question, and it cleanly separates the field into three behaviors:
 
-**1. Graceful resume.** The client comes back, imports the blocks it missed during the gap, and keeps its on-disk state. Minutes to catch up, no re-download. This is what makes a client operationally *boring*, in the good way — geth, nethermind, and reth are expected here by design (we call this out as design-level expectation; we bisected only ethrex's behavior directly).
+**1. Graceful resume.** The client comes back, imports the blocks it missed during the gap, and keeps its on-disk state. Minutes to catch up, no re-download. This is what makes a client operationally *boring*, in the good way. We **measured** this directly for **geth**: restarted after a ~52-hour gap, it kept its full datadir and caught up purely by sequential block-import (trie-diff application) — never re-snapping — and converged back to the validating tip. That's the exact positive contrast to ethrex's cliff. **nethermind** and **reth** are expected here by design too, though of the three only geth's resume was measured directly (as only ethrex's cliff was bisected).
 
 **2. Re-snap cliff.** Past a downtime threshold the client **discards its fully-synced state and re-syncs from scratch.** Only ethrex lands here — and we pinned the edge precisely.
 
