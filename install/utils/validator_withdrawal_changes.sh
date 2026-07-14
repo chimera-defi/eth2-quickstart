@@ -353,7 +353,6 @@ generate_changes() {
         generate-bls-to-execution-change
         --bls_to_execution_changes_folder="$target_dir"
         --chain="$CHAIN"
-        --mnemonic="$mnemonic"
         --validator_indices="$SELECTED_INDICES"
         --bls_withdrawal_credentials_list="$SELECTED_WITHDRAWAL_CREDENTIALS"
         --execution_address="$WITHDRAWAL_ADDRESS"
@@ -363,7 +362,12 @@ generate_changes() {
     fi
 
     log_info "Generating BLS-to-execution changes with $launcher"
-    "$launcher" "${args[@]}"
+    # Feed the mnemonic on stdin instead of via --mnemonic= on argv, so the
+    # master secret never appears in /proc/<pid>/cmdline or `ps` while the
+    # deposit CLI runs. The CLI prompts for the mnemonic when the flag is
+    # omitted and reads it from stdin. (A mnemonic passphrase, if used, still
+    # transits --mnemonic_password on argv — the CLI does not prompt for it.)
+    printf '%s\n' "$mnemonic" | "$launcher" "${args[@]}"
     write_generation_manifest "$target_dir" || return 1
 }
 
@@ -377,10 +381,10 @@ preview_generation() {
             generate-bls-to-execution-change \
             --bls_to_execution_changes_folder="$target_dir_hint" \
             --chain="$CHAIN" \
-            --mnemonic="<hidden>" \
             --validator_indices="$SELECTED_INDICES" \
             --bls_withdrawal_credentials_list="$SELECTED_WITHDRAWAL_CREDENTIALS" \
             --execution_address="$WITHDRAWAL_ADDRESS"
+        log_info "  (the mnemonic is fed to the deposit CLI on stdin, not via --mnemonic on the command line)"
     else
         log_warn "Deposit CLI not found; install deposit.sh or deposit before generating for real."
     fi
