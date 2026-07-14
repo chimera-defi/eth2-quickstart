@@ -20,7 +20,13 @@ run_test() {
     echo ""
     echo "=== Test $test_count: $test_name ==="
 
-    if "$test_func"; then
+    local _rc _e_was=0
+    [[ $- == *e* ]] && _e_was=1
+    set +e
+    ( set -euo pipefail; "$test_func" )
+    _rc=$?
+    [[ $_e_was -eq 1 ]] && set -e
+    if [[ $_rc -eq 0 ]]; then
         echo "PASS: $test_name"
         pass_count=$((pass_count + 1))
     else
