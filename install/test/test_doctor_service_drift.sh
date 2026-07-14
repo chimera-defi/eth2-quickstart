@@ -138,12 +138,23 @@ EOF
 
 # shellcheck disable=SC2317
 test_doctor_reports_service_unit_drift_in_json() {
-    local temp_root output
+    local temp_root output dj_rc
     temp_root="$(setup_fake_repo)"
 
-    output="$(PATH="$temp_root/bin:$PATH" "$temp_root/install/utils/doctor.sh" --json)"
+    dj_rc=0
+    output="$(PATH="$temp_root/bin:$PATH" "$temp_root/install/utils/doctor.sh" --json 2>"$temp_root/doctor.err")" || dj_rc=$?
 
-    if ! jq -e '.checks[] | select(.name == "Execution client (eth1): Service unit drift detected" and .status == "warn") | .details == "Unit expects ethrex but runtime is geth"' >/dev/null <<< "$output"; then
+    if [[ $dj_rc -ne 0 ]] || ! jq -e '.checks[] | select(.name == "Execution client (eth1): Service unit drift detected" and .status == "warn") | .details == "Unit expects ethrex but runtime is geth"' >/dev/null <<< "$output"; then
+        {
+            echo "=== DIAGNOSTIC: doctor drift test failed (temporary instrumentation) ==="
+            echo "doctor --json exit=$dj_rc  jq=$(command -v jq || echo NO)  bash=$BASH_VERSION  user=$(whoami)"
+            echo "ps=$(command -v ps || echo NO)  systemctl=$(command -v systemctl || echo NO)"
+            echo "--- doctor stderr ---"; head -20 "$temp_root/doctor.err" 2>/dev/null
+            echo "--- stdout valid JSON? ---"; printf '%s' "$output" | jq -e . >/dev/null 2>&1 && echo yes || echo NO
+            echo "--- drift/client checks ---"; printf '%s' "$output" | jq -rc '.checks[]? | select(.name|test("client|drift";"i")) | {name,status,details}' 2>&1 | head
+            echo "--- raw stdout (first 2000 chars) ---"; printf '%s' "$output" | head -c 2000; echo
+            echo "=== END DIAGNOSTIC ==="
+        } >&2
         rm -rf "$temp_root"
         return 1
     fi
