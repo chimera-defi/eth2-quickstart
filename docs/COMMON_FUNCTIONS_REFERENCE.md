@@ -229,6 +229,29 @@ This document provides a comprehensive reference for all functions available in 
 **Usage:** `command_exists "jq"`  
 **Returns:** 0 if exists, 1 if not
 
+#### `require_cmd(command)`
+**Purpose:** Require a command to exist and print a standard error if it does not  
+**Parameters:** `command` - Command to check  
+**Usage:** `require_cmd "crontab"`  
+**Returns:** 0 if exists, 2 if not
+
+#### `cron_filter_by_marker(marker)`
+**Purpose:** Filter crontab content to remove lines containing a marker  
+**Parameters:** `marker` - Text to filter on  
+**Usage:** `crontab -l \| cron_filter_by_marker "eth2qs-cli-pr-watch"`
+
+#### `cron_remove_by_marker(marker)`
+**Purpose:** Remove all crontab entries containing a marker  
+**Parameters:** `marker` - Text to filter on  
+**Usage:** `cron_remove_by_marker "eth2qs-cli-pr-watch"`
+
+#### `cron_replace_by_marker(marker, cron_line)`
+**Purpose:** Replace entries containing a marker with a single cron line  
+**Parameters:**
+- `marker` - Text to filter on
+- `cron_line` - New cron line to install
+**Usage:** `cron_replace_by_marker "eth2qs-cli-pr-watch" "15 9 * * * ./scripts/check-cli-anything-pr.sh ..."`
+
 #### `check_port(port)`
 **Purpose:** Check if a TCP port is in use (with fallbacks for different tools)  
 **Parameters:** `port` - Port number to check  

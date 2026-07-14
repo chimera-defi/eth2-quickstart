@@ -14,6 +14,8 @@ source "$PROJECT_ROOT/lib/common_functions.sh"
 # Get script directories
 get_script_directories
 
+CLIENT_GRAFFITI="$(printf '%s' "Grandine ${GRAFITTI}" | head -c 32)"
+
 # Start installation
 log_installation_start "Grandine"
 
@@ -115,7 +117,8 @@ BEACON_EXEC_START="$GRANDINE_DIR/grandine \
   --metrics-port 8008 \
   --checkpoint-sync-url $GRANDINE_CHECKPOINT_URL \
   --suggested-fee-recipient $FEE_RECIPIENT \
-  --graffiti $GRAFITTI \
+  --graffiti \"$CLIENT_GRAFFITI\" \
+  --prune-storage \
   --target-peers $MAX_PEERS \
   --listen-address 0.0.0.0 \
   --libp2p-port 9000 \

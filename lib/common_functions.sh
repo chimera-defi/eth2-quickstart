@@ -51,6 +51,66 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Check if required command exists, printing a consistent error on failure.
+require_cmd() {
+    local cmd="$1"
+    if ! command_exists "$cmd"; then
+        log_error "missing required command: $cmd"
+        return 2
+    fi
+}
+
+# Filter crontab content to remove entries containing a marker.
+cron_filter_by_marker() {
+    local marker="$1"
+    awk -v marker="$marker" 'index($0, marker) == 0'
+}
+
+# Remove all cron entries containing a marker if any are present.
+cron_remove_by_marker() {
+    local marker="$1"
+    local existing_crontab filtered_crontab
+
+    existing_crontab="$(crontab -l 2>/dev/null || true)"
+    filtered_crontab="$(printf '%s\n' "$existing_crontab" | cron_filter_by_marker "$marker")"
+
+    if [[ "$filtered_crontab" == "$existing_crontab" ]]; then
+        return 0
+    fi
+
+    printf '%s\n' "$filtered_crontab" | crontab -
+}
+
+# Replace cron entries containing a marker with a single desired line.
+cron_replace_by_marker() {
+    local marker="$1"
+    local cron_line="$2"
+    local existing_crontab filtered_crontab
+
+    existing_crontab="$(crontab -l 2>/dev/null || true)"
+    filtered_crontab="$(printf '%s\n' "$existing_crontab" | cron_filter_by_marker "$marker")"
+
+    {
+        printf '%s\n' "$filtered_crontab"
+        printf '%s\n' "$cron_line"
+    } | awk 'NF' | crontab -
+}
+
+# Detect this host's external/public IPv4 address at install time.
+# Tries three independent endpoints with a timeout each; validates the
+# result is a well-formed IPv4 before echoing it. Echoes nothing on failure
+# so callers can safely test -z and fall back gracefully.
+detect_external_ip() {
+    local ip _url
+    for _url in https://v4.ident.me https://api.ipify.org https://ifconfig.me/ip; do
+        ip="$(curl -s -m 10 "$_url" 2>/dev/null | tr -d '[:space:]' || true)"
+        if echo "$ip" | grep -qE '^([0-9]{1,3}\.){3}[0-9]{1,3}$'; then
+            echo "$ip"
+            return 0
+        fi
+    done
+}
+
 # Check if running inside Docker/container (/.dockerenv or cgroup)
 is_docker() {
     [[ -f /.dockerenv ]] || grep -qE 'docker|containerd' /proc/1/cgroup 2>/dev/null
@@ -267,7 +327,7 @@ extract_archive() {
             fi
             ;;
         *.zip)
-            unzip -qo "$archive_file" -d "$dest_dir"
+            unzip -q "$archive_file" -d "$dest_dir"
             extract_result=$?
             ;;
         *)

@@ -63,6 +63,7 @@ bash install/test/test_doctor_service_drift.sh
 bash install/test/test_ensure_dispatch.sh
 bash install/test/test_plan_json.sh
 bash install/test/test_install_planner.sh
+bash install/test/test_installer_security_assertions.sh
 
 echo "=== Bakeoff data-dirs sync check ==="
 bash test/bakeoff/test_data_dirs_sync.sh
