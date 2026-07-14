@@ -119,7 +119,7 @@ fi
 # Covers: execution (7), consensus (6), MEV (3), web (caddy, nginx), utils
 log_info "Test 3: Verify all install scripts (syntax)..."
 syntax_fail=0
-for script in "${CLIENT_SCRIPTS[@]}" "install/utils/install_dependencies.sh" "install/utils/select_clients.sh" "install/utils/validator_exit.sh" "install/utils/validator_create_0x02.sh" "install/utils/validator_withdrawal_changes.sh" "install/web/install_caddy.sh" "install/web/install_nginx.sh" "install/web/proxy_config_renderer.sh" "config/edge_policy.env" "test/validate_proxy_policy_sync.sh" "test/validate_proxy_policy_toggles.sh" "test/validate_caddy_config.sh" "test/validate_nginx_config.sh" "test/validate_review_guardrails.sh"; do
+for script in "${CLIENT_SCRIPTS[@]}" "install/utils/install_dependencies.sh" "install/utils/select_clients.sh" "install/utils/validator_exit.sh" "install/utils/validator_create_0x01.sh" "install/utils/validator_create_0x02.sh" "install/utils/validator_withdrawal_changes.sh" "install/test/test_validator_manage.sh" "install/test/test_validator_list.sh" "install/test/test_validator_exit.sh" "install/test/test_validator_create_0x01.sh" "install/test/test_validator_create_0x02.sh" "install/web/install_caddy.sh" "install/web/install_nginx.sh" "install/web/proxy_config_renderer.sh" "config/edge_policy.env" "test/validate_proxy_policy_sync.sh" "test/validate_proxy_policy_toggles.sh" "test/validate_caddy_config.sh" "test/validate_nginx_config.sh" "test/validate_review_guardrails.sh"; do
     if [[ -f "$PROJECT_ROOT/$script" ]]; then
         if bash -n "$PROJECT_ROOT/$script" 2>/dev/null; then
             log_info "  ✓ $script"
@@ -133,6 +133,22 @@ for script in "${CLIENT_SCRIPTS[@]}" "install/utils/install_dependencies.sh" "in
     fi
 done
 if [[ $syntax_fail -gt 0 ]]; then
+    exit 1
+fi
+
+if [[ -f "$PROJECT_ROOT/install/utils/validator_withdrawal_changes.sh" ]]; then
+    if bash "$PROJECT_ROOT/install/utils/validator_withdrawal_changes.sh" --help 2>&1 | grep -Eq "0x00|BLS-to-execution"; then
+        log_info "  ✓ validator_withdrawal_changes.sh help smoke"
+    else
+        log_error "  ✗ validator_withdrawal_changes.sh --help did not advertise the withdrawal change flow"
+        exit 1
+    fi
+fi
+
+if bash "$PROJECT_ROOT/scripts/eth2qs.sh" help 2>&1 | grep -Eq 'validator-exit|validator-create-0x02'; then
+    log_info "  ✓ eth2qs wrapper exposes validator helpers"
+else
+    log_error "  ✗ eth2qs.sh help is missing validator helper commands"
     exit 1
 fi
 
@@ -183,6 +199,51 @@ if grep -q 'record_service_health "mev" "MEV-Boost (mev)"' "$PROJECT_ROOT/instal
     log_info "  ✓ doctor.sh checks mev unit name"
 else
     log_error "  ✗ doctor.sh MEV service name mismatch"
+    exit 1
+fi
+
+# Test 5c: Validator manage regression tests
+log_info "Test 5c: Validator manage regression tests..."
+if bash "$PROJECT_ROOT/install/test/test_validator_manage.sh"; then
+    log_info "  ✓ validator_manage tests passed"
+else
+    log_error "  ✗ validator_manage tests failed"
+    exit 1
+fi
+
+# Test 5d: Validator list batching regression
+log_info "Test 5d: Validator list batching regression..."
+if bash "$PROJECT_ROOT/install/test/test_validator_list.sh"; then
+    log_info "  ✓ validator_list batching test passed"
+else
+    log_error "  ✗ validator_list batching test failed"
+    exit 1
+fi
+
+# Test 5e: Validator exit fast-path regression
+log_info "Test 5e: Validator exit fast-path regression..."
+if bash "$PROJECT_ROOT/install/test/test_validator_exit.sh"; then
+    log_info "  ✓ validator_exit fast-path test passed"
+else
+    log_error "  ✗ validator_exit fast-path test failed"
+    exit 1
+fi
+
+# Test 5f: Validator 0x01 creation regression
+log_info "Test 5f: Validator 0x01 creation regression..."
+if bash "$PROJECT_ROOT/install/test/test_validator_create_0x01.sh"; then
+    log_info "  ✓ validator_create_0x01 tests passed"
+else
+    log_error "  ✗ validator_create_0x01 tests failed"
+    exit 1
+fi
+
+# Test 5h: Validator withdrawal changes regression
+log_info "Test 5h: Validator withdrawal changes regression..."
+if bash "$PROJECT_ROOT/install/test/test_validator_withdrawal_changes.sh"; then
+    log_info "  ✓ validator_withdrawal_changes tests passed"
+else
+    log_error "  ✗ validator_withdrawal_changes tests failed"
     exit 1
 fi
 

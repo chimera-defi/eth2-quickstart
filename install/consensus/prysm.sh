@@ -14,6 +14,8 @@ source "$PROJECT_ROOT/lib/common_functions.sh"
 # Get script directories
 get_script_directories
 
+CLIENT_GRAFFITI="$(printf '%s' "Prysm ${GRAFITTI}" | head -c 32)"
+
 log_installation_start "Prysm"
 
 
@@ -62,7 +64,7 @@ create_temp_config_dir
 # Note: graffiti is a validator-only flag, not beacon
 cat > ./tmp/prysm_beacon_custom.yaml << EOF
 suggested-fee-recipient: $FEE_RECIPIENT
-p2p-host-ip: $(curl -s v4.ident.me)
+p2p-host-ip: $(detect_external_ip)
 p2p-max-peers: $MAX_PEERS
 checkpoint-sync-url: $PRYSM_CPURL
 genesis-beacon-api-url: $PRYSM_CPURL
@@ -71,7 +73,7 @@ EOF
 
 # Create custom validator configuration variables
 cat > ./tmp/prysm_validator_custom.yaml << EOF
-graffiti: $GRAFITTI
+graffiti: $CLIENT_GRAFFITI
 suggested-fee-recipient: $FEE_RECIPIENT
 wallet-password-file: $HOME/secrets/pass.txt
 EOF
@@ -88,11 +90,22 @@ BEACON_EXEC_START="$PRYSM_DIR/prysm.sh beacon-chain --config-file=$PRYSM_DIR/pry
 
 create_systemd_service "cl" "Prysm Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target eth1.service" "network-online.target eth1.service"
 
-# Pin USE_PRYSM_VERSION to the locally cached binary so prysm.sh skips the live
-# version check against prysmaticlabs.com (fails with 403 on rate-limited hosts).
-PRYSM_PINNED=""
-if [[ -d "$PRYSM_DIR/dist" ]]; then
+# Resolve the prysm version to pin. Prefer the latest published release from the
+# GitHub API (avoids the prysmaticlabs.com live version check, which 403s on
+# rate-limited hosts); fall back to the newest locally cached binary only if the
+# API is unreachable. Pinning to newest-cached alone silently goes stale — a
+# stale v7.1.5 pin once stalled a besu sync ~30h until manually bumped to v7.1.6.
+PRYSM_PINNED="$(get_latest_release "prysmaticlabs/prysm" 2>/dev/null || true)"
+# get_latest_release() prints diagnostics to stdout when the GitHub API is
+# rate-limited/unparseable (fresh CI containers); those would otherwise be
+# captured above as a bogus "version". Only accept a real vX.Y tag — anything
+# else falls through to the cached-binary fallback / no-pin.
+if [[ ! "${PRYSM_PINNED:-}" =~ ^v[0-9]+\.[0-9]+ ]]; then
+  PRYSM_PINNED=""
+fi
+if [[ -z "${PRYSM_PINNED:-}" && -d "$PRYSM_DIR/dist" ]]; then
   PRYSM_PINNED="$(find "$PRYSM_DIR/dist/" -maxdepth 1 -name 'beacon-chain-v*-linux-amd64' ! -name '*.sha256' ! -name '*.sig' 2>/dev/null | sed 's|.*/beacon-chain-||; s|-linux-amd64||' | sort -V | tail -1 || true)"
+  [[ -n "${PRYSM_PINNED:-}" ]] && log_warn "prysm GitHub release lookup failed; falling back to newest cached binary $PRYSM_PINNED"
 fi
 if [[ -n "${PRYSM_PINNED:-}" ]]; then
   sudo sed -i "/^\[Service\]/a Environment=\"USE_PRYSM_VERSION=${PRYSM_PINNED}\"" /etc/systemd/system/cl.service

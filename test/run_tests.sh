@@ -255,6 +255,10 @@ run_source_verification() {
         "check_user"
         "ensure_directory"
         "command_exists"
+        "require_cmd"
+        "cron_filter_by_marker"
+        "cron_remove_by_marker"
+        "cron_replace_by_marker"
         "get_latest_release"
         "extract_archive"
         "download_file"
@@ -543,6 +547,16 @@ run_unit_tests() {
         fi
     else
         log_test "SKIP" "test_data_dirs_sync.sh: file not found"
+    fi
+
+    if [[ -f "$PROJECT_ROOT/install/test/test_installer_security_assertions.sh" ]]; then
+        if bash "$PROJECT_ROOT/install/test/test_installer_security_assertions.sh"; then
+            log_test "PASS" "test_installer_security_assertions.sh: all tests passed"
+        else
+            log_test "FAIL" "test_installer_security_assertions.sh: some tests failed"
+        fi
+    else
+        log_test "SKIP" "test_installer_security_assertions.sh: file not found"
     fi
 
     if [[ -f "$PROJECT_ROOT/test/ci_test_mcp_server.sh" ]]; then

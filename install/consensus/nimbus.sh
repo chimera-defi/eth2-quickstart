@@ -14,6 +14,8 @@ source "$PROJECT_ROOT/lib/common_functions.sh"
 # Get script directories
 get_script_directories
 
+CLIENT_GRAFFITI="$(printf '%s' "Nimbus ${GRAFITTI}" | head -c 32)"
+
 log_installation_start "Nimbus"
 
 
@@ -102,7 +104,7 @@ log-file = "$NIMBUS_DATA_DIR/beacon_node.log"
 
 # Performance
 suggested-fee-recipient = "$FEE_RECIPIENT"
-graffiti = "$GRAFITTI"
+graffiti = "$CLIENT_GRAFFITI"
 EOF
 
 # Merge base configuration with custom settings
@@ -118,7 +120,7 @@ beacon-node = "http://127.0.0.1:5052"
 validators-dir = "$VALIDATOR_DATA_DIR"
 secrets-dir = "$VALIDATOR_DATA_DIR/secrets"
 suggested-fee-recipient = "$FEE_RECIPIENT"
-graffiti = "$GRAFITTI"
+graffiti = "$CLIENT_GRAFFITI"
 metrics = true
 metrics-port = 8009
 metrics-address = "$CONSENSUS_HOST"

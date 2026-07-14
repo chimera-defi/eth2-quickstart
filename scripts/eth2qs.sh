@@ -42,6 +42,7 @@ Validator:
   validators [--json] [--min-balance N] [--max-balance N] [--withdrawal-type 0x00|0x01|0x02] [--status S]
                                    List active validators (filter by balance / withdrawal type / status)
   validator-exit                   Exit local validators using the managed exit flow
+  validator-create-0x01            Create standard validators with 0x01 credentials
   validator-create-0x02            Create modern compounding validators with 0x02 credentials
   validator-deploy [opts]          Generate validator keys + deposit_data.json (0x01 or 0x02), import, print deposit cmd
   validator-manage [--exit|--consolidate|--eip7002-exit|--withdraw-change]   Manage validators: exits, EIP-7251/7002, credential changes
@@ -68,6 +69,7 @@ Examples:
   ./scripts/eth2qs.sh validators
   ./scripts/eth2qs.sh validators --json
   ./scripts/eth2qs.sh validator-exit
+  ./scripts/eth2qs.sh validator-create-0x01
   ./scripts/eth2qs.sh validator-create-0x02
   ./scripts/eth2qs.sh validator-manage
   ./scripts/eth2qs.sh validator-manage --exit
@@ -165,6 +167,9 @@ case "$cmd" in
         ;;
     validator-exit)
         run_cmd "$ROOT_DIR/install/utils/validator_exit.sh" "$@"
+        ;;
+    validator-create-0x01)
+        run_cmd "$ROOT_DIR/install/utils/validator_create_0x01.sh" "$@"
         ;;
     validator-create-0x02)
         run_cmd "$ROOT_DIR/install/utils/validator_create_0x02.sh" "$@"

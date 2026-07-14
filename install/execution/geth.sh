@@ -45,11 +45,11 @@ if ! command -v geth &>/dev/null; then
     log_error "Geth binary not found after installation"
     exit 1
 fi
-log_info "Geth installed: $(geth version | head -1)"
+log_info "Geth installed: $(geth version </dev/null 2>&1 | head -1)"
 
 export GETH_CMD="/usr/bin/geth --cache=$GETH_CACHE --syncmode snap \
---http --http.addr $LH --http.corsdomain \"*\" --http.vhosts=* --http.api=\"admin,eth,net,web3,engine\" \
---ws --ws.addr $LH --ws.origins \"*\" --ws.api=\"web3,eth,net,engine\" \
+--http --http.addr $LH --http.corsdomain \"*\" --http.vhosts=* --http.api=\"eth,net,web3\" \
+--ws --ws.addr $LH --ws.origins \"*\" --ws.api=\"web3,eth,net\" \
 --authrpc.addr $LH --authrpc.port $ENGINE_PORT --authrpc.jwtsecret=$HOME/secrets/jwt.hex \
 --history.chain postmerge \
 --maxpeers 50 --txpool.globalslots 10000 --txpool.globalqueue 5000 \
@@ -58,7 +58,7 @@ export GETH_CMD="/usr/bin/geth --cache=$GETH_CACHE --syncmode snap \
 # built-in miner; fee recipient is set by the consensus client (MEV / vanilla).
 # --history.chain postmerge: don't keep pre-merge block bodies/receipts in the
 # ancient freezer (saves ~500-800G on a staking node). To reclaim space on an
-# already-synced node, run clean_geth_history.sh. See HANDOFF_diskcleanup.md.
+# already-synced node, run clean_geth_history.sh. See docs/GETH_DISK_PRUNE.md.
 # --http.api / --ws.api: no spaces after commas (systemd ExecStart splits on spaces).
 
 
