@@ -14,6 +14,36 @@ We ran every execution client (EL) and consensus client (CL) that [eth2-quicksta
 
 ---
 
+## The scorecard at a glance
+
+**Execution clients (EL)** — each run against a fixed prysm, one at a time, 72h cap:
+
+| EL | Result | Sync time | Footprint | Sync mode | Mainnet share |
+|----|--------|-----------|-----------|-----------|---------------|
+| **nethermind** | ✅ synced | ~14.5h | **~251 GiB** (pruned) — smallest | snap + Bonsai | 36.0% |
+| **geth** | ✅ synced | ~8h28m | ~1.13 TiB (pruned) | snap + `--history.chain postmerge` | 44.9% |
+| **ethrex** | ✅ synced | **~2h16m** — fastest | ~286 → ~467 GiB (un-pruned, growing) | snap (v19.0.0) | ~0% |
+| **besu** | ✅ synced (un-pruned) | ~19h18m | ~1.08 TiB (un-pruned) | snap / Bonsai | 17.4% |
+| **reth** | ⏳ 72h cap (~21%) | did not finish | ~0.98 TiB (partial) | full-sync-only | 1.5% |
+| **nimbus_eth1** | ⏳ 72h cap (~21.6%) | did not finish | ~40 GB (partial) | full-sync-only | ~0% |
+| **erigon** | ❌ no-sync | deadlocked | — | OtterSync | ~0% |
+
+Disk, pruned and apples-to-apples: **nethermind (~251 GiB) < geth (~1.13 TiB)** — the only two with comparable numbers. Speed, among those that finished: **ethrex (~2h16m) < geth (~8h28m) < nethermind (~14.5h) < besu (~19h18m)**. The other three fall out for a specific, documented reason each (below), not a blanket failure.
+
+**Consensus clients (CL)** — each run against a fixed EL anchor; **all five synced** to a validating head in minutes, so footprint is the only differentiator:
+
+| CL | Footprint (geth anchor) | History-prune lever |
+|----|-------------------------|---------------------|
+| **lodestar** | **~177 MiB** — smallest | `pruneHistory=true` |
+| **lighthouse** | ~518 MiB | `checkpoint-sync-url` |
+| **grandine** | ~725 MiB (actual) | `--prune-storage` (critical) |
+| **teku** | ~936 MiB | `data-storage-mode=minimal` |
+| **nimbus** | ~1.2 GiB — largest | `history=prune` |
+
+The ranking reproduced across two different EL anchors (ethrex and geth) — EL/CL decoupling, confirmed empirically. The rest of this post is the *why* behind these numbers.
+
+---
+
 ## What we measured, and how we kept it honest
 
 The bake-off measures, for each client, the **final synced disk footprint** and the **sync duration**, on a shared semi-production host (not a live validator), with MEV disabled and no validator keys. One candidate at a time, a 72-hour cap per candidate, and the footprint taken from the last near-cap `du` sample — never the peak mid-sync.
