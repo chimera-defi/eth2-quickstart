@@ -49,6 +49,13 @@ setup_fake_env() {
 set -Eeuo pipefail
 : "${MOCK_DEPOSIT_LOG:?missing MOCK_DEPOSIT_LOG}"
 echo "[MOCK] deposit.sh $*" >> "$MOCK_DEPOSIT_LOG"
+# The real deposit CLI prompts for the mnemonic on stdin when --mnemonic is
+# omitted; capture it so the test can confirm it arrived off-argv.
+if [[ -n "${MOCK_MNEMONIC_LOG:-}" ]]; then
+    _stdin_mnemonic=""
+    IFS= read -r _stdin_mnemonic || true
+    printf '%s\n' "$_stdin_mnemonic" >> "$MOCK_MNEMONIC_LOG"
+fi
 out_dir=""
 indices=""
 for arg in "$@"; do
@@ -199,13 +206,14 @@ JSONEOF
 
 # shellcheck disable=SC2317
 test_generate_and_submit_0x00_changes() {
-    local temp_root output deposit_log curl_log out_dir
+    local temp_root output deposit_log curl_log out_dir mnemonic_log
     temp_root="$(setup_fake_env)"
     deposit_log="$temp_root/deposit.log"
     curl_log="$temp_root/curl.log"
+    mnemonic_log="$temp_root/mnemonic.stdin.log"
     out_dir="$temp_root/generated"
 
-    output="$(MOCK_DEPOSIT_LOG="$deposit_log" MOCK_CURL_LOG="$curl_log" PATH="$temp_root/bin:$PATH" "$PROJECT_ROOT/install/utils/validator_withdrawal_changes.sh" \
+    output="$(MOCK_DEPOSIT_LOG="$deposit_log" MOCK_CURL_LOG="$curl_log" MOCK_MNEMONIC_LOG="$mnemonic_log" PATH="$temp_root/bin:$PATH" "$PROJECT_ROOT/install/utils/validator_withdrawal_changes.sh" \
         --validators-json "$temp_root/validators.json" \
         --credential-type 0x00 \
         --generate \
@@ -224,6 +232,11 @@ test_generate_and_submit_0x00_changes() {
     assert_contains "--execution_address=0x1111111111111111111111111111111111111111" "$deposit_log"
     test -f "$out_dir/bls_to_execution_change-1700000000.json"
     assert_contains "/eth/v1/beacon/pool/bls_to_execution_changes" "$curl_log"
+
+    # Security: the master mnemonic must NOT appear on argv (it would be visible
+    # in /proc/<pid>/cmdline and `ps`). It must instead be delivered on stdin.
+    if grep -q -- '--mnemonic=' "$deposit_log"; then return 1; fi
+    assert_contains "abandon abandon abandon" "$mnemonic_log"
 
     printf '%s\n' "$output" | grep -q "Submitting bls_to_execution_change-1700000000.json"
 
