@@ -14,11 +14,6 @@ This directory contains all project documentation organized by category.
 - **[CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md)** - Configuration architecture and conventions
 - **[COMMON_FUNCTIONS_REFERENCE.md](COMMON_FUNCTIONS_REFERENCE.md)** - Common functions library reference
 
-## Research & Bake-off
-- **[CLIENT_BAKEOFF_RESULTS.md](CLIENT_BAKEOFF_RESULTS.md)** - Execution/consensus client bake-off: measured results (source of truth)
-- **[CLIENT_BAKEOFF_BLOG.md](CLIENT_BAKEOFF_BLOG.md)** - Bake-off findings, narrative writeup
-- **[CLIENT_BAKEOFF_HARNESS.md](CLIENT_BAKEOFF_HARNESS.md)** - Function-level engineering reference for the `test/bakeoff/` harness
-
 ## Development & Testing
 - **[AGENT_SKILL_PLAN.md](AGENT_SKILL_PLAN.md)** - Plan for packaging repo workflows as an installable agent skill
 - **[AGENT_SKILL_LISTING.md](AGENT_SKILL_LISTING.md)** - Marketing/listing copy for the agent skill
