@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { SITE_CONFIG } from '@/lib/constants'
+import { ArrowRight } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Ethereum Client Bake-off - ETH2 Quick Start',
@@ -141,6 +142,26 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground">
             A 23-day field campaign comparing seven execution-client syncs and five consensus clients.
           </p>
+          <div className="mt-4 flex flex-wrap gap-3 sm:mt-6">
+            <Button
+              href={`${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_BLOG.md`}
+              external
+              variant="secondary"
+              size="sm"
+            >
+              Read the full writeup
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <Button
+              href={`${SITE_CONFIG.github}/blob/master/docs/HOW_WE_TESTED_WITH_CLAUDE.md`}
+              external
+              variant="ghost"
+              size="sm"
+            >
+              How we tested this
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
         </header>
 
         <section className="mt-10 sm:mt-16">
