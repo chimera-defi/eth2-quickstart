@@ -116,7 +116,7 @@ const outboundLinks = [
   },
   {
     label: 'How we tested this with Claude',
-    href: `${SITE_CONFIG.github}/blob/master/docs/HOW_WE_TESTED_WITH_CLAUDE.md`,
+    href: `${SITE_CONFIG.github}/blob/270b0e50a8b9709fb70ae288070998cc87f6d5fb/docs/HOW_WE_TESTED_WITH_CLAUDE.md`,
   },
   {
     label: 'Raw results',
@@ -124,7 +124,7 @@ const outboundLinks = [
   },
   {
     label: 'Harness engineering deep-dive',
-    href: `${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_HARNESS.md`,
+    href: `${SITE_CONFIG.github}/blob/e8f309506512098bbcc9279efaf415d7a94984d0/docs/CLIENT_BAKEOFF_HARNESS.md`,
   },
 ]
 
@@ -153,7 +153,7 @@ export default function EthereumClientBakeoffPage() {
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button
-              href={`${SITE_CONFIG.github}/blob/master/docs/HOW_WE_TESTED_WITH_CLAUDE.md`}
+              href={`${SITE_CONFIG.github}/blob/270b0e50a8b9709fb70ae288070998cc87f6d5fb/docs/HOW_WE_TESTED_WITH_CLAUDE.md`}
               external
               variant="ghost"
               size="sm"
@@ -310,7 +310,7 @@ export default function EthereumClientBakeoffPage() {
             How we tested
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            The campaign ran from 2026-06-22 to 2026-07-14 on a shared non-production host with MEV disabled and no validator keys. Every footprint came from the final near-cap <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">du</code> sample, never a mid-sync peak. Before a result counted, an automated config-optimality gate verified that the client was using its most disk-efficient mode; otherwise the harness rejected it rather than treating a configuration mistake as a client result. See <a href={`${SITE_CONFIG.github}/blob/master/docs/HOW_WE_TESTED_WITH_CLAUDE.md`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">the methodology and harness overview</a> for the full process.
+            The campaign ran from 2026-06-22 to 2026-07-14 on a shared non-production host with MEV disabled and no validator keys. Every footprint came from the final near-cap <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">du</code> sample, never a mid-sync peak. Before a result counted, an automated config-optimality gate verified that the client was using its most disk-efficient mode; otherwise the harness rejected it rather than treating a configuration mistake as a client result. See <a href={`${SITE_CONFIG.github}/blob/270b0e50a8b9709fb70ae288070998cc87f6d5fb/docs/HOW_WE_TESTED_WITH_CLAUDE.md`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">the methodology and harness overview</a> for the full process.
           </p>
         </section>
 
