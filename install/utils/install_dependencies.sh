@@ -173,6 +173,7 @@ configure_time_sync() {
 install_rust_toolchain() {
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y > /dev/null 2>&1
     [[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:${PATH:-}"
+    return 0
 }
 
 # =============================================================================
