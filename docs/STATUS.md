@@ -14,7 +14,7 @@ Last updated: 2026-07-18
 - Diagnostics & operations (`scripts/eth2qs.sh`): `doctor` health checks, `monitor`/`stats` (JSON-capable), `repair`, `update-check`, `clean-data`, `cleanup-host`, `update-all`
 - Agent integration: MCP server (`mcp_server/`) exposing `phase1`/`phase2`/`client-options`/monitoring/repair as first-class tools
 - Experimental: Monad devnet install path (`monad-install`)
-- Client bake-off complete: all 7 execution + 6 consensus clients benchmarked for synced disk footprint and sync time (Stage A triage + Stage B full sync + CL matrix) — see [CLIENT_BAKEOFF_RESULTS.md](CLIENT_BAKEOFF_RESULTS.md)
+- Client bake-off complete: all 7 execution clients plus 5 non-Prysm consensus clients benchmarked for synced disk footprint and sync time (Stage A triage + Stage B full sync + CL matrix; Prysm was the fixed execution-sweep anchor) — see [CLIENT_BAKEOFF_RESULTS.md](CLIENT_BAKEOFF_RESULTS.md)
 - Canonical service units:
   - `eth1.service`
   - `cl.service`
