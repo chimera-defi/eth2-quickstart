@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-03-13
+Last updated: 2026-07-18
 
 ## Current Capabilities
 
@@ -10,6 +10,11 @@ Last updated: 2026-03-13
 - Execution clients (7): geth, erigon, reth, nethermind, besu, nimbus_eth1, ethrex
 - Consensus clients (6): prysm, lighthouse, teku, nimbus, lodestar, grandine
 - MEV options: MEV-Boost, Commit-Boost, optional ETHGas (with Commit-Boost)
+- Validator lifecycle helpers (`scripts/eth2qs.sh`): `validators` inventory, `validator-exit`, `validator-create-0x01`/`validator-create-0x02`, `validator-deploy`, `validator-manage`, and `validator-withdrawal-changes` (BLS-to-execution, with a `--dry-run` rehearsal path) — see [VALIDATOR_MANAGEMENT.md](VALIDATOR_MANAGEMENT.md)
+- Diagnostics & operations (`scripts/eth2qs.sh`): `doctor` health checks, `monitor`/`stats` (JSON-capable), `repair`, `update-check`, `clean-data`, `cleanup-host`, `update-all`
+- Agent integration: MCP server (`mcp_server/`) exposing `phase1`/`phase2`/`client-options`/monitoring/repair as first-class tools
+- Experimental: Monad devnet install path (`monad-install`)
+- Client bake-off complete: all 7 execution + 6 consensus clients benchmarked for synced disk footprint and sync time (Stage A triage + Stage B full sync + CL matrix) — see [CLIENT_BAKEOFF_RESULTS.md](CLIENT_BAKEOFF_RESULTS.md)
 - Canonical service units:
   - `eth1.service`
   - `cl.service`
@@ -52,3 +57,5 @@ Last updated: 2026-03-13
 - Frontend guide: `docs/FRONTEND.md`
 - Closed PR follow-up tracker: `docs/PR_FOLLOWUPS.md`
 - Session continuity: `docs/agent-handoff.md`
+- Validator management: `docs/VALIDATOR_MANAGEMENT.md`
+- Client bake-off (results + methodology): `docs/CLIENT_BAKEOFF_BLOG.md`, `docs/CLIENT_BAKEOFF_RESULTS.md`
