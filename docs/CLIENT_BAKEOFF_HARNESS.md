@@ -1,8 +1,7 @@
 # The Bake-off Harness — Function-Level Engineering Reference
 
-This is the deep, function-level companion to the harness section of `docs/HOW_WE_TESTED_WITH_CLAUDE.md`
-(the higher-level "how we tested with an agent" writeup). Where that doc covers the orchestration
-model and the war stories, this one is a reference: every script under `test/bakeoff/`, every
+This is the deep, function-level reference for the bake-off harness. Where the results and narrative
+writeups cover the measurements, orchestration model, and war stories, this document covers every script under `test/bakeoff/`, every
 function it calls, every flag it reads, and the data files it produces. Read it alongside the
 scripts themselves — line numbers below refer to the harness as of this writing and will drift as
 the code evolves; the function/flag *names* are the stable contract.
@@ -414,8 +413,7 @@ campaign (see `CLIENT_BAKEOFF_ISSUES_LOG.md` for the incidents that motivated th
 
 ## See also
 
-- `docs/HOW_WE_TESTED_WITH_CLAUDE.md` — the higher-level companion: the agent-orchestration model
-  used to run this campaign, the 23-day timeline, and the war stories behind the hardening fixes above.
+- The repository's narrative and methodology documents explain the agent-orchestration model, the 23-day timeline, and the war stories behind the hardening fixes above.
 - `CLIENT_BAKEOFF_RESULTS.md` — the numbers, source-of-truth.
 - `CLIENT_BAKEOFF_BLOG.md` — the narrative writeup of the findings.
 - `CLIENT_BAKEOFF_ISSUES_LOG.md` — the incident log that motivated several of the hardening fixes above.
