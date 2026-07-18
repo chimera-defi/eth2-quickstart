@@ -2,7 +2,7 @@
 
 *A companion to [the results write-up](CLIENT_BAKEOFF_BLOG.md). That post is about the clients. This one is about the machine that tested them: the agent orchestration model, the harness we built to keep ourselves honest, and what actually breaks when a benchmark runs for three weeks on a shared host with an AI in the driver's seat.*
 
-The [client bake-off](CLIENT_BAKEOFF_BLOG.md) measured, for every execution and consensus client [eth2-quickstart](https://github.com/chimera-defi/eth2-quickstart) supports, two numbers: final synced disk footprint and sync duration. Seven execution clients, six consensus clients, one candidate at a time, on one shared semi-production host, from **June 22 to July 14, 2026 — 23 days end-to-end**.
+The [client bake-off](CLIENT_BAKEOFF_BLOG.md) measured, for every execution and consensus client [eth2-quickstart](https://github.com/chimera-defi/eth2-quickstart) supports, two numbers: final synced disk footprint and sync duration. In practice that meant **seven execution-client syncs** against a fixed consensus client, then a **five-way consensus-client sweep** against a fixed execution client (prysm held constant as the pacemaker on both axes) — one candidate at a time, on one shared semi-production host, from **June 22 to July 14, 2026 — 23 days end-to-end**.
 
 A campaign that long, that sequential, and that easy to get subtly wrong is exactly the kind of work you don't want a human babysitting around the clock. So we didn't. It was run by **Claude** — Claude Opus 4.8 as the orchestrator, fresh Claude Sonnet subagents as builders, and a set of delegate models for the cheap and the sandboxed work — with a human operator holding the handful of levers that genuinely need a human. This is the story of that setup, written both for the curious and for the next person (or agent) who has to run something like it.
 
@@ -19,7 +19,7 @@ Benchmarking a sync client is deceptively expensive:
 - **It's easy to measure the wrong thing.** A client that "installed and followed the chain" can still be silently broken (0 peers, frozen execution head). A datadir size means nothing if the client was accidentally running in archive mode. A footprint sampled mid-compaction over-counts.
 - **It's destructive.** Measuring the next client means wiping the last one's datadir on a shared box that also runs other people's work.
 
-Multiply that by thirteen clients and three weeks and you have a task defined less by any single hard step than by *sustained correctness* — the discipline to run the same careful protocol dozens of times, capture the right sample on every exit path, and never let a shared-host quirk masquerade as a client property. That is what the harness and the orchestration model exist to enforce.
+Multiply that across the whole supported field of clients and three weeks and you have a task defined less by any single hard step than by *sustained correctness* — the discipline to run the same careful protocol dozens of times, capture the right sample on every exit path, and never let a shared-host quirk masquerade as a client property. That is what the harness and the orchestration model exist to enforce.
 
 ---
 
