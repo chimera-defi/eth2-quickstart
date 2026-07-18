@@ -2,6 +2,8 @@
 
 *A full-field execution- and consensus-client bake-off — what we measured, and the operability findings that the raw sync numbers hide.*
 
+> **Companion post:** [How We Ran a 23-Day Ethereum Client Bake-Off With Claude](HOW_WE_TESTED_WITH_CLAUDE.md) — the agent orchestration, the harness, and the methodology behind these numbers.
+
 We ran every execution client (EL) and consensus client (CL) that [eth2-quickstart](https://github.com/chimera-defi/eth2-quickstart) supports through the same mainnet sync, on the same host, one at a time, and recorded two numbers for each: **final synced disk footprint** and **sync duration**. Simple premise. The interesting part is what fell out of it — an operability axis (what a client does *after a restart*) that turns out to be more decision-relevant than either headline number, and which explains a genuine paradox: the client that synced *fastest* in the whole field is one with essentially **zero** real-world adoption.
 
 ## TL;DR
