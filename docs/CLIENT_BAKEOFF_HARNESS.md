@@ -26,8 +26,13 @@ test/bakeoff/
 └── test_data_dirs_sync.sh  # CI guard: BAKEOFF_DATA_DIRS must match purge_ethereum_data.sh
 ```
 
-All scripts source `lib/common_functions.sh` for logging (`log_info`/`log_warn`/`log_error`) and
-run under `set -Eeuo pipefail`.
+The executable driver scripts (`run_bakeoff.sh`, `run_candidate.sh`, `run_anchor_rotation.sh`,
+`apply_resource_caps.sh`, `summarize.sh`) each set `set -Eeuo pipefail` and source
+`lib/common_functions.sh` for logging (`log_info`/`log_warn`/`log_error`). `lib.sh` is the
+exception noted in the layout above: it's a sourced library, never executed on its own, that
+inherits strict mode from whichever script sources it and does not source `common_functions.sh`
+itself — its `log_*` calls resolve at runtime because every caller (`run_candidate.sh`,
+`run_anchor_rotation.sh`) already sourced `common_functions.sh` first.
 
 ### Data flow at a glance
 
@@ -235,8 +240,11 @@ guard that fails the build if they drift (it diffs the two lists rather than sou
   vanishes mid-walk (a live datadir churning during snapshot), and `|| true` keeps the number that
   *was* printed instead of letting `pipefail` propagate a fatal exit into an unguarded caller.
 - `bakeoff_probe_execution_sync` — `curl -sS --max-time 5` to `http://127.0.0.1:8545` with an
-  `eth_syncing` JSON-RPC payload; on curl failure, prints `{"error":"execution_rpc_unavailable"}`
-  instead of failing, so downstream `jq` always has valid JSON to parse.
+  `eth_syncing` JSON-RPC payload; on a curl connection failure, prints
+  `{"error":"execution_rpc_unavailable"}` instead of failing. There's no `--fail` flag, so an
+  HTTP-error response with a non-JSON body (e.g. an HTML error page) is *not* caught by this
+  fallback — the actual guard against malformed output downstream is `bakeoff_write_sample`'s
+  `fromjson? // {raw: ...}` fallback (§5.4).
 - `bakeoff_probe_beacon_sync` — tries four ports in order (`3500`, `5051`, `5052`, `9596` — the
   different consensus clients' REST API defaults) against `/eth/v1/node/syncing`, returns the first
   non-empty body; falls back to `{"error":"beacon_rest_unavailable"}`.
@@ -273,8 +281,10 @@ the results tables.
 Mechanism:
 1. Pull the running `ExecStart` line from each systemd unit: `systemctl cat eth1.service | grep -i ExecStart`
    (same for `cl.service`).
-2. Extract any config file path referenced on that line. Three flag styles are matched in one
-   `grep -oP` alternation: `--config-file=`/`--config-file `, `--rcConfig=`/`--rcConfig ` (lodestar),
+2. Extract the first config file path referenced on that line — the extraction pipes through
+   `grep -oP | head -1`, so only the first match is kept even if more than one flag appears on the
+   line. Three flag styles are matched in one `grep -oP` alternation: `--config-file=`/`--config-file `,
+   `--rcConfig=`/`--rcConfig ` (lodestar),
    and `--config=`/`--config ` (erigon). The comment in the source notes why the `--config` alternative
    doesn't falsely match a `--config-file=x` line: PCRE lookbehind is position-anchored, so
    `(?<=--config[= ])` only fires when the character immediately after `--config` is `=` or a space —
@@ -298,7 +308,7 @@ Mechanism:
    | ethrex | no history-prune lever exists, so "optimal" is redefined as `--syncmode snap` being present |
    | prysm | `beacon-db-pruning` (flag or config-key form) |
    | lighthouse | `checkpoint-sync-url` present (default pruning behavior is already fine) |
-   | teku | `data-storage-mode` set to `minimal` or `prune`, case-insensitive |
+   | teku | `data-storage-mode` set to `minimal` or `prune` (leading letter either case) |
    | nimbus (CL) | `history = prune` in the persistent config — deliberately **not** checking `trustedNodeSync`/`--trusted-node-url`, because those only appear in the one-shot bootstrap subcommand that runs *before* the service starts, never in the persistent `ExecStart` or `nimbus.toml`, so they're unobservable here and out of scope for this "is the running config optimal" gate |
    | lodestar | `pruneHistory=true` (or `chain.pruneHistory`) |
    | grandine | `--prune-storage` present |
