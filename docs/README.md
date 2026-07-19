@@ -22,6 +22,14 @@ This directory contains all project documentation organized by category.
 - **[SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md](SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md)** - Shell scripting standards
 - **[COMMIT_MESSAGES.md](COMMIT_MESSAGES.md)** - Commit message conventions
 
+## Research & Bake-off
+- **[HOW_WE_TESTED_WITH_CLAUDE.md](HOW_WE_TESTED_WITH_CLAUDE.md)** - How the client bake-off was run with Claude: agent orchestration, the harness, and the 23-day campaign
+- **[CLIENT_BAKEOFF_BLOG.md](CLIENT_BAKEOFF_BLOG.md)** - Findings write-up: the fastest Ethereum client is one almost nobody runs
+- **[CLIENT_BAKEOFF_RESULTS.md](CLIENT_BAKEOFF_RESULTS.md)** - Measured footprints, sync times, and verdicts (the of-record data)
+- **[CLIENT_BAKEOFF_ISSUES_LOG.md](CLIENT_BAKEOFF_ISSUES_LOG.md)** - War stories: symptom → root cause → fix → takeaway for every issue hit
+- **[CLIENT_BAKEOFF_BLOG_NOTES.md](CLIENT_BAKEOFF_BLOG_NOTES.md)** - Narrative framing notes behind the write-up
+- **[blog/CLIENT_BAKEOFF_OPERATOR_GUIDE.md](blog/CLIENT_BAKEOFF_OPERATOR_GUIDE.md)** - Turning the findings into an operator's client decision
+
 ## Security
 - **[SECURITY_GUIDE.md](SECURITY_GUIDE.md)** - Comprehensive security documentation
 - **[SECURITY_STATUS.md](SECURITY_STATUS.md)** - Security status and improvement tasks
