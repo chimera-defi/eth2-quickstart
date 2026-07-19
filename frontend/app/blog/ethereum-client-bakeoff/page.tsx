@@ -199,7 +199,7 @@ export default function EthereumClientBakeoffPage() {
             <Card padding="sm" className="bg-muted/30">
               <h3 className="font-medium text-foreground">The CL layer is effectively solved</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                All five consensus clients checkpoint-synced to a validating head in about 22–23 minutes with zero failures; footprint is the only real differentiator.
+                All five consensus clients checkpoint-synced to a validating head in minutes with zero failures — about 6–9 minutes on the geth anchor whose footprints are shown below, and ~22 minutes on the ethrex anchor. Footprint is the main differentiator.
               </p>
             </Card>
           </div>
