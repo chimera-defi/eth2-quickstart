@@ -11,6 +11,7 @@ export const SITE_CONFIG = {
 
 export const NAV_LINKS = [
   { label: 'Install', href: '/#install' },
+  { label: 'Blog', href: '/blog' },
   { label: 'Get Started', href: '/quickstart' },
   { label: 'GitHub', href: SITE_CONFIG.github, external: true },
 ]
