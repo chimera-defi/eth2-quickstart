@@ -27,7 +27,7 @@ export default function BlogPage() {
           <h2 className="text-lg sm:text-xl font-semibold text-foreground">
             Latest
           </h2>
-          <div className="mt-4 sm:mt-6">
+          <div className="mt-4 sm:mt-6 space-y-4">
             <Card hover>
               <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
                 Client research
@@ -40,6 +40,22 @@ export default function BlogPage() {
               </p>
               <div className="mt-4">
                 <Button href="/blog/ethereum-client-bakeoff" variant="ghost" size="sm">
+                  Read more
+                </Button>
+              </div>
+            </Card>
+            <Card hover>
+              <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
+                Methodology
+              </p>
+              <h3 className="mt-2 text-xl font-semibold text-foreground">
+                How we ran the bake-off with Claude
+              </h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                The agent orchestration model, the harness, and what actually breaks when a benchmark runs for three weeks with an AI in the driver&apos;s seat.
+              </p>
+              <div className="mt-4">
+                <Button href="/blog/how-we-tested-with-claude" variant="ghost" size="sm">
                   Read more
                 </Button>
               </div>
