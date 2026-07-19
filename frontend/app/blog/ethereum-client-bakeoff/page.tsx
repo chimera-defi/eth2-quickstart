@@ -109,6 +109,15 @@ const consensusClients = [
   },
 ]
 
+const completedExecutionSyncs = [
+  { name: 'Ethrex', hours: 2.27, duration: '2h 16m' },
+  { name: 'Geth', hours: 8.47, duration: '8h 28m' },
+  { name: 'Nethermind', hours: 14.5, duration: '14h 30m' },
+  { name: 'Besu', hours: 19.3, duration: '19h 18m' },
+]
+
+const syncChartMaxHours = 20
+
 const outboundLinks = [
   {
     label: 'Read the full writeup',
@@ -197,6 +206,66 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-4 text-sm text-muted-foreground">
             Restart resilience is a real, under-reported axis—separate from raw sync speed and disk footprint.
           </p>
+        </section>
+
+        <section className="mt-10 sm:mt-16" aria-labelledby="sync-time-heading">
+          <h2 id="sync-time-heading" className="text-lg sm:text-xl font-semibold text-foreground">
+            Cold-sync time, at a glance
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Completed execution-client syncs only. The 72-hour-capped clients are intentionally excluded.
+          </p>
+          <figure className="mt-4 hidden sm:block" aria-labelledby="sync-time-chart-title" aria-describedby="sync-time-chart-description">
+            <svg className="h-auto w-full" viewBox="0 0 680 210" role="img">
+              <title id="sync-time-chart-title">Completed Ethereum execution-client cold-sync times</title>
+              <desc id="sync-time-chart-description">
+                Ethrex completed in 2 hours 16 minutes, Geth in 8 hours 28 minutes, Nethermind in 14 hours 30 minutes, and Besu in 19 hours 18 minutes.
+              </desc>
+              {[0, 5, 10, 15, 20].map((hour) => {
+                const x = 150 + (hour / syncChartMaxHours) * 420
+                return (
+                  <g key={hour}>
+                    <line x1={x} x2={x} y1="24" y2="180" className="stroke-border" />
+                    <text x={x} y="202" textAnchor="middle" className="fill-muted-foreground text-[12px]">
+                      {hour}h
+                    </text>
+                  </g>
+                )
+              })}
+              {completedExecutionSyncs.map((client, index) => {
+                const y = 38 + index * 36
+                const width = (client.hours / syncChartMaxHours) * 420
+                return (
+                  <g key={client.name}>
+                    <text x="136" y={y + 15} textAnchor="end" className="fill-foreground text-[14px]">
+                      {client.name}
+                    </text>
+                    <rect x="150" y={y} width={width} height="22" rx="4" className="fill-primary" />
+                    <text x={Math.min(578, 160 + width)} y={y + 15} className="fill-foreground text-[13px]">
+                      {client.duration}
+                    </text>
+                  </g>
+                )
+              })}
+            </svg>
+            <figcaption className="mt-2 text-xs text-muted-foreground">
+              Time to a validating head on the same shared host. See the scorecard below for sync mode and footprint context.
+            </figcaption>
+          </figure>
+          <dl className="mt-4 space-y-3 sm:hidden">
+            {completedExecutionSyncs.map((client) => (
+              <div key={client.name}>
+                <div className="flex items-baseline justify-between gap-3 text-xs">
+                  <dt className="font-medium text-foreground">{client.name}</dt>
+                  <dd className="text-muted-foreground">{client.duration}</dd>
+                </div>
+                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                  <div className="h-full rounded-full bg-primary" style={{ width: `${(client.hours / syncChartMaxHours) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+            <p className="text-xs text-muted-foreground">Bars use a shared 0–20 hour scale.</p>
+          </dl>
         </section>
 
         <section className="mt-10 sm:mt-16">
