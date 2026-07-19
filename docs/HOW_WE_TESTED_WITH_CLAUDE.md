@@ -8,6 +8,23 @@ A campaign that long, that sequential, and that easy to get subtly wrong is exac
 
 > **Up front, honestly:** this was AI-*driven*, not AI-*unsupervised*. Every destructive action against the live node was gated behind an explicit human confirmation, every result was committed under conventional-commit review, and no agent could merge its own pull request. The interesting claim here is not "the AI did it alone" — it's that the *right division of labor* between an agent and an operator let a 23-day, disk-and-timing-sensitive benchmark run to completion without a person watching it sync.
 
+## The durable control loop
+
+```mermaid
+flowchart LR
+    operator[Human operator] -->|approves destructive steps| orchestrator[Claude orchestrator]
+    orchestrator -->|starts and resumes runs| driver[Detached tmux driver]
+    driver --> harness[Bake-off harness]
+    harness --> services[systemd EL and CL services]
+    harness --> artifacts[Samples, verdicts, and run artifacts]
+    artifacts --> state[Small durable state: results, queue, handoff]
+    state -->|fresh session recovers context| orchestrator
+```
+
+The important boundary is between **long-running work** (the services and driver) and **short-lived
+agent context**. The artifacts carry the campaign forward; a new orchestrating session reads the
+small durable state instead of reconstructing a run from raw logs.
+
 ---
 
 ## The shape of the problem
