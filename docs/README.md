@@ -24,6 +24,7 @@ This directory contains all project documentation organized by category.
 
 ## Research & Bake-off
 - **[HOW_WE_TESTED_WITH_CLAUDE.md](HOW_WE_TESTED_WITH_CLAUDE.md)** - How the client bake-off was run with Claude: agent orchestration, the harness, and the 23-day campaign
+- **[CLIENT_BAKEOFF_HARNESS.md](CLIENT_BAKEOFF_HARNESS.md)** - Function-level engineering reference for the bake-off harness: every script, function, flag, and data file
 - **[CLIENT_BAKEOFF_BLOG.md](CLIENT_BAKEOFF_BLOG.md)** - Findings write-up: the fastest Ethereum client is one almost nobody runs
 - **[CLIENT_BAKEOFF_RESULTS.md](CLIENT_BAKEOFF_RESULTS.md)** - Measured footprints, sync times, and verdicts (the of-record data)
 - **[CLIENT_BAKEOFF_ISSUES_LOG.md](CLIENT_BAKEOFF_ISSUES_LOG.md)** - War stories: symptom → root cause → fix → takeaway for every issue hit
