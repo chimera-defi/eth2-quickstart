@@ -117,6 +117,12 @@ validator keys. Resource-capped via systemd (`CPUQuota`/`MemoryMax`) to protect 
 - **Fix:** guarded the `USE_PRYSM_VERSION` pin (`find … dist/` only when the dir exists). Task #25.
 - **Takeaway:** installer logic that reads the local filesystem (`find dist/`) must be guarded for environments where that path doesn't exist (CI, fresh clone).
 
+### C7. SIGTTIN — an install that read the tty hung a detached run for 90 minutes
+- **Symptom:** a bake-off candidate install launched from a detached `tmux` session hung and eventually hit the 90-minute install timeout (`install_exit_code=124`), leaving a subtree of *stopped* (not killed) processes behind. The identical install run interactively (attached terminal) completed fine — so it looked like a phantom, environment-only hang.
+- **Root cause:** the install shelled out to `geth version | head -1` to log the binary version. In a detached session the process ran in a **non-foreground process group** against a controlling tty it did not own; the `geth version` read from that tty raised **`SIGTTIN`**, which *stops* the whole process subtree rather than killing it. The install never progressed and the outer `timeout` eventually fired (rc=124). Not a geth defect — a shell-job-control interaction that only surfaces when nothing owns the foreground.
+- **Fix:** redirect stdin from `/dev/null` on unattended invocations so no child can block on a tty read — both at the harness install entrypoints and defensively at the `geth version` call site. Commits [`fix(bakeoff): prevent SIGTTIN install-hang by giving installs /dev/null stdin`](https://github.com/chimera-defi/eth2-quickstart/commit/df743ce528a5d60aa7d449cdfad427143b95966b) and [`fix(geth): guard geth version call against SIGTTIN install-hang`](https://github.com/chimera-defi/eth2-quickstart/commit/f495892aa5475f867299e77bfcbf59f28af3fdcd).
+- **Takeaway:** any command in an unattended pipeline that *might* read the terminal must have its stdin redirected from `/dev/null`. Because `SIGTTIN` **stops** rather than kills, the tell is a hung run with children in the `T` (stopped) state, not a crash — a failure mode you only meet once your automation genuinely runs detached. (Same family as the interactive-`unzip` hang in A4, one layer deeper.)
+
 ---
 
 ## D. Stage B full-sync issues (the expensive ones)
@@ -164,6 +170,7 @@ validator keys. Resource-capped via systemd (`CPUQuota`/`MemoryMax`) to protect 
 
 ---
 
-_Last updated: 2026-06-29 (through nethermind P2P fix). Append new issues as Stage B continues
-(besu, nimbus_eth1, ethrex × prysm; then geth × lighthouse, teku, nimbus, lodestar, grandine).
-Orchestrator-owned; uncommitted pending operator approval to fold into the bake-off PR._
+_Last updated: 2026-07-18. Campaign complete — this log now spans Stage A triage, Stage B full
+sync, the CL matrix, and the harness hangs (SIGTTIN, §C7) surfaced by running detached for weeks.
+Companion to [`CLIENT_BAKEOFF_RESULTS.md`](CLIENT_BAKEOFF_RESULTS.md) (the clean metrics) and
+[`HOW_WE_TESTED_WITH_CLAUDE.md`](HOW_WE_TESTED_WITH_CLAUDE.md) (the orchestration story)._
