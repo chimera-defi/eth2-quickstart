@@ -29,6 +29,23 @@ test/bakeoff/
 All scripts source `lib/common_functions.sh` for logging (`log_info`/`log_warn`/`log_error`) and
 run under `set -Eeuo pipefail`.
 
+### Data flow at a glance
+
+```mermaid
+flowchart LR
+    manifest[candidates.tsv] --> sweep[run_bakeoff.sh]
+    sweep --> candidate[run_candidate.sh]
+    rotation[run_anchor_rotation.sh] --> candidate
+    candidate --> services[systemd EL and CL services]
+    candidate --> artifacts[artifacts/run-id/]
+    artifacts --> summary[summarize.sh]
+    summary --> outputs[summary.csv and report.md]
+```
+
+`run_bakeoff.sh` owns the ordinary sequential sweep; `run_anchor_rotation.sh` reuses one synced
+execution-layer anchor while cycling consensus clients. Both paths produce the same per-candidate
+artifacts, so `summarize.sh` has one source of truth.
+
 ---
 
 ## 2. `run_bakeoff.sh` — the sequential orchestrator
