@@ -110,6 +110,73 @@ apt_update() {
 }
 
 # =============================================================================
+# SHARED PHASE1 / PRODUCTION STEPS
+# =============================================================================
+# install_phase1() and install_production() both install the same root-level
+# apt/snap/time-sync stack (production is the legacy Docker/CI combined mode
+# that runs Phase 1 + Phase 2 together). These helpers are the single copy of
+# that logic; both callers keep their own EUID guards/conditionals untouched.
+
+# apt_update + base packages + Phase 1 system packages.
+install_phase1_apt_stack() {
+    apt_update
+    install_base
+    install_packages "${PHASE1_PACKAGES[@]}"
+}
+
+# Go + certbot via snap (skipped in Docker/CI or when snap is unavailable).
+# EUID-branched so it's safe to call from a caller that may run as root or
+# non-root; install_phase1() always runs as root, so it always takes the
+# unprefixed branch below (identical to its pre-refactor behavior).
+install_snap_tools() {
+    if [[ "${CI_E2E:-}" != "true" ]] && ! is_docker && command -v snap &>/dev/null; then
+        log_info "Installing Go via snap..."
+        if [[ $EUID -eq 0 ]]; then
+            snap install --classic go
+            ln -sf /snap/bin/go /usr/bin/go
+            log_info "Installing certbot via snap..."
+            snap install core
+            snap install --classic certbot
+            ln -sf /snap/bin/certbot /usr/bin/certbot
+        else
+            sudo snap install --classic go
+            sudo ln -sf /snap/bin/go /usr/bin/go
+            log_info "Installing certbot via snap..."
+            sudo snap install core
+            sudo snap install --classic certbot
+            sudo ln -sf /snap/bin/certbot /usr/bin/certbot
+        fi
+    else
+        log_warn "Skipping snap installs (Docker or snap unavailable)"
+    fi
+}
+
+# NTP time sync via timedatectl (skipped in Docker -- no timedatectl there).
+# Same EUID-branch rationale as install_snap_tools() above.
+configure_time_sync() {
+    if ! is_docker && command -v timedatectl &>/dev/null; then
+        log_info "Configuring time synchronization..."
+        if [[ $EUID -eq 0 ]]; then
+            TZ=UTC timedatectl set-ntp true 2>/dev/null || log_warn "Could not enable NTP (chrony uses pool.ntp.org by default)"
+        else
+            sudo TZ=UTC timedatectl set-ntp true 2>/dev/null || log_warn "Could not enable NTP (chrony uses pool.ntp.org by default)"
+        fi
+    fi
+}
+
+# Rustup install command itself (the literal, byte-identical command both
+# install_phase2() and install_production() run). Callers keep their own
+# surrounding guard conditionals unchanged -- phase2's "skip if cargo already
+# installed" check is intentionally NOT folded in here, since production's
+# caller never had that check and folding it in would change production's
+# existing behavior.
+install_rust_toolchain() {
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y > /dev/null 2>&1
+    [[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:${PATH:-}"
+    return 0
+}
+
+# =============================================================================
 # VALIDATOR TOOL INSTALLATION
 # =============================================================================
 
@@ -255,29 +322,9 @@ install_phase1() {
         exit 1
     fi
 
-    apt_update
-
-    install_base
-    install_packages "${PHASE1_PACKAGES[@]}"
-
-    # Snap installs: Go and certbot (skip in Docker -- snap doesn't work in containers)
-    if [[ "${CI_E2E:-}" != "true" ]] && ! is_docker && command -v snap &>/dev/null; then
-        log_info "Installing Go via snap..."
-        snap install --classic go
-        ln -sf /snap/bin/go /usr/bin/go
-        log_info "Installing certbot via snap..."
-        snap install core
-        snap install --classic certbot
-        ln -sf /snap/bin/certbot /usr/bin/certbot
-    else
-        log_warn "Skipping snap installs (Docker or snap unavailable)"
-    fi
-
-    # Configure time synchronization (skip in Docker -- no timedatectl)
-    if ! is_docker && command -v timedatectl &>/dev/null; then
-        log_info "Configuring time synchronization..."
-        TZ=UTC timedatectl set-ntp true 2>/dev/null || log_warn "Could not enable NTP (chrony uses pool.ntp.org by default)"
-    fi
+    install_phase1_apt_stack
+    install_snap_tools
+    configure_time_sync
 
     log_info "Phase 1 system dependencies installed successfully!"
 }
@@ -297,8 +344,7 @@ install_phase2() {
         log_info "Rust already installed: $(rustc --version 2>/dev/null || echo 'unknown')"
     elif ! is_docker || [[ "${CI_E2E:-}" == "true" ]]; then
         log_info "Installing Rust (user-level, $HOME/.cargo)..."
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y > /dev/null 2>&1
-        [[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:${PATH:-}"
+        install_rust_toolchain
     fi
 
     # Validator tools (ethdo + ethstaker-deposit-cli)
@@ -312,50 +358,19 @@ install_phase2() {
 install_production() {
     log_info "Installing all production dependencies (Docker/CI combined mode)..."
 
-    apt_update
-
-    install_base
-    install_packages "${PHASE1_PACKAGES[@]}"
-
-    # Snap installs (skip in Docker)
-    if [[ "${CI_E2E:-}" != "true" ]] && ! is_docker && command -v snap &>/dev/null; then
-        log_info "Installing Go via snap..."
-        if [[ $EUID -eq 0 ]]; then
-            snap install --classic go
-            ln -sf /snap/bin/go /usr/bin/go
-            snap install core
-            snap install --classic certbot
-            ln -sf /snap/bin/certbot /usr/bin/certbot
-        else
-            sudo snap install --classic go
-            sudo ln -sf /snap/bin/go /usr/bin/go
-            sudo snap install core
-            sudo snap install --classic certbot
-            sudo ln -sf /snap/bin/certbot /usr/bin/certbot
-        fi
-    else
-        log_warn "Skipping snap installs (Docker or snap unavailable)"
-    fi
+    install_phase1_apt_stack
+    install_snap_tools
 
     # Rust (user-level)
     if ! is_docker || [[ "${CI_E2E:-}" == "true" ]]; then
         log_info "Installing Rust..."
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y > /dev/null 2>&1
-        [[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:${PATH:-}"
+        install_rust_toolchain
     fi
 
     # Validator tools (ethdo + ethstaker-deposit-cli)
     install_validator_tools
 
-    # Time sync (skip in Docker)
-    if ! is_docker && command -v timedatectl &>/dev/null; then
-        log_info "Configuring time synchronization..."
-        if [[ $EUID -eq 0 ]]; then
-            TZ=UTC timedatectl set-ntp true 2>/dev/null || log_warn "Could not enable NTP"
-        else
-            sudo TZ=UTC timedatectl set-ntp true 2>/dev/null || log_warn "Could not enable NTP"
-        fi
-    fi
+    configure_time_sync
 
     log_info "All production dependencies installed successfully!"
 }
