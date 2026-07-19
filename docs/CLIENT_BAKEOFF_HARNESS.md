@@ -248,8 +248,11 @@ guard that fails the build if they drift (it diffs the two lists rather than sou
 - `bakeoff_probe_beacon_sync` — tries four ports in order (`3500`, `5051`, `5052`, `9596` — the
   different consensus clients' REST API defaults) against `/eth/v1/node/syncing`, returns the first
   non-empty body; falls back to `{"error":"beacon_rest_unavailable"}`.
-- `bakeoff_snapshot_processes` — `ps -eo` filtered by an `awk` regex over known client binary/comm
-  names, converted to a JSON array via `jq -R -s 'split("\n")[:-1]'`.
+- `bakeoff_snapshot_processes` — `ps -eo pid=,comm=,%cpu=,%mem=,rss=,vsz=,etime=,args=` piped to an
+  `awk` regex over known client names; the pattern matches against the **whole formatted `ps` row**
+  (comm *and* args columns together), not just the `comm` field — so any process whose *arguments*
+  happen to contain one of those tokens is picked up too, not only ones named after a client binary.
+  Matching lines are converted to a JSON array via `jq -R -s 'split("\n")[:-1]'`.
 - `bakeoff_services_alive` — `systemctl is-active --quiet eth1.service && systemctl is-active --quiet cl.service`.
 
 ### 5.3 `bakeoff_is_synced`
@@ -267,9 +270,11 @@ The per-tick sampling routine. Writes disk/execution-sync/beacon-sync/process sn
 `./scripts/eth2qs.sh doctor --json` and `stats --json` (each `timeout 30`, best-effort) into a
 `tmp/` scratch dir, determines `alive="up"/"down"` via `bakeoff_services_alive`, and assembles one
 JSON object per call with `jq -cn --rawfile` (each raw file parsed with `fromjson?  // {raw: ...}` so
-a malformed sub-output degrades to a raw-string field instead of aborting the whole sample) appended
-as one line to `samples.jsonl`. A `jq` failure on the whole assembly is caught and logged
-(`log_warn`) rather than propagated — one bad sample should never kill the observation loop.
+a malformed sub-output degrades to a raw-string field instead of aborting the whole sample — with
+one exception: `processes` degrades to an empty array `(($processes | fromjson?) // [])`, not a
+`{raw: ...}` object, since it's already expected to be a JSON array) appended as one line to
+`samples.jsonl`. A `jq` failure on the whole assembly is caught and logged (`log_warn`) rather than
+propagated — one bad sample should never kill the observation loop.
 
 ### 5.5 `bakeoff_check_config_optimal <el> <cl> <out_dir>`
 
@@ -279,8 +284,10 @@ most disk-efficient mode. Non-blocking (always returns 0), but stamps a verdict 
 the results tables.
 
 Mechanism:
-1. Pull the running `ExecStart` line from each systemd unit: `systemctl cat eth1.service | grep -i ExecStart`
-   (same for `cl.service`).
+1. Pull the configured `ExecStart` line from each systemd unit: `systemctl cat eth1.service | grep -i ExecStart`
+   (same for `cl.service`). `systemctl cat` reads the unit **file** text (what the service is
+   configured to run, including drop-ins) — not the live process's actual command line — so this
+   reflects the configuration, not a runtime introspection of the running process.
 2. Extract the first config file path referenced on that line — the extraction pipes through
    `grep -oP | head -1`, so only the first match is kept even if more than one flag appears on the
    line. Three flag styles are matched in one `grep -oP` alternation: `--config-file=`/`--config-file `,
