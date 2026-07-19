@@ -447,7 +447,7 @@ campaign (see `CLIENT_BAKEOFF_ISSUES_LOG.md` for the incidents that motivated th
 
 ## See also
 
-- The repository's narrative and methodology documents explain the agent-orchestration model, the 23-day timeline, and the war stories behind the hardening fixes above.
+- `HOW_WE_TESTED_WITH_CLAUDE.md` — the agent-orchestration model, the 23-day timeline, and the war stories behind the hardening fixes above.
 - `CLIENT_BAKEOFF_RESULTS.md` — the numbers, source-of-truth.
 - `CLIENT_BAKEOFF_BLOG.md` — the narrative writeup of the findings.
 - `CLIENT_BAKEOFF_ISSUES_LOG.md` — the incident log that motivated several of the hardening fixes above.
