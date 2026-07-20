@@ -148,6 +148,32 @@ function FlowDiagram({ steps }: { steps: string[] }) {
   )
 }
 
+function AgentHierarchy() {
+  return (
+    <div className="mt-4">
+      <div className="mx-auto max-w-sm rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-center text-sm text-foreground">
+        Orchestrator / reviewer — Claude Opus 4.8
+        <span className="block text-xs text-muted-foreground">plans, reviews every diff, writes durable state</span>
+      </div>
+      <ArrowDown className="mx-auto my-1.5 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
+          Builder — fresh Sonnet subagent
+          <span className="block text-xs text-muted-foreground">one task, reports a summary back</span>
+        </div>
+        <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
+          Builder — fresh Sonnet subagent
+          <span className="block text-xs text-muted-foreground">one task, reports a summary back</span>
+        </div>
+        <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
+          Delegates — cheaper / sandboxed models
+          <span className="block text-xs text-muted-foreground">cheap read-only work, routed via wrapper binaries</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function HowWeTestedWithClaudePage() {
   return (
     <div className="min-h-screen py-12 sm:py-16 md:py-24">
@@ -299,6 +325,7 @@ export default function HowWeTestedWithClaudePage() {
 
           <h3 className="mt-6 font-medium text-foreground">2. Three tiers of agent, by cost and capability</h3>
           <p className="mt-2 text-sm text-muted-foreground">Not every sub-task deserves the strongest, most expensive model:</p>
+          <AgentHierarchy />
           <div className="mt-4 hidden sm:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
