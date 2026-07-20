@@ -102,11 +102,14 @@ const campaignTimeline = [
   { date: '2026-07-14', label: 'Campaign ends, harness and results docs shipped' },
 ]
 
+// What's actually implemented (test/bakeoff/lib.sh, run_candidate.sh) — no peer-count check
+// anywhere; the stall-watchdog tracks one flat no-progress streak and is opt-in. STALLED is
+// reachable only through RESTARTING, never directly from SYNCING — the component below reflects
+// that chain rather than flattening it into a fan-out.
 const verdictOutcomes = [
-  { name: 'STALLED_NO_PEERS', trigger: '0 peers', variant: 'default' as const },
-  { name: 'STALLED_NO_PROGRESS', trigger: 'peers ok, head frozen', variant: 'default' as const },
-  { name: 'SYNCED', trigger: 'peers ok, head advancing, synced', variant: 'primary' as const },
-  { name: 'CAPPED', trigger: '72h elapsed', variant: 'default' as const },
+  { name: 'SYNCED', trigger: '2 consecutive clean samples', variant: 'primary' as const },
+  { name: 'CAPPED', trigger: 'window elapses, still not synced', variant: 'default' as const },
+  { name: 'RESTARTING', trigger: 'no-progress streak hits threshold (opt-in watchdog) — loops back to SYNCING, or falls through to STALLED if the restart budget runs out', variant: 'default' as const },
 ]
 
 const harnessPipelineSteps = [
@@ -218,7 +221,7 @@ function VerdictDiagram() {
         SYNCING
       </div>
       <ArrowDown className="mx-auto my-1.5 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-3">
         {verdictOutcomes.map((outcome) => (
           <div key={outcome.name} className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-center">
             <Badge variant={outcome.variant}>{outcome.name}</Badge>
@@ -440,13 +443,13 @@ export default function HowWeTestedWithClaudePage() {
             stalled?&rdquo; pulled raw <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">journalctl</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">du</code>, and RPC output into the context window, and that filled up in hours, not weeks. The fix was architectural:
           </p>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-            <li><span className="font-medium text-foreground">Push conclusions down to where the data lives.</span> The harness computes a verdict (SYNCING / STALLED_NO_PEERS / STALLED_NO_PROGRESS / SYNCED / CAPPED) so the agent reads a word, not a log.</li>
+            <li><span className="font-medium text-foreground">Push conclusions down to where the data lives.</span> Each sample collapses to a couple of flags in <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">env.txt</code> &mdash; <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">fully_synced=yes</code> after two consecutive clean samples, or (with the stall-watchdog armed) <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.stalled</code> once bounded restarts are exhausted &mdash; so the agent reads a file, not a log.</li>
             <li><span className="font-medium text-foreground">Keep durable state small and in files.</span> Results, governance rules, the queue, and a live self-handoff note live in a handful of markdown files &mdash; a mid-campaign context clear becomes a non-event.</li>
             <li><span className="font-medium text-foreground">Keep transient investigation off the context path.</span> Logs, probes, and sample dumps are ephemeral: computed, summarized, dropped &mdash; never carried.</li>
           </ul>
           <VerdictDiagram />
           <p className="mt-3 text-xs text-muted-foreground">
-            Why three conditions, not one: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing=false</code> alone is a trap &mdash; it&apos;s returned both before a sync starts and after it finishes. nethermind&apos;s 13.3h loopback stall (see the table above) looked healthy on that signal alone; only peers-plus-head-plus-distance together catch it.
+            This is what&apos;s actually implemented, not a peer-aware state machine: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced()</code> checks <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">sync_distance</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">is_optimistic</code>, and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">el_offline</code> together &mdash; already enough to avoid trusting <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing=false</code> alone &mdash; but there&apos;s no peer-count check anywhere, and the stall-watchdog is opt-in. nethermind&apos;s 13.3h loopback stall (see the table above) predates the watchdog: the harness correctly never reported it synced, but nothing flagged the run as <em>stuck</em> rather than <em>still syncing</em> &mdash; that gap is exactly what motivated building the watchdog afterward.
           </p>
 
           <h3 className="mt-6 font-medium text-foreground">4. Governance the agent could not override</h3>
