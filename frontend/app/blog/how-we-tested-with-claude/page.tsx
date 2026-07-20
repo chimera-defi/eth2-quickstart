@@ -87,6 +87,28 @@ const controlLoopSteps = [
   'Small durable state: results, queue, handoff',
 ]
 
+// Every date is a shipped fix or completed measurement run, cross-checked against
+// CLIENT_BAKEOFF_RESULTS.md and the repo's merged-PR history — none invented or approximated.
+const campaignTimeline = [
+  { date: '2026-06-22', label: 'Campaign starts, Stage A triage begins' },
+  { date: '2026-06-26', label: 'Stage-A installer fixes shipped' },
+  { date: '2026-06-30', label: 'besu completes un-pruned sync' },
+  { date: '2026-07-05', label: 'besu pruned re-run abandoned, deadlocked twice' },
+  { date: '2026-07-06', label: 'CL sweep vs ethrex anchor, 5 CLs' },
+  { date: '2026-07-08', label: 'CL cross-check vs geth anchor' },
+  { date: '2026-07-10', label: 'ethrex restart-cliff bisected, geth 52h resume verified' },
+  { date: '2026-07-12', label: 'Installer / config correctness fixes shipped' },
+  { date: '2026-07-13', label: 'nimbus_eth1 72h capped run completes' },
+  { date: '2026-07-14', label: 'Campaign ends, harness and results docs shipped' },
+]
+
+const verdictOutcomes = [
+  { name: 'STALLED_NO_PEERS', trigger: '0 peers', variant: 'default' as const },
+  { name: 'STALLED_NO_PROGRESS', trigger: 'peers ok, head frozen', variant: 'default' as const },
+  { name: 'SYNCED', trigger: 'peers ok, head advancing, synced', variant: 'primary' as const },
+  { name: 'CAPPED', trigger: '72h elapsed', variant: 'default' as const },
+]
+
 const harnessPipelineSteps = [
   'Candidate manifest → run_bakeoff.sh (walks one candidate at a time)',
   'run_candidate.sh: hard-reset shared services → install → apply resource caps',
@@ -169,6 +191,40 @@ function AgentHierarchy() {
           Delegates — cheaper / sandboxed models
           <span className="block text-xs text-muted-foreground">cheap read-only work, routed via wrapper binaries</span>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function CampaignTimeline() {
+  return (
+    <div className="mt-4 overflow-x-auto">
+      <div className="flex gap-3 pb-2" style={{ minWidth: 'max-content' }}>
+        {campaignTimeline.map((item) => (
+          <div key={item.date} className="w-40 shrink-0 rounded-lg border border-border bg-muted/30 p-3">
+            <p className="font-mono text-xs text-primary">{item.date}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{item.label}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function VerdictDiagram() {
+  return (
+    <div className="mt-4">
+      <div className="mx-auto max-w-xs rounded-lg border border-border bg-muted/30 px-4 py-2 text-center text-sm font-medium text-foreground">
+        SYNCING
+      </div>
+      <ArrowDown className="mx-auto my-1.5 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+      <div className="grid gap-3 sm:grid-cols-4">
+        {verdictOutcomes.map((outcome) => (
+          <div key={outcome.name} className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-center">
+            <Badge variant={outcome.variant}>{outcome.name}</Badge>
+            <p className="mt-1.5 text-xs text-muted-foreground">{outcome.trigger}</p>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -291,6 +347,16 @@ export default function HowWeTestedWithClaudePage() {
               the orchestrator.
             </p>
           </div>
+
+          <div className="mt-8">
+            <h3 className="font-medium text-foreground">23-day campaign — key dates</h3>
+            <CampaignTimeline />
+            <p className="mt-2 text-xs text-muted-foreground">
+              Every date is a shipped fix or a completed measurement run, sourced from{' '}
+              <a href={`${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_RESULTS.md`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">CLIENT_BAKEOFF_RESULTS.md</a>
+              {' '}and the repo&apos;s merged-PR history &mdash; not reconstructed from memory.
+            </p>
+          </div>
         </section>
 
         <section id="shape-of-the-problem" className="mt-10 sm:mt-16">
@@ -378,6 +444,10 @@ export default function HowWeTestedWithClaudePage() {
             <li><span className="font-medium text-foreground">Keep durable state small and in files.</span> Results, governance rules, the queue, and a live self-handoff note live in a handful of markdown files &mdash; a mid-campaign context clear becomes a non-event.</li>
             <li><span className="font-medium text-foreground">Keep transient investigation off the context path.</span> Logs, probes, and sample dumps are ephemeral: computed, summarized, dropped &mdash; never carried.</li>
           </ul>
+          <VerdictDiagram />
+          <p className="mt-3 text-xs text-muted-foreground">
+            Why three conditions, not one: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing=false</code> alone is a trap &mdash; it&apos;s returned both before a sync starts and after it finishes. nethermind&apos;s 13.3h loopback stall (see the table above) looked healthy on that signal alone; only peers-plus-head-plus-distance together catch it.
+          </p>
 
           <h3 className="mt-6 font-medium text-foreground">4. Governance the agent could not override</h3>
           <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
