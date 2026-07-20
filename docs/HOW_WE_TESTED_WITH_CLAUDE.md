@@ -86,8 +86,8 @@ flowchart TD
     orchestrator -->|spawns, one task each| builder1["Builder<br/>fresh Claude Sonnet subagent"]
     orchestrator -->|spawns, one task each| builder2["Builder<br/>fresh Claude Sonnet subagent"]
     orchestrator -->|routes cheap/sandboxed work| delegates["Delegates<br/>cheaper / sandboxed models"]
-    builder1 -.->|"done — here's the diff" (summary only)| orchestrator
-    builder2 -.->|"done — here's the diff" (summary only)| orchestrator
+    builder1 -.->|summary only, not full context| orchestrator
+    builder2 -.->|summary only, not full context| orchestrator
 ```
 
 *Builders read the full investigation (client source, logs, diffs) and hand back a short summary — the orchestrator reviews the diff, never holds the investigation.*
