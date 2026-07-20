@@ -133,8 +133,8 @@ The harness had already solved node time. But every status check, every "is it s
 stateDiagram-v2
     [*] --> SYNCING
     SYNCING --> STALLED_NO_PEERS: 0 peers
-    SYNCING --> STALLED_NO_PROGRESS: peers greater than 0, head frozen
-    SYNCING --> SYNCED: peers greater than 0 and head advancing and sync_distance is 0
+    SYNCING --> STALLED_NO_PROGRESS: peers ok, head frozen
+    SYNCING --> SYNCED: peers ok, head advancing, synced
     SYNCING --> CAPPED: 72h elapsed
     STALLED_NO_PEERS --> SYNCING: peers recover
     STALLED_NO_PROGRESS --> SYNCING: head resumes advancing
