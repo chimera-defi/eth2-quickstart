@@ -125,24 +125,21 @@ The single most important lesson of the campaign (see [the issues log, §E3](CLI
 
 The harness had already solved node time. But every status check, every "is it stalled?" pulled raw `journalctl`, `du`, and RPC output into the context window, and *that* filled up in hours, not weeks. The fix was architectural, and it generalizes far beyond Ethereum:
 
-- **Push conclusions down to where the data lives.** The harness computes a verdict (`SYNCING` / `STALLED_NO_PEERS` / `STALLED_NO_PROGRESS` / `SYNCED` / `CAPPED`) so the agent reads a *word*, not a log.
+- **Push conclusions down to where the data lives.** Each sample collapses to a couple of flags in `env.txt` — `fully_synced=yes` after two consecutive clean samples, or (with the stall-watchdog armed) `.stalled` once bounded restarts are exhausted — so the agent reads a *file*, not a log.
 - **Keep durable state small and in files.** Results, governance rules, the queue, and a live self-handoff note live in a handful of markdown files — a mid-campaign context clear becomes a non-event.
 - **Keep transient investigation off the context path.** Logs, probes, and sample dumps are ephemeral: computed, summarized, dropped — never carried.
 
 ```mermaid
 stateDiagram-v2
     [*] --> SYNCING
-    SYNCING --> STALLED_NO_PEERS: 0 peers
-    SYNCING --> STALLED_NO_PROGRESS: peers ok, head frozen
-    SYNCING --> SYNCED: peers ok, head advancing, synced
-    SYNCING --> CAPPED: 72h elapsed
-    STALLED_NO_PEERS --> SYNCING: peers recover
-    STALLED_NO_PROGRESS --> SYNCING: head resumes advancing
-    STALLED_NO_PEERS --> CAPPED: 72h elapsed
-    STALLED_NO_PROGRESS --> CAPPED: 72h elapsed
+    SYNCING --> SYNCED: 2 consecutive clean samples
+    SYNCING --> CAPPED: window elapses, still not synced
+    SYNCING --> RESTARTING: no-progress streak hits threshold (opt-in watchdog only)
+    RESTARTING --> SYNCING: unit restarted, watchdog keeps watching
+    RESTARTING --> STALLED: restart budget exhausted, loop breaks early
 ```
 
-*Why three conditions, not one: `eth_syncing=false` alone is a trap — it's returned both before a sync starts and after it finishes. nethermind's 13.3h loopback stall (see the table above) looked healthy on that signal alone; only peers-plus-head-plus-distance together catch it.*
+*This is what's actually implemented (`test/bakeoff/lib.sh`, `run_candidate.sh`) — not a peer-aware state machine. `bakeoff_is_synced()` checks `sync_distance`, `is_optimistic`, and `el_offline` together, which is already enough to avoid trusting `eth_syncing=false` alone (it's returned both before a sync starts and after it finishes). But it has **no peer-count check at all**, and the stall-watchdog that restarts a stuck unit is opt-in and tracks only flat block/slot progress. nethermind's 13.3h loopback stall (see the table above) predates the watchdog: `bakeoff_is_synced()` correctly never reported it synced, but nothing flagged the run as *stuck* rather than *still syncing* — that gap is exactly what motivated building the watchdog afterward. (The issues log, [§E3](CLIENT_BAKEOFF_ISSUES_LOG.md), still lists a fuller peer-aware verdict scheme as a documented improvement, not yet shipped.)*
 
 That separation is the difference between an agent that can run a 23-day campaign and one that suffocates on its own status checks by day two.
 
