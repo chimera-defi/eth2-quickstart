@@ -51,6 +51,23 @@ flowchart LR
 
 *The durable control loop: the artifacts carry the campaign forward; a new orchestrating session reads the small durable state instead of reconstructing a run from raw logs.*
 
+```mermaid
+timeline
+    title 23-day campaign — key dates
+    2026-06-22 : Campaign starts, Stage A triage begins
+    2026-06-26 : Stage-A installer fixes shipped
+    2026-06-30 : besu completes un-pruned sync
+    2026-07-05 : besu pruned re-run abandoned, deadlocked twice
+    2026-07-06 : CL sweep vs ethrex anchor, 5 CLs
+    2026-07-08 : CL cross-check vs geth anchor
+    2026-07-10 : ethrex restart-cliff bisected, geth 52h resume verified
+    2026-07-12 : Installer / config correctness fixes shipped
+    2026-07-13 : nimbus_eth1 72h capped run completes
+    2026-07-14 : Campaign ends, harness and results docs shipped
+```
+
+*Every date here is a shipped fix or a completed measurement run — sourced from [`CLIENT_BAKEOFF_RESULTS.md`](CLIENT_BAKEOFF_RESULTS.md) and the repo's merged-PR history, not reconstructed from memory.*
+
 ---
 
 ## The shape of the problem
@@ -111,6 +128,21 @@ The harness had already solved node time. But every status check, every "is it s
 - **Push conclusions down to where the data lives.** The harness computes a verdict (`SYNCING` / `STALLED_NO_PEERS` / `STALLED_NO_PROGRESS` / `SYNCED` / `CAPPED`) so the agent reads a *word*, not a log.
 - **Keep durable state small and in files.** Results, governance rules, the queue, and a live self-handoff note live in a handful of markdown files — a mid-campaign context clear becomes a non-event.
 - **Keep transient investigation off the context path.** Logs, probes, and sample dumps are ephemeral: computed, summarized, dropped — never carried.
+
+```mermaid
+stateDiagram-v2
+    [*] --> SYNCING
+    SYNCING --> STALLED_NO_PEERS: 0 peers
+    SYNCING --> STALLED_NO_PROGRESS: peers greater than 0, head frozen
+    SYNCING --> SYNCED: peers greater than 0 and head advancing and sync_distance is 0
+    SYNCING --> CAPPED: 72h elapsed
+    STALLED_NO_PEERS --> SYNCING: peers recover
+    STALLED_NO_PROGRESS --> SYNCING: head resumes advancing
+    STALLED_NO_PEERS --> CAPPED: 72h elapsed
+    STALLED_NO_PROGRESS --> CAPPED: 72h elapsed
+```
+
+*Why three conditions, not one: `eth_syncing=false` alone is a trap — it's returned both before a sync starts and after it finishes. nethermind's 13.3h loopback stall (see the table above) looked healthy on that signal alone; only peers-plus-head-plus-distance together catch it.*
 
 That separation is the difference between an agent that can run a 23-day campaign and one that suffocates on its own status checks by day two.
 
