@@ -80,6 +80,18 @@ Instead of polling logs, the agent armed **event-driven watchers** — backgroun
 
 Not every sub-task deserves the strongest, most expensive model. The campaign used a deliberate hierarchy:
 
+```mermaid
+flowchart TD
+    orchestrator["Orchestrator / reviewer<br/>Claude Opus 4.8<br/>plans, reviews every diff, writes durable state"]
+    orchestrator -->|spawns, one task each| builder1["Builder<br/>fresh Claude Sonnet subagent"]
+    orchestrator -->|spawns, one task each| builder2["Builder<br/>fresh Claude Sonnet subagent"]
+    orchestrator -->|routes cheap/sandboxed work| delegates["Delegates<br/>cheaper / sandboxed models"]
+    builder1 -.->|summary only, not full context| orchestrator
+    builder2 -.->|summary only, not full context| orchestrator
+```
+
+*Builders read the full investigation (client source, logs, diffs) and hand back a short summary — the orchestrator reviews the diff, never holds the investigation.*
+
 | Role | Who | What they did |
 |------|-----|---------------|
 | **Orchestrator / reviewer** | Claude Opus 4.8 | Planned the queue, made the judgment calls, reviewed every diff, wrote the durable state. Did *not* hand-write most client code. |
