@@ -50,7 +50,7 @@ checkpoint (2026-07-11) and is retained for provenance.
 
 ## 1. Headline findings (lead with these)
 
-1. **Disk winner: Nethermind ~251 GiB** — ~4.5× smaller than geth's ~1.13 TiB, the smallest of any client
+1. **Disk winner: Nethermind ~251 GiB** — ~4.6× smaller than geth's ~1.13 TiB, the smallest of any client
    that finished a *pruned-comparable* sync. This is the number to lead the disk story with.
 2. **Speed winner: ethrex ~2h16m** — the fastest cold sync in the entire field, by a wide margin
    (next is geth at ~8.5h). A ~0%-adoption minimalist Rust client (Lambda Class) beat everyone on speed.
@@ -233,7 +233,7 @@ trustworthy. The bake-off's credibility rests on this gate.
 
 - **geth** — the boring, correct baseline. ~8.5h snap sync, ~1.13 TiB with post-merge history prune,
   resumes cleanly across restarts. 44.9% share. If you don't have a reason to run something else, run this.
-- **nethermind** — the disk champion at ~251 GiB (4.5× smaller than geth), ~14.5h sync, clean restart
+- **nethermind** — the disk champion at ~251 GiB (4.6× smaller than geth), ~14.5h sync, clean restart
   behavior. 36% share. The pick when disk is the constraint.
 - **ethrex** — the sprinter with a glass jaw. Fastest cold sync (~2h16m), but an un-pruned datadir that keeps
   growing **even at the chain tip with `eth_syncing=false`** (~286 GiB at sync → ~467 GiB on 2026-07-06,
