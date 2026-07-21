@@ -242,7 +242,7 @@ export default function BakeoffHarnessPage() {
             This is the deep, function-level reference for the bake-off harness. Where the results and narrative
             writeups cover the measurements, orchestration model, and war stories, this document covers every
             script under <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">test/bakeoff/</code>, every function it calls, every flag it reads, and the data
-            files it produces. Read it alongside the scripts themselves — line numbers refer to the harness as of
+            files it produces. Read it alongside the scripts themselves — line numbers below refer to the harness as of
             this writing and will drift as the code evolves; the function/flag <em>names</em> are the stable
             contract.
           </p>
@@ -816,8 +816,7 @@ export default function BakeoffHarnessPage() {
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Usage: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'run_anchor_rotation.sh <anchors_csv> [<cls_csv>]'}</code> (CLs default to{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">lighthouse,teku,nimbus,lodestar,grandine</code>). This is how the CL matrix (§ of the
-            blog) gets measured against more than one EL anchor without re-syncing every EL from scratch for every
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">lighthouse,teku,nimbus,lodestar,grandine</code>). This is how the CL matrix gets measured against more than one EL anchor without re-syncing every EL from scratch for every
             CL.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">

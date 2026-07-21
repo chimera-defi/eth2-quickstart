@@ -12,7 +12,7 @@ const posts = [
     eyebrow: 'Client research',
     title: 'Ethereum client bake-off',
     description:
-      'Results from a 23-day execution and consensus client sync campaign: disk, speed, and restart resilience across every client pairing.',
+      'Results from a 23-day execution and consensus client sync campaign: disk, speed, and restart resilience across the full client roster.',
     href: '/blog/ethereum-client-bakeoff',
   },
   {

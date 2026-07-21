@@ -597,7 +597,7 @@ export default function EthereumClientBakeoffPage() {
             The obvious follow-up: how big a gap actually trips it? We bisected it with controlled
             stop → wait → start cycles, a live prysm driving forkchoice:
           </p>
-          <div className="mt-4 overflow-x-auto">
+          <div className="mt-4 hidden sm:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
@@ -616,6 +616,17 @@ export default function EthereumClientBakeoffPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="mt-4 space-y-3 sm:hidden">
+            {restartBisection.map((row) => (
+              <div key={row.gap} className="rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-medium text-foreground">{row.gap} gap</span>
+                  <Badge variant={row.variant}>{row.outcome}</Badge>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">{row.blocks} blocks missed</p>
+              </div>
+            ))}
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
             <strong className="text-foreground">The cliff edge is ~128 blocks ≈ 24–25 minutes.</strong>{' '}
@@ -737,11 +748,13 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             We ran the five CLs — lighthouse, lodestar, grandine, teku, nimbus — against a constant
             anchor EL, and then repeated it against a second anchor EL to test the EL/CL decoupling
-            claim directly. Every CL checkpoint-synced to a fully-validating head in{' '}
-            <strong className="text-foreground">~22–23 minutes</strong>,{' '}
+            claim directly. Every CL checkpoint-synced to a fully-validating head in minutes —{' '}
+            <strong className="text-foreground">~22–23 minutes on the ethrex anchor</strong> and{' '}
+            <strong className="text-foreground">~6–9 minutes on the geth anchor</strong> (whose
+            footprints are in the CL scorecard above),{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes</code>,
-            zero crashes. Sync time is effectively tied, so footprint is the differentiator — see
-            the CL scorecard above.
+            zero crashes. Sync time is effectively tied within each anchor, so footprint is the
+            differentiator.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             Crucially, the ranking reproduced across both anchor ELs — the heavyweight tier
@@ -807,7 +820,27 @@ export default function EthereumClientBakeoffPage() {
 
         <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <h2 className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
-            Sources
+            Read next
+          </h2>
+          <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <li>
+              <Link href="/blog/how-we-tested-with-claude" className="text-primary hover:underline">
+                How we tested with Claude
+              </Link>
+            </li>
+            <li>
+              <Link href="/blog/bakeoff-harness" className="text-primary hover:underline">
+                The bake-off harness
+              </Link>
+            </li>
+            <li>
+              <Link href="/blog/bakeoff-results" className="text-primary hover:underline">
+                Bake-off results (raw data)
+              </Link>
+            </li>
+          </ul>
+          <h2 className="mt-6 font-mono text-sm text-muted-foreground uppercase tracking-wide">
+            Source docs on GitHub
           </h2>
           <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
             {sourceLinks.map((link) => (
