@@ -156,7 +156,7 @@ A tempting story going in was "mainnet share predicts syncability" — the low/z
 
 ## The consensus layer is solved
 
-We ran the five CLs — **lighthouse, lodestar, grandine, teku, nimbus** — against a constant anchor EL, and then repeated it against a *second* anchor EL to test the EL/CL decoupling claim directly. Every CL checkpoint-synced to a fully-validating head in **~22–23 minutes**, `config_optimal=yes`, zero crashes. Sync *time* is effectively tied, so **footprint is the differentiator**:
+We ran the five CLs — **lighthouse, lodestar, grandine, teku, nimbus** — against a constant anchor EL, and then repeated it against a *second* anchor EL to test the EL/CL decoupling claim directly. Every CL checkpoint-synced to a fully-validating head in minutes — **~22–23 min on the ethrex anchor and ~6–9 min on the geth anchor** (whose footprints are tabulated below) — `config_optimal=yes`, zero crashes. Sync *time* is effectively tied within each anchor, so **footprint is the differentiator**:
 
 | CL | Footprint (geth anchor) |
 |----|------|
