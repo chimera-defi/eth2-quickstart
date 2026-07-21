@@ -22,7 +22,7 @@ We ran every execution client (EL) and consensus client (CL) that [eth2-quicksta
 
 | EL | Result | Sync time | Footprint | Sync mode | Mainnet share |
 |----|--------|-----------|-----------|-----------|---------------|
-| **nethermind** | ✅ synced | ~14.5h | **~251 GiB** (pruned) — smallest | snap + Bonsai | 36.0% |
+| **nethermind** | ✅ synced | ~14.5h | **~251 GiB** (pruned) — smallest | snap + Halite | 36.0% |
 | **geth** | ✅ synced | ~8h28m | ~1.13 TiB (pruned) | snap + `--history.chain postmerge` | 44.9% |
 | **ethrex** | ✅ synced | **~2h16m** — fastest | ~286 → ~467 GiB (un-pruned, growing) | snap (v19.0.0) | ~0% |
 | **besu** | ✅ synced (un-pruned) | ~19h18m | ~1.08 TiB (un-pruned) | snap / Bonsai | 17.4% |
@@ -67,7 +67,7 @@ Only two clients produced a **pruned, apples-to-apples** footprint — geth and 
 | **Nethermind** | **~251 GiB** | ~14.5h | snap + ancient-barrier prune | 36.0% |
 | geth | ~1.13 TiB | ~8h28m | snap + `--history.chain postmerge` | 44.9% |
 
-Nethermind's Bonsai flat-DB plus snap sync lands it at roughly a quarter of geth's size. It's also a minority client, so choosing it modestly improves mainnet client diversity — a nice-to-have on top of the disk win. The cost is sync time: ~14.5h vs geth's ~8.5h. If disk is your binding constraint, this is the pick.
+Nethermind's Halite/Paprika flat storage plus snap sync lands it at roughly a quarter of geth's size. It's also a minority client, so choosing it modestly improves mainnet client diversity — a nice-to-have on top of the disk win. The cost is sync time: ~14.5h vs geth's ~8.5h. If disk is your binding constraint, this is the pick.
 
 Everything else is *not* pruned-comparable, for a specific reason each, and we refuse to rank those on disk against a pruned node — that would be measuring different things. They're recorded transparently as client limitations:
 

@@ -18,7 +18,7 @@ const executionClients = [
     result: 'synced',
     syncTime: '~14.5h',
     footprint: '~251 GiB (pruned) — smallest',
-    syncMode: 'snap + Bonsai',
+    syncMode: 'snap + Halite',
     mainnetShare: '36.0%',
     resultVariant: 'primary' as const,
   },
@@ -464,7 +464,7 @@ export default function EthereumClientBakeoffPage() {
             ~14.5h, versus geth&apos;s ~1.13 TiB in ~8h28m.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
-            Nethermind&apos;s Bonsai flat-DB plus snap sync lands it at roughly a quarter of
+            Nethermind&apos;s Halite/Paprika flat storage plus snap sync lands it at roughly a quarter of
             geth&apos;s size. It&apos;s also a minority client, so choosing it modestly improves
             mainnet client diversity — a nice-to-have on top of the disk win. The cost is sync
             time: ~14.5h vs geth&apos;s ~8.5h. If disk is your binding constraint, this is the
