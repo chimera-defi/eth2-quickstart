@@ -27,7 +27,7 @@ export function Blog() {
             Field notes &amp; benchmarks
           </h2>
           <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground">
-            Real results from running these clients in production — disk footprints, sync
+            Real results from running these clients for three weeks on a shared server — disk footprints, sync
             times, and hard-won operational lessons.
           </p>
         </motion.div>

@@ -114,7 +114,7 @@ const consensusClients = [
 const completedExecutionSyncs = [
   { name: 'Ethrex', hours: 2.27, duration: '2h 16m' },
   { name: 'Geth', hours: 8.47, duration: '8h 28m' },
-  { name: 'Nethermind', hours: 14.5, duration: '14h 30m' },
+  { name: 'Nethermind', hours: 14.5, duration: '~14h 30m' },
   { name: 'Besu', hours: 19.3, duration: '19h 18m' },
 ]
 
@@ -205,7 +205,7 @@ export default function EthereumClientBakeoffPage() {
             <Card padding="sm" className="bg-muted/30">
               <h3 className="font-medium text-foreground">Disk winner — Nethermind, ~251 GiB</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Pruned Nethermind was ~4.5x smaller than geth, the smallest of any client that finished a pruned, apples-to-apples sync.
+                Pruned Nethermind was ~4.6x smaller than geth, the smallest of any client that finished a pruned, apples-to-apples sync.
               </p>
             </Card>
             <Card padding="sm" className="bg-muted/30">
@@ -243,7 +243,7 @@ export default function EthereumClientBakeoffPage() {
             <svg className="h-auto w-full" viewBox="0 0 680 210" role="img">
               <title id="sync-time-chart-title">Completed Ethereum execution-client cold-sync times</title>
               <desc id="sync-time-chart-description">
-                Ethrex completed in 2 hours 16 minutes, Geth in 8 hours 28 minutes, Nethermind in 14 hours 30 minutes, and Besu in 19 hours 18 minutes.
+                Ethrex completed in 2 hours 16 minutes, Geth in 8 hours 28 minutes, Nethermind in about 14 hours 30 minutes, and Besu in 19 hours 18 minutes.
               </desc>
               {[0, 5, 10, 15, 20].map((hour) => {
                 const x = 150 + (hour / syncChartMaxHours) * 420
@@ -422,8 +422,8 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-3 text-sm text-muted-foreground">
             For the EL scorecard we hold the CL constant at Prysm. That&apos;s defensible because
             an EL&apos;s footprint and sync time are EL-only properties, decoupled from the CL
-            across the Engine API — the Prysm datadir is ~0.65–1.68 GB, negligible against an
-            EL&apos;s hundreds of gigabytes. We confirmed the decoupling empirically later (see
+            across the Engine API — the Prysm datadir ran ~0.65–1.68 GB in the bounded runs (up to ~12.5 GB during
+            reth&apos;s full 72h cap), still negligible against an EL&apos;s hundreds of gigabytes. We confirmed the decoupling empirically later (see
             the CL matrix above), so this isn&apos;t just an assumption.
           </p>
           <Card padding="sm" className="mt-4 bg-muted/30">
@@ -753,8 +753,9 @@ export default function EthereumClientBakeoffPage() {
             <strong className="text-foreground">~6–9 minutes on the geth anchor</strong> (whose
             footprints are in the CL scorecard above),{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes</code>,
-            zero crashes. Sync time is effectively tied within each anchor, so footprint is the
-            differentiator.
+            zero crashes (teku and grandine each needed one re-run — a JVM heap-sizing fix and a
+            harness artifact, not client faults). Sync time is effectively tied within each anchor,
+            so footprint is the differentiator.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             Crucially, the ranking reproduced across both anchor ELs — the heavyweight tier
@@ -783,7 +784,7 @@ export default function EthereumClientBakeoffPage() {
             </li>
             <li>
               <span className="font-medium text-foreground">Disk-constrained: nethermind.</span>{' '}
-              ~251 GiB — 4.5× leaner than geth — with clean restart behavior and a
+              ~251 GiB — 4.6× leaner than geth — with clean restart behavior and a
               client-diversity bonus. Costs you sync time (~14.5h).
             </li>
             <li>
