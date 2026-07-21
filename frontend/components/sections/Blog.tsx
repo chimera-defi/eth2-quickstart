@@ -51,7 +51,7 @@ export function Blog() {
             </h3>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground leading-relaxed">
               Results from a 23-day execution and consensus client sync campaign: disk,
-              speed, and restart resilience across every client pairing.
+              speed, and restart resilience across the full client roster.
             </p>
             <div className="mt-4 flex flex-col flex-wrap items-stretch gap-3 sm:flex-row sm:items-center">
               <Button
