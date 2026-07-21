@@ -5,6 +5,8 @@
 [![Frontend CI](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/frontend.yml/badge.svg)](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/frontend.yml)
 [![Security Validation](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/security.yml/badge.svg)](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/security.yml)
 
+**🌐 Website & blog:** [eth2quickstart.com](https://eth2quickstart.com) — quick start, supported clients, and the [Ethereum client bake-off](https://eth2quickstart.com/blog/ethereum-client-bakeoff) write-up.
+
 Get an ETH2 compatible RPC node setup in seconds!   
 Save at least 2 days compared to CoinCashew and Somersats guides using the automated scripts and built-in checkpoint-sync configuration support.   
 With your own uncensored & unmetered RPC node!   
