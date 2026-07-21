@@ -8,7 +8,7 @@ We ran every execution client (EL) and consensus client (CL) that [eth2-quicksta
 
 ## TL;DR
 
-- **Disk winner — Nethermind, ~251 GiB.** ~4.5× smaller than geth, and the smallest of any client that finished a *pruned, apples-to-apples* sync.
+- **Disk winner — Nethermind, ~251 GiB.** ~4.6× smaller than geth, and the smallest of any client that finished a *pruned, apples-to-apples* sync.
 - **Speed winner — ethrex, ~2h16m.** Fastest cold sync in the field by a wide margin (next is geth at ~8.5h). A ~0%-adoption minimalist Rust client beat everyone.
 - **The twist — ethrex's restart-resync cliff.** ethrex is fastest to sync but **throws away its synced state and re-syncs from scratch (~2h) after a downtime gap past a hard edge we bisected to ~128 blocks (≈24–25 min).** That operability tax is the best explanation we found for why the fastest-syncing client is one almost nobody runs.
 - **Restart resilience is a real, under-reported axis.** Clients split into three distinct behaviors after a restart-with-gap. This matters more to a running operator than cold-sync numbers.
@@ -50,7 +50,7 @@ The ranking reproduced across two different EL anchors (ethrex and geth) — EL/
 
 The bake-off measures, for each client, the **final synced disk footprint** and the **sync duration**, on a shared semi-production host (not a live validator), with MEV disabled and no validator keys. One candidate at a time, a 72-hour cap per candidate, and the footprint taken from the last near-cap `du` sample — never the peak mid-sync.
 
-For the EL scorecard we hold the CL constant at **prysm**. That is defensible because an EL's footprint and sync time are EL-only properties, decoupled from the CL across the Engine API — the prysm datadir is ~0.65–1.68 GB, negligible against an EL's hundreds of gigabytes. We confirmed the decoupling empirically later (see the CL matrix), so this isn't just an assumption.
+For the EL scorecard we hold the CL constant at **prysm**. That is defensible because an EL's footprint and sync time are EL-only properties, decoupled from the CL across the Engine API — the prysm datadir ran ~0.65–1.68 GB in the bounded runs (up to ~12.5 GB during reth's full 72h cap), still negligible against an EL's hundreds of gigabytes. We confirmed the decoupling empirically later (see the CL matrix), so this isn't just an assumption.
 
 **The honesty mechanism.** Early in the campaign we corrupted our own results by recording footprints *before* verifying each client was running in its most disk-efficient mode. A benchmark that measures your misconfiguration instead of the client is worse than no benchmark. So we built a **config-optimality gate** into the harness: it inspects the actually-generated, actually-running config and refuses to trust a footprint from a mis-configured client, stamping every row `config_optimal=yes|no`. The gate itself needed six bug-fixes across three review rounds before we trusted it — which is the point. Every number below is stamped optimal.
 
@@ -175,7 +175,7 @@ The punchline: on the CL side, all five are operationally effective — none fai
 ## Recommendations
 
 - **Default: geth.** Largest ecosystem, most documentation, the cleanest snap sync (~8.5h), and it resumes gracefully across restarts. You pay for it in disk (~1.13 TiB). If you don't have a specific reason to run something else, run this.
-- **Disk-constrained: nethermind.** ~251 GiB — 4.5× leaner than geth — with clean restart behavior and a client-diversity bonus. Costs you sync time (~14.5h).
+- **Disk-constrained: nethermind.** ~251 GiB — 4.6× leaner than geth — with clean restart behavior and a client-diversity bonus. Costs you sync time (~14.5h).
 - **Consensus client: lighthouse** as the lean default; any of the five is operationally fine — pick on footprint and familiarity.
 - **Watch, don't yet deploy: ethrex.** Fascinating and fastest, but the un-pruned/growing footprint and the ~25-minute restart cliff make it operationally costly today. Young (v19.0.0) — worth revisiting.
 - **Enterprise with care: besu.** It syncs, but its snap sync is fragile to CL outages; handle upgrades and CL health deliberately.
