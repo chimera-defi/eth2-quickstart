@@ -301,7 +301,7 @@
           <tbody>
             <tr><td class="name-cell">Nethermind</td><td><span class="pill ok">synced</span></td><td class="n">~14.5h</td><td class="n">~251 GiB</td><td class="n">36.0%</td></tr>
             <tr><td class="name-cell">Geth</td><td><span class="pill ok">synced</span></td><td class="n">8h28m</td><td class="n">~1.13 TiB</td><td class="n">44.9%</td></tr>
-            <tr><td class="name-cell">Ethrex</td><td><span class="pill ok">synced</span></td><td class="n">2h16m</td><td class="n">~467 GiB</td><td class="n">~0%</td></tr>
+            <tr><td class="name-cell">Ethrex</td><td><span class="pill ok">synced</span></td><td class="n">2h16m</td><td class="n">~467 GiB, growing</td><td class="n">~0%</td></tr>
             <tr><td class="name-cell">Besu</td><td><span class="pill warn">un-pruned</span></td><td class="n">19h18m</td><td class="n">~1.08 TiB</td><td class="n">17.4%</td></tr>
             <tr><td class="name-cell">Reth</td><td><span class="pill warn">72h cap</span></td><td class="n">—</td><td class="n">~0.98 TiB*</td><td class="n">1.5%</td></tr>
             <tr><td class="name-cell">Nimbus-eth1</td><td><span class="pill warn">72h cap</span></td><td class="n">—</td><td class="n">~40 GB*</td><td class="n">~0%</td></tr>
@@ -309,7 +309,7 @@
           </tbody>
         </table>
       </div>
-      <p class="kicker">Reth &amp; Nimbus-eth1 are full-sync-only — multi-day by design, capped here. Besu synced fine; its number is just history-inflated, not comparable. <span style="color:var(--faint)">* partial</span></p>
+      <p class="kicker">Only nethermind &amp; geth are pruned-comparable on disk. Besu (un-pruned) and ethrex (still growing) synced fine but their footprints aren't; reth &amp; nimbus-eth1 are full-sync-only, capped here. <span style="color:var(--faint)">* partial</span></p>
     </div>
   </section>
 
@@ -420,11 +420,11 @@
   var NOTES=[
     "Open on the paradox: the fastest Ethereum client is one almost nobody runs. The hook — we let a fleet of AI agents run a real 23-day mainnet benchmark.",
     "A fair fight: every client got its most disk-efficient mode, a fixed partner, and a hard 72-hour cap. Two headline numbers each — disk and sync — then the third axis nobody benchmarks.",
-    "Nethermind wins disk decisively: ~251 GiB, 4.6× leaner than geth, via its Halite/Paprika flat storage. The muted bars never reached a clean, comparable synced state.",
+    "Nethermind wins disk among the clients that finished a comparable sync: ~251 GiB, ~4.6× leaner than geth. The hatched bars never finished — Nimbus-eth1's ~40 GB is only ~21% of a sync, not a win, so don't let the shortest bar read as the winner.",
     "ethrex is nearly 4× faster than anything else in the field. Land the question and pause: so why does almost nobody actually run it?",
     "Because it throws the synced state away on restart. Past a ~25-minute downtime edge it re-syncs from scratch (~2h). That operability tax is the adoption story.",
     "The point of the whole talk: restart resilience is a third axis, and it predicts who people keep running better than speed or disk. Three behaviors — clean resume, re-snap cliff, mid-sync deadlock.",
-    "The full field at a glance. Be fair to the clients: besu synced fine (its number is just history-inflated); reth and nimbus-eth1 are full-sync-only by design, not failures.",
+    "The full field at a glance. Be fair to the clients: besu and ethrex synced fine but their footprints aren't pruned-comparable (un-pruned / still growing); reth and nimbus-eth1 are full-sync-only by design, not failures.",
     "The consensus layer is effectively solved — all five sync in minutes, so footprint is the only differentiator. Lighthouse is the lean, safe default. The ranking held across two different EL anchors.",
     "Pivot to methodology — the other story people want. Three tiers keep token cost sane and judgment where it belongs. Governance is the punchline: an agent cannot merge its own PR.",
     "The harness is what kept it honest: decouple node time from agent time, push conclusions into small durable files (not the context window), and gate every result on config-optimality.",
