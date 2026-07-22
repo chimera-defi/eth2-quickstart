@@ -382,7 +382,9 @@ export default function EthereumClientBakeoffPage() {
             Disk footprint, at a glance
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            All seven execution clients. Muted bars didn&apos;t reach a clean synced state — partial (72h-capped) or frozen (erigon&apos;s no-sync deadlock) — so their footprint isn&apos;t comparable to the synced clients.
+            All seven execution clients. Hatched bars didn&apos;t finish a comparable sync — partial
+            (72h-capped) or frozen (erigon&apos;s no-sync deadlock) — so a short hatched bar isn&apos;t a
+            win: Nimbus-eth1&apos;s ~40 GB is only ~21% of a sync, not a finished footprint.
           </p>
           <figure className="mt-4 hidden sm:block" aria-labelledby="disk-chart-title" aria-describedby="disk-chart-description">
             <svg className="h-auto w-full" viewBox="0 0 680 300" role="img">
@@ -390,6 +392,12 @@ export default function EthereumClientBakeoffPage() {
               <desc id="disk-chart-description">
                 Nimbus-eth1 partial about 40 GB, Nethermind synced about 251 GiB, Ethrex synced about 467 GiB, Reth partial about 0.98 TiB, Besu synced about 1.08 TiB, Geth synced about 1.13 TiB, Erigon frozen partial about 1.21 TiB.
               </desc>
+              <defs>
+                <pattern id="unfinished-bar" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)">
+                  <rect width="7" height="7" className="fill-muted" />
+                  <rect width="3.5" height="7" className="fill-border" />
+                </pattern>
+              </defs>
               {[0, 250, 500, 750, 1000, 1250].map((gib) => {
                 const x = 150 + (gib / diskChartMaxGib) * 420
                 return (
@@ -409,7 +417,7 @@ export default function EthereumClientBakeoffPage() {
                     <text x="136" y={y + 14} textAnchor="end" className="fill-foreground text-[13px]">
                       {client.name}
                     </text>
-                    <rect x="150" y={y} width={width} height="20" rx="4" className={client.status === 'synced' ? 'fill-primary' : 'fill-border'} />
+                    <rect x="150" y={y} width={width} height="20" rx="4" className={client.status === 'synced' ? 'fill-primary' : undefined} fill={client.status === 'synced' ? undefined : 'url(#unfinished-bar)'} />
                     <text x={Math.min(578, 160 + width)} y={y + 14} className="fill-foreground text-[12px]">
                       {client.label}{client.status !== 'synced' ? ` (${client.status})` : ''}
                     </text>
