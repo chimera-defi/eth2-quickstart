@@ -17,18 +17,35 @@ export const metadata: Metadata = {
   alternates: { canonical: '/blog/ethereum-client-bakeoff' },
   openGraph: {
     type: 'article',
-    images: ['/og.png'],
+    images: ['/og-bakeoff.png'],
     url: '/blog/ethereum-client-bakeoff',
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
-    images: ['/og.png'],
+    images: ['/og-bakeoff.png'],
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },
 }
+
+const tocLinks = [
+  { label: 'TL;DR', href: '#tldr' },
+  { label: 'Cold-sync time', href: '#sync-time-heading' },
+  { label: 'Disk footprint', href: '#disk-heading' },
+  { label: 'EL scorecard', href: '#el-scorecard' },
+  { label: 'CL scorecard', href: '#cl-scorecard' },
+  { label: 'Every metric', href: '#every-metric-we-collected' },
+  { label: 'What we measured', href: '#what-we-measured' },
+  { label: 'The disk story', href: '#the-disk-story' },
+  { label: 'The speed story', href: '#the-speed-story' },
+  { label: 'Restart resilience', href: '#restart-resilience' },
+  { label: 'Full-sync-only clients', href: '#full-sync-only-clients' },
+  { label: 'Distribution as predictor', href: '#distribution-as-predictor' },
+  { label: 'Consensus layer solved', href: '#consensus-layer-solved' },
+  { label: 'Recommendations', href: '#recommendations' },
+]
 
 const executionClients = [
   {
@@ -250,6 +267,19 @@ export default function EthereumClientBakeoffPage() {
             .
           </p>
         </Card>
+
+        <nav aria-label="Table of contents" className="mt-8 rounded-lg border border-border p-4 sm:p-5">
+          <p className="font-mono text-xs text-muted-foreground uppercase tracking-wide">Contents</p>
+          <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
+            {tocLinks.map((link) => (
+              <li key={link.href}>
+                <a href={link.href} className="text-primary hover:underline">
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
         <section className="mt-10 sm:mt-16">
           <AnchorHeading id="tldr" className="text-lg sm:text-xl font-semibold text-foreground">
