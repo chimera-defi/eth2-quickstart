@@ -1,14 +1,30 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { AnchorHeading } from '@/components/ui/AnchorHeading'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowRight } from 'lucide-react'
 
+const PAGE_TITLE = 'Bake-off Results — ETH2 Quick Start'
+const PAGE_DESCRIPTION =
+  'The full raw results doc from the 23-day Ethereum client bake-off: every Stage A triage row, every Stage B disk-footprint measurement, the CL matrix on two anchors, client limitations, and every gotcha — verbatim from docs/CLIENT_BAKEOFF_RESULTS.md.'
+
 export const metadata: Metadata = {
-  title: 'Bake-off Results — ETH2 Quick Start',
-  description:
-    'The full raw results doc from the 23-day Ethereum client bake-off: every Stage A triage row, every Stage B disk-footprint measurement, the CL matrix on two anchors, client limitations, and every gotcha — verbatim from docs/CLIENT_BAKEOFF_RESULTS.md.',
+  title: PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  alternates: { canonical: '/blog/bakeoff-results' },
+  openGraph: {
+    type: 'article',
+    url: '/blog/bakeoff-results',
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+  },
 }
 
 /**
@@ -331,8 +347,8 @@ export default function BakeoffResultsPage() {
         </nav>
 
         {/* ---------------------------------------------------------------- */}
-        <section id="method" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">Method</h2>
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="method" className="text-lg sm:text-xl font-semibold text-foreground">Method</AnchorHeading>
           <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
             <li>
               <span className="font-medium text-foreground">Baseline-anchored coverage (12 candidates):</span>{' '}
@@ -374,10 +390,10 @@ export default function BakeoffResultsPage() {
         </section>
 
         {/* ---------------------------------------------------------------- */}
-        <section id="stage-a" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="stage-a" className="text-lg sm:text-xl font-semibold text-foreground">
             Stage A results — 12/12 PASS
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             <Rich text="`el_offline` is Prysm's own verdict on whether the EL is reachable **and** authenticating over the Engine API. `False` across the window = JWT wired correctly and the EL is validating payloads. `restErr` = beacon REST momentarily unavailable during heavy-client startup (see Resource contention below)." />
           </p>
@@ -462,24 +478,28 @@ export default function BakeoffResultsPage() {
             <Rich text="All 12: `install_exit_code=0`, no service crash, `is_optimistic=true`, checkpoint-sync PASS signature." />
           </p>
 
-          <h3 className="mt-8 font-medium text-foreground">Per-candidate notes</h3>
+          <AnchorHeading id="per-candidate-notes" as="h3" className="mt-8 font-medium text-foreground">
+            Per-candidate notes
+          </AnchorHeading>
           <ul className="mt-3 space-y-3 text-sm text-muted-foreground">
             {perCandidateNotes.map((note, i) => (
               <li key={i}><Rich text={note} /></li>
             ))}
           </ul>
 
-          <h3 className="mt-8 font-medium text-foreground">Resource contention (shared semi-prod host)</h3>
+          <AnchorHeading id="resource-contention" as="h3" className="mt-8 font-medium text-foreground">
+            Resource contention (shared semi-prod host)
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             <Rich text="Heavier-client startups (non-geth ELs, and lodestar) showed Prysm's beacon REST briefly unavailable for the first 1–3 minutes (`restErr` counts above) before recovering — consistent with startup contending for CPU/IO against co-resident agents on this shared host. It did **not** block any checkpoint sync, but it is the headline risk for Stage B: a multi-day, IO-heavy full sync will compete with co-resident workloads. Stage B execution strategy (sequential vs. small parallel batches) must account for this." />
           </p>
         </section>
 
         {/* ---------------------------------------------------------------- */}
-        <section id="changes" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="changes" className="text-lg sm:text-xl font-semibold text-foreground">
             Changes driven by this bake-off
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Installer/harness fixes landed on the bake-off branch as a direct result of triage:
           </p>
@@ -493,10 +513,10 @@ export default function BakeoffResultsPage() {
         </section>
 
         {/* ---------------------------------------------------------------- */}
-        <section id="recommendation" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="recommendation" className="text-lg sm:text-xl font-semibold text-foreground">
             Recommendation (preliminary — Stage A only)
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             <Rich text="Stage A establishes **viability**, not a final pick: all 12 client pairs install, checkpoint-sync, and authenticate the Engine API on this host. The final recommendation depends on Stage B's synced disk footprint and sync-time metrics." />
           </p>
@@ -508,10 +528,10 @@ export default function BakeoffResultsPage() {
         </section>
 
         {/* ---------------------------------------------------------------- */}
-        <section id="disk-flag-audit" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="disk-flag-audit" className="text-lg sm:text-xl font-semibold text-foreground">
             Sync-mode &amp; disk-flag audit (2026-06-25)
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             <Rich text="Before letting the slow full-sync ELs run, we audited every execution client to confirm it uses the most disk- and time-efficient sync mode available — so the Stage B footprint numbers reflect each client's *best* configuration, not an accidental archive run. Trigger: geth's `--history.chain postmerge` flag (prunes pre-merge block history, a large disk saving). We verified it was on for the baseline, then checked the rest." />
           </p>
@@ -545,10 +565,10 @@ export default function BakeoffResultsPage() {
         </section>
 
         {/* ---------------------------------------------------------------- */}
-        <section id="stage-b" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="stage-b" className="text-lg sm:text-xl font-semibold text-foreground">
             Final synced disk footprint (Stage B)
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm italic text-muted-foreground">
             <Rich text="In progress (run_id `client-bakeoff-stageB-2026-06-23`). Sequential, one candidate at a time; rows added as each candidate reaches a verdict. Footprint = final synced datadir size (EL + CL); secrets/validator material excluded." />
           </p>
@@ -581,10 +601,10 @@ export default function BakeoffResultsPage() {
           </div>
 
           {/* -------------------------------------------------------------- */}
-          <h3 className="mt-10 font-medium text-foreground">
+          <AnchorHeading id="cl-matrix-ethrex-anchor" as="h3" className="mt-10 font-medium text-foreground">
             Consensus-client matrix — COMPLETE (anchor = ethrex, run_id{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">client-bakeoff-clsweep-2026-07-06</code>)
-          </h3>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             <Rich text="The CL matrix holds the **execution client constant** and cycles the consensus client, the mirror of the EL scorecard above. The constant anchor is **ethrex** (not geth as first planned): ethrex was already synced at mainnet tip from its EL run, so reusing it as the fixed anchor saved a multi-day re-sync. Because the EL and CL are decoupled across the Engine API (the CL datadir is <1% of the EL and does not depend on which EL it pairs with), the anchor choice does **not** bias the CL comparison. To *prove* that empirically rather than assert it, the full 5-CL sweep was subsequently re-run against a **geth** anchor (2026-07-08, run_id `client-bakeoff-anchor-rotation-2026-07-07`) — the cross-anchor confirmation is recorded below and reproduces the ranking. The ethrex anchor stayed active and `eth_syncing=false` (~502 GB, never restarted) across all five runs; each run cycled only `cl`+`validator`." />
           </p>
@@ -655,11 +675,11 @@ export default function BakeoffResultsPage() {
           </ul>
 
           {/* -------------------------------------------------------------- */}
-          <h3 className="mt-10 font-medium text-foreground">
+          <AnchorHeading id="cl-matrix-geth-anchor" as="h3" className="mt-10 font-medium text-foreground">
             CL matrix — cross-anchor confirmation (anchor = geth, run_id{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">client-bakeoff-anchor-rotation-2026-07-07</code>
             , 2026-07-08)
-          </h3>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             <Rich text="The same 5-CL sweep was re-run against a **geth** anchor to verify the ranking is not an artifact of the ethrex anchor. All five runs were `config_optimal=yes`, `anchor_synced=yes`, no service crash; each cycled only `cl`+`validator` against the preserved geth EL datadir (~1.13 TiB, never wiped)." />
           </p>
@@ -737,10 +757,10 @@ export default function BakeoffResultsPage() {
         </section>
 
         {/* ---------------------------------------------------------------- */}
-        <section id="client-limitations" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="client-limitations" className="text-lg sm:text-xl font-semibold text-foreground">
             Client limitations — shown separately, NOT in the pruned-comparable ranking
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             <Rich text="Only **geth** (~1.13 TiB) and **nethermind** (~251 GiB) produced a final footprint under a **pruned, apples-to-apples** config, so only those two are ranked head-to-head on disk. The rest are recorded here with the reason each falls outside that comparison. **“Outside the disk ranking” does not mean “failed to sync”** — besu in particular synced cleanly (see below); it's here purely because we don't have a pruned-comparable disk number for it." />
           </p>
@@ -777,15 +797,17 @@ export default function BakeoffResultsPage() {
         </section>
 
         {/* ---------------------------------------------------------------- */}
-        <section id="operational-viability" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="operational-viability" className="text-lg sm:text-xl font-semibold text-foreground">
             Operational viability — which clients would we actually run (Stage B + CL matrix synthesis)
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             <Rich text="The disk ranking answers “smallest,” but production also asks “will it survive restarts, upgrades, and weeks of uptime?” Under that operational lens the field narrows sharply — and the two layers tell opposite stories: the **EL layer is where the operational risk lives; the CL layer is basically solved.**" />
           </p>
 
-          <h3 className="mt-6 font-medium text-foreground">Execution clients — two clear picks, one qualified third</h3>
+          <AnchorHeading id="execution-clients-viability" as="h3" className="mt-6 font-medium text-foreground">
+            Execution clients — two clear picks, one qualified third
+          </AnchorHeading>
           <ul className="mt-3 space-y-3 text-sm text-muted-foreground">
             <li>
               <Rich text="**geth and nethermind are the only two that cleared the full operational bar** here: snap-sync to a validating tip, a working history-prune lever (so the disk number is apples-to-apples), clean restart-resume, and the two largest, most battle-tested codebases. **nethermind** wins on disk (~251 GiB, ~4.6× leaner than geth) and improves client diversity as a minority client; **geth** is the conservative default (largest ecosystem, most docs, cleanest ~8h28m snap). If you run one EL for the long haul, run one of these two." />
@@ -809,9 +831,9 @@ export default function BakeoffResultsPage() {
             </li>
           </ul>
 
-          <h3 className="mt-6 font-medium text-foreground">
+          <AnchorHeading id="consensus-clients-viability" as="h3" className="mt-6 font-medium text-foreground">
             Consensus clients — the healthy half: all five we swept are operationally effective
-          </h3>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             <Rich text="Every CL (lighthouse, lodestar, grandine, teku, nimbus) checkpoint-synced to a validating head in ~22–23 min, `config_optimal=yes`, zero crashes, against a live anchor. Unlike the EL layer, none of them *failed* — so the choice is footprint + preference, not survivability:" />
           </p>
@@ -837,10 +859,10 @@ export default function BakeoffResultsPage() {
         </section>
 
         {/* ---------------------------------------------------------------- */}
-        <section id="gotchas" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="gotchas" className="text-lg sm:text-xl font-semibold text-foreground">
             Gotchas &amp; lessons learned
-          </h2>
+          </AnchorHeading>
           <ul className="mt-4 space-y-4 text-sm text-muted-foreground">
             {gotchas.map((item, i) => (
               <li key={i}><Rich text={item} /></li>

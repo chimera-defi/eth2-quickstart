@@ -1,14 +1,30 @@
 import type { Metadata } from 'next'
+import { AnchorHeading } from '@/components/ui/AnchorHeading'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowDown, ArrowRight, ArrowUp } from 'lucide-react'
 
+const PAGE_TITLE = 'How We Ran a 23-Day Ethereum Client Bake-off With Claude - ETH2 Quick Start'
+const PAGE_DESCRIPTION =
+  'The agent orchestration model, the harness, and what actually breaks when a benchmark runs for three weeks on a shared host with an AI in the driver’s seat.'
+
 export const metadata: Metadata = {
-  title: 'How We Ran a 23-Day Ethereum Client Bake-off With Claude - ETH2 Quick Start',
-  description:
-    'The agent orchestration model, the harness, and what actually breaks when a benchmark runs for three weeks on a shared host with an AI in the driver’s seat.',
+  title: PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  alternates: { canonical: '/blog/how-we-tested-with-claude' },
+  openGraph: {
+    type: 'article',
+    url: '/blog/how-we-tested-with-claude',
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+  },
 }
 
 const tocLinks = [
@@ -325,8 +341,8 @@ export default function HowWeTestedWithClaudePage() {
           </ul>
         </nav>
 
-        <section id="tldr" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">TL;DR</h2>
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="tldr" className="text-lg sm:text-xl font-semibold text-foreground">TL;DR</AnchorHeading>
           <div className="mt-4 grid gap-3 sm:gap-4 md:grid-cols-2">
             {tldrPoints.map((point) => (
               <Card key={point.title} padding="sm" className="bg-muted/30">
@@ -337,8 +353,8 @@ export default function HowWeTestedWithClaudePage() {
           </div>
         </section>
 
-        <section id="at-a-glance" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">At a glance</h2>
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="at-a-glance" className="text-lg sm:text-xl font-semibold text-foreground">At a glance</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Four real incidents hit during the campaign, all fixed or explicitly documented.
           </p>
@@ -385,7 +401,9 @@ export default function HowWeTestedWithClaudePage() {
           </div>
 
           <div className="mt-8">
-            <h3 className="font-medium text-foreground">The durable control loop</h3>
+            <AnchorHeading id="durable-control-loop" as="h3" className="font-medium text-foreground">
+              The durable control loop
+            </AnchorHeading>
             <FlowDiagram
               steps={controlLoopSteps}
               loopBackTo={controlLoopSteps[1]}
@@ -399,7 +417,9 @@ export default function HowWeTestedWithClaudePage() {
           </div>
 
           <div className="mt-8">
-            <h3 className="font-medium text-foreground">23-day campaign — key dates</h3>
+            <AnchorHeading id="campaign-timeline" as="h3" className="font-medium text-foreground">
+              23-day campaign — key dates
+            </AnchorHeading>
             <CampaignTimeline />
             <p className="mt-2 text-xs text-muted-foreground">
               Every date is a shipped fix or a completed measurement run, sourced from{' '}
@@ -409,8 +429,8 @@ export default function HowWeTestedWithClaudePage() {
           </div>
         </section>
 
-        <section id="shape-of-the-problem" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">The shape of the problem</h2>
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="shape-of-the-problem" className="text-lg sm:text-xl font-semibold text-foreground">The shape of the problem</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">Benchmarking a sync client is deceptively expensive:</p>
           <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
             <li><span className="font-medium text-foreground">It&apos;s slow.</span> A single mainnet sync ranges from ~2 hours (ethrex, snap) to never finishes in three days (the full-sync-only clients). Each candidate got a 72-hour cap.</li>
@@ -426,20 +446,24 @@ export default function HowWeTestedWithClaudePage() {
           </p>
         </section>
 
-        <section id="orchestration-model" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">The orchestration model</h2>
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="orchestration-model" className="text-lg sm:text-xl font-semibold text-foreground">The orchestration model</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             The core design choice: decouple node wall-clock from agent wall-clock, and decouple durable
             state from agent context. Get those two right and a three-week campaign stops needing a
             three-week attention span.
           </p>
 
-          <h3 className="mt-6 font-medium text-foreground">1. The node runs; the agent doesn&apos;t watch it run</h3>
+          <AnchorHeading id="node-runs-agent-doesnt-watch" as="h3" className="mt-6 font-medium text-foreground">
+            1. The node runs; the agent doesn&apos;t watch it run
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Every client runs as a native systemd service (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth1.service</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">cl.service</code>, no Docker) in a detached tmux session &mdash; a sync proceeds for 72 hours whether or not any Claude session is alive. The orchestrating session did die mid-run more than once (once to an out-of-memory event); the systemd unit and its sampler kept going, and a fresh session picked the campaign back up from durable state with nothing lost. Instead of polling logs, the agent armed event-driven watchers that fire one notification on a terminal condition, so the orchestrator slept until something decision-worthy happened.
           </p>
 
-          <h3 className="mt-6 font-medium text-foreground">2. Three tiers of agent, by cost and capability</h3>
+          <AnchorHeading id="three-tiers-of-agent" as="h3" className="mt-6 font-medium text-foreground">
+            2. Three tiers of agent, by cost and capability
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">Not every sub-task deserves the strongest, most expensive model:</p>
           <AgentHierarchy />
           <div className="mt-4 hidden sm:block overflow-x-auto">
@@ -478,7 +502,9 @@ export default function HowWeTestedWithClaudePage() {
             investigation.
           </p>
 
-          <h3 className="mt-6 font-medium text-foreground">3. Durable state is the backbone</h3>
+          <AnchorHeading id="durable-state-backbone" as="h3" className="mt-6 font-medium text-foreground">
+            3. Durable state is the backbone
+          </AnchorHeading>
           <Card padding="sm" className="mt-2 border-primary/20 bg-primary/5">
             <p className="text-sm text-foreground">
               The orchestrating agent&apos;s context window &mdash; not node wall-clock &mdash; is the real
@@ -499,7 +525,9 @@ export default function HowWeTestedWithClaudePage() {
             This is what&apos;s actually implemented, not a peer-aware state machine: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced()</code> checks <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">sync_distance</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">is_optimistic</code>, and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">el_offline</code> together &mdash; already enough to avoid trusting <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing=false</code> alone &mdash; but there&apos;s no peer-count check anywhere, and the stall-watchdog is opt-in. nethermind&apos;s 13.3h loopback stall (see the table above) predates the watchdog: the harness correctly never reported it synced, but nothing flagged the run as <em>stuck</em> rather than <em>still syncing</em> &mdash; that gap is exactly what motivated building the watchdog afterward.
           </p>
 
-          <h3 className="mt-6 font-medium text-foreground">4. Governance the agent could not override</h3>
+          <AnchorHeading id="governance" as="h3" className="mt-6 font-medium text-foreground">
+            4. Governance the agent could not override
+          </AnchorHeading>
           <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
             <li><span className="font-medium text-foreground">One candidate at a time. No batching.</span> Ever.</li>
             <li><span className="font-medium text-foreground">72-hour cap</span> per candidate; footprint is the last near-cap sample, never the peak.</li>
@@ -509,8 +537,8 @@ export default function HowWeTestedWithClaudePage() {
           </ul>
         </section>
 
-        <section id="the-harness" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">The harness</h2>
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="the-harness" className="text-lg sm:text-xl font-semibold text-foreground">The harness</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             The measurement machinery lives in{' '}
             <a href={`${SITE_CONFIG.github}/tree/master/test/bakeoff`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
@@ -530,11 +558,15 @@ export default function HowWeTestedWithClaudePage() {
           </ul>
 
           <div className="mt-8">
-            <h3 className="font-medium text-foreground">The harness pipeline</h3>
+            <AnchorHeading id="harness-pipeline" as="h3" className="font-medium text-foreground">
+              The harness pipeline
+            </AnchorHeading>
             <FlowDiagram steps={harnessPipelineSteps} />
           </div>
 
-          <h3 className="mt-8 font-medium text-foreground">The config-optimality gate, and why it needed six bug-fixes</h3>
+          <AnchorHeading id="config-optimality-gate" as="h3" className="mt-8 font-medium text-foreground">
+            The config-optimality gate, and why it needed six bug-fixes
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Early on we corrupted our own results by recording a footprint before confirming the client was
             in its most disk-efficient mode: reth at its defaults runs a ~2.8 TiB archive node, and we
@@ -546,7 +578,9 @@ export default function HowWeTestedWithClaudePage() {
             actually-running config and stamps every row <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes|no</code>; <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">summarize.sh</code> quarantines non-optimal rows in a &ldquo;superseded&rdquo; section. The gate needed six bug-fixes across three review rounds before we trusted it &mdash; every one the same species (&ldquo;the flag I asserted on doesn&apos;t match the real generated config&rdquo;) &mdash; the exact failure mode the gate exists to catch, turned on itself.
           </p>
 
-          <h3 className="mt-6 font-medium text-foreground">Anchor-preserving mode: don&apos;t re-sync the world five times</h3>
+          <AnchorHeading id="anchor-preserving-mode" as="h3" className="mt-6 font-medium text-foreground">
+            Anchor-preserving mode: don&apos;t re-sync the world five times
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             The consensus-client matrix holds the execution client constant and cycles the CL. Naively
             that&apos;s five full EL re-syncs. Anchor-preserving mode keeps one already-synced execution
@@ -559,22 +593,26 @@ export default function HowWeTestedWithClaudePage() {
             gap is small and measurement-window-sensitive.
           </p>
 
-          <h3 className="mt-6 font-medium text-foreground">Two harness bugs that nearly cost us data</h3>
+          <AnchorHeading id="two-harness-bugs" as="h3" className="mt-6 font-medium text-foreground">
+            Two harness bugs that nearly cost us data
+          </AnchorHeading>
           <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
             <li><span className="font-medium text-foreground">The detached-shell landmine (SIGTTIN).</span> An install step shelled out to a version-check command. Run from a detached tmux session in a non-foreground process group, that read raised SIGTTIN against a tty it didn&apos;t own &mdash; which stops (not kills) the whole subtree &mdash; and hung a run for 90 minutes. Fix: redirect stdin from /dev/null on unattended invocations.</li>
             <li><span className="font-medium text-foreground">The measurement that vanished at the cap.</span> The disk snapshot was taken only on the synced success branch. When a slow client hit the 72-hour cap, the script fell through to teardown &mdash; which wiped the datadir &mdash; and snapshotted after. Fix: snapshot on every exit path, before teardown. The cap path is the one you forget, and it&apos;s the one a slow client actually takes.</li>
           </ul>
         </section>
 
-        <section id="next-person" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">What we&apos;d tell the next person</h2>
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="next-person" className="text-lg sm:text-xl font-semibold text-foreground">What we&apos;d tell the next person</AnchorHeading>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
             <li><span className="font-medium text-foreground">The third clock is the real limit.</span> Node wall-clock and agent wall-clock are solvable with infrastructure; agent context only scales if you push conclusions to the data and keep durable state in small files.</li>
             <li><span className="font-medium text-foreground">Measure on every exit path, before you destroy anything.</span> Success is the easy path. The cap and the error paths are where your data quietly disappears.</li>
             <li><span className="font-medium text-foreground">Gate your benchmark on config, not just on outcome.</span> Stamp every number with &ldquo;was this the client&apos;s best mode?&rdquo; or you will eventually publish a measurement of your own mistake.</li>
             <li><span className="font-medium text-foreground">Give an agent a job and a fence.</span> The agent owns the tedious, sustained correctness; the human owns the few irreversible levers.</li>
           </ul>
-          <h3 className="mt-6 font-medium text-foreground">Honest limitations</h3>
+          <AnchorHeading id="honest-limitations" as="h3" className="mt-6 font-medium text-foreground">
+            Honest limitations
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             This is a real benchmark, not a lab result. It ran on a shared, semi-production host (12 cores,
             ~62 GB RAM, co-resident workloads) &mdash; representative of how many people actually run
@@ -585,8 +623,8 @@ export default function HowWeTestedWithClaudePage() {
           </p>
         </section>
 
-        <section id="reproduce-it" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">Reproduce it</h2>
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="reproduce-it" className="text-lg sm:text-xl font-semibold text-foreground">Reproduce it</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">The harness is in the repo and the data is committed:</p>
           <div className="mt-4 flex flex-wrap gap-3">
             {reproduceLinks.map((link) => (
