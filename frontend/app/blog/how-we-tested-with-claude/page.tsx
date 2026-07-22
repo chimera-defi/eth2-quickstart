@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { SITE_CONFIG } from '@/lib/constants'
-import { ArrowDown, ArrowRight } from 'lucide-react'
+import { ArrowDown, ArrowRight, ArrowUp } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'How We Ran a 23-Day Ethereum Client Bake-off With Claude - ETH2 Quick Start',
@@ -104,13 +104,22 @@ const campaignTimeline = [
 
 // What's actually implemented (test/bakeoff/lib.sh, run_candidate.sh) — no peer-count check
 // anywhere; the stall-watchdog tracks one flat no-progress streak and is opt-in. STALLED is
-// reachable only through RESTARTING, never directly from SYNCING — the component below reflects
-// that chain rather than flattening it into a fan-out.
+// reachable only through RESTARTING, never directly from SYNCING — VerdictDiagram below renders
+// it nested under RESTARTING (not as a same-level fan-out) to keep that chain honest.
 const verdictOutcomes = [
   { name: 'SYNCED', trigger: '2 consecutive clean samples', variant: 'primary' as const },
   { name: 'CAPPED', trigger: 'window elapses, still not synced', variant: 'default' as const },
   { name: 'RESTARTING', trigger: 'no-progress streak hits threshold (opt-in watchdog) — loops back to SYNCING, or falls through to STALLED if the restart budget runs out', variant: 'default' as const },
 ]
+
+// A real, distinct terminal state (docs/CLIENT_BAKEOFF_HARNESS.md §3.5): a `.stalled` marker
+// file / `stall_failed=yes` once the bounded restart budget is exhausted. This is what caught
+// nethermind's 13.3h 0-peer stall — the EL head frozen while the beacon still looked healthy.
+const stalledOutcome = {
+  name: 'STALLED',
+  trigger: 'restart budget exhausted (opt-in stall-watchdog) — EL head frozen / 0 peers while the beacon still looks healthy; the harness flags the row instead of reporting a clean sync',
+  variant: 'default' as const,
+}
 
 const harnessPipelineSteps = [
   'Candidate manifest → run_bakeoff.sh (walks one candidate at a time)',
@@ -156,7 +165,7 @@ const reproduceLinks = [
   { label: 'Running a node for real', href: `${SITE_CONFIG.github}/blob/master/docs/blog/CLIENT_BAKEOFF_OPERATOR_GUIDE.md` },
 ]
 
-function FlowDiagram({ steps }: { steps: string[] }) {
+function FlowDiagram({ steps, loopBackTo, loopLabel }: { steps: string[]; loopBackTo?: string; loopLabel?: string }) {
   return (
     <div className="mt-4 flex flex-col items-stretch">
       {steps.map((step, index) => (
@@ -169,6 +178,17 @@ function FlowDiagram({ steps }: { steps: string[] }) {
           )}
         </div>
       ))}
+      {loopBackTo && (
+        <div className="flex flex-col items-center">
+          <div className="my-1.5 flex items-center gap-1.5 text-xs font-medium text-primary">
+            <ArrowUp className="h-4 w-4 shrink-0" aria-hidden="true" />
+            {loopLabel}
+          </div>
+          <div className="w-full rounded-lg border border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-center text-sm text-foreground">
+            {loopBackTo}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -194,6 +214,10 @@ function AgentHierarchy() {
           Delegates — cheaper / sandboxed models
           <span className="block text-xs text-muted-foreground">cheap read-only work, routed via wrapper binaries</span>
         </div>
+      </div>
+      <div className="mx-auto mt-3 flex w-fit flex-col items-center gap-1 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-1.5">
+        <ArrowUp className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+        <span className="text-xs text-muted-foreground">summary only, not full context &mdash; returns to the orchestrator</span>
       </div>
     </div>
   )
@@ -223,9 +247,20 @@ function VerdictDiagram() {
       <ArrowDown className="mx-auto my-1.5 h-4 w-4 text-muted-foreground" aria-hidden="true" />
       <div className="grid gap-3 sm:grid-cols-3">
         {verdictOutcomes.map((outcome) => (
-          <div key={outcome.name} className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-center">
-            <Badge variant={outcome.variant}>{outcome.name}</Badge>
-            <p className="mt-1.5 text-xs text-muted-foreground">{outcome.trigger}</p>
+          <div key={outcome.name} className="flex flex-col items-center gap-1.5">
+            <div className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-center">
+              <Badge variant={outcome.variant}>{outcome.name}</Badge>
+              <p className="mt-1.5 text-xs text-muted-foreground">{outcome.trigger}</p>
+            </div>
+            {outcome.name === 'RESTARTING' && (
+              <>
+                <ArrowDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <div className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-center">
+                  <Badge variant={stalledOutcome.variant}>{stalledOutcome.name}</Badge>
+                  <p className="mt-1.5 text-xs text-muted-foreground">{stalledOutcome.trigger}</p>
+                </div>
+              </>
+            )}
           </div>
         ))}
       </div>
@@ -252,6 +287,14 @@ export default function HowWeTestedWithClaudePage() {
           <div className="mt-4 flex flex-wrap gap-3 sm:mt-6">
             <Button href="/blog/ethereum-client-bakeoff" variant="secondary" size="sm">
               Read the results writeup
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <Button href="/blog/bakeoff-harness" variant="ghost" size="sm">
+              The bake-off harness
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <Button href="/blog/bakeoff-results" variant="ghost" size="sm">
+              Bake-off results (raw data)
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
@@ -343,7 +386,11 @@ export default function HowWeTestedWithClaudePage() {
 
           <div className="mt-8">
             <h3 className="font-medium text-foreground">The durable control loop</h3>
-            <FlowDiagram steps={controlLoopSteps} />
+            <FlowDiagram
+              steps={controlLoopSteps}
+              loopBackTo={controlLoopSteps[1]}
+              loopLabel="fresh session recovers context"
+            />
             <p className="mt-2 text-xs text-muted-foreground">
               The artifacts carry the campaign forward; a new orchestrating session reads the small
               durable state instead of reconstructing a run from raw logs &mdash; closing the loop back to
@@ -506,7 +553,10 @@ export default function HowWeTestedWithClaudePage() {
             client running and cycles only the CL service per candidate, purging just the consensus
             datadir between runs: five CL candidates, one EL sync. We ran the sweep twice &mdash; against
             an ethrex anchor and a geth anchor &mdash; to prove the EL/CL decoupling empirically. The
-            ranking reproduced.
+            heavyweight and lightweight tiers both reproduced on both anchors &mdash; with one nuance:
+            the lodestar&harr;lighthouse order flipped between anchors (geth: lodestar &lt; lighthouse;
+            ethrex: lighthouse &lt; lodestar), though both stayed in the same smallest tier, where the
+            gap is small and measurement-window-sensitive.
           </p>
 
           <h3 className="mt-6 font-medium text-foreground">Two harness bugs that nearly cost us data</h3>

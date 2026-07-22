@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { CodeBlock } from '@/components/ui/CodeBlock'
 import { SITE_CONFIG } from '@/lib/constants'
-import { ArrowRight } from 'lucide-react'
+import { ArrowDown, ArrowRight } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'The Bake-off Harness — ETH2 Quick Start',
@@ -57,15 +58,6 @@ const layoutTree = `test/bakeoff/
 ├── summarize.sh            # aggregates artifacts/ into summary.csv, report.md, a results skeleton
 ├── candidates.tsv          # the manifest: <execution>\\t<consensus> pairs to run
 └── test_data_dirs_sync.sh  # CI guard: BAKEOFF_DATA_DIRS must match purge_ethereum_data.sh`
-
-const dataFlowMermaid = `flowchart LR
-    manifest[candidates.tsv] --> sweep[run_bakeoff.sh]
-    sweep --> candidate[run_candidate.sh]
-    rotation[run_anchor_rotation.sh] --> candidate
-    candidate --> services[systemd EL and CL services]
-    candidate --> artifacts[artifacts/run-id/]
-    artifacts --> summary[summarize.sh]
-    summary --> outputs[summary.csv and report.md]`
 
 const installSnippet = `timeout "$install_timeout" /usr/bin/time -v -o "$out/install-time.txt" \\
   ./scripts/eth2qs.sh phase2 --execution="$execution" --consensus="$consensus" --mev=none \\
@@ -227,6 +219,64 @@ const dataModelRows: { file: string; writtenBy: React.ReactNode; contents: React
   },
 ]
 
+// Renders the same edges as the source flowchart (kept in git history):
+//   candidates.tsv --> run_bakeoff.sh --> run_candidate.sh
+//   run_anchor_rotation.sh --> run_candidate.sh
+//   run_candidate.sh --> systemd EL/CL services
+//   run_candidate.sh --> artifacts/run-id/ --> summarize.sh --> summary.csv & report.md
+function DataFlowDiagram() {
+  return (
+    <div className="mt-3">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="flex flex-col items-center">
+          <div className="w-full rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
+            <span className="font-mono text-xs">candidates.tsv</span>
+            <span className="block text-xs text-muted-foreground">manifest</span>
+          </div>
+          <ArrowDown className="my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <div className="w-full rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
+            <span className="font-mono text-xs">run_bakeoff.sh</span>
+            <span className="block text-xs text-muted-foreground">sequential multi-candidate sweep</span>
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-end">
+          <div className="w-full rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
+            <span className="font-mono text-xs">run_anchor_rotation.sh</span>
+            <span className="block text-xs text-muted-foreground">anchor-preserving CL sweep (separate entry point)</span>
+          </div>
+        </div>
+      </div>
+      <ArrowDown className="mx-auto my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <div className="mx-auto max-w-sm rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-center text-sm text-foreground">
+        <span className="font-mono text-xs text-primary">run_candidate.sh</span>
+        <span className="block text-xs text-muted-foreground">single-candidate driver: reset → install → cap → sample</span>
+      </div>
+      <ArrowDown className="mx-auto my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
+          <span className="font-mono text-xs">systemd EL &amp; CL services</span>
+          <span className="block text-xs text-muted-foreground">the running node</span>
+        </div>
+        <div className="flex flex-col items-center">
+          <div className="w-full rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
+            <span className="font-mono text-xs">artifacts/run-id/</span>
+            <span className="block text-xs text-muted-foreground">env.txt, samples.jsonl, disk snapshots</span>
+          </div>
+          <ArrowDown className="my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <div className="w-full rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
+            <span className="font-mono text-xs">summarize.sh</span>
+            <span className="block text-xs text-muted-foreground">aggregation</span>
+          </div>
+          <ArrowDown className="my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <div className="w-full rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
+            <span className="font-mono text-xs">summary.csv &amp; report.md</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function BakeoffHarnessPage() {
   return (
     <div className="min-h-screen py-12 sm:py-16 md:py-24">
@@ -295,7 +345,7 @@ export default function BakeoffHarnessPage() {
           </p>
 
           <h3 className="mt-6 font-medium text-foreground">Data flow at a glance</h3>
-          <CodeBlock language="text" code={dataFlowMermaid} className="mt-3" />
+          <DataFlowDiagram />
           <p className="mt-3 text-sm text-muted-foreground">
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code> owns the ordinary sequential sweep; <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code>{' '}
             reuses one synced execution-layer anchor while cycling consensus clients. Both paths produce the same
@@ -1038,6 +1088,29 @@ export default function BakeoffHarnessPage() {
                 {' '}&mdash; {link.desc}
               </li>
             ))}
+          </ul>
+        </section>
+
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
+          <h2 className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
+            Read next
+          </h2>
+          <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <li>
+              <Link href="/blog/ethereum-client-bakeoff" className="text-primary hover:underline">
+                Ethereum client bake-off (narrative write-up)
+              </Link>
+            </li>
+            <li>
+              <Link href="/blog/how-we-tested-with-claude" className="text-primary hover:underline">
+                How we tested with Claude
+              </Link>
+            </li>
+            <li>
+              <Link href="/blog/bakeoff-results" className="text-primary hover:underline">
+                Bake-off results (raw data)
+              </Link>
+            </li>
           </ul>
         </section>
 
