@@ -1,15 +1,31 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { AnchorHeading } from '@/components/ui/AnchorHeading'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowRight } from 'lucide-react'
 
+const PAGE_TITLE = 'Ethereum Client Bake-off - ETH2 Quick Start'
+const PAGE_DESCRIPTION =
+  'The full write-up: results from a 23-day Ethereum execution and consensus client sync campaign, including the restart-resilience findings the headline numbers hide.'
+
 export const metadata: Metadata = {
-  title: 'Ethereum Client Bake-off - ETH2 Quick Start',
-  description:
-    'The full write-up: results from a 23-day Ethereum execution and consensus client sync campaign, including the restart-resilience findings the headline numbers hide.',
+  title: PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  alternates: { canonical: '/blog/ethereum-client-bakeoff' },
+  openGraph: {
+    type: 'article',
+    url: '/blog/ethereum-client-bakeoff',
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+  },
 }
 
 const executionClients = [
@@ -234,9 +250,9 @@ export default function EthereumClientBakeoffPage() {
         </Card>
 
         <section className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+          <AnchorHeading id="tldr" className="text-lg sm:text-xl font-semibold text-foreground">
             TL;DR
-          </h2>
+          </AnchorHeading>
           <div className="mt-4 grid gap-3 sm:gap-4 md:grid-cols-2">
             <Card padding="sm" className="bg-muted/30">
               <h3 className="font-medium text-foreground">Disk winner — Nethermind, ~251 GiB</h3>
@@ -269,9 +285,9 @@ export default function EthereumClientBakeoffPage() {
         </section>
 
         <section className="mt-10 sm:mt-16" aria-labelledby="sync-time-heading">
-          <h2 id="sync-time-heading" className="text-lg sm:text-xl font-semibold text-foreground">
+          <AnchorHeading id="sync-time-heading" className="text-lg sm:text-xl font-semibold text-foreground">
             Cold-sync time, at a glance
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Completed execution-client syncs only. The 72-hour-capped clients are intentionally excluded.
           </p>
@@ -329,9 +345,9 @@ export default function EthereumClientBakeoffPage() {
         </section>
 
         <section className="mt-10 sm:mt-16" aria-labelledby="disk-heading">
-          <h2 id="disk-heading" className="text-lg sm:text-xl font-semibold text-foreground">
+          <AnchorHeading id="disk-heading" className="text-lg sm:text-xl font-semibold text-foreground">
             Disk footprint, at a glance
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             All seven execution clients. Muted bars didn&apos;t reach a clean synced state — partial (72h-capped) or frozen (erigon&apos;s no-sync deadlock) — so their footprint isn&apos;t comparable to the synced clients.
           </p>
@@ -390,9 +406,9 @@ export default function EthereumClientBakeoffPage() {
         </section>
 
         <section className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+          <AnchorHeading id="el-scorecard" className="text-lg sm:text-xl font-semibold text-foreground">
             EL scorecard
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Each execution-client run used a fixed Prysm consensus client and a 72-hour cap.
           </p>
@@ -453,9 +469,9 @@ export default function EthereumClientBakeoffPage() {
         </section>
 
         <section className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+          <AnchorHeading id="cl-scorecard" className="text-lg sm:text-xl font-semibold text-foreground">
             CL scorecard
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Each consensus client ran against a fixed EL anchor, and the full sweep was repeated
             against a second anchor (ethrex, then geth) to test EL/CL decoupling directly; all
@@ -522,9 +538,9 @@ export default function EthereumClientBakeoffPage() {
         </section>
 
         <section className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+          <AnchorHeading id="every-metric-we-collected" className="text-lg sm:text-xl font-semibold text-foreground">
             Every metric we collected
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             The scorecards above are the curated view. Everything else recorded per candidate —
             peer counts, config-optimality verification, re-run history, and other notable detail —
@@ -582,9 +598,9 @@ export default function EthereumClientBakeoffPage() {
         </section>
 
         <section className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+          <AnchorHeading id="what-we-measured" className="text-lg sm:text-xl font-semibold text-foreground">
             What we measured, and how we kept it honest
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             The campaign ran from 2026-06-22 to 2026-07-14 on a shared semi-production host (not a
             live validator), with MEV disabled and no validator keys. The bake-off measures, for
@@ -601,7 +617,9 @@ export default function EthereumClientBakeoffPage() {
             the CL matrix above), so this isn&apos;t just an assumption.
           </p>
           <Card padding="sm" className="mt-4 bg-muted/30">
-            <h3 className="font-medium text-foreground">The honesty mechanism</h3>
+            <AnchorHeading id="honesty-mechanism" as="h3" className="font-medium text-foreground">
+              The honesty mechanism
+            </AnchorHeading>
             <p className="mt-1 text-sm text-muted-foreground">
               Early in the campaign we corrupted our own results by recording footprints before
               verifying each client was running in its most disk-efficient mode. A benchmark that
@@ -628,9 +646,9 @@ export default function EthereumClientBakeoffPage() {
         </section>
 
         <section className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+          <AnchorHeading id="the-disk-story" className="text-lg sm:text-xl font-semibold text-foreground">
             The disk story: Nethermind wins, by a lot
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Only two clients produced a pruned, apples-to-apples footprint — geth and nethermind
             (see the EL scorecard above) — so the honest head-to-head disk ranking is exactly
@@ -682,9 +700,9 @@ export default function EthereumClientBakeoffPage() {
         </section>
 
         <section className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+          <AnchorHeading id="the-speed-story" className="text-lg sm:text-xl font-semibold text-foreground">
             The speed story: ethrex wins, by a lot — and then loses it on restart
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             ethrex snap-synced to a fully-validating head in{' '}
             <strong className="text-foreground">~2h16m</strong>, the fastest in the field by
@@ -712,9 +730,9 @@ export default function EthereumClientBakeoffPage() {
         </section>
 
         <section className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+          <AnchorHeading id="restart-resilience" className="text-lg sm:text-xl font-semibold text-foreground">
             The novel axis: restart resilience
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Cold-sync numbers tell you how a node behaves once, on day one. But operators restart
             nodes constantly — upgrades, config changes, crashes, host maintenance. &ldquo;What
@@ -754,7 +772,9 @@ export default function EthereumClientBakeoffPage() {
             available) instead of re-fetching state.
           </p>
 
-          <h3 className="mt-6 font-medium text-foreground">ethrex&apos;s cliff, bisected</h3>
+          <AnchorHeading id="ethrex-cliff-bisected" as="h3" className="mt-6 font-medium text-foreground">
+            ethrex&apos;s cliff, bisected
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             After a routine ~1.5–2h restart gap, a fully-synced ethrex (286 GiB, at mainnet head)
             abandoned its state and began a fresh full snap sync from the current head — datadir
@@ -825,7 +845,9 @@ export default function EthereumClientBakeoffPage() {
             alongside, not folded into, the cold-sync number.
           </p>
 
-          <h3 className="mt-6 font-medium text-foreground">besu&apos;s mid-sync deadlock</h3>
+          <AnchorHeading id="besu-mid-sync-deadlock" as="h3" className="mt-6 font-medium text-foreground">
+            besu&apos;s mid-sync deadlock
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             besu&apos;s pruned re-run deadlocked twice and was abandoned — and the causal chain is
             a tidy production cautionary tale:
@@ -863,9 +885,9 @@ export default function EthereumClientBakeoffPage() {
         </section>
 
         <section className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+          <AnchorHeading id="full-sync-only-clients" className="text-lg sm:text-xl font-semibold text-foreground">
             The full-sync-only clients — and a contested flag, settled
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             reth and nimbus_eth1 have no snap-sync path; they full-sync from genesis. Both hit the
             72h cap far from tip (reth ~21%, ~0.98 TiB; nimbus_eth1 ~21.6%, ~40 GB). This is a
@@ -899,9 +921,9 @@ export default function EthereumClientBakeoffPage() {
         </section>
 
         <section className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+          <AnchorHeading id="distribution-as-predictor" className="text-lg sm:text-xl font-semibold text-foreground">
             Distribution is a <em>nuanced</em> predictor, not a flat one
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             A tempting story going in was &ldquo;mainnet share predicts syncability&rdquo; — the
             low/zero-share clients are exactly the ones that struggle. The data only half-supports
@@ -916,9 +938,9 @@ export default function EthereumClientBakeoffPage() {
         </section>
 
         <section className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+          <AnchorHeading id="consensus-layer-solved" className="text-lg sm:text-xl font-semibold text-foreground">
             The consensus layer is solved
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             We ran the five CLs — lighthouse, lodestar, grandine, teku, nimbus — against a constant
             anchor EL, and then repeated it against a second anchor EL to test the EL/CL decoupling
@@ -946,9 +968,9 @@ export default function EthereumClientBakeoffPage() {
         </section>
 
         <section className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+          <AnchorHeading id="recommendations" className="text-lg sm:text-xl font-semibold text-foreground">
             Recommendations
-          </h2>
+          </AnchorHeading>
           <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
             <li>
               <span className="font-medium text-foreground">Default: geth.</span> Largest

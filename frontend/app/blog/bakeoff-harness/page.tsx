@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { AnchorHeading } from '@/components/ui/AnchorHeading'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -7,10 +8,25 @@ import { CodeBlock } from '@/components/ui/CodeBlock'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowDown, ArrowRight } from 'lucide-react'
 
+const PAGE_TITLE = 'The Bake-off Harness — ETH2 Quick Start'
+const PAGE_DESCRIPTION =
+  'A function-level engineering reference for the bake-off harness: every script under test/bakeoff/, every function it calls, every flag it reads, and the data files it produces.'
+
 export const metadata: Metadata = {
-  title: 'The Bake-off Harness — ETH2 Quick Start',
-  description:
-    'A function-level engineering reference for the bake-off harness: every script under test/bakeoff/, every function it calls, every flag it reads, and the data files it produces.',
+  title: PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  alternates: { canonical: '/blog/bakeoff-harness' },
+  openGraph: {
+    type: 'article',
+    url: '/blog/bakeoff-harness',
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+  },
 }
 
 const tocLinks = [
@@ -328,8 +344,8 @@ export default function BakeoffHarnessPage() {
         </nav>
 
         {/* 1. Layout */}
-        <section id="layout" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">1. Layout</h2>
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="layout" className="text-lg sm:text-xl font-semibold text-foreground">1. Layout</AnchorHeading>
           <CodeBlock language="text" code={layoutTree} className="mt-4" />
           <p className="mt-4 text-sm text-muted-foreground">
             The executable driver scripts (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>,{' '}
@@ -344,7 +360,9 @@ export default function BakeoffHarnessPage() {
             already sourced <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">common_functions.sh</code> first.
           </p>
 
-          <h3 className="mt-6 font-medium text-foreground">Data flow at a glance</h3>
+          <AnchorHeading id="data-flow" as="h3" className="mt-6 font-medium text-foreground">
+            Data flow at a glance
+          </AnchorHeading>
           <DataFlowDiagram />
           <p className="mt-3 text-sm text-muted-foreground">
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code> owns the ordinary sequential sweep; <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code>{' '}
@@ -354,10 +372,10 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* 2. run_bakeoff.sh */}
-        <section id="run-bakeoff" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="run-bakeoff" className="text-lg sm:text-xl font-semibold text-foreground">
             2. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code> — the sequential orchestrator
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Usage: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'run_bakeoff.sh --stage=triage|full [--only=el__cl,el__cl,...] [--force]'}</code>
           </p>
@@ -421,10 +439,10 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* 3. run_candidate.sh */}
-        <section id="run-candidate" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="run-candidate" className="text-lg sm:text-xl font-semibold text-foreground">
             3. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code> — the single-candidate state machine
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Usage: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'run_candidate.sh <execution> <consensus>'}</code>. This is the workhorse; every
             candidate row in the results tables is one invocation of this script. It refuses to run at all unless{' '}
@@ -432,7 +450,9 @@ export default function BakeoffHarnessPage() {
             deliberate manual safety gate because the script purges data directories and stops/disables services.
           </p>
 
-          <h3 className="mt-6 font-medium text-foreground">3.1 Modes</h3>
+          <AnchorHeading id="modes" as="h3" className="mt-6 font-medium text-foreground">
+            3.1 Modes
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             The script has three modes, selected by env vars, all mutually aware of each other:
           </p>
@@ -509,7 +529,9 @@ export default function BakeoffHarnessPage() {
             the CL sweep is allowed to start.
           </p>
 
-          <h3 className="mt-6 font-medium text-foreground">3.2 Resume guard</h3>
+          <AnchorHeading id="resume-guard" as="h3" className="mt-6 font-medium text-foreground">
+            3.2 Resume guard
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             If <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">$out/.done</code> exists and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_FORCE</code> isn&apos;t{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">yes</code>, the candidate is skipped entirely (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">exit 0</code>). Setting{' '}
@@ -519,7 +541,9 @@ export default function BakeoffHarnessPage() {
             finalize <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">anchor_synced=no</code> for what is actually a clean rerun.
           </p>
 
-          <h3 className="mt-6 font-medium text-foreground">3.3 Pre-install sequence</h3>
+          <AnchorHeading id="pre-install-sequence" as="h3" className="mt-6 font-medium text-foreground">
+            3.3 Pre-install sequence
+          </AnchorHeading>
           <ol className="mt-2 space-y-3 text-sm text-muted-foreground list-decimal list-inside">
             <li>
               Stop+disable the relevant services (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth1.service cl.service validator.service</code>, or just{' '}
@@ -556,7 +580,9 @@ export default function BakeoffHarnessPage() {
             </li>
           </ol>
 
-          <h3 className="mt-6 font-medium text-foreground">3.4 Install</h3>
+          <AnchorHeading id="install-step" as="h3" className="mt-6 font-medium text-foreground">
+            3.4 Install
+          </AnchorHeading>
           <CodeBlock language="bash" code={installSnippet} className="mt-3" />
           <p className="mt-3 text-sm text-muted-foreground">
             (Anchor mode omits <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--execution=</code> since only the CL installs.){' '}
@@ -575,7 +601,9 @@ export default function BakeoffHarnessPage() {
             stamps <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'config_optimal=yes|no'}</code> into <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">env.txt</code> and never aborts the run.
           </p>
 
-          <h3 className="mt-6 font-medium text-foreground">3.5 Observation window</h3>
+          <AnchorHeading id="observation-window" as="h3" className="mt-6 font-medium text-foreground">
+            3.5 Observation window
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Skipped entirely if <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">install_rc != 0</code>. Otherwise a <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">while</code> loop runs
             until <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'$(date +%s) >= end_at'}</code> (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">end_at = now + window</code>),
@@ -627,7 +655,9 @@ export default function BakeoffHarnessPage() {
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'anchor_synced=yes|no'}</code> depending on whether <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.anchor-poisoned</code> exists.
           </p>
 
-          <h3 className="mt-6 font-medium text-foreground">3.6 Teardown</h3>
+          <AnchorHeading id="teardown" as="h3" className="mt-6 font-medium text-foreground">
+            3.6 Teardown
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">journalctl</code> tails (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">-u eth1 -n 700</code>,{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">-u cl -n 700</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">-u validator -n 300</code>) and{' '}
@@ -644,10 +674,10 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* 4. apply_resource_caps.sh */}
-        <section id="apply-resource-caps" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="apply-resource-caps" className="text-lg sm:text-xl font-semibold text-foreground">
             4. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">apply_resource_caps.sh</code> — systemd runtime caps
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Usage: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'apply_resource_caps.sh <apply|clear>'}</code>. Purpose: keep the bake-off from
             starving co-resident work on a shared host by capping the node stack to roughly 8 cores / 36G total.
@@ -679,16 +709,18 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* 5. lib.sh */}
-        <section id="lib-sh" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="lib-sh" className="text-lg sm:text-xl font-semibold text-foreground">
             5. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">lib.sh</code> — the shared probe/sample/gate library
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Sourced by <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code> and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code>. Never
             executed directly.
           </p>
 
-          <h3 className="mt-6 font-medium text-foreground">5.1 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">BAKEOFF_DATA_DIRS</code></h3>
+          <AnchorHeading id="bakeoff-data-dirs" as="h3" className="mt-6 font-medium text-foreground">
+            5.1 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">BAKEOFF_DATA_DIRS</code>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             The canonical list of every client datadir the harness knows about (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">$HOME/.ethereum</code>,{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">$HOME/.local/share/nethermind</code>, … through <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">$HOME/ethgas</code>). This
@@ -699,7 +731,9 @@ export default function BakeoffHarnessPage() {
             the actual purge).
           </p>
 
-          <h3 className="mt-6 font-medium text-foreground">5.2 Snapshot/probe primitives</h3>
+          <AnchorHeading id="snapshot-probe-primitives" as="h3" className="mt-6 font-medium text-foreground">
+            5.2 Snapshot/probe primitives
+          </AnchorHeading>
           <ul className="mt-2 space-y-3 text-sm text-muted-foreground list-disc list-inside">
             <li>
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'bakeoff_snapshot_disk <outfile>'}</code> — for every path in{' '}
@@ -743,7 +777,9 @@ export default function BakeoffHarnessPage() {
             </li>
           </ul>
 
-          <h3 className="mt-6 font-medium text-foreground">5.3 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced</code></h3>
+          <AnchorHeading id="bakeoff-is-synced" as="h3" className="mt-6 font-medium text-foreground">
+            5.3 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced</code>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">Returns 0 only when <strong>both</strong> layers report caught-up:</p>
           <ul className="mt-2 space-y-2 text-sm text-muted-foreground list-disc list-inside">
             <li>
@@ -759,7 +795,9 @@ export default function BakeoffHarnessPage() {
             </li>
           </ul>
 
-          <h3 className="mt-6 font-medium text-foreground">5.4 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'bakeoff_write_sample <out_dir> <repo_root>'}</code></h3>
+          <AnchorHeading id="bakeoff-write-sample" as="h3" className="mt-6 font-medium text-foreground">
+            5.4 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'bakeoff_write_sample <out_dir> <repo_root>'}</code>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             The per-tick sampling routine. Writes disk/execution-sync/beacon-sync/process snapshots plus{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">./scripts/eth2qs.sh doctor --json</code> and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">stats --json</code> (each{' '}
@@ -775,7 +813,9 @@ export default function BakeoffHarnessPage() {
             the observation loop.
           </p>
 
-          <h3 className="mt-6 font-medium text-foreground">5.5 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'bakeoff_check_config_optimal <el> <cl> <out_dir>'}</code></h3>
+          <AnchorHeading id="bakeoff-check-config-optimal" as="h3" className="mt-6 font-medium text-foreground">
+            5.5 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'bakeoff_check_config_optimal <el> <cl> <out_dir>'}</code>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             The config-optimality gate — arguably the harness&apos;s most important correctness mechanism, since a
             disk-footprint benchmark is meaningless if you can&apos;t prove the client was actually running in its
@@ -860,10 +900,10 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* 6. run_anchor_rotation.sh */}
-        <section id="run-anchor-rotation" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="run-anchor-rotation" className="text-lg sm:text-xl font-semibold text-foreground">
             6. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code> — multi-EL anchor rotation
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Usage: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'run_anchor_rotation.sh <anchors_csv> [<cls_csv>]'}</code> (CLs default to{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">lighthouse,teku,nimbus,lodestar,grandine</code>). This is how the CL matrix gets measured against more than one EL anchor without re-syncing every EL from scratch for every
@@ -912,10 +952,10 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* 7. summarize.sh */}
-        <section id="summarize" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="summarize" className="text-lg sm:text-xl font-semibold text-foreground">
             7. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">summarize.sh</code> — aggregation
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Reads every <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'artifacts/<run-id>/<el>__<cl>/'}</code> directory and produces three outputs,
             none of which overwrite the hand-curated <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">docs/CLIENT_BAKEOFF_RESULTS.md</code> (that file is
@@ -996,8 +1036,8 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* 8. Data model reference */}
-        <section id="data-model" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">8. Data model reference</h2>
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="data-model" className="text-lg sm:text-xl font-semibold text-foreground">8. Data model reference</AnchorHeading>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -1023,8 +1063,8 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* 9. Hardening fixes */}
-        <section id="hardening-fixes" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">9. Hardening fixes visible in the code</h2>
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="hardening-fixes" className="text-lg sm:text-xl font-semibold text-foreground">9. Hardening fixes visible in the code</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             These are defensive patterns baked into the harness as a result of real failures during the campaign
             (see <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">CLIENT_BAKEOFF_ISSUES_LOG.md</code> for the incidents that motivated them):
@@ -1077,8 +1117,8 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* See also */}
-        <section id="see-also" className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">See also</h2>
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="see-also" className="text-lg sm:text-xl font-semibold text-foreground">See also</AnchorHeading>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
             {seeAlsoLinks.map((link) => (
               <li key={link.href}>
