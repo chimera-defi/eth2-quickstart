@@ -16,6 +16,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/blog/how-we-tested-with-claude' },
   openGraph: {
     type: 'article',
+    siteName: 'ETH2 Quick Start',
     images: ['/og-how-we-tested.png'],
     url: '/blog/how-we-tested-with-claude',
     title: PAGE_TITLE,

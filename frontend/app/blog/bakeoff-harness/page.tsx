@@ -18,6 +18,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/blog/bakeoff-harness' },
   openGraph: {
     type: 'article',
+    siteName: 'ETH2 Quick Start',
     images: ['/og-harness.png'],
     url: '/blog/bakeoff-harness',
     title: PAGE_TITLE,

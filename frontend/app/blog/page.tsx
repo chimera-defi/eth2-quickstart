@@ -2,9 +2,27 @@ import type { Metadata } from 'next'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 
+const BLOG_TITLE = 'Blog - ETH2 Quick Start'
+const BLOG_DESCRIPTION = 'Notes and results from the ETH2 Quick Start lab.'
+
 export const metadata: Metadata = {
-  title: 'Blog - ETH2 Quick Start',
-  description: 'Notes and results from the ETH2 Quick Start lab.',
+  title: BLOG_TITLE,
+  description: BLOG_DESCRIPTION,
+  alternates: { canonical: '/blog' },
+  openGraph: {
+    type: 'website',
+    url: '/blog',
+    siteName: 'ETH2 Quick Start',
+    title: BLOG_TITLE,
+    description: BLOG_DESCRIPTION,
+    images: ['/og.png'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: BLOG_TITLE,
+    description: BLOG_DESCRIPTION,
+    images: ['/og.png'],
+  },
 }
 
 const posts = [
