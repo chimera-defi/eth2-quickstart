@@ -467,7 +467,9 @@
   var root=document.documentElement;
   document.getElementById('themeBtn').addEventListener('click',function(){
     var cur=root.getAttribute('data-theme');
-    var isDark = cur ? cur==='dark' : matchMedia('(prefers-color-scheme:dark)').matches;
+    // The deck's default render is committed-dark (no prefers-color-scheme:light
+    // override), so treat "unset" as dark — first click always reaches light.
+    var isDark = cur ? cur==='dark' : true;
     root.setAttribute('data-theme', isDark?'light':'dark');
   });
   var start=parseInt((location.hash||'').slice(1),10);
