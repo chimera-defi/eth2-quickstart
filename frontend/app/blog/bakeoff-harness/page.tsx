@@ -18,12 +18,14 @@ export const metadata: Metadata = {
   alternates: { canonical: '/blog/bakeoff-harness' },
   openGraph: {
     type: 'article',
+    images: ['/og.png'],
     url: '/blog/bakeoff-harness',
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
+    images: ['/og.png'],
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },

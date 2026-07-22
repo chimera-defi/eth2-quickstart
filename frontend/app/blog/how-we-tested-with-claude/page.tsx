@@ -16,12 +16,14 @@ export const metadata: Metadata = {
   alternates: { canonical: '/blog/how-we-tested-with-claude' },
   openGraph: {
     type: 'article',
+    images: ['/og.png'],
     url: '/blog/how-we-tested-with-claude',
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
+    images: ['/og.png'],
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },

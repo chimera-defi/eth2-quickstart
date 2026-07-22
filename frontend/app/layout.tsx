@@ -12,11 +12,13 @@ export const metadata: Metadata = {
     description: 'Transform a fresh server into a fully-configured Ethereum node. 12 clients, automated security, MEV integration.',
     siteName: 'ETH2 Quick Start',
     type: 'website',
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'ETH2 Quick Start — Ethereum client bake-off' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'ETH2 Quick Start - Ethereum Node Setup in Minutes',
     description: 'Transform a fresh server into a fully-configured Ethereum node. 12 clients, automated security, MEV integration.',
+    images: ['/og.png'],
   },
 }
 

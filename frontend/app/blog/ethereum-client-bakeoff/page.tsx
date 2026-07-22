@@ -17,12 +17,14 @@ export const metadata: Metadata = {
   alternates: { canonical: '/blog/ethereum-client-bakeoff' },
   openGraph: {
     type: 'article',
+    images: ['/og.png'],
     url: '/blog/ethereum-client-bakeoff',
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
+    images: ['/og.png'],
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },
