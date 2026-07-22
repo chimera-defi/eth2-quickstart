@@ -870,6 +870,16 @@ export default function BakeoffResultsPage() {
                 Narrative write-up: Ethereum client bake-off
               </Link>
             </li>
+            <li>
+              <Link href="/blog/how-we-tested-with-claude" className="text-primary hover:underline">
+                How we tested with Claude
+              </Link>
+            </li>
+            <li>
+              <Link href="/blog/bakeoff-harness" className="text-primary hover:underline">
+                The bake-off harness (engineering reference)
+              </Link>
+            </li>
           </ul>
         </section>
       </div>
