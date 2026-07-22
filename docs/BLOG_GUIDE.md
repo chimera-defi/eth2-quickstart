@@ -38,7 +38,7 @@ Slugs are kebab-case and must be unique per page; reuse a page's existing Conten
 
 ## Link previews (OpenGraph)
 
-Each article sets its own OpenGraph + Twitter card so a pasted link unfurls with a branded image, not bare text. The images live in `frontend/public/` (`og-bakeoff.png`, `og-how-we-tested.png`, `og-harness.png`, `og-results.png`; `og.png` is the site default). To regenerate them, edit and re-run `gen-og.py` (renders the card template to PNG via headless Chromium at 1200×630) and drop the output in `frontend/public/`. A page opts into its card via its `metadata` export:
+Each article sets its own OpenGraph + Twitter card so a pasted link unfurls with a branded image, not bare text. The images live in `frontend/public/` (`og-bakeoff.png`, `og-how-we-tested.png`, `og-harness.png`, `og-results.png`; `og.png` is the site default). To regenerate them, edit the card definitions in [`frontend/scripts/gen-og-cards.py`](../frontend/scripts/gen-og-cards.py) and run `python3 frontend/scripts/gen-og-cards.py` (set `CHROME_BIN` to a Chromium/Chrome binary if it isn't auto-found) — it renders the card template to 1200×630 PNGs directly into `frontend/public/`. A page opts into its card via its `metadata` export:
 
 ```ts
 openGraph: { type: 'article', images: ['/og-bakeoff.png'], url: '/blog/ethereum-client-bakeoff', ... },
