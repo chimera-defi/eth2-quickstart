@@ -16,14 +16,14 @@ export const metadata: Metadata = {
   alternates: { canonical: '/blog/bakeoff-results' },
   openGraph: {
     type: 'article',
-    images: ['/og.png'],
+    images: ['/og-results.png'],
     url: '/blog/bakeoff-results',
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
-    images: ['/og.png'],
+    images: ['/og-results.png'],
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },
