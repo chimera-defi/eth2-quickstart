@@ -245,6 +245,10 @@ export default function EthereumClientBakeoffPage() {
             field has essentially zero real-world adoption.
           </p>
           <div className="mt-4 flex flex-wrap gap-3 sm:mt-6">
+            <Button href="/deck/bakeoff.html" external variant="secondary" size="sm">
+              View as slides
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
             <Button
               href={`${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_BLOG.md`}
               external
