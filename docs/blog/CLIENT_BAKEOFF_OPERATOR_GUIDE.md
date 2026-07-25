@@ -16,16 +16,16 @@ Two clients cleared every bar we care about — snap-sync to a validating tip, a
 
 | EL | Sync time | Pruned footprint | Mainnet share | Verdict |
 |----|-----------|------------------|---------------|---------|
-| **nethermind** | ~14.5h | **~251 GiB** | 36.0% | **Disk winner** — ~4.5× leaner than geth. Also a minority client, so running it helps client diversity. |
+| **nethermind** | ~14.5h | **~251 GiB** | 36.0% | **Disk winner** — ~4.6× leaner than geth. Also a minority client, so running it helps client diversity. |
 | **geth** | ~8h28m | ~1.13 TiB | 44.9% | **Conservative default** — biggest ecosystem, most docs, resumes cleanly from multi-day downtime. |
 
-If you run one EL for the long haul, run one of these. Pick **nethermind** if disk is your constraint (it is 4.5× smaller and improves diversity); pick **geth** if you want the most boring, best-documented option on the network.
+If you run one EL for the long haul, run one of these. Pick **nethermind** if disk is your constraint (it is 4.6× smaller and improves diversity); pick **geth** if you want the most boring, best-documented option on the network.
 
 **besu** is a legitimate enterprise third — it *did* snap-sync to a fully validated head (~19h18m) — but with two asterisks: our run was un-pruned (~1.08 TiB, no comparable pruned number), and its snap sync is fragile if your CL goes down for a while (more on that below). Fine for a shop that keeps its CL current and watches the node; not a set-and-forget solo-staker pick.
 
 **The rest fell out for specific, documented reasons — not because they're "bad":**
 
-- **ethrex** — *fastest cold sync in the entire field* (~2h16m, next-fastest is geth at ~8.5h) but the wrong long-run profile. It has no prune lever, the datadir grows unbounded even *at the chain tip* (~10 GiB/hr, 286 → ~467 GiB in our window), and — the dealbreaker — it **throws away its synced state and re-syncs from scratch after any downtime longer than ~25 minutes.** Every upgrade or maintenance window costs a fresh ~2h sync. Fast to stand up, painful to operate. Young client (v19.0.0); may improve.
+- **ethrex** — *fastest cold sync in the entire field* (~2h16m, next-fastest is geth at ~8.5h) but the wrong long-run profile. It has no prune lever, the datadir grows unbounded even *at the chain tip* (~10 GiB/hr, 286 → ~467 GiB in our window), and — the dealbreaker — a 26-minute/132-block gap stalled instead of resuming, while measured 1.5–2-hour gaps threw away synced state and triggered a fresh ~2-hour re-snap. Fast to stand up, painful to operate. Young client (v19.0.0); may improve.
 - **reth, nimbus_eth1** — full-sync-only in the mode we tested (no snap), so they can't reach the tip inside a practical window on this host. A time-to-sync limit under our bar, not a blanket verdict — reth in particular is widely run elsewhere.
 - **erigon** — deadlocked against a checkpoint-synced consensus client on this host (a reproducible, structural stall), so it never produced a synced datadir.
 
@@ -41,7 +41,7 @@ Two operational caveats worth knowing:
 - **grandine** needs `--prune-storage` or it stores *every* state — the single most important flag for it.
 - **nimbus** is simply the heaviest (~6.8× lighthouse), but otherwise clean.
 
-We ran this whole sweep twice — once anchored to ethrex, once to geth — and the ranking held. The absolute sizes shifted (they grow the longer a CL follows the chain), but the order didn't, which is the empirical proof that **your CL choice doesn't depend on your EL choice.**
+We ran this whole sweep twice — once anchored to ethrex, once to geth — and the heavyweight/lightweight tiers held. Absolute sizes shifted, and lodestar/lighthouse swapped order within the lightweight tier, so the evidence supports broad EL/CL decoupling without claiming an identical total order.
 
 ## The one rule that ties it together
 
@@ -59,7 +59,7 @@ Behaviors #2 and #3 come from the *same* root cause: the network only serves rec
 
 ## TL;DR
 
-- **Run geth or nethermind.** nethermind if you want small (~251 GiB, 4.5× leaner) and diverse; geth if you want boring and well-documented. besu only if you're an enterprise shop that babysits its CL.
+- **Run geth or nethermind.** nethermind if you want small (~251 GiB, 4.6× leaner) and diverse; geth if you want boring and well-documented. besu only if you're an enterprise shop that babysits its CL.
 - **Any CL works.** lighthouse is the lean default (~739 MB); lodestar and grandine are close; teku and nimbus are heavier but fine.
 - **Restart-resilience beats cold-sync speed.** Fast initial sync (ethrex) and small archive-context footprints do not make a client operationally viable — surviving restarts and uptime does, and that's an EL-layer problem.
 - **Keep your consensus client updated.** A stale CL is how the one un-recoverable failure we saw actually happened.

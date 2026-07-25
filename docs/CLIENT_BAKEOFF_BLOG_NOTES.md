@@ -50,7 +50,7 @@ checkpoint (2026-07-11) and is retained for provenance.
 
 ## 1. Headline findings (lead with these)
 
-1. **Disk winner: Nethermind ~251 GiB** — ~4.5× smaller than geth's ~1.13 TiB, the smallest of any client
+1. **Disk winner: Nethermind ~251 GiB** — ~4.6× smaller than geth's ~1.13 TiB, the smallest of any client
    that finished a *pruned-comparable* sync. This is the number to lead the disk story with.
 2. **Speed winner: ethrex ~2h16m** — the fastest cold sync in the entire field, by a wide margin
    (next is geth at ~8.5h). A ~0%-adoption minimalist Rust client (Lambda Class) beat everyone on speed.
@@ -142,10 +142,10 @@ verified, not inferred):
 (optimistically at current head) drove `forkchoiceUpdated` forward, ethrex was too far behind to close the
 gap by block import, so it re-pivoted to a fresh snap sync rather than resuming — throwing away the 286 GiB.
 
-**Why it matters for the blog:** a client that re-syncs from scratch after any downtime beyond ~25 min is
-operationally painful. Every upgrade, crash, or maintenance window longer than ~25 min costs a full ~2h
-re-sync. This is a strong candidate explanation for ethrex's ~0% operational adoption *despite* its
-best-in-field cold-sync numbers — "great benchmark, painful to actually run."
+**Why it matters for the blog:** a client that can stop resuming after ~25 min and, on longer measured gaps,
+fall into a full ~2h re-snap is operationally painful. This is a strong candidate explanation for ethrex's
+~0% operational adoption *despite* its best-in-field cold-sync numbers — "great benchmark, painful to
+actually run."
 
 **Fairness caveats (state these; do not overclaim):**
 - Observed on **v19.0.0** — ethrex is a young client and this may improve in future releases.
@@ -233,7 +233,7 @@ trustworthy. The bake-off's credibility rests on this gate.
 
 - **geth** — the boring, correct baseline. ~8.5h snap sync, ~1.13 TiB with post-merge history prune,
   resumes cleanly across restarts. 44.9% share. If you don't have a reason to run something else, run this.
-- **nethermind** — the disk champion at ~251 GiB (4.5× smaller than geth), ~14.5h sync, clean restart
+- **nethermind** — the disk champion at ~251 GiB (4.6× smaller than geth), ~14.5h sync, clean restart
   behavior. 36% share. The pick when disk is the constraint.
 - **ethrex** — the sprinter with a glass jaw. Fastest cold sync (~2h16m), but an un-pruned datadir that keeps
   growing **even at the chain tip with `eth_syncing=false`** (~286 GiB at sync → ~467 GiB on 2026-07-06,
@@ -258,10 +258,10 @@ EL/CL decoupling:
   **geth-anchor CL disk ranking (smaller = better): lodestar (~177 MiB) < lighthouse (~518 MiB) <
   grandine (~725 MiB) < teku (~936 MiB) < nimbus (~1.2 GiB).**
 
-**Cross-anchor verdict — the ranking reproduces:** the heavyweight tier (nimbus largest, teku second) and
+**Cross-anchor verdict — the tiers reproduce:** the heavyweight tier (nimbus largest, teku second) and
 the lightweight tier (lodestar / lighthouse / grandine smallest) hold on both anchors; only the
 lodestar↔lighthouse order flips within the smallest tier. Absolute sizes scale with post-sync observation
-time, not the EL anchor. Two different EL anchors → the same CL ranking = **EL/CL decoupling confirmed
+time, not the EL anchor. Two different EL anchors → the same broad CL tiers = **EL/CL decoupling supported
 empirically.** (The nimbus_eth1 anchor now running is a *third* EL anchor, but as a full-sync-only client it
 won't reach tip in 72h → it yields a partial EL footprint, not a new CL sweep.)
 

@@ -1,14 +1,56 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
+import { AnchorHeading } from '@/components/ui/AnchorHeading'
+import { ArticleJsonLd } from '@/components/ui/ArticleJsonLd'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { ReadNext } from '@/components/ui/ReadNext'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowRight } from 'lucide-react'
 
+const PAGE_TITLE = 'Ethereum Client Bake-off - ETH2 Quick Start'
+const PAGE_DESCRIPTION =
+  'The full write-up: results from a 23-day Ethereum execution and consensus client sync campaign, including the restart-resilience findings the headline numbers hide.'
+const PAGE_OG_ALT =
+  'The fastest Ethereum client is one almost nobody runs — a 23-day client bake-off'
+
 export const metadata: Metadata = {
-  title: 'Ethereum Client Bake-off - ETH2 Quick Start',
-  description: 'Results from a 23-day Ethereum execution and consensus client sync campaign.',
+  title: PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  alternates: { canonical: '/blog/ethereum-client-bakeoff' },
+  openGraph: {
+    type: 'article',
+    siteName: 'ETH2 Quick Start',
+    images: [{ url: '/og-bakeoff.png', width: 1200, height: 630, alt: PAGE_OG_ALT }],
+    url: '/blog/ethereum-client-bakeoff',
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    images: [{ url: '/og-bakeoff.png', width: 1200, height: 630, alt: PAGE_OG_ALT }],
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+  },
 }
+
+const tocLinks = [
+  { label: 'TL;DR', href: '#tldr' },
+  { label: 'Cold-sync time', href: '#sync-time-heading' },
+  { label: 'Disk footprint', href: '#disk-heading' },
+  { label: 'EL scorecard', href: '#el-scorecard' },
+  { label: 'CL scorecard', href: '#cl-scorecard' },
+  { label: 'Additional run details', href: '#additional-run-details' },
+  { label: 'What we measured', href: '#what-we-measured' },
+  { label: 'The disk story', href: '#the-disk-story' },
+  { label: 'The speed story', href: '#the-speed-story' },
+  { label: 'Restart resilience', href: '#restart-resilience' },
+  { label: 'Full-sync-only clients', href: '#full-sync-only-clients' },
+  { label: 'Distribution as predictor', href: '#distribution-as-predictor' },
+  { label: 'Consensus layer solved', href: '#consensus-layer-solved' },
+  { label: 'Recommendations', href: '#recommendations' },
+]
 
 const executionClients = [
   {
@@ -16,7 +58,7 @@ const executionClients = [
     result: 'synced',
     syncTime: '~14.5h',
     footprint: '~251 GiB (pruned) — smallest',
-    syncMode: 'snap + Bonsai',
+    syncMode: 'snap + Halite',
     mainnetShare: '36.0%',
     resultVariant: 'primary' as const,
   },
@@ -49,7 +91,7 @@ const executionClients = [
   },
   {
     name: 'Reth',
-    result: 'hit 72h cap (~21%)',
+    result: 'hit 72h cap (47% by block, ~21% gas-weighted)',
     syncTime: 'did not finish',
     footprint: '~0.98 TiB (partial)',
     syncMode: 'full-sync-only',
@@ -69,70 +111,117 @@ const executionClients = [
     name: 'Erigon',
     result: 'no-sync',
     syncTime: 'deadlocked',
-    footprint: '—',
+    footprint: '~1.21 TiB (frozen partial, not a synced datadir)',
     syncMode: 'OtterSync',
     mainnetShare: '~0%',
     resultVariant: 'default' as const,
   },
 ]
 
+// Both anchors were independently measured (docs/CLIENT_BAKEOFF_RESULTS.md: ethrex anchor is the
+// primary/complete sweep; geth anchor is the cross-anchor confirmation re-run). Sorted by the
+// ethrex-anchor footprint, the primary run. lodestar/lighthouse order flips between anchors — both
+// sit in the smallest tier where the gap is small and measurement-window-sensitive (RESULTS.md).
 const consensusClients = [
   {
-    name: 'Lodestar',
-    footprint: '~177 MiB — smallest',
-    pruneLever: 'pruneHistory=true',
+    name: 'Lighthouse',
+    ethrexAnchorFootprint: '~737 MiB — smallest',
+    gethAnchorFootprint: '~518 MiB',
+    pruneLever: 'checkpoint-sync-url',
     variant: 'primary' as const,
   },
   {
-    name: 'Lighthouse',
-    footprint: '~518 MiB',
-    pruneLever: 'checkpoint-sync-url',
+    name: 'Lodestar',
+    ethrexAnchorFootprint: '~828 MiB',
+    gethAnchorFootprint: '~177 MiB — smallest',
+    pruneLever: 'pruneHistory=true',
     variant: 'default' as const,
   },
   {
     name: 'Grandine',
-    footprint: '~725 MiB',
+    ethrexAnchorFootprint: '~946 MB actual (sparse file)',
+    gethAnchorFootprint: '~725 MiB actual (sparse file)',
     pruneLever: '--prune-storage',
     variant: 'default' as const,
   },
   {
     name: 'Teku',
-    footprint: '~936 MiB',
+    ethrexAnchorFootprint: '~2.01 GiB',
+    gethAnchorFootprint: '~936 MiB',
     pruneLever: 'data-storage-mode=minimal',
     variant: 'default' as const,
   },
   {
     name: 'Nimbus',
-    footprint: '~1.2 GiB — largest',
+    ethrexAnchorFootprint: '~4.94 GiB — largest',
+    gethAnchorFootprint: '~1.2 GiB — largest',
     pruneLever: 'history=prune',
     variant: 'default' as const,
   },
 ]
 
+// Every other metric CLIENT_BAKEOFF_RESULTS.md records that isn't in the scorecards above —
+// peer counts, resource caps, re-run counts, config_optimal, and other candidate-level detail.
+const fullMetrics = [
+  { candidate: 'geth × prysm', peers: '—', configOptimal: 'yes', reRuns: 0, notable: 'Baseline; no large optimistic gap to close' },
+  { candidate: 'nethermind × prysm', peers: '49', configOptimal: 'yes', reRuns: 1, notable: 'First attempt: 13.3h 0-peer loopback stall; re-run after ExternalIp fix synced clean' },
+  { candidate: 'ethrex × prysm', peers: '50', configOptimal: 'yes', reRuns: 0, notable: '~10 GiB/hr disk growth even at tip; 1 auto-healed stale-pivot event' },
+  { candidate: 'besu × prysm', peers: '~50', configOptimal: 'n/a (pruned re-run only)', reRuns: 2, notable: 'Un-pruned run synced clean; pruned re-run deadlocked twice, abandoned' },
+  { candidate: 'reth × prysm', peers: '—', configOptimal: 'yes', reRuns: 1, notable: '578 samples; relaunched after --full fix; 47% by block / ~21% gas-weighted at cap' },
+  { candidate: 'nimbus-eth1 × prysm', peers: '20–25', configOptimal: 'yes', reRuns: 1, notable: '72h continuous, 0 restarts; supersedes an earlier ~21 GB aborted run' },
+  { candidate: 'erigon × prysm', peers: '—', configOptimal: 'n/a (no-sync)', reRuns: 0, notable: 'CPU cap raised 200%→600% mid-run; advanced ~5k blocks then re-froze' },
+  { candidate: 'CL sweep × ethrex anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 2, notable: 'teku: JVM-OOM on first attempt (TEKU_CACHE fix); grandine: harness du-pipeline bug, not a client fault' },
+  { candidate: 'CL sweep × geth anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 0, notable: 'Cross-anchor confirmation re-run; heavyweight/lightweight tiers reproduced (lodestar↔lighthouse swapped within the smallest tier)' },
+]
+
 const completedExecutionSyncs = [
   { name: 'Ethrex', hours: 2.27, duration: '2h 16m' },
   { name: 'Geth', hours: 8.47, duration: '8h 28m' },
-  { name: 'Nethermind', hours: 14.5, duration: '14h 30m' },
+  { name: 'Nethermind', hours: 14.5, duration: '~14h 30m' },
   { name: 'Besu', hours: 19.3, duration: '19h 18m' },
 ]
 
 const syncChartMaxHours = 20
 
-const outboundLinks = [
+// GiB, verified against docs/CLIENT_BAKEOFF_RESULTS.md exact byte counts (Stage B footprint table + client-limitations table).
+const elFootprints = [
+  { name: 'Nimbus-eth1', gib: 37.3, label: '~40 GB', status: 'partial' as const },
+  { name: 'Nethermind', gib: 251.1, label: '~251 GiB', status: 'synced' as const },
+  { name: 'Ethrex', gib: 466.6, label: '~467 GiB', status: 'synced' as const },
+  { name: 'Reth', gib: 1003.2, label: '~0.98 TiB', status: 'partial' as const },
+  { name: 'Besu', gib: 1109.7, label: '~1.08 TiB', status: 'synced' as const },
+  { name: 'Geth', gib: 1160.3, label: '~1.13 TiB', status: 'synced' as const },
+  { name: 'Erigon', gib: 1242.6, label: '~1.21 TiB', status: 'frozen' as const },
+]
+
+const diskChartMaxGib = 1300
+
+const restartBisection = [
+  { gap: '12 min', blocks: '68', outcome: 'resumed cleanly', variant: 'primary' as const },
+  { gap: '20 min', blocks: '108', outcome: 'resumed cleanly', variant: 'primary' as const },
+  { gap: '23 min', blocks: '124', outcome: 'resumed cleanly', variant: 'primary' as const },
+  { gap: '26 min', blocks: '132', outcome: 'stuck — Failed to fetch headers for sync head', variant: 'default' as const },
+]
+
+const sourceLinks = [
   {
-    label: 'Read the full writeup',
+    label: 'Full write-up',
+    file: 'CLIENT_BAKEOFF_BLOG.md',
     href: `${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_BLOG.md`,
   },
   {
-    label: 'How we tested this with Claude',
+    label: 'Methodology',
+    file: 'HOW_WE_TESTED_WITH_CLAUDE.md',
     href: `${SITE_CONFIG.github}/blob/master/docs/HOW_WE_TESTED_WITH_CLAUDE.md`,
   },
   {
     label: 'Raw results',
+    file: 'CLIENT_BAKEOFF_RESULTS.md',
     href: `${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_RESULTS.md`,
   },
   {
-    label: 'Harness engineering deep-dive',
+    label: 'Harness deep-dive',
+    file: 'CLIENT_BAKEOFF_HARNESS.md',
     href: `${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_HARNESS.md`,
   },
 ]
@@ -141,6 +230,13 @@ export default function EthereumClientBakeoffPage() {
   return (
     <div className="min-h-screen py-12 sm:py-16 md:py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
+        <ArticleJsonLd
+          title={PAGE_TITLE}
+          description={PAGE_DESCRIPTION}
+          slug="ethereum-client-bakeoff"
+          image="/og-bakeoff.png"
+          datePublished="2026-07-19"
+        />
         <header>
           <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
             Blog
@@ -148,40 +244,68 @@ export default function EthereumClientBakeoffPage() {
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
             Ethereum client bake-off
           </h1>
+          <p className="mt-3 text-base font-medium italic text-foreground sm:text-lg">
+            &ldquo;The Fastest Ethereum Client Is One Almost Nobody Runs&rdquo;
+          </p>
           <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground">
-            A 23-day field campaign comparing seven execution-client syncs and five consensus clients.
+            A 23-day field campaign comparing seven execution-client syncs and five consensus
+            clients — the same mainnet sync, on the same host, one client at a time, recording two
+            numbers for each: final synced disk footprint and sync duration. The interesting part
+            is what fell out of it: an operability axis that turns out to matter more than either
+            headline number, and a genuine paradox — the client that synced fastest in the whole
+            field has essentially zero real-world adoption.
           </p>
           <div className="mt-4 flex flex-wrap gap-3 sm:mt-6">
-            <Button
-              href={`${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_BLOG.md`}
-              external
-              variant="secondary"
-              size="sm"
-            >
-              Read the full writeup
+            <Button href="/deck/bakeoff.html" external variant="secondary" size="sm">
+              View as slides
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button
-              href={`${SITE_CONFIG.github}/blob/master/docs/HOW_WE_TESTED_WITH_CLAUDE.md`}
+              href={`${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_BLOG.md`}
               external
               variant="ghost"
               size="sm"
             >
-              How we tested this
+              View source on GitHub
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
         </header>
 
+        <Card padding="sm" className="mt-8 border-primary/20 bg-primary/5">
+          <p className="text-sm text-foreground">
+            <span className="font-medium">Companion post:</span> this write-up covers the clients
+            and the numbers. For the agent orchestration, the harness, and the methodology behind
+            them, see{' '}
+            <Link href="/blog/how-we-tested-with-claude" className="text-primary underline underline-offset-2">
+              How We Ran a 23-Day Ethereum Client Bake-Off With Claude
+            </Link>
+            .
+          </p>
+        </Card>
+
+        <nav aria-label="Table of contents" className="mt-8 rounded-lg border border-border p-4 sm:p-5">
+          <p className="font-mono text-xs text-muted-foreground uppercase tracking-wide">Contents</p>
+          <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
+            {tocLinks.map((link) => (
+              <li key={link.href}>
+                <a href={link.href} className="text-primary hover:underline">
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
         <section className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+          <AnchorHeading id="tldr" className="text-lg sm:text-xl font-semibold text-foreground">
             TL;DR
-          </h2>
+          </AnchorHeading>
           <div className="mt-4 grid gap-3 sm:gap-4 md:grid-cols-2">
             <Card padding="sm" className="bg-muted/30">
               <h3 className="font-medium text-foreground">Disk winner — Nethermind, ~251 GiB</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Pruned Nethermind was ~4.5x smaller than geth, the smallest of any client that finished a pruned, apples-to-apples sync.
+                Pruned Nethermind was ~4.6x smaller than geth, the smallest of any client that finished a pruned, apples-to-apples sync.
               </p>
             </Card>
             <Card padding="sm" className="bg-muted/30">
@@ -193,13 +317,13 @@ export default function EthereumClientBakeoffPage() {
             <Card padding="sm" className="bg-muted/30">
               <h3 className="font-medium text-foreground">The twist — ethrex&apos;s restart-resync cliff</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                ethrex throws away synced state and re-syncs from scratch (~2h) after downtime past a hard edge of ~128 blocks, roughly 24–25 minutes. This operability tax is the likely reason the fastest-syncing client in the field has close to zero real-world mainnet adoption.
+                Gaps through 23 minutes / 124 blocks resumed, while a 26-minute / 132-block gap stalled. Measured 1.5–2-hour gaps discarded synced state and triggered a full re-snap (~2h). This operability tax is the likely reason the fastest-syncing client in the field has close to zero real-world mainnet adoption.
               </p>
             </Card>
             <Card padding="sm" className="bg-muted/30">
               <h3 className="font-medium text-foreground">The CL layer is effectively solved</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                All five consensus clients checkpoint-synced to a validating head in minutes — about 6–9 minutes on the geth anchor whose footprints are shown below, and ~22 minutes on the ethrex anchor. All five reached a validating head (teku and grandine after one re-run each — a JVM heap-sizing issue and a harness artifact, not client faults). Footprint is the main differentiator.
+                All five consensus clients checkpoint-synced to a validating head in minutes — about 6–9 minutes on the geth anchor whose footprints are shown below, and ~22–23 minutes on the ethrex anchor. All five reached a validating head (teku and grandine after one re-run each — a JVM heap-sizing issue and a harness artifact, not client faults). Footprint is the main differentiator.
               </p>
             </Card>
           </div>
@@ -209,9 +333,9 @@ export default function EthereumClientBakeoffPage() {
         </section>
 
         <section className="mt-10 sm:mt-16" aria-labelledby="sync-time-heading">
-          <h2 id="sync-time-heading" className="text-lg sm:text-xl font-semibold text-foreground">
+          <AnchorHeading id="sync-time-heading" className="text-lg sm:text-xl font-semibold text-foreground">
             Cold-sync time, at a glance
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Completed execution-client syncs only. The 72-hour-capped clients are intentionally excluded.
           </p>
@@ -219,7 +343,7 @@ export default function EthereumClientBakeoffPage() {
             <svg className="h-auto w-full" viewBox="0 0 680 210" role="img">
               <title id="sync-time-chart-title">Completed Ethereum execution-client cold-sync times</title>
               <desc id="sync-time-chart-description">
-                Ethrex completed in 2 hours 16 minutes, Geth in 8 hours 28 minutes, Nethermind in 14 hours 30 minutes, and Besu in 19 hours 18 minutes.
+                Ethrex completed in 2 hours 16 minutes, Geth in 8 hours 28 minutes, Nethermind in about 14 hours 30 minutes, and Besu in 19 hours 18 minutes.
               </desc>
               {[0, 5, 10, 15, 20].map((hour) => {
                 const x = 150 + (hour / syncChartMaxHours) * 420
@@ -268,15 +392,89 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-3 text-xs text-muted-foreground sm:hidden">Bars use a shared 0–20 hour scale.</p>
         </section>
 
+        <section className="mt-10 sm:mt-16" aria-labelledby="disk-heading">
+          <AnchorHeading id="disk-heading" className="text-lg sm:text-xl font-semibold text-foreground">
+            Disk footprint, at a glance
+          </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            All seven execution clients. Hatched bars didn&apos;t finish a comparable sync — partial
+            (72h-capped) or frozen (erigon&apos;s no-sync deadlock) — so a short hatched bar isn&apos;t a
+            win: Nimbus-eth1&apos;s ~40 GB is only ~21% of a sync, not a finished footprint.
+          </p>
+          <figure className="mt-4 hidden sm:block" aria-labelledby="disk-chart-title" aria-describedby="disk-chart-description">
+            <svg className="h-auto w-full" viewBox="0 0 680 300" role="img">
+              <title id="disk-chart-title">Ethereum execution-client disk footprint</title>
+              <desc id="disk-chart-description">
+                Nimbus-eth1 partial about 40 GB, Nethermind synced about 251 GiB, Ethrex synced about 467 GiB, Reth partial about 0.98 TiB, Besu synced about 1.08 TiB, Geth synced about 1.13 TiB, Erigon frozen partial about 1.21 TiB.
+              </desc>
+              <defs>
+                <pattern id="unfinished-bar" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)">
+                  <rect width="7" height="7" className="fill-muted" />
+                  <rect width="3.5" height="7" className="fill-border" />
+                </pattern>
+              </defs>
+              {[0, 250, 500, 750, 1000, 1250].map((gib) => {
+                const x = 150 + (gib / diskChartMaxGib) * 420
+                return (
+                  <g key={gib}>
+                    <line x1={x} x2={x} y1="24" y2="264" className="stroke-border" />
+                    <text x={x} y="284" textAnchor="middle" className="fill-muted-foreground text-[12px]">
+                      {gib === 0 ? '0' : `${gib}`}
+                    </text>
+                  </g>
+                )
+              })}
+              {elFootprints.map((client, index) => {
+                const y = 38 + index * 32
+                const width = (client.gib / diskChartMaxGib) * 420
+                return (
+                  <g key={client.name}>
+                    <text x="136" y={y + 14} textAnchor="end" className="fill-foreground text-[13px]">
+                      {client.name}
+                    </text>
+                    <rect x="150" y={y} width={width} height="20" rx="4" className={client.status === 'synced' ? 'fill-primary' : undefined} fill={client.status === 'synced' ? undefined : 'url(#unfinished-bar)'} />
+                    <text x={Math.min(578, 160 + width)} y={y + 14} className="fill-foreground text-[12px]">
+                      {client.label}{client.status !== 'synced' ? ` (${client.status})` : ''}
+                    </text>
+                  </g>
+                )
+              })}
+              <text x="150" y="298" className="fill-muted-foreground text-[11px]">GiB</text>
+            </svg>
+            <figcaption className="mt-2 text-xs text-muted-foreground">
+              Only geth and nethermind are pruned, apples-to-apples comparable — see &ldquo;The disk story&rdquo; below for why the rest sit outside that comparison.
+            </figcaption>
+          </figure>
+          <dl className="mt-4 space-y-3 sm:hidden">
+            {elFootprints.map((client) => (
+              <div key={client.name}>
+                <div className="flex items-baseline justify-between gap-3 text-xs">
+                  <dt className="font-medium text-foreground">{client.name}</dt>
+                  <dd className="text-muted-foreground">{client.label}{client.status !== 'synced' ? ` (${client.status})` : ''}</dd>
+                </div>
+                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                  <div className={`h-full rounded-full ${client.status === 'synced' ? 'bg-primary' : 'bg-border'}`} style={{ width: `${(client.gib / diskChartMaxGib) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-3 text-xs text-muted-foreground sm:hidden">Bars use a shared 0–1300 GiB scale.</p>
+        </section>
+
         <section className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+          <AnchorHeading id="el-scorecard" className="text-lg sm:text-xl font-semibold text-foreground">
             EL scorecard
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Each execution-client run used a fixed Prysm consensus client and a 72-hour cap.
           </p>
-          <div className="mt-4 sm:mt-6 hidden sm:block overflow-x-auto">
-            <table className="w-full text-sm">
+          <div
+            className="mt-4 sm:mt-6 hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
+            role="region"
+            aria-label="Execution client scorecard"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[48rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="pb-3 font-medium text-muted-foreground">EL</th>
@@ -332,17 +530,25 @@ export default function EthereumClientBakeoffPage() {
         </section>
 
         <section className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+          <AnchorHeading id="cl-scorecard" className="text-lg sm:text-xl font-semibold text-foreground">
             CL scorecard
-          </h2>
+          </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            Each consensus client ran against a fixed EL anchor; all five synced.
+            Each consensus client ran against a fixed EL anchor, and the full sweep was repeated
+            against a second anchor (ethrex, then geth) to test EL/CL decoupling directly; all
+            five synced on both.
           </p>
-          <div className="mt-4 sm:mt-6 hidden sm:block overflow-x-auto">
-            <table className="w-full text-sm">
+          <div
+            className="mt-4 sm:mt-6 hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
+            role="region"
+            aria-label="Consensus client scorecard"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[42rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="pb-3 font-medium text-muted-foreground">CL</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Footprint (ethrex anchor)</th>
                   <th className="pb-3 font-medium text-muted-foreground">Footprint (geth anchor)</th>
                   <th className="pb-3 font-medium text-muted-foreground">History-prune lever</th>
                 </tr>
@@ -351,7 +557,8 @@ export default function EthereumClientBakeoffPage() {
                 {consensusClients.map((client) => (
                   <tr key={client.name}>
                     <td className="py-3 font-medium text-foreground">{client.name}</td>
-                    <td className="py-3 text-muted-foreground">{client.footprint}</td>
+                    <td className="py-3 text-muted-foreground">{client.ethrexAnchorFootprint}</td>
+                    <td className="py-3 text-muted-foreground">{client.gethAnchorFootprint}</td>
                     <td className="py-3"><Badge variant={client.variant}>{client.pruneLever}</Badge></td>
                   </tr>
                 ))}
@@ -361,10 +568,17 @@ export default function EthereumClientBakeoffPage() {
           <div className="mt-4 space-y-3 sm:hidden">
             {consensusClients.map((client) => (
               <div key={client.name} className="rounded-lg border border-border p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-medium text-foreground">{client.name}</span>
-                  <span className="text-sm text-foreground">{client.footprint}</span>
-                </div>
+                <span className="font-medium text-foreground">{client.name}</span>
+                <dl className="mt-2 space-y-1.5 text-sm">
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Ethrex anchor</dt>
+                    <dd className="text-right text-foreground">{client.ethrexAnchorFootprint}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Geth anchor</dt>
+                    <dd className="text-right text-foreground">{client.gethAnchorFootprint}</dd>
+                  </div>
+                </dl>
                 <div className="mt-3 flex items-center justify-between gap-4">
                   <span className="text-sm text-muted-foreground">History-prune lever</span>
                   <Badge variant={client.variant}>{client.pruneLever}</Badge>
@@ -372,28 +586,532 @@ export default function EthereumClientBakeoffPage() {
               </div>
             ))}
           </div>
-        </section>
-
-        <section className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
-            How we tested
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            The campaign ran from 2026-06-22 to 2026-07-14 on a shared non-production host with MEV disabled and no validator keys. Every footprint came from the final near-cap <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">du</code> sample, never a mid-sync peak. Before a result counted, an automated config-optimality gate verified that the client was using its most disk-efficient mode; otherwise the harness rejected it rather than treating a configuration mistake as a client result. See <a href={`${SITE_CONFIG.github}/blob/master/docs/HOW_WE_TESTED_WITH_CLAUDE.md`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">the methodology and harness overview</a> for the full process.
+          <p className="mt-4 text-sm text-muted-foreground">
+            The same client&apos;s two columns differ because absolute footprint tracks how long the
+            CL had been following the chain when it was sampled — the geth-anchor runs were measured
+            minutes after checkpoint-sync, on a fresher datadir — not which EL it paired with. It is
+            the broad heavyweight/lightweight tiers, not the absolute size or exact within-tier order,
+            that reproduce across anchors.
+          </p>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Disk, pruned and apples-to-apples: Nethermind (~251 GiB) &lt; Geth (~1.13 TiB) — the
+            only two with comparable numbers. Speed, among those that finished: ethrex (~2h16m)
+            &lt; Geth (~8h28m) &lt; Nethermind (~14.5h) &lt; Besu (~19h18m). The other three fall
+            out for a specific, documented reason each (below), not a blanket failure. This
+            The CL heavyweight/lightweight tiers also reproduced across two different EL anchors
+            (ethrex and geth), while lodestar and lighthouse swapped order within the lightweight
+            tier. The rest of this post is the <em>why</em> behind these numbers.
           </p>
         </section>
 
         <section className="mt-10 sm:mt-16">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
-            Explore the campaign
-          </h2>
-          <div className="mt-4 flex flex-wrap gap-3">
-            {outboundLinks.map((link) => (
-              <Button key={link.href} href={link.href} external variant="secondary" size="sm">
-                {link.label}
-              </Button>
+          <AnchorHeading id="additional-run-details" className="text-lg sm:text-xl font-semibold text-foreground">
+            Additional run details
+          </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            The scorecards above are the curated view. This table adds peer counts,
+            config-optimality verification, re-run history, and other notable per-candidate detail.
+          </p>
+          <div
+            className="mt-4 sm:mt-6 hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
+            role="region"
+            aria-label="Additional per-candidate run details"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[48rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
+              <thead>
+                <tr className="border-b border-border text-left">
+                  <th className="pb-3 font-medium text-muted-foreground">Candidate</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Peers</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Config optimal</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Re-runs</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Notable</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {fullMetrics.map((row) => (
+                  <tr key={row.candidate}>
+                    <td className="py-3 align-top font-medium text-foreground">{row.candidate}</td>
+                    <td className="py-3 align-top text-muted-foreground">{row.peers}</td>
+                    <td className="py-3 align-top text-muted-foreground">{row.configOptimal}</td>
+                    <td className="py-3 align-top text-muted-foreground">{row.reRuns}</td>
+                    <td className="py-3 align-top text-muted-foreground">{row.notable}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-4 space-y-3 sm:hidden">
+            {fullMetrics.map((row) => (
+              <div key={row.candidate} className="rounded-lg border border-border p-3">
+                <span className="font-medium text-foreground">{row.candidate}</span>
+                <dl className="mt-2 space-y-1.5 text-xs">
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Peers</dt>
+                    <dd className="text-right text-foreground">{row.peers}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Config optimal</dt>
+                    <dd className="text-right text-foreground">{row.configOptimal}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Re-runs</dt>
+                    <dd className="text-right text-foreground">{row.reRuns}</dd>
+                  </div>
+                </dl>
+                <p className="mt-2 text-xs text-muted-foreground">{row.notable}</p>
+              </div>
             ))}
           </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Sourced from <a href={`${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_RESULTS.md`} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">CLIENT_BAKEOFF_RESULTS.md</a>, the campaign&apos;s source-of-truth data.
+          </p>
+        </section>
+
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="what-we-measured" className="text-lg sm:text-xl font-semibold text-foreground">
+            What we measured, and how we kept it honest
+          </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            The campaign ran from 2026-06-22 to 2026-07-14 on a shared semi-production host (not a
+            live validator), with MEV disabled and no validator keys. The bake-off measures, for
+            each client, the final synced disk footprint and the sync duration: one candidate at a
+            time, a 72-hour cap per candidate, and the footprint taken from the last near-cap{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">du</code> sample —
+            never the peak mid-sync.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            For the EL scorecard we hold the CL constant at Prysm. That&apos;s defensible because
+            an EL&apos;s footprint and sync time are EL-only properties, decoupled from the CL
+            across the Engine API — the Prysm datadir ran ~0.65–1.68 GB in the bounded runs (up to ~12.5 GB during
+            reth&apos;s full 72h cap), still negligible against an EL&apos;s hundreds of gigabytes. We confirmed the decoupling empirically later (see
+            the CL matrix above), so this isn&apos;t just an assumption.
+          </p>
+          <Card padding="sm" className="mt-4 bg-muted/30">
+            <AnchorHeading id="honesty-mechanism" as="h3" className="font-medium text-foreground">
+              The honesty mechanism
+            </AnchorHeading>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Early in the campaign we corrupted our own results by recording footprints before
+              verifying each client was running in its most disk-efficient mode. A benchmark that
+              measures your misconfiguration instead of the client is worse than no benchmark. So
+              we built a config-optimality gate into the harness: it inspects the
+              actually-generated, actually-running config and refuses to trust a footprint from a
+              mis-configured client, stamping every row{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes|no</code>.
+              The gate itself needed six bug-fixes across three review rounds before we trusted
+              it — which is the point. Every number on this page is stamped optimal.
+            </p>
+          </Card>
+          <p className="mt-3 text-sm text-muted-foreground">
+            A knock-on benefit of that gate: it forced us to empirically settle config questions
+            we&apos;d otherwise have guessed at. The clearest example is nimbus_eth1&apos;s
+            history-pruning flag (below), where the binary&apos;s{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--help</code> and
+            the online docs flatly contradicted each other — and only a live run resolved it. See{' '}
+            <Link href="/blog/how-we-tested-with-claude" className="text-primary underline underline-offset-2">
+              how we tested this with Claude
+            </Link>{' '}
+            for the full harness engineering process.
+          </p>
+        </section>
+
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="the-disk-story" className="text-lg sm:text-xl font-semibold text-foreground">
+            The disk story: Nethermind wins, by a lot
+          </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Only two clients produced a pruned, apples-to-apples footprint — geth and nethermind
+            (see the EL scorecard above) — so the honest head-to-head disk ranking is exactly
+            those two: Nethermind at <strong className="text-foreground">~251 GiB</strong> in
+            ~14.5h, versus geth&apos;s ~1.13 TiB in ~8h28m.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Nethermind&apos;s Halite/Paprika flat storage plus snap sync lands it at roughly a quarter of
+            geth&apos;s size. It&apos;s also a minority client, so choosing it modestly improves
+            mainnet client diversity — a nice-to-have on top of the disk win. The cost is sync
+            time: ~14.5h vs geth&apos;s ~8.5h. If disk is your binding constraint, this is the
+            pick.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Everything else is <em>not</em> pruned-comparable, for a specific reason each, and we
+            refuse to rank those on disk against a pruned node — that would be measuring different
+            things. They&apos;re recorded transparently as client limitations:
+          </p>
+          <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
+            <li>
+              <span className="font-medium text-foreground">besu</span> — synced, ~1.08 TiB
+              (un-pruned), ~19h18m. Synced cleanly, but the pruned re-run for a comparable number
+              deadlocked twice (below). Un-pruned → history-inflated.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">ethrex</span> — synced, ~286 GiB →
+              ~467 GiB (growing), ~2h16m. Un-pruned and serves almost no history; datadir grows
+              even at tip. Neither compact nor a full archive. Speed is its claim, not size.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">reth</span> — 72h cap at ~21%, ~0.98
+              TiB partial. Full-sync-only (no snap) — can&apos;t reach tip in a practical window.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">nimbus_eth1</span> — 72h cap at
+              ~21.6%, ~40 GB partial. Full-sync-only (no snap). Pruning works (below), but it
+              can&apos;t finish in 72h.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">erigon</span> — deadlocked, no result.
+              Optimistic-sync deadlock against a checkpoint-synced CL (below).
+            </li>
+          </ul>
+          <p className="mt-3 text-sm text-muted-foreground">
+            &ldquo;Outside the disk ranking&rdquo; does not mean &ldquo;failed to sync.&rdquo;
+            besu in particular synced to a fully-validating head — it&apos;s here only because we
+            don&apos;t have a pruned-comparable number for it.
+          </p>
+        </section>
+
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="the-speed-story" className="text-lg sm:text-xl font-semibold text-foreground">
+            The speed story: ethrex wins, by a lot — and then loses it on restart
+          </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            ethrex snap-synced to a fully-validating head in{' '}
+            <strong className="text-foreground">~2h16m</strong>, the fastest in the field by
+            nearly 4×. Fifty peers throughout, one automatic stale-pivot self-heal (~4 min, no
+            intervention), no crash. On paper it&apos;s the star.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">Two things keep it out of the winners&apos; circle:</p>
+          <ol className="mt-3 list-inside list-decimal space-y-2 text-sm text-muted-foreground">
+            <li>
+              <span className="font-medium text-foreground">The footprint isn&apos;t a fixed number.</span>{' '}
+              ethrex prunes nothing and the datadir keeps growing even at the chain tip with{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing=false</code>{' '}
+              — we watched it climb 286 → 403 → 416 → ~467 GiB across a single day (~10 GiB/hr) —
+              while simultaneously serving almost no history (
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_getBlockByNumber</code>{' '}
+              returns <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">null</code>{' '}
+              below head). So it is neither compact nor a full-history archive, and there&apos;s no
+              steady-state size to rank.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">The restart cliff</span> — which is
+              the marquee finding of the whole campaign, so it gets its own section, next.
+            </li>
+          </ol>
+        </section>
+
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="restart-resilience" className="text-lg sm:text-xl font-semibold text-foreground">
+            The novel axis: restart resilience
+          </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Cold-sync numbers tell you how a node behaves once, on day one. But operators restart
+            nodes constantly — upgrades, config changes, crashes, host maintenance. &ldquo;What
+            happens after a restart with a gap?&rdquo; is a first-class operational question, and
+            it cleanly separates the field into three behaviors:
+          </p>
+          <ol className="mt-4 list-inside list-decimal space-y-3 text-sm text-muted-foreground">
+            <li>
+              <span className="font-medium text-foreground">Graceful resume.</span> The client
+              comes back, imports the blocks it missed during the gap, and keeps its on-disk
+              state. Minutes to catch up, no re-download. This is what makes a client
+              operationally boring, in the good way. We measured this directly for geth: restarted
+              after a ~52-hour gap, it kept its full datadir and caught up purely by sequential
+              block-import (trie-diff application) — never re-snapping — and converged back to the
+              validating tip. That&apos;s the exact positive contrast to ethrex&apos;s cliff.
+              nethermind and reth are expected here by design too, though of the three only
+              geth&apos;s resume was measured directly (as only ethrex&apos;s cliff was bisected).
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Re-snap cliff.</span> Past a downtime
+              threshold ethrex first stalls with a disconnected head; in the longer measured gaps
+              it discarded its fully-synced state and re-synced from scratch. Only ethrex lands
+              here — and we pinned the onset precisely.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Mid-sync deadlock.</span> If the CL
+              stops driving the engine during an in-progress snap sync, the EL&apos;s pivot ages
+              out of the network&apos;s servable-state window and the sync wedges irrecoverably —
+              the process stays alive and answers RPC but makes zero progress. besu is the
+              cautionary tale here.
+            </li>
+          </ol>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Behaviors 2 and 3 share one root cause: a full node only serves recent world-state
+            (roughly a ~128-block window). Once your head or pivot ages past it, peers can no
+            longer serve the state you need to heal, so you can&apos;t resume by state — you&apos;re
+            forced to re-pivot. Graceful-resume clients dodge this by importing gap blocks (always
+            available) instead of re-fetching state.
+          </p>
+
+          <AnchorHeading id="ethrex-cliff-bisected" as="h3" className="mt-6 font-medium text-foreground">
+            ethrex&apos;s cliff, bisected
+          </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            After a routine ~1.5–2h restart gap, a fully-synced ethrex (286 GiB, at mainnet head)
+            abandoned its state and began a fresh full snap sync from the current head — datadir
+            collapsing 286 GiB → ~9 GiB → climbing, journal showing{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">SNAP SYNC STARTED</code>{' '}
+            from near-genesis,{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_blockNumber</code>{' '}
+            at <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">0x0</code>{' '}
+            throughout. It re-ran the entire ~2h pipeline. We reproduced it independently: a second
+            restart triggered another full re-snap, timed at{' '}
+            <strong className="text-foreground">2h11m</strong> — a clean second data point.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            The obvious follow-up: how big a gap actually trips it? We bisected it with controlled
+            stop → wait → start cycles, a live prysm driving forkchoice:
+          </p>
+          <div
+            className="mt-4 hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
+            role="region"
+            aria-label="ethrex restart-gap bisection results"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[42rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
+              <thead>
+                <tr className="border-b border-border text-left">
+                  <th className="pb-3 font-medium text-muted-foreground">Downtime gap</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Blocks missed</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Outcome</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {restartBisection.map((row) => (
+                  <tr key={row.gap}>
+                    <td className="py-3 font-medium text-foreground">{row.gap}</td>
+                    <td className="py-3 text-muted-foreground">{row.blocks}</td>
+                    <td className="py-3"><Badge variant={row.variant}>{row.outcome}</Badge></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-4 space-y-3 sm:hidden">
+            {restartBisection.map((row) => (
+              <div key={row.gap} className="rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-medium text-foreground">{row.gap} gap</span>
+                  <Badge variant={row.variant}>{row.outcome}</Badge>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">{row.blocks} blocks missed</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            <strong className="text-foreground">The cliff edge is ~128 blocks ≈ 24–25 minutes.</strong>{' '}
+            And the bisection corrected our understanding of the mechanism: the true trigger is
+            header-fetch failure once the gap exceeds the ~128-block servable window — not
+            &ldquo;state expiry&rdquo; per se. Just past the edge, ethrex first stalls with a
+            disconnected head (peers won&apos;t serve the gap headers); at larger gaps (~1.5–2h)
+            that escalates to the full datadir-collapse re-snap. The stuck head is the onset; the
+            re-snap is where it ends up.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            <strong className="text-foreground">Why it matters:</strong> a client that can stop
+            resuming after ~25 minutes and, on longer measured gaps, fall into a ~2h re-snap is
+            genuinely painful to operate. That&apos;s a strong candidate explanation for
+            ethrex&apos;s ~0% adoption despite best-in-field cold-sync numbers: great benchmark,
+            painful to actually run.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            <strong className="text-foreground">Fairness caveats (we state these plainly):</strong>{' '}
+            observed on ethrex v19.0.0, a young client — this may well improve. The cliff does not
+            change the recorded sync-time result; it&apos;s a separate resilience finding presented
+            alongside, not folded into, the cold-sync number.
+          </p>
+
+          <AnchorHeading id="besu-mid-sync-deadlock" as="h3" className="mt-6 font-medium text-foreground">
+            besu&apos;s mid-sync deadlock
+          </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            besu&apos;s pruned re-run deadlocked twice and was abandoned — and the causal chain is
+            a tidy production cautionary tale:
+          </p>
+          <ol className="mt-3 list-inside list-decimal space-y-2 text-sm text-muted-foreground">
+            <li>
+              A stale prysm v7.1.5 (a PeerDAS/data-column-sidecar bug) stalled the CL for ~28h;
+              besu logged{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Execution engine not called in 120 seconds</code>{' '}
+              continuously.
+            </li>
+            <li>
+              With no{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">forkchoiceUpdated</code>{' '}
+              driving it, besu&apos;s snap-sync pivot aged out of the servable window — the
+              world-state heal became un-completable.
+            </li>
+            <li>
+              besu threw{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">IllegalStateException: The pivot block number has not increased</code>,
+              cancelled its fast-sync download, and the downloader thread died without restarting.
+              The process stayed alive and still answered{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_blockNumber</code>{' '}
+              — but the sync engine was dead and the datadir frozen.
+            </li>
+            <li>Restarting resumed on the same stale pivot and re-deadlocked identically.</li>
+          </ol>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Takeaways: an in-progress besu snap sync is fragile to a prolonged CL outage — a stale
+            CL binary can poison the EL&apos;s pivot irrecoverably; and besu answering RPC ≠ besu
+            syncing (judge by disk growth and DB writes, not RPC liveness). Note the shared root
+            with ethrex&apos;s cliff: same ~128-block servable-state window, one hitting mid-sync,
+            the other post-sync-on-restart.
+          </p>
+        </section>
+
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="full-sync-only-clients" className="text-lg sm:text-xl font-semibold text-foreground">
+            The full-sync-only clients — and a contested flag, settled
+          </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            reth and nimbus_eth1 have no snap-sync path; they full-sync from genesis. Both hit the
+            72h cap far from tip (reth ~21%, ~0.98 TiB; nimbus_eth1 ~21.6%, ~40 GB). This is a
+            client-design limitation for our snap-to-tip bar, not a failure — it would be unfair to
+            rank a from-genesis full sync against a snap sync on either time or disk. reth in
+            particular is widely and successfully run elsewhere.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            nimbus_eth1 did settle one open question for us. Its config carries{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">prune = true</code>,
+            and whether that flag actually does anything was genuinely contested: the binary&apos;s{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--help</code> claims
+            it prunes expired bodies and receipts, while the online docs say pre-merge history
+            needs a separate era1 export — i.e. that the flag is effectively inert. We&apos;d
+            flagged it &ldquo;unverified.&rdquo; The 72-hour run answered it directly: the journal
+            logged continuous online pruning (
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Pruning history … pruned=N</code>
+            ) throughout block import. So the flag is <strong className="text-foreground">not</strong>{' '}
+            inert — nimbus_eth1 prunes history online as it syncs. (Whether it reaches full
+            pre-merge completeness versus an era1 import stays untestable here, since the node
+            never reached tip — but the &ldquo;does it do anything?&rdquo; question is now a clean
+            yes.) As a bonus data point, that run stayed up 72 hours with zero restarts: stable,
+            just slow by design.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            erigon was the one hard deadlock: erigon3&apos;s OtterSync plus a checkpoint-synced
+            prysm wedged in a mutual wait — erigon waiting for the CL to finalize, the CL waiting
+            for erigon to execute — zero progress, no footprint. The single no-sync of the EL
+            sweep.
+          </p>
+        </section>
+
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="distribution-as-predictor" className="text-lg sm:text-xl font-semibold text-foreground">
+            Distribution is a <em>nuanced</em> predictor, not a flat one
+          </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            A tempting story going in was &ldquo;mainnet share predicts syncability&rdquo; — the
+            low/zero-share clients are exactly the ones that struggle. The data only half-supports
+            it, and ethrex breaks it outright: a ~0%-share minimalist client synced fastest in the
+            entire field. Several minority clients did struggle (erigon&apos;s deadlock; reth and
+            nimbus_eth1 too slow by design), but the real predictor is snap-sync availability plus
+            client robustness, not market share per se. ethrex has snap sync and clock-based
+            stale-pivot self-healing during the initial sync — and it excelled at cold sync. Its
+            adoption gap is far better explained by the restart cliff than by any sync deficiency.
+            Don&apos;t write the flat version.
+          </p>
+        </section>
+
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="consensus-layer-solved" className="text-lg sm:text-xl font-semibold text-foreground">
+            The consensus layer is solved
+          </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            We ran the five CLs — lighthouse, lodestar, grandine, teku, nimbus — against a constant
+            anchor EL, and then repeated it against a second anchor EL to test the EL/CL decoupling
+            claim directly. Every CL checkpoint-synced to a fully-validating head in minutes —{' '}
+            <strong className="text-foreground">~22–23 minutes on the ethrex anchor</strong> and{' '}
+            <strong className="text-foreground">~6–9 minutes on the geth anchor</strong> (whose
+            footprints are in the CL scorecard above),{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes</code>,
+            zero crashes (teku and grandine each needed one re-run — a JVM heap-sizing fix and a
+            harness artifact, not client faults). Sync time is effectively tied within each anchor,
+            so footprint is the differentiator.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Crucially, the broad tiers reproduced across both anchor ELs — the heavyweight tier
+            (nimbus, teku) and the lightweight tier (lodestar, lighthouse, grandine) held on both,
+            with only a lodestar↔lighthouse flip within the smallest tier. Two different EL
+            anchors, the same CL tiers: EL/CL decoupling, supported empirically — which
+            retroactively validates holding CL=prysm constant for the whole EL scorecard.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            The punchline: on the CL side, all five are operationally effective — none failed, and
+            the choice comes down to footprint and preference (lighthouse is the lean, safe
+            default). Operational risk in an Ethereum node lives in the EL layer, not the CL layer.
+          </p>
+        </section>
+
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="recommendations" className="text-lg sm:text-xl font-semibold text-foreground">
+            Recommendations
+          </AnchorHeading>
+          <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
+            <li>
+              <span className="font-medium text-foreground">Default: geth.</span> Largest
+              ecosystem, most documentation, the cleanest snap sync (~8.5h), and it resumes
+              gracefully across restarts. You pay for it in disk (~1.13 TiB). If you don&apos;t
+              have a specific reason to run something else, run this.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Disk-constrained: nethermind.</span>{' '}
+              ~251 GiB — 4.6× leaner than geth — with clean restart behavior and a
+              client-diversity bonus. Costs you sync time (~14.5h).
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Consensus client: lighthouse</span> as
+              the lean default; any of the five is operationally fine — pick on footprint and
+              familiarity.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Watch, don&apos;t yet deploy: ethrex.</span>{' '}
+              Fascinating and fastest, but the un-pruned/growing footprint and the ~25-minute
+              restart cliff make it operationally costly today. Young (v19.0.0) — worth
+              revisiting.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Enterprise with care: besu.</span> It
+              syncs, but its snap sync is fragile to CL outages; handle upgrades and CL health
+              deliberately.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Know the design limits:</span> reth
+              and nimbus_eth1 are full-sync-only — excellent clients, but plan for a long initial
+              sync rather than snap-to-tip. Avoid erigon3 + a checkpoint-synced CL until the
+              optimistic-sync deadlock is resolved.
+            </li>
+          </ul>
+          <p className="mt-4 text-sm text-muted-foreground">
+            The most useful thing this bake-off surfaced isn&apos;t a single winner — it&apos;s
+            that the number that matters to a running operator is often not the one on the
+            benchmark chart. Cold-sync time and disk footprint are easy to measure and easy to
+            publish. Restart resilience is neither, and it&apos;s the axis that most cleanly
+            explains which clients people actually keep running.
+          </p>
+        </section>
+
+        <ReadNext currentSlug="ethereum-client-bakeoff" />
+
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
+          <h2 className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
+            Source docs on GitHub
+          </h2>
+          <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            {sourceLinks.map((link) => (
+              <li key={link.href}>
+                <a
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  {link.label} <span className="text-muted-foreground">({link.file})</span>
+                </a>
+              </li>
+            ))}
+          </ul>
         </section>
       </div>
     </div>
