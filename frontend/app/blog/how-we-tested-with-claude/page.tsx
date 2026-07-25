@@ -57,8 +57,8 @@ const tldrPoints = [
     body: 'One candidate at a time, a 72-hour cap, destructive actions gated behind explicit human confirmation, only a human merges.',
   },
   {
-    title: "Two clients aren't production-ready as measured here",
-    body: 'ethrex is the fastest cold-sync in the field but re-syncs from scratch after any restart gap past ~25 minutes and its datadir grows unbounded; besu is fragile to a prolonged consensus-layer outage.',
+    title: 'The headline numbers hide operational limits',
+    body: 'ethrex is the fastest cold-sync in the field but is not production-ready as tested: a 26-minute/132-block restart gap stalled, longer measured gaps caused a full re-snap, and its datadir kept growing at tip. besu did sync successfully; its pruned re-run exposed fragility after a prolonged outage of the pinned Prysm version.',
   },
 ]
 
@@ -83,8 +83,8 @@ const clientIncidents = [
   },
   {
     client: 'ethrex',
-    whatHappened: 'Restart with a gap past ~128 blocks (~24–25 min) discards all state, re-syncs from scratch (~2h); datadir also grows unbounded, un-pruned (~286 → ~467 GiB)',
-    rootCause: 'Old head ages out of the ~128-block servable-state window; re-pivots to a full snap sync instead of importing the gap',
+    whatHappened: 'Gaps through 23 min / 124 blocks resumed; a 26 min / 132 block gap stalled, and measured 1.5–2h gaps discarded state and re-snapped (~2h). The un-pruned datadir also grew at tip (~286 → ~467 GiB)',
+    rootCause: 'Old head ages out of the ~128-block servable-state window; beyond it the head can freeze and longer gaps can trigger a full snap instead of importing the gap',
     resolution: 'None — inherent to current design (v19.0.0)',
     status: 'Not production-ready',
     statusNote: 'as tested — young client, may improve',
@@ -114,7 +114,7 @@ const controlLoopSteps = [
 const campaignTimeline = [
   { date: '2026-06-22', label: 'Campaign starts, Stage A triage begins' },
   { date: '2026-06-26', label: 'Stage-A installer fixes shipped' },
-  { date: '2026-06-30', label: 'besu completes un-pruned sync' },
+  { date: '2026-07-01', label: 'besu completes un-pruned sync' },
   { date: '2026-07-05', label: 'besu pruned re-run abandoned, deadlocked twice' },
   { date: '2026-07-06', label: 'CL sweep vs ethrex anchor, 5 CLs' },
   { date: '2026-07-08', label: 'CL cross-check vs geth anchor' },
@@ -135,18 +135,18 @@ const verdictOutcomes = [
 ]
 
 // A real, distinct terminal state (docs/CLIENT_BAKEOFF_HARNESS.md §3.5): a `.stalled` marker
-// file / `stall_failed=yes` once the bounded restart budget is exhausted. This is what caught
-// nethermind's 13.3h 0-peer stall — the EL head frozen while the beacon still looked healthy.
+// file / `stall_failed=yes` once the bounded restart budget is exhausted. Nethermind's earlier
+// 13.3h 0-peer stall predates this watchdog and motivated adding it.
 const stalledOutcome = {
   name: 'STALLED',
-  trigger: 'restart budget exhausted (opt-in stall-watchdog) — EL head frozen / 0 peers while the beacon still looks healthy; the harness flags the row instead of reporting a clean sync',
+  trigger: 'restart budget exhausted (opt-in stall-watchdog) after block number or head slot fails to advance; the harness flags the row instead of spinning to the 72-hour cap',
   variant: 'default' as const,
 }
 
 const harnessPipelineSteps = [
   'Candidate manifest → run_bakeoff.sh (walks one candidate at a time)',
   'run_candidate.sh: hard-reset shared services → install → apply resource caps',
-  'lib.sh sampling loop → verdict (SYNCED / CAPPED / STALLED / error)',
+  'run_candidate.sh sampling loop → verdict (SYNCED / CAPPED / STALLED / install error)',
   'Snapshot disk, before teardown',
   'summarize.sh → results table',
 ]
@@ -171,8 +171,8 @@ const agentTiers = [
 
 const harnessScripts = [
   { name: 'run_bakeoff.sh', path: 'test/bakeoff/run_bakeoff.sh', desc: 'sequential orchestrator with a resume guard: a killed campaign restarts where it left off, never re-runs finished candidates.' },
-  { name: 'run_candidate.sh', path: 'test/bakeoff/run_candidate.sh', desc: 'single-candidate runner: reset → install → cap → sample. Captures the measurement on every exit path — success, cap, error — always before the destructive teardown.' },
-  { name: 'lib.sh', path: 'test/bakeoff/lib.sh', desc: 'shared probe/sample library: the sampling loop, the disk snapshotter, the config-optimality gate.' },
+  { name: 'run_candidate.sh', path: 'test/bakeoff/run_candidate.sh', desc: 'single-candidate runner: reset → install → cap → sample. Owns the observation loop and captures a final footprint on synced, capped, stalled, and install-error paths before teardown. Preflight aborts such as insufficient disk exit before sampling starts.' },
+  { name: 'lib.sh', path: 'test/bakeoff/lib.sh', desc: 'shared probe/sample library: sync probes, the sample writer, the disk snapshotter, and the config-optimality gate.' },
   { name: 'apply_resource_caps.sh', path: 'test/bakeoff/apply_resource_caps.sh', desc: "systemd CPUQuota/MemoryMax caps so a heavy sync can't starve co-resident workloads on the shared host." },
   { name: 'summarize.sh', path: 'test/bakeoff/summarize.sh', desc: 'turns per-run artifacts into the results table, split by whether the config was verified optimal.' },
   { name: 'run_anchor_rotation.sh', path: 'test/bakeoff/run_anchor_rotation.sh', desc: 'the anchor-preserving mode used for the consensus-client sweep.' },
@@ -247,7 +247,12 @@ function AgentHierarchy() {
 
 function CampaignTimeline() {
   return (
-    <div className="mt-4 overflow-x-auto">
+    <div
+      className="mt-4 overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      role="region"
+      aria-label="23-day campaign timeline"
+      tabIndex={0}
+    >
       <div className="flex gap-3 pb-2" style={{ minWidth: 'max-content' }}>
         {campaignTimeline.map((item) => (
           <div key={item.date} className="w-40 shrink-0 rounded-lg border border-border bg-muted/30 p-3">
@@ -371,8 +376,13 @@ export default function HowWeTestedWithClaudePage() {
           <p className="mt-2 text-sm text-muted-foreground">
             Four real incidents hit during the campaign, all fixed or explicitly documented.
           </p>
-          <div className="mt-4 sm:mt-6 hidden sm:block overflow-x-auto">
-            <table className="w-full text-sm">
+          <div
+            className="mt-4 sm:mt-6 hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
+            role="region"
+            aria-label="Client incidents table"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[52rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="pb-3 font-medium text-muted-foreground">Client</th>
@@ -436,7 +446,7 @@ export default function HowWeTestedWithClaudePage() {
             <CampaignTimeline />
             <p className="mt-2 text-xs text-muted-foreground">
               Every date is a shipped fix or a completed measurement run, sourced from{' '}
-              <a href={`${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_RESULTS.md`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">CLIENT_BAKEOFF_RESULTS.md</a>
+              <a href={`${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_RESULTS.md`} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">CLIENT_BAKEOFF_RESULTS.md</a>
               {' '}and the repo&apos;s merged-PR history &mdash; not reconstructed from memory.
             </p>
           </div>
@@ -454,8 +464,8 @@ export default function HowWeTestedWithClaudePage() {
           <p className="mt-4 text-sm text-muted-foreground">
             Multiply that across the whole supported field of clients and three weeks and you have a task
             defined less by any single hard step than by <em>sustained correctness</em> &mdash; the
-            discipline to run the same careful protocol dozens of times, capture the right sample on every
-            exit path, and never let a shared-host quirk masquerade as a client property.
+            discipline to run the same careful protocol dozens of times, preserve the terminal measurement
+            before teardown, and never let a shared-host quirk masquerade as a client property.
           </p>
         </section>
 
@@ -479,8 +489,13 @@ export default function HowWeTestedWithClaudePage() {
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">Not every sub-task deserves the strongest, most expensive model:</p>
           <AgentHierarchy />
-          <div className="mt-4 hidden sm:block overflow-x-auto">
-            <table className="w-full text-sm">
+          <div
+            className="mt-4 hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
+            role="region"
+            aria-label="Agent tiers table"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[44rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="pb-3 font-medium text-muted-foreground">Role</th>
@@ -545,7 +560,7 @@ export default function HowWeTestedWithClaudePage() {
             <li><span className="font-medium text-foreground">One candidate at a time. No batching.</span> Ever.</li>
             <li><span className="font-medium text-foreground">72-hour cap</span> per candidate; footprint is the last near-cap sample, never the peak.</li>
             <li><span className="font-medium text-foreground">Destructive data-cleans are gated</span> behind explicit confirmation, and wiping the live shared node always required a fresh human go-ahead.</li>
-            <li><span className="font-medium text-foreground">Conventional Commits, new commits only</span>, never a force-push to master, secrets never written to disk or committed.</li>
+            <li><span className="font-medium text-foreground">Conventional Commits, new commits only</span>, never a force-push to master; secrets stayed in protected local files and were never committed or exposed to agent context.</li>
             <li><span className="font-medium text-foreground">An agent cannot merge its own pull request.</span> A human does that.</li>
           </ul>
         </section>
@@ -554,7 +569,7 @@ export default function HowWeTestedWithClaudePage() {
           <AnchorHeading id="the-harness" className="text-lg sm:text-xl font-semibold text-foreground">The harness</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             The measurement machinery lives in{' '}
-            <a href={`${SITE_CONFIG.github}/tree/master/test/bakeoff`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+            <a href={`${SITE_CONFIG.github}/tree/master/test/bakeoff`} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">
               test/bakeoff
             </a>
             . It&apos;s plain bash &mdash; deliberately, so it has no runtime that can drift out from under a systemd service:
@@ -562,7 +577,7 @@ export default function HowWeTestedWithClaudePage() {
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
             {harnessScripts.map((script) => (
               <li key={script.name}>
-                <a href={`${SITE_CONFIG.github}/blob/master/${script.path}`} target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-primary hover:underline">
+                <a href={`${SITE_CONFIG.github}/blob/master/${script.path}`} target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-primary underline underline-offset-2">
                   {script.name}
                 </a>
                 {' '}&mdash; {script.desc}
@@ -611,7 +626,7 @@ export default function HowWeTestedWithClaudePage() {
           </AnchorHeading>
           <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
             <li><span className="font-medium text-foreground">The detached-shell landmine (SIGTTIN).</span> An install step shelled out to a version-check command. Run from a detached tmux session in a non-foreground process group, that read raised SIGTTIN against a tty it didn&apos;t own &mdash; which stops (not kills) the whole subtree &mdash; and hung a run for 90 minutes. Fix: redirect stdin from /dev/null on unattended invocations.</li>
-            <li><span className="font-medium text-foreground">The measurement that vanished at the cap.</span> The disk snapshot was taken only on the synced success branch. When a slow client hit the 72-hour cap, the script fell through to teardown &mdash; which wiped the datadir &mdash; and snapshotted after. Fix: snapshot on every exit path, before teardown. The cap path is the one you forget, and it&apos;s the one a slow client actually takes.</li>
+            <li><span className="font-medium text-foreground">The measurement that vanished at the cap.</span> The disk snapshot was taken only on the synced success branch. When a slow client hit the 72-hour cap, the script fell through to teardown &mdash; which wiped the datadir &mdash; and snapshotted after. Fix: snapshot every terminal run path after installation and before teardown; preflight aborts still exit before sampling. The cap path is the one you forget, and it&apos;s the one a slow client actually takes.</li>
           </ul>
         </section>
 

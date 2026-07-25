@@ -5,7 +5,6 @@ import { BackToTop } from '@/components/ui/BackToTop'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { CodeBlock } from '@/components/ui/CodeBlock'
 import { ReadNext } from '@/components/ui/ReadNext'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowDown, ArrowRight } from 'lucide-react'
@@ -88,6 +87,14 @@ const installSnippet = `timeout "$install_timeout" /usr/bin/time -v -o "$out/ins
 const summaryCsvColumns = `pair,execution,consensus,install_exit_code,crash,sample_count,last_doctor_status,
 last_disk_bytes,residual_bytes,config_optimal,config_optimal_detail,fully_synced,
 sync_duration,sync_only,last_el_block,el_bytes,cl_bytes,anchor_synced`
+
+function StaticCodeBlock({ code, className = '' }: { code: string; className?: string }) {
+  return (
+    <pre className={`overflow-x-auto rounded-lg border border-border bg-[#0c0c0c] p-4 font-mono text-[13px] leading-relaxed text-zinc-200 ${className}`}>
+      <code>{code}</code>
+    </pre>
+  )
+}
 
 const configTokenRows: { client: string; token: React.ReactNode }[] = [
   { client: 'geth', token: <><code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">history.chain</code> present</> },
@@ -310,7 +317,7 @@ export default function BakeoffHarnessPage() {
           image="/og-harness.png"
           datePublished="2026-07-21"
         />
-        <header>
+        <header id="article-top" tabIndex={-1} className="focus:outline-none">
           <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
             Engineering &middot; Companion to the bake-off writeup
           </p>
@@ -359,7 +366,7 @@ export default function BakeoffHarnessPage() {
         {/* 1. Layout */}
         <section className="mt-10 sm:mt-16">
           <AnchorHeading id="layout" className="text-lg sm:text-xl font-semibold text-foreground">1. Layout</AnchorHeading>
-          <CodeBlock language="text" code={layoutTree} className="mt-4" />
+          <StaticCodeBlock code={layoutTree} className="mt-4" />
           <p className="mt-4 text-sm text-muted-foreground">
             The executable driver scripts (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>,{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">apply_resource_caps.sh</code>,{' '}
@@ -596,7 +603,7 @@ export default function BakeoffHarnessPage() {
           <AnchorHeading id="install-step" as="h3" className="mt-6 font-medium text-foreground">
             3.4 Install
           </AnchorHeading>
-          <CodeBlock language="bash" code={installSnippet} className="mt-3" />
+          <StaticCodeBlock code={installSnippet} className="mt-3" />
           <p className="mt-3 text-sm text-muted-foreground">
             (Anchor mode omits <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--execution=</code> since only the CL installs.){' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">install_timeout</code> defaults to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">90m</code> (
@@ -977,7 +984,7 @@ export default function BakeoffHarnessPage() {
           <ul className="mt-4 space-y-3 text-sm text-muted-foreground list-disc list-inside">
             <li>
               <strong><code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">summary.csv</code></strong> — one row per candidate:
-              <CodeBlock language="text" code={summaryCsvColumns} className="mt-2 mb-2" />
+              <StaticCodeBlock code={summaryCsvColumns} className="mt-2 mb-2" />
               <ul className="mt-2 space-y-2 list-disc list-inside">
                 <li>
                   <strong className="text-foreground">Sync-time derivation</strong>: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">_epoch</code> converts{' '}

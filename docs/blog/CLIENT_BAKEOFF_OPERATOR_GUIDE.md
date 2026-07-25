@@ -25,7 +25,7 @@ If you run one EL for the long haul, run one of these. Pick **nethermind** if di
 
 **The rest fell out for specific, documented reasons — not because they're "bad":**
 
-- **ethrex** — *fastest cold sync in the entire field* (~2h16m, next-fastest is geth at ~8.5h) but the wrong long-run profile. It has no prune lever, the datadir grows unbounded even *at the chain tip* (~10 GiB/hr, 286 → ~467 GiB in our window), and — the dealbreaker — it **throws away its synced state and re-syncs from scratch after any downtime longer than ~25 minutes.** Every upgrade or maintenance window costs a fresh ~2h sync. Fast to stand up, painful to operate. Young client (v19.0.0); may improve.
+- **ethrex** — *fastest cold sync in the entire field* (~2h16m, next-fastest is geth at ~8.5h) but the wrong long-run profile. It has no prune lever, the datadir grows unbounded even *at the chain tip* (~10 GiB/hr, 286 → ~467 GiB in our window), and — the dealbreaker — a 26-minute/132-block gap stalled instead of resuming, while measured 1.5–2-hour gaps threw away synced state and triggered a fresh ~2-hour re-snap. Fast to stand up, painful to operate. Young client (v19.0.0); may improve.
 - **reth, nimbus_eth1** — full-sync-only in the mode we tested (no snap), so they can't reach the tip inside a practical window on this host. A time-to-sync limit under our bar, not a blanket verdict — reth in particular is widely run elsewhere.
 - **erigon** — deadlocked against a checkpoint-synced consensus client on this host (a reproducible, structural stall), so it never produced a synced datadir.
 
@@ -41,7 +41,7 @@ Two operational caveats worth knowing:
 - **grandine** needs `--prune-storage` or it stores *every* state — the single most important flag for it.
 - **nimbus** is simply the heaviest (~6.8× lighthouse), but otherwise clean.
 
-We ran this whole sweep twice — once anchored to ethrex, once to geth — and the ranking held. The absolute sizes shifted (they grow the longer a CL follows the chain), but the order didn't, which is the empirical proof that **your CL choice doesn't depend on your EL choice.**
+We ran this whole sweep twice — once anchored to ethrex, once to geth — and the heavyweight/lightweight tiers held. Absolute sizes shifted, and lodestar/lighthouse swapped order within the lightweight tier, so the evidence supports broad EL/CL decoupling without claiming an identical total order.
 
 ## The one rule that ties it together
 

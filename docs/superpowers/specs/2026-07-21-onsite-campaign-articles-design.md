@@ -1,8 +1,8 @@
 # Design: Full campaign articles, native on the site
 
 **Date:** 2026-07-21
-**Status:** Approved (chimera_defi, in-session)
-**Branch:** session/ah-eth2qs-build-0720-1425
+**Status:** Implemented in PR #209
+**Branch:** feat/onsite-campaign-articles
 
 ## Problem
 
@@ -26,12 +26,12 @@ faithful to their source markdown, styled with the existing design system.
 | `/blog/ethereum-client-bakeoff` (expand in place) | `docs/CLIENT_BAKEOFF_BLOG.md` | this branch |
 | `/blog/bakeoff-harness` (new) | `docs/CLIENT_BAKEOFF_HARNESS.md` | this branch |
 | `/blog/bakeoff-results` (new) | `docs/CLIENT_BAKEOFF_RESULTS.md` | this branch |
-| `/blog/how-we-tested-with-claude` | `docs/HOW_WE_TESTED_WITH_CLAUDE.md` | **PR #202** (already a complete 552-line page; borrowed read-only for preview) |
+| `/blog/how-we-tested-with-claude` | `docs/HOW_WE_TESTED_WITH_CLAUDE.md` | PR #209 (integrated from #208, stacked on #207) |
 
 ## Approach (decided)
 
 - **Hand-authored JSX pages**, one per article — no markdown pipeline. Matches the
-  existing bake-off page and #202's how-we-tested page (the gold-standard full-article
+  existing bake-off page and the integrated how-we-tested page from #208 (the gold-standard full-article
   template: sections TL;DR → At a glance → narrative → Reproduce it).
 - **Design system only:** `Card`, `Badge`, `Button`, `CodeBlock`, responsive tables
   (desktop `<table>` + mobile stacked cards), inline SVG charts. No new dependencies.
@@ -50,15 +50,10 @@ Opus orchestrates and reviews; **fresh Sonnet subagents** each author one page
 only their single page file and do not run installs/builds — Opus verifies centrally
 (typecheck + production build + render check) and reviews fidelity vs source.
 
-## Coordination with PR #202 (non-destructive)
+## Integration status
 
-- Never modify or push the `feat/blog-how-we-tested-page` branch.
-- For the preview only, surgically check out `#202`'s single page file
-  (`frontend/app/blog/how-we-tested-with-claude/page.tsx`) into the working tree so
-  all four articles render together for review. This borrows one file; it does not
-  entangle this branch with #202's other 19 commits.
-- The real merge-to-master sequencing and the `blog/page.tsx` index conflict with
-  #202 are resolved **after** the owner vets the content — not now.
+- Commit `01683f2` integrated the final how-we-tested page and screenshots from #208, plus #207's final restructured source document and Mermaid evidence.
+- PR #209 now owns the combined four-article delivery; #207 and #208 are superseded and must not merge separately.
 
 ## Deliverable
 
@@ -69,8 +64,8 @@ before anything is pushed.
 ## Non-goals
 
 - No markdown/MDX pipeline.
-- No push / no PR / no branch merges to master until the owner signs off on content.
-- No changes to #202's branch.
+- No merge to master until the owner signs off on content.
+- No separate merge of the superseded #207 or #208 branches.
 
 ## Verification
 

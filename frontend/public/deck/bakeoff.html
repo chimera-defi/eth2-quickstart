@@ -265,11 +265,11 @@
   <section class="slide">
     <div class="wrap">
       <p class="eyebrow" style="color:var(--signal)">The paradox</p>
-      <h2>ethrex throws it all away on restart.</h2>
-      <p class="lede">Take the node down past a hard edge and ethrex discards its synced state and <strong class="hot">re-syncs from scratch (~2h)</strong>. Every maintenance window becomes a full resync — the operability tax that keeps the fastest-syncing client at close to <strong class="hot">zero real-world mainnet adoption</strong>.</p>
+      <h2>ethrex hits a hard restart cliff.</h2>
+      <p class="lede">Gaps through 23 minutes resumed; a 26-minute gap stalled. In measured 1.5–2-hour gaps, ethrex discarded its synced state and <strong class="hot">re-synced from scratch (~2h)</strong> — an operability tax that helps explain why the fastest-syncing client has close to <strong class="hot">zero real-world mainnet adoption</strong>.</p>
       <div class="stat-row">
         <div class="stat"><div class="n sig">~128</div><div class="l">blocks — the cliff edge</div></div>
-        <div class="stat"><div class="n sig">~25 min</div><div class="l">downtime before collapse</div></div>
+        <div class="stat"><div class="n sig">~25 min</div><div class="l">downtime before stall onset</div></div>
         <div class="stat"><div class="n sig">~2 h</div><div class="l">to re-sync from scratch</div></div>
       </div>
       <p class="kicker">Bisected with controlled stop → wait → start cycles: clean resume at 12 / 20 / 23 min gaps; stuck at 26 min.</p>
@@ -284,8 +284,8 @@
       <p class="lede">Sync speed and disk footprint are easy to measure and easy to publish. How a client behaves after downtime is neither — and it's the axis that most cleanly explains which clients people actually keep running.</p>
       <div class="grid g3">
         <div class="panel"><span class="tag">Clean resume</span><h3>geth, nethermind</h3><p>Pick up where they left off. Boring, in the best way.</p></div>
-        <div class="panel hot"><span class="tag">Re-snap cliff</span><h3>ethrex</h3><p>Discards synced state and re-syncs from scratch past a ~25-min downtime gap.</p></div>
-        <div class="panel"><span class="tag">Mid-sync deadlock</span><h3>besu</h3><p>The downloader thread dies mid-sync; a stale CL wedges the beacon.</p></div>
+        <div class="panel hot"><span class="tag">Re-snap cliff</span><h3>ethrex</h3><p>Stops resuming beyond ~25 minutes; longer measured gaps triggered a full re-snap.</p></div>
+        <div class="panel"><span class="tag">Mid-sync deadlock</span><h3>besu</h3><p>A prolonged stale-CL outage aged out the pivot; the downloader died while RPC stayed up.</p></div>
       </div>
     </div>
   </section>
@@ -326,7 +326,7 @@
         <div class="bar"><div class="name">teku</div><div class="track"><div class="fill" style="--v:.780"></div></div><div class="val"><b>~936 MiB</b></div></div>
         <div class="bar"><div class="name">nimbus</div><div class="track"><div class="fill" style="--v:1"></div></div><div class="val"><b>~1.2 GiB</b> · largest</div></div>
       </div>
-      <p class="kicker">Same ranking held across two different EL anchors — <strong class="win">EL/CL decoupling, confirmed empirically</strong> (only a lodestar↔lighthouse flip within the smallest tier).</p>
+      <p class="kicker">The same heavyweight/lightweight tiers held across two EL anchors — <strong class="win">EL/CL decoupling, supported empirically</strong> (lodestar and lighthouse swapped within the smallest tier).</p>
     </div>
   </section>
 
@@ -368,7 +368,7 @@
       <div class="grid g2">
         <div class="panel"><span class="tag">nethermind</span><h3>13.3h silent stall</h3><p>Head frozen at block 4,651, 0 peers — everything else looked healthy. Root cause: P2P pinned to loopback. Fixed by advertising a routable external IP.</p></div>
         <div class="panel"><span class="tag">besu</span><h3>Mid-sync deadlock</h3><p>Downloader thread died, process stayed alive and kept answering RPC. Stale pinned CL stalled the beacon past the servable window.</p></div>
-        <div class="panel hot"><span class="tag">ethrex</span><h3>Restart-resync cliff</h3><p>Discards state and re-snaps after a &gt;~25-min gap. Inherent to the current design — the headline finding.</p></div>
+        <div class="panel hot"><span class="tag">ethrex</span><h3>Restart-resync cliff</h3><p>Stalled just beyond ~25 min; longer measured gaps discarded state and re-snapped. Inherent to the current design.</p></div>
         <div class="panel"><span class="tag">erigon</span><h3>Gap-close deadlock</h3><p>OtterSync + a checkpoint-synced CL never issue the forkchoice update that would close the gap. Raising CPU caps didn't help.</p></div>
       </div>
     </div>
@@ -422,10 +422,10 @@
     "A fair fight: every client got its most disk-efficient mode, a fixed partner, and a hard 72-hour cap. Two headline numbers each — disk and sync — then the third axis nobody benchmarks.",
     "Nethermind wins disk among the clients that finished a comparable sync: ~251 GiB, ~4.6× leaner than geth. The hatched bars never finished — Nimbus-eth1's ~40 GB is only ~21% of a sync, not a win, so don't let the shortest bar read as the winner.",
     "ethrex is nearly 4× faster than anything else in the field. Land the question and pause: so why does almost nobody actually run it?",
-    "Because it throws the synced state away on restart. Past a ~25-minute downtime edge it re-syncs from scratch (~2h). That operability tax is the adoption story.",
+    "Because it hits a restart cliff. A 26-minute gap stalled; measured 1.5–2-hour gaps discarded state and triggered a full ~2-hour re-snap. That operability tax is the adoption story.",
     "The point of the whole talk: restart resilience is a third axis, and it predicts who people keep running better than speed or disk. Three behaviors — clean resume, re-snap cliff, mid-sync deadlock.",
     "The full field at a glance. Be fair to the clients: besu and ethrex synced fine but their footprints aren't pruned-comparable (un-pruned / still growing); reth and nimbus-eth1 are full-sync-only by design, not failures.",
-    "The consensus layer is effectively solved — all five sync in minutes, so footprint is the only differentiator. Lighthouse is the lean, safe default. The ranking held across two different EL anchors.",
+    "The consensus layer is effectively solved — all five sync in minutes, so footprint is the only differentiator. Lighthouse is the lean, safe default. The heavyweight/lightweight tiers held across two EL anchors, with a small within-tier order flip.",
     "Pivot to methodology — the other story people want. Three tiers keep token cost sane and judgment where it belongs. Governance is the punchline: an agent cannot merge its own PR.",
     "The harness is what kept it honest: decouple node time from agent time, push conclusions into small durable files (not the context window), and gate every result on config-optimality.",
     "Four real incidents in three weeks — every one caught and documented. This is the concrete proof of 'we kept ourselves honest.'",
@@ -453,6 +453,7 @@
   document.getElementById('next').addEventListener('click',next);
   document.getElementById('prev').addEventListener('click',prev);
   document.addEventListener('keydown',function(e){
+    if(e.target.closest&&e.target.closest('a,button,input,textarea,select,[contenteditable]'))return;
     if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();next()}
     else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();prev()}
     else if(e.key==='Home'){go(0)} else if(e.key==='End'){go(n-1)}

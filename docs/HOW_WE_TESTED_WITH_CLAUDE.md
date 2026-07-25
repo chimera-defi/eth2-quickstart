@@ -27,7 +27,7 @@ A campaign that long, that sequential, and that easy to get subtly wrong is exac
 - **Three-tier agent hierarchy for context economy.** Opus orchestrator (plans, reviews every diff) → fresh Sonnet builders (implement, report back a summary) → delegate models (cheap and sandboxed work).
 - **Non-negotiable governance, not vibes.** One candidate at a time, a 72-hour cap, destructive actions gated behind explicit human confirmation, only a human merges.
 - **Four real incidents, all fixed or explicitly documented** — see the table below.
-- **Two clients aren't production-ready as measured here.** ethrex is the fastest cold-sync in the field but re-syncs from scratch after any >~25-minute restart gap and its datadir grows unbounded; besu is fragile to a prolonged consensus-layer outage. Neither is a dealbreaker bug — both are real operational limitations worth knowing before you deploy either.
+- **The headline numbers hide operational limits.** ethrex is the fastest cold-sync in the field but is not production-ready as tested: a 26-minute/132-block restart gap stalled, longer measured gaps caused a full re-snap, and its datadir kept growing at tip. besu did sync successfully; its pruned re-run exposed fragility after a prolonged outage of the pinned Prysm version.
 
 ## At a glance
 
@@ -35,7 +35,7 @@ A campaign that long, that sequential, and that easy to get subtly wrong is exac
 |---|---|---|---|---|
 | **nethermind** | 13.3h silent stall — head frozen at block 4,651, 0 peers, everything else looked healthy | P2P bind pinned to loopback (`Network.LocalIp=127.0.0.1`) | Advertise the real external IP | ✅ Fixed — production-viable |
 | **besu** | Mid-sync deadlock — downloader thread died, process stayed alive and kept answering RPC | Stale pinned CL (prysm v7.1.5) stalled the beacon ~28h; snap-sync pivot aged out of the ~25-min servable-state window | None available (upstream CL issue) — keep CL binaries current; harness gained a stall-watchdog | ⚠️ Fragile to a prolonged CL outage |
-| **ethrex** | Restart with a gap past ~128 blocks (~24–25 min) discards all state, re-syncs from scratch (~2h); datadir also grows unbounded, un-pruned (~286 → ~467 GiB) | Old head ages out of the ~128-block servable-state window; re-pivots to a full snap sync instead of importing the gap | None — inherent to current design (v19.0.0) | ❌ **Not production-ready as tested.** Fastest cold sync in the field, but the likely explanation for its ~0% adoption; young client, may improve |
+| **ethrex** | Gaps through 23 min / 124 blocks resumed; a 26 min / 132 block gap stalled, and measured 1.5–2h gaps discarded state and re-snapped (~2h). The un-pruned datadir also grew at tip (~286 → ~467 GiB) | Old head ages out of the ~128-block servable-state window; beyond it the head can freeze and longer gaps can trigger a full snap instead of importing the gap | None — inherent to current design (v19.0.0) | ❌ **Not production-ready as tested.** Fastest cold sync in the field, but the likely explanation for its ~0% adoption; young client, may improve |
 | **erigon** | Head froze a few thousand blocks behind tip; consensus stayed `is_optimistic=true` indefinitely | Genuine gap-close deadlock, erigon3 OtterSync vs. checkpoint-synced Prysm — not resource starvation | None — terminated per operator decision, recorded as a no-sync | ❌ No-sync on this host/CL combination |
 
 ```mermaid
@@ -56,7 +56,7 @@ timeline
     title 23-day campaign — key dates
     2026-06-22 : Campaign starts, Stage A triage begins
     2026-06-26 : Stage-A installer fixes shipped
-    2026-06-30 : besu completes un-pruned sync
+    2026-07-01 : besu completes un-pruned sync
     2026-07-05 : besu pruned re-run abandoned, deadlocked twice
     2026-07-06 : CL sweep vs ethrex anchor, 5 CLs
     2026-07-08 : CL cross-check vs geth anchor
@@ -79,7 +79,7 @@ Benchmarking a sync client is deceptively expensive:
 - **It's easy to measure the wrong thing.** A client that "installed and followed the chain" can be silently broken (0 peers, frozen head); a datadir means nothing if it's running in archive mode; a footprint sampled mid-compaction over-counts.
 - **It's destructive.** Measuring the next client means wiping the last one's datadir on a shared box that also runs other people's work.
 
-Multiply that across the whole supported field of clients and three weeks and you have a task defined less by any single hard step than by *sustained correctness* — the discipline to run the same careful protocol dozens of times, capture the right sample on every exit path, and never let a shared-host quirk masquerade as a client property. That is what the harness and the orchestration model exist to enforce.
+Multiply that across the whole supported field of clients and three weeks and you have a task defined less by any single hard step than by *sustained correctness* — the discipline to run the same careful protocol dozens of times, preserve the terminal measurement before teardown, and never let a shared-host quirk masquerade as a client property. That is what the harness and the orchestration model exist to enforce.
 
 ---
 
@@ -150,7 +150,7 @@ A handful of rules were treated as non-negotiable, and they are what made it saf
 - **One candidate at a time. No batching.** Ever.
 - **72-hour cap** per candidate; **footprint is the last near-cap sample, never the peak** (on-disk size oscillates during compaction — see [issues log §E2](CLIENT_BAKEOFF_ISSUES_LOG.md)).
 - **Destructive data-cleans are gated** behind an explicit `ETH2QS_BAKEOFF_CONFIRMED=yes`, and wiping the *live* shared node always required a fresh human go-ahead — surfaced as a structured decision prompt, never assumed.
-- **Conventional Commits, new commits only**, never a force-push to `master`, secrets never written to disk or committed.
+- **Conventional Commits, new commits only**, never a force-push to `master`; secrets stayed in protected local files and were never committed or exposed to agent context.
 - **An agent cannot merge its own pull request.** A human does that.
 
 None of these are clever. All of them are the reason a three-week autonomous benchmark against real client software didn't turn into a three-week autonomous incident.
@@ -162,8 +162,8 @@ None of these are clever. All of them are the reason a three-week autonomous ben
 The measurement machinery lives in [`test/bakeoff/`](../test/bakeoff). It's plain bash — deliberately, so it has no runtime that can drift out from under a systemd service:
 
 - **[`run_bakeoff.sh`](../test/bakeoff/run_bakeoff.sh)** — sequential orchestrator with a resume guard: a killed campaign restarts where it left off, never re-runs finished candidates.
-- **[`run_candidate.sh`](../test/bakeoff/run_candidate.sh)** — single-candidate runner: reset → install → cap → sample. Captures the measurement on **every** exit path — success, cap, error — always **before** the destructive teardown.
-- **[`lib.sh`](../test/bakeoff/lib.sh)** — shared probe/sample library: the sampling loop, the disk snapshotter, the config-optimality gate.
+- **[`run_candidate.sh`](../test/bakeoff/run_candidate.sh)** — single-candidate runner: reset → install → cap → sample. Owns the observation loop and captures a final footprint on synced, capped, stalled, and install-error paths before teardown. Preflight aborts such as insufficient disk exit before sampling starts.
+- **[`lib.sh`](../test/bakeoff/lib.sh)** — shared probe/sample library: sync probes, the sample writer, the disk snapshotter, and the config-optimality gate.
 - **[`apply_resource_caps.sh`](../test/bakeoff/apply_resource_caps.sh)** — systemd `CPUQuota`/`MemoryMax` caps so a heavy sync can't starve co-resident workloads on the shared host.
 - **[`summarize.sh`](../test/bakeoff/summarize.sh)** — turns per-run artifacts into the results table, split by whether the config was verified optimal.
 - **[`run_anchor_rotation.sh`](../test/bakeoff/run_anchor_rotation.sh)** — the anchor-preserving mode used for the consensus-client sweep (below).
@@ -174,9 +174,9 @@ flowchart LR
     bakeoff -->|one candidate at a time| candidate[run_candidate.sh]
     candidate --> reset[Hard-reset shared services]
     reset --> install[Install + apply resource caps]
-    install --> sample[lib.sh sampling loop]
+    install --> sample[run_candidate.sh sampling loop]
     sample --> verdict{{Verdict}}
-    verdict -->|SYNCED / CAPPED / STALLED / error| snapshot[Snapshot disk, before teardown]
+    verdict -->|SYNCED / CAPPED / STALLED / install error| snapshot[Snapshot disk, before teardown]
     snapshot --> results[summarize.sh results table]
 ```
 
@@ -190,14 +190,14 @@ The gate needed **six bug-fixes across three review rounds** before we trusted i
 
 ### Anchor-preserving mode: don't re-sync the world five times
 
-The consensus-client matrix holds the execution client constant and cycles the CL. Naively that's five full EL re-syncs — days of waste measuring the *same* EL. Anchor-preserving mode (`ETH2QS_BAKEOFF_ANCHOR_EL=…`) keeps one already-synced execution client running and cycles **only** the `cl` service per candidate, purging just the consensus datadir between runs: five CL candidates, one EL sync. We ran the sweep twice — against an ethrex anchor and a geth anchor — to *prove* the EL/CL decoupling empirically rather than assert it. The ranking reproduced.
+The consensus-client matrix holds the execution client constant and cycles the CL. Naively that's five full EL re-syncs — days of waste measuring the *same* EL. Anchor-preserving mode (`ETH2QS_BAKEOFF_ANCHOR_EL=…`) keeps one already-synced execution client running and cycles **only** the `cl` service per candidate, purging just the consensus datadir between runs: five CL candidates, one EL sync. We ran the sweep twice — against an ethrex anchor and a geth anchor — to test the EL/CL decoupling empirically rather than assert it. The heavyweight/lightweight tiers reproduced; lodestar and lighthouse swapped order within the lightweight tier.
 
 ### Two harness bugs that nearly cost us data
 
 Beyond the four client incidents in the table above, two bugs were in the harness itself — the kind you only meet once your automation genuinely runs unattended:
 
 - **The detached-shell landmine (SIGTTIN).** An install step shelled out to `geth version | head -1`. Run from a detached `tmux` session in a non-foreground process group, that read raised `SIGTTIN` against a tty it didn't own — which **stops** (not kills) the whole subtree — and hung a run for 90 minutes. Fix: redirect stdin from `/dev/null` on unattended invocations.
-- **The measurement that vanished at the cap.** The disk snapshot was taken only on the *synced* success branch. When a slow client hit the 72-hour cap, the script fell through to teardown — which wiped the datadir — and snapshotted *after*. reth's partial footprint survived only because we could reconstruct it from the raw samples. Fix: snapshot on every exit path, before teardown. **The cap path is the one you forget, and it's the one a slow client actually takes.**
+- **The measurement that vanished at the cap.** The disk snapshot was taken only on the *synced* success branch. When a slow client hit the 72-hour cap, the script fell through to teardown — which wiped the datadir — and snapshotted *after*. reth's partial footprint survived only because we could reconstruct it from the raw samples. Fix: snapshot every terminal run path after installation and before teardown; preflight aborts still exit before sampling. **The cap path is the one you forget, and it's the one a slow client actually takes.**
 
 Smaller ones too — release-API rate limits, a `pipefail`-triggered `du | awk` false failure, interactive `unzip` prompts hanging a detached install — are in the [issues log](CLIENT_BAKEOFF_ISSUES_LOG.md).
 
