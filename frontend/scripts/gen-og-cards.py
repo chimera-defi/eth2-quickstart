@@ -8,7 +8,12 @@ a few common locations (including the Playwright cache).
 Usage:  python3 frontend/scripts/gen-og-cards.py
 Edit the VARIANTS below (or the CSS/template) and re-run to refresh the cards.
 """
-import subprocess, os, sys, tempfile, glob
+import glob
+import os
+import struct
+import subprocess
+import sys
+import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PUBLIC = os.path.normpath(os.path.join(HERE, "..", "public"))
@@ -70,6 +75,20 @@ def card(tag, headline, sub, stats):
             f"<div class=\"foot\">eth2quickstart.com</div></div>\n")
 
 
+def validate_png(path):
+    with open(path, "rb") as image:
+        header = image.read(24)
+    if len(header) != 24 or header[:8] != b"\x89PNG\r\n\x1a\n":
+        raise RuntimeError(f"Chromium did not produce a valid PNG: {path}")
+    width, height = struct.unpack(">II", header[16:24])
+    if (width, height) != (1200, 630):
+        raise RuntimeError(
+            f"Unexpected card dimensions for {path}: {width}x{height} (expected 1200x630)"
+        )
+    if os.path.getsize(path) == 0:
+        raise RuntimeError(f"Chromium produced an empty PNG: {path}")
+
+
 # name (-> public/<name>.png) : rendered card
 VARIANTS = {
     "og": card(
@@ -106,17 +125,45 @@ def main():
         sys.exit("No Chromium found. Set CHROME_BIN to a Chrome/Chromium binary and re-run.")
     os.makedirs(PUBLIC, exist_ok=True)
     for name, doc in VARIANTS.items():
-        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False) as f:
-            f.write(doc)
-            html_path = f.name
-        png = os.path.join(PUBLIC, name + ".png")
-        subprocess.run([chrome, "--headless=new", "--no-sandbox", "--disable-gpu",
-            "--disable-dev-shm-usage", "--hide-scrollbars", "--force-color-profile=srgb",
-            "--run-all-compositor-stages-before-draw", "--virtual-time-budget=2500",
-            "--window-size=1200,630", "--screenshot=" + png, "file://" + html_path],
-            timeout=60, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        os.unlink(html_path)
-        print(f"{name}.png -> {os.path.getsize(png) if os.path.exists(png) else 0} bytes")
+        html_path = None
+        temp_png = None
+        destination = os.path.join(PUBLIC, name + ".png")
+        try:
+            with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False) as html:
+                html.write(doc)
+                html_path = html.name
+            temp_fd, temp_png = tempfile.mkstemp(
+                prefix=f".{name}-", suffix=".png", dir=PUBLIC
+            )
+            os.close(temp_fd)
+            os.unlink(temp_png)
+            subprocess.run(
+                [
+                    chrome,
+                    "--headless=new",
+                    "--no-sandbox",
+                    "--disable-gpu",
+                    "--disable-dev-shm-usage",
+                    "--hide-scrollbars",
+                    "--force-color-profile=srgb",
+                    "--run-all-compositor-stages-before-draw",
+                    "--virtual-time-budget=2500",
+                    "--window-size=1200,630",
+                    "--screenshot=" + temp_png,
+                    "file://" + html_path,
+                ],
+                check=True,
+                timeout=60,
+                stdout=subprocess.DEVNULL,
+            )
+            validate_png(temp_png)
+            os.replace(temp_png, destination)
+            temp_png = None
+            print(f"{name}.png -> {os.path.getsize(destination)} bytes")
+        finally:
+            for path in (html_path, temp_png):
+                if path and os.path.exists(path):
+                    os.unlink(path)
 
 
 if __name__ == "__main__":

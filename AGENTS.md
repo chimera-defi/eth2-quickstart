@@ -85,3 +85,8 @@ Before marking any task complete, verify the change set against the repository's
 - Validator exit helpers should reuse the local validator inventory path and delegate client-specific exit logic to `validator_manage.sh`.
 - Validator entry helpers should prefer an explicit command template when the deposit CLI is not installed locally so operators still get a usable offline checklist.
 - Withdrawal-change helpers should support a no-side-effect `--dry-run` preview and a fixture-backed smoke test path so agents can rehearse the workflow in the live geth + Prysm container before touching production keys.
+- Treat PR descriptions as live metadata: update scope, dependencies, verification, and supersession notes whenever the head changes materially.
+- Before closing a PR as superseded, prove coverage with ancestry for stacked commits and blob or semantic comparisons for copied work; record both head SHAs.
+- Link review evidence with immutable commit-SHA URLs, and keep screenshots out of the merge tree unless durable documentation references them.
+- Validate agent identity, required trailers, and PR attribution fields before the first push; late attribution repair rewrites downstream SHAs and checks.
+- Re-read the live PR head before final review conclusions; cached review refs can become stale while a PR is still active.

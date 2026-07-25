@@ -142,10 +142,10 @@ verified, not inferred):
 (optimistically at current head) drove `forkchoiceUpdated` forward, ethrex was too far behind to close the
 gap by block import, so it re-pivoted to a fresh snap sync rather than resuming — throwing away the 286 GiB.
 
-**Why it matters for the blog:** a client that re-syncs from scratch after any downtime beyond ~25 min is
-operationally painful. Every upgrade, crash, or maintenance window longer than ~25 min costs a full ~2h
-re-sync. This is a strong candidate explanation for ethrex's ~0% operational adoption *despite* its
-best-in-field cold-sync numbers — "great benchmark, painful to actually run."
+**Why it matters for the blog:** a client that can stop resuming after ~25 min and, on longer measured gaps,
+fall into a full ~2h re-snap is operationally painful. This is a strong candidate explanation for ethrex's
+~0% operational adoption *despite* its best-in-field cold-sync numbers — "great benchmark, painful to
+actually run."
 
 **Fairness caveats (state these; do not overclaim):**
 - Observed on **v19.0.0** — ethrex is a young client and this may improve in future releases.
@@ -258,10 +258,10 @@ EL/CL decoupling:
   **geth-anchor CL disk ranking (smaller = better): lodestar (~177 MiB) < lighthouse (~518 MiB) <
   grandine (~725 MiB) < teku (~936 MiB) < nimbus (~1.2 GiB).**
 
-**Cross-anchor verdict — the ranking reproduces:** the heavyweight tier (nimbus largest, teku second) and
+**Cross-anchor verdict — the tiers reproduce:** the heavyweight tier (nimbus largest, teku second) and
 the lightweight tier (lodestar / lighthouse / grandine smallest) hold on both anchors; only the
 lodestar↔lighthouse order flips within the smallest tier. Absolute sizes scale with post-sync observation
-time, not the EL anchor. Two different EL anchors → the same CL ranking = **EL/CL decoupling confirmed
+time, not the EL anchor. Two different EL anchors → the same broad CL tiers = **EL/CL decoupling supported
 empirically.** (The nimbus_eth1 anchor now running is a *third* EL anchor, but as a full-sync-only client it
 won't reach tip in 72h → it yields a partial EL footprint, not a new CL sweep.)
 
