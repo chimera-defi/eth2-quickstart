@@ -5,6 +5,8 @@ import { Card } from '@/components/ui/Card'
 const BLOG_TITLE = 'Blog - ETH2 Quick Start'
 const BLOG_DESCRIPTION = 'Notes and results from the ETH2 Quick Start lab.'
 
+const BLOG_OG_ALT = 'ETH2 Quick Start — from the lab'
+
 export const metadata: Metadata = {
   title: BLOG_TITLE,
   description: BLOG_DESCRIPTION,
@@ -15,13 +17,13 @@ export const metadata: Metadata = {
     siteName: 'ETH2 Quick Start',
     title: BLOG_TITLE,
     description: BLOG_DESCRIPTION,
-    images: ['/og.png'],
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: BLOG_OG_ALT }],
   },
   twitter: {
     card: 'summary_large_image',
     title: BLOG_TITLE,
     description: BLOG_DESCRIPTION,
-    images: ['/og.png'],
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: BLOG_OG_ALT }],
   },
 }
 

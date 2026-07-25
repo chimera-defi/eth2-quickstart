@@ -1,16 +1,19 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { AnchorHeading } from '@/components/ui/AnchorHeading'
+import { ArticleJsonLd } from '@/components/ui/ArticleJsonLd'
+import { BackToTop } from '@/components/ui/BackToTop'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { CodeBlock } from '@/components/ui/CodeBlock'
+import { ReadNext } from '@/components/ui/ReadNext'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowDown, ArrowRight } from 'lucide-react'
 
 const PAGE_TITLE = 'The Bake-off Harness — ETH2 Quick Start'
 const PAGE_DESCRIPTION =
   'A function-level engineering reference for the bake-off harness: every script under test/bakeoff/, every function it calls, every flag it reads, and the data files it produces.'
+const PAGE_OG_ALT = 'The bake-off harness — a function-level engineering reference'
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -19,14 +22,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'article',
     siteName: 'ETH2 Quick Start',
-    images: ['/og-harness.png'],
+    images: [{ url: '/og-harness.png', width: 1200, height: 630, alt: PAGE_OG_ALT }],
     url: '/blog/bakeoff-harness',
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
-    images: ['/og-harness.png'],
+    images: [{ url: '/og-harness.png', width: 1200, height: 630, alt: PAGE_OG_ALT }],
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },
@@ -300,6 +303,13 @@ export default function BakeoffHarnessPage() {
   return (
     <div className="min-h-screen py-12 sm:py-16 md:py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
+        <ArticleJsonLd
+          title={PAGE_TITLE}
+          description={PAGE_DESCRIPTION}
+          slug="bakeoff-harness"
+          image="/og-harness.png"
+          datePublished="2026-07-21"
+        />
         <header>
           <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
             Engineering &middot; Companion to the bake-off writeup
@@ -1134,28 +1144,7 @@ export default function BakeoffHarnessPage() {
           </ul>
         </section>
 
-        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
-          <h2 className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
-            Read next
-          </h2>
-          <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
-            <li>
-              <Link href="/blog/ethereum-client-bakeoff" className="text-primary hover:underline">
-                Ethereum client bake-off (narrative write-up)
-              </Link>
-            </li>
-            <li>
-              <Link href="/blog/how-we-tested-with-claude" className="text-primary hover:underline">
-                How we tested with Claude
-              </Link>
-            </li>
-            <li>
-              <Link href="/blog/bakeoff-results" className="text-primary hover:underline">
-                Bake-off results (raw data)
-              </Link>
-            </li>
-          </ul>
-        </section>
+        <ReadNext currentSlug="bakeoff-harness" />
 
         <Card padding="sm" className="mt-10 sm:mt-16 bg-muted/30">
           <p className="text-xs text-muted-foreground">
@@ -1176,6 +1165,7 @@ export default function BakeoffHarnessPage() {
           </p>
         </Card>
       </div>
+      <BackToTop />
     </div>
   )
 }

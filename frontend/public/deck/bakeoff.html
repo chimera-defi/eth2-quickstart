@@ -438,6 +438,7 @@
     slides.forEach(function(s,k){
       s.classList.toggle('active',k===to);
       s.classList.toggle('prev',k<to);
+      s.setAttribute('aria-hidden',k===to?'false':'true');
     });
     i=to;
     document.getElementById('cur').textContent=String(i+1).padStart(2,'0');

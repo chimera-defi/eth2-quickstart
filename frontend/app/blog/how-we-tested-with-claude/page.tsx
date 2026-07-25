@@ -1,14 +1,17 @@
 import type { Metadata } from 'next'
 import { AnchorHeading } from '@/components/ui/AnchorHeading'
+import { ArticleJsonLd } from '@/components/ui/ArticleJsonLd'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { ReadNext } from '@/components/ui/ReadNext'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowDown, ArrowRight, ArrowUp } from 'lucide-react'
 
 const PAGE_TITLE = 'How We Ran a 23-Day Ethereum Client Bake-off With Claude - ETH2 Quick Start'
 const PAGE_DESCRIPTION =
   'The agent orchestration model, the harness, and what actually breaks when a benchmark runs for three weeks on a shared host with an AI in the driver’s seat.'
+const PAGE_OG_ALT = 'How we ran a 23-day Ethereum client bake-off with Claude'
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -17,14 +20,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'article',
     siteName: 'ETH2 Quick Start',
-    images: ['/og-how-we-tested.png'],
+    images: [{ url: '/og-how-we-tested.png', width: 1200, height: 630, alt: PAGE_OG_ALT }],
     url: '/blog/how-we-tested-with-claude',
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
-    images: ['/og-how-we-tested.png'],
+    images: [{ url: '/og-how-we-tested.png', width: 1200, height: 630, alt: PAGE_OG_ALT }],
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },
@@ -291,6 +294,13 @@ export default function HowWeTestedWithClaudePage() {
   return (
     <div className="min-h-screen py-12 sm:py-16 md:py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
+        <ArticleJsonLd
+          title={PAGE_TITLE}
+          description={PAGE_DESCRIPTION}
+          slug="how-we-tested-with-claude"
+          image="/og-how-we-tested.png"
+          datePublished="2026-07-22"
+        />
         <header>
           <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
             Blog &middot; Companion to the bake-off writeup
@@ -637,6 +647,8 @@ export default function HowWeTestedWithClaudePage() {
             ))}
           </div>
         </section>
+
+        <ReadNext currentSlug="how-we-tested-with-claude" />
       </div>
     </div>
   )
