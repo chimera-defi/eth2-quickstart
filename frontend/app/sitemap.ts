@@ -12,6 +12,7 @@ const routes: { path: string; priority: number }[] = [
   { path: '/blog/how-we-tested-with-claude', priority: 0.8 },
   { path: '/blog/bakeoff-harness', priority: 0.8 },
   { path: '/blog/bakeoff-results', priority: 0.8 },
+  { path: '/deck/bakeoff.html', priority: 0.6 },
 ]
 
 export default function sitemap(): MetadataRoute.Sitemap {

@@ -1,14 +1,18 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { AnchorHeading } from '@/components/ui/AnchorHeading'
+import { ArticleJsonLd } from '@/components/ui/ArticleJsonLd'
+import { BackToTop } from '@/components/ui/BackToTop'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { ReadNext } from '@/components/ui/ReadNext'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowRight } from 'lucide-react'
 
 const PAGE_TITLE = 'Bake-off Results — ETH2 Quick Start'
 const PAGE_DESCRIPTION =
   'The full raw results doc from the 23-day Ethereum client bake-off: every Stage A triage row, every Stage B disk-footprint measurement, the CL matrix on two anchors, client limitations, and every gotcha — verbatim from docs/CLIENT_BAKEOFF_RESULTS.md.'
+const PAGE_OG_ALT = 'Bake-off results — the raw data'
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -17,14 +21,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'article',
     siteName: 'ETH2 Quick Start',
-    images: ['/og-results.png'],
+    images: [{ url: '/og-results.png', width: 1200, height: 630, alt: PAGE_OG_ALT }],
     url: '/blog/bakeoff-results',
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
-    images: ['/og-results.png'],
+    images: [{ url: '/og-results.png', width: 1200, height: 630, alt: PAGE_OG_ALT }],
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },
@@ -299,6 +303,13 @@ export default function BakeoffResultsPage() {
   return (
     <div className="min-h-screen py-12 sm:py-16 md:py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
+        <ArticleJsonLd
+          title={PAGE_TITLE}
+          description={PAGE_DESCRIPTION}
+          slug="bakeoff-results"
+          image="/og-results.png"
+          datePublished="2026-07-21"
+        />
         <header>
           <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
             Raw results
@@ -873,6 +884,8 @@ export default function BakeoffResultsPage() {
           </ul>
         </section>
 
+        <ReadNext currentSlug="bakeoff-results" />
+
         {/* ---------------------------------------------------------------- */}
         <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <h2 className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
@@ -890,24 +903,10 @@ export default function BakeoffResultsPage() {
                 <span className="text-muted-foreground">(CLIENT_BAKEOFF_RESULTS.md)</span>
               </a>
             </li>
-            <li>
-              <Link href="/blog/ethereum-client-bakeoff" className="text-primary hover:underline">
-                Narrative write-up: Ethereum client bake-off
-              </Link>
-            </li>
-            <li>
-              <Link href="/blog/how-we-tested-with-claude" className="text-primary hover:underline">
-                How we tested with Claude
-              </Link>
-            </li>
-            <li>
-              <Link href="/blog/bakeoff-harness" className="text-primary hover:underline">
-                The bake-off harness (engineering reference)
-              </Link>
-            </li>
           </ul>
         </section>
       </div>
+      <BackToTop />
     </div>
   )
 }

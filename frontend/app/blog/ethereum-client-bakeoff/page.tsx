@@ -1,15 +1,19 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { AnchorHeading } from '@/components/ui/AnchorHeading'
+import { ArticleJsonLd } from '@/components/ui/ArticleJsonLd'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { ReadNext } from '@/components/ui/ReadNext'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowRight } from 'lucide-react'
 
 const PAGE_TITLE = 'Ethereum Client Bake-off - ETH2 Quick Start'
 const PAGE_DESCRIPTION =
   'The full write-up: results from a 23-day Ethereum execution and consensus client sync campaign, including the restart-resilience findings the headline numbers hide.'
+const PAGE_OG_ALT =
+  'The fastest Ethereum client is one almost nobody runs — a 23-day client bake-off'
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -18,14 +22,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'article',
     siteName: 'ETH2 Quick Start',
-    images: ['/og-bakeoff.png'],
+    images: [{ url: '/og-bakeoff.png', width: 1200, height: 630, alt: PAGE_OG_ALT }],
     url: '/blog/ethereum-client-bakeoff',
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
-    images: ['/og-bakeoff.png'],
+    images: [{ url: '/og-bakeoff.png', width: 1200, height: 630, alt: PAGE_OG_ALT }],
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },
@@ -226,6 +230,13 @@ export default function EthereumClientBakeoffPage() {
   return (
     <div className="min-h-screen py-12 sm:py-16 md:py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
+        <ArticleJsonLd
+          title={PAGE_TITLE}
+          description={PAGE_DESCRIPTION}
+          slug="ethereum-client-bakeoff"
+          image="/og-bakeoff.png"
+          datePublished="2026-07-19"
+        />
         <header>
           <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
             Blog
@@ -1060,28 +1071,10 @@ export default function EthereumClientBakeoffPage() {
           </p>
         </section>
 
+        <ReadNext currentSlug="ethereum-client-bakeoff" />
+
         <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <h2 className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
-            Read next
-          </h2>
-          <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
-            <li>
-              <Link href="/blog/how-we-tested-with-claude" className="text-primary hover:underline">
-                How we tested with Claude
-              </Link>
-            </li>
-            <li>
-              <Link href="/blog/bakeoff-harness" className="text-primary hover:underline">
-                The bake-off harness
-              </Link>
-            </li>
-            <li>
-              <Link href="/blog/bakeoff-results" className="text-primary hover:underline">
-                Bake-off results (raw data)
-              </Link>
-            </li>
-          </ul>
-          <h2 className="mt-6 font-mono text-sm text-muted-foreground uppercase tracking-wide">
             Source docs on GitHub
           </h2>
           <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
