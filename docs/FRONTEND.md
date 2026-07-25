@@ -1,6 +1,12 @@
 # Frontend Guide
 
-This repo includes a marketing frontend in `frontend/`.
+This repo includes a marketing frontend in `frontend/`. It is live at
+**[eth2quickstart.com](https://eth2quickstart.com)** (no hyphen), and **merging to `master`
+publishes it automatically** — within minutes, edits included. The deploy pipeline lives
+outside this repo (no workflow or deploy config here) and serves the Next.js standalone build
+behind CloudFront, so a merged `frontend/` change is public immediately: build and preview it
+locally first. Details in [`frontend/README.md`](../frontend/README.md#deployment); the blog and
+slide deck are covered in [`BLOG_GUIDE.md`](BLOG_GUIDE.md).
 
 ## Canonical Sources
 
