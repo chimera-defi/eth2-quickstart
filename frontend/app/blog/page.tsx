@@ -2,10 +2,61 @@ import type { Metadata } from 'next'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 
+const BLOG_TITLE = 'Blog - ETH2 Quick Start'
+const BLOG_DESCRIPTION = 'Notes and results from the ETH2 Quick Start lab.'
+
+const BLOG_OG_ALT = 'ETH2 Quick Start — from the lab'
+
 export const metadata: Metadata = {
-  title: 'Blog - ETH2 Quick Start',
-  description: 'Notes and results from the ETH2 Quick Start lab.',
+  title: BLOG_TITLE,
+  description: BLOG_DESCRIPTION,
+  alternates: { canonical: '/blog' },
+  openGraph: {
+    type: 'website',
+    url: '/blog',
+    siteName: 'ETH2 Quick Start',
+    title: BLOG_TITLE,
+    description: BLOG_DESCRIPTION,
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: BLOG_OG_ALT }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: BLOG_TITLE,
+    description: BLOG_DESCRIPTION,
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: BLOG_OG_ALT }],
+  },
 }
+
+const posts = [
+  {
+    eyebrow: 'Client research',
+    title: 'Ethereum client bake-off',
+    description:
+      'Results from a 23-day execution and consensus client sync campaign: disk, speed, and restart resilience across the full client roster.',
+    href: '/blog/ethereum-client-bakeoff',
+  },
+  {
+    eyebrow: 'Methodology',
+    title: 'How we tested with Claude',
+    description:
+      'The orchestration model and harness behind the 23-day campaign — how a fleet of agents ran, sampled, and gated every client sync.',
+    href: '/blog/how-we-tested-with-claude',
+  },
+  {
+    eyebrow: 'Engineering',
+    title: 'The bake-off harness',
+    description:
+      'A function-level engineering reference for the harness: the orchestrator, the per-candidate state machine, resource caps, and the probe/sample/gate library.',
+    href: '/blog/bakeoff-harness',
+  },
+  {
+    eyebrow: 'Data',
+    title: 'Bake-off results',
+    description:
+      'The raw results: Stage A pass matrix, final synced disk footprints, the consensus-client matrices, and operational-viability notes.',
+    href: '/blog/bakeoff-results',
+  },
+]
 
 export default function BlogPage() {
   return (
@@ -27,23 +78,25 @@ export default function BlogPage() {
           <h2 className="text-lg sm:text-xl font-semibold text-foreground">
             Latest
           </h2>
-          <div className="mt-4 sm:mt-6">
-            <Card hover>
-              <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
-                Client research
-              </p>
-              <h3 className="mt-2 text-xl font-semibold text-foreground">
-                Ethereum client bake-off
-              </h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Results from a 23-day execution and consensus client sync campaign: disk, speed, and restart resilience.
-              </p>
-              <div className="mt-4">
-                <Button href="/blog/ethereum-client-bakeoff" variant="ghost" size="sm">
-                  Read more
-                </Button>
-              </div>
-            </Card>
+          <div className="mt-4 sm:mt-6 space-y-4">
+            {posts.map((post) => (
+              <Card key={post.href} hover>
+                <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
+                  {post.eyebrow}
+                </p>
+                <h3 className="mt-2 text-xl font-semibold text-foreground">
+                  {post.title}
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {post.description}
+                </p>
+                <div className="mt-4">
+                  <Button href={post.href} variant="ghost" size="sm">
+                    Read more
+                  </Button>
+                </div>
+              </Card>
+            ))}
           </div>
         </section>
       </div>

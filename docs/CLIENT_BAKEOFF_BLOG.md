@@ -8,9 +8,9 @@ We ran every execution client (EL) and consensus client (CL) that [eth2-quicksta
 
 ## TL;DR
 
-- **Disk winner — Nethermind, ~251 GiB.** ~4.5× smaller than geth, and the smallest of any client that finished a *pruned, apples-to-apples* sync.
+- **Disk winner — Nethermind, ~251 GiB.** ~4.6× smaller than geth, and the smallest of any client that finished a *pruned, apples-to-apples* sync.
 - **Speed winner — ethrex, ~2h16m.** Fastest cold sync in the field by a wide margin (next is geth at ~8.5h). A ~0%-adoption minimalist Rust client beat everyone.
-- **The twist — ethrex's restart-resync cliff.** ethrex is fastest to sync but **throws away its synced state and re-syncs from scratch (~2h) after a downtime gap past a hard edge we bisected to ~128 blocks (≈24–25 min).** That operability tax is the best explanation we found for why the fastest-syncing client is one almost nobody runs.
+- **The twist — ethrex's restart-resync cliff.** ethrex is fastest to sync, but a gap just beyond the ~128-block (≈24–25 min) edge stalled instead of resuming, and measured 1.5–2h gaps **discarded its synced state and triggered a full re-snap (~2h).** That operability tax is the best explanation we found for why the fastest-syncing client is one almost nobody runs.
 - **Restart resilience is a real, under-reported axis.** Clients split into three distinct behaviors after a restart-with-gap. This matters more to a running operator than cold-sync numbers.
 - **The CL layer is effectively solved.** All five consensus clients checkpoint-synced to a validating head in ~22–23 minutes with zero failures; footprint is the only differentiator. Operational risk lives in the **EL** layer.
 
@@ -22,7 +22,7 @@ We ran every execution client (EL) and consensus client (CL) that [eth2-quicksta
 
 | EL | Result | Sync time | Footprint | Sync mode | Mainnet share |
 |----|--------|-----------|-----------|-----------|---------------|
-| **nethermind** | ✅ synced | ~14.5h | **~251 GiB** (pruned) — smallest | snap + Bonsai | 36.0% |
+| **nethermind** | ✅ synced | ~14.5h | **~251 GiB** (pruned) — smallest | snap + Halite | 36.0% |
 | **geth** | ✅ synced | ~8h28m | ~1.13 TiB (pruned) | snap + `--history.chain postmerge` | 44.9% |
 | **ethrex** | ✅ synced | **~2h16m** — fastest | ~286 → ~467 GiB (un-pruned, growing) | snap (v19.0.0) | ~0% |
 | **besu** | ✅ synced (un-pruned) | ~19h18m | ~1.08 TiB (un-pruned) | snap / Bonsai | 17.4% |
@@ -42,7 +42,7 @@ Disk, pruned and apples-to-apples: **nethermind (~251 GiB) < geth (~1.13 TiB)** 
 | **teku** | ~936 MiB | `data-storage-mode=minimal` |
 | **nimbus** | ~1.2 GiB — largest | `history=prune` |
 
-The ranking reproduced across two different EL anchors (ethrex and geth) — EL/CL decoupling, confirmed empirically. The rest of this post is the *why* behind these numbers.
+The heavyweight/lightweight tiers reproduced across two different EL anchors (ethrex and geth), while lodestar and lighthouse swapped order within the lightweight tier — empirical support for EL/CL decoupling without claiming an identical total order. The rest of this post is the *why* behind these numbers.
 
 ---
 
@@ -50,7 +50,7 @@ The ranking reproduced across two different EL anchors (ethrex and geth) — EL/
 
 The bake-off measures, for each client, the **final synced disk footprint** and the **sync duration**, on a shared semi-production host (not a live validator), with MEV disabled and no validator keys. One candidate at a time, a 72-hour cap per candidate, and the footprint taken from the last near-cap `du` sample — never the peak mid-sync.
 
-For the EL scorecard we hold the CL constant at **prysm**. That is defensible because an EL's footprint and sync time are EL-only properties, decoupled from the CL across the Engine API — the prysm datadir is ~0.65–1.68 GB, negligible against an EL's hundreds of gigabytes. We confirmed the decoupling empirically later (see the CL matrix), so this isn't just an assumption.
+For the EL scorecard we hold the CL constant at **prysm**. That is defensible because an EL's footprint and sync time are EL-only properties, decoupled from the CL across the Engine API — the prysm datadir ran ~0.65–1.68 GB in the bounded runs (up to ~12.5 GB during reth's full 72h cap), still negligible against an EL's hundreds of gigabytes. We confirmed the decoupling empirically later (see the CL matrix), so this isn't just an assumption.
 
 **The honesty mechanism.** Early in the campaign we corrupted our own results by recording footprints *before* verifying each client was running in its most disk-efficient mode. A benchmark that measures your misconfiguration instead of the client is worse than no benchmark. So we built a **config-optimality gate** into the harness: it inspects the actually-generated, actually-running config and refuses to trust a footprint from a mis-configured client, stamping every row `config_optimal=yes|no`. The gate itself needed six bug-fixes across three review rounds before we trusted it — which is the point. Every number below is stamped optimal.
 
@@ -67,7 +67,7 @@ Only two clients produced a **pruned, apples-to-apples** footprint — geth and 
 | **Nethermind** | **~251 GiB** | ~14.5h | snap + ancient-barrier prune | 36.0% |
 | geth | ~1.13 TiB | ~8h28m | snap + `--history.chain postmerge` | 44.9% |
 
-Nethermind's Bonsai flat-DB plus snap sync lands it at roughly a quarter of geth's size. It's also a minority client, so choosing it modestly improves mainnet client diversity — a nice-to-have on top of the disk win. The cost is sync time: ~14.5h vs geth's ~8.5h. If disk is your binding constraint, this is the pick.
+Nethermind's Halite/Paprika flat storage plus snap sync lands it at roughly a quarter of geth's size. It's also a minority client, so choosing it modestly improves mainnet client diversity — a nice-to-have on top of the disk win. The cost is sync time: ~14.5h vs geth's ~8.5h. If disk is your binding constraint, this is the pick.
 
 Everything else is *not* pruned-comparable, for a specific reason each, and we refuse to rank those on disk against a pruned node — that would be measuring different things. They're recorded transparently as client limitations:
 
@@ -100,7 +100,7 @@ Cold-sync numbers tell you how a node behaves *once*, on day one. But operators 
 
 **1. Graceful resume.** The client comes back, imports the blocks it missed during the gap, and keeps its on-disk state. Minutes to catch up, no re-download. This is what makes a client operationally *boring*, in the good way. We **measured** this directly for **geth**: restarted after a ~52-hour gap, it kept its full datadir and caught up purely by sequential block-import (trie-diff application) — never re-snapping — and converged back to the validating tip. That's the exact positive contrast to ethrex's cliff. **nethermind** and **reth** are expected here by design too, though of the three only geth's resume was measured directly (as only ethrex's cliff was bisected).
 
-**2. Re-snap cliff.** Past a downtime threshold the client **discards its fully-synced state and re-syncs from scratch.** Only ethrex lands here — and we pinned the edge precisely.
+**2. Re-snap cliff.** Past a downtime threshold ethrex first **stalls with a disconnected head**; in the longer measured gaps it discarded its fully-synced state and re-synced from scratch. Only ethrex lands here — and we pinned the onset precisely.
 
 **3. Mid-sync deadlock.** If the CL stops driving the engine during an *in-progress* snap sync, the EL's pivot ages out of the network's servable-state window and the sync wedges irrecoverably — the process stays alive and answers RPC but makes zero progress. besu is the cautionary tale here.
 
@@ -121,7 +121,7 @@ The obvious follow-up: *how big a gap actually trips it?* We bisected it with co
 
 **The cliff edge is ~128 blocks ≈ 24–25 minutes.** And the bisection corrected our understanding of the mechanism: the true trigger is **header-fetch failure** once the gap exceeds the ~128-block servable window — not "state expiry" per se. Just past the edge, ethrex first *stalls with a disconnected head* (peers won't serve the gap headers); at larger gaps (~1.5–2h) that escalates to the full datadir-collapse re-snap. The stuck head is the onset; the re-snap is where it ends up.
 
-**Why it matters:** a client that re-syncs from scratch after any downtime beyond ~25 minutes is genuinely painful to operate — every upgrade or maintenance window longer than that costs a ~2h re-sync. That's a strong candidate explanation for ethrex's ~0% adoption *despite* best-in-field cold-sync numbers: great benchmark, painful to actually run.
+**Why it matters:** a client that can stop resuming after ~25 minutes and, on longer measured gaps, fall into a ~2h re-snap is genuinely painful to operate. That's a strong candidate explanation for ethrex's ~0% adoption *despite* best-in-field cold-sync numbers: great benchmark, painful to actually run.
 
 **Fairness caveats (we state these plainly):** observed on ethrex **v19.0.0**, a young client — this may well improve. The cliff does not change the recorded sync-*time* result; it's a separate resilience finding presented alongside, not folded into, the cold-sync number.
 
@@ -156,7 +156,7 @@ A tempting story going in was "mainnet share predicts syncability" — the low/z
 
 ## The consensus layer is solved
 
-We ran the five CLs — **lighthouse, lodestar, grandine, teku, nimbus** — against a constant anchor EL, and then repeated it against a *second* anchor EL to test the EL/CL decoupling claim directly. Every CL checkpoint-synced to a fully-validating head in **~22–23 minutes**, `config_optimal=yes`, zero crashes. Sync *time* is effectively tied, so **footprint is the differentiator**:
+We ran the five CLs — **lighthouse, lodestar, grandine, teku, nimbus** — against a constant anchor EL, and then repeated it against a *second* anchor EL to test the EL/CL decoupling claim directly. Every CL checkpoint-synced to a fully-validating head in minutes — **~22–23 min on the ethrex anchor and ~6–9 min on the geth anchor** (whose footprints are tabulated below) — `config_optimal=yes`, zero crashes. Sync *time* is effectively tied within each anchor, so **footprint is the differentiator**:
 
 | CL | Footprint (geth anchor) |
 |----|------|
@@ -166,7 +166,7 @@ We ran the five CLs — **lighthouse, lodestar, grandine, teku, nimbus** — aga
 | teku | ~936 MiB |
 | nimbus | ~1.2 GiB |
 
-Crucially, the ranking **reproduced across both anchor ELs** — the heavyweight tier (nimbus, teku) and the lightweight tier (lodestar, lighthouse, grandine) held on both, with only a lodestar↔lighthouse flip within the smallest tier. Two different EL anchors, the same CL ranking: **EL/CL decoupling, confirmed empirically** — which retroactively validates holding CL=prysm constant for the whole EL scorecard.
+Crucially, the broad tiers **reproduced across both anchor ELs** — the heavyweight tier (nimbus, teku) and the lightweight tier (lodestar, lighthouse, grandine) held on both, with a lodestar↔lighthouse flip within the smallest tier. Two different EL anchors, the same CL tiers: **EL/CL decoupling, supported empirically** — which retroactively validates holding CL=prysm constant for the whole EL scorecard.
 
 The punchline: on the CL side, all five are operationally effective — none failed, and the choice comes down to footprint and preference (lighthouse is the lean, safe default). **Operational risk in an Ethereum node lives in the EL layer, not the CL layer.**
 
@@ -175,7 +175,7 @@ The punchline: on the CL side, all five are operationally effective — none fai
 ## Recommendations
 
 - **Default: geth.** Largest ecosystem, most documentation, the cleanest snap sync (~8.5h), and it resumes gracefully across restarts. You pay for it in disk (~1.13 TiB). If you don't have a specific reason to run something else, run this.
-- **Disk-constrained: nethermind.** ~251 GiB — 4.5× leaner than geth — with clean restart behavior and a client-diversity bonus. Costs you sync time (~14.5h).
+- **Disk-constrained: nethermind.** ~251 GiB — 4.6× leaner than geth — with clean restart behavior and a client-diversity bonus. Costs you sync time (~14.5h).
 - **Consensus client: lighthouse** as the lean default; any of the five is operationally fine — pick on footprint and familiarity.
 - **Watch, don't yet deploy: ethrex.** Fascinating and fastest, but the un-pruned/growing footprint and the ~25-minute restart cliff make it operationally costly today. Young (v19.0.0) — worth revisiting.
 - **Enterprise with care: besu.** It syncs, but its snap sync is fragile to CL outages; handle upgrades and CL health deliberately.

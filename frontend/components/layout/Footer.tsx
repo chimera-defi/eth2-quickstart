@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { SITE_CONFIG } from '@/lib/constants'
 
 const footerLinks = [
+  { label: 'Blog', href: '/blog', internal: true },
   { label: 'Get Started', href: '/quickstart', internal: true },
   { label: 'GitHub', href: SITE_CONFIG.github },
   { label: 'Issues', href: `${SITE_CONFIG.github}/issues` },
