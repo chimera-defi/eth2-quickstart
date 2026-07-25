@@ -171,7 +171,7 @@ const fullMetrics = [
   { candidate: 'nimbus-eth1 × prysm', peers: '20–25', configOptimal: 'yes', reRuns: 1, notable: '72h continuous, 0 restarts; supersedes an earlier ~21 GB aborted run' },
   { candidate: 'erigon × prysm', peers: '—', configOptimal: 'n/a (no-sync)', reRuns: 0, notable: 'CPU cap raised 200%→600% mid-run; advanced ~5k blocks then re-froze' },
   { candidate: 'CL sweep × ethrex anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 2, notable: 'teku: JVM-OOM on first attempt (TEKU_CACHE fix); grandine: harness du-pipeline bug, not a client fault' },
-  { candidate: 'CL sweep × geth anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 0, notable: 'Cross-anchor confirmation re-run; ranking reproduced' },
+  { candidate: 'CL sweep × geth anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 0, notable: 'Cross-anchor confirmation re-run; heavyweight/lightweight tiers reproduced (lodestar↔lighthouse swapped within the smallest tier)' },
 ]
 
 const completedExecutionSyncs = [
