@@ -476,8 +476,13 @@ export default function BakeoffHarnessPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             The script has three modes, selected by env vars, all mutually aware of each other:
           </p>
-          <div className="mt-4 sm:mt-6 hidden sm:block overflow-x-auto">
-            <table className="w-full text-sm">
+          <div
+            className="mt-4 sm:mt-6 hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
+            role="region"
+            aria-label="run_candidate.sh mode, trigger, and behavior"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[42rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="pb-3 font-medium text-muted-foreground">Mode</th>
@@ -881,8 +886,13 @@ export default function BakeoffHarnessPage() {
             </li>
             <li>
               Per-client token table (kept current with what the install scripts actually emit):
-              <div className="mt-3 overflow-x-auto">
-                <table className="w-full text-sm">
+              <div
+                className="mt-3 overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                role="region"
+                aria-label="Config-optimality token checked per client"
+                tabIndex={0}
+              >
+                <table className="w-full min-w-[48rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
                   <thead>
                     <tr className="border-b border-border text-left">
                       <th className="pb-3 font-medium text-muted-foreground">Client</th>
@@ -1058,8 +1068,13 @@ export default function BakeoffHarnessPage() {
         {/* 8. Data model reference */}
         <section className="mt-10 sm:mt-16">
           <AnchorHeading id="data-model" className="text-lg sm:text-xl font-semibold text-foreground">8. Data model reference</AnchorHeading>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-sm">
+          <div
+            className="mt-4 overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            role="region"
+            aria-label="Harness data model reference: files, writers, and contents"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[48rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="pb-3 font-medium text-muted-foreground">File</th>

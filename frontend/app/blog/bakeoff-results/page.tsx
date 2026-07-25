@@ -412,8 +412,13 @@ export default function BakeoffResultsPage() {
             <Rich text="`el_offline` is Prysm's own verdict on whether the EL is reachable **and** authenticating over the Engine API. `False` across the window = JWT wired correctly and the EL is validating payloads. `restErr` = beacon REST momentarily unavailable during heavy-client startup (see Resource contention below)." />
           </p>
 
-          <div className="mt-4 sm:mt-6 hidden sm:block overflow-x-auto">
-            <table className="w-full text-sm">
+          <div
+            className="mt-4 sm:mt-6 hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
+            role="region"
+            aria-label="Stage A triage results for all 12 client pairs"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[52rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="pb-3 font-medium text-muted-foreground">Candidate</th>
@@ -550,8 +555,13 @@ export default function BakeoffResultsPage() {
             <Rich text="Before letting the slow full-sync ELs run, we audited every execution client to confirm it uses the most disk- and time-efficient sync mode available — so the Stage B footprint numbers reflect each client's *best* configuration, not an accidental archive run. Trigger: geth's `--history.chain postmerge` flag (prunes pre-merge block history, a large disk saving). We verified it was on for the baseline, then checked the rest." />
           </p>
 
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-sm">
+          <div
+            className="mt-4 overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            role="region"
+            aria-label="Sync-mode and disk-flag audit by execution client"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[52rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="pb-3 font-medium text-muted-foreground">EL</th>
@@ -587,8 +597,13 @@ export default function BakeoffResultsPage() {
             <Rich text="Complete (run_id `client-bakeoff-stageB-2026-06-23`). Runs were sequential, one candidate at a time; every candidate now has a final synced, capped, or no-sync verdict. Footprint = final synced datadir size (EL + CL); secrets/validator material excluded." />
           </p>
 
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-sm">
+          <div
+            className="mt-4 overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            role="region"
+            aria-label="Stage B final synced disk footprint results"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[52rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="pb-3 font-medium text-muted-foreground">Candidate</th>
@@ -626,8 +641,13 @@ export default function BakeoffResultsPage() {
             <Rich text="All five CLs **checkpoint-synced to a fully validating head in ~22–23 min**, `config_optimal=yes`, `anchor_synced=yes`, `service_crash_observed=no`. Sync **time** is effectively tied (checkpoint sync dominates), so **the CL datadir footprint is the differentiator.**" />
           </p>
 
-          <div className="mt-4 sm:mt-6 hidden sm:block overflow-x-auto">
-            <table className="w-full text-sm">
+          <div
+            className="mt-4 sm:mt-6 hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
+            role="region"
+            aria-label="Consensus client matrix, ethrex anchor"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[42rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="pb-3 font-medium text-muted-foreground">CL</th>
@@ -698,8 +718,13 @@ export default function BakeoffResultsPage() {
             <Rich text="The same 5-CL sweep was re-run against a **geth** anchor to verify the ranking is not an artifact of the ethrex anchor. All five runs were `config_optimal=yes`, `anchor_synced=yes`, no service crash; each cycled only `cl`+`validator` against the preserved geth EL datadir (~1.13 TiB, never wiped)." />
           </p>
 
-          <div className="mt-4 sm:mt-6 hidden sm:block overflow-x-auto">
-            <table className="w-full text-sm">
+          <div
+            className="mt-4 sm:mt-6 hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
+            role="region"
+            aria-label="Consensus client matrix, geth anchor (cross-anchor confirmation)"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[42rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="pb-3 font-medium text-muted-foreground">Consensus</th>
@@ -779,8 +804,13 @@ export default function BakeoffResultsPage() {
             <Rich text="Only **geth** (~1.13 TiB) and **nethermind** (~251 GiB) produced a final footprint under a **pruned, apples-to-apples** config, so only those two are ranked head-to-head on disk. The rest are recorded here with the reason each falls outside that comparison. **“Outside the disk ranking” does not mean “failed to sync”** — besu in particular synced cleanly (see below); it's here purely because we don't have a pruned-comparable disk number for it." />
           </p>
 
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-sm">
+          <div
+            className="mt-4 overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            role="region"
+            aria-label="Execution client limitations and disk-ranking exclusions"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[52rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="pb-3 font-medium text-muted-foreground">EL</th>

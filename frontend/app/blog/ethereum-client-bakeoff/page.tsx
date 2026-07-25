@@ -863,8 +863,13 @@ export default function EthereumClientBakeoffPage() {
             The obvious follow-up: how big a gap actually trips it? We bisected it with controlled
             stop → wait → start cycles, a live prysm driving forkchoice:
           </p>
-          <div className="mt-4 hidden sm:block overflow-x-auto">
-            <table className="w-full text-sm">
+          <div
+            className="mt-4 hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
+            role="region"
+            aria-label="ethrex restart-gap bisection results"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[42rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="pb-3 font-medium text-muted-foreground">Downtime gap</th>
