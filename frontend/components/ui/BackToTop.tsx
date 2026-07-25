@@ -10,16 +10,36 @@ const SHOW_AFTER_PX = 600
  * Fixed bottom-right "back to top" button. Appears once the user has scrolled
  * past SHOW_AFTER_PX and smooth-scrolls to the top of the page on click,
  * falling back to an instant jump when the user prefers reduced motion.
+ *
+ * Hides again once the page footer scrolls into view so the button never sits
+ * on top of the footer's links (which share the bottom-right column at
+ * tablet / unmaximized widths).
  */
 export function BackToTop() {
-  const [visible, setVisible] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const [footerInView, setFooterInView] = useState(false)
 
   useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > SHOW_AFTER_PX)
+    const onScroll = () => setScrolled(window.scrollY > SHOW_AFTER_PX)
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  useEffect(() => {
+    const footer = document.querySelector('footer')
+    if (!footer) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setFooterInView(entry.isIntersecting),
+      // Grow the root's bottom edge so the button clears out a little before
+      // the footer actually reaches it.
+      { rootMargin: '0px 0px 80px 0px' }
+    )
+    observer.observe(footer)
+    return () => observer.disconnect()
+  }, [])
+
+  const visible = scrolled && !footerInView
 
   const handleClick = () => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
