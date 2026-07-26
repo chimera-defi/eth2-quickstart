@@ -12,9 +12,29 @@ import {
 } from '@/lib/constants'
 import { ArrowRight, Server, HardDrive, Cpu, ExternalLink } from 'lucide-react'
 
+const PAGE_TITLE = 'Get Started - ETH2 Quick Start'
+const PAGE_DESCRIPTION =
+  'Get your Ethereum node running in 30 minutes. One-liner or manual install with run_1.sh and run_2.sh.'
+const PAGE_OG_ALT = 'Get your Ethereum node running in 30 minutes — one-liner or manual install'
+
 export const metadata: Metadata = {
-  title: 'Get Started - ETH2 Quick Start',
-  description: 'Get your Ethereum node running in 30 minutes. One-liner or manual install with run_1.sh and run_2.sh.',
+  title: PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  alternates: { canonical: '/quickstart' },
+  openGraph: {
+    type: 'website',
+    siteName: SITE_CONFIG.shortName,
+    url: '/quickstart',
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: PAGE_OG_ALT }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: PAGE_OG_ALT }],
+  },
 }
 
 const RECOMMENDED_SPECS = [

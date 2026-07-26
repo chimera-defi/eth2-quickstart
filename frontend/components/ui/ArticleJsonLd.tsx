@@ -1,40 +1,52 @@
-const SITE_URL = 'https://eth2quickstart.com'
+import { getArticle } from '@/lib/articles'
+import { SITE_CONFIG } from '@/lib/constants'
 
 const ORGANIZATION = {
   '@type': 'Organization',
-  name: 'ETH2 Quick Start',
-  url: SITE_URL,
+  name: SITE_CONFIG.shortName,
+  url: SITE_CONFIG.url,
 } as const
 
 export interface ArticleJsonLdProps {
-  title: string
-  description: string
-  /** Blog post slug, e.g. 'ethereum-client-bakeoff' — used to build the canonical URL. */
+  /** Blog post slug, e.g. 'ethereum-client-bakeoff' — all other fields are resolved from the article registry. */
   slug: string
-  /** Site-relative image path, e.g. '/og-bakeoff.png' — resolved to an absolute URL. */
-  image: string
-  /** ISO date string, e.g. '2026-07-19'. */
-  datePublished: string
 }
 
 /**
- * Renders a schema.org BlogPosting JSON-LD block for a blog article. Organization-only
+ * Renders schema.org JSON-LD for a blog article: a BlogPosting plus a
+ * Home → Blog → Article BreadcrumbList, as a single `@graph`. Organization-only
  * attribution (author + publisher) — no invented person byline.
  */
-export function ArticleJsonLd({ title, description, slug, image, datePublished }: ArticleJsonLdProps) {
-  const url = `${SITE_URL}/blog/${slug}`
+export function ArticleJsonLd({ slug }: ArticleJsonLdProps) {
+  const article = getArticle(slug)
+  const url = `${SITE_CONFIG.url}/blog/${article.slug}`
 
   const schema = {
     '@context': 'https://schema.org',
-    '@type': 'BlogPosting',
-    headline: title,
-    description,
-    image: `${SITE_URL}${image}`,
-    datePublished,
-    mainEntityOfPage: url,
-    url,
-    author: ORGANIZATION,
-    publisher: ORGANIZATION,
+    '@graph': [
+      {
+        '@type': 'BlogPosting',
+        headline: article.headline,
+        description: article.pageDescription,
+        image: `${SITE_CONFIG.url}${article.ogImage}`,
+        datePublished: article.datePublished,
+        // No updates tracked separately yet — reusing datePublished is explicitly
+        // allowed by Google's structured-data guidance when nothing has changed.
+        dateModified: article.datePublished,
+        mainEntityOfPage: url,
+        url,
+        author: ORGANIZATION,
+        publisher: ORGANIZATION,
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_CONFIG.url },
+          { '@type': 'ListItem', position: 2, name: 'Blog', item: `${SITE_CONFIG.url}/blog` },
+          { '@type': 'ListItem', position: 3, name: article.navTitle, item: url },
+        ],
+      },
+    ],
   }
 
   return (
