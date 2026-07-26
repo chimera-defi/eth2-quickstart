@@ -1,8 +1,13 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter'
+import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+
+// Only bash is used anywhere in this repo (verified via grep across app/components).
+// Register any additional language here if a new call site ever needs one.
+SyntaxHighlighter.registerLanguage('bash', bash)
 
 export interface TerminalProps {
   code?: string

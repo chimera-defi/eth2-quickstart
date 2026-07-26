@@ -1,7 +1,23 @@
 import type { Metadata } from 'next'
+import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
+import { MotionProvider } from './motion-provider'
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  display: 'swap',
+  variable: '--font-sans',
+})
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  display: 'swap',
+  variable: '--font-mono',
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://eth2quickstart.com'),
@@ -28,11 +44,21 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className={`dark ${inter.variable} ${jetbrainsMono.variable}`}>
       <body className="min-h-screen bg-background text-foreground antialiased overflow-x-hidden">
-        <Navbar />
-        <main className="overflow-x-hidden">{children}</main>
-        <Footer />
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[60] focus:rounded focus:bg-background focus:px-4 focus:py-2 focus:text-foreground focus:outline focus:outline-2 focus:outline-primary"
+        >
+          Skip to content
+        </a>
+        <MotionProvider>
+          <Navbar />
+          <main id="main-content" tabIndex={-1} className="overflow-x-hidden focus:outline-none">
+            {children}
+          </main>
+          <Footer />
+        </MotionProvider>
       </body>
     </html>
   )
