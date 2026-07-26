@@ -39,13 +39,23 @@ describe('ArticleJsonLd', () => {
     expect(blogPosting.dateModified).toBeTruthy()
   })
 
-  it('strips the site-name suffix from headline', () => {
-    const schema = renderJsonLd(slug)
-    const blogPosting = schema['@graph'].find(
-      (node: any) => node['@type'] === 'BlogPosting'
-    )
-    expect(blogPosting.headline).not.toContain('ETH2 Quick Start')
-  })
+  // Titles use two different dash styles before the site name ("- ETH2 Quick Start"
+  // and "— ETH2 Quick Start"), so exercise every article rather than just one.
+  it.each(ARTICLES.map((article) => [article.slug] as const))(
+    'strips the site-name suffix from the headline for %s',
+    (articleSlug) => {
+      const article = getArticle(articleSlug)
+      const schema = renderJsonLd(articleSlug)
+      const blogPosting = schema['@graph'].find(
+        (node: any) => node['@type'] === 'BlogPosting'
+      )
+      expect(blogPosting.headline).not.toContain('ETH2 Quick Start')
+      // The headline must still be the real title, not an empty or truncated string.
+      expect(blogPosting.headline.length).toBeGreaterThan(10)
+      expect(article.pageTitle).toContain(blogPosting.headline)
+      expect(blogPosting.headline).not.toMatch(/[-—]\s*$/)
+    }
+  )
 
   it('attributes author and publisher to the Organization, not a person', () => {
     const schema = renderJsonLd(slug)

@@ -56,9 +56,22 @@ describe('ARTICLES registry', () => {
 })
 
 describe('getArticle', () => {
-  it('returns the matching article for a known slug', () => {
-    const target = ARTICLES[0]
-    expect(getArticle(target.slug)).toEqual(target)
+  // Comparing a lookup's result against the registry it reads from is tautological,
+  // so pin the flagship article's real values independently of the registry.
+  it('returns the article identified by the slug, with its own values', () => {
+    const article = getArticle('ethereum-client-bakeoff')
+    expect(article.slug).toBe('ethereum-client-bakeoff')
+    expect(article.ogImage).toBe('/og-bakeoff.png')
+    expect(article.datePublished).toBe('2026-07-19')
+    expect(article.navTitle).toBe('Ethereum client bake-off')
+  })
+
+  it('maps each slug to a distinct article, never a shared or default one', () => {
+    for (const target of ARTICLES) {
+      expect(getArticle(target.slug).slug).toBe(target.slug)
+    }
+    const images = ARTICLES.map((article) => getArticle(article.slug).ogImage)
+    expect(new Set(images).size).toBe(ARTICLES.length)
   })
 
   it('throws on an unknown slug', () => {
