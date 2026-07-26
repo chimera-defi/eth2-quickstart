@@ -27,6 +27,14 @@ if [[ "${ETH2QS_BAKEOFF_CONFIRMED:-}" != "yes" ]]; then
   exit 2
 fi
 
+# The bake-off runs eth2qs.sh phase2 WITHOUT a prior run_1, so run_2.sh's post-install
+# security validation (run_1-dependent: expects active UFW, security_monitor, etc.) is
+# inappropriate here and exit-1s — aborting client installs whenever UFW is inactive.
+# CI_E2E=true is the codebase's existing switch for a run_1-less phase2 (run_2.sh:469);
+# it also skips UFW setup (needs run_1/kernel modules). It does NOT change the installed
+# client binary/config/datadir or its sync footprint. An explicit caller value still wins.
+export CI_E2E="${CI_E2E:-true}"
+
 # Anchor-mode precondition: verify the anchor EL is running, listening on 8551, and synced.
 if [[ -n "$anchor_el" ]]; then
   if [[ "$execution" != "$anchor_el" ]]; then
