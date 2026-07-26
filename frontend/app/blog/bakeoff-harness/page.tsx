@@ -1,38 +1,17 @@
 import type { Metadata } from 'next'
 import { AnchorHeading } from '@/components/ui/AnchorHeading'
 import { ArticleJsonLd } from '@/components/ui/ArticleJsonLd'
+import { ArticleToc } from '@/components/ui/ArticleToc'
 import { BackToTop } from '@/components/ui/BackToTop'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ReadNext } from '@/components/ui/ReadNext'
+import { buildArticleMetadata } from '@/lib/articles'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowDown, ArrowRight } from 'lucide-react'
 
-const PAGE_TITLE = 'The Bake-off Harness — ETH2 Quick Start'
-const PAGE_DESCRIPTION =
-  'A function-level engineering reference for the bake-off harness: every script under test/bakeoff/, every function it calls, every flag it reads, and the data files it produces.'
-const PAGE_OG_ALT = 'The bake-off harness — a function-level engineering reference'
-
-export const metadata: Metadata = {
-  title: PAGE_TITLE,
-  description: PAGE_DESCRIPTION,
-  alternates: { canonical: '/blog/bakeoff-harness' },
-  openGraph: {
-    type: 'article',
-    siteName: 'ETH2 Quick Start',
-    images: [{ url: '/og-harness.png', width: 1200, height: 630, alt: PAGE_OG_ALT }],
-    url: '/blog/bakeoff-harness',
-    title: PAGE_TITLE,
-    description: PAGE_DESCRIPTION,
-  },
-  twitter: {
-    card: 'summary_large_image',
-    images: [{ url: '/og-harness.png', width: 1200, height: 630, alt: PAGE_OG_ALT }],
-    title: PAGE_TITLE,
-    description: PAGE_DESCRIPTION,
-  },
-}
+export const metadata: Metadata = buildArticleMetadata('bakeoff-harness')
 
 const tocLinks = [
   { label: '1. Layout', href: '#layout' },
@@ -310,13 +289,7 @@ export default function BakeoffHarnessPage() {
   return (
     <div className="min-h-screen py-12 sm:py-16 md:py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
-        <ArticleJsonLd
-          title={PAGE_TITLE}
-          description={PAGE_DESCRIPTION}
-          slug="bakeoff-harness"
-          image="/og-harness.png"
-          datePublished="2026-07-21"
-        />
+        <ArticleJsonLd slug="bakeoff-harness" />
         <header id="article-top" tabIndex={-1} className="focus:outline-none">
           <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
             Engineering &middot; Companion to the bake-off writeup
@@ -350,18 +323,7 @@ export default function BakeoffHarnessPage() {
           </div>
         </header>
 
-        <nav aria-label="Table of contents" className="mt-8 rounded-lg border border-border p-4 sm:p-5">
-          <p className="font-mono text-xs text-muted-foreground uppercase tracking-wide">Contents</p>
-          <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
-            {tocLinks.map((link) => (
-              <li key={link.href}>
-                <a href={link.href} className="text-primary hover:underline">
-                  {link.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <ArticleToc links={tocLinks} />
 
         {/* 1. Layout */}
         <section className="mt-10 sm:mt-16">

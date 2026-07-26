@@ -38,9 +38,10 @@ export function Navbar() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="flex h-14 items-center justify-between">
           {/* Logo */}
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="font-mono text-sm font-medium text-foreground"
+            onClick={() => setMobileMenuOpen(false)}
           >
             {SITE_CONFIG.shortName}
           </Link>
@@ -81,7 +82,11 @@ export function Navbar() {
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileMenuOpen}
           >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {mobileMenuOpen ? (
+              <X className="h-5 w-5" aria-hidden="true" />
+            ) : (
+              <Menu className="h-5 w-5" aria-hidden="true" />
+            )}
           </button>
         </div>
       </div>
@@ -90,8 +95,9 @@ export function Navbar() {
       <div
         className={cn(
           'border-t border-border bg-background md:hidden overflow-hidden transition-all duration-200 ease-out',
-          mobileMenuOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0 border-t-0'
+          mobileMenuOpen ? 'visible max-h-80 opacity-100' : 'invisible max-h-0 opacity-0 border-t-0'
         )}
+        aria-hidden={!mobileMenuOpen}
       >
         <div className="px-4 sm:px-6 py-4 space-y-1 mobile-menu-enter">
           {NAV_LINKS.map((link) => (

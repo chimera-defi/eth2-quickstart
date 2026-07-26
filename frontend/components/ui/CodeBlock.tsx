@@ -2,9 +2,14 @@
 
 import { useState } from 'react'
 import { cn, copyToClipboard } from '@/lib/utils'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter'
+import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { Copy, Check } from 'lucide-react'
+
+// Only bash is used anywhere in this repo (verified via grep across app/components).
+// Register any additional language here if a new call site ever needs one.
+SyntaxHighlighter.registerLanguage('bash', bash)
 
 export interface CodeBlockProps {
   code: string
@@ -40,7 +45,11 @@ export function CodeBlock({ code, language = 'bash', showCopy = true, className 
           className="absolute right-2 top-2 rounded p-1.5 text-zinc-500 opacity-0 transition-all hover:text-zinc-300 group-hover:opacity-100 focus:opacity-100"
           aria-label={copied ? 'Copied!' : 'Copy code'}
         >
-          {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
+          {copied ? (
+            <Check className="h-4 w-4 text-green-400" aria-hidden="true" />
+          ) : (
+            <Copy className="h-4 w-4" aria-hidden="true" />
+          )}
         </button>
       )}
       <div className="overflow-x-auto p-4">
