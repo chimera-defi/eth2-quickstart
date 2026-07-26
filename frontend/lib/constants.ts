@@ -7,6 +7,7 @@ export const SITE_CONFIG = {
   shortName: 'ETH2 Quick Start',
   description: 'Transform a fresh cloud server into a fully-configured Ethereum node.',
   github: 'https://github.com/chimera-defi/eth2-quickstart',
+  url: 'https://eth2quickstart.com',
 }
 
 export const NAV_LINKS = [

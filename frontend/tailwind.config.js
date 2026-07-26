@@ -29,8 +29,8 @@ module.exports = {
         border: 'rgba(255, 255, 255, 0.06)',
       },
       fontFamily: {
-        mono: ['JetBrains Mono', 'SF Mono', 'monospace'],
-        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        mono: ['var(--font-mono)', 'SF Mono', 'monospace'],
+        sans: ['var(--font-sans)', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(ellipse at center, var(--tw-gradient-stops))',
