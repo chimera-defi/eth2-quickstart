@@ -1,23 +1,29 @@
 import type { MetadataRoute } from 'next'
-
-const BASE = 'https://eth2quickstart.com'
+import { ARTICLES } from '@/lib/articles'
+import { SITE_CONFIG } from '@/lib/constants'
 
 // Static routes worth indexing. Blog articles get a higher priority since
 // they're the pages we want people to find and share.
-const routes: { path: string; priority: number }[] = [
+const staticRoutes: { path: string; priority: number }[] = [
   { path: '', priority: 1 },
   { path: '/quickstart', priority: 0.7 },
   { path: '/blog', priority: 0.7 },
-  { path: '/blog/ethereum-client-bakeoff', priority: 0.9 },
-  { path: '/blog/how-we-tested-with-claude', priority: 0.8 },
-  { path: '/blog/bakeoff-harness', priority: 0.8 },
-  { path: '/blog/bakeoff-results', priority: 0.8 },
+]
+
+const blogRoutes: { path: string; priority: number }[] = ARTICLES.map((article) => ({
+  path: `/blog/${article.slug}`,
+  priority: article.sitemapPriority,
+}))
+
+const routes: { path: string; priority: number }[] = [
+  ...staticRoutes,
+  ...blogRoutes,
   { path: '/deck/bakeoff.html', priority: 0.6 },
 ]
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return routes.map(({ path, priority }) => ({
-    url: `${BASE}${path}`,
+    url: `${SITE_CONFIG.url}${path}`,
     changeFrequency: 'monthly',
     priority,
   }))

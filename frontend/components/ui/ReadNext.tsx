@@ -1,15 +1,9 @@
 import Link from 'next/link'
-
-const ARTICLES = [
-  { slug: 'ethereum-client-bakeoff', title: 'Ethereum client bake-off' },
-  { slug: 'how-we-tested-with-claude', title: 'How we tested with Claude' },
-  { slug: 'bakeoff-harness', title: 'The bake-off harness' },
-  { slug: 'bakeoff-results', title: 'Bake-off results' },
-] as const
+import { ARTICLES } from '@/lib/articles'
 
 export interface ReadNextProps {
   /** The slug of the article this component is rendered on — excluded from the list. */
-  currentSlug: (typeof ARTICLES)[number]['slug']
+  currentSlug: string
 }
 
 /**
@@ -18,7 +12,9 @@ export interface ReadNextProps {
  * one it's rendered on.
  */
 export function ReadNext({ currentSlug }: ReadNextProps) {
-  const others = ARTICLES.filter((article) => article.slug !== currentSlug)
+  const others = ARTICLES.filter((article) => article.slug !== currentSlug).map(
+    ({ slug, navTitle }) => ({ slug, navTitle })
+  )
 
   return (
     <section className="mt-10 sm:mt-16 border-t border-border pt-6">
@@ -27,7 +23,7 @@ export function ReadNext({ currentSlug }: ReadNextProps) {
         {others.map((article) => (
           <li key={article.slug}>
             <Link href={`/blog/${article.slug}`} className="text-primary hover:underline">
-              {article.title}
+              {article.navTitle}
             </Link>
           </li>
         ))}

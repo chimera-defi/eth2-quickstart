@@ -2,38 +2,16 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { AnchorHeading } from '@/components/ui/AnchorHeading'
 import { ArticleJsonLd } from '@/components/ui/ArticleJsonLd'
+import { ArticleToc } from '@/components/ui/ArticleToc'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ReadNext } from '@/components/ui/ReadNext'
+import { buildArticleMetadata } from '@/lib/articles'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowRight } from 'lucide-react'
 
-const PAGE_TITLE = 'Ethereum Client Bake-off - ETH2 Quick Start'
-const PAGE_DESCRIPTION =
-  'The full write-up: results from a 23-day Ethereum execution and consensus client sync campaign, including the restart-resilience findings the headline numbers hide.'
-const PAGE_OG_ALT =
-  'The fastest Ethereum client is one almost nobody runs — a 23-day client bake-off'
-
-export const metadata: Metadata = {
-  title: PAGE_TITLE,
-  description: PAGE_DESCRIPTION,
-  alternates: { canonical: '/blog/ethereum-client-bakeoff' },
-  openGraph: {
-    type: 'article',
-    siteName: 'ETH2 Quick Start',
-    images: [{ url: '/og-bakeoff.png', width: 1200, height: 630, alt: PAGE_OG_ALT }],
-    url: '/blog/ethereum-client-bakeoff',
-    title: PAGE_TITLE,
-    description: PAGE_DESCRIPTION,
-  },
-  twitter: {
-    card: 'summary_large_image',
-    images: [{ url: '/og-bakeoff.png', width: 1200, height: 630, alt: PAGE_OG_ALT }],
-    title: PAGE_TITLE,
-    description: PAGE_DESCRIPTION,
-  },
-}
+export const metadata: Metadata = buildArticleMetadata('ethereum-client-bakeoff')
 
 const tocLinks = [
   { label: 'TL;DR', href: '#tldr' },
@@ -230,14 +208,8 @@ export default function EthereumClientBakeoffPage() {
   return (
     <div className="min-h-screen py-12 sm:py-16 md:py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
-        <ArticleJsonLd
-          title={PAGE_TITLE}
-          description={PAGE_DESCRIPTION}
-          slug="ethereum-client-bakeoff"
-          image="/og-bakeoff.png"
-          datePublished="2026-07-19"
-        />
-        <header>
+        <ArticleJsonLd slug="ethereum-client-bakeoff" />
+        <header id="article-top" tabIndex={-1} className="focus:outline-none">
           <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
             Blog
           </p>
@@ -284,18 +256,7 @@ export default function EthereumClientBakeoffPage() {
           </p>
         </Card>
 
-        <nav aria-label="Table of contents" className="mt-8 rounded-lg border border-border p-4 sm:p-5">
-          <p className="font-mono text-xs text-muted-foreground uppercase tracking-wide">Contents</p>
-          <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
-            {tocLinks.map((link) => (
-              <li key={link.href}>
-                <a href={link.href} className="text-primary hover:underline">
-                  {link.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <ArticleToc links={tocLinks} />
 
         <section className="mt-10 sm:mt-16">
           <AnchorHeading id="tldr" className="text-lg sm:text-xl font-semibold text-foreground">
