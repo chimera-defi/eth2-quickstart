@@ -15,20 +15,22 @@
 <style>
   :root{
     --ground:#0a0b12; --panel:#13141f; --panel-2:#191b28;
-    --ink:#e9eaf2; --muted:#8b8ea8; --faint:#5a5d76;
+    --ink:#e9eaf2; --muted:#8b8ea8; --faint:#767a97;
     --line:#23253a; --line-2:#2e3150;
     --accent:#a78bfa; --accent-dim:#7c6bd6;
     --signal:#f5a524; --good:#34d399; --bad:#fb7185;
+    --hatch-a:#3c3f5c; --hatch-b:#2a2c44;
     --mono:ui-monospace,"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;
     --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     --maxw:1080px;
   }
   :root[data-theme="light"]{
     --ground:#f3f2ef; --panel:#ffffff; --panel-2:#f7f6f3;
-    --ink:#191a24; --muted:#5c6072; --faint:#9498ac;
+    --ink:#191a24; --muted:#5c6072; --faint:#676c85;
     --line:#e2e0da; --line-2:#d3d1c9;
     --accent:#6d47d9; --accent-dim:#8b6bea;
-    --signal:#b3730a; --good:#0f9d6a; --bad:#d1425a;
+    --signal:#966008; --good:#0c7c54; --bad:#c7304a;
+    --hatch-a:#d3d1c9; --hatch-b:#b9b6ac;
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
@@ -96,7 +98,7 @@
     background:linear-gradient(90deg,var(--accent-dim),var(--accent));
     transform-origin:left;transform:scaleX(var(--v,0));transition:transform 1s cubic-bezier(.2,.7,.2,1)}
   .slide:not(.active) .bar .fill{transform:scaleX(0)}
-  .bar.muted .fill{background:repeating-linear-gradient(45deg,#3c3f5c,#3c3f5c 5px,#2a2c44 5px,#2a2c44 10px)}
+  .bar.muted .fill{background:repeating-linear-gradient(45deg,var(--hatch-a),var(--hatch-a) 5px,var(--hatch-b) 5px,var(--hatch-b) 10px)}
   .bar.sig .fill{background:linear-gradient(90deg,#c07d12,var(--signal))}
   .bar .val{font-family:var(--mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
   .bar .val b{color:var(--ink);font-weight:600}
@@ -448,12 +450,24 @@
   }
   var notesEl=document.getElementById('notes');
   function toggleNotes(){notesEl.classList.toggle('show')}
-  document.getElementById('notesBtn').addEventListener('click',toggleNotes);
+  // Chrome buttons (next/prev/notes/theme) keep focus after a mouse click,
+  // which would otherwise make e.target a <button> for every subsequent
+  // keydown and (a) get swallowed by the guard below and/or (b) let a later
+  // Space keypress both re-activate the focused button *and* advance the
+  // slide. Blurring right after the click side-steps both failure modes.
+  function blurAfter(fn){
+    return function(e){ fn(); if(e&&e.currentTarget&&e.currentTarget.blur){e.currentTarget.blur();} };
+  }
+  document.getElementById('notesBtn').addEventListener('click',blurAfter(toggleNotes));
   function next(){go(i+1)} function prev(){go(i-1)}
-  document.getElementById('next').addEventListener('click',next);
-  document.getElementById('prev').addEventListener('click',prev);
+  document.getElementById('next').addEventListener('click',blurAfter(next));
+  document.getElementById('prev').addEventListener('click',blurAfter(prev));
   document.addEventListener('keydown',function(e){
-    if(e.target.closest&&e.target.closest('a,button,input,textarea,select,[contenteditable]'))return;
+    // Only genuine text-entry widgets should block slide-nav shortcuts.
+    // Buttons (next/prev/notes/theme) must NOT be in this list: they can
+    // retain focus after a click, and excluding them here would silently
+    // swallow every arrow/N/P keypress until the user clicks elsewhere.
+    if(e.target.closest&&e.target.closest('input,textarea,select,[contenteditable]'))return;
     if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();next()}
     else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();prev()}
     else if(e.key==='Home'){go(0)} else if(e.key==='End'){go(n-1)}
@@ -465,15 +479,27 @@
     if(e.target.closest('a,button'))return;
     (e.clientX > window.innerWidth*0.5) ? next() : prev();
   });
-  // theme toggle
+  // theme toggle (persisted in localStorage; defaults to dark when unset
+  // or when storage is unavailable, e.g. privacy mode / file:// contexts)
   var root=document.documentElement;
-  document.getElementById('themeBtn').addEventListener('click',function(){
+  var THEME_KEY='bakeoff-theme';
+  function readStoredTheme(){
+    try{ return localStorage.getItem(THEME_KEY); }catch(e){ return null; }
+  }
+  function writeStoredTheme(t){
+    try{ localStorage.setItem(THEME_KEY, t); }catch(e){ /* ignore */ }
+  }
+  var stored=readStoredTheme();
+  if(stored==='light'||stored==='dark'){ root.setAttribute('data-theme', stored); }
+  document.getElementById('themeBtn').addEventListener('click',blurAfter(function(){
     var cur=root.getAttribute('data-theme');
     // The deck's default render is committed-dark (no prefers-color-scheme:light
     // override), so treat "unset" as dark — first click always reaches light.
     var isDark = cur ? cur==='dark' : true;
-    root.setAttribute('data-theme', isDark?'light':'dark');
-  });
+    var next=isDark?'light':'dark';
+    root.setAttribute('data-theme', next);
+    writeStoredTheme(next);
+  }));
   var start=parseInt((location.hash||'').slice(1),10);
   go(isNaN(start)?0:start-1);
   addEventListener('hashchange',function(){var h=parseInt(location.hash.slice(1),10);if(!isNaN(h)&&h-1!==i)go(h-1)});
