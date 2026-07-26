@@ -12,6 +12,12 @@ The blog lives in the Next.js frontend (`frontend/app/blog/`). Articles are **ha
 | `/blog/bakeoff-harness` | the function-level harness reference |
 | `/blog/bakeoff-results` | the raw results |
 
+All of it is live at **[eth2quickstart.com](https://eth2quickstart.com)** — e.g.
+[`/blog`](https://eth2quickstart.com/blog). **Merging to `master` publishes automatically**
+(within minutes, edits included), so a merged article change is public immediately. Preview
+locally with `bun run build && bun run start` in `frontend/` first — see
+[frontend/README.md](../frontend/README.md#deployment).
+
 ---
 
 ## Sharing an article — deep links to any subheading

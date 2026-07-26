@@ -10,6 +10,13 @@ This file provides essential context for AI assistants working in this repositor
 
 The project also includes a **Next.js marketing website** (`frontend/`) and comprehensive **CI pipelines** via GitHub Actions.
 
+**The website is live at [eth2quickstart.com](https://eth2quickstart.com)** (no hyphen), and
+**merging to `master` publishes to it automatically** — within minutes, for edits as well as new
+routes. The deploy pipeline is configured outside this repo (no workflow or deploy config here);
+it serves the Next.js standalone build behind CloudFront. Treat any `frontend/` change reaching
+`master` as publishing to a public website: verify it with a production build and a local preview
+first. See `frontend/README.md` (Deployment) and `docs/BLOG_GUIDE.md`.
+
 ---
 
 ## Critical Rules — Read First
