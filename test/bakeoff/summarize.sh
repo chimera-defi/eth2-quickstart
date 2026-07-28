@@ -52,7 +52,7 @@ _cl_basenames="$(awk '/^CL_DATA_DIRS=\(/{f=1;next} /^\)/{f=0} f' \
 
 # Machine-readable summary.
 {
-  echo "pair,execution,consensus,install_exit_code,crash,sample_count,last_doctor_status,last_disk_bytes,residual_bytes,config_optimal,config_optimal_detail,fully_synced,sync_duration,sync_only,last_el_block,el_bytes,cl_bytes,anchor_synced"
+  echo "pair,execution,consensus,install_exit_code,crash,sample_count,last_doctor_status,last_disk_bytes,residual_bytes,config_optimal,config_optimal_detail,fully_synced,sync_duration,sync_only,last_el_block,el_bytes,cl_bytes,anchor_synced,crash_loop_detected"
   for dir in "$artifact_root"/*__*; do
     [[ -d "$dir" ]] || continue
     pair="$(basename "$dir")"
@@ -109,8 +109,9 @@ _cl_basenames="$(awk '/^CL_DATA_DIRS=\(/{f=1;next} /^\)/{f=0} f' \
       el_bytes=0; cl_bytes=0
     fi
     anchor_synced="$(grep -E '^anchor_synced=' "$dir/env.txt" 2>/dev/null | tail -1 | cut -d= -f2-)" || true
+    crash_loop="$(grep -E '^crash_loop_detected=' "$dir/env.txt" 2>/dev/null | tail -1 | cut -d= -f2-)" || true
 
-    echo "$pair,$execution,$consensus,${install_code:-missing},${crash:-unknown},$sample_count,$last_doctor,${last_disk:-0},${residual:-0},${cfg_optimal:-unknown},${cfg_detail:-},${_synced:-unknown},$sync_dur_h,$sync_only_h,$last_el_block,${el_bytes:-0},${cl_bytes:-0},${anchor_synced:-n/a}"
+    echo "$pair,$execution,$consensus,${install_code:-missing},${crash:-unknown},$sample_count,$last_doctor,${last_disk:-0},${residual:-0},${cfg_optimal:-unknown},${cfg_detail:-},${_synced:-unknown},$sync_dur_h,$sync_only_h,$last_el_block,${el_bytes:-0},${cl_bytes:-0},${anchor_synced:-n/a},${crash_loop:-no}"
   done
 } > "$artifact_root/summary.csv"
 

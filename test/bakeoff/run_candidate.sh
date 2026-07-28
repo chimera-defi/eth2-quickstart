@@ -17,6 +17,10 @@ install_timeout="${ETH2QS_BAKEOFF_INSTALL_TIMEOUT:-90m}"
 stall_restart="${ETH2QS_BAKEOFF_STALL_RESTART:-no}"
 stall_samples="${ETH2QS_BAKEOFF_STALL_SAMPLES:-10}"
 stall_max_restarts="${ETH2QS_BAKEOFF_STALL_MAX_RESTARTS:-3}"
+# Crash-loop watchdog: always-on (not opt-in). Default 20 is far above what a
+# healthy candidate ever sees (~0 restarts across a run) but far below a real
+# crash loop (hundreds within minutes) — see incident note at the watchdog site.
+crash_loop_max_restarts="${ETH2QS_BAKEOFF_MAX_RESTARTS:-20}"
 caps="$REPO_ROOT/test/bakeoff/apply_resource_caps.sh"
 
 # Anchor mode: when set, preserves this EL across the entire CL sweep.
@@ -96,7 +100,7 @@ fi
 # Without this, a prior .anchor-poisoned bypasses the watchdog entirely (line 175 guard),
 # then finalization falsely writes anchor_synced=no for an otherwise-clean run.
 if [[ "${ETH2QS_BAKEOFF_FORCE:-}" == "yes" ]]; then
-  rm -f "$out/.anchor-poisoned" "$out/.done"
+  rm -f "$out/.anchor-poisoned" "$out/.crash-looped" "$out/.done"
 fi
 
 cd "$REPO_ROOT"
@@ -208,11 +212,64 @@ if [[ "$install_rc" -eq 0 ]]; then
   no_progress_streak=0
   stall_restarts=0
   prev_progress=""
+  # Crash-loop watchdog baseline: unit(s) under test only (anchor mode tests
+  # cl.service alone; the anchor eth1.service is pre-existing and out of scope).
+  if [[ -n "$anchor_el" ]]; then
+    crash_loop_units=(cl.service)
+  else
+    crash_loop_units=(eth1.service cl.service)
+  fi
+  crash_loop_baseline_eth1="$(systemctl show eth1.service -p NRestarts --value 2>/dev/null || true)"
+  [[ "$crash_loop_baseline_eth1" =~ ^[0-9]+$ ]] || crash_loop_baseline_eth1=0
+  crash_loop_baseline_cl="$(systemctl show cl.service -p NRestarts --value 2>/dev/null || true)"
+  [[ "$crash_loop_baseline_cl" =~ ^[0-9]+$ ]] || crash_loop_baseline_cl=0
   while [[ "$(date +%s)" -lt "$end_at" ]]; do
     bakeoff_write_sample "$out" "$REPO_ROOT" || log_warn "$pair: sample write failed"
     if ! bakeoff_services_alive; then
       crashed="yes"
       log_warn "$pair: a service is no longer active during the window"
+    fi
+    # Crash-loop watchdog (always-on): detect a unit under test flapping under
+    # systemd's Restart= (e.g. a config error causing an immediate exit that
+    # respawns every few seconds). "$crashed"/bakeoff_services_alive above
+    # only catches this if a sample happens to land while the unit is down
+    # between restarts — unreliable, since a flapping unit is "active" again
+    # within seconds. NRestarts is cumulative and monotonic, so it catches the
+    # pattern regardless of sample timing. Incident: lodestar's cl.service
+    # crash-looped on `Unknown argument: chain` (exit 1, ~5s per cycle) and was
+    # respawned 20,892 times over ~2 days; the harness kept sampling to the
+    # full 72h window on generic "service is no longer active" warnings alone
+    # and would have produced nothing without a human noticing. This watchdog
+    # fails the row fast instead.
+    # NOTE: the break decision below is driven by an in-loop flag, not by
+    # checking for "$out/.crash-looped" on disk — a marker file left over from
+    # a prior interrupted run (killed mid-window, before .done was written)
+    # would otherwise cause a false-positive break on the very first sample of
+    # a rerun, with no matching crash_loop_detected= line in the fresh env.txt.
+    crash_loop_hit=no
+    for _cl_unit in "${crash_loop_units[@]}"; do
+      _cl_cur="$(systemctl show "$_cl_unit" -p NRestarts --value 2>/dev/null || true)"
+      [[ "$_cl_cur" =~ ^[0-9]+$ ]] || _cl_cur=0
+      if [[ "$_cl_unit" == "eth1.service" ]]; then
+        _cl_base="$crash_loop_baseline_eth1"
+      else
+        _cl_base="$crash_loop_baseline_cl"
+      fi
+      _cl_delta=$(( _cl_cur - _cl_base ))
+      if [[ "$_cl_delta" -gt "$crash_loop_max_restarts" ]]; then
+        touch "$out/.crash-looped"
+        {
+          echo "crash_loop_detected=yes"
+          echo "crash_loop_unit=$_cl_unit"
+          echo "crash_loop_restarts=$_cl_delta"
+        } >> "$out/env.txt"
+        log_error "$pair: crash-loop-watchdog: $_cl_unit restarted $_cl_delta times (> $crash_loop_max_restarts threshold) at $(date -u +%Y-%m-%dT%H:%M:%SZ): row invalid"
+        crash_loop_hit=yes
+        break
+      fi
+    done
+    if [[ "$crash_loop_hit" == "yes" ]]; then
+      break
     fi
     # Anchor-only watchdog: detect if the anchor EL dropped into a re-snap.
     # DETECTION ONLY — never restarts or kills anything.
