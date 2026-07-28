@@ -121,7 +121,12 @@ rm -rf ./tmp/
 # Create systemd service for beacon node
 # --rcConfig loads node options (checkpointSyncUrl, dataDir, execution.urls…);
 # --paramsFile is the chain-spec preset file and silently ignores node options.
-BEACON_EXEC_START="$LODESTAR_BIN beacon --network mainnet --rcConfig $LODESTAR_DIR/beacon.config.json --execution.urls http://$LH:$ENGINE_PORT --jwtSecret $HOME/secrets/jwt.hex"
+# History pruning MUST be passed as the --chain.pruneHistory CLI flag, not as a
+# nested "chain": {"pruneHistory": true} object in --rcConfig: lodestar's
+# rcConfig parser rejects unrecognized top-level keys and exits immediately
+# with "Unknown argument: chain" (confirmed empirically — this crash-looped
+# cl.service 20,892 times over ~2 days in a bake-off run before being caught).
+BEACON_EXEC_START="$LODESTAR_BIN beacon --network mainnet --rcConfig $LODESTAR_DIR/beacon.config.json --execution.urls http://$LH:$ENGINE_PORT --jwtSecret $HOME/secrets/jwt.hex --chain.pruneHistory"
 
 create_systemd_service "cl" "Lodestar Ethereum Consensus Client (Beacon Node)" "$BEACON_EXEC_START" "$(whoami)" "on-failure" "600" "5" "300" "network-online.target eth1.service" "network-online.target eth1.service"
 
