@@ -10,6 +10,10 @@ execution="${1:?usage: run_candidate.sh <execution> <consensus>}"
 consensus="${2:?usage: run_candidate.sh <execution> <consensus>}"
 pair="${execution}__${consensus}"
 artifact_root="$REPO_ROOT/artifacts/${ETH2QS_BAKEOFF_RUN_ID:-client-bakeoff-2026-06-22}"
+# Advisor alert channel: single JSONL file per run_id, shared across every
+# candidate row (and with run_queue.sh, when driven from there) so an
+# operator/supervising-AI can `tail -f` one file for the whole run.
+export ETH2QS_BAKEOFF_ALERT_LOG="${ETH2QS_BAKEOFF_ALERT_LOG:-$artifact_root/advisor-alerts.jsonl}"
 out="$artifact_root/$pair"
 window="${ETH2QS_BAKEOFF_SYNC_WINDOW_SECONDS:-5400}"
 interval="${ETH2QS_BAKEOFF_SAMPLE_INTERVAL_SECONDS:-120}"
@@ -187,6 +191,9 @@ fi
 install_rc=$?
 set -e
 echo "install_exit_code=$install_rc" >> "$out/env.txt"
+if [[ "$install_rc" -ne 0 ]]; then
+  bakeoff_advisor_alert error "$pair" install_failed "phase2 install exited $install_rc (see $out/install.log)" || true
+fi
 
 # Apply resource caps once services exist.
 "$caps" apply > "$out/resource-caps.log" 2>&1 || true
@@ -264,6 +271,7 @@ if [[ "$install_rc" -eq 0 ]]; then
           echo "crash_loop_restarts=$_cl_delta"
         } >> "$out/env.txt"
         log_error "$pair: crash-loop-watchdog: $_cl_unit restarted $_cl_delta times (> $crash_loop_max_restarts threshold) at $(date -u +%Y-%m-%dT%H:%M:%SZ): row invalid"
+        bakeoff_advisor_alert error "$pair" crash_loop "$_cl_unit restarted $_cl_delta times (> $crash_loop_max_restarts threshold)" || true
         crash_loop_hit=yes
         break
       fi
@@ -310,6 +318,7 @@ if [[ "$install_rc" -eq 0 ]]; then
       if [[ "$anchor_miss_streak" -ge 2 ]]; then
         touch "$out/.anchor-poisoned"
         log_error "anchor EL $anchor_el lost $anchor_miss_streak consecutive samples at $(date -u +%Y-%m-%dT%H:%M:%SZ): row invalid"
+        bakeoff_advisor_alert error "$pair" anchor_poisoned "anchor EL $anchor_el lost $anchor_miss_streak consecutive samples" || true
       fi
     fi
     # Stall-watchdog: opt-in auto-restart of a stuck EL/CL (bounded).
@@ -374,6 +383,7 @@ if [[ "$install_rc" -eq 0 ]]; then
           log_error "$pair: stall-watchdog: $stall_unit made no progress after $stall_restarts restarts at $(date -u +%Y-%m-%dT%H:%M:%SZ): row invalid"
           echo "stall_restarts=$stall_restarts" >> "$out/env.txt"
           echo "stall_failed=yes" >> "$out/env.txt"
+          bakeoff_advisor_alert error "$pair" stall "$stall_unit made no progress after $stall_restarts restarts" || true
           break
         fi
       fi
@@ -394,6 +404,16 @@ if [[ "$install_rc" -eq 0 ]]; then
   bakeoff_write_sample "$out" "$REPO_ROOT" || log_warn "$pair: sample write failed"
 fi
 grep -q '^fully_synced=' "$out/env.txt" || echo "fully_synced=no" >> "$out/env.txt"
+# Window-capped-without-sync: only fires when the observation window actually
+# ran and expired on its own (install succeeded) without ever reaching
+# fully_synced=yes, and neither of the two OTHER give-up paths (crash-loop,
+# stall) already fired their own error alert for this same row.
+if [[ "$install_rc" -eq 0 ]] \
+  && ! grep -q '^fully_synced=yes$' "$out/env.txt" \
+  && [[ ! -f "$out/.crash-looped" ]] \
+  && [[ ! -f "$out/.stalled" ]]; then
+  bakeoff_advisor_alert warn "$pair" window_capped_unsynced "observation window (${window}s) expired without reaching synced" || true
+fi
 echo "service_crash_observed=$crashed" >> "$out/env.txt"
 # Anchor finalize gate: record anchor_synced=yes|no only when running in anchor mode.
 # Non-anchor runs write nothing here; summarize.sh reads missing as n/a (unset behavior unchanged).
