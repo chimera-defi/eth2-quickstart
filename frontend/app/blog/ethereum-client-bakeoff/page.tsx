@@ -170,7 +170,7 @@ const elFootprints = [
   { name: 'Nimbus-eth1', gib: 37.3, label: '~40 GB', status: 'partial' as const },
   { name: 'Ethrex', gib: 466.6, label: '~467 GiB', status: 'growing' as const },
   { name: 'Reth', gib: 1003.2, label: '~0.98 TiB', status: 'partial' as const },
-  { name: 'Nethermind', gib: 1068, label: '~1.1 TiB', status: 'synced' as const },
+  { name: 'Nethermind', gib: 1088.1, label: '~1.1 TiB', status: 'synced' as const },
   { name: 'Besu', gib: 1109.7, label: '~1.08 TiB', status: 'synced' as const },
   { name: 'Geth', gib: 1160.3, label: '~1.13 TiB', status: 'synced' as const },
   { name: 'Erigon', gib: 1242.6, label: '~1.21 TiB', status: 'frozen' as const },
