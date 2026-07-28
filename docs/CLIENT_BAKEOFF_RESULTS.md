@@ -6,7 +6,7 @@ _Stage A (triage) synthesized from `artifacts/client-bakeoff-2026-06-22/` on 202
 
 - **Baseline-anchored coverage (12 candidates):** every execution client vs fixed Prysm (7 ELs), plus every other consensus client vs a fixed execution anchor (5 CLs). This isolates each client against a known-good counterpart instead of testing every NxM pair.
   - ELs × prysm: geth, erigon, reth, nethermind, besu, nimbus_eth1, ethrex
-  - CLs × fixed anchor EL: lighthouse, teku, nimbus, lodestar, grandine. The first sweep used **ethrex**, already synced at tip. The originally planned geth sweep was initially deferred, then completed on 2026-07-08 as a cross-anchor check; the heavyweight/lightweight tiers reproduced, while lodestar and lighthouse swapped order within the lightweight tier.
+  - CLs × fixed anchor EL: lighthouse, teku, nimbus, lodestar, grandine. The first sweep used **ethrex**, already synced at tip. The originally planned geth sweep was initially deferred, then completed on 2026-07-08 as a cross-anchor check, and a third sweep against a **nethermind** anchor followed on 2026-07-26. Across all three anchors the same three tiers reproduce — lightweight {lodestar, lighthouse}, mid {teku, grandine}, heavy {nimbus} — while the order within each pair is measurement-window-sensitive (lodestar↔lighthouse between ethrex and geth; teku↔grandine between geth and nethermind).
 - **Two stages:**
   - **Stage A — triage (this doc):** does each candidate install, checkpoint-sync, and authenticate the Engine API? ~5-min observation window per candidate, 60s sampling.
   - **Stage B — full sync (complete):** each candidate reached a final synced, capped, or no-sync verdict; synced disk footprints are recorded below.
@@ -127,11 +127,31 @@ The same 5-CL sweep was re-run against a **geth** anchor to verify the ranking i
 
 **geth-anchor CL disk ranking (actual disk, smaller = better): lodestar (~177 MiB) < lighthouse (~518 MiB) < grandine (~725 MiB actual) < teku (~936 MiB) < nimbus (~1.2 GiB).**
 
-**Cross-anchor verdict — the tiers reproduce:**
-- **Heavyweight tier holds on both anchors:** nimbus is always the largest CL and teku always the second-largest, on both the ethrex and geth anchors.
-- **Lightweight tier holds:** grandine, lighthouse, and lodestar are always the three smallest. The lodestar↔lighthouse order flips between anchors (geth: lodestar < lighthouse; ethrex: lighthouse < lodestar) but both sit in the smallest tier, where the gap is small and measurement-window-sensitive.
-- **Absolute footprints scale with observation time, not just the EL anchor.** The geth-anchor numbers are much smaller (nimbus ~1.2 GiB vs ~5.0 GB; teku ~936 MiB vs ~2.1 GB) because those runs were measured minutes after checkpoint-sync (a fresh datadir), while the ethrex-anchor runs ran longer post-sync and had filled more of the blob-retention / state-history window. The broad tiers are anchor-independent here; exact within-tier order is measurement-window-sensitive.
-- **Net:** two different EL anchors (ethrex, geth) reproduce the same heavyweight/lightweight tiers, empirically supporting EL/CL decoupling without claiming an identical total order.
+### CL matrix — second cross-anchor confirmation (anchor = **nethermind**, run_id `client-bakeoff-anchor-nethermind-2026-07-26b`, 2026-07-26)
+
+A third run of the same 5-CL sweep was performed against a **nethermind** anchor (nethermind 1.39.2, the same instance recorded in the Stage B row above) to further stress-test the EL/CL decoupling claim beyond the ethrex↔geth check. The anchor EL was brought current to mainnet tip in ~1h53m before this sweep began — a catch-up, not a re-sync; its datadir was preserved untouched — and stayed at tip across all five runs; each run cycled only `cl`+`validator`. All five: `fully_synced=yes`, `config_optimal=yes`, `service_crash_observed=no`.
+
+| Consensus | Sync status | Sync time | Final CL datadir (rank by actual disk) | History-prune lever |
+| --- | --- | --- | --- | --- |
+| **lodestar** | ✅ synced | ~7m36s *(clean re-read — see caveat 1)* | **186,083,466 B (~178 MiB)** ← **smallest** | `--chain.pruneHistory` |
+| **lighthouse** | ✅ synced | ~10m07s | **491,525,193 B (~470 MiB)** | `checkpoint-sync-url` |
+| **teku** | ✅ synced (`anchor_synced=no` — watchdog false positive, see caveat 2) | ~10m07s | **875,146,169 B (~848 MiB)** *(clean re-read; a first run measured ~667 MiB — see caveat 2)* | `data-storage-mode=minimal` |
+| **grandine** | ✅ synced | ~9m58s | **1,074,340,425 B apparent / ~730 MiB actual** (sparse DB) | `--prune-storage` |
+| **nimbus** | ✅ synced | ~10m13s | **1,337,611,316 B (~1.3 GiB)** ← **largest** | `history=prune` |
+
+**nethermind-anchor CL disk ranking (actual disk, smaller = better): lodestar (~178 MiB) < lighthouse (~470 MiB) < grandine (~730 MiB actual) < teku (~848 MiB) < nimbus (~1.3 GiB).**
+
+**Caveats (mandatory — accuracy over a clean story):**
+1. **lodestar's row is a clean re-read; the discarded first attempt is instructive.** lodestar's first run on this anchor recorded ~76m14s — not a lodestar property: that run began while the anchor EL was still importing a ~2-day block gap (left by an unrelated lodestar crash-loop incident on this host), so lodestar's beacon could not report `is_optimistic=false` until the EL closed the gap. After the anchor returned to head and the crash-loop root cause was fixed, lodestar was re-measured from scratch: **~7m36s / 186,083,466 B (~178 MiB)**, `anchor_synced=yes`, `config_optimal=yes` — in line with the other four CLs and within ~1 MiB of its geth-anchor footprint (~177 MiB). The published row is the re-read; the superseded run is retained in the artifacts (`nethermind__lodestar.gapped-run-76m`) for provenance.
+2. **teku finalized `anchor_synced=no` on BOTH of its runs — a reproducible watchdog false positive, not an anchor problem.** Each time, the anchor was independently verified healthy at the exact mainnet head (`eth_syncing=false`, teku reporting `sync_distance=0`, `is_optimistic=false`) at the moment of the check. Root cause: teku's slow JVM warm-up leaves the anchor briefly undriven, its head lags, and the watchdog's two-consecutive-sample rule trips. It reproduced on a deliberate clean re-read, which is what upgrades it from a fluke to a known harness limitation — the watchdog should tolerate a bounded head lag, or only sample once the CL reports synced. Both runs' footprints are valid; the published row is the re-read (~848 MiB, vs ~667 MiB on the first run).
+3. **grandine sparse DB, again:** apparent `du -sb` (1,074,340,425 B) overstates real on-disk usage; actual on-disk usage is **~730 MiB**, the fair number for ranking — the same caveat as the geth-anchor row above.
+
+**Cross-anchor verdict — the tiers reproduce, not an identical order (now three anchors: ethrex, geth, nethermind):**
+- **nimbus is the largest CL on all three anchors** — the one ranking that holds without exception.
+- **{lodestar, lighthouse} are the two smallest CLs on all three anchors**, but which one is smallest is measurement-window-sensitive: lighthouse is smallest on the ethrex anchor; lodestar is smallest on both the geth and nethermind anchors.
+- **{teku, grandine} form a "mid" tier, and teku shows how soft within-tier ordering is.** teku was measured twice on this same anchor and moved ~27%: ~667 MiB on a first run, **~848 MiB on a deliberate clean re-read** — enough to flip it from below grandine (~730 MiB) to above it. Taking the re-read as authoritative, grandine < teku holds on all three anchors; the honest reading is that this pair's internal order is measurement-window-sensitive, not a stable client property.
+- **Absolute footprints scale with observation time, not just the EL anchor.** The geth- and nethermind-anchor numbers are much smaller than the ethrex-anchor ones (e.g. nimbus ~1.2–1.3 GiB vs ~5.0 GB) because those sweeps were measured minutes after checkpoint-sync (a fresh datadir), while the ethrex-anchor runs ran longer post-sync and had filled more of the blob-retention / state-history window. The tiers are anchor-independent here; exact within-tier order is measurement-window-sensitive.
+- **Net:** three different EL anchors (ethrex, geth, nethermind) reproduce the same three tiers — lightweight {lodestar, lighthouse}, mid {teku, grandine}, heavy {nimbus} — empirically supporting EL/CL decoupling, **without** claiming an identical total order across anchors.
 
 **Measurement notes:**
 - **grandine uses sparse DB files** → its apparent `du -sb` byte count (1,074,340,425 B) overstates real on-disk usage. `du -sh` reports **~725 MiB actual**, which is the fair number for ranking. The other four CLs had apparent ≈ actual.
