@@ -10,11 +10,17 @@ on:
     paths:
       - 'frontend/**'
       - '.github/workflows/frontend.yml'
+      # The site serves committed copies of these (frontend/public/llms*.txt),
+      # so a repo-root edit alone must still run the drift check below.
+      - 'llms.txt'
+      - 'llms-full.txt'
   pull_request:
     branches: [ main, master, develop, 'cursor/**' ]
     paths:
       - 'frontend/**'
       - '.github/workflows/frontend.yml'
+      - 'llms.txt'
+      - 'llms-full.txt'
 
 jobs:
   lint:
@@ -115,6 +121,22 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      # Runs BEFORE the build on purpose: `bun run build` fires the `prebuild`
+      # hook which regenerates these files, so checking afterwards would be
+      # testing the hook rather than the committed state. The site is deployed
+      # from the checkout by an out-of-repo pipeline that may never run the
+      # hook, so the committed copies are what actually ship.
+      - name: Verify served llms.txt files match repo root
+        run: |
+          bun scripts/sync-llms.mjs
+          if ! git diff --exit-code -- public/llms.txt public/llms-full.txt; then
+            echo "::error::frontend/public/llms.txt and/or llms-full.txt are stale."
+            echo "The website serves the COMMITTED copies under frontend/public/, so they must be"
+            echo "regenerated and committed whenever the repo-root llms.txt / llms-full.txt change."
+            echo "Fix: run 'bun scripts/sync-llms.mjs' from frontend/ and commit the regenerated files."
+            exit 1
+          fi
 
       - name: Build Next.js application
         run: bun run build
