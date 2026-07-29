@@ -50,8 +50,10 @@ checkpoint (2026-07-11) and is retained for provenance.
 
 ## 1. Headline findings (lead with these)
 
-1. **Disk winner: Nethermind ~251 GiB** — ~4.6× smaller than geth's ~1.13 TiB, the smallest of any client
-   that finished a *pruned-comparable* sync. This is the number to lead the disk story with.
+1. **Disk: no winner — the field converges.** Nethermind's ~251 GiB was a pre-backfill snap-sync-tip
+   snapshot; its steady state (measured 2026-07-28) is ~1.06 TiB — on par with geth (~1.13 TiB) and besu
+   (~1.08 TiB) once full post-merge history is counted. Disk size is set by history-retention config, not
+   client efficiency, so it isn't the axis to lead the disk story with; speed and restart-resume are.
 2. **Speed winner: ethrex ~2h16m** — the fastest cold sync in the entire field, by a wide margin
    (next is geth at ~8.5h). A ~0%-adoption minimalist Rust client (Lambda Class) beat everyone on speed.
 3. **The twist — ethrex's restart-resync cliff:** ethrex is fastest to sync but **throws away its entire
@@ -74,7 +76,7 @@ checkpoint (2026-07-11) and is retained for provenance.
 
 | EL | Status | Sync time | Footprint | Sync mode | Mainnet share | One-line verdict |
 |----|--------|-----------|-----------|-----------|--------------|------------------|
-| **nethermind** | ✅ synced | ~14.5h | **~251 GiB** | snap + AncientBarrier prune | 36.0% | **Disk winner.** Pruned-comparable. |
+| **nethermind** | ✅ synced | ~14.5h | **~1.06 TiB** steady-state (~251 GiB pre-backfill) | snap + AncientBarrier prune | 36.0% | On par with geth/besu on disk; diversity pick. |
 | **ethrex** | ✅ synced | **~2h16m** | ~286 GiB at sync → **~467 GiB** (2026-07-06, still growing even at tip) | snap (v19.0.0) | 0.0% | **Speed winner.** Un-pruned + serves ~no history → limitation note, not ranked on disk. Restart cliff (§3). |
 | **geth** | ✅ synced | ~8h28m | ~1.13 TiB | snap + `--history.chain postmerge` | 44.9% | Baseline. Rock-solid, resumes cleanly. |
 | **besu** | ✅ synced (un-pruned) | ~19h18m | ~1.08 TiB (un-pruned) | snap / Bonsai | 17.4% | Synced, but pruned re-run deadlocked twice → limitation note (§4). |
@@ -84,14 +86,15 @@ checkpoint (2026-07-11) and is retained for provenance.
 
 ### Rankings
 
-- **Disk (pruned-comparable only — the honest ranking):** nethermind ~251 GiB → geth ~1.13 TiB. Only these
-  two produced a pruned-comparable final footprint.
-- **Disk (raw, all synced ELs, context only):** nethermind 251 GiB < ethrex ~467 GiB (growing) < besu 1.08 TiB
-  (un-pruned) < geth 1.13 TiB. ethrex's footprint was ~286 GiB at sync completion but it prunes nothing — the
-  datadir keeps growing **even at the chain tip with `eth_syncing=false`** (re-measured 403 → 416 → ~467 GiB
-  across 2026-07-06, ~10 GiB/hr) *and* it serves almost no history (block lookups below head return `null`).
-  So it is neither compact nor a full-history archive; it is kept OUT of the official ranking because its
-  footprint is un-prunable and not steady-state (not apples-to-apples with a pruned node).
+- **Disk (no ranking to draw — the field converges):** geth (~1.13 TiB), nethermind (~1.06 TiB steady-state),
+  and besu (~1.08 TiB) all land in the same band once full post-merge history is retained; nethermind's
+  ~251 GiB reading was a pre-backfill snap-sync-tip snapshot, not its steady state. Disk size here is set by
+  a client-agnostic history-retention knob, not client efficiency.
+- **ethrex is excluded from that comparison, context only:** its footprint was ~286 GiB at sync completion
+  but it prunes nothing — the datadir keeps growing **even at the chain tip with `eth_syncing=false`**
+  (re-measured 403 → 416 → ~467 GiB across 2026-07-06, ~10 GiB/hr) *and* it serves almost no history (block
+  lookups below head return `null`). So it is neither compact nor a full-history archive; it is kept OUT of
+  the comparison because its footprint is un-prunable and not yet steady-state (result pending).
 - **Sync speed (all synced ELs):** ethrex ~2h16m < geth ~8h28m < nethermind ~14.5h < besu ~19h18m. The two
   full-sync-only clients (reth, nimbus_eth1) never finish inside the 72h window.
 
@@ -233,8 +236,9 @@ trustworthy. The bake-off's credibility rests on this gate.
 
 - **geth** — the boring, correct baseline. ~8.5h snap sync, ~1.13 TiB with post-merge history prune,
   resumes cleanly across restarts. 44.9% share. If you don't have a reason to run something else, run this.
-- **nethermind** — the disk champion at ~251 GiB (4.6× smaller than geth), ~14.5h sync, clean restart
-  behavior. 36% share. The pick when disk is the constraint.
+- **nethermind** — compact flat-storage state, ~14.5h sync, clean restart behavior, and a minority-client
+  diversity bonus. 36% share. Its disk footprint (~1.06 TiB steady-state) is on par with geth, not the
+  ~251 GiB pre-backfill space-saver it first appeared to be. The diversity pick.
 - **ethrex** — the sprinter with a glass jaw. Fastest cold sync (~2h16m), but an un-pruned datadir that keeps
   growing **even at the chain tip with `eth_syncing=false`** (~286 GiB at sync → ~467 GiB on 2026-07-06,
   ~10 GiB/hr) while serving *almost no history*, plus the restart-resync cliff (§3), makes it operationally
@@ -270,10 +274,10 @@ won't reach tip in 72h → it yields a partial EL footprint, not a new CL sweep.
 ## 10. Blog structure suggestion (for later)
 1. Hook: the fastest client to sync is one almost nobody runs — here's why (ethrex cliff teaser).
 2. What we measured + how we kept it honest (methodology + the config-optimality gate).
-3. The disk story: nethermind wins, by a lot.
+3. The disk story: there is no winner — the field converges.
 4. The speed story: ethrex wins, by a lot.
 5. The restart-resilience axis (the novel part): the three behaviors, with ethrex's cliff and besu's
    deadlock as the two vivid cases.
 6. Distribution nuance: why market share doesn't cleanly predict syncability.
-7. Recommendations: geth (default), nethermind (disk-constrained), + operational caveats for the rest.
+7. Recommendations: geth (default), nethermind (diversity pick), + operational caveats for the rest.
 8. CL matrix results (once available) + final EL+CL recommendation.

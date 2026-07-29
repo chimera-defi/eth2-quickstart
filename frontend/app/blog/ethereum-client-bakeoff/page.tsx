@@ -35,7 +35,7 @@ const executionClients = [
     name: 'Nethermind',
     result: 'synced',
     syncTime: '~14.5h',
-    footprint: '~251 GiB (pruned) — smallest',
+    footprint: '~1.06 TiB steady-state (~251 GiB pre-backfill)',
     syncMode: 'snap + Halite',
     mainnetShare: '36.0%',
     resultVariant: 'primary' as const,
@@ -60,9 +60,9 @@ const executionClients = [
   },
   {
     name: 'Besu',
-    result: 'synced (un-pruned)',
+    result: 'synced',
     syncTime: '~19h18m',
-    footprint: '~1.08 TiB (un-pruned)',
+    footprint: '~1.08 TiB',
     syncMode: 'snap / Bonsai',
     mainnetShare: '17.4%',
     resultVariant: 'default' as const,
@@ -162,11 +162,15 @@ const completedExecutionSyncs = [
 const syncChartMaxHours = 20
 
 // GiB, verified against docs/CLIENT_BAKEOFF_RESULTS.md exact byte counts (Stage B footprint table + client-limitations table).
+// Nethermind's synced-tip snapshot (~251 GiB) predates FastBlocks backfilling post-merge block
+// bodies/receipts; steady-state (measured 2026-07-28) is ~1.06 TiB (state ~226 GiB + ~842 GiB
+// post-merge history) — on par with the other ELs that retain full post-merge history. Ethrex is
+// still climbing at tip and is being re-measured, so its bar is marked "growing," not a settled size.
 const elFootprints = [
   { name: 'Nimbus-eth1', gib: 37.3, label: '~40 GB', status: 'partial' as const },
-  { name: 'Nethermind', gib: 251.1, label: '~251 GiB', status: 'synced' as const },
-  { name: 'Ethrex', gib: 466.6, label: '~467 GiB', status: 'synced' as const },
+  { name: 'Ethrex', gib: 466.6, label: '~467 GiB', status: 'growing' as const },
   { name: 'Reth', gib: 1003.2, label: '~0.98 TiB', status: 'partial' as const },
+  { name: 'Nethermind', gib: 1088.1, label: '~1.06 TiB', status: 'synced' as const },
   { name: 'Besu', gib: 1109.7, label: '~1.08 TiB', status: 'synced' as const },
   { name: 'Geth', gib: 1160.3, label: '~1.13 TiB', status: 'synced' as const },
   { name: 'Erigon', gib: 1242.6, label: '~1.21 TiB', status: 'frozen' as const },
@@ -264,9 +268,9 @@ export default function EthereumClientBakeoffPage() {
           </AnchorHeading>
           <div className="mt-4 grid gap-3 sm:gap-4 md:grid-cols-2">
             <Card padding="sm" className="bg-muted/30">
-              <h3 className="font-medium text-foreground">Disk winner — Nethermind, ~251 GiB</h3>
+              <h3 className="font-medium text-foreground">Disk: the field converges, ~1.0–1.2 TiB</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Pruned Nethermind was ~4.6x smaller than geth, the smallest of any client that finished a pruned, apples-to-apples sync.
+                Every EL that carries full post-merge history lands in the same band (geth 1.13 TiB, nethermind ~1.06 TiB, besu 1.08 TiB) — disk size is set by history-retention config, not client efficiency, so it isn&apos;t a good axis for picking a winner.
               </p>
             </Card>
             <Card padding="sm" className="bg-muted/30">
@@ -358,15 +362,20 @@ export default function EthereumClientBakeoffPage() {
             Disk footprint, at a glance
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            All seven execution clients. Hatched bars didn&apos;t finish a comparable sync — partial
-            (72h-capped) or frozen (erigon&apos;s no-sync deadlock) — so a short hatched bar isn&apos;t a
-            win: Nimbus-eth1&apos;s ~40 GB is only ~21% of a sync, not a finished footprint.
+            All seven execution clients. Hatched bars aren&apos;t a settled footprint — partial
+            (72h-capped), frozen (erigon&apos;s no-sync deadlock), or still-growing (ethrex, whose
+            steady-state we&apos;re re-measuring) — so a short hatched bar isn&apos;t a win:
+            Nimbus-eth1&apos;s ~40 GB is only ~21% of a sync, reth&apos;s ~0.98 TiB is a 72h-capped
+            partial (projected to land in the same band as the solid bars once finished), and
+            ethrex&apos;s ~467 GiB is still climbing, not a finished footprint. The three solid bars
+            (nethermind, besu, geth) converge in the same ~1.0–1.2 TiB band once full post-merge
+            history is retained — disk size is set by that retention config, not client efficiency.
           </p>
           <figure className="mt-4 hidden sm:block" aria-labelledby="disk-chart-title" aria-describedby="disk-chart-description">
             <svg className="h-auto w-full" viewBox="0 0 680 300" role="img">
               <title id="disk-chart-title">Ethereum execution-client disk footprint</title>
               <desc id="disk-chart-description">
-                Nimbus-eth1 partial about 40 GB, Nethermind synced about 251 GiB, Ethrex synced about 467 GiB, Reth partial about 0.98 TiB, Besu synced about 1.08 TiB, Geth synced about 1.13 TiB, Erigon frozen partial about 1.21 TiB.
+                Nimbus-eth1 partial about 40 GB, Ethrex still growing about 467 GiB, Reth partial about 0.98 TiB, Nethermind synced about 1.06 TiB steady-state, Besu synced about 1.08 TiB, Geth synced about 1.13 TiB, Erigon frozen partial about 1.21 TiB.
               </desc>
               <defs>
                 <pattern id="unfinished-bar" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)">
@@ -403,7 +412,7 @@ export default function EthereumClientBakeoffPage() {
               <text x="150" y="298" className="fill-muted-foreground text-[11px]">GiB</text>
             </svg>
             <figcaption className="mt-2 text-xs text-muted-foreground">
-              Only geth and nethermind are pruned, apples-to-apples comparable — see &ldquo;The disk story&rdquo; below for why the rest sit outside that comparison.
+              geth, nethermind, and besu converge in the same ~1.0–1.2 TiB band — see &ldquo;The disk story&rdquo; below for why disk size isn&apos;t the axis that separates this field.
             </figcaption>
           </figure>
           <dl className="mt-4 space-y-3 sm:hidden">
@@ -555,13 +564,15 @@ export default function EthereumClientBakeoffPage() {
             that reproduce across anchors.
           </p>
           <p className="mt-4 text-sm text-muted-foreground">
-            Disk, pruned and apples-to-apples: Nethermind (~251 GiB) &lt; Geth (~1.13 TiB) — the
-            only two with comparable numbers. Speed, among those that finished: ethrex (~2h16m)
-            &lt; Geth (~8h28m) &lt; Nethermind (~14.5h) &lt; Besu (~19h18m). The other three fall
-            out for a specific, documented reason each (below), not a blanket failure. This
-            The CL heavyweight/lightweight tiers also reproduced across two different EL anchors
-            (ethrex and geth), while lodestar and lighthouse swapped order within the lightweight
-            tier. The rest of this post is the <em>why</em> behind these numbers.
+            Disk: geth (~1.13 TiB), nethermind (~1.06 TiB steady-state), and besu (~1.08 TiB) all
+            converge in the same band once full post-merge history is retained — there&apos;s no
+            meaningful ranking to draw there. Speed, among those that finished: ethrex (~2h16m)
+            &lt; Geth (~8h28m) &lt; Nethermind (~14.5h) &lt; Besu (~19h18m) — that&apos;s the axis
+            that actually separates the field, along with restart-resume behavior. The other three
+            EL candidates fall out for a specific, documented reason each (below), not a blanket
+            failure. The CL heavyweight/lightweight tiers also reproduced across two different EL
+            anchors (ethrex and geth), while lodestar and lighthouse swapped order within the
+            lightweight tier. The rest of this post is the <em>why</em> behind these numbers.
           </p>
         </section>
 
@@ -679,40 +690,50 @@ export default function EthereumClientBakeoffPage() {
 
         <section className="mt-10 sm:mt-16">
           <AnchorHeading id="the-disk-story" className="text-lg sm:text-xl font-semibold text-foreground">
-            The disk story: Nethermind wins, by a lot
+            The disk story: there is no winner — the field converges
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            Only two clients produced a pruned, apples-to-apples footprint — geth and nethermind
-            (see the EL scorecard above) — so the honest head-to-head disk ranking is exactly
-            those two: Nethermind at <strong className="text-foreground">~251 GiB</strong> in
-            ~14.5h, versus geth&apos;s ~1.13 TiB in ~8h28m.
+            Nethermind&apos;s synced-tip snapshot read <strong className="text-foreground">~251 GiB</strong>,
+            well below geth&apos;s ~1.13 TiB — but that number was taken before nethermind&apos;s
+            FastBlocks finished backfilling post-merge block bodies and receipts. Its steady-state
+            datadir (measured 2026-07-28) is <strong className="text-foreground">~1.06 TiB</strong>:
+            state ~226 GiB (its compact Halite/Paprika flat storage) plus ~842 GiB of post-merge
+            history it retains, the same history geth keeps under{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--history.chain postmerge</code>.
+            Under matched history-retention configs, nethermind and geth are on par.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
-            Nethermind&apos;s Halite/Paprika flat storage plus snap sync lands it at roughly a quarter of
-            geth&apos;s size. It&apos;s also a minority client, so choosing it modestly improves
-            mainnet client diversity — a nice-to-have on top of the disk win. The cost is sync
-            time: ~14.5h vs geth&apos;s ~8.5h. If disk is your binding constraint, this is the
-            pick.
+            besu lands in the same band too, at ~1.08 TiB — the same order of magnitude, not an
+            outlier. reth (window-capped at 72h, ~21% by block) already tracked ~87% of geth&apos;s
+            size at that point and projects to ~1.1–1.2 TiB finished. So the four ELs with full
+            post-merge history — geth (1.13), nethermind (~1.06), besu (1.08), reth (~1.1–1.2
+            projected) — converge on roughly the same footprint. Disk size here is set by a
+            client-agnostic knob (how much post-merge history you retain), not by client
+            efficiency, so it isn&apos;t a good axis for picking a winner.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
-            Everything else is <em>not</em> pruned-comparable, for a specific reason each, and we
-            refuse to rank those on disk against a pruned node — that would be measuring different
-            things. They&apos;re recorded transparently as client limitations:
+            That leaves the axes that actually differ: <strong className="text-foreground">snap-sync
+            speed</strong> and <strong className="text-foreground">restart-resume stability</strong>{' '}
+            (both covered below). nethermind is still a good pick — its flat-storage state is
+            genuinely compact, and it&apos;s a minority client, so running it improves mainnet
+            client diversity — just not because it&apos;s smaller on disk than geth.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            The rest of the field didn&apos;t produce a comparable finished footprint, each for a
+            specific, documented reason — not a blanket failure:
           </p>
           <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
             <li>
-              <span className="font-medium text-foreground">besu</span> — synced, ~1.08 TiB
-              (un-pruned), ~19h18m. Synced cleanly, but the pruned re-run for a comparable number
-              deadlocked twice (below). Un-pruned → history-inflated.
-            </li>
-            <li>
-              <span className="font-medium text-foreground">ethrex</span> — synced, ~286 GiB →
-              ~467 GiB (growing), ~2h16m. Un-pruned and serves almost no history; datadir grows
-              even at tip. Neither compact nor a full archive. Speed is its claim, not size.
+              <span className="font-medium text-foreground">ethrex</span> — synced, ~2h16m, fastest
+              in the field. Its datadir kept growing even at tip (286 GiB → ~467 GiB, ~10 GiB/hr,
+              measured 2026-07-06). We&apos;re re-measuring whether that settles near the ~1.0–1.2
+              TiB the other ELs reach (normal post-merge backfill) or keeps climbing unbounded (a
+              real defect) — result pending. Speed is its settled claim; disk size isn&apos;t, yet.
             </li>
             <li>
               <span className="font-medium text-foreground">reth</span> — 72h cap at ~21%, ~0.98
-              TiB partial. Full-sync-only (no snap) — can&apos;t reach tip in a practical window.
+              TiB partial. Full-sync-only (no snap) — can&apos;t reach tip in a practical window,
+              though its trajectory already projects into the converged band above.
             </li>
             <li>
               <span className="font-medium text-foreground">nimbus_eth1</span> — 72h cap at
@@ -725,9 +746,9 @@ export default function EthereumClientBakeoffPage() {
             </li>
           </ul>
           <p className="mt-3 text-sm text-muted-foreground">
-            &ldquo;Outside the disk ranking&rdquo; does not mean &ldquo;failed to sync.&rdquo;
-            besu in particular synced to a fully-validating head — it&apos;s here only because we
-            don&apos;t have a pruned-comparable number for it.
+            besu, reth, and nimbus_eth1 all synced or made forward progress here — &ldquo;not a
+            finished, comparable footprint&rdquo; does not mean &ldquo;failed.&rdquo; Only erigon
+            produced no synced datadir at all.
           </p>
         </section>
 
@@ -1013,13 +1034,16 @@ export default function EthereumClientBakeoffPage() {
             <li>
               <span className="font-medium text-foreground">Default: geth.</span> Largest
               ecosystem, most documentation, the cleanest snap sync (~8.5h), and it resumes
-              gracefully across restarts. You pay for it in disk (~1.13 TiB). If you don&apos;t
-              have a specific reason to run something else, run this.
+              gracefully across restarts. Its disk footprint (~1.13 TiB) is on par with the other
+              ELs that carry full post-merge history — not a downside unique to geth. If you
+              don&apos;t have a specific reason to run something else, run this.
             </li>
             <li>
-              <span className="font-medium text-foreground">Disk-constrained: nethermind.</span>{' '}
-              ~251 GiB — 4.6× leaner than geth — with clean restart behavior and a
-              client-diversity bonus. Costs you sync time (~14.5h).
+              <span className="font-medium text-foreground">Diversity pick: nethermind.</span>{' '}
+              Compact flat-storage state, clean restart behavior, and a minority-client diversity
+              bonus. On disk it&apos;s on par with geth (~1.06 vs ~1.13 TiB) once full post-merge
+              history is counted — not the space-saver its snap-sync-tip snapshot (~251 GiB)
+              suggested. Costs a bit more sync time (~14.5h vs geth&apos;s ~8.5h).
             </li>
             <li>
               <span className="font-medium text-foreground">Consensus client: lighthouse</span> as
@@ -1028,9 +1052,9 @@ export default function EthereumClientBakeoffPage() {
             </li>
             <li>
               <span className="font-medium text-foreground">Watch, don&apos;t yet deploy: ethrex.</span>{' '}
-              Fascinating and fastest, but the un-pruned/growing footprint and the ~25-minute
-              restart cliff make it operationally costly today. Young (v19.0.0) — worth
-              revisiting.
+              Fascinating and fastest, but the ~25-minute restart cliff makes it operationally
+              costly today; we&apos;re separately re-measuring whether its still-growing footprint
+              settles near the pack or is a real defect. Young (v19.0.0) — worth revisiting.
             </li>
             <li>
               <span className="font-medium text-foreground">Enterprise with care: besu.</span> It
