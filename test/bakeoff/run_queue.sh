@@ -86,14 +86,16 @@ _other_candidate_running() {
 }
 
 # True (exit 0) when the anchor precondition holds: no anchor configured, or
-# the anchor EL's unit is active AND the harness's OWN synced predicate
-# (bakeoff_is_synced, lib.sh) reports fully synced. Reuses the existing
-# predicate rather than re-deriving the sync-progress jq logic that lives
-# inline in run_candidate.sh's anchor-mode precondition block.
+# the anchor EL's unit is active AND the execution client is synced to head.
+# Deliberately EXECUTION-ONLY (bakeoff_is_execution_synced, lib.sh) rather than
+# bakeoff_is_synced: anchor-mode cleanup stops the CL and purges its datadir
+# between candidates, so a beacon-inclusive predicate could never be satisfied
+# here and every queued row would wait out the timeout and be skipped. This
+# matches run_candidate.sh's own anchor preflight, which also checks the EL only.
 _anchor_ready() {
   [[ -z "$anchor_el" ]] && return 0
   systemctl is-active --quiet eth1.service 2>/dev/null || return 1
-  bakeoff_is_synced
+  bakeoff_is_execution_synced
 }
 
 # wait_for_preconditions <pair-or-dash>
@@ -187,9 +189,15 @@ while IFS=$'\t' read -r execution consensus reason || [[ -n "${execution:-}" ]];
     continue
   fi
 
-  log_info "run_queue: row $row_count ($pair): preconditions met; running run_candidate.sh"
+  # The queue's purpose is re-measuring pairs that already have a .done marker
+  # (that is what a "rerun queue" is for), and run_candidate.sh exits 0 without
+  # running anything when .done exists and FORCE is unset. Without this the
+  # queue would record a successful rerun while taking no measurement at all.
+  # Opt out with ETH2QS_BAKEOFF_QUEUE_FORCE=no if a row should be skipped when
+  # already complete.
+  log_info "run_queue: row $row_count ($pair): preconditions met; running run_candidate.sh (force=${ETH2QS_BAKEOFF_QUEUE_FORCE:-yes})"
   set +e
-  "$run_candidate_bin" "$execution" "$consensus"
+  ETH2QS_BAKEOFF_FORCE="${ETH2QS_BAKEOFF_QUEUE_FORCE:-yes}" "$run_candidate_bin" "$execution" "$consensus"
   rc=$?
   set -e
   printf '%s\trow=%d\tpair=%s\trc=%d\treason=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$row_count" "$pair" "$rc" "$reason" >> "$queue_log"

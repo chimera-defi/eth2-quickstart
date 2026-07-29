@@ -464,4 +464,13 @@ bakeoff_snapshot_disk "$out/disk-after-cleanup.tsv"
 
 echo "ended_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$out/env.txt"
 touch "$out/.done"
+
+# A crash-looped row is an invalid measurement, but install itself succeeded, so
+# install_rc is 0. Exiting 0 here would let run_queue.sh / run_bakeoff.sh record
+# the row as a clean run despite the .crash-looped marker and the error alert.
+# Cleanup and artifact capture above are preserved; only the terminal status
+# changes. 4 is distinct from 3 (anchor not synced) and from install failures.
+if [[ "${crash_loop_hit:-no}" == "yes" ]]; then
+  exit 4
+fi
 exit "$install_rc"
