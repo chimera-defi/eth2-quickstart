@@ -21,6 +21,11 @@
 #   ETH2QS_BAKEOFF_QUEUE_WAIT_SECONDS  bounded wait per row for preconditions
 #                                      (default 7200)
 #   ETH2QS_BAKEOFF_QUEUE_POLL_SECONDS  poll interval while waiting (default 60)
+#   ETH2QS_BAKEOFF_QUEUE_FORCE         "yes" (default) reruns a pair even when it
+#                                      already has a .done marker, which is the point
+#                                      of a rerun queue; set "no" to skip completed
+#                                      pairs instead. Forcing overwrites that pair's
+#                                      previous artifacts.
 #   ETH2QS_BAKEOFF_RUN_ID              same run_id used by run_candidate.sh;
 #                                      determines the shared artifact dir
 #   ETH2QS_BAKEOFF_ALERT_LOG           advisor-alert JSONL path (see lib.sh);
@@ -131,7 +136,7 @@ if [[ "$dry_run" == "yes" ]]; then
   echo "[dry-run] queue file: $queue_file"
   echo "[dry-run] operator gate: ETH2QS_BAKEOFF_CONFIRMED=yes (checked)"
   if [[ -n "$anchor_el" ]]; then
-    echo "[dry-run] anchor precondition: eth1.service active AND bakeoff_is_synced (anchor_el=$anchor_el)"
+    echo "[dry-run] anchor precondition: eth1.service active AND bakeoff_is_execution_synced (execution-only; anchor_el=$anchor_el)"
   else
     echo "[dry-run] anchor precondition: none (ETH2QS_BAKEOFF_ANCHOR_EL not set)"
   fi
