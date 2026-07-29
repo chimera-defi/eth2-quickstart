@@ -192,14 +192,15 @@ bakeoff_write_sample() {
   fi
 }
 
-bakeoff_is_synced() {
-  # Returns 0 only when the node is fully synced to head.
-  local b e
-  b="$(bakeoff_probe_beacon_sync)"; e="$(bakeoff_probe_execution_sync)"
-  # Beacon: data present, sync_distance<=4, not optimistic, EL not offline.
-  echo "$b" | jq -e '.data and (.data.sync_distance|tonumber) <= 4 and (.data.is_optimistic==false) and (.data.el_offline==false)' >/dev/null 2>&1 || return 1
-  # Execution: synced when eth_syncing is boolean false OR when it returns a
-  # progress object where currentBlock==highestBlock (nethermind-style caught-up).
+# Returns 0 when the EXECUTION client alone is synced to head. Split out from
+# bakeoff_is_synced so anchor-mode callers can check the preserved EL without
+# also requiring a beacon: between anchor-mode candidates the CL is stopped and
+# its datadir purged, so any beacon-inclusive predicate can never pass there.
+bakeoff_is_execution_synced() {
+  local e
+  e="$(bakeoff_probe_execution_sync)"
+  # Synced when eth_syncing is boolean false OR when it returns a progress
+  # object where currentBlock==highestBlock (nethermind-style caught-up).
   # highestBlock != "0x0" guards against the pre-sync zero state.
   echo "$e" | jq -e '
     (.result == false)
@@ -207,6 +208,16 @@ bakeoff_is_synced() {
          and (.result.currentBlock == .result.highestBlock)
          and (.result.highestBlock != "0x0") )
   ' >/dev/null 2>&1 || return 1
+  return 0
+}
+
+bakeoff_is_synced() {
+  # Returns 0 only when BOTH the beacon and the execution client are synced.
+  local b
+  b="$(bakeoff_probe_beacon_sync)"
+  # Beacon: data present, sync_distance<=4, not optimistic, EL not offline.
+  echo "$b" | jq -e '.data and (.data.sync_distance|tonumber) <= 4 and (.data.is_optimistic==false) and (.data.el_offline==false)' >/dev/null 2>&1 || return 1
+  bakeoff_is_execution_synced || return 1
   return 0
 }
 

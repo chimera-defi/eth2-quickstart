@@ -22,3 +22,8 @@
 # geth	prysm	rerun after extract_archive -o fix (97541bd)
 # nethermind	lodestar	rerun: lodestar pruneHistory CLI-flag fix (77d939d)
 # erigon	teku	rerun: previous row crash-looped before the watchdog existed
+#
+# Rerunning a pair that has already been measured is the normal case here, so
+# run_queue.sh forces by default (ETH2QS_BAKEOFF_QUEUE_FORCE=yes) and the rerun
+# OVERWRITES that pair's previous artifacts. Set ETH2QS_BAKEOFF_QUEUE_FORCE=no to
+# skip pairs that are already complete instead.
