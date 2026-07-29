@@ -250,7 +250,7 @@ const clMatrixNethermind = [
 
 const clNethermindNotes = [
   "**lodestar's nethermind-anchor sync time is now a clean, comparable 7m36s.** An earlier run took 76m14s, but that run spent most of its time waiting on the anchor importing a ~2-day block gap left by an earlier lodestar crash-loop incident — not a clean sync — so it was discarded and archived as `nethermind__lodestar.gapped-run-76m` (matching the campaign's existing convention for invalidated runs, cf. `env.txt.poisoned-run1` on the ethrex-anchor teku). The ranking uses the clean run's 178 MiB; the discarded run measured 248 MiB, which is another reason not to carry it forward.",
-  "**teku's `anchor_synced=no` is a watchdog false positive, not a sync failure.** `nethermind__teku/samples.jsonl` shows the flag tripping on a transient anchor lag, not a real failure: the first sample (18:14:13Z) has the anchor at `currentBlock=0x18720c3` against `highestBlock=0x18720fb` — 56 blocks behind — while teku already reported `sync_distance=0, is_syncing=false, is_optimistic=false, el_offline=false`. By the final sample (18:22:45Z) the anchor's `eth_syncing` returned `false` outright, i.e. fully synced, with teku still at `sync_distance=0`. This reproduced on a clean re-run of the candidate, confirming it's a harness/watchdog artifact rather than a client failure. The footprint (848 MiB) is valid and included, exactly as the campaign already did for the earlier ethrex-anchor teku poison.",
+  "**teku's `anchor_synced=no` is a watchdog false positive, not a sync failure.** `nethermind__teku/samples.jsonl` shows the flag tripping during warmup, before either side had settled: at 18:14:13Z the anchor was 56 blocks behind (`currentBlock=0x18720c3` vs `highestBlock=0x18720fb`), and at 18:16:51Z both were transiently behind — the anchor by 21 blocks and teku itself at `sync_distance=49, is_syncing=true`. From 18:19:30Z onward every remaining sample is clean on both sides (`eth_syncing=false`, `sync_distance=0`, `is_optimistic=false`), including at teku's own `synced_at_utc` of 18:22:08Z. So the anchor was healthy when the measurement was taken; the watchdog had already latched on the earlier warmup samples and never re-evaluated. This reproduced on a clean re-run of the candidate, confirming it's a harness/watchdog artifact rather than a client failure. The footprint (848 MiB) is valid and included, exactly as the campaign already did for the earlier ethrex-anchor teku poison.",
   "**grandine's apparent `du -sb` (1,074,340,425 B) again far exceeds actual on-disk (730 MiB).** This apparent figure is byte-identical to the geth-anchor run's — it is grandine's fixed preallocated DB map size, not a coincidence or copy-paste error. Ranking uses the actual, on-disk figure.",
 ]
 
@@ -666,7 +666,7 @@ export default function BakeoffResultsPage() {
                     <dd className="text-right text-foreground">{row.footprint}</dd>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Disk-optimal lever</dt>
+                    <dt className="text-muted-foreground">History-prune lever</dt>
                     <dd className="text-right text-foreground"><Rich text={row.lever} /></dd>
                   </div>
                 </dl>
@@ -815,7 +815,7 @@ export default function BakeoffResultsPage() {
                     <dd className="text-right text-foreground">{row.footprint}</dd>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Disk-optimal lever</dt>
+                    <dt className="text-muted-foreground">History-prune lever</dt>
                     <dd className="text-right text-foreground"><Rich text={row.lever} /></dd>
                   </div>
                 </dl>
