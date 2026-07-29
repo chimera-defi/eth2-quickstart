@@ -158,7 +158,7 @@ const fullMetrics = [
   { candidate: 'nimbus-eth1 × prysm', peers: '20–25', configOptimal: 'yes', reRuns: 1, notable: '72h continuous, 0 restarts; supersedes an earlier ~21 GB aborted run' },
   { candidate: 'erigon × prysm', peers: '—', configOptimal: 'n/a (no-sync)', reRuns: 0, notable: 'CPU cap raised 200%→600% mid-run; advanced ~5k blocks then re-froze' },
   { candidate: 'CL sweep × ethrex anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 2, notable: 'teku: JVM-OOM on first attempt (TEKU_CACHE fix); grandine: harness du-pipeline bug, not a client fault' },
-  { candidate: 'CL sweep × geth anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 0, notable: 'Cross-anchor confirmation re-run; heavyweight/lightweight tiers reproduced (lodestar↔lighthouse swapped within the smallest tier)' },
+  { candidate: 'CL sweep × geth anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 0, notable: 'Cross-anchor confirmation re-run; the lightweight/mid/heavy tiers reproduced (lodestar↔lighthouse swapped within the lightweight pair, vs. the ethrex primary)' },
   { candidate: 'CL sweep × nethermind anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 1, notable: "Second cross-anchor confirmation; teku re-measured (~667→~848 MiB across two runs on the same anchor, showing how window-sensitive the mid tier is); lodestar was re-measured after the anchor returned to head (~7m36s / ~178 MiB); its first attempt (~76m14s) was an anchor-gap artifact, not a lodestar property" },
 ]
 

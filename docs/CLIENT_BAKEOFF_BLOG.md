@@ -34,15 +34,15 @@ Disk: geth (~1.13 TiB), nethermind (~1.06 TiB steady-state), and besu (~1.08 TiB
 
 **Consensus clients (CL)** — each run against a fixed EL anchor; **all five synced** to a validating head in minutes, so footprint is the only differentiator:
 
-| CL | Footprint (geth anchor) | History-prune lever |
-|----|-------------------------|---------------------|
-| **lodestar** | **~177 MiB** — smallest | `pruneHistory=true` |
-| **lighthouse** | ~518 MiB | `checkpoint-sync-url` |
-| **grandine** | ~725 MiB (actual) | `--prune-storage` (critical) |
-| **teku** | ~936 MiB | `data-storage-mode=minimal` |
-| **nimbus** | ~1.2 GiB — largest | `history=prune` |
+| CL | Footprint (geth anchor) | Footprint (nethermind anchor) | History-prune lever |
+|----|-------------------------|--------------------------------|---------------------|
+| **lodestar** | **~177 MiB** — smallest | **~178 MiB** — smallest | `pruneHistory=true` |
+| **lighthouse** | ~518 MiB | ~470 MiB | `checkpoint-sync-url` |
+| **grandine** | ~725 MiB (actual) | ~730 MiB (actual) | `--prune-storage` (critical) |
+| **teku** | ~936 MiB | ~848 MiB | `data-storage-mode=minimal` |
+| **nimbus** | ~1.2 GiB — largest | ~1.3 GiB — largest | `history=prune` |
 
-The heavyweight/lightweight tiers reproduced across two different EL anchors (ethrex and geth), while lodestar and lighthouse swapped order within the lightweight tier — empirical support for EL/CL decoupling without claiming an identical total order. The rest of this post is the *why* behind these numbers.
+The three tiers — lightweight {lodestar, lighthouse}, mid {teku, grandine}, heavy {nimbus} — reproduced across three different EL anchors (ethrex, geth, and nethermind), with lodestar and lighthouse swapping which one is smallest by anchor (lighthouse smallest on ethrex; lodestar smallest on geth and nethermind) — empirical support for EL/CL decoupling without claiming an identical total order. The rest of this post is the *why* behind these numbers.
 
 ---
 
@@ -158,17 +158,17 @@ A tempting story going in was "mainnet share predicts syncability" — the low/z
 
 ## The consensus layer is solved
 
-We ran the five CLs — **lighthouse, lodestar, grandine, teku, nimbus** — against a constant anchor EL, and then repeated it against a *second* anchor EL to test the EL/CL decoupling claim directly. Every CL checkpoint-synced to a fully-validating head in minutes — **~22–23 min on the ethrex anchor and ~6–9 min on the geth anchor** (whose footprints are tabulated below) — `config_optimal=yes`, zero crashes. Sync *time* is effectively tied within each anchor, so **footprint is the differentiator**:
+We ran the five CLs — **lighthouse, lodestar, grandine, teku, nimbus** — against a constant anchor EL, then repeated it against two further anchor ELs to test the EL/CL decoupling claim directly. Every CL checkpoint-synced to a fully-validating head in minutes — **~22–23 min on the ethrex anchor, ~6–9 min on the geth anchor** (whose footprints are tabulated below), and **~7–10 min on the nethermind anchor** — `config_optimal=yes`, zero crashes. Sync *time* is effectively tied within each anchor, so **footprint is the differentiator**:
 
-| CL | Footprint (geth anchor) |
-|----|------|
-| lodestar | ~177 MiB |
-| lighthouse | ~518 MiB |
-| grandine | ~725 MiB |
-| teku | ~936 MiB |
-| nimbus | ~1.2 GiB |
+| CL | Footprint (geth anchor) | Footprint (nethermind anchor) |
+|----|------|------|
+| lodestar | ~177 MiB | ~178 MiB |
+| lighthouse | ~518 MiB | ~470 MiB |
+| grandine | ~725 MiB (actual) | ~730 MiB (actual) |
+| teku | ~936 MiB | ~848 MiB |
+| nimbus | ~1.2 GiB | ~1.3 GiB |
 
-Crucially, the broad tiers **reproduced across both anchor ELs** — the heavyweight tier (nimbus, teku) and the lightweight tier (lodestar, lighthouse, grandine) held on both, with a lodestar↔lighthouse flip within the smallest tier. Two different EL anchors, the same CL tiers: **EL/CL decoupling, supported empirically** — which retroactively validates holding CL=prysm constant for the whole EL scorecard.
+Crucially, the broad tiers **reproduced across all three anchor ELs** — the mid tier (teku, grandine) and the lightweight tier (lodestar, lighthouse), with nimbus alone at the heavy end — held on all three, with a lodestar↔lighthouse flip within the lightweight tier (lighthouse smallest on ethrex; lodestar smallest on geth and nethermind); grandine stays below teku on every anchor, so there is no genuine grandine↔teku swap — the apparent crossing was teku's own ~667→~848 MiB re-read variance on the nethermind anchor. Three different EL anchors, the same CL tiers: **EL/CL decoupling, supported empirically** — which retroactively validates holding CL=prysm constant for the whole EL scorecard.
 
 The punchline: on the CL side, all five are operationally effective — none failed, and the choice comes down to footprint and preference (lighthouse is the lean, safe default). **Operational risk in an Ethereum node lives in the EL layer, not the CL layer.**
 

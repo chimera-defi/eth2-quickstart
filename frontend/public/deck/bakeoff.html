@@ -321,7 +321,7 @@
     <div class="wrap">
       <p class="eyebrow">Consensus layer</p>
       <h2>The CL layer is effectively solved.</h2>
-      <p class="lede">All five checkpoint-synced to a validating head in minutes — ~6–9 min on the geth anchor, ~22–23 min on ethrex — with zero client-fault failures. Sync time is a tie, so <em>footprint</em> is the differentiator.</p>
+      <p class="lede">All five checkpoint-synced to a validating head in minutes — ~6–9 min on the geth anchor, ~7–10 min on the nethermind anchor, ~22–23 min on ethrex — with zero client-fault failures. Sync time is a tie, so <em>footprint</em> is the differentiator.</p>
       <div class="chart" style="margin-top:24px" aria-label="Consensus-client datadir footprint, geth anchor">
         <div class="bar"><div class="name">lodestar</div><div class="track"><div class="fill" style="--v:.147"></div></div><div class="val"><b>~177 MiB</b> · smallest</div></div>
         <div class="bar"><div class="name">lighthouse</div><div class="track"><div class="fill" style="--v:.431"></div></div><div class="val"><b>~518 MiB</b> · lean default</div></div>
@@ -329,7 +329,7 @@
         <div class="bar"><div class="name">teku</div><div class="track"><div class="fill" style="--v:.780"></div></div><div class="val"><b>~936 MiB</b></div></div>
         <div class="bar"><div class="name">nimbus</div><div class="track"><div class="fill" style="--v:1"></div></div><div class="val"><b>~1.2 GiB</b> · largest</div></div>
       </div>
-      <p class="kicker">The same heavyweight/lightweight tiers held across two EL anchors — <strong class="win">EL/CL decoupling, supported empirically</strong> (lodestar and lighthouse swapped within the smallest tier).</p>
+      <p class="kicker">The same three tiers — lightweight, mid, heavy — held across three EL anchors — <strong class="win">EL/CL decoupling, supported empirically</strong> (lodestar and lighthouse swap which is smallest, by anchor).</p>
     </div>
   </section>
 
@@ -428,7 +428,7 @@
     "Because it hits a restart cliff. A 26-minute gap stalled; measured 1.5–2-hour gaps discarded state and triggered a full ~2-hour re-snap. That operability tax is the adoption story.",
     "The point of the whole talk: restart resilience is a third axis, and it predicts who people keep running better than speed or disk. Three behaviors — clean resume, re-snap cliff, mid-sync deadlock.",
     "The full field at a glance. Be fair to the clients: besu and ethrex synced fine but their footprints aren't pruned-comparable (besu un-pruned; ethrex a no-history plateau); reth and nimbus-eth1 are full-sync-only by design, not failures.",
-    "The consensus layer is effectively solved — all five sync in minutes, so footprint is the only differentiator. Lighthouse is the lean, safe default. The heavyweight/lightweight tiers held across two EL anchors, with a small within-tier order flip.",
+    "The consensus layer is effectively solved — all five sync in minutes, so footprint is the only differentiator. Lighthouse is the lean, safe default. The same three tiers held across three EL anchors, with a small within-tier order flip.",
     "Pivot to methodology — the other story people want. Three tiers keep token cost sane and judgment where it belongs. Governance is the punchline: an agent cannot merge its own PR.",
     "The harness is what kept it honest: decouple node time from agent time, push conclusions into small durable files (not the context window), and gate every result on config-optimality.",
     "Four real incidents in three weeks — every one caught and documented. This is the concrete proof of 'we kept ourselves honest.'",
