@@ -113,7 +113,7 @@ export default function AgentsPage() {
               <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
               <span className="text-muted-foreground">
                 <span className="font-medium text-foreground">A packaged skill</span> —
-                Anthropic skill-creator format, published via ClawHub, with 10 reference
+                Anthropic skill-creator format, published via ClawHub, with 9 reference
                 docs covering workflow, operator flows, safety, and sizing.
               </span>
             </li>
