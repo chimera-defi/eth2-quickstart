@@ -100,7 +100,7 @@ The CL matrix holds the **execution client constant** and cycles the consensus c
 
 All five CLs **checkpoint-synced to a fully validating head in ~22–23 min**, `config_optimal=yes`, `anchor_synced=yes`, `service_crash_observed=no`. Sync **time** is effectively tied (checkpoint sync dominates), so **the CL datadir footprint is the differentiator.**
 
-| CL | Result | Sync time | CL datadir footprint | Disk-optimal lever |
+| CL | Result | Sync time | CL datadir footprint | History-prune lever |
 | --- | --- | --- | --- | --- |
 | **lighthouse** | ✅ synced | ~22m | **773,282,157 B (~739 MB)** ← **smallest** | `checkpoint-sync-url` (blob-prune default) |
 | **lodestar** | ✅ synced | ~22m | **867,829,601 B (~827 MB)** | `chain.pruneHistory=true` |
