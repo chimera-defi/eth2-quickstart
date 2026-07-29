@@ -35,7 +35,7 @@ const executionClients = [
     name: 'Nethermind',
     result: 'synced',
     syncTime: '~14.5h',
-    footprint: '~1.1 TiB steady-state (~251 GiB pre-backfill)',
+    footprint: '~1.06 TiB steady-state (~251 GiB pre-backfill)',
     syncMode: 'snap + Halite',
     mainnetShare: '36.0%',
     resultVariant: 'primary' as const,
@@ -163,14 +163,14 @@ const syncChartMaxHours = 20
 
 // GiB, verified against docs/CLIENT_BAKEOFF_RESULTS.md exact byte counts (Stage B footprint table + client-limitations table).
 // Nethermind's synced-tip snapshot (~251 GiB) predates FastBlocks backfilling post-merge block
-// bodies/receipts; steady-state (measured 2026-07-28) is ~1.1 TiB (state ~226 GiB + ~842 GiB
+// bodies/receipts; steady-state (measured 2026-07-28) is ~1.06 TiB (state ~226 GiB + ~842 GiB
 // post-merge history) — on par with the other ELs that retain full post-merge history. Ethrex is
 // still climbing at tip and is being re-measured, so its bar is marked "growing," not a settled size.
 const elFootprints = [
   { name: 'Nimbus-eth1', gib: 37.3, label: '~40 GB', status: 'partial' as const },
   { name: 'Ethrex', gib: 466.6, label: '~467 GiB', status: 'growing' as const },
   { name: 'Reth', gib: 1003.2, label: '~0.98 TiB', status: 'partial' as const },
-  { name: 'Nethermind', gib: 1088.1, label: '~1.1 TiB', status: 'synced' as const },
+  { name: 'Nethermind', gib: 1088.1, label: '~1.06 TiB', status: 'synced' as const },
   { name: 'Besu', gib: 1109.7, label: '~1.08 TiB', status: 'synced' as const },
   { name: 'Geth', gib: 1160.3, label: '~1.13 TiB', status: 'synced' as const },
   { name: 'Erigon', gib: 1242.6, label: '~1.21 TiB', status: 'frozen' as const },
@@ -270,7 +270,7 @@ export default function EthereumClientBakeoffPage() {
             <Card padding="sm" className="bg-muted/30">
               <h3 className="font-medium text-foreground">Disk: the field converges, ~1.0–1.2 TiB</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Every EL that carries full post-merge history lands in the same band (geth 1.13 TiB, nethermind ~1.1 TiB, besu 1.08 TiB) — disk size is set by history-retention config, not client efficiency, so it isn&apos;t a good axis for picking a winner.
+                Every EL that carries full post-merge history lands in the same band (geth 1.13 TiB, nethermind ~1.06 TiB, besu 1.08 TiB) — disk size is set by history-retention config, not client efficiency, so it isn&apos;t a good axis for picking a winner.
               </p>
             </Card>
             <Card padding="sm" className="bg-muted/30">
@@ -375,7 +375,7 @@ export default function EthereumClientBakeoffPage() {
             <svg className="h-auto w-full" viewBox="0 0 680 300" role="img">
               <title id="disk-chart-title">Ethereum execution-client disk footprint</title>
               <desc id="disk-chart-description">
-                Nimbus-eth1 partial about 40 GB, Ethrex still growing about 467 GiB, Reth partial about 0.98 TiB, Nethermind synced about 1.1 TiB steady-state, Besu synced about 1.08 TiB, Geth synced about 1.13 TiB, Erigon frozen partial about 1.21 TiB.
+                Nimbus-eth1 partial about 40 GB, Ethrex still growing about 467 GiB, Reth partial about 0.98 TiB, Nethermind synced about 1.06 TiB steady-state, Besu synced about 1.08 TiB, Geth synced about 1.13 TiB, Erigon frozen partial about 1.21 TiB.
               </desc>
               <defs>
                 <pattern id="unfinished-bar" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)">
@@ -564,7 +564,7 @@ export default function EthereumClientBakeoffPage() {
             that reproduce across anchors.
           </p>
           <p className="mt-4 text-sm text-muted-foreground">
-            Disk: geth (~1.13 TiB), nethermind (~1.1 TiB steady-state), and besu (~1.08 TiB) all
+            Disk: geth (~1.13 TiB), nethermind (~1.06 TiB steady-state), and besu (~1.08 TiB) all
             converge in the same band once full post-merge history is retained — there&apos;s no
             meaningful ranking to draw there. Speed, among those that finished: ethrex (~2h16m)
             &lt; Geth (~8h28m) &lt; Nethermind (~14.5h) &lt; Besu (~19h18m) — that&apos;s the axis
@@ -696,7 +696,7 @@ export default function EthereumClientBakeoffPage() {
             Nethermind&apos;s synced-tip snapshot read <strong className="text-foreground">~251 GiB</strong>,
             well below geth&apos;s ~1.13 TiB — but that number was taken before nethermind&apos;s
             FastBlocks finished backfilling post-merge block bodies and receipts. Its steady-state
-            datadir (measured 2026-07-28) is <strong className="text-foreground">~1.1 TiB</strong>:
+            datadir (measured 2026-07-28) is <strong className="text-foreground">~1.06 TiB</strong>:
             state ~226 GiB (its compact Halite/Paprika flat storage) plus ~842 GiB of post-merge
             history it retains, the same history geth keeps under{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--history.chain postmerge</code>.
@@ -706,7 +706,7 @@ export default function EthereumClientBakeoffPage() {
             besu lands in the same band too, at ~1.08 TiB — the same order of magnitude, not an
             outlier. reth (window-capped at 72h, ~21% by block) already tracked ~87% of geth&apos;s
             size at that point and projects to ~1.1–1.2 TiB finished. So the four ELs with full
-            post-merge history — geth (1.13), nethermind (~1.1), besu (1.08), reth (~1.1–1.2
+            post-merge history — geth (1.13), nethermind (~1.06), besu (1.08), reth (~1.1–1.2
             projected) — converge on roughly the same footprint. Disk size here is set by a
             client-agnostic knob (how much post-merge history you retain), not by client
             efficiency, so it isn&apos;t a good axis for picking a winner.
@@ -1041,7 +1041,7 @@ export default function EthereumClientBakeoffPage() {
             <li>
               <span className="font-medium text-foreground">Diversity pick: nethermind.</span>{' '}
               Compact flat-storage state, clean restart behavior, and a minority-client diversity
-              bonus. On disk it&apos;s on par with geth (~1.1 vs ~1.13 TiB) once full post-merge
+              bonus. On disk it&apos;s on par with geth (~1.06 vs ~1.13 TiB) once full post-merge
               history is counted — not the space-saver its snap-sync-tip snapshot (~251 GiB)
               suggested. Costs a bit more sync time (~14.5h vs geth&apos;s ~8.5h).
             </li>
