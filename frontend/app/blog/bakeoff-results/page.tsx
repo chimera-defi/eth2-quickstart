@@ -633,7 +633,7 @@ export default function BakeoffResultsPage() {
                   <th className="pb-3 font-medium text-muted-foreground">Result</th>
                   <th className="pb-3 font-medium text-muted-foreground">Sync time</th>
                   <th className="pb-3 font-medium text-muted-foreground">CL datadir footprint</th>
-                  <th className="pb-3 font-medium text-muted-foreground">Disk-optimal lever</th>
+                  <th className="pb-3 font-medium text-muted-foreground">History-prune lever</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
