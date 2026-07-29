@@ -14,6 +14,7 @@ export const NAV_LINKS = [
   { label: 'Install', href: '/#install' },
   { label: 'Blog', href: '/blog' },
   { label: 'Get Started', href: '/quickstart' },
+  { label: 'Agents', href: '/agents' },
   { label: 'GitHub', href: SITE_CONFIG.github, external: true },
 ]
 
@@ -36,7 +37,10 @@ export const CONSENSUS_CLIENTS = [
   { name: 'Grandine', language: 'Rust', bestFor: 'Advanced users' },
 ]
 
-const TOTAL_CLIENTS = EXECUTION_CLIENTS.length + CONSENSUS_CLIENTS.length
+// Exported so any copy that states the client count (Hero quick-answer, FAQ)
+// derives it instead of hardcoding a number that can drift when a client is
+// added or removed (see EXECUTION_CLIENTS / CONSENSUS_CLIENTS above).
+export const TOTAL_CLIENTS = EXECUTION_CLIENTS.length + CONSENSUS_CLIENTS.length
 const TOTAL_COMBINATIONS = EXECUTION_CLIENTS.length * CONSENSUS_CLIENTS.length
 
 export const STATS = [
@@ -209,4 +213,49 @@ export const PREREQUISITES = [
   { label: 'CPU', value: '4–8+ cores (8+ recommended for sync)' },
   { label: 'Network', value: 'Stable broadband, unlimited data preferred' },
   { label: 'RAID', value: 'Set swraid 1 & swraidlevel 0 for full disk access before install' },
+]
+
+const EXECUTION_CLIENT_NAMES = EXECUTION_CLIENTS.map((c) => c.name).join(', ')
+const CONSENSUS_CLIENT_NAMES = CONSENSUS_CLIENTS.map((c) => c.name).join(', ')
+const SETUP_TIME = STATS.find((s) => s.label === 'Setup Time')?.value ?? '~30m'
+const DISK_PREREQ = PREREQUISITES.find((p) => p.label === 'Storage')?.value ?? ''
+const RAM_PREREQ = PREREQUISITES.find((p) => p.label === 'Memory')?.value ?? ''
+const CPU_PREREQ = PREREQUISITES.find((p) => p.label === 'CPU')?.value ?? ''
+
+/**
+ * Single source of truth for the homepage FAQ: both the visible
+ * `components/sections/Faq.tsx` and the `FAQPage` JSON-LD in
+ * `components/ui/FaqJsonLd.tsx` render from this array, so the visible copy
+ * and the structured data can never drift apart. Answers are written to be
+ * self-contained and quotable in isolation (an LLM lifting just the answer
+ * text should still make sense).
+ */
+export const FAQ_ITEMS = [
+  {
+    question: 'How do I set up an Ethereum validator?',
+    answer: `Run the one-line installer, complete Phase 1 (security hardening) as root, reboot, then run Phase 2 as the new non-root user to install and configure your validator — ${SETUP_TIME} end-to-end for the install. The node then syncs over hours to days (and mainnet has an activation queue) before it actually starts validating.`,
+  },
+  {
+    question: 'How do I run an Ethereum node?',
+    answer:
+      'The same two-phase installer works without a validator key: Phase 1 hardens the host, Phase 2 installs your chosen execution and consensus clients so you get a synced node with your own local RPC endpoint.',
+  },
+  {
+    question: 'Which Ethereum execution or consensus client should I choose?',
+    answer: `eth2-quickstart supports ${EXECUTION_CLIENTS.length} execution clients (${EXECUTION_CLIENT_NAMES}) and ${CONSENSUS_CLIENTS.length} consensus clients (${CONSENSUS_CLIENT_NAMES}) — ${TOTAL_COMBINATIONS} possible combinations. Geth + Prysm is the well-documented default for beginners; the client bake-off measured disk-footprint and sync-time trade-offs for the rest.`,
+  },
+  {
+    question: 'How much disk, RAM, and CPU does an Ethereum node need?',
+    answer: `Plan for ${DISK_PREREQ}, ${RAM_PREREQ}, and ${CPU_PREREQ}. Disk is the most common constraint — a bare-metal VPS with NVMe storage is strongly preferred over cloud block storage.`,
+  },
+  {
+    question: 'Is it safe? How are validator keys and secrets handled?',
+    answer:
+      'Phase 1 hardens SSH (key-only auth, non-standard port, no root login), enables a strict firewall and fail2ban, and every service runs as a non-root user. Keys and JWT secrets live under $HOME/secrets with 600/700 permissions and are never touched by the agent/MCP layer.',
+  },
+  {
+    question: 'Can an AI agent set this up for me?',
+    answer:
+      'Yes — the repo ships a packaged agent skill, an MCP server, and a JSON-first ./scripts/eth2qs.sh CLI that an agent can drive directly; see /agents for the copy-paste setup and the safety contract.',
+  },
 ]

@@ -1,0 +1,40 @@
+# eth2-quickstart
+
+Website: https://eth2quickstart.com · Source: https://github.com/chimera-defi/eth2-quickstart
+
+> Repo-backed Ethereum node operations toolkit and agent skill. Use this when you need to bootstrap, operate, inspect, update, or safely clean Ethereum node hosts through the real repo commands.
+
+This project supports humans and agents. The canonical runtime surface is `./scripts/eth2qs.sh`, and the packaged skill lives under `skills/eth2-quickstart/`.
+
+Important constraints:
+- The skill is repo-aware. Install or load it, then use it inside an `eth2-quickstart` checkout.
+- Prefer `./scripts/eth2qs.sh doctor --json` for machine-readable health.
+- Prefer dry-run cleanup first.
+- Do not remove validator keys or secrets.
+- Treat ClawHub as the package install path. Treat this file as the raw-ingest fallback for agents that can read a text URL directly.
+
+## Core Files
+
+- [Skill entrypoint](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/SKILL.md): Main agent skill contract and routing rules.
+- [Workflow reference](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/workflow.md): Bootstrap vs phase flow, resolver usage, and repo-aware install guidance.
+- [Operator reference](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/operator.md): Install, resume, operate, update, and cleanup flows.
+- [Command map](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/commands.md): Canonical wrapper commands.
+- [Safety reference](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/safety.md): Confirmation boundaries and secret-preservation rules.
+- [Sizing reference](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/sizing.md): Host sizing guidance before install.
+
+## Validator Management
+
+Agent-usable validator operations (mainnet, post-Pectra). Full guide: [Validator management](https://github.com/chimera-defi/eth2-quickstart/blob/master/docs/VALIDATOR_MANAGEMENT.md).
+
+- List + filter: `./scripts/eth2qs.sh validators --json [--min-balance N] [--max-balance N] [--withdrawal-type 0x00|0x01|0x02] [--status S]`. Read-only MCP tool: `eth2qs_validators(min_balance, max_balance, withdrawal_type, status)`.
+- Deploy + keygen (0x01 or 0x02 compounding): `./scripts/eth2qs.sh validator-deploy` (wraps ethstaker-deposit-cli; generates keys + deposit_data.json, prints the deposit command, no auto-submit). Provide the keystore password via the `ETHQS_KEYSTORE_PASSWORD` env var, not the CLI flag.
+- Modify (CLI only — irreversible, funds-affecting): `validator-exit`, `validator-withdrawal-changes` (0x00→0x01), `validator-manage --consolidate` (EIP-7251, incl. 0x01→0x02), `validator-manage --eip7002-exit` (EIP-7002).
+- Agent safety: funds-affecting operations are NOT executed via MCP. The read-only MCP tool `eth2qs_validator_op_preview(operation)` returns the exact node CLI command to run; execution + confirmation happen on the node CLI.
+
+## Optional
+
+- [Project website](https://eth2quickstart.com): Human-facing entrypoint — quickstart guide, blog, and a dedicated [/agents](https://eth2quickstart.com/agents) page for this skill/MCP/CLI layer. This file is mirrored at `https://eth2quickstart.com/llms.txt`.
+- [Full agent context](https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/llms-full.txt): Expanded agent-facing summary of install, operation, cleanup, and sharing paths.
+- [README agent section](https://github.com/chimera-defi/eth2-quickstart/blob/master/README.md#for-external-agents): Human-facing entrypoint for sharing the skill.
+- [MCP reference](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/mcp.md): Claude Code / Codex native tool setup via `./mcp_server/run_eth2qs_mcp.sh`.
+- [Agent listing copy](https://github.com/chimera-defi/eth2-quickstart/blob/master/docs/AGENT_SKILL_LISTING.md): Short public marketing copy.
