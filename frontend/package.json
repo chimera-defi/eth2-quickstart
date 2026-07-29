@@ -4,9 +4,9 @@
   "private": true,
   "packageManager": "bun@latest",
   "scripts": {
-    "predev": "bun scripts/sync-llms.mjs",
+    "predev": "node scripts/sync-llms.mjs",
     "dev": "next dev",
-    "prebuild": "bun scripts/sync-llms.mjs",
+    "prebuild": "node scripts/sync-llms.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
