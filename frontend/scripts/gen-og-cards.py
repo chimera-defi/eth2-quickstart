@@ -95,12 +95,12 @@ VARIANTS = {
         "23-day field report",
         'The fastest Ethereum client is one almost <span class="hot">nobody runs</span>.',
         '<b>7 execution + 5 consensus clients</b> · one host · run by AI agents',
-        [("Disk winner", "Nethermind", "acc"), ("Speed winner", "ethrex · 2h16m", "sig"), ("The catch", "restart cliff", "")]),
+        [("Disk", "no clear winner", "acc"), ("Speed winner", "ethrex · 2h16m", "sig"), ("The catch", "restart cliff", "")]),
     "og-bakeoff": card(
         "23-day field report",
         'The fastest Ethereum client is one almost <span class="hot">nobody runs</span>.',
         '<b>7 execution + 5 consensus clients</b> · one host · run by AI agents',
-        [("Disk winner", "Nethermind", "acc"), ("Speed winner", "ethrex · 2h16m", "sig"), ("The catch", "restart cliff", "")]),
+        [("Disk", "no clear winner", "acc"), ("Speed winner", "ethrex · 2h16m", "sig"), ("The catch", "restart cliff", "")]),
     "og-how-we-tested": card(
         "Methodology",
         'How we ran a 23-day bake-off <span class="hot">with Claude</span>.',
