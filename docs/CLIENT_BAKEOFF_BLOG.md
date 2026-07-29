@@ -42,7 +42,7 @@ Disk: geth (~1.13 TiB), nethermind (~1.06 TiB steady-state), and besu (~1.08 TiB
 | **teku** | ~936 MiB | `data-storage-mode=minimal` |
 | **nimbus** | ~1.2 GiB — largest | `history=prune` |
 
-The heavyweight/lightweight tiers reproduced across two different EL anchors (ethrex and geth), while lodestar and lighthouse swapped order within the lightweight tier — empirical support for EL/CL decoupling without claiming an identical total order. The rest of this post is the *why* behind these numbers.
+The 2/2/1 tier structure — (lodestar, lighthouse) smallest, (teku, grandine) middle, nimbus largest — reproduced across all three EL anchors (ethrex, geth, and nethermind). The only order swap anywhere is lodestar↔lighthouse on the ethrex anchor; geth and nethermind reproduce an identical total ranking — empirical support for EL/CL decoupling. The rest of this post is the *why* behind these numbers.
 
 ---
 
@@ -156,7 +156,7 @@ A tempting story going in was "mainnet share predicts syncability" — the low/z
 
 ## The consensus layer is solved
 
-We ran the five CLs — **lighthouse, lodestar, grandine, teku, nimbus** — against a constant anchor EL, and then repeated it against a *second* anchor EL to test the EL/CL decoupling claim directly. Every CL checkpoint-synced to a fully-validating head in minutes — **~22–23 min on the ethrex anchor and ~6–9 min on the geth anchor** (whose footprints are tabulated below) — `config_optimal=yes`, zero crashes. Sync *time* is effectively tied within each anchor, so **footprint is the differentiator**:
+We ran the five CLs — **lighthouse, lodestar, grandine, teku, nimbus** — against a constant anchor EL, and then repeated it against *two further* anchor ELs to test the EL/CL decoupling claim directly. Every CL checkpoint-synced to a fully-validating head in minutes — **~22–23 min on the ethrex anchor, ~6–9 min on the geth anchor** (whose footprints are tabulated below), and **~7–10 min on the nethermind anchor for all five CLs** (lodestar fastest, at 7m36s) — `config_optimal=yes`, zero crashes on every anchor (teku's nethermind-anchor watchdog flagged a false-positive sync failure that the raw samples ruled out — the anchor was verified healthy at teku's actual sync moment, and this reproduced on a clean re-run). Sync *time* is effectively tied within each anchor, so **footprint is the differentiator**:
 
 | CL | Footprint (geth anchor) |
 |----|------|
@@ -166,7 +166,7 @@ We ran the five CLs — **lighthouse, lodestar, grandine, teku, nimbus** — aga
 | teku | ~936 MiB |
 | nimbus | ~1.2 GiB |
 
-Crucially, the broad tiers **reproduced across both anchor ELs** — the heavyweight tier (nimbus, teku) and the lightweight tier (lodestar, lighthouse, grandine) held on both, with a lodestar↔lighthouse flip within the smallest tier. Two different EL anchors, the same CL tiers: **EL/CL decoupling, supported empirically** — which retroactively validates holding CL=prysm constant for the whole EL scorecard.
+Crucially, the tier *structure* **reproduced across all three anchor ELs**: (lodestar, lighthouse) are always the smallest pair, (teku, grandine) are always the middle pair, and nimbus is always the largest. The geth and nethermind anchors go further and reproduce an identical total ranking; only the ethrex anchor swaps lodestar↔lighthouse within the smallest pair. Two of three anchors agree exactly, and all three agree on tier structure: **EL/CL decoupling, supported empirically** — which retroactively validates holding CL=prysm constant for the whole EL scorecard.
 
 The punchline: on the CL side, all five are operationally effective — none failed, and the choice comes down to footprint and preference (lighthouse is the lean, safe default). **Operational risk in an Ethereum node lives in the EL layer, not the CL layer.**
 
