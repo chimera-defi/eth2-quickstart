@@ -12,12 +12,23 @@
 // from the repo-root files on every run. It is wired as `predev`/`prebuild`
 // in package.json, so it always runs before `bun run dev` / `bun run build`.
 //
-// The generated files are NOT committed (see frontend/.gitignore) — they
-// are always a fresh copy of the repo-root source plus one inserted line
-// bridging back to the site + GitHub repo, so there is nothing to keep
-// manually in sync. If you need to check they match by hand: re-run this
-// script and diff frontend/public/llms.txt against llms.txt (the only
-// expected difference is the inserted bridge line below the title).
+// IMPORTANT — the generated files ARE COMMITTED, not gitignored. The deploy
+// pipeline for eth2quickstart.com lives outside this repo (CloudFront + a
+// Next standalone build), so we cannot assume it runs `bun run build`; if it
+// invokes `next build` directly or restores a cached layer, the `prebuild`
+// lifecycle hook never fires. Were these files gitignored, they would then be
+// absent from the checkout and the site would ship without them — leaving
+// /llms.txt a silent 404, which is the exact bug this feature exists to fix.
+// Every other asset in frontend/public (og.png, deck/) is committed for the
+// same reason.
+//
+// So: this script keeps the committed copies fresh, and CI enforces they
+// match — see the "Verify served llms.txt files match repo root" step in
+// .github/workflows/frontend.yml, which re-runs this script and fails on any
+// diff. Workflow when editing agent instructions: edit the repo-root
+// llms.txt / llms-full.txt, run `bun scripts/sync-llms.mjs`, then commit both
+// the source and the regenerated public/ copies. The only difference between
+// a source file and its served copy is the bridge line inserted below the title.
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
