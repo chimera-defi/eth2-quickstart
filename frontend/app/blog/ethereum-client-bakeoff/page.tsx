@@ -98,10 +98,12 @@ const executionClients = [
 
 // All three anchors were independently measured (docs/CLIENT_BAKEOFF_RESULTS.md: ethrex anchor is
 // the primary/complete sweep; geth anchor is the first cross-anchor confirmation re-run; nethermind
-// anchor is the second). Sorted by the ethrex-anchor footprint, the primary run. Two pairs swap
-// order between anchors — lodestar/lighthouse (ethrex vs geth) and teku/grandine (geth vs
-// nethermind) — but each pair stays within its own tier (lightweight / mid), where the gap is small
-// and measurement-window-sensitive (RESULTS.md).
+// anchor is the second). Sorted by the ethrex-anchor footprint, the primary run. One pair swaps
+// order between anchors — lodestar/lighthouse (ethrex vs geth); on the nethermind anchor, teku
+// instead shows ~27% variance against itself across two runs (~667 MiB vs ~848 MiB), crossing
+// grandine's ~730 MiB and back — grandine < teku holds on all three anchors — but each pair stays
+// within its own tier (lightweight / mid), where the gap is small and measurement-window-sensitive
+// (RESULTS.md).
 const consensusClients = [
   {
     name: 'Lighthouse',
