@@ -66,8 +66,9 @@ export function Hero() {
               className="text-base sm:text-lg text-muted-foreground leading-relaxed"
             >
               eth2-quickstart turns a fresh Ubuntu server into a hardened Ethereum
-              validator or RPC node in ~30 minutes — across {TOTAL_CLIENTS} clients,
-              with MEV and security built in. Drivable by humans or AI agents.
+              validator or RPC node — a ~30-minute install across {TOTAL_CLIENTS} clients,
+              with MEV and security built in. The node then syncs for hours to days
+              before it starts validating. Drivable by humans or AI agents.
             </motion.p>
 
             <motion.div
