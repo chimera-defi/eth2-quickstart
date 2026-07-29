@@ -33,4 +33,11 @@ describe('sitemap', () => {
     expect(paths).toContain('https://eth2quickstart.com/quickstart')
     expect(paths).toContain('https://eth2quickstart.com/blog')
   })
+
+  it('includes the agent-discoverability routes (/agents, /llms.txt, /llms-full.txt)', () => {
+    const paths = entries.map((entry) => entry.url)
+    expect(paths).toContain('https://eth2quickstart.com/agents')
+    expect(paths).toContain('https://eth2quickstart.com/llms.txt')
+    expect(paths).toContain('https://eth2quickstart.com/llms-full.txt')
+  })
 })
