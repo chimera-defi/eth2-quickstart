@@ -77,7 +77,7 @@ checkpoint (2026-07-11) and is retained for provenance.
 | EL | Status | Sync time | Footprint | Sync mode | Mainnet share | One-line verdict |
 |----|--------|-----------|-----------|-----------|--------------|------------------|
 | **nethermind** | ✅ synced | ~14.5h | **~1.06 TiB** steady-state (~251 GiB pre-backfill) | snap + AncientBarrier prune | 36.0% | On par with geth/besu on disk; diversity pick. |
-| **ethrex** | ✅ synced | **~2h16m** | ~286 GiB at sync → **~467 GiB** (2026-07-06, still growing even at tip) | snap (v19.0.0) | 0.0% | **Speed winner.** Un-pruned + serves ~no history → limitation note, not ranked on disk. Restart cliff (§3). |
+| **ethrex** | ✅ synced | **~2h16m** | ~286–300 GiB at sync → **~470 GiB steady-state plateau** (471.9 GiB, confirmed 2026-07-28→29) | snap (v19.0.0) | 0.0% | **Speed winner.** Un-pruned + serves ~no history → limitation note, not ranked on disk (no-history node, not a disk win). Restart cliff (§3). |
 | **geth** | ✅ synced | ~8h28m | ~1.13 TiB | snap + `--history.chain postmerge` | 44.9% | Baseline. Rock-solid, resumes cleanly. |
 | **besu** | ✅ synced (un-pruned) | ~19h18m | ~1.08 TiB (un-pruned) | snap / Bonsai | 17.4% | Synced, but pruned re-run deadlocked twice → limitation note (§4). |
 | **reth** | ⏳ 72h cap | did not finish | ~0.98 TiB @ ~21% | full-sync-only (no snap) | 1.5% | Client limitation: no snap → too slow for 3-day window. |
@@ -91,10 +91,12 @@ checkpoint (2026-07-11) and is retained for provenance.
   ~251 GiB reading was a pre-backfill snap-sync-tip snapshot, not its steady state. Disk size here is set by
   a client-agnostic history-retention knob, not client efficiency.
 - **ethrex is excluded from that comparison, context only:** its footprint was ~286 GiB at sync completion
-  but it prunes nothing — the datadir keeps growing **even at the chain tip with `eth_syncing=false`**
-  (re-measured 403 → 416 → ~467 GiB across 2026-07-06, ~10 GiB/hr) *and* it serves almost no history (block
-  lookups below head return `null`). So it is neither compact nor a full-history archive; it is kept OUT of
-  the comparison because its footprint is un-prunable and not yet steady-state (result pending).
+  and it prunes nothing — the datadir climbed **even at the chain tip with `eth_syncing=false`**
+  (403 → 416 → ~467 GiB across 2026-07-06, ~10 GiB/hr) — but a follow-up run (2026-07-28→29) confirmed that
+  climb was settling, not unbounded: it **plateaus at ~470 GiB** (471.9 GiB, flat 8.8+ hours) — *and* it
+  serves almost no history (block lookups below its snap pivot return `null`). So it is neither compact nor
+  a full-history archive; it is kept OUT of the comparison because it's a no-history node, not a
+  pruned-comparable one — smaller footprint tracks retained-nothing, not efficiency.
 - **Sync speed (all synced ELs):** ethrex ~2h16m < geth ~8h28m < nethermind ~14.5h < besu ~19h18m. The two
   full-sync-only clients (reth, nimbus_eth1) never finish inside the 72h window.
 
@@ -163,8 +165,10 @@ actually run."
 - **Reproduced independently on 2026-07-06:** a second restart triggered another full re-snap of **2h11m**
   (`SNAP SYNC STARTED` 01:58:29Z → complete 04:09:37Z; eth1 start 01:57:05Z) — a second measured data point for
   the cliff. The re-snapped datadir then rebuilt *past* the original 286 GiB to 403 → 416 → ~467 GiB (un-pruned,
-  still growing **even at the chain tip with `eth_syncing=false`**, ~10 GiB/hr on 2026-07-06), confirming
-  ethrex's footprint is not a fixed, reproducible number.
+  still climbing **even at the chain tip with `eth_syncing=false`**, ~10 GiB/hr on 2026-07-06). A later
+  steady-state run (2026-07-28→29) settled the question that climb left open: the footprint plateaus at
+  **~470 GiB** (471.9 GiB, flat 8.8+ hours) rather than growing unbounded — the ~467 GiB reading above was
+  this same plateau caught mid-climb.
 
 ---
 
@@ -239,10 +243,10 @@ trustworthy. The bake-off's credibility rests on this gate.
 - **nethermind** — compact flat-storage state, ~14.5h sync, clean restart behavior, and a minority-client
   diversity bonus. 36% share. Its disk footprint (~1.06 TiB steady-state) is on par with geth, not the
   ~251 GiB pre-backfill space-saver it first appeared to be. The diversity pick.
-- **ethrex** — the sprinter with a glass jaw. Fastest cold sync (~2h16m), but an un-pruned datadir that keeps
-  growing **even at the chain tip with `eth_syncing=false`** (~286 GiB at sync → ~467 GiB on 2026-07-06,
-  ~10 GiB/hr) while serving *almost no history*, plus the restart-resync cliff (§3), makes it operationally
-  costly. Fascinating, young (v19.0.0), one to watch.
+- **ethrex** — the sprinter with a glass jaw. Fastest cold sync (~2h16m), but an un-pruned datadir that
+  plateaus at **~470 GiB** (confirmed 2026-07-28→29, after climbing ~286 GiB at sync → ~467 GiB on
+  2026-07-06) while serving *almost no history* — a no-history node, not a disk win — plus the
+  restart-resync cliff (§3), makes it operationally costly. Fascinating, young (v19.0.0), one to watch.
 - **besu** — enterprise Java client; does sync (~19h un-pruned) but its snap sync is fragile to CL outages
   (§4) and the pruned-comparable number never landed. Careful operational handling required.
 - **reth** — high-performance Rust, but full-sync-only means it can't finish a mainnet sync in 3 days.

@@ -53,7 +53,7 @@ const executionClients = [
     name: 'Ethrex',
     result: 'synced',
     syncTime: '~2h16m — fastest',
-    footprint: '~286 → ~467 GiB (un-pruned, growing)',
+    footprint: '~470 GiB steady-state plateau (no-history)',
     syncMode: 'snap (v19.0.0)',
     mainnetShare: '~0%',
     resultVariant: 'primary' as const,
@@ -152,7 +152,7 @@ const consensusClients = [
 const fullMetrics = [
   { candidate: 'geth × prysm', peers: '—', configOptimal: 'yes', reRuns: 0, notable: 'Baseline; no large optimistic gap to close' },
   { candidate: 'nethermind × prysm', peers: '49', configOptimal: 'yes', reRuns: 1, notable: 'First attempt: 13.3h 0-peer loopback stall; re-run after ExternalIp fix synced clean' },
-  { candidate: 'ethrex × prysm', peers: '50', configOptimal: 'yes', reRuns: 0, notable: '~10 GiB/hr disk growth even at tip; 1 auto-healed stale-pivot event' },
+  { candidate: 'ethrex × prysm', peers: '50', configOptimal: 'yes', reRuns: 0, notable: 'Datadir plateaus at ~470 GiB (confirmed by a follow-up steady-state measurement run, 4h09m56s snap, 8.8+ flat hours after); 1 auto-healed stale-pivot event; serves no history beyond its snap pivot' },
   { candidate: 'besu × prysm', peers: '~50', configOptimal: 'n/a (pruned re-run only)', reRuns: 2, notable: 'Un-pruned run synced clean; pruned re-run deadlocked twice, abandoned' },
   { candidate: 'reth × prysm', peers: '—', configOptimal: 'yes', reRuns: 1, notable: '578 samples; relaunched after --full fix; 47% by block / ~21% gas-weighted at cap' },
   { candidate: 'nimbus-eth1 × prysm', peers: '20–25', configOptimal: 'yes', reRuns: 1, notable: '72h continuous, 0 restarts; supersedes an earlier ~21 GB aborted run' },
@@ -174,11 +174,13 @@ const syncChartMaxHours = 20
 // GiB, verified against docs/CLIENT_BAKEOFF_RESULTS.md exact byte counts (Stage B footprint table + client-limitations table).
 // Nethermind's synced-tip snapshot (~251 GiB) predates FastBlocks backfilling post-merge block
 // bodies/receipts; steady-state (measured 2026-07-28) is ~1.06 TiB (state ~226 GiB + ~842 GiB
-// post-merge history) — on par with the other ELs that retain full post-merge history. Ethrex is
-// still climbing at tip and is being re-measured, so its bar is marked "growing," not a settled size.
+// post-merge history) — on par with the other ELs that retain full post-merge history. Ethrex's
+// steady state is now measured too: it plateaus at ~472 GiB (confirmed 2026-07-28→29, 8.8+ flat
+// hours). Its bar stays hatched as "no-history," not because it's unsettled, but because a
+// no-history node's total isn't comparable to the full-history bars below it.
 const elFootprints = [
   { name: 'Nimbus-eth1', gib: 37.3, label: '~40 GB', status: 'partial' as const },
-  { name: 'Ethrex', gib: 466.6, label: '~467 GiB', status: 'growing' as const },
+  { name: 'Ethrex', gib: 471.9, label: '~472 GiB', status: 'no-history' as const },
   { name: 'Reth', gib: 1003.2, label: '~0.98 TiB', status: 'partial' as const },
   { name: 'Nethermind', gib: 1088.1, label: '~1.06 TiB', status: 'synced' as const },
   { name: 'Besu', gib: 1109.7, label: '~1.08 TiB', status: 'synced' as const },
@@ -372,20 +374,22 @@ export default function EthereumClientBakeoffPage() {
             Disk footprint, at a glance
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            All seven execution clients. Hatched bars aren&apos;t a settled footprint — partial
-            (72h-capped), frozen (erigon&apos;s no-sync deadlock), or still-growing (ethrex, whose
-            steady-state we&apos;re re-measuring) — so a short hatched bar isn&apos;t a win:
-            Nimbus-eth1&apos;s ~40 GB is only ~21% of a sync, reth&apos;s ~0.98 TiB is a 72h-capped
-            partial (projected to land in the same band as the solid bars once finished), and
-            ethrex&apos;s ~467 GiB is still climbing, not a finished footprint. The three solid bars
-            (nethermind, besu, geth) converge in the same ~1.0–1.2 TiB band once full post-merge
-            history is retained — disk size is set by that retention config, not client efficiency.
+            All seven execution clients. Hatched bars aren&apos;t a comparable finished
+            footprint — partial (72h-capped), frozen (erigon&apos;s no-sync deadlock), or
+            no-history (ethrex, which plateaus at ~472 GiB but serves no history) — so a short
+            hatched bar isn&apos;t a win: Nimbus-eth1&apos;s ~40 GB is only ~21% of a sync,
+            reth&apos;s ~0.98 TiB is a 72h-capped partial (projected to land in the same band as
+            the solid bars once finished), and ethrex&apos;s ~472 GiB is a settled plateau, not a
+            pruned-comparable footprint — it&apos;s smaller only because it retains no history at
+            all, not because it&apos;s more efficient. The three solid bars (nethermind, besu,
+            geth) converge in the same ~1.0–1.2 TiB band once full post-merge history is retained
+            — disk size is set by that retention config, not client efficiency.
           </p>
           <figure className="mt-4 hidden sm:block" aria-labelledby="disk-chart-title" aria-describedby="disk-chart-description">
             <svg className="h-auto w-full" viewBox="0 0 680 300" role="img">
               <title id="disk-chart-title">Ethereum execution-client disk footprint</title>
               <desc id="disk-chart-description">
-                Nimbus-eth1 partial about 40 GB, Ethrex still growing about 467 GiB, Reth partial about 0.98 TiB, Nethermind synced about 1.06 TiB steady-state, Besu synced about 1.08 TiB, Geth synced about 1.13 TiB, Erigon frozen partial about 1.21 TiB.
+                Nimbus-eth1 partial about 40 GB, Ethrex no-history plateau about 472 GiB, Reth partial about 0.98 TiB, Nethermind synced about 1.06 TiB steady-state, Besu synced about 1.08 TiB, Geth synced about 1.13 TiB, Erigon frozen partial about 1.21 TiB.
               </desc>
               <defs>
                 <pattern id="unfinished-bar" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)">
@@ -744,11 +748,17 @@ export default function EthereumClientBakeoffPage() {
           </p>
           <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
             <li>
-              <span className="font-medium text-foreground">ethrex</span> — synced, ~2h16m, fastest
-              in the field. Its datadir kept growing even at tip (286 GiB → ~467 GiB, ~10 GiB/hr,
-              measured 2026-07-06). We&apos;re re-measuring whether that settles near the ~1.0–1.2
-              TiB the other ELs reach (normal post-merge backfill) or keeps climbing unbounded (a
-              real defect) — result pending. Speed is its settled claim; disk size isn&apos;t, yet.
+              <span className="font-medium text-foreground">ethrex</span> — synced, ~2h16m,
+              fastest in the field. Its datadir <strong className="text-foreground">plateaus at
+              ~472 GiB</strong>: it climbed toward ~465 GiB during post-sync settling (+43 GiB/hr),
+              then growth collapsed ~200× to +0.22 GiB/hr and stayed flat for 8.8+ hours (confirmed
+              2026-07-28→29). The earlier ~467 GiB reading was this same plateau caught mid-climb,
+              not evidence of unbounded growth. That doesn&apos;t make it a disk winner, though: it
+              lands smaller only because it serves no history at all — a no-history node, not a
+              pruned-comparable one. On a state-only basis it isn&apos;t even the smallest:
+              nethermind&apos;s state alone is ~226 GiB, roughly half ethrex&apos;s entire total
+              (not a perfectly controlled comparison — ethrex&apos;s total also includes headers
+              and recent blocks, and the two clients use different state encodings).
             </li>
             <li>
               <span className="font-medium text-foreground">reth</span> — 72h cap at ~21%, ~0.98
@@ -770,6 +780,21 @@ export default function EthereumClientBakeoffPage() {
             finished, comparable footprint&rdquo; does not mean &ldquo;failed.&rdquo; Only erigon
             produced no synced datadir at all.
           </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            ethrex&apos;s no-history design has a concrete cost worth spelling out, since this repo
+            ships an nginx/Caddy RPC-endpoint feature for exposing a node&apos;s RPC publicly.
+            Probed live against the running node (2026-07-29), the servable window&apos;s back
+            edge is <em>exactly</em> the snap-sync pivot block —{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_getBlockByNumber</code>{' '}
+            returns <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">null</code>{' '}
+            one block before it and resolves cleanly at and after it, and it never backfills.
+            Current-state calls (balances, current quotes, allowances) work fine, but any block,
+            log, or receipt before the pivot fails outright — effectively all of Ethereum history
+            — which rules out indexer/subgraph backfill, portfolio history, and tax/accounting
+            exports. A geth endpoint with <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--history.chain postmerge</code>{' '}
+            serves that same history; an ethrex endpoint does not, so it isn&apos;t a drop-in
+            replacement for a public DeFi-facing RPC.
+          </p>
         </section>
 
         <section className="mt-10 sm:mt-16">
@@ -785,15 +810,18 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-3 text-sm text-muted-foreground">Two things keep it out of the winners&apos; circle:</p>
           <ol className="mt-3 list-inside list-decimal space-y-2 text-sm text-muted-foreground">
             <li>
-              <span className="font-medium text-foreground">The footprint isn&apos;t a fixed number.</span>{' '}
-              ethrex prunes nothing and the datadir keeps growing even at the chain tip with{' '}
+              <span className="font-medium text-foreground">The footprint is settled now, and
+              it&apos;s not comparable.</span>{' '}
+              ethrex prunes nothing, and we watched the datadir climb even at the chain tip with{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing=false</code>{' '}
-              — we watched it climb 286 → 403 → 416 → ~467 GiB across a single day (~10 GiB/hr) —
-              while simultaneously serving almost no history (
+              (286 → 403 → 416 → ~467 GiB across a single day, ~10 GiB/hr, 2026-07-06) — but a
+              follow-up run confirmed that climb was settling, not unbounded: it plateaus at ~472
+              GiB (flat for 8.8+ hours, 2026-07-28→29). That still doesn&apos;t make it a disk
+              winner, because it simultaneously serves almost no history (
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_getBlockByNumber</code>{' '}
               returns <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">null</code>{' '}
-              below head). So it is neither compact nor a full-history archive, and there&apos;s no
-              steady-state size to rank.
+              below its snap pivot). So it is neither compact nor a full-history archive — its
+              settled size just isn&apos;t rankable against the full-history clients above.
             </li>
             <li>
               <span className="font-medium text-foreground">The restart cliff</span> — which is
@@ -1080,8 +1108,10 @@ export default function EthereumClientBakeoffPage() {
             <li>
               <span className="font-medium text-foreground">Watch, don&apos;t yet deploy: ethrex.</span>{' '}
               Fascinating and fastest, but the ~25-minute restart cliff makes it operationally
-              costly today; we&apos;re separately re-measuring whether its still-growing footprint
-              settles near the pack or is a real defect. Young (v19.0.0) — worth revisiting.
+              costly today. Its footprint is now settled too — a ~472 GiB plateau — but that&apos;s
+              not a disk win: it&apos;s a no-history node, and running its RPC in place of a
+              full-history endpoint (this repo&apos;s nginx/Caddy feature) will silently fail on
+              anything historical. Young (v19.0.0) — worth revisiting.
             </li>
             <li>
               <span className="font-medium text-foreground">Enterprise with care: besu.</span> It
