@@ -41,7 +41,7 @@ Two operational caveats worth knowing:
 - **grandine** needs `--prune-storage` or it stores *every* state — the single most important flag for it.
 - **nimbus** is simply the heaviest (~6.8× lighthouse), but otherwise clean.
 
-We ran this whole sweep twice — once anchored to ethrex, once to geth — and the heavyweight/lightweight tiers held. Absolute sizes shifted, and lodestar/lighthouse swapped order within the lightweight tier, so the evidence supports broad EL/CL decoupling without claiming an identical total order.
+We ran this whole sweep three times — anchored to ethrex, then geth, then nethermind — and the same three tiers held: lightweight {lodestar, lighthouse}, mid {teku, grandine}, heavy {nimbus}. Absolute sizes shifted by anchor, and lodestar/lighthouse swapped which one was smallest (lighthouse on ethrex; lodestar on geth and nethermind), so the evidence supports broad EL/CL decoupling without claiming an identical total order.
 
 ## The one rule that ties it together
 

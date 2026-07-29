@@ -190,7 +190,7 @@ The gate needed **six bug-fixes across three review rounds** before we trusted i
 
 ### Anchor-preserving mode: don't re-sync the world five times
 
-The consensus-client matrix holds the execution client constant and cycles the CL. Naively that's five full EL re-syncs — days of waste measuring the *same* EL. Anchor-preserving mode (`ETH2QS_BAKEOFF_ANCHOR_EL=…`) keeps one already-synced execution client running and cycles **only** the `cl` service per candidate, purging just the consensus datadir between runs: five CL candidates, one EL sync. We ran the sweep twice — against an ethrex anchor and a geth anchor — to test the EL/CL decoupling empirically rather than assert it. The heavyweight/lightweight tiers reproduced; lodestar and lighthouse swapped order within the lightweight tier.
+The consensus-client matrix holds the execution client constant and cycles the CL. Naively that's five full EL re-syncs — days of waste measuring the *same* EL. Anchor-preserving mode (`ETH2QS_BAKEOFF_ANCHOR_EL=…`) keeps one already-synced execution client running and cycles **only** the `cl` service per candidate, purging just the consensus datadir between runs: five CL candidates, one EL sync. We ran the sweep three times — against an ethrex anchor, a geth anchor, and a nethermind anchor — to test the EL/CL decoupling empirically rather than assert it. The same three tiers reproduced each time — lightweight {lodestar, lighthouse}, mid {teku, grandine}, heavy {nimbus} — with lodestar and lighthouse swapping which one is smallest by anchor (lighthouse on ethrex; lodestar on geth and nethermind).
 
 ### Two harness bugs that nearly cost us data
 
