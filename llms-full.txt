@@ -51,6 +51,7 @@
 
 ## Best References
 
+- [Project website](https://eth2quickstart.com): Human-facing entrypoint — quickstart guide, blog, and a dedicated `/agents` page for this skill/MCP/CLI layer. This file is mirrored at `https://eth2quickstart.com/llms-full.txt`.
 - [Skill entrypoint](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/SKILL.md)
 - [Workflow](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/workflow.md)
 - [Operator](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/operator.md)

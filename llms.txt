@@ -31,6 +31,7 @@ Agent-usable validator operations (mainnet, post-Pectra). Full guide: [Validator
 
 ## Optional
 
+- [Project website](https://eth2quickstart.com): Human-facing entrypoint — quickstart guide, blog, and a dedicated [/agents](https://eth2quickstart.com/agents) page for this skill/MCP/CLI layer. This file is mirrored at `https://eth2quickstart.com/llms.txt`.
 - [Full agent context](https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/llms-full.txt): Expanded agent-facing summary of install, operation, cleanup, and sharing paths.
 - [README agent section](https://github.com/chimera-defi/eth2-quickstart/blob/master/README.md#for-external-agents): Human-facing entrypoint for sharing the skill.
 - [MCP reference](https://github.com/chimera-defi/eth2-quickstart/blob/master/skills/eth2-quickstart/references/mcp.md): Claude Code / Codex native tool setup via `./mcp_server/run_eth2qs_mcp.sh`.
