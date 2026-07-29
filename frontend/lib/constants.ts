@@ -233,7 +233,7 @@ const CPU_PREREQ = PREREQUISITES.find((p) => p.label === 'CPU')?.value ?? ''
 export const FAQ_ITEMS = [
   {
     question: 'How do I set up an Ethereum validator?',
-    answer: `Run the one-line installer, complete Phase 1 (security hardening) as root, reboot, then run Phase 2 as the new non-root user to install your execution and consensus clients and start validating — ${SETUP_TIME} end-to-end.`,
+    answer: `Run the one-line installer, complete Phase 1 (security hardening) as root, reboot, then run Phase 2 as the new non-root user to install and configure your validator — ${SETUP_TIME} end-to-end for the install. The node then syncs over hours to days (and mainnet has an activation queue) before it actually starts validating.`,
   },
   {
     question: 'How do I run an Ethereum node?',
@@ -242,7 +242,7 @@ export const FAQ_ITEMS = [
   },
   {
     question: 'Which Ethereum execution or consensus client should I choose?',
-    answer: `eth2-quickstart supports ${EXECUTION_CLIENTS.length} execution clients (${EXECUTION_CLIENT_NAMES}) and ${CONSENSUS_CLIENTS.length} consensus clients (${CONSENSUS_CLIENT_NAMES}) — ${TOTAL_COMBINATIONS} tested combinations. Geth + Prysm is the well-documented default for beginners; the client bake-off has measured disk-footprint and sync-time trade-offs for the rest.`,
+    answer: `eth2-quickstart supports ${EXECUTION_CLIENTS.length} execution clients (${EXECUTION_CLIENT_NAMES}) and ${CONSENSUS_CLIENTS.length} consensus clients (${CONSENSUS_CLIENT_NAMES}) — ${TOTAL_COMBINATIONS} possible combinations. Geth + Prysm is the well-documented default for beginners; the client bake-off measured disk-footprint and sync-time trade-offs for the rest.`,
   },
   {
     question: 'How much disk, RAM, and CPU does an Ethereum node need?',
