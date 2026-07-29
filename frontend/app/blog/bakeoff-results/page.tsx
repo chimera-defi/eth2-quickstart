@@ -826,7 +826,7 @@ export default function BakeoffResultsPage() {
 
           <p className="mt-4 text-sm text-foreground">
             <strong>
-              nethermind-anchor CL disk ranking (actual disk, smaller = better): lodestar (~248
+              nethermind-anchor CL disk ranking (actual disk, smaller = better): lodestar (~178
               MiB) &lt; lighthouse (~470 MiB) &lt; grandine (~730 MiB actual) &lt; teku (~848 MiB)
               &lt; nimbus (~1.3 GiB).
             </strong>
