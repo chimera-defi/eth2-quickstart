@@ -1,5 +1,7 @@
 # eth2-quickstart
 
+Website: https://eth2quickstart.com · Source: https://github.com/chimera-defi/eth2-quickstart
+
 > Repo-backed Ethereum node operations toolkit and agent skill. Use this when you need to bootstrap, operate, inspect, update, or safely clean Ethereum node hosts through the real repo commands.
 
 This project supports humans and agents. The canonical runtime surface is `./scripts/eth2qs.sh`, and the packaged skill lives under `skills/eth2-quickstart/`.

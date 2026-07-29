@@ -9,6 +9,8 @@ import {
   INSTALLATION_STEPS_ONELINER,
   INSTALLATION_STEPS_MANUAL,
   PREREQUISITES,
+  TOTAL_CLIENTS,
+  FAQ_ITEMS,
 } from '@/lib/constants'
 
 describe('constants', () => {
@@ -53,6 +55,20 @@ describe('constants', () => {
     })
     INSTALLATION_STEPS_MANUAL.forEach((step, i) => {
       expect(step.step).toBe(i + 1)
+    })
+  })
+
+  it('TOTAL_CLIENTS matches the execution + consensus client matrix', () => {
+    expect(TOTAL_CLIENTS).toBe(EXECUTION_CLIENTS.length + CONSENSUS_CLIENTS.length)
+  })
+
+  it('FAQ_ITEMS are non-empty, unique questions with substantive answers', () => {
+    expect(FAQ_ITEMS.length).toBeGreaterThan(0)
+    const questions = FAQ_ITEMS.map((item) => item.question)
+    expect(new Set(questions).size).toBe(questions.length)
+    FAQ_ITEMS.forEach((item) => {
+      expect(item.question.length).toBeGreaterThan(0)
+      expect(item.answer.length).toBeGreaterThan(20)
     })
   })
 })

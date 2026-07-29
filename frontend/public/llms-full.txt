@@ -1,5 +1,7 @@
 # eth2-quickstart
 
+Website: https://eth2quickstart.com · Source: https://github.com/chimera-defi/eth2-quickstart
+
 > Repo-backed Ethereum node operations toolkit and agent skill. Use it inside an `eth2-quickstart` checkout to bootstrap, install, operate, inspect, update, and safely clean Ethereum or Monad node stacks without inventing commands.
 
 ## What This Project Is
