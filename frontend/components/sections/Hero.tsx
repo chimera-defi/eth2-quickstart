@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Terminal } from '@/components/ui/Terminal'
-import { SITE_CONFIG, STATS, INSTALL_COMMAND } from '@/lib/constants'
+import { SITE_CONFIG, STATS, INSTALL_COMMAND, TOTAL_CLIENTS } from '@/lib/constants'
 import { ArrowRight, CheckCircle2 } from 'lucide-react'
 
 const TERMINAL_OUTPUT = `$ ${INSTALL_COMMAND}
@@ -65,8 +65,9 @@ export function Hero() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-base sm:text-lg text-muted-foreground leading-relaxed"
             >
-              Transform a fresh server into a fully-configured Ethereum node. 
-              One command handles security hardening, client installs, MEV, and monitoring.
+              eth2-quickstart turns a fresh Ubuntu server into a hardened Ethereum
+              validator or RPC node in ~30 minutes — across {TOTAL_CLIENTS} clients,
+              with MEV and security built in. Drivable by humans or AI agents.
             </motion.p>
 
             <motion.div
