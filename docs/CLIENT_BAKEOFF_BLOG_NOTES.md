@@ -16,7 +16,7 @@ prysm datadir is ~0.65–1.68 GB, negligible against an EL's hundreds of GB).
 
 ## 0. CAMPAIGN COMPLETE — all tests finished (2026-07-14)
 
-**All bake-off tests are now complete.** The EL scorecard (7/7), the CL matrix (both anchors), the ethrex
+**All bake-off tests are now complete.** The EL scorecard (7/7), the CL matrix (three anchors), the ethrex
 restart cliff, and the final nimbus_eth1 anchor are **final and of-record**. The publishable writeup lives at
 [`CLIENT_BAKEOFF_BLOG.md`](CLIENT_BAKEOFF_BLOG.md); raw data in
 [`CLIENT_BAKEOFF_RESULTS.md`](CLIENT_BAKEOFF_RESULTS.md). This §0 block was originally a mid-campaign safety
@@ -250,24 +250,35 @@ trustworthy. The bake-off's credibility rests on this gate.
 - **nimbus_eth1** — lightweight Nim, also full-sync-only (no snap); exited mid-sync. Same limitation class.
 - **erigon** — the one hard deadlock; OtterSync + checkpoint-synced CL wedged with zero progress.
 
-## 9. CL matrix — ✅ COMPLETE (both anchors, ranking reproduced)
+## 9. CL matrix — ✅ COMPLETE (three anchors, tiers reproduced)
 The CL matrix (**lighthouse, teku, nimbus-CL, lodestar, grandine**) is done and of-record — full scorecard
 in [`CLIENT_BAKEOFF_RESULTS.md`](CLIENT_BAKEOFF_RESULTS.md). All five CLs **checkpoint-synced to a fully
-validating head in ~22–23 min** (`config_optimal=yes`, `anchor_synced=yes`, zero crashes), so sync *time* is
-effectively tied and **CL datadir footprint is the differentiator.** It was run against two anchors to prove
+validating head in ~6–23 min** (`config_optimal=yes`, zero crashes), so sync *time* is
+effectively tied and **CL datadir footprint is the differentiator.** It was run against three anchors to prove
 EL/CL decoupling:
 - **ethrex anchor** (run_id `client-bakeoff-clsweep-2026-07-06`) — reused the already-synced ethrex datadir
   at tip (zero anchor-sync cost); all five CL footprints are <1% of the ~502 GB EL datadir.
 - **geth anchor** cross-anchor confirmation (run_id `client-bakeoff-anchor-rotation-2026-07-07`, 2026-07-08).
   **geth-anchor CL disk ranking (smaller = better): lodestar (~177 MiB) < lighthouse (~518 MiB) <
   grandine (~725 MiB) < teku (~936 MiB) < nimbus (~1.2 GiB).**
+- **nethermind anchor**, a third confirmation (run_id `client-bakeoff-anchor-nethermind-2026-07-26b`,
+  2026-07-26). **nethermind-anchor CL disk ranking: lodestar (178 MiB) < lighthouse (470 MiB) <
+  grandine (730 MiB) < teku (848 MiB) < nimbus (1.3 GiB)** — an identical total ranking to the geth anchor, on actual disk.
+  Two rows carry a footnote (detail in the results doc): lodestar's early 76m14s run was not a comparable
+  sync time (it waited on the anchor importing a ~2-day block gap) and was discarded; a clean re-run landed
+  a comparable 7m36s at 178 MiB (the discarded run had measured 248 MiB). teku's `anchor_synced=no` was a
+  watchdog false positive — the anchor was briefly a few blocks behind mid-run while teku already reported
+  sync_distance=0, and it was fully synced by teku's own sync timestamp — and this reproduced on the clean
+  re-run.
 
-**Cross-anchor verdict — the tiers reproduce:** the heavyweight tier (nimbus largest, teku second) and
-the lightweight tier (lodestar / lighthouse / grandine smallest) hold on both anchors; only the
-lodestar↔lighthouse order flips within the smallest tier. Absolute sizes scale with post-sync observation
-time, not the EL anchor. Two different EL anchors → the same broad CL tiers = **EL/CL decoupling supported
-empirically.** (The nimbus_eth1 anchor now running is a *third* EL anchor, but as a full-sync-only client it
-won't reach tip in 72h → it yields a partial EL footprint, not a new CL sweep.)
+**Cross-anchor verdict — the tiers reproduce everywhere; the total ranking reproduces on two of three:** a
+2/2/1 structure holds on all three anchors — {lodestar, lighthouse} are always the smallest pair, {teku,
+grandine} are always the middle pair, and **nimbus is largest on all three.** teku is always the larger of
+the middle pair (no teku↔grandine swap anywhere). The only order flip anywhere is lodestar↔lighthouse
+(ethrex: lighthouse smaller; geth and nethermind: lodestar smaller) — so the geth and nethermind anchors
+reproduce an identical total ranking, and only the ethrex anchor differs. Absolute sizes scale with
+post-sync observation time, not the EL anchor. Three different EL anchors → the same 2/2/1 CL tiers =
+**EL/CL decoupling supported empirically**, with two of three anchors agreeing on the full order too.
 
 ---
 

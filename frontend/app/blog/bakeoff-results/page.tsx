@@ -237,11 +237,28 @@ const clMatrixGeth = [
   { cl: 'nimbus', result: 'synced', syncTime: '~7m58s', footprint: '1,198,275,155 B (~1.2 GiB) ← largest', lever: '`history=prune`' },
 ]
 
+// ---------------------------------------------------------------------------
+// CL matrix — third-anchor confirmation (anchor = nethermind)
+// ---------------------------------------------------------------------------
+const clMatrixNethermind = [
+  { cl: 'lodestar', result: 'synced', syncTime: '~7m36s', footprint: '186,083,466 B (~178 MiB) ← smallest', lever: '`pruneHistory=true`' },
+  { cl: 'lighthouse', result: 'synced', syncTime: '~10m07s', footprint: '491,525,193 B (~470 MiB)', lever: '`checkpoint-sync-url`' },
+  { cl: 'grandine', result: 'synced', syncTime: '~9m58s', footprint: '1,074,340,425 B apparent / ~730 MiB actual (sparse DB)', lever: '`--prune-storage`' },
+  { cl: 'teku', result: 'synced', syncTime: '~10m07s', footprint: '875,146,169 B (~848 MiB)', lever: '`data-storage-mode=minimal`' },
+  { cl: 'nimbus', result: 'synced', syncTime: '~10m13s', footprint: '1,337,611,316 B (~1.3 GiB) ← largest', lever: '`history=prune`' },
+]
+
+const clNethermindNotes = [
+  "**lodestar's nethermind-anchor sync time is now a clean, comparable 7m36s.** An earlier run took 76m14s, but that run spent most of its time waiting on the anchor importing a ~2-day block gap left by an earlier lodestar crash-loop incident — not a clean sync — so it was discarded and archived as `nethermind__lodestar.gapped-run-76m` (matching the campaign's existing convention for invalidated runs, cf. `env.txt.poisoned-run1` on the ethrex-anchor teku). The ranking uses the clean run's 178 MiB; the discarded run measured 248 MiB, which is another reason not to carry it forward.",
+  "**teku's `anchor_synced=no` is a watchdog false positive, not a sync failure.** `nethermind__teku/samples.jsonl` shows the flag tripping on a transient anchor lag, not a real failure: the first sample (18:14:13Z) has the anchor at `currentBlock=0x18720c3` against `highestBlock=0x18720fb` — 56 blocks behind — while teku already reported `sync_distance=0, is_syncing=false, is_optimistic=false, el_offline=false`. By the final sample (18:22:45Z) the anchor's `eth_syncing` returned `false` outright, i.e. fully synced, with teku still at `sync_distance=0`. This reproduced on a clean re-run of the candidate, confirming it's a harness/watchdog artifact rather than a client failure. The footprint (848 MiB) is valid and included, exactly as the campaign already did for the earlier ethrex-anchor teku poison.",
+  "**grandine's apparent `du -sb` (1,074,340,425 B) again far exceeds actual on-disk (730 MiB).** This apparent figure is byte-identical to the geth-anchor run's — it is grandine's fixed preallocated DB map size, not a coincidence or copy-paste error. Ranking uses the actual, on-disk figure.",
+]
+
 const crossAnchorVerdict = [
-  '**Heavyweight tier holds on both anchors:** nimbus is always the largest CL and teku always the second-largest, on both the ethrex and geth anchors.',
-  "**Lightweight tier holds:** grandine, lighthouse, and lodestar are always the three smallest. The lodestar↔lighthouse order flips between anchors (geth: lodestar < lighthouse; ethrex: lighthouse < lodestar) but both sit in the smallest tier, where the gap is small and measurement-window-sensitive.",
-  '**Absolute footprints scale with observation time, not just the EL anchor.** The geth-anchor numbers are much smaller (nimbus ~1.2 GiB vs ~5.0 GB; teku ~936 MiB vs ~2.1 GB) because those runs were measured minutes after checkpoint-sync (a fresh datadir), while the ethrex-anchor runs ran longer post-sync and had filled more of the blob-retention / state-history window. The broad tiers are anchor-independent here; exact within-tier order is measurement-window-sensitive.',
-  '**Net:** two different EL anchors (ethrex, geth) reproduce the same heavyweight/lightweight tiers, empirically supporting EL/CL decoupling without claiming an identical total order.',
+  '**The 2/2/1 tier structure holds on all three anchors:** {lodestar, lighthouse} are always the two smallest, {teku, grandine} are always the middle two, and **nimbus is the largest CL on all three anchors** (ethrex, geth, nethermind).',
+  "**teku is always the larger of the middle pair — grandine is always second-largest.** teku > grandine on all three anchors (ethrex, geth, and nethermind), so there is no teku↔grandine swap anywhere. The only order flip anywhere is lodestar↔lighthouse: lighthouse is smallest on the ethrex anchor, but lodestar is smallest on the geth and nethermind anchors.",
+  '**Absolute footprints scale with observation time, not just the EL anchor.** The geth-anchor and nethermind-anchor numbers are much smaller (nimbus ~1.2–1.3 GiB vs ~5.0 GB; teku ~848–936 MiB vs ~2.1 GB) than the ethrex-anchor numbers because those runs were measured minutes after checkpoint-sync (fresh datadirs, ~7–10 min for geth/nethermind vs ~22–23 min for ethrex), while the ethrex-anchor runs had filled more of the blob-retention / state-history window. The 2/2/1 tiers are anchor-independent here; exact within-tier order is measurement-window-sensitive.',
+  '**Net:** three different EL anchors (ethrex, geth, nethermind) reproduce the same 2/2/1 tier structure — nimbus always largest, {lodestar, lighthouse} always the smallest pair, {teku, grandine} always the middle pair — empirically supporting EL/CL decoupling. The geth and nethermind anchors reproduce an **identical total ranking**; only the ethrex anchor differs, via the lodestar↔lighthouse swap in the smallest pair.',
 ]
 
 const measurementNotes = [
@@ -299,7 +316,7 @@ export default function BakeoffResultsPage() {
               docs/CLIENT_BAKEOFF_RESULTS.md
             </code>{' '}
             verbatim: every Stage A triage row, every Stage B disk-footprint measurement, the
-            consensus-client matrix on two anchors, the client-limitations table, and every gotcha
+            consensus-client matrix on three anchors, the client-limitations table, and every gotcha
             — unrounded, unreordered, straight from the committed doc. For the narrative write-up,
             see{' '}
             <Link href="/blog/ethereum-client-bakeoff" className="text-primary hover:underline">
@@ -334,7 +351,7 @@ export default function BakeoffResultsPage() {
               <ul className="mt-2 space-y-1.5 pl-4">
                 <li>ELs × prysm: geth, erigon, reth, nethermind, besu, nimbus_eth1, ethrex</li>
                 <li>
-                  <Rich text="CLs × fixed anchor EL: lighthouse, teku, nimbus, lodestar, grandine. The first sweep used **ethrex**, already synced at tip. The originally planned geth sweep was initially deferred, then completed on 2026-07-08 as a cross-anchor check; the heavyweight/lightweight tiers reproduced, while lodestar and lighthouse swapped order within the lightweight tier." />
+                  <Rich text="CLs × fixed anchor EL: lighthouse, teku, nimbus, lodestar, grandine. The first sweep used **ethrex**, already synced at tip. The originally planned geth sweep was initially deferred, then completed on 2026-07-08 as a cross-anchor check, and a third anchor (**nethermind**) was run on 2026-07-26 to confirm further. Across all three anchors the CL footprints fall into a consistent 2/2/1 tier structure — {lodestar, lighthouse} smallest, {teku, grandine} mid, nimbus always largest — and the geth and nethermind anchors reproduce an identical total ranking; only the ethrex anchor swaps lodestar↔lighthouse within the smallest pair, so the tiers reproduce everywhere and the full ranking reproduces on two of three anchors." />
                 </li>
               </ul>
             </li>
@@ -597,7 +614,7 @@ export default function BakeoffResultsPage() {
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">client-bakeoff-clsweep-2026-07-06</code>)
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            <Rich text="The CL matrix holds the **execution client constant** and cycles the consensus client, the mirror of the EL scorecard above. The constant anchor is **ethrex** (not geth as first planned): ethrex was already synced at mainnet tip from its EL run, so reusing it as the fixed anchor saved a multi-day re-sync. Because the EL and CL are decoupled across the Engine API (the CL datadir is <1% of the EL and does not depend on which EL it pairs with), the anchor choice does **not** bias the CL comparison. To *prove* that empirically rather than assert it, the full 5-CL sweep was subsequently re-run against a **geth** anchor (2026-07-08, run_id `client-bakeoff-anchor-rotation-2026-07-07`) — the cross-anchor confirmation is recorded below and reproduces the ranking. The ethrex anchor stayed active and `eth_syncing=false` (~502 GB, never restarted) across all five runs; each run cycled only `cl`+`validator`." />
+            <Rich text="The CL matrix holds the **execution client constant** and cycles the consensus client, the mirror of the EL scorecard above. The constant anchor is **ethrex** (not geth as first planned): ethrex was already synced at mainnet tip from its EL run, so reusing it as the fixed anchor saved a multi-day re-sync. Because the EL and CL are decoupled across the Engine API (the CL datadir is <1% of the EL and does not depend on which EL it pairs with), the anchor choice does **not** bias the CL comparison. To *prove* that empirically rather than assert it, the full 5-CL sweep was subsequently re-run against a **geth** anchor (2026-07-08, run_id `client-bakeoff-anchor-rotation-2026-07-07`), and again against a **nethermind** anchor as a third-anchor confirmation (2026-07-26, run_id `client-bakeoff-anchor-nethermind-2026-07-26b`) — both cross-anchor runs are recorded below and reproduce the same tier structure, though not an identical total order (see the cross-anchor verdict). The ethrex anchor stayed active and `eth_syncing=false` (~502 GB, never restarted) across all five runs; each run cycled only `cl`+`validator`." />
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             <Rich text="All five CLs **checkpoint-synced to a fully validating head in ~22–23 min**, `config_optimal=yes`, `anchor_synced=yes`, `service_crash_observed=no`. Sync **time** is effectively tied (checkpoint sync dominates), so **the CL datadir footprint is the differentiator.**" />
@@ -741,6 +758,83 @@ export default function BakeoffResultsPage() {
               (~1.2 GiB).
             </strong>
           </p>
+
+          {/* -------------------------------------------------------------- */}
+          <AnchorHeading id="cl-matrix-nethermind-anchor" as="h3" className="mt-10 font-medium text-foreground">
+            CL matrix — third-anchor confirmation (anchor = nethermind, run_id{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">client-bakeoff-anchor-nethermind-2026-07-26b</code>
+            , 2026-07-26)
+          </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            <Rich text="The same 5-CL sweep was run a third time against a **nethermind** anchor to further confirm the ranking isn't an artifact of a specific EL. All five runs were `config_optimal=yes` with `service_crash_observed=no`; four of five reported `anchor_synced=yes` — teku's `anchor_synced=no` is a watchdog false positive, addressed in the notes below. The nethermind anchor was **~283 GiB at establish time** and continued to grow across the five CL runs (not held constant for this comparison); each run cycled only `cl`+`validator`." />
+          </p>
+
+          <div
+            className="mt-4 sm:mt-6 hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
+            role="region"
+            aria-label="Consensus client matrix, nethermind anchor (third-anchor confirmation)"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[42rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
+              <thead>
+                <tr className="border-b border-border text-left">
+                  <th className="pb-3 font-medium text-muted-foreground">Consensus</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Sync status</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Sync time</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Final CL datadir</th>
+                  <th className="pb-3 font-medium text-muted-foreground">History-prune lever</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {clMatrixNethermind.map((row) => (
+                  <tr key={row.cl}>
+                    <td className="py-3 align-top font-medium text-foreground">{row.cl}</td>
+                    <td className="py-3 align-top"><Badge variant="primary">{row.result}</Badge></td>
+                    <td className="py-3 align-top text-muted-foreground">{row.syncTime}</td>
+                    <td className="py-3 align-top text-muted-foreground">{row.footprint}</td>
+                    <td className="py-3 align-top text-muted-foreground"><Rich text={row.lever} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-4 space-y-3 sm:hidden">
+            {clMatrixNethermind.map((row) => (
+              <div key={row.cl} className="rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-medium text-foreground">{row.cl}</span>
+                  <Badge variant="primary">{row.result}</Badge>
+                </div>
+                <dl className="mt-3 space-y-2 text-sm">
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Sync time</dt>
+                    <dd className="text-right text-foreground">{row.syncTime}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Final CL datadir</dt>
+                    <dd className="text-right text-foreground">{row.footprint}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Disk-optimal lever</dt>
+                    <dd className="text-right text-foreground"><Rich text={row.lever} /></dd>
+                  </div>
+                </dl>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-4 text-sm text-foreground">
+            <strong>
+              nethermind-anchor CL disk ranking (actual disk, smaller = better): lodestar (~178 MiB) &lt;
+              lighthouse (~470 MiB) &lt; grandine (~730 MiB) &lt; teku (~848 MiB) &lt; nimbus
+              (~1.3 GiB).
+            </strong>
+          </p>
+          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+            {clNethermindNotes.map((note, i) => (
+              <li key={i}><Rich text={note} /></li>
+            ))}
+          </ul>
 
           <p className="mt-4 text-sm font-medium text-foreground">Cross-anchor verdict — the tiers reproduce:</p>
           <ul className="mt-2 space-y-2 text-sm text-muted-foreground">

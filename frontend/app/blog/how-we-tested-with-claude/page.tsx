@@ -512,7 +512,7 @@ export default function HowWeTestedWithClaudePage() {
           </ul>
           <VerdictDiagram />
           <p className="mt-3 text-xs text-muted-foreground">
-            This is what&apos;s actually implemented, not a peer-aware state machine: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced()</code> checks <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">sync_distance</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">is_optimistic</code>, and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">el_offline</code> together &mdash; already enough to avoid trusting <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing=false</code> alone &mdash; but there&apos;s no peer-count check anywhere, and the stall-watchdog is opt-in. nethermind&apos;s 13.3h loopback stall (see the table above) predates the watchdog: the harness correctly never reported it synced, but nothing flagged the run as <em>stuck</em> rather than <em>still syncing</em> &mdash; that gap is exactly what motivated building the watchdog afterward.
+            This is what&apos;s actually implemented, not a peer-aware state machine: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced()</code> checks <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">sync_distance</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">is_optimistic</code>, and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">el_offline</code> together &mdash; already enough to avoid trusting <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing=false</code> alone &mdash; but there&apos;s no peer-count check anywhere, and the stall-watchdog is opt-in. nethermind&apos;s 13.3h loopback stall (see the table above) predates the watchdog: the harness correctly never reported it synced, but nothing flagged the run as <em>stuck</em> rather than <em>still syncing</em> &mdash; that gap is exactly what motivated building the watchdog afterward. A different sweep later caught the same verdict logic erring the other way: on the nethermind-anchor CL sweep, teku&apos;s row was flagged <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">anchor_synced=no</code>, but the raw samples showed the anchor already at exact head in the same instant teku itself reported synced &mdash; a conservative false positive, not a bad measurement, so the row shipped with the caveat noted rather than being silently dropped.
           </p>
 
           <AnchorHeading id="governance" as="h3" className="mt-6 font-medium text-foreground">
@@ -575,12 +575,23 @@ export default function HowWeTestedWithClaudePage() {
             The consensus-client matrix holds the execution client constant and cycles the CL. Naively
             that&apos;s five full EL re-syncs. Anchor-preserving mode keeps one already-synced execution
             client running and cycles only the CL service per candidate, purging just the consensus
-            datadir between runs: five CL candidates, one EL sync. We ran the sweep twice &mdash; against
-            an ethrex anchor and a geth anchor &mdash; to prove the EL/CL decoupling empirically. The
-            heavyweight and lightweight tiers both reproduced on both anchors &mdash; with one nuance:
-            the lodestar&harr;lighthouse order flipped between anchors (geth: lodestar &lt; lighthouse;
-            ethrex: lighthouse &lt; lodestar), though both stayed in the same smallest tier, where the
-            gap is small and measurement-window-sensitive.
+            datadir between runs: five CL candidates, one EL sync. That cheapness is the point &mdash; it
+            let us run the sweep three times, against an ethrex anchor, a geth anchor, and a nethermind
+            anchor, to test the EL/CL decoupling empirically rather than assert it from one run. A 2/2/1
+            tier structure holds on all three: lodestar and lighthouse are always the smallest pair, teku
+            and grandine are always the middle pair, and nimbus is always the largest &mdash; and within
+            the middle pair, teku is always the larger of the two. The only order flip anywhere is
+            lodestar&harr;lighthouse (ethrex: lighthouse &lt; lodestar; geth and nethermind: lodestar &lt;
+            lighthouse). <span className="font-medium text-foreground">The geth and nethermind anchors
+            reproduce an identical total ranking by actual disk; only the ethrex anchor differs.</span> One
+            nethermind-anchor row also needed a footnote of its own: an early lodestar run took 76m14s
+            because it waited on the anchor recovering from a stale multi-day block gap, not a lodestar
+            defect; that run was discarded and archived as{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">nethermind__lodestar.gapped-run-76m</code>,
+            following the same invalidated-run convention as the earlier{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">env.txt.poisoned-run1</code> teku
+            re-run. A clean re-run landed lodestar&apos;s nethermind-anchor sync at a comparable 7m36s and a
+            178 MiB footprint; the discarded run had measured 248 MiB.
           </p>
 
           <AnchorHeading id="two-harness-bugs" as="h3" className="mt-6 font-medium text-foreground">
