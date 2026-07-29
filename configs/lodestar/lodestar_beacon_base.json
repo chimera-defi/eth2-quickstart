@@ -12,9 +12,6 @@
   "builder": {
     "enabled": false
   },
-  "chain": {
-    "pruneHistory": true
-  },
   "logLevel": "info",
   "targetPeers": 50
 }

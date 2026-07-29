@@ -24,6 +24,82 @@ BAKEOFF_DATA_DIRS=(
   "$HOME/ethgas"
 )
 
+# bakeoff_advisor_alert <severity> <candidate> <kind> <detail>
+#
+# Single structured "surface the problem" channel for the bake-off harness.
+# The harness already detects trouble (crash-loop, anchor poison, stall,
+# install failure, window-capped-without-sync) — this gives an
+# operator/supervising-AI something to watch instead of a log line buried in
+# a multi-hour run.
+#
+#   severity  : warn | error
+#   candidate : "<el>__<cl>" pair, or "-" when not candidate-scoped
+#   kind      : short machine token, e.g. crash_loop, anchor_poisoned, stall,
+#               install_failed, window_capped_unsynced
+#   detail    : free text (may contain quotes/backslashes/newlines)
+#
+# Side effects:
+#   - appends one JSON object per line (JSONL) to
+#     ${ETH2QS_BAKEOFF_ALERT_LOG:-./advisor-alerts.jsonl}. Callers that want the
+#     spec default of "<artifact_root>/advisor-alerts.jsonl" should export
+#     ETH2QS_BAKEOFF_ALERT_LOG once they know artifact_root (see
+#     run_candidate.sh / run_queue.sh).
+#   - echoes a single-line "ADVISOR_ALERT ..." marker to stdout so it is
+#     greppable in the driver log regardless of whether the JSONL write
+#     succeeds.
+#
+# MUST NEVER abort the caller: every internal step is best-effort and the
+# function always returns 0, even under set -Eeuo pipefail, even when the
+# target directory is unwritable, even when jq is missing, even when detail
+# contains characters that would otherwise corrupt a hand-rolled JSON string.
+bakeoff_advisor_alert() {
+  local severity="${1:-warn}" candidate="${2:--}" kind="${3:-unknown}" detail="${4:-}"
+  local log_file="${ETH2QS_BAKEOFF_ALERT_LOG:-./advisor-alerts.jsonl}"
+  local run_id="${ETH2QS_BAKEOFF_RUN_ID:-unknown}"
+  local ts dir line esc_detail esc_candidate
+
+  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null)" || ts=""
+
+  # Greppable marker first: must survive even if the JSONL write below fails
+  # (unwritable dir, no jq, bad $detail, ...).
+  printf 'ADVISOR_ALERT severity=%s kind=%s candidate=%s detail=%s\n' \
+    "$severity" "$kind" "$candidate" "$detail" || true
+
+  dir="$(dirname -- "$log_file" 2>/dev/null)" || dir=""
+  if [[ -n "$dir" ]]; then
+    mkdir -p -- "$dir" 2>/dev/null || true
+  fi
+
+  line=""
+  if command -v jq >/dev/null 2>&1; then
+    line="$(jq -cn \
+      --arg ts "$ts" \
+      --arg severity "$severity" \
+      --arg run_id "$run_id" \
+      --arg candidate "$candidate" \
+      --arg kind "$kind" \
+      --arg detail "$detail" \
+      '{ts_utc:$ts, severity:$severity, run_id:$run_id, candidate:$candidate, kind:$kind, detail:$detail}' \
+      2>/dev/null)" || line=""
+  fi
+  if [[ -z "$line" ]]; then
+    # jq unavailable (or failed): minimal manual escape so the file stays
+    # valid JSONL. Order matters — escape backslashes BEFORE quotes, else the
+    # backslash inserted by the quote-escape step would itself get re-escaped.
+    esc_detail="$detail"
+    esc_detail="${esc_detail//\\/\\\\}"
+    esc_detail="${esc_detail//\"/\\\"}"
+    esc_detail="${esc_detail//$'\n'/\\n}"
+    esc_candidate="$candidate"
+    esc_candidate="${esc_candidate//\\/\\\\}"
+    esc_candidate="${esc_candidate//\"/\\\"}"
+    esc_candidate="${esc_candidate//$'\n'/\\n}"
+    line="{\"ts_utc\":\"${ts}\",\"severity\":\"${severity}\",\"run_id\":\"${run_id}\",\"candidate\":\"${esc_candidate}\",\"kind\":\"${kind}\",\"detail\":\"${esc_detail}\"}"
+  fi
+  { printf '%s\n' "$line" >> "$log_file"; } 2>/dev/null || true
+  return 0
+}
+
 bakeoff_snapshot_disk() {
   local outfile="$1"
   {

@@ -1,0 +1,24 @@
+# rerun_queue.tsv — queue of bake-off candidates that need (re-)measuring.
+#
+# Consumed by test/bakeoff/run_queue.sh. Copy this file to
+# test/bakeoff/rerun_queue.tsv (gitignored — do not commit real entries) and
+# fill in real rows.
+#
+# Format:
+#   - TAB-separated.
+#   - Blank lines and lines starting with # are ignored.
+#   - Columns (exactly 3, TAB-separated): execution	consensus	reason
+#       execution  execution client id, e.g. geth / nethermind / erigon / reth /
+#                  besu / nimbus_eth1 / ethrex
+#       consensus  consensus client id, e.g. prysm / lighthouse / teku /
+#                  nimbus / lodestar / grandine
+#       reason     free-text note on WHY this row needs a rerun (fix landed,
+#                  prior run crash-looped, anchor poisoned, etc.) — shows up
+#                  in the queue log and in --dry-run's plan output.
+#
+# Example rows (uncomment + edit; each row is run via
+# test/bakeoff/run_candidate.sh <execution> <consensus>):
+#
+# geth	prysm	rerun after extract_archive -o fix (97541bd)
+# nethermind	lodestar	rerun: lodestar pruneHistory CLI-flag fix (77d939d)
+# erigon	teku	rerun: previous row crash-looped before the watchdog existed

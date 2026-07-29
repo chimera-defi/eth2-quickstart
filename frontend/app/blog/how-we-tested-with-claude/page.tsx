@@ -575,12 +575,25 @@ export default function HowWeTestedWithClaudePage() {
             The consensus-client matrix holds the execution client constant and cycles the CL. Naively
             that&apos;s five full EL re-syncs. Anchor-preserving mode keeps one already-synced execution
             client running and cycles only the CL service per candidate, purging just the consensus
-            datadir between runs: five CL candidates, one EL sync. We ran the sweep twice &mdash; against
-            an ethrex anchor and a geth anchor &mdash; to prove the EL/CL decoupling empirically. The
-            heavyweight and lightweight tiers both reproduced on both anchors &mdash; with one nuance:
-            the lodestar&harr;lighthouse order flipped between anchors (geth: lodestar &lt; lighthouse;
-            ethrex: lighthouse &lt; lodestar), though both stayed in the same smallest tier, where the
-            gap is small and measurement-window-sensitive.
+            datadir between runs: five CL candidates, one EL sync. We ran the sweep three times &mdash;
+            against an ethrex anchor, a geth anchor, and a nethermind anchor &mdash; to prove the EL/CL
+            decoupling empirically. The same three tiers reproduced on all three anchors: a lightweight
+            pair (lodestar, lighthouse), a mid pair (teku, grandine), and nimbus alone at the heavy end
+            &mdash; with the caveat that within-tier order is soft: the lodestar&harr;lighthouse order
+            flipped between the ethrex and geth anchors (geth: lodestar &lt; lighthouse; ethrex:
+            lighthouse &lt; lodestar), and teku moved ~27% between two runs on the <em>same</em>{' '}
+            nethermind anchor (~667 MiB, then ~848 MiB on a clean re-read) &mdash; enough to cross
+            grandine (~730 MiB) and back. Each client stayed inside its own tier; the ordering within
+            a tier tracks the measurement window more than the client. That instability is itself the
+            finding. The nethermind-anchor sweep also surfaced two harness-fidelity caveats worth
+            carrying forward: lodestar&apos;s first run happened to start while the anchor EL was
+            still closing an unrelated block gap, inflating its recorded sync time to ~76 minutes
+            versus ~10 for the other four &mdash; a measurement artifact, not a lodestar result, and
+            one we discarded in favour of a clean re-read (~7m36s, ~178 MiB) &mdash; and teku&apos;s
+            run was flagged{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">anchor_synced=no</code>{' '}
+            by the watchdog even though the anchor was independently verified healthy &mdash; a false
+            positive in the check, not in the anchor.
           </p>
 
           <AnchorHeading id="two-harness-bugs" as="h3" className="mt-6 font-medium text-foreground">

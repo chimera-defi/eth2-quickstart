@@ -17,6 +17,10 @@ status/*.json
 # Audit working artifacts (raw delegate output; committed report lives in docs/audit/)
 artifacts/
 
+# Bake-off rerun queue: operator-local list of live entries. Only the
+# documented .tsv.example template is committed.
+test/bakeoff/rerun_queue.tsv
+
 # Python bytecode cache
 __pycache__/
 
