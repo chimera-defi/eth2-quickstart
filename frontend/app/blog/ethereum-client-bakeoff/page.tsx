@@ -96,15 +96,20 @@ const executionClients = [
   },
 ]
 
-// Both anchors were independently measured (docs/CLIENT_BAKEOFF_RESULTS.md: ethrex anchor is the
-// primary/complete sweep; geth anchor is the cross-anchor confirmation re-run). Sorted by the
-// ethrex-anchor footprint, the primary run. lodestar/lighthouse order flips between anchors — both
-// sit in the smallest tier where the gap is small and measurement-window-sensitive (RESULTS.md).
+// All three anchors were independently measured (docs/CLIENT_BAKEOFF_RESULTS.md: ethrex anchor is
+// the primary/complete sweep; geth anchor is the first cross-anchor confirmation re-run; nethermind
+// anchor is the second). Sorted by the ethrex-anchor footprint, the primary run. One pair swaps
+// order between anchors — lodestar/lighthouse (ethrex vs geth); on the nethermind anchor, teku
+// instead shows ~27% variance against itself across two runs (~667 MiB vs ~848 MiB), crossing
+// grandine's ~730 MiB and back — grandine < teku holds on all three anchors — but each pair stays
+// within its own tier (lightweight / mid), where the gap is small and measurement-window-sensitive
+// (RESULTS.md).
 const consensusClients = [
   {
     name: 'Lighthouse',
     ethrexAnchorFootprint: '~737 MiB — smallest',
     gethAnchorFootprint: '~518 MiB',
+    nethermindAnchorFootprint: '~470 MiB',
     pruneLever: 'checkpoint-sync-url',
     variant: 'primary' as const,
   },
@@ -112,6 +117,7 @@ const consensusClients = [
     name: 'Lodestar',
     ethrexAnchorFootprint: '~828 MiB',
     gethAnchorFootprint: '~177 MiB — smallest',
+    nethermindAnchorFootprint: '~178 MiB — smallest',
     pruneLever: 'pruneHistory=true',
     variant: 'default' as const,
   },
@@ -119,6 +125,7 @@ const consensusClients = [
     name: 'Grandine',
     ethrexAnchorFootprint: '~946 MB actual (sparse file)',
     gethAnchorFootprint: '~725 MiB actual (sparse file)',
+    nethermindAnchorFootprint: '~730 MiB actual (sparse file)',
     pruneLever: '--prune-storage',
     variant: 'default' as const,
   },
@@ -126,6 +133,7 @@ const consensusClients = [
     name: 'Teku',
     ethrexAnchorFootprint: '~2.01 GiB',
     gethAnchorFootprint: '~936 MiB',
+    nethermindAnchorFootprint: '~848 MiB',
     pruneLever: 'data-storage-mode=minimal',
     variant: 'default' as const,
   },
@@ -133,6 +141,7 @@ const consensusClients = [
     name: 'Nimbus',
     ethrexAnchorFootprint: '~4.94 GiB — largest',
     gethAnchorFootprint: '~1.2 GiB — largest',
+    nethermindAnchorFootprint: '~1.3 GiB — largest',
     pruneLever: 'history=prune',
     variant: 'default' as const,
   },
@@ -150,6 +159,7 @@ const fullMetrics = [
   { candidate: 'erigon × prysm', peers: '—', configOptimal: 'n/a (no-sync)', reRuns: 0, notable: 'CPU cap raised 200%→600% mid-run; advanced ~5k blocks then re-froze' },
   { candidate: 'CL sweep × ethrex anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 2, notable: 'teku: JVM-OOM on first attempt (TEKU_CACHE fix); grandine: harness du-pipeline bug, not a client fault' },
   { candidate: 'CL sweep × geth anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 0, notable: 'Cross-anchor confirmation re-run; heavyweight/lightweight tiers reproduced (lodestar↔lighthouse swapped within the smallest tier)' },
+  { candidate: 'CL sweep × nethermind anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 1, notable: "Second cross-anchor confirmation; teku re-measured (~667→~848 MiB across two runs on the same anchor, showing how window-sensitive the mid tier is); lodestar was re-measured after the anchor returned to head (~7m36s / ~178 MiB); its first attempt (~76m14s) was an anchor-gap artifact, not a lodestar property" },
 ]
 
 const completedExecutionSyncs = [
@@ -288,7 +298,7 @@ export default function EthereumClientBakeoffPage() {
             <Card padding="sm" className="bg-muted/30">
               <h3 className="font-medium text-foreground">The CL layer is effectively solved</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                All five consensus clients checkpoint-synced to a validating head in minutes — about 6–9 minutes on the geth anchor whose footprints are shown below, and ~22–23 minutes on the ethrex anchor. All five reached a validating head (teku and grandine after one re-run each — a JVM heap-sizing issue and a harness artifact, not client faults). Footprint is the main differentiator.
+                All five consensus clients checkpoint-synced to a validating head in minutes — about 6–9 minutes on the geth anchor whose footprints are shown below, ~10 minutes on a third, nethermind anchor, and ~22–23 minutes on the ethrex anchor. All five reached a validating head on all three anchors (teku and grandine each needed a caveat along the way — a JVM heap-sizing issue, a harness artifact, and a watchdog false positive, not client faults). Footprint is the main differentiator.
               </p>
             </Card>
           </div>
@@ -505,8 +515,8 @@ export default function EthereumClientBakeoffPage() {
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Each consensus client ran against a fixed EL anchor, and the full sweep was repeated
-            against a second anchor (ethrex, then geth) to test EL/CL decoupling directly; all
-            five synced on both.
+            against two more anchors (ethrex, then geth, then nethermind) to test EL/CL decoupling
+            directly; all five synced on all three.
           </p>
           <div
             className="mt-4 sm:mt-6 hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
@@ -514,12 +524,13 @@ export default function EthereumClientBakeoffPage() {
             aria-label="Consensus client scorecard"
             tabIndex={0}
           >
-            <table className="w-full min-w-[42rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
+            <table className="w-full min-w-[48rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="pb-3 font-medium text-muted-foreground">CL</th>
                   <th className="pb-3 font-medium text-muted-foreground">Footprint (ethrex anchor)</th>
                   <th className="pb-3 font-medium text-muted-foreground">Footprint (geth anchor)</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Footprint (nethermind anchor)</th>
                   <th className="pb-3 font-medium text-muted-foreground">History-prune lever</th>
                 </tr>
               </thead>
@@ -529,6 +540,7 @@ export default function EthereumClientBakeoffPage() {
                     <td className="py-3 font-medium text-foreground">{client.name}</td>
                     <td className="py-3 text-muted-foreground">{client.ethrexAnchorFootprint}</td>
                     <td className="py-3 text-muted-foreground">{client.gethAnchorFootprint}</td>
+                    <td className="py-3 text-muted-foreground">{client.nethermindAnchorFootprint}</td>
                     <td className="py-3"><Badge variant={client.variant}>{client.pruneLever}</Badge></td>
                   </tr>
                 ))}
@@ -548,6 +560,10 @@ export default function EthereumClientBakeoffPage() {
                     <dt className="text-muted-foreground">Geth anchor</dt>
                     <dd className="text-right text-foreground">{client.gethAnchorFootprint}</dd>
                   </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Nethermind anchor</dt>
+                    <dd className="text-right text-foreground">{client.nethermindAnchorFootprint}</dd>
+                  </div>
                 </dl>
                 <div className="mt-3 flex items-center justify-between gap-4">
                   <span className="text-sm text-muted-foreground">History-prune lever</span>
@@ -557,11 +573,11 @@ export default function EthereumClientBakeoffPage() {
             ))}
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            The same client&apos;s two columns differ because absolute footprint tracks how long the
-            CL had been following the chain when it was sampled — the geth-anchor runs were measured
-            minutes after checkpoint-sync, on a fresher datadir — not which EL it paired with. It is
-            the broad heavyweight/lightweight tiers, not the absolute size or exact within-tier order,
-            that reproduce across anchors.
+            The same client&apos;s three columns differ because absolute footprint tracks how long
+            the CL had been following the chain when it was sampled — the geth- and
+            nethermind-anchor runs were measured minutes after checkpoint-sync, on a fresher datadir
+            — not which EL it paired with. It is the broad tiers (lightweight, mid, heavy), not the
+            absolute size or exact within-tier order, that reproduce across anchors.
           </p>
           <p className="mt-4 text-sm text-muted-foreground">
             Disk: geth (~1.13 TiB), nethermind (~1.06 TiB steady-state), and besu (~1.08 TiB) all
@@ -570,9 +586,13 @@ export default function EthereumClientBakeoffPage() {
             &lt; Geth (~8h28m) &lt; Nethermind (~14.5h) &lt; Besu (~19h18m) — that&apos;s the axis
             that actually separates the field, along with restart-resume behavior. The other three
             EL candidates fall out for a specific, documented reason each (below), not a blanket
-            failure. The CL heavyweight/lightweight tiers also reproduced across two different EL
-            anchors (ethrex and geth), while lodestar and lighthouse swapped order within the
-            lightweight tier. The rest of this post is the <em>why</em> behind these numbers.
+            failure. The CL tiers also reproduced across three different EL anchors (ethrex, geth,
+            and nethermind): a lightweight pair (lodestar, lighthouse), a mid pair (grandine, teku),
+            and nimbus alone at the heavy end — with lodestar and lighthouse swapping order between
+            the ethrex and geth anchors. Within-tier order is measurement-window-sensitive: teku
+            itself moved ~667 &rarr; ~848 MiB across two runs on the <em>same</em> nethermind anchor,
+            crossing grandine (~730 MiB) and back. The rest of this post is the{' '}
+            <em>why</em> behind these numbers.
           </p>
         </section>
 
@@ -1002,22 +1022,29 @@ export default function EthereumClientBakeoffPage() {
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             We ran the five CLs — lighthouse, lodestar, grandine, teku, nimbus — against a constant
-            anchor EL, and then repeated it against a second anchor EL to test the EL/CL decoupling
-            claim directly. Every CL checkpoint-synced to a fully-validating head in minutes —{' '}
-            <strong className="text-foreground">~22–23 minutes on the ethrex anchor</strong> and{' '}
+            anchor EL, and then repeated it twice more against different anchor ELs to test the
+            EL/CL decoupling claim directly. Every CL checkpoint-synced to a fully-validating head
+            in minutes —{' '}
+            <strong className="text-foreground">~22–23 minutes on the ethrex anchor</strong>,{' '}
             <strong className="text-foreground">~6–9 minutes on the geth anchor</strong> (whose
-            footprints are in the CL scorecard above),{' '}
+            footprints are in the CL scorecard above), and{' '}
+            <strong className="text-foreground">~10 minutes on the nethermind anchor</strong>{' '}
+            (lodestar&apos;s nethermind-anchor run took ~76 minutes, but that was an anchor-side
+            block-gap artifact unrelated to lodestar itself — see the caveat in the raw results
+            doc),{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes</code>,
-            zero crashes (teku and grandine each needed one re-run — a JVM heap-sizing fix and a
-            harness artifact, not client faults). Sync time is effectively tied within each anchor,
-            so footprint is the differentiator.
+            zero crashes (teku and grandine each needed a caveat across the sweeps — a JVM
+            heap-sizing fix, a harness artifact, and, on the nethermind anchor, a watchdog false
+            positive on teku&apos;s anchor-health verdict — not client faults). Sync time is
+            effectively tied within each anchor, so footprint is the differentiator.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
-            Crucially, the broad tiers reproduced across both anchor ELs — the heavyweight tier
-            (nimbus, teku) and the lightweight tier (lodestar, lighthouse, grandine) held on both,
-            with only a lodestar↔lighthouse flip within the smallest tier. Two different EL
-            anchors, the same CL tiers: EL/CL decoupling, supported empirically — which
-            retroactively validates holding CL=prysm constant for the whole EL scorecard.
+            Crucially, the tiers reproduced across all three anchor ELs — a lightweight pair
+            (lodestar, lighthouse), a mid pair (teku, grandine), and nimbus alone at the heavy end —
+            with two swaps: lodestar↔lighthouse within the lightweight pair (ethrex vs geth), and
+            teku itself across two runs on one anchor (~667 vs ~848 MiB). Three different EL anchors, the
+            same three tiers, no identical total order: EL/CL decoupling, supported empirically —
+            which retroactively validates holding CL=prysm constant for the whole EL scorecard.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             The punchline: on the CL side, all five are operationally effective — none failed, and

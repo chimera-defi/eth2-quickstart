@@ -327,7 +327,10 @@ extract_archive() {
             fi
             ;;
         *.zip)
-            unzip -q "$archive_file" -d "$dest_dir"
+            # -o: overwrite existing files without an interactive prompt. Without it,
+            # a reinstall/upgrade over a pre-existing dir stalls on a y/n prompt and
+            # (non-interactively) defaults to "[N]one", silently keeping the STALE binary.
+            unzip -o -q "$archive_file" -d "$dest_dir"
             extract_result=$?
             ;;
         *)
