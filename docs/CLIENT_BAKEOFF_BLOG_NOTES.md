@@ -267,9 +267,9 @@ EL/CL decoupling:
   Two rows carry a footnote (detail in the results doc): lodestar's early 76m14s run was not a comparable
   sync time (it waited on the anchor importing a ~2-day block gap) and was discarded; a clean re-run landed
   a comparable 7m36s at 178 MiB (the discarded run had measured 248 MiB). teku's `anchor_synced=no` was a
-  watchdog false positive — the anchor was briefly a few blocks behind mid-run while teku already reported
-  sync_distance=0, and it was fully synced by teku's own sync timestamp — and this reproduced on the clean
-  re-run.
+  watchdog false positive — during warmup both sides were briefly behind (the anchor by 56 then 21 blocks,
+  teku itself at sync_distance=49), but every sample from 18:19:30Z onward is clean on both sides,
+  including at teku's own sync timestamp — and this reproduced on the clean re-run.
 
 **Cross-anchor verdict — the tiers reproduce everywhere; the total ranking reproduces on two of three:** a
 2/2/1 structure holds on all three anchors — {lodestar, lighthouse} are always the smallest pair, {teku,
