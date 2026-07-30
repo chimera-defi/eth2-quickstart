@@ -67,7 +67,11 @@ function withBridgeLine(source) {
 for (const file of SOURCE_FILES) {
   const sourcePath = path.join(REPO_ROOT, file)
   if (!existsSync(sourcePath)) {
-    throw new Error(`sync-llms: expected repo-root file not found: ${sourcePath}`)
+    // Deploy environments don't always have the repo root available (some build
+    // only the frontend/ subtree). These files are a nice-to-have mirror, so warn
+    // and carry on rather than failing the whole build over a missing asset.
+    console.warn(`[sync-llms] skipping ${file}: repo-root source not found at ${sourcePath}`)
+    continue
   }
 
   const source = readFileSync(sourcePath, 'utf8')
