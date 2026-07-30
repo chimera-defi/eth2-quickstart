@@ -1057,10 +1057,10 @@ export default function BakeoffResultsPage() {
             <Rich text="**One spec deviation worth calling out:** ethrex's `eth_getLogs` **requires** a `topics` parameter — omitting it returns `Expected parameter: topics is missing`, while geth treats `topics` as optional. Conformant tooling can therefore fail even inside the window ethrex does serve." />
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
-            <Rich text="**Tie it to this repo:** we ship an nginx/Caddy RPC setup. On geth (`--history.chain postmerge`) that endpoint serves post-merge history properly. The same setup on ethrex answers current-state and wallet traffic fine but returns `null`/errors for anything historical — so it is not a drop-in public RPC if your users expect history. If exposing an endpoint is the goal, that's an independent reason to prefer geth or nethermind." />
+            <Rich text="**What this means for the RPC setup we ship:** we ship an nginx/Caddy RPC setup. On geth (`--history.chain postmerge`) that endpoint serves post-merge history properly. The same setup on ethrex answers current-state and wallet traffic fine but returns `null`/errors for anything historical — so it is not a drop-in public RPC if your users expect history. If exposing an endpoint is the goal, that's an independent reason to prefer geth or nethermind." />
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
-            <Rich text="**Close the loop with the disk finding:** this is precisely why ethrex's ~470 GiB plateau is not a disk win — the missing ~600 GiB *is* the history the other clients are storing. Footprint tracks what you retain." />
+            <Rich text="**Why this connects to the disk numbers:** this is precisely why ethrex's ~470 GiB plateau is not a disk win — the missing ~600 GiB *is* the history the other clients are storing. Footprint tracks what you retain." />
           </p>
         </section>
 
