@@ -77,7 +77,7 @@ checkpoint (2026-07-11) and is retained for provenance.
 | EL | Status | Sync time | Footprint | Sync mode | Mainnet share | One-line verdict |
 |----|--------|-----------|-----------|-----------|--------------|------------------|
 | **nethermind** | ✅ synced | ~14.5h | **~1.06 TiB** steady-state (~251 GiB pre-backfill) | snap + AncientBarrier prune | 36.0% | On par with geth/besu on disk; diversity pick. |
-| **ethrex** | ✅ synced | **~2h16m** | ~286–300 GiB at sync → **~470 GiB steady-state plateau** (471.9 GiB, confirmed 2026-07-28→29) | snap (v19.0.0) | 0.0% | **Speed winner.** Un-pruned + serves ~no history → limitation note, not ranked on disk (no-history node, not a disk win). Restart cliff (§3). |
+| **ethrex** | ✅ synced | **~2h16m** | ~286–300 GiB at sync → **~470 GiB steady-state plateau** (471.9 GiB, confirmed 2026-07-28→29) | snap (v19.0.0 at sync; v22.0.0 steady-state) | 0.0% | **Speed winner.** Un-pruned + serves ~no history → limitation note, not ranked on disk (no-history node, not a disk win). Restart cliff (§3). |
 | **geth** | ✅ synced | ~8h28m | ~1.13 TiB | snap + `--history.chain postmerge` | 44.9% | Baseline. Rock-solid, resumes cleanly. |
 | **besu** | ✅ synced (un-pruned) | ~19h18m | ~1.08 TiB (un-pruned) | snap / Bonsai | 17.4% | Synced, but pruned re-run deadlocked twice → limitation note (§4). |
 | **reth** | ⏳ 72h cap | did not finish | ~0.98 TiB @ ~21% | full-sync-only (no snap) | 1.5% | Client limitation: no snap → too slow for 3-day window. |
@@ -246,7 +246,8 @@ trustworthy. The bake-off's credibility rests on this gate.
 - **ethrex** — the sprinter with a glass jaw. Fastest cold sync (~2h16m), but an un-pruned datadir that
   plateaus at **~470 GiB** (confirmed 2026-07-28→29, after climbing ~286 GiB at sync → ~467 GiB on
   2026-07-06) while serving *almost no history* — a no-history node, not a disk win — plus the
-  restart-resync cliff (§3), makes it operationally costly. Fascinating, young (v19.0.0), one to watch.
+  restart-resync cliff (§3), makes it operationally costly. Fascinating, fast-moving (v19.0.0 at first
+  sync, v22.0.0 by the steady-state measurement), one to watch.
 - **besu** — enterprise Java client; does sync (~19h un-pruned) but its snap sync is fragile to CL outages
   (§4) and the pruned-comparable number never landed. Careful operational handling required.
 - **reth** — high-performance Rust, but full-sync-only means it can't finish a mainnet sync in 3 days.

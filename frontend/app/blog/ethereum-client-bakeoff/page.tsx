@@ -54,7 +54,7 @@ const executionClients = [
     result: 'synced',
     syncTime: '~2h16m — fastest',
     footprint: '~470 GiB steady-state plateau (no-history)',
-    syncMode: 'snap (v19.0.0)',
+    syncMode: 'snap (v19.0.0 at sync; v22.0.0 steady-state)',
     mainnetShare: '~0%',
     resultVariant: 'primary' as const,
   },
@@ -152,7 +152,7 @@ const consensusClients = [
 const fullMetrics = [
   { candidate: 'geth × prysm', peers: '—', configOptimal: 'yes', reRuns: 0, notable: 'Baseline; no large optimistic gap to close' },
   { candidate: 'nethermind × prysm', peers: '49', configOptimal: 'yes', reRuns: 1, notable: 'First attempt: 13.3h 0-peer loopback stall; re-run after ExternalIp fix synced clean' },
-  { candidate: 'ethrex × prysm', peers: '50', configOptimal: 'yes', reRuns: 0, notable: 'Datadir plateaus at ~470 GiB (confirmed by a follow-up steady-state measurement run, 4h09m56s snap, 8.8+ flat hours after); 1 auto-healed stale-pivot event; serves no history beyond its snap pivot' },
+  { candidate: 'ethrex × prysm', peers: '50', configOptimal: 'yes', reRuns: 0, notable: 'Datadir plateaus at ~470 GiB (confirmed by a follow-up steady-state measurement run on v22.0.0, 4h09m56s snap, 8.8+ flat hours after); 1 auto-healed stale-pivot event; serves no history beyond its snap pivot' },
   { candidate: 'besu × prysm', peers: '~50', configOptimal: 'n/a (pruned re-run only)', reRuns: 2, notable: 'Un-pruned run synced clean; pruned re-run deadlocked twice, abandoned' },
   { candidate: 'reth × prysm', peers: '—', configOptimal: 'yes', reRuns: 1, notable: '578 samples; relaunched after --full fix; 47% by block / ~21% gas-weighted at cap' },
   { candidate: 'nimbus-eth1 × prysm', peers: '20–25', configOptimal: 'yes', reRuns: 1, notable: '72h continuous, 0 restarts; supersedes an earlier ~21 GB aborted run' },
@@ -1111,7 +1111,8 @@ export default function EthereumClientBakeoffPage() {
               costly today. Its footprint is now settled too — a ~472 GiB plateau — but that&apos;s
               not a disk win: it&apos;s a no-history node, and running its RPC in place of a
               full-history endpoint (this repo&apos;s nginx/Caddy feature) will silently fail on
-              anything historical. Young (v19.0.0) — worth revisiting.
+              anything historical. Fast-moving client — v19.0.0 at first sync, v22.0.0 by
+              this steady-state measurement — worth revisiting.
             </li>
             <li>
               <span className="font-medium text-foreground">Enterprise with care: besu.</span> It

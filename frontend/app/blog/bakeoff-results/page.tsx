@@ -134,6 +134,7 @@ const tocLinks = [
   { label: 'Sync-mode & disk-flag audit', href: '#disk-flag-audit' },
   { label: 'Stage B footprint + CL matrix', href: '#stage-b' },
   { label: 'Client limitations', href: '#client-limitations' },
+  { label: 'Q&A: does ethrex serve a usable RPC?', href: '#qa-ethrex-rpc' },
   { label: 'Operational viability', href: '#operational-viability' },
   { label: 'Gotchas & lessons learned', href: '#gotchas' },
 ]
@@ -180,7 +181,7 @@ const changesDriven = [
 // Recommendation (final campaign synthesis)
 // ---------------------------------------------------------------------------
 const recommendationPoints = [
-  "Execution client: **there is no disk winner — the field converges.** Every EL that carries full post-merge history lands at ~1.0–1.2 TiB (geth 1.13, nethermind ~1.06, besu 1.08, reth ~1.1–1.2 projected); on-disk size is set by history-retention config, a client-agnostic knob, not by client efficiency. So pick on the axes that actually differ: **snap-sync speed** and **restart-resume stability.** **geth** — conservative default, largest ecosystem, cleanest ~8h28m snap, and resumes gracefully after downtime (imports missed blocks, keeps its datadir). **nethermind** — a strong minority-client pick (improves diversity; compact flat-storage state) that resumes cleanly. **ethrex** — fastest cold sync in the field (~2h16m; a later re-sync took 4h09m56s — different day/host state, not a regression trend) but a ~25-min restart cliff (longer gaps trigger a full re-snap); its datadir plateaus at ~470 GiB, smaller than the pack only because it retains no history at all — a no-history node, not a pruned-comparable one, so this is not a disk win. besu snap-synced cleanly (~1.08 TiB) but is fragile to a prolonged CL outage; reth and nimbus_eth1 are full-sync-only (multi-day, capped partial here); erigon deadlocked against checkpoint-synced prysm on this host.",
+  "Execution client: **there is no disk winner — the field converges.** Every EL that carries full post-merge history lands at ~1.0–1.2 TiB (geth 1.13, nethermind ~1.06, besu 1.08, reth ~1.1–1.2 projected); on-disk size is set by history-retention config, a client-agnostic knob, not by client efficiency. So pick on the axes that actually differ: **snap-sync speed** and **restart-resume stability.** **geth** — conservative default, largest ecosystem, cleanest ~8h28m snap, and resumes gracefully after downtime (imports missed blocks, keeps its datadir). **nethermind** — a strong minority-client pick (improves diversity; compact flat-storage state) that resumes cleanly. **ethrex** — fastest cold sync in the field (~2h16m on v19.0.0; a later re-sync took 4h09m56s on v22.0.0 — different ethrex versions and different day/host state, not a regression trend) but a ~25-min restart cliff (longer gaps trigger a full re-snap); its datadir plateaus at ~470 GiB, smaller than the pack only because it retains no history at all — a no-history node, not a pruned-comparable one, so this is not a disk win. besu snap-synced cleanly (~1.08 TiB) but is fragile to a prolonged CL outage; reth and nimbus_eth1 are full-sync-only (multi-day, capped partial here); erigon deadlocked against checkpoint-synced prysm on this host.",
   'Recommended consensus client: **lighthouse** — smallest synced footprint (~739 MB), checkpoint-syncs in ~22 min, blob pruning on by default. lodestar (~827 MB) and grandine (~946 MB, with `--prune-storage`) are close seconds; teku (~2.1 GB) and nimbus (~5.0 GB) are heavier. All five checkpoint-sync in ~22–23 min, so footprint is the differentiator.',
   'Stage-A note: geth, besu, nimbus_eth1, ethrex passed with zero installer changes and zero REST contention — the cleanest out-of-the-box ELs against Prysm.',
 ]
@@ -207,7 +208,7 @@ const stageBFootprint = [
   { candidate: 'reth__prysm', result: 'capped (72h)', variant: 'default' as const, syncTime: 'n/a', footprint: '~0.98 TiB* — reth 1,064,695,764,125 B + prysm 12,468,756,540 B', notes: '*Partial — window-capped at Execution stage block 11,970,965/25,395,872 (47% by block count, ~21% gas-weighted; ended 2026-06-28T16:53:20Z). reth `--full` is the only no-snap EL; sequential full block execution too slow to finish in 72h under caps. Clean SIGTERM stop (ExecMainStatus=0), no crash, 578 samples. Footprint recovered from `samples.jsonl` last entry (16:52:46Z) — `disk-final.tsv` absent due to harness capped-path gap (fixed commit `af0d77f`). Extrapolation: at ~21% gas-exec already ~87% of geth\'s 1.13 TiB; projected final `--full` footprint ~1.1–1.2 TiB.' },
   { candidate: 'nethermind__prysm', result: 'synced', variant: 'primary' as const, syncTime: '~14.5h (snap)', footprint: '**~1.06 TiB steady-state** (state ~226 GiB + ~842 GiB post-merge bodies/receipts) — **~251 GiB at snap-sync, before FastBlocks backfilled post-merge history** (268,110,243,338 B at that point) + prysm 1,431,145,921 B', notes: 'Snap-synced to head 25,428,620, 49 peers, no crash — compact flat-storage STATE (~226 GiB) but full post-merge history backfills to ~1.06 TiB — on par with geth. NOTE: nethermind\'s FIRST attempt was a 13.3h 0-peer loopback stall (P2P pinned to 127.0.0.1, execution head frozen ~block 4,651 while the beacon looked healthy) — the origin of the "triage is blind to a stalled EL" lesson below. After the installer was fixed to advertise a routable `ExternalIp` (commit `676e4da`), the re-run synced cleanly.' },
   { candidate: 'besu__prysm', result: 'synced; pruned re-run abandoned', variant: 'primary' as const, syncTime: '~19h18m', footprint: '**~1.08 TiB** — besu 1,189,836,723,674 B + prysm 1,682,488,084 B', notes: '**besu synced successfully.** The 2026-06-30 run snap-synced cleanly to a fully validating head (~50 peers, prysm `is_optimistic=false` at 2026-07-01T01:37:10Z → ~19h18m, fully_synced=yes) — a working, production-viable node. Its **~1.08 TiB is the same ~1.1 TiB magnitude** as geth (1.13 TiB) and nethermind (~1.06 TiB) once they carry full post-merge history — comparable, not an outlier; geth\'s 1.13 TiB is itself the `--history.chain postmerge` floor, not a pruned-smaller number besu skipped. A follow-up re-run (`history-expiry-prune=true`, 2026-07-04) to see if a further prune lever shrinks it **deadlocked twice and was abandoned** (operator: “Stop; accept limitation note”, 2026-07-05 — see the besu snap-sync deadlock gotcha below; the deadlock trigger was a stale-CL stall, **not** a besu sync failure). besu **did** sync; its open issue is that snap sync is **fragile to a prolonged CL outage**, not its disk size.' },
-  { candidate: 'ethrex__prysm', result: 'synced', variant: 'primary' as const, syncTime: '~2h16m (snap); a later re-sync (steady-state run) took 4h09m56s', footprint: '**~470 GiB steady-state plateau** (471.9 GiB, oscillating 470.0–472.3 GiB) — **~286 GiB at first sync** (306,564,007,339 B, 2026-07-06); **~300 GiB at sync this run** (2026-07-28, 4h09m56s)', notes: 'Snap-synced to a fully validating head in ~2h16m — **fastest EL sync in the field.** 50 peers throughout. 1 automatic stale-pivot update (block 25,469,233→25,469,696) self-healed in ~4 min with no intervention (ethrex clock-based detection, as designed). No crash (service_crash_observed=no, install_exit_code=0). Footprint is un-pruned and **NOT full-history** — ethrex serves ~no history (`eth_getBlockByNumber` returns `null` below head; verified 2026-07-06 and again 2026-07-29). Its datadir **plateaus, it does not grow unbounded**: run `client-bakeoff-ethrex-steadystate-2026-07-28` (NRestarts=0) climbed +43 GiB/hr during post-sync settling (0→465 GiB, 19:02→05:48Z), then growth collapsed ~200× to +0.22 GiB/hr and stayed flat for 8.8+ hours (06:03→14:48Z, oscillating 470.0–472.3 GiB — RocksDB compaction; `sync_distance=0`, `is_optimistic=false` throughout). The earlier ~467 GiB reading (2026-07-06) was this same plateau caught mid-climb — that run was wiped believing it was still growing, when it was actually within ~1% of where it settles. **Not a disk win:** ethrex is smaller only because it retains no history — a no-history node, not a pruned-comparable one. On a state-only basis it isn\'t even smallest: nethermind\'s state alone is ~226 GiB, roughly half ethrex\'s entire 472 GiB (not a perfectly controlled comparison — ethrex\'s total also includes headers/recent blocks, and the two clients use different state encodings). See client limitations and gotchas for the restart cliff (unchanged) and the no-history RPC cost. ethrex v19.0.0. fully_synced=yes, hit_72h_cap=no.' },
+  { candidate: 'ethrex__prysm', result: 'synced', variant: 'primary' as const, syncTime: '~2h16m (snap, v19.0.0); a later re-sync (steady-state run, v22.0.0) took 4h09m56s', footprint: '**~470 GiB steady-state plateau** (471.9 GiB, oscillating 470.0–472.3 GiB) — **~286 GiB at first sync** (306,564,007,339 B, 2026-07-06); **~300 GiB at sync this run** (2026-07-28, 4h09m56s)', notes: 'Snap-synced to a fully validating head in ~2h16m — **fastest EL sync in the field.** 50 peers throughout. 1 automatic stale-pivot update (block 25,469,233→25,469,696) self-healed in ~4 min with no intervention (ethrex clock-based detection, as designed). No crash (service_crash_observed=no, install_exit_code=0). Footprint is un-pruned and **NOT full-history** — ethrex serves ~no history (`eth_getBlockByNumber` returns `null` below head; verified 2026-07-06 and again 2026-07-29). Its datadir **plateaus, it does not grow unbounded**: run `client-bakeoff-ethrex-steadystate-2026-07-28` (NRestarts=0) climbed +43 GiB/hr during post-sync settling (0→465 GiB, 19:02→05:48Z), then growth collapsed ~200× to +0.22 GiB/hr and stayed flat for 8.8+ hours (06:03→14:48Z, oscillating 470.0–472.3 GiB — RocksDB compaction; `sync_distance=0`, `is_optimistic=false` throughout). The earlier ~467 GiB reading (2026-07-06) was this same plateau caught mid-climb — that run was wiped believing it was still growing, when it was actually within ~1% of where it settles. **Not a disk win:** ethrex is smaller only because it retains no history — a no-history node, not a pruned-comparable one. On a state-only basis it isn\'t even smallest: nethermind\'s state alone is ~226 GiB, roughly half ethrex\'s entire 472 GiB (not a perfectly controlled comparison — ethrex\'s total also includes headers/recent blocks, and the two clients use different state encodings). See client limitations and gotchas for the restart cliff (unchanged) and the no-history RPC cost. First sync ran v19.0.0; the 2026-07-28 steady-state run ran v22.0.0 (`ethrex/v22.0.0-HEAD-aa6c5f04750595…`) — fully_synced=yes, hit_72h_cap=no.' },
 ]
 
 // ---------------------------------------------------------------------------
@@ -220,7 +221,7 @@ const stageBFootprint = [
 // ---------------------------------------------------------------------------
 const freshVsSteadyFootprint = [
   { el: 'nethermind', fresh: '~251 GiB (268,110,243,338 B)', steady: '**~1.06 TiB** (state ~226 GiB + ~842 GiB post-merge bodies/receipts)', note: 'Grew after sync as FastBlocks backfilled post-merge history.' },
-  { el: 'ethrex', fresh: '~286 GiB (306,564,007,339 B, 2026-07-06 run); ~300 GiB (this run, 2026-07-28, at 4h09m56s)', steady: '**~470 GiB plateau** (471.9 GiB; oscillates 470.0–472.3 GiB)', note: '+43 GiB/hr during post-sync settling, then collapsed ~200× to +0.22 GiB/hr, flat 8.8+ hours. No-history node — not pruned-comparable to the rows below.' },
+  { el: 'ethrex', fresh: '~286 GiB (306,564,007,339 B, 2026-07-06 run, v19.0.0); ~300 GiB (this run, 2026-07-28, v22.0.0, at 4h09m56s)', steady: '**~470 GiB plateau** (471.9 GiB; oscillates 470.0–472.3 GiB)', note: '+43 GiB/hr during post-sync settling, then collapsed ~200× to +0.22 GiB/hr, flat 8.8+ hours. No-history node — not pruned-comparable to the rows below. The two runs used different ethrex versions (v19.0.0 → v22.0.0) as well as different days/host load.' },
   { el: 'geth', fresh: 'not separately captured', steady: '**1.13 TiB** (1,245,128,582,247 B)', note: '`--history.chain postmerge`.' },
   { el: 'besu', fresh: 'not separately captured', steady: '**1.08 TiB** (1,189,836,723,674 B)', note: '' },
   { el: 'reth', fresh: '—', steady: '~0.98 TiB partial @72h cap (projected ~1.1–1.2 TiB finished)', note: "Full-sync-only; never reaches a moment distinct from its capped steady state." },
@@ -291,7 +292,7 @@ const clientLimitations = [
   { el: 'reth', footprint: '~0.98 TiB partial (72h-capped)', synced: 'partial', syncedDetail: '', why: '`--full`-only (no snap); sequential full block execution can\'t finish mainnet inside the 72h cap. Speed-bound, not config-bound.' },
   { el: 'nimbus_eth1', footprint: '**~40 GB partial @72h cap** (2026-07-13; supersedes an earlier ~21 GB aborted run)', synced: 'partial', syncedDetail: '(~21.6%)', why: 'Full-sync-only (no snap). The 72h governance-cap run (2026-07-11→13, run_id `client-bakeoff-nimbuseth1-2026-07-11`) ran **72h continuously with 0 restarts** (stable throughout, 20–25 peers) and reached **~21.6%** — head 5,509,858 / target 25,505,378, eta ~1w3d still remaining — so it never neared tip. **New, measured this run:** `prune = true` is **empirically confirmed pruning online** (journal `Pruning history … pruned=N` logged continuously during import), which **resolves the earlier "contested / era1-only / unverified" open question** — the lever is NOT inert. It\'s listed here only because a full-sync-only client can\'t reach tip in a practical window on this host, **not** because the prune lever fails.' },
   { el: 'erigon', footprint: '~1.21 TiB frozen partial', synced: 'no', syncedDetail: '', why: 'Structural no-sync: erigon3 OtterSync + checkpoint-synced-prysm optimistic gap-close deadlock. Not a synced datadir.' },
-  { el: 'ethrex', footprint: '~286–300 GiB at sync (fresh) → **~470 GiB steady-state plateau** (471.9 GiB, oscillating 470.0–472.3 GiB)', synced: 'yes', syncedDetail: '(~2h16m, fully validated; a later re-sync took 4h09m56s)', why: 'ethrex **synced cleanly and fastest in the field (~2h16m snap).** No history-prune lever (`--syncmode snap` only; no state-prune flag) — moot, since it retains no history to prune. It serves ~no history (`eth_getBlockByNumber` `null` below head, verified 2026-07-06 and 2026-07-29) and its datadir **plateaus rather than growing unbounded**: +43 GiB/hr while post-sync settling, then a ~200× collapse to +0.22 GiB/hr, flat 8.8+ hours (run `client-bakeoff-ethrex-steadystate-2026-07-28`, NRestarts=0). The earlier ~467 GiB (2026-07-06) was this same plateau caught mid-climb, ~1% below the settled figure — not evidence of unbounded growth. **Not a disk win:** it\'s smaller only because it\'s a no-history node; nethermind\'s state alone (~226 GiB) is roughly half ethrex\'s entire total on a state-only basis (caveat: not a perfectly controlled comparison — different state encodings, and ethrex\'s total includes headers/recent blocks). config_optimal=yes (snap is optimal-by-absence; 1 stale-pivot auto-healed). service_crash_observed=no. See gotchas for the restart cliff (unchanged) and the no-history RPC cost.' },
+  { el: 'ethrex', footprint: '~286–300 GiB at sync (fresh) → **~470 GiB steady-state plateau** (471.9 GiB, oscillating 470.0–472.3 GiB)', synced: 'yes', syncedDetail: '(~2h16m on v19.0.0, fully validated; a later re-sync on v22.0.0 took 4h09m56s — different day/host load too, not a regression)', why: 'ethrex **synced cleanly and fastest in the field (~2h16m snap).** No history-prune lever (`--syncmode snap` only; no state-prune flag) — moot, since it retains no history to prune. It serves ~no history (`eth_getBlockByNumber` `null` below head, verified 2026-07-06 and 2026-07-29) and its datadir **plateaus rather than growing unbounded**: +43 GiB/hr while post-sync settling, then a ~200× collapse to +0.22 GiB/hr, flat 8.8+ hours (run `client-bakeoff-ethrex-steadystate-2026-07-28`, NRestarts=0). The earlier ~467 GiB (2026-07-06) was this same plateau caught mid-climb, ~1% below the settled figure — not evidence of unbounded growth. **Not a disk win:** it\'s smaller only because it\'s a no-history node; nethermind\'s state alone (~226 GiB) is roughly half ethrex\'s entire total on a state-only basis (caveat: not a perfectly controlled comparison — different state encodings, and ethrex\'s total includes headers/recent blocks). config_optimal=yes (snap is optimal-by-absence; 1 stale-pivot auto-healed). service_crash_observed=no. See gotchas for the restart cliff (unchanged) and the no-history RPC cost.' },
 ]
 
 // ---------------------------------------------------------------------------
@@ -311,6 +312,26 @@ const gotchas = [
   "**erigon3 OtterSync + checkpoint-synced prysm deadlock** — the one structural no-sync (see the erigon row): EL head freezes behind tip while the beacon stays optimistic; neither issues the `forkchoiceUpdated` that would close the gap. Raising CPU caps advanced it ~5k blocks then re-froze.",
   "**reth is `--full`-only here** (archive was the disk-hostile default; switched to `--full`); sequential full block execution can't finish a mainnet sync inside the 72h cap.",
   '**Sampler timestamp skew (~2h):** samples label local CEST times as `Z`. Trust file mtime for wall-clock, not the sample\'s `timestamp_utc` string.',
+]
+
+// ---------------------------------------------------------------------------
+// Reader Q&A: does ethrex serve a usable RPC? (measured live 2026-07-29/30
+// against our own synced ethrex node, head ~25,646,566)
+// ---------------------------------------------------------------------------
+const rpcHistoryProbes = [
+  { block: '1', era: 'genesis, 2015', result: 'null' },
+  { block: '4,374,488', era: '2017 — ICO era', result: 'null' },
+  { block: '12,000,000', era: '2021 — DeFi summer', result: 'null' },
+  { block: '15,537,394', era: 'the merge block itself', result: 'null' },
+]
+
+const rpcConsequentlyBroken = [
+  'Indexer/subgraph backfill',
+  'Portfolio history',
+  'Tax and accounting exports',
+  'Historical charts',
+  '"Show me my transaction from last month"',
+  'Any analytics that replays past logs',
 ]
 
 export default function BakeoffResultsPage() {
@@ -954,6 +975,97 @@ export default function BakeoffResultsPage() {
 
         {/* ---------------------------------------------------------------- */}
         <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="qa-ethrex-rpc" className="text-lg sm:text-xl font-semibold text-foreground">
+            Reader Q&amp;A: does ethrex serve a usable RPC?
+          </AnchorHeading>
+          <p className="mt-2 text-sm italic text-muted-foreground">
+            <Rich text="Everything below was measured live on 2026-07-29/30 against our own synced ethrex node (head ~25,646,566, `ethrex/v22.0.0-HEAD-aa6c5f04750595…`)." />
+          </p>
+
+          <p className="mt-4 text-base font-medium text-foreground">Q: Does ethrex serve a usable RPC?</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            <Rich text="**A:** Yes — for anything at or after the block you synced at. No — for anything before it. The dividing line is your sync point, not “wallet vs DeFi”." />
+          </p>
+
+          <AnchorHeading id="qa-what-works" as="h3" className="mt-6 font-medium text-foreground">
+            What works (verified)
+          </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            <Rich text="A full dapp-frontend method sweep at `latest` all passed — `eth_call`, `eth_getCode`, `eth_getStorageAt`, `eth_estimateGas`, `eth_getBalance`, `eth_getTransactionCount`, `eth_gasPrice`, `eth_feeHistory`, `eth_maxPriorityFeePerGas`, `web3_clientVersion`, `net_version`. `eth_sendRawTransaction` is present and validates input (a deliberately malformed payload was rejected with `Invalid params: InvalidLength`). Current-state DeFi reads — swap quotes, balances, allowances, pool state — work normally." />
+          </p>
+
+          <AnchorHeading id="qa-deploy-today" as="h3" className="mt-6 font-medium text-foreground">
+            The deploy-today test (the decisive one)
+          </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            <Rich text="We took a real contract-creation transaction from 17 blocks back — block 25,646,549, tx `0xc909b51c…`, contract `0x227efd38ef38a798ae5ec9af062c437ee4bbef35` — and every dapp read worked: `eth_getCode` returned **8,043 bytes of bytecode**, plus `eth_getStorageAt`, `eth_getTransactionByHash`, `eth_getTransactionReceipt`, and `eth_getLogs` from its deploy block to `latest`." />
+          </p>
+          <p className="mt-3 rounded-lg border border-border p-3 text-sm font-medium text-foreground">
+            So: deploy a contract today, read its state, and serve a dapp frontend from ethrex — all fine.
+          </p>
+
+          <AnchorHeading id="qa-what-doesnt-work" as="h3" className="mt-6 font-medium text-foreground">
+            What does NOT work
+          </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Every pre-merge probe returns <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">null</code>:
+          </p>
+          <div
+            className="mt-4 overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            role="region"
+            aria-label="ethrex historical block probes, all pre-merge"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[32rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
+              <thead>
+                <tr className="border-b border-border text-left">
+                  <th className="pb-3 font-medium text-muted-foreground">Block probed</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Era</th>
+                  <th className="pb-3 font-medium text-muted-foreground"><code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_getBlockByNumber</code></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {rpcHistoryProbes.map((row) => (
+                  <tr key={row.block}>
+                    <td className="py-3 align-top font-medium text-foreground">{row.block}</td>
+                    <td className="py-3 align-top text-muted-foreground">{row.era}</td>
+                    <td className="py-3 align-top"><Badge>{row.result}</Badge></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            <Rich text="The cutoff is exactly the snap-sync pivot, probed to single-block precision: pivot−1 (25,634,444) → `null`, pivot+0 (25,634,445) → served. The node held only 4,783 blocks (~16h of chain) at test time. That window grows forward as it imports but never extends backward — ethrex does not backfill." />
+          </p>
+
+          <AnchorHeading id="qa-historical-state" as="h3" className="mt-6 font-medium text-foreground">
+            A second, much tighter limit — historical state
+          </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            <Rich text="`eth_call` succeeds at head−100 but fails at head−500 with `Vm execution error: DB error: state root missing for block N`. So historical state is roughly the last ~128 blocks (~25 minutes). “What was this balance at block X” does not work." />
+          </p>
+
+          <p className="mt-4 text-sm font-medium text-foreground">Consequently broken:</p>
+          <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-muted-foreground">
+            {rpcConsequentlyBroken.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+
+          <p className="mt-4 text-sm text-muted-foreground">
+            <Rich text="**One spec deviation worth calling out:** ethrex's `eth_getLogs` **requires** a `topics` parameter — omitting it returns `Expected parameter: topics is missing`, while geth treats `topics` as optional. Conformant tooling can therefore fail even inside the window ethrex does serve." />
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            <Rich text="**Tie it to this repo:** we ship an nginx/Caddy RPC setup. On geth (`--history.chain postmerge`) that endpoint serves post-merge history properly. The same setup on ethrex answers current-state and wallet traffic fine but returns `null`/errors for anything historical — so it is not a drop-in public RPC if your users expect history. If exposing an endpoint is the goal, that's an independent reason to prefer geth or nethermind." />
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            <Rich text="**Close the loop with the disk finding:** this is precisely why ethrex's ~470 GiB plateau is not a disk win — the missing ~600 GiB *is* the history the other clients are storing. Footprint tracks what you retain." />
+          </p>
+        </section>
+
+        {/* ---------------------------------------------------------------- */}
+        <section className="mt-10 sm:mt-16">
           <AnchorHeading id="operational-viability" className="text-lg sm:text-xl font-semibold text-foreground">
             Operational viability — which clients would we actually run (Stage B + CL matrix synthesis)
           </AnchorHeading>
@@ -975,7 +1087,7 @@ export default function BakeoffResultsPage() {
               <span className="font-medium text-foreground">The rest each missed the bar for a specific, documented reason — not a blanket “bad client”:</span>
               <ul className="mt-2 space-y-2 pl-4">
                 <li>
-                  <Rich text="**ethrex** — fastest cold sync in the whole field (~2h16m), but the restart-cliff is a real operational weakness: a 26-minute/132-block downtime gap stalled instead of resuming, and measured 1.5–2-hour gaps triggered a full ~2-hour re-snap. Separately, its datadir **plateaus at ~470 GiB** (confirmed 2026-07-28→29: a +43 GiB/hr post-sync settling climb collapsed ~200× to +0.22 GiB/hr and stayed flat 8.8+ hours) — the earlier ~467 GiB reading was this same plateau caught mid-climb, not unbounded growth. That doesn't make it a disk winner: it plateaus low only because it serves no history at all, and on a state-only basis nethermind's ~226 GiB state is smaller still. Snap speed is a trap if the restart cliff isn't fixed — fast to stand up, painful to *operate*. Young client (v19.0.0); may improve." />
+                  <Rich text="**ethrex** — fastest cold sync in the whole field (~2h16m), but the restart-cliff is a real operational weakness: a 26-minute/132-block downtime gap stalled instead of resuming, and measured 1.5–2-hour gaps triggered a full ~2-hour re-snap. Separately, its datadir **plateaus at ~470 GiB** (confirmed 2026-07-28→29: a +43 GiB/hr post-sync settling climb collapsed ~200× to +0.22 GiB/hr and stayed flat 8.8+ hours) — the earlier ~467 GiB reading was this same plateau caught mid-climb, not unbounded growth. That doesn't make it a disk winner: it plateaus low only because it serves no history at all, and on a state-only basis nethermind's ~226 GiB state is smaller still. Snap speed is a trap if the restart cliff isn't fixed — fast to stand up, painful to *operate*. Fast-moving young client — v19.0.0 at first sync, v22.0.0 by the 2026-07-28 steady-state run; may improve further." />
                 </li>
                 <li>
                   <Rich text="**reth, nimbus_eth1** — full-sync-only (no snap) in the mode we tested; can't reach tip inside a practical window on this host. This is a time-to-sync limit under our snap-to-tip bar, **not** a verdict on the clients in every context (reth in particular is widely run elsewhere)." />
