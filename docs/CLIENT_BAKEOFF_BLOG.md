@@ -24,7 +24,7 @@ We ran every execution client (EL) and consensus client (CL) that [eth2-quicksta
 |----|--------|-----------|-----------|-----------|---------------|
 | **nethermind** | ✅ synced | ~14.5h | **~1.06 TiB** steady-state (~251 GiB at snap-sync, pre-backfill) | snap + Halite | 36.0% |
 | **geth** | ✅ synced | ~8h28m | ~1.13 TiB (pruned) | snap + `--history.chain postmerge` | 44.9% |
-| **ethrex** | ✅ synced | **~2h16m** — fastest | **~472 GiB** steady-state plateau (no-history; ~286–300 GiB at snap-sync) | snap (v19.0.0) | ~0% |
+| **ethrex** | ✅ synced | **~2h16m** — fastest | **~472 GiB** steady-state plateau (no-history; ~286–300 GiB at snap-sync) | snap (v19.0.0 at sync; v22.0.0 steady-state) | ~0% |
 | **besu** | ✅ synced (un-pruned) | ~19h18m | ~1.08 TiB (un-pruned) | snap / Bonsai | 17.4% |
 | **reth** | ⏳ 72h cap (~21%) | did not finish | ~0.98 TiB (partial) | full-sync-only | 1.5% |
 | **nimbus_eth1** | ⏳ 72h cap (~21.6%) | did not finish | ~40 GB (partial) | full-sync-only | ~0% |
@@ -179,7 +179,7 @@ The punchline: on the CL side, all five are operationally effective — none fai
 - **Default: geth.** Largest ecosystem, most documentation, the cleanest snap sync (~8.5h), and it resumes gracefully across restarts. Its disk footprint (~1.13 TiB) is on par with the other ELs that carry full post-merge history — not a downside unique to geth. If you don't have a specific reason to run something else, run this.
 - **Diversity pick: nethermind.** Compact flat-storage state, clean restart behavior, and a minority-client diversity bonus. On disk it's on par with geth (~1.06 vs ~1.13 TiB) once full post-merge history is counted — not the space-saver its snap-sync-tip snapshot (~251 GiB) suggested. Costs a bit more sync time (~14.5h vs geth's ~8.5h).
 - **Consensus client: lighthouse** as the lean default; any of the five is operationally fine — pick on footprint and familiarity.
-- **Watch, don't yet deploy: ethrex.** Fascinating and fastest, but the ~25-minute restart cliff makes it operationally costly today. Its footprint is now settled too — a ~472 GiB plateau — but that's not a disk win: it's a no-history node, and running its RPC in place of a full-history endpoint will silently fail on anything historical. Young (v19.0.0) — worth revisiting.
+- **Watch, don't yet deploy: ethrex.** Fascinating and fastest, but the ~25-minute restart cliff makes it operationally costly today. Its footprint is now settled too — a ~472 GiB plateau — but that's not a disk win: it's a no-history node, and running its RPC in place of a full-history endpoint will silently fail on anything historical. Fast-moving client — v19.0.0 at first sync, v22.0.0 by the steady-state measurement — worth revisiting.
 - **Enterprise with care: besu.** It syncs, but its snap sync is fragile to CL outages; handle upgrades and CL health deliberately.
 - **Know the design limits:** reth and nimbus_eth1 are full-sync-only — excellent clients, but plan for a long initial sync rather than snap-to-tip. Avoid erigon3 + a checkpoint-synced CL until the optimistic-sync deadlock is resolved.
 
