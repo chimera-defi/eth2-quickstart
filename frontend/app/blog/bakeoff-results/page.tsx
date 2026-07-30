@@ -979,7 +979,7 @@ export default function BakeoffResultsPage() {
             Reader Q&amp;A: does ethrex serve a usable RPC?
           </AnchorHeading>
           <p className="mt-2 text-sm italic text-muted-foreground">
-            <Rich text="Everything below was measured live on 2026-07-29/30 against our own synced ethrex node (head ~25,646,566, `ethrex/v22.0.0-HEAD-aa6c5f04750595…`)." />
+            <Rich text="Everything below was measured live on 2026-07-29/30 against our own synced ethrex node (`ethrex/v22.0.0-HEAD-aa6c5f04750595…`), across several probes taken at different moments as the head advanced." />
           </p>
 
           <p className="mt-4 text-base font-medium text-foreground">Q: Does ethrex serve a usable RPC?</p>
@@ -998,7 +998,7 @@ export default function BakeoffResultsPage() {
             The deploy-today test (the decisive one)
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            <Rich text="We took a real contract-creation transaction from 17 blocks back — block 25,646,549, tx `0xc909b51c…`, contract `0x227efd38ef38a798ae5ec9af062c437ee4bbef35` — and every dapp read worked: `eth_getCode` returned **8,043 bytes of bytecode**, plus `eth_getStorageAt`, `eth_getTransactionByHash`, `eth_getTransactionReceipt`, and `eth_getLogs` from its deploy block to `latest`." />
+            <Rich text="We took a real contract-creation transaction from 17 blocks back — head ~25,646,566 at the time, block 25,646,549, tx `0xc909b51c…`, contract `0x227efd38ef38a798ae5ec9af062c437ee4bbef35` — and every dapp read worked: `eth_getCode` returned **8,043 bytes of bytecode**, plus `eth_getStorageAt`, `eth_getTransactionByHash`, `eth_getTransactionReceipt`, and `eth_getLogs` from its deploy block to `latest`." />
           </p>
           <p className="mt-3 rounded-lg border border-border p-3 text-sm font-medium text-foreground">
             So: deploy a contract today, read its state, and serve a dapp frontend from ethrex — all fine.
@@ -1036,7 +1036,7 @@ export default function BakeoffResultsPage() {
             </table>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            <Rich text="The cutoff is exactly the snap-sync pivot, probed to single-block precision: pivot−1 (25,634,444) → `null`, pivot+0 (25,634,445) → served. The node held only 4,783 blocks (~16h of chain) at test time. That window grows forward as it imports but never extends backward — ethrex does not backfill." />
+            <Rich text="The cutoff is exactly the snap-sync pivot, probed to single-block precision: pivot−1 (25,634,444) → `null`, pivot+0 (25,634,445) → served. At this earlier probe (head ~25,639,228), the node held only 4,783 blocks (~16h of chain). That window grows forward as it imports but never extends backward — ethrex does not backfill." />
           </p>
 
           <AnchorHeading id="qa-historical-state" as="h3" className="mt-6 font-medium text-foreground">
