@@ -25,6 +25,13 @@ stall_max_restarts="${ETH2QS_BAKEOFF_STALL_MAX_RESTARTS:-3}"
 # healthy candidate ever sees (~0 restarts across a run) but far below a real
 # crash loop (hundreds within minutes) — see incident note at the watchdog site.
 crash_loop_max_restarts="${ETH2QS_BAKEOFF_MAX_RESTARTS:-20}"
+# How far the anchor EL may trail the network head before a sample counts as a
+# miss. Some ELs (nethermind) keep returning an eth_syncing OBJECT at tip with
+# highestBlock = network head, so while a CL is still warming up and nothing is
+# driving forkchoice, the anchor legitimately trails by a few blocks. Requiring
+# currentBlock >= highestBlock there poisons healthy rows. A real re-snap drops
+# currentBlock to ~0, which is millions of blocks out and still trips this.
+anchor_lag_tolerance="${ETH2QS_BAKEOFF_ANCHOR_LAG_BLOCKS:-128}"
 caps="$REPO_ROOT/test/bakeoff/apply_resource_caps.sh"
 
 # Anchor mode: when set, preserves this EL across the entire CL sweep.
@@ -289,7 +296,7 @@ if [[ "$install_rc" -eq 0 ]]; then
       else
         _snap_check="$(cat "$out/tmp/execution-sync.json" 2>/dev/null || true)"
         # Non-empty payload that does NOT parse as "synced" is a miss.
-        if [[ -n "$_snap_check" ]] && ! echo "$_snap_check" | jq -e '
+        if [[ -n "$_snap_check" ]] && ! echo "$_snap_check" | jq -e --argjson tol "$anchor_lag_tolerance" '
           def h2n:
             if . == null then 0
             else (ltrimstr("0x")
@@ -305,7 +312,7 @@ if [[ "$install_rc" -eq 0 ]]; then
           (.result == false)
           or ( ((.result|type) == "object")
                and (.result.highestBlock != "0x0")
-               and ((.result.currentBlock | h2n) >= (.result.highestBlock | h2n)) )
+               and (((.result.highestBlock | h2n) - (.result.currentBlock | h2n)) <= $tol) )
         ' >/dev/null 2>&1; then
           anchor_miss="yes"
         fi

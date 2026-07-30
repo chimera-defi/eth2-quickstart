@@ -176,7 +176,14 @@ Each iteration:
    loop `break`s immediately (before the anchor/stall/synced checks below even run for that tick).
 4. **Anchor watchdog** (anchor mode only, and only while `.anchor-poisoned` doesn't already exist):
    detects if the anchor EL silently dropped out of sync (service down, or `eth_syncing` no longer
-   reporting caught-up). Two consecutive misses (`anchor_miss_streak -ge 2`) touches
+   reporting caught-up). "Caught-up" allows the anchor to trail the network head by up to
+   `ETH2QS_BAKEOFF_ANCHOR_LAG_BLOCKS` (default 128): some ELs (nethermind) keep returning an
+   `eth_syncing` object at tip with `highestBlock` = network head, so while a CL is still warming up
+   and nothing is driving forkchoice the anchor legitimately trails by a few blocks. Demanding
+   `currentBlock >= highestBlock` there poisoned healthy rows (it is what produced the teku
+   `anchor_synced=no` false positive on the nethermind anchor). A real re-snap drops `currentBlock`
+   to ~0, millions of blocks out, so it still trips well inside the tolerance.
+   Two consecutive misses (`anchor_miss_streak -ge 2`) touches
    `.anchor-poisoned` and logs an error — **detection only, it never restarts or kills anything**,
    because the anchor EL is shared state across the whole CL sweep and killing it would invalidate
    every remaining candidate in the rotation.
