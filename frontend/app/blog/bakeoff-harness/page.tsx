@@ -674,7 +674,12 @@ export default function BakeoffHarnessPage() {
             <li>
               <strong>Anchor watchdog</strong> (anchor mode only, and only while <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.anchor-poisoned</code> doesn&apos;t
               already exist): detects if the anchor EL silently dropped out of sync (service down, or{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing</code> no longer reporting caught-up). Two consecutive misses (
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing</code> no longer reporting caught-up). &ldquo;Caught-up&rdquo; allows the anchor to trail
+              the network head by up to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_ANCHOR_LAG_BLOCKS</code> (default 128) &mdash; some ELs
+              keep returning an <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing</code> object at tip with <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">highestBlock</code> set to the network
+              head, so while a CL is still warming up and nothing drives forkchoice the anchor legitimately trails by
+              a few blocks. Demanding an exact catch-up there poisoned healthy rows. A real re-snap drops 
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">currentBlock</code> to ~0, so it still trips far inside the tolerance. Two consecutive misses (
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">anchor_miss_streak -ge 2</code>) touches <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.anchor-poisoned</code> and logs
               an error — <strong>detection only, it never restarts or kills anything</strong>, because the anchor EL
               is shared state across the whole CL sweep and killing it would invalidate every remaining candidate in
