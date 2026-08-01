@@ -35,29 +35,29 @@ export const ARTICLES: Article[] = [
     slug: 'ethereum-client-bakeoff',
     pageTitle: 'Ethereum Client Bake-off - ETH2 Quick Start',
     pageDescription:
-      'The full write-up: results from a 23-day Ethereum execution and consensus client sync campaign, including the restart-resilience findings the headline numbers hide.',
+      'The full write-up: results from a six-week Ethereum execution and consensus client sync campaign (a 23-day initial sync phase, then steady-state and restart-resume follow-ups), including the restart-resilience findings the headline numbers hide.',
     navTitle: 'Ethereum client bake-off',
     indexDescription:
-      'Results from a 23-day execution and consensus client sync campaign: disk, speed, and restart resilience across the full client roster.',
+      'Results from a six-week execution and consensus client sync campaign: disk, speed, and restart resilience across the full client roster.',
     eyebrow: 'Client research',
     ogImage: '/og-bakeoff.png',
-    ogAlt: 'The fastest Ethereum client is one almost nobody runs — a 23-day client bake-off',
+    ogAlt: 'The fastest Ethereum client is one almost nobody runs — a six-week client bake-off',
     headline: 'Ethereum Client Bake-off',
     datePublished: '2026-07-19',
     sitemapPriority: 0.9,
   },
   {
     slug: 'how-we-tested-with-claude',
-    pageTitle: 'How We Ran a 23-Day Bake-off With Claude - ETH2 Quick Start',
+    pageTitle: 'How We Ran a Six-Week Bake-off With Claude - ETH2 Quick Start',
     pageDescription:
-      'The agent orchestration model, the harness, and what actually breaks when a benchmark runs for three weeks on a shared host with an AI in the driver’s seat.',
+      'The agent orchestration model, the harness, and what actually breaks when a benchmark runs for six weeks (a 23-day initial campaign, then steady-state and restart-resume follow-ups) on a shared host with an AI in the driver’s seat.',
     navTitle: 'How we tested with Claude',
     indexDescription:
-      'The orchestration model and harness behind the 23-day campaign — how a fleet of agents ran, sampled, and gated every client sync.',
+      'The orchestration model and harness behind the six-week campaign — how a fleet of agents ran, sampled, and gated every client sync.',
     eyebrow: 'Methodology',
     ogImage: '/og-how-we-tested.png',
-    ogAlt: 'How we ran a 23-day Ethereum client bake-off with Claude',
-    headline: 'How We Ran a 23-Day Bake-off With Claude',
+    ogAlt: 'How we ran a six-week Ethereum client bake-off with Claude',
+    headline: 'How We Ran a Six-Week Bake-off With Claude',
     datePublished: '2026-07-22',
     sitemapPriority: 0.8,
   },
@@ -80,7 +80,7 @@ export const ARTICLES: Article[] = [
     slug: 'bakeoff-results',
     pageTitle: 'Bake-off Results — ETH2 Quick Start',
     pageDescription:
-      'The raw results from the 23-day Ethereum client bake-off — every triage row, footprint measurement, and gotcha — verbatim from CLIENT_BAKEOFF_RESULTS.md.',
+      'The raw results from the six-week Ethereum client bake-off — every triage row, footprint measurement, and gotcha — verbatim from CLIENT_BAKEOFF_RESULTS.md.',
     navTitle: 'Bake-off results',
     indexDescription:
       'The raw results: Stage A pass matrix, final synced disk footprints, the consensus-client matrices, and operational-viability notes.',

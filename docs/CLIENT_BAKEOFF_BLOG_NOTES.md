@@ -14,13 +14,15 @@ prysm datadir is ~0.65–1.68 GB, negligible against an EL's hundreds of GB).
 
 ---
 
-## 0. CAMPAIGN COMPLETE — all tests finished (2026-07-14)
+## 0. INITIAL CAMPAIGN COMPLETE — all Stage A/B tests finished (2026-07-14)
 
-**All bake-off tests are now complete.** The EL scorecard (7/7), the CL matrix (three anchors), the ethrex
+**All initial bake-off tests are complete.** The EL scorecard (7/7), the CL matrix (three anchors), the ethrex
 restart cliff, and the final nimbus_eth1 anchor are **final and of-record**. The publishable writeup lives at
 [`CLIENT_BAKEOFF_BLOG.md`](CLIENT_BAKEOFF_BLOG.md); raw data in
 [`CLIENT_BAKEOFF_RESULTS.md`](CLIENT_BAKEOFF_RESULTS.md). This §0 block was originally a mid-campaign safety
-checkpoint (2026-07-11) and is retained for provenance.
+checkpoint (2026-07-11) and is retained for provenance. **Update:** a follow-up steady-state and
+restart-resume measurement phase continued after this date (2026-07-26 → 2026-08-01 and counting) — see
+[`HOW_WE_TESTED_WITH_CLAUDE.md`](HOW_WE_TESTED_WITH_CLAUDE.md)'s campaign timeline for the extended dates.
 
 **REMAINING items (operator's list, reconciled to ground truth):**
 - **ethrex restart cliff — ✅ DONE (this session).** Bisected via controlled `stop eth1` → wait → `start`

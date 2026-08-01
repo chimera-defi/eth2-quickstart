@@ -30,7 +30,7 @@ const tocLinks = [
 const seeAlsoLinks = [
   {
     file: 'HOW_WE_TESTED_WITH_CLAUDE.md',
-    desc: 'the agent-orchestration model, the 23-day timeline, and the war stories behind the hardening fixes above.',
+    desc: 'the agent-orchestration model, the six-week timeline (23-day initial campaign, then steady-state and restart-resume follow-ups), and the war stories behind the hardening fixes above.',
     href: `${SITE_CONFIG.github}/blob/master/docs/HOW_WE_TESTED_WITH_CLAUDE.md`,
   },
   {

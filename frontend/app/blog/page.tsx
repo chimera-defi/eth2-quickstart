@@ -6,7 +6,7 @@ import { SITE_CONFIG } from '@/lib/constants'
 
 const BLOG_TITLE = 'Blog - ETH2 Quick Start'
 const BLOG_DESCRIPTION =
-  'Field notes and benchmarks from the ETH2 Quick Start lab: the 23-day Ethereum client bake-off, how we tested it with Claude, the harness, and raw results.'
+  'Field notes and benchmarks from the ETH2 Quick Start lab: the six-week Ethereum client bake-off, how we tested it with Claude, the harness, and raw results.'
 
 const BLOG_OG_ALT = 'ETH2 Quick Start — from the lab'
 
