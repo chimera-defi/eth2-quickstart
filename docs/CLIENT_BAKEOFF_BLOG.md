@@ -60,7 +60,7 @@ A knock-on benefit of that gate: it forced us to *empirically settle* config que
 
 ## The disk story: there is no winner — the field converges
 
-Nethermind's synced-tip snapshot read ~251 GiB, well below geth's ~1.13 TiB — but that number was taken before nethermind's FastBlocks finished backfilling post-merge block bodies and receipts. Its steady-state datadir (measured 2026-07-28) is **~1.06 TiB**: state ~226 GiB (its compact Halite/Paprika flat storage) plus ~842 GiB of post-merge history it retains, the same history geth keeps under `--history.chain postmerge`. Under matched history-retention configs, nethermind and geth are on par:
+Nethermind's synced-tip snapshot read ~251 GiB, well below geth's ~1.13 TiB — but that number was taken before nethermind's FastBlocks finished backfilling post-merge block bodies and receipts. Its steady-state datadir (re-measured 2026-08-01) is **~1.06 TiB (~1,088 GiB)**: state ~226–230 GiB (its compact Halite/Paprika flat storage) plus ~843 GiB of post-merge bodies and receipts plus ~19 GiB of headers and code, the same history geth keeps under `--history.chain postmerge`. Under matched history-retention configs, nethermind and geth are on par:
 
 | EL | Footprint (full post-merge history) | Sync time | Mode | Mainnet share |
 |----|------|------|------|------|
@@ -74,7 +74,7 @@ Everything else hasn't reached a finished, comparable footprint, for a specific 
 
 | EL | Result | Why it's outside a clean comparison |
 |----|--------|-----------------------------------|
-| ethrex | ✅ synced, **~472 GiB plateau** (no-history), ~2h16m | Un-pruned **and** serves almost no history; datadir plateaus, doesn't grow unbounded (confirmed 2026-07-28→29). Neither compact nor a full archive — smaller only because it retains nothing, not a disk win. Speed is its claim, not size. |
+| ethrex | ✅ synced, **~470–476 GiB plateau** (no-history), ~2h16m | Un-pruned **and** serves almost no history; datadir plateaus (drifting 470.2 → 475.5 GiB over ~42h), doesn't grow unbounded (confirmed 2026-07-28→31). Neither compact nor a full archive — smaller only because it retains nothing, not a disk win. Speed is its claim, not size. |
 | reth | ⏳ 72h cap at ~21%, ~0.98 TiB partial | Full-sync-only (no snap) — can't reach tip in a practical window; projects to ~1.1–1.2 TiB finished, the same convergence band. |
 | nimbus_eth1 | ⏳ 72h cap at ~21.6%, ~40 GB partial | Full-sync-only (no snap). Pruning *works* (below), but it can't finish in 72h. |
 | erigon | ❌ deadlocked, no result | Optimistic-sync deadlock against a checkpoint-synced CL (below). |
@@ -91,7 +91,7 @@ ethrex snap-synced to a fully-validating head in **~2h16m**, the fastest in the 
 
 Two things keep it out of the winners' circle:
 
-1. **The footprint is settled now, and it's not comparable.** ethrex prunes nothing, and we watched the datadir climb even at the chain tip with `eth_syncing=false` (286 → 403 → 416 → ~467 GiB across a single day, ~10 GiB/hr, 2026-07-06) — but a follow-up run confirmed that climb was settling, not unbounded: it plateaus at **~472 GiB** (flat for 8.8+ hours, 2026-07-28→29). That still isn't a disk win, because it simultaneously serves almost no history (`eth_getBlockByNumber` returns `null` below its snap pivot). So it is neither compact nor a full-history archive — its settled size just isn't rankable against the full-history clients above. On a state-only basis it isn't even smallest: nethermind's state alone is ~226 GiB, roughly half ethrex's entire total (not a perfectly controlled comparison — different state encodings, and ethrex's total also includes headers/recent blocks).
+1. **The footprint is settled now, and it's not comparable.** ethrex prunes nothing, and we watched the datadir climb even at the chain tip with `eth_syncing=false` (286 → 403 → 416 → ~467 GiB across a single day, ~10 GiB/hr, 2026-07-06) — but a follow-up run confirmed that climb was settling, not unbounded: it plateaus at **~470–476 GiB** (drifting 470.2 → 475.5 GiB over ~42 hours at +0.13 GiB/hr, 2026-07-28→31). That still isn't a disk win, because it simultaneously serves almost no history (`eth_getBlockByNumber` returns `null` below its snap pivot). So it is neither compact nor a full-history archive — its settled size just isn't rankable against the full-history clients above. On a state-only basis it isn't even smallest: nethermind's state alone is ~226–230 GiB, roughly half ethrex's entire total (not a perfectly controlled comparison — different state encodings, and ethrex's total also includes headers/recent blocks).
 2. **The restart cliff** — which is the marquee finding of the whole campaign, so it gets its own section.
 
 ---

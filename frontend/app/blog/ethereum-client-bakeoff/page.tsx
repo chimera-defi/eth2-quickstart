@@ -152,7 +152,7 @@ const consensusClients = [
 const fullMetrics = [
   { candidate: 'geth × prysm', peers: '—', configOptimal: 'yes', reRuns: 0, notable: 'Baseline; no large optimistic gap to close' },
   { candidate: 'nethermind × prysm', peers: '49', configOptimal: 'yes', reRuns: 1, notable: 'First attempt: 13.3h 0-peer loopback stall; re-run after ExternalIp fix synced clean' },
-  { candidate: 'ethrex × prysm', peers: '50', configOptimal: 'yes', reRuns: 0, notable: 'Datadir plateaus at ~470 GiB (confirmed by a follow-up steady-state measurement run on v22.0.0, 4h09m56s snap, 8.8+ flat hours after); 1 auto-healed stale-pivot event; serves no history beyond its snap pivot' },
+  { candidate: 'ethrex × prysm', peers: '50', configOptimal: 'yes', reRuns: 0, notable: 'Datadir plateaus at ~470–476 GiB (confirmed by a follow-up steady-state measurement run on v22.0.0, 4h09m56s snap, drifting 470.2→475.5 GiB over ~42h after); 1 auto-healed stale-pivot event; serves no history beyond its snap pivot' },
   { candidate: 'besu × prysm', peers: '~50', configOptimal: 'n/a (pruned re-run only)', reRuns: 2, notable: 'Un-pruned run synced clean; pruned re-run deadlocked twice, abandoned' },
   { candidate: 'reth × prysm', peers: '—', configOptimal: 'yes', reRuns: 1, notable: '578 samples; relaunched after --full fix; 47% by block / ~21% gas-weighted at cap' },
   { candidate: 'nimbus-eth1 × prysm', peers: '20–25', configOptimal: 'yes', reRuns: 1, notable: '72h continuous, 0 restarts; supersedes an earlier ~21 GB aborted run' },
@@ -173,14 +173,15 @@ const syncChartMaxHours = 20
 
 // GiB, verified against docs/CLIENT_BAKEOFF_RESULTS.md exact byte counts (Stage B footprint table + client-limitations table).
 // Nethermind's synced-tip snapshot (~251 GiB) predates FastBlocks backfilling post-merge block
-// bodies/receipts; steady-state (measured 2026-07-28) is ~1.06 TiB (state ~226 GiB + ~842 GiB
-// post-merge history) — on par with the other ELs that retain full post-merge history. Ethrex's
-// steady state is now measured too: it plateaus at ~472 GiB (confirmed 2026-07-28→29, 8.8+ flat
-// hours). Its bar stays hatched as "no-history," not because it's unsettled, but because a
-// no-history node's total isn't comparable to the full-history bars below it.
+// bodies/receipts; steady-state (re-measured 2026-08-01) is ~1.06 TiB (~1,088 GiB: state ~226–230
+// GiB + ~843 GiB post-merge bodies/receipts + ~19 GiB headers/code) — on par with the other ELs
+// that retain full post-merge history. Ethrex's steady state is now measured too: it plateaus at
+// ~470–476 GiB (confirmed 2026-07-28→31, drifting 470.2→475.5 GiB over ~42 flat-ish hours). Its
+// bar stays hatched as "no-history," not because it's unsettled, but because a no-history node's
+// total isn't comparable to the full-history bars below it.
 const elFootprints = [
   { name: 'Nimbus-eth1', gib: 37.3, label: '~40 GB', status: 'partial' as const },
-  { name: 'Ethrex', gib: 471.9, label: '~472 GiB', status: 'no-history' as const },
+  { name: 'Ethrex', gib: 475.5, label: '~475 GiB', status: 'no-history' as const },
   { name: 'Reth', gib: 1003.2, label: '~0.98 TiB', status: 'partial' as const },
   { name: 'Nethermind', gib: 1088.1, label: '~1.06 TiB', status: 'synced' as const },
   { name: 'Besu', gib: 1109.7, label: '~1.08 TiB', status: 'synced' as const },
@@ -720,9 +721,10 @@ export default function EthereumClientBakeoffPage() {
             Nethermind&apos;s synced-tip snapshot read <strong className="text-foreground">~251 GiB</strong>,
             well below geth&apos;s ~1.13 TiB — but that number was taken before nethermind&apos;s
             FastBlocks finished backfilling post-merge block bodies and receipts. Its steady-state
-            datadir (measured 2026-07-28) is <strong className="text-foreground">~1.06 TiB</strong>:
-            state ~226 GiB (its compact Halite/Paprika flat storage) plus ~842 GiB of post-merge
-            history it retains, the same history geth keeps under{' '}
+            datadir (re-measured 2026-08-01) is <strong className="text-foreground">~1.06 TiB</strong>{' '}
+            (~1,088 GiB): state ~226–230 GiB (its compact Halite/Paprika flat storage) plus ~843 GiB
+            of post-merge bodies and receipts plus ~19 GiB of headers and code, the same history
+            geth keeps under{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--history.chain postmerge</code>.
             Under matched history-retention configs, nethermind and geth are on par.
           </p>
@@ -750,15 +752,16 @@ export default function EthereumClientBakeoffPage() {
             <li>
               <span className="font-medium text-foreground">ethrex</span> — synced, ~2h16m,
               fastest in the field. Its datadir <strong className="text-foreground">plateaus at
-              ~472 GiB</strong>: it climbed toward ~465 GiB during post-sync settling (+43 GiB/hr),
-              then growth collapsed ~200× to +0.22 GiB/hr and stayed flat for 8.8+ hours (confirmed
-              2026-07-28→29). The earlier ~467 GiB reading was this same plateau caught mid-climb,
-              not evidence of unbounded growth. That doesn&apos;t make it a disk winner, though: it
-              lands smaller only because it serves no history at all — a no-history node, not a
-              pruned-comparable one. On a state-only basis it isn&apos;t even the smallest:
-              nethermind&apos;s state alone is ~226 GiB, roughly half ethrex&apos;s entire total
-              (not a perfectly controlled comparison — ethrex&apos;s total also includes headers
-              and recent blocks, and the two clients use different state encodings).
+              ~470–476 GiB</strong>: it climbed toward ~465 GiB during post-sync settling (+43 GiB/hr),
+              then growth collapsed ~300× to +0.13 GiB/hr and drifted 470.2 → 475.5 GiB over ~42
+              hours (confirmed 2026-07-28→31). The earlier ~467 GiB reading was this same plateau
+              caught mid-climb, not evidence of unbounded growth. That doesn&apos;t make it a disk
+              winner, though: it lands smaller only because it serves no history at all — a
+              no-history node, not a pruned-comparable one. On a state-only basis it isn&apos;t even
+              the smallest: nethermind&apos;s state alone is ~226–230 GiB, roughly half
+              ethrex&apos;s entire total (not a perfectly controlled comparison — ethrex&apos;s
+              total also includes headers and recent blocks, and the two clients use different
+              state encodings).
             </li>
             <li>
               <span className="font-medium text-foreground">reth</span> — 72h cap at ~21%, ~0.98
@@ -815,8 +818,8 @@ export default function EthereumClientBakeoffPage() {
               ethrex prunes nothing, and we watched the datadir climb even at the chain tip with{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing=false</code>{' '}
               (286 → 403 → 416 → ~467 GiB across a single day, ~10 GiB/hr, 2026-07-06) — but a
-              follow-up run confirmed that climb was settling, not unbounded: it plateaus at ~472
-              GiB (flat for 8.8+ hours, 2026-07-28→29). That still doesn&apos;t make it a disk
+              follow-up run confirmed that climb was settling, not unbounded: it plateaus at
+              ~470–476 GiB (drifting 470.2 → 475.5 GiB over ~42 hours, 2026-07-28→31). That still doesn&apos;t make it a disk
               winner, because it simultaneously serves almost no history (
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_getBlockByNumber</code>{' '}
               returns <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">null</code>{' '}

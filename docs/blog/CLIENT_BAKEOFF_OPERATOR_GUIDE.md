@@ -16,7 +16,7 @@ Two clients cleared every bar we care about — snap-sync to a validating tip, a
 
 | EL | Sync time | Steady-state footprint | Mainnet share | Verdict |
 |----|-----------|------------------------|---------------|---------|
-| **nethermind** | ~14.5h | **~1.06 TiB** (state ~226 GiB + ~842 GiB post-merge history; ~251 GiB at snap-sync, before backfill) | 36.0% | **Diversity pick** — on par with geth once full post-merge history is counted, not a disk winner. Compact flat-storage state; a minority client, so running it helps client diversity. |
+| **nethermind** | ~14.5h | **~1.06 TiB** (re-measured 2026-08-01: state ~226–230 GiB + ~843 GiB post-merge bodies/receipts + ~19 GiB headers/code; ~251 GiB at snap-sync, before backfill) | 36.0% | **Diversity pick** — on par with geth once full post-merge history is counted, not a disk winner. Compact flat-storage state; a minority client, so running it helps client diversity. |
 | **geth** | ~8h28m | ~1.13 TiB | 44.9% | **Conservative default** — biggest ecosystem, most docs, resumes cleanly from multi-day downtime. |
 
 There is no disk winner between these two — they converge once you count full post-merge history. If you run one EL for the long haul, run one of these. Pick **nethermind** for its genuinely compact flat-storage state and to improve client diversity; pick **geth** if you want the most boring, best-documented option on the network.
@@ -25,7 +25,7 @@ There is no disk winner between these two — they converge once you count full 
 
 **The rest fell out for specific, documented reasons — not because they're "bad":**
 
-- **ethrex** — *fastest cold sync in the entire field* (~2h16m, next-fastest is geth at ~8.5h) but the wrong long-run profile. Its datadir plateaus at **~470 GiB** — confirmed by an 8.8+ hour flat window after a settling climb, so it's not unbounded — but that's not a disk win: it has no prune lever because it retains no history at all (a no-history node, not a pruned-comparable one). And — the dealbreaker — a 26-minute/132-block gap stalled instead of resuming, while measured 1.5–2-hour gaps threw away synced state and triggered a fresh ~2-hour re-snap. Fast to stand up, painful to operate. Fast-moving client — v19.0.0 at first sync, v22.0.0 by the steady-state measurement; may improve further.
+- **ethrex** — *fastest cold sync in the entire field* (~2h16m, next-fastest is geth at ~8.5h) but the wrong long-run profile. Its datadir plateaus at **~470–476 GiB** — confirmed by a ~42-hour drift window (470.2 → 475.5 GiB at +0.13 GiB/hr) after a settling climb, so it's not unbounded — but that's not a disk win: it has no prune lever because it retains no history at all (a no-history node, not a pruned-comparable one). And — the dealbreaker — a 26-minute/132-block gap stalled instead of resuming, while measured 1.5–2-hour gaps threw away synced state and triggered a fresh ~2-hour re-snap. Fast to stand up, painful to operate. Fast-moving client — v19.0.0 at first sync, v22.0.0 by the steady-state measurement; may improve further.
 - **reth, nimbus_eth1** — full-sync-only in the mode we tested (no snap), so they can't reach the tip inside a practical window on this host. A time-to-sync limit under our bar, not a blanket verdict — reth in particular is widely run elsewhere.
 - **erigon** — deadlocked against a checkpoint-synced consensus client on this host (a reproducible, structural stall), so it never produced a synced datadir.
 
