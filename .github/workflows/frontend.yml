@@ -167,6 +167,12 @@ jobs:
           SITE: https://eth2quickstart.com
           EXPECTED_SHA: ${{ github.sha }}
         run: |
+          # GitHub runs this step as `bash -e`, so a failing command aborts the
+          # whole script. The poll below EXPECTS curl to fail while the deploy is
+          # still propagating, so errexit has to be off or the first 404 kills the
+          # job instead of retrying — which is exactly what happened on the first
+          # run of this check.
+          set +e
           set -uo pipefail
 
           # Deploys normally land in ~2-3 minutes; allow well past that before
