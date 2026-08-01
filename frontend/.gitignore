@@ -45,3 +45,7 @@ next-env.d.ts
 # hook, so the files must exist in the checkout. CI enforces they match the
 # repo-root sources. Edit the repo-root llms.txt / llms-full.txt, then run
 # `bun scripts/sync-llms.mjs` and commit the result.
+
+# Generated per build by scripts/build-info.mjs (changes every build, so
+# unlike public/llms*.txt this is NOT committed).
+public/build-info.json
