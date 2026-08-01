@@ -237,12 +237,14 @@ export default function EthereumClientBakeoffPage() {
             &ldquo;The Fastest Ethereum Client Is One Almost Nobody Runs&rdquo;
           </p>
           <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground">
-            A 23-day field campaign comparing seven execution-client syncs and five consensus
-            clients — the same mainnet sync, on the same host, one client at a time, recording two
-            numbers for each: final synced disk footprint and sync duration. The interesting part
-            is what fell out of it: an operability axis that turns out to matter more than either
-            headline number, and a genuine paradox — the client that synced fastest in the whole
-            field has essentially zero real-world adoption.
+            A field campaign that began with a 23-day measurement phase (2026-06-22 → 2026-07-14)
+            and continued with steady-state and restart-resume measurements through 2026-08-01,
+            comparing seven execution-client syncs and five consensus clients — the same mainnet
+            sync, on the same host, one client at a time, recording two numbers for each: final
+            synced disk footprint and sync duration. The interesting part is what fell out of it:
+            an operability axis that turns out to matter more than either headline number, and a
+            genuine paradox — the client that synced fastest in the whole field has essentially
+            zero real-world adoption.
           </p>
           <div className="mt-4 flex flex-wrap gap-3 sm:mt-6">
             <Button href="/deck/bakeoff.html" external variant="secondary" size="sm">
@@ -267,7 +269,7 @@ export default function EthereumClientBakeoffPage() {
             and the numbers. For the agent orchestration, the harness, and the methodology behind
             them, see{' '}
             <Link href="/blog/how-we-tested-with-claude" className="text-primary underline underline-offset-2">
-              How We Ran a 23-Day Ethereum Client Bake-Off With Claude
+              How We Ran a Six-Week Ethereum Client Bake-Off With Claude
             </Link>
             .
           </p>
@@ -670,8 +672,10 @@ export default function EthereumClientBakeoffPage() {
             What we measured, and how we kept it honest
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            The campaign ran from 2026-06-22 to 2026-07-14 on a shared semi-production host (not a
-            live validator), with MEV disabled and no validator keys. The bake-off measures, for
+            The campaign began with a 23-day measurement phase (2026-06-22 → 2026-07-14) and
+            continued with steady-state and restart-resume measurements through 2026-08-01, all on
+            a shared semi-production host (not a live validator), with MEV disabled and no
+            validator keys. The bake-off measures, for
             each client, the final synced disk footprint and the sync duration: one candidate at a
             time, a 72-hour cap per candidate, and the footprint taken from the last near-cap{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">du</code> sample —
