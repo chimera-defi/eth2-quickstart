@@ -149,3 +149,59 @@ jobs:
             frontend/.next/
             frontend/out/
           retention-days: 7
+
+  deploy-smoke:
+    name: Post-deploy smoke
+    runs-on: ubuntu-latest
+    needs: [build]
+    # Only after a real merge to the live branch — a PR never publishes.
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+    steps:
+      # Merging publishes to eth2quickstart.com through a pipeline that lives
+      # outside this repo, so a failed publish is invisible here: the site keeps
+      # serving the previous build and answering 200. That happened on
+      # 2026-07-29 (a broken prebuild step stopped deploys for ~35 minutes) and
+      # was only caught by hand. This job is the automatic version of that check.
+      - name: Wait for the new build to go live, then check the site
+        env:
+          SITE: https://eth2quickstart.com
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -uo pipefail
+
+          # Deploys normally land in ~2-3 minutes; allow well past that before
+          # calling it a failure so ordinary slowness doesn't page anyone.
+          deadline=$(( SECONDS + 900 ))
+          live_sha=""
+          until [ "$SECONDS" -ge "$deadline" ]; do
+            live_sha="$(curl -fsSL --max-time 20 "$SITE/build-info.json?cb=$RANDOM" 2>/dev/null \
+              | sed -n 's/.*"sha"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
+            if [ "$live_sha" = "$EXPECTED_SHA" ]; then
+              echo "Deployed: $live_sha"
+              break
+            fi
+            echo "Waiting for deploy (live=${live_sha:-none} expected=$EXPECTED_SHA)"
+            sleep 30
+          done
+
+          if [ "$live_sha" != "$EXPECTED_SHA" ]; then
+            echo "::error::Site did not publish $EXPECTED_SHA within 15 minutes (live=${live_sha:-none}). The deploy pipeline is outside this repo — check its build logs."
+            exit 1
+          fi
+
+          # The 2026-07-29 outage showed up as new routes 404ing while the old
+          # build kept serving, so assert the routes exist, not just the origin.
+          fail=0
+          for path in / /quickstart /blog /agents /llms.txt /sitemap.xml /robots.txt \
+                      /blog/ethereum-client-bakeoff /blog/bakeoff-results \
+                      /blog/bakeoff-harness /blog/how-we-tested-with-claude \
+                      /deck/bakeoff.html; do
+            code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$SITE$path?cb=$RANDOM")"
+            if [ "$code" = "200" ]; then
+              echo "  ok   $code $path"
+            else
+              echo "::error::$path returned $code"
+              fail=1
+            fi
+          done
+          exit "$fail"
