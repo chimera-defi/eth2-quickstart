@@ -93,7 +93,7 @@ checkpoint (2026-07-11) and is retained for provenance.
 - **ethrex is excluded from that comparison, context only:** its footprint was ~286 GiB at sync completion
   and it prunes nothing — the datadir climbed **even at the chain tip with `eth_syncing=false`**
   (403 → 416 → ~467 GiB across 2026-07-06, ~10 GiB/hr) — but a follow-up run (2026-07-28→29) confirmed that
-  climb was settling, not unbounded: it **plateaus at ~470 GiB** (471.9 GiB, flat 8.8+ hours) — *and* it
+  climb was settling, not unbounded: it **plateaus at ~470–476 GiB** (drifting 470.2 → 475.5 GiB over ~42 hours) — *and* it
   serves almost no history (block lookups below its snap pivot return `null`). So it is neither compact nor
   a full-history archive; it is kept OUT of the comparison because it's a no-history node, not a
   pruned-comparable one — smaller footprint tracks retained-nothing, not efficiency.
@@ -166,9 +166,10 @@ actually run."
   (`SNAP SYNC STARTED` 01:58:29Z → complete 04:09:37Z; eth1 start 01:57:05Z) — a second measured data point for
   the cliff. The re-snapped datadir then rebuilt *past* the original 286 GiB to 403 → 416 → ~467 GiB (un-pruned,
   still climbing **even at the chain tip with `eth_syncing=false`**, ~10 GiB/hr on 2026-07-06). A later
-  steady-state run (2026-07-28→29) settled the question that climb left open: the footprint plateaus at
-  **~470 GiB** (471.9 GiB, flat 8.8+ hours) rather than growing unbounded — the ~467 GiB reading above was
-  this same plateau caught mid-climb.
+  steady-state run (2026-07-28→31) settled the question that climb left open: the footprint plateaus at
+  **~470–476 GiB** (drifting 470.2 → 475.5 GiB over ~42 hours, 2026-07-29T06:18Z→2026-07-31T00:03Z, 168
+  samples, +0.13 GiB/hr) rather than growing unbounded — the ~467 GiB reading above was this same plateau
+  caught mid-climb.
 
 ---
 
@@ -244,8 +245,9 @@ trustworthy. The bake-off's credibility rests on this gate.
   diversity bonus. 36% share. Its disk footprint (~1.06 TiB steady-state) is on par with geth, not the
   ~251 GiB pre-backfill space-saver it first appeared to be. The diversity pick.
 - **ethrex** — the sprinter with a glass jaw. Fastest cold sync (~2h16m), but an un-pruned datadir that
-  plateaus at **~470 GiB** (confirmed 2026-07-28→29, after climbing ~286 GiB at sync → ~467 GiB on
-  2026-07-06) while serving *almost no history* — a no-history node, not a disk win — plus the
+  plateaus at **~470–476 GiB** (confirmed 2026-07-28→31, drifting 470.2 → 475.5 GiB over ~42h, after
+  climbing ~286 GiB at sync → ~467 GiB on 2026-07-06) while serving *almost no history* — a no-history
+  node, not a disk win — plus the
   restart-resync cliff (§3), makes it operationally costly. Fascinating, fast-moving (v19.0.0 at first
   sync, v22.0.0 by the steady-state measurement), one to watch.
 - **besu** — enterprise Java client; does sync (~19h un-pruned) but its snap sync is fragile to CL outages
@@ -262,7 +264,7 @@ validating head in minutes** (`config_optimal=yes`, `anchor_synced=yes`, zero cr
 effectively tied and **CL datadir footprint is the differentiator.** It was run against three anchors to
 prove EL/CL decoupling:
 - **ethrex anchor** (run_id `client-bakeoff-clsweep-2026-07-06`) — reused the already-synced ethrex datadir
-  at tip (zero anchor-sync cost); all five CL footprints are <1% of the ~502 GB EL datadir.
+  at tip (zero anchor-sync cost); all five CL footprints are <1% of the ~468 GiB (502 GB) EL datadir.
 - **geth anchor** cross-anchor confirmation (run_id `client-bakeoff-anchor-rotation-2026-07-07`, 2026-07-08).
   **geth-anchor CL disk ranking (smaller = better): lodestar (~177 MiB) < lighthouse (~518 MiB) <
   grandine (~725 MiB) < teku (~936 MiB) < nimbus (~1.2 GiB).**

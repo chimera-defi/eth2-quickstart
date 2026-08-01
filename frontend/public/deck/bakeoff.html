@@ -236,7 +236,7 @@
       <h2>Disk: the field converges — there's no winner.</h2>
       <div class="chart" aria-label="Final synced disk footprint by execution client">
         <div class="bar muted"><div class="name">Nimbus-eth1</div><div class="track"><div class="fill" style="--v:.031"></div></div><div class="val"><b>~40 GB</b> · only ~21% synced</div></div>
-        <div class="bar muted"><div class="name">Ethrex</div><div class="track"><div class="fill" style="--v:.363"></div></div><div class="val"><b>~472 GiB</b> · no-history</div></div>
+        <div class="bar muted"><div class="name">Ethrex</div><div class="track"><div class="fill" style="--v:.363"></div></div><div class="val"><b>~470–476 GiB</b> · no-history</div></div>
         <div class="bar muted"><div class="name">Reth</div><div class="track"><div class="fill" style="--v:.772"></div></div><div class="val"><b>~0.98 TiB</b> · capped</div></div>
         <div class="bar"><div class="name">Nethermind</div><div class="track"><div class="fill" style="--v:.837"></div></div><div class="val"><b>~1.06 TiB</b> · steady-state</div></div>
         <div class="bar"><div class="name">Besu</div><div class="track"><div class="fill" style="--v:.854"></div></div><div class="val"><b>~1.08 TiB</b> · un-pruned</div></div>
@@ -244,7 +244,7 @@
         <div class="bar muted"><div class="name">Erigon</div><div class="track"><div class="fill" style="--v:.956"></div></div><div class="val"><b>~1.21 TiB</b> · no-sync</div></div>
       </div>
       <div class="axis">0 ————————————————— 1.3 TiB</div>
-      <p class="kicker"><strong class="win">The field converges — no disk winner.</strong> Nethermind, besu, and geth all land in the same ~1.0–1.2 TiB band once they carry full post-merge history; nethermind's early snap-sync-tip read (~251 GiB) predates that backfill. Disk size here is a config knob, not a client-efficiency signal. The hatched bars aren't comparable: Nimbus-eth1's ~40 GB is only ~21% of a sync, and Ethrex's ~472 GiB is a settled plateau, not a pruned-comparable footprint — it's smaller only because it's a no-history node, not because it's more efficient.</p>
+      <p class="kicker"><strong class="win">The field converges — no disk winner.</strong> Nethermind, besu, and geth all land in the same ~1.0–1.2 TiB band once they carry full post-merge history; nethermind's early snap-sync-tip read (~251 GiB) predates that backfill. Disk size here is a config knob, not a client-efficiency signal. The hatched bars aren't comparable: Nimbus-eth1's ~40 GB is only ~21% of a sync, and Ethrex's ~470–476 GiB is a settled plateau, not a pruned-comparable footprint — it's smaller only because it's a no-history node, not because it's more efficient.</p>
     </div>
   </section>
 
@@ -304,7 +304,7 @@
           <tbody>
             <tr><td class="name-cell">Nethermind</td><td><span class="pill ok">synced</span></td><td class="n">~14.5h</td><td class="n">~1.06 TiB</td><td class="n">36.0%</td></tr>
             <tr><td class="name-cell">Geth</td><td><span class="pill ok">synced</span></td><td class="n">8h28m</td><td class="n">~1.13 TiB</td><td class="n">44.9%</td></tr>
-            <tr><td class="name-cell">Ethrex</td><td><span class="pill ok">synced</span></td><td class="n">2h16m</td><td class="n">~472 GiB, no-history</td><td class="n">~0%</td></tr>
+            <tr><td class="name-cell">Ethrex</td><td><span class="pill ok">synced</span></td><td class="n">2h16m</td><td class="n">~470–476 GiB, no-history</td><td class="n">~0%</td></tr>
             <tr><td class="name-cell">Besu</td><td><span class="pill warn">un-pruned</span></td><td class="n">19h18m</td><td class="n">~1.08 TiB</td><td class="n">17.4%</td></tr>
             <tr><td class="name-cell">Reth</td><td><span class="pill warn">72h cap</span></td><td class="n">—</td><td class="n">~0.98 TiB*</td><td class="n">1.5%</td></tr>
             <tr><td class="name-cell">Nimbus-eth1</td><td><span class="pill warn">72h cap</span></td><td class="n">—</td><td class="n">~40 GB*</td><td class="n">~0%</td></tr>
@@ -312,7 +312,7 @@
           </tbody>
         </table>
       </div>
-      <p class="kicker">Disk converges once full post-merge history is counted (nethermind ~1.06 TiB, besu ~1.08 TiB, geth ~1.13 TiB) — no meaningful ranking there. Ethrex plateaus at ~472 GiB but isn't comparable (no-history node); reth &amp; nimbus-eth1 are full-sync-only, capped here. <span style="color:var(--faint)">* partial</span></p>
+      <p class="kicker">Disk converges once full post-merge history is counted (nethermind ~1.06 TiB, besu ~1.08 TiB, geth ~1.13 TiB) — no meaningful ranking there. Ethrex plateaus at ~470–476 GiB but isn't comparable (no-history node); reth &amp; nimbus-eth1 are full-sync-only, capped here. <span style="color:var(--faint)">* partial</span></p>
     </div>
   </section>
 
@@ -423,7 +423,7 @@
   var NOTES=[
     "Open on the paradox: the fastest Ethereum client is one almost nobody runs. The hook — we let a fleet of AI agents run a real 23-day mainnet benchmark.",
     "A fair fight: every client got its most disk-efficient mode, a fixed partner, and a hard 72-hour cap. Two headline numbers each — disk and sync — then the third axis nobody benchmarks.",
-    "The field converges on disk — no clean winner. Nethermind, besu, and geth all land in the same ~1.0-1.2 TiB band once they carry full post-merge history; nethermind's early ~251 GiB reading was pre-backfill, not steady-state. The hatched bars aren't comparable: Nimbus-eth1's ~40 GB never finished (only ~21% of a sync), while ethrex's ~472 GiB is a settled plateau — smaller only because it's a no-history node, not because it's more efficient.",
+    "The field converges on disk — no clean winner. Nethermind, besu, and geth all land in the same ~1.0-1.2 TiB band once they carry full post-merge history; nethermind's early ~251 GiB reading was pre-backfill, not steady-state. The hatched bars aren't comparable: Nimbus-eth1's ~40 GB never finished (only ~21% of a sync), while ethrex's ~470–476 GiB is a settled plateau — smaller only because it's a no-history node, not because it's more efficient.",
     "ethrex is nearly 4× faster than anything else in the field. Land the question and pause: so why does almost nobody actually run it?",
     "Because it hits a restart cliff. A 26-minute gap stalled; measured 1.5–2-hour gaps discarded state and triggered a full ~2-hour re-snap. That operability tax is the adoption story.",
     "The point of the whole talk: restart resilience is a third axis, and it predicts who people keep running better than speed or disk. Three behaviors — clean resume, re-snap cliff, mid-sync deadlock.",
