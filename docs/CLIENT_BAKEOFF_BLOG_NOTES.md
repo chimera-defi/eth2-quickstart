@@ -77,7 +77,7 @@ checkpoint (2026-07-11) and is retained for provenance.
 | EL | Status | Sync time | Footprint | Sync mode | Mainnet share | One-line verdict |
 |----|--------|-----------|-----------|-----------|--------------|------------------|
 | **nethermind** | ✅ synced | ~14.5h | **~1.06 TiB** steady-state (~251 GiB pre-backfill) | snap + AncientBarrier prune | 36.0% | On par with geth/besu on disk; diversity pick. |
-| **ethrex** | ✅ synced | **~2h16m** | ~286–300 GiB at sync → **~470 GiB steady-state plateau** (471.9 GiB, confirmed 2026-07-28→29) | snap (v19.0.0 at sync; v22.0.0 steady-state) | 0.0% | **Speed winner.** Un-pruned + serves ~no history → limitation note, not ranked on disk (no-history node, not a disk win). Restart cliff (§3). |
+| **ethrex** | ✅ synced | **~2h16m** | ~286–300 GiB at sync → **~470–476 GiB steady-state plateau** (drifting 470.2 → 475.5 GiB over ~42h, confirmed 2026-07-28→31) | snap (v19.0.0 at sync; v22.0.0 steady-state) | 0.0% | **Speed winner.** Un-pruned + serves ~no history → limitation note, not ranked on disk (no-history node, not a disk win). Restart cliff (§3). |
 | **geth** | ✅ synced | ~8h28m | ~1.13 TiB | snap + `--history.chain postmerge` | 44.9% | Baseline. Rock-solid, resumes cleanly. |
 | **besu** | ✅ synced (un-pruned) | ~19h18m | ~1.08 TiB (un-pruned) | snap / Bonsai | 17.4% | Synced, but pruned re-run deadlocked twice → limitation note (§4). |
 | **reth** | ⏳ 72h cap | did not finish | ~0.98 TiB @ ~21% | full-sync-only (no snap) | 1.5% | Client limitation: no snap → too slow for 3-day window. |
@@ -241,9 +241,10 @@ trustworthy. The bake-off's credibility rests on this gate.
 
 - **geth** — the boring, correct baseline. ~8.5h snap sync, ~1.13 TiB with post-merge history prune,
   resumes cleanly across restarts. 44.9% share. If you don't have a reason to run something else, run this.
-- **nethermind** — compact flat-storage state, ~14.5h sync, clean restart behavior, and a minority-client
-  diversity bonus. 36% share. Its disk footprint (~1.06 TiB steady-state) is on par with geth, not the
-  ~251 GiB pre-backfill space-saver it first appeared to be. The diversity pick.
+- **nethermind** — compact flat-storage state, ~14.5h sync, restart-resume now measured (2026-08-01:
+  closed a 10,607-block/~35h gap in 35m09s, no re-snap), and a minority-client diversity bonus. 36%
+  share. Its disk footprint (~1.06 TiB steady-state) is on par with geth, not the ~251 GiB pre-backfill
+  space-saver it first appeared to be. The diversity pick.
 - **ethrex** — the sprinter with a glass jaw. Fastest cold sync (~2h16m), but an un-pruned datadir that
   plateaus at **~470–476 GiB** (confirmed 2026-07-28→31, drifting 470.2 → 475.5 GiB over ~42h, after
   climbing ~286 GiB at sync → ~467 GiB on 2026-07-06) while serving *almost no history* — a no-history
