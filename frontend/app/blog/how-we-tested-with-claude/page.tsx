@@ -37,7 +37,7 @@ const tldrPoints = [
   },
   {
     title: 'The headline numbers hide operational limits',
-    body: "ethrex is the fastest cold-sync in the field but is not production-ready as tested: a 26-minute/132-block restart gap stalled, and longer measured gaps caused a full re-snap. Its datadir plateaus at ~470 GiB, but that's not a disk win — it's a no-history node. besu did sync successfully; its pruned re-run exposed fragility after a prolonged outage of the pinned Prysm version.",
+    body: "ethrex is the fastest cold-sync in the field but is not production-ready as tested: a 26-minute/132-block restart gap stalled, and longer measured gaps caused a full re-snap. Its datadir plateaus at ~470–476 GiB, but that's not a disk win — it's a no-history node. besu did sync successfully; its pruned re-run exposed fragility after a prolonged outage of the pinned Prysm version.",
   },
 ]
 
@@ -48,7 +48,7 @@ const clientIncidents = [
     rootCause: 'P2P bind pinned to loopback (Network.LocalIp=127.0.0.1)',
     resolution: 'Advertise the real external IP',
     status: 'Fixed',
-    statusNote: 'production-viable',
+    statusNote: 'production-viable — restart-resume measured 2026-08-01',
     variant: 'primary' as const,
   },
   {
@@ -62,7 +62,7 @@ const clientIncidents = [
   },
   {
     client: 'ethrex',
-    whatHappened: 'Gaps through 23 min / 124 blocks resumed; a 26 min / 132 block gap stalled, and measured 1.5–2h gaps discarded state and re-snapped (~2h). The un-pruned datadir plateaus at ~470 GiB (471.9 GiB) — settled, but a no-history node, not a disk win',
+    whatHappened: 'Gaps through 23 min / 124 blocks resumed; a 26 min / 132 block gap stalled, and measured 1.5–2h gaps discarded state and re-snapped (~2h). The un-pruned datadir plateaus at ~470–476 GiB (drifting 470.2 → 475.5 GiB over ~42h) — settled, but a no-history node, not a disk win',
     rootCause: 'Old head ages out of the ~128-block servable-state window; beyond it the head can freeze and longer gaps can trigger a full snap instead of importing the gap',
     resolution: 'None — inherent to current design (v19.0.0)',
     status: 'Not production-ready',

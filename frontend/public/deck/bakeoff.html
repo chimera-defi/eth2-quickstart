@@ -286,7 +286,7 @@
       <h2>Restart resilience is a third axis nobody benchmarks.</h2>
       <p class="lede">Sync speed and disk footprint are easy to measure and easy to publish. How a client behaves after downtime is neither — and it's the axis that most cleanly explains which clients people actually keep running.</p>
       <div class="grid g3">
-        <div class="panel"><span class="tag">Clean resume</span><h3>geth, nethermind</h3><p>Pick up where they left off. Boring, in the best way.</p></div>
+        <div class="panel"><span class="tag">Clean resume</span><h3>geth, nethermind</h3><p>Pick up where they left off. Boring, in the best way — both now directly measured (geth 2026-07-10, nethermind 2026-08-01).</p></div>
         <div class="panel hot"><span class="tag">Re-snap cliff</span><h3>ethrex</h3><p>Stops resuming beyond ~25 minutes; longer measured gaps triggered a full re-snap.</p></div>
         <div class="panel"><span class="tag">Mid-sync deadlock</span><h3>besu</h3><p>A prolonged stale-CL outage aged out the pivot; the downloader died while RPC stayed up.</p></div>
       </div>
@@ -383,7 +383,7 @@
       <p class="eyebrow">If you run one node for the long haul</p>
       <h2>What to actually run.</h2>
       <ul class="clean">
-        <li><b>Diversity pick → Nethermind.</b> Compact flat-storage state, clean restart behaviour, and a minority-client diversity bonus — on disk it's on par with geth (~1.06 vs ~1.13 TiB) once full post-merge history is counted, not the space-saver its snap-sync-tip snapshot suggested. Costs a bit more sync time (~14.5h vs geth's ~8.5h).</li>
+        <li><b>Diversity pick → Nethermind.</b> Compact flat-storage state, restart-resume now measured (2026-08-01: closed a 10,607-block/~35h gap in 35m09s, no re-snap), and a minority-client diversity bonus — on disk it's on par with geth (~1.06 vs ~1.13 TiB) once full post-merge history is counted, not the space-saver its snap-sync-tip snapshot suggested. Costs a bit more sync time (~14.5h vs geth's ~8.5h).</li>
         <li><b>The boring default → Geth.</b> Largest ecosystem, most docs, cleanest ~8h28m snap sync — its ~1.13 TiB disk footprint is on par with the rest of the field, not a downside unique to geth.</li>
         <li><b>Consensus → Lighthouse.</b> The lean, safe default: ~518 MiB, checkpoint-syncs in minutes, blob pruning on by default.</li>
       </ul>

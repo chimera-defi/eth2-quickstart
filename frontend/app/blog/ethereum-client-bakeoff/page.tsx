@@ -151,7 +151,7 @@ const consensusClients = [
 // peer counts, resource caps, re-run counts, config_optimal, and other candidate-level detail.
 const fullMetrics = [
   { candidate: 'geth × prysm', peers: '—', configOptimal: 'yes', reRuns: 0, notable: 'Baseline; no large optimistic gap to close' },
-  { candidate: 'nethermind × prysm', peers: '49', configOptimal: 'yes', reRuns: 1, notable: 'First attempt: 13.3h 0-peer loopback stall; re-run after ExternalIp fix synced clean' },
+  { candidate: 'nethermind × prysm', peers: '49', configOptimal: 'yes', reRuns: 1, notable: 'First attempt: 13.3h 0-peer loopback stall; re-run after ExternalIp fix synced clean. Restart-resume now measured (2026-08-01): closed a 10,607-block gap in 35m09s, no re-snap' },
   { candidate: 'ethrex × prysm', peers: '50', configOptimal: 'yes', reRuns: 0, notable: 'Datadir plateaus at ~470–476 GiB (confirmed by a follow-up steady-state measurement run on v22.0.0, 4h09m56s snap, drifting 470.2→475.5 GiB over ~42h after); 1 auto-healed stale-pivot event; serves no history beyond its snap pivot' },
   { candidate: 'besu × prysm', peers: '~50', configOptimal: 'n/a (pruned re-run only)', reRuns: 2, notable: 'Un-pruned run synced clean; pruned re-run deadlocked twice, abandoned' },
   { candidate: 'reth × prysm', peers: '—', configOptimal: 'yes', reRuns: 1, notable: '578 samples; relaunched after --full fix; 47% by block / ~21% gas-weighted at cap' },
@@ -377,10 +377,10 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             All seven execution clients. Hatched bars aren&apos;t a comparable finished
             footprint — partial (72h-capped), frozen (erigon&apos;s no-sync deadlock), or
-            no-history (ethrex, which plateaus at ~472 GiB but serves no history) — so a short
+            no-history (ethrex, which plateaus at ~470–476 GiB but serves no history) — so a short
             hatched bar isn&apos;t a win: Nimbus-eth1&apos;s ~40 GB is only ~21% of a sync,
             reth&apos;s ~0.98 TiB is a 72h-capped partial (projected to land in the same band as
-            the solid bars once finished), and ethrex&apos;s ~472 GiB is a settled plateau, not a
+            the solid bars once finished), and ethrex&apos;s ~470–476 GiB is a settled plateau, not a
             pruned-comparable footprint — it&apos;s smaller only because it retains no history at
             all, not because it&apos;s more efficient. The three solid bars (nethermind, besu,
             geth) converge in the same ~1.0–1.2 TiB band once full post-merge history is retained
@@ -390,7 +390,7 @@ export default function EthereumClientBakeoffPage() {
             <svg className="h-auto w-full" viewBox="0 0 680 300" role="img">
               <title id="disk-chart-title">Ethereum execution-client disk footprint</title>
               <desc id="disk-chart-description">
-                Nimbus-eth1 partial about 40 GB, Ethrex no-history plateau about 472 GiB, Reth partial about 0.98 TiB, Nethermind synced about 1.06 TiB steady-state, Besu synced about 1.08 TiB, Geth synced about 1.13 TiB, Erigon frozen partial about 1.21 TiB.
+                Nimbus-eth1 partial about 40 GB, Ethrex no-history plateau about 470 to 476 GiB, Reth partial about 0.98 TiB, Nethermind synced about 1.06 TiB steady-state, Besu synced about 1.08 TiB, Geth synced about 1.13 TiB, Erigon frozen partial about 1.21 TiB.
               </desc>
               <defs>
                 <pattern id="unfinished-bar" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)">
@@ -852,8 +852,26 @@ export default function EthereumClientBakeoffPage() {
               after a ~52-hour gap, it kept its full datadir and caught up purely by sequential
               block-import (trie-diff application) — never re-snapping — and converged back to the
               validating tip. That&apos;s the exact positive contrast to ethrex&apos;s cliff.
-              nethermind and reth are expected here by design too, though of the three only
-              geth&apos;s resume was measured directly (as only ethrex&apos;s cliff was bisected).
+              nethermind&apos;s resume is now measured too (2026-08-01, below) — reth remains
+              expected-by-design but unmeasured.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">nethermind&apos;s resume, measured
+              (2026-08-01).</span> An opportunistic catch-up, not a controlled bisection: a CL
+              restart at 13:24:55Z left nethermind{' '}
+              <strong className="text-foreground">10,607 blocks (~35h of chain) behind</strong> the
+              external tip. It closed the entire gap by ordinary block import in{' '}
+              <strong className="text-foreground">35m09s (~307 blocks/min)</strong>; the beacon
+              dropped <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">is_optimistic</code>{' '}
+              at 14:00:04Z. The datadir grew 1.165 → 1.178 TB (+1.1%, exactly the imported
+              bodies/receipts) — no state wipe, no re-snap. That&apos;s ~80× past ethrex&apos;s
+              ~128-block re-snap cliff, and it matches geth&apos;s resume behavior. A separate
+              establish run the day before (2026-07-31) snap-synced nethermind fresh in{' '}
+              <strong className="text-foreground">1h52m51s</strong> (~280 GiB at snap, pivot
+              25,649,064, zero restarts) — far faster than the ~14.5h Stage-B figure because the
+              pivot was minutes-old and near-tip, and network conditions differ; a second data
+              point under different conditions, not a replacement for the Stage-B number. Artifacts:
+              exp-lab run <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">exp-a-nethermind-restart-resume-2026-07-31</code>.
             </li>
             <li>
               <span className="font-medium text-foreground">Re-snap cliff.</span> Past a downtime
@@ -1098,10 +1116,12 @@ export default function EthereumClientBakeoffPage() {
             </li>
             <li>
               <span className="font-medium text-foreground">Diversity pick: nethermind.</span>{' '}
-              Compact flat-storage state, clean restart behavior, and a minority-client diversity
-              bonus. On disk it&apos;s on par with geth (~1.06 vs ~1.13 TiB) once full post-merge
-              history is counted — not the space-saver its snap-sync-tip snapshot (~251 GiB)
-              suggested. Costs a bit more sync time (~14.5h vs geth&apos;s ~8.5h).
+              Compact flat-storage state, a minority-client diversity bonus, and restart-resume
+              that is now measured, not just assumed (2026-08-01: closed a 10,607-block/~35h gap
+              in 35m09s, no re-snap — see &ldquo;Restart resilience&rdquo; above). On disk
+              it&apos;s on par with geth (~1.06 vs ~1.13 TiB) once full post-merge history is
+              counted — not the space-saver its snap-sync-tip snapshot (~251 GiB) suggested. Costs
+              a bit more sync time (~14.5h vs geth&apos;s ~8.5h).
             </li>
             <li>
               <span className="font-medium text-foreground">Consensus client: lighthouse</span> as
@@ -1111,7 +1131,7 @@ export default function EthereumClientBakeoffPage() {
             <li>
               <span className="font-medium text-foreground">Watch, don&apos;t yet deploy: ethrex.</span>{' '}
               Fascinating and fastest, but the ~25-minute restart cliff makes it operationally
-              costly today. Its footprint is now settled too — a ~472 GiB plateau — but that&apos;s
+              costly today. Its footprint is now settled too — a ~470–476 GiB plateau — but that&apos;s
               not a disk win: it&apos;s a no-history node, and running its RPC in place of a
               full-history endpoint (this repo&apos;s nginx/Caddy feature) will silently fail on
               anything historical. Fast-moving client — v19.0.0 at first sync, v22.0.0 by

@@ -12,12 +12,12 @@ An Ethereum node is one EL + one CL talking over the Engine API. Their disk and 
 
 ## Execution client: geth or nethermind (and know why)
 
-Two clients cleared every bar we care about — snap-sync to a validating tip, a working history-prune lever so the disk number is honest, and clean resume after a restart:
+Two clients cleared every bar we care about — snap-sync to a validating tip, a working history-prune lever so the disk number is honest, and resume-after-restart that is now measured for both, not assumed:
 
 | EL | Sync time | Steady-state footprint | Mainnet share | Verdict |
 |----|-----------|------------------------|---------------|---------|
-| **nethermind** | ~14.5h | **~1.06 TiB** (re-measured 2026-08-01: state ~226–230 GiB + ~843 GiB post-merge bodies/receipts + ~19 GiB headers/code; ~251 GiB at snap-sync, before backfill) | 36.0% | **Diversity pick** — on par with geth once full post-merge history is counted, not a disk winner. Compact flat-storage state; a minority client, so running it helps client diversity. |
-| **geth** | ~8h28m | ~1.13 TiB | 44.9% | **Conservative default** — biggest ecosystem, most docs, resumes cleanly from multi-day downtime. |
+| **nethermind** | ~14.5h | **~1.06 TiB** (re-measured 2026-08-01: state ~226–230 GiB + ~843 GiB post-merge bodies/receipts + ~19 GiB headers/code; ~251 GiB at snap-sync, before backfill) | 36.0% | **Diversity pick** — on par with geth once full post-merge history is counted, not a disk winner. Compact flat-storage state; a minority client; restart-resume now measured (2026-08-01: closed a 10,607-block/~35h gap in 35m09s, no re-snap). |
+| **geth** | ~8h28m | ~1.13 TiB | 44.9% | **Conservative default** — biggest ecosystem, most docs, resumes cleanly from multi-day downtime (measured 2026-07-10). |
 
 There is no disk winner between these two — they converge once you count full post-merge history. If you run one EL for the long haul, run one of these. Pick **nethermind** for its genuinely compact flat-storage state and to improve client diversity; pick **geth** if you want the most boring, best-documented option on the network.
 
