@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ReadNext } from '@/components/ui/ReadNext'
-import { buildArticleMetadata, formatArticleDate, getArticle } from '@/lib/articles'
+import { ArticleByline } from '@/components/ui/ArticleByline'
+import { buildArticleMetadata } from '@/lib/articles'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowDown, ArrowRight, ArrowUp } from 'lucide-react'
 
@@ -280,7 +281,6 @@ function VerdictDiagram() {
 }
 
 export default function HowWeTestedWithClaudePage() {
-  const article = getArticle('how-we-tested-with-claude')
   return (
     <div className="min-h-screen py-12 sm:py-16 md:py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
@@ -289,12 +289,7 @@ export default function HowWeTestedWithClaudePage() {
           <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
             Blog &middot; Companion to the bake-off writeup
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Published {formatArticleDate(article.datePublished)}
-            {article.dateModified !== article.datePublished && (
-              <> &middot; Updated {formatArticleDate(article.dateModified)}</>
-            )}
-          </p>
+          <ArticleByline slug="how-we-tested-with-claude" />
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
             How we ran a six-week Ethereum client bake-off with Claude
           </h1>

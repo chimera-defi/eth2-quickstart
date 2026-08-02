@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ReadNext } from '@/components/ui/ReadNext'
-import { buildArticleMetadata, formatArticleDate, getArticle } from '@/lib/articles'
+import { ArticleByline } from '@/components/ui/ArticleByline'
+import { buildArticleMetadata } from '@/lib/articles'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowRight } from 'lucide-react'
 
@@ -208,7 +209,7 @@ const nethermindComposition = [
   { label: 'Headers + code', gib: 19, valueLabel: '~19 GiB', fill: '#9333ea' },
 ]
 const compositionScaleMaxGib = 1200
-const ethrexNoHistoryGib = 472
+const ethrexNoHistoryGib = 475.5
 const compositionSegments = (() => {
   let cum = 0
   return nethermindComposition.map((seg) => {
@@ -252,7 +253,6 @@ const sourceLinks = [
 ]
 
 export default function EthereumClientBakeoffPage() {
-  const article = getArticle('ethereum-client-bakeoff')
   return (
     <div className="min-h-screen py-12 sm:py-16 md:py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
@@ -261,12 +261,7 @@ export default function EthereumClientBakeoffPage() {
           <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
             Blog
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Published {formatArticleDate(article.datePublished)}
-            {article.dateModified !== article.datePublished && (
-              <> &middot; Updated {formatArticleDate(article.dateModified)}</>
-            )}
-          </p>
+          <ArticleByline slug="ethereum-client-bakeoff" />
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
             Ethereum client bake-off
           </h1>
@@ -773,7 +768,7 @@ export default function EthereumClientBakeoffPage() {
             <svg className="h-auto w-full" viewBox="0 0 680 254" role="img">
               <title id="composition-chart-title">What fills nethermind&apos;s steady-state terabyte, vs ethrex&apos;s no-history datadir</title>
               <desc id="composition-chart-description">
-                Nethermind&apos;s roughly 1.06 TiB steady-state datadir is about 228 GiB of state, 595 GiB of block bodies, 249 GiB of receipts, and 19 GiB of headers and code. Ethrex&apos;s entire no-history datadir is about 472 GiB — roughly double nethermind&apos;s state component alone.
+                Nethermind&apos;s roughly 1.06 TiB steady-state datadir is about 228 GiB of state, 595 GiB of block bodies, 249 GiB of receipts, and 19 GiB of headers and code. Ethrex&apos;s entire no-history datadir plateaus at about 475 GiB — roughly double nethermind&apos;s state component alone.
               </desc>
               <defs>
                 <pattern id="composition-hatch" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)">
@@ -810,7 +805,7 @@ export default function EthereumClientBakeoffPage() {
               <text x="136" y="143" textAnchor="end" className="fill-muted-foreground text-[11px]">no-history</text>
               <rect x="150" y="116" width={(ethrexNoHistoryGib / compositionScaleMaxGib) * 420} height="24" rx="4" fill="url(#composition-hatch)" />
               <text x={compositionX(ethrexNoHistoryGib) + 8} y="132" className="fill-foreground text-[12px]">
-                ~472 GiB — whole datadir
+                ~475 GiB — whole datadir (plateau)
               </text>
               <line
                 x1={compositionX(228)}
@@ -855,8 +850,8 @@ export default function EthereumClientBakeoffPage() {
               </div>
             ))}
             <p className="text-xs text-muted-foreground">
-              Nethermind steady-state total ~1.06 TiB; ethrex&apos;s entire no-history datadir (~472 GiB)
-              is only about double nethermind&apos;s state component (~228 GiB).
+              Nethermind steady-state total ~1.06 TiB; ethrex&apos;s entire no-history datadir (~475 GiB
+              plateau) is only about double nethermind&apos;s state component (~228 GiB).
             </p>
           </dl>
           <p className="mt-3 text-sm text-muted-foreground">
