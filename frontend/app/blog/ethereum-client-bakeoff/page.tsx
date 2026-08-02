@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ReadNext } from '@/components/ui/ReadNext'
-import { buildArticleMetadata } from '@/lib/articles'
+import { buildArticleMetadata, formatArticleDate, getArticle } from '@/lib/articles'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowRight } from 'lucide-react'
 
@@ -222,6 +222,7 @@ const sourceLinks = [
 ]
 
 export default function EthereumClientBakeoffPage() {
+  const article = getArticle('ethereum-client-bakeoff')
   return (
     <div className="min-h-screen py-12 sm:py-16 md:py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
@@ -229,6 +230,12 @@ export default function EthereumClientBakeoffPage() {
         <header id="article-top" tabIndex={-1} className="focus:outline-none">
           <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
             Blog
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Published {formatArticleDate(article.datePublished)}
+            {article.dateModified !== article.datePublished && (
+              <> &middot; Updated {formatArticleDate(article.dateModified)}</>
+            )}
           </p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
             Ethereum client bake-off

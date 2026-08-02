@@ -27,6 +27,8 @@ export interface Article {
   /** JSON-LD headline — pageTitle with the trailing site-name suffix stripped. */
   headline: string
   datePublished: string
+  /** Last date the article's content was materially edited (data corrections, new findings, etc.). */
+  dateModified: string
   sitemapPriority: number
 }
 
@@ -35,7 +37,7 @@ export const ARTICLES: Article[] = [
     slug: 'ethereum-client-bakeoff',
     pageTitle: 'Ethereum Client Bake-off - ETH2 Quick Start',
     pageDescription:
-      'The full write-up: results from a six-week Ethereum execution and consensus client sync campaign (a 23-day initial sync phase, then steady-state and restart-resume follow-ups), including the restart-resilience findings the headline numbers hide.',
+      'Results from a six-week Ethereum execution and consensus client sync campaign, including the restart-resilience findings the headline numbers hide.',
     navTitle: 'Ethereum client bake-off',
     indexDescription:
       'Results from a six-week execution and consensus client sync campaign: disk, speed, and restart resilience across the full client roster.',
@@ -44,21 +46,23 @@ export const ARTICLES: Article[] = [
     ogAlt: 'The fastest Ethereum client is one almost nobody runs — a six-week client bake-off',
     headline: 'Ethereum Client Bake-off',
     datePublished: '2026-07-19',
+    dateModified: '2026-08-01',
     sitemapPriority: 0.9,
   },
   {
     slug: 'how-we-tested-with-claude',
-    pageTitle: 'How We Ran a Six-Week Bake-off With Claude - ETH2 Quick Start',
+    pageTitle: 'How We Ran a 6-Week Bake-off With Claude - ETH2 Quick Start',
     pageDescription:
-      'The agent orchestration model, the harness, and what actually breaks when a benchmark runs for six weeks (a 23-day initial campaign, then steady-state and restart-resume follow-ups) on a shared host with an AI in the driver’s seat.',
+      "The agent orchestration model, the harness, and what actually breaks when a six-week benchmark runs on a shared host with an AI in the driver's seat.",
     navTitle: 'How we tested with Claude',
     indexDescription:
       'The orchestration model and harness behind the six-week campaign — how a fleet of agents ran, sampled, and gated every client sync.',
     eyebrow: 'Methodology',
     ogImage: '/og-how-we-tested.png',
     ogAlt: 'How we ran a six-week Ethereum client bake-off with Claude',
-    headline: 'How We Ran a Six-Week Bake-off With Claude',
+    headline: 'How We Ran a 6-Week Bake-off With Claude',
     datePublished: '2026-07-22',
+    dateModified: '2026-08-01',
     sitemapPriority: 0.8,
   },
   {
@@ -74,6 +78,7 @@ export const ARTICLES: Article[] = [
     ogAlt: 'The bake-off harness — a function-level engineering reference',
     headline: 'The Bake-off Harness',
     datePublished: '2026-07-21',
+    dateModified: '2026-08-01',
     sitemapPriority: 0.8,
   },
   {
@@ -89,9 +94,21 @@ export const ARTICLES: Article[] = [
     ogAlt: 'Bake-off results — the raw data',
     headline: 'Bake-off Results',
     datePublished: '2026-07-21',
+    dateModified: '2026-08-01',
     sitemapPriority: 0.8,
   },
 ]
+
+/** Formats a `YYYY-MM-DD` article date as e.g. "Aug 1, 2026", pinned to UTC so
+ * server and client render the same string regardless of local timezone. */
+export function formatArticleDate(iso: string): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  })
+}
 
 export function getArticle(slug: string): Article {
   const article = ARTICLES.find((a) => a.slug === slug)

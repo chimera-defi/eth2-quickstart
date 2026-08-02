@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ReadNext } from '@/components/ui/ReadNext'
-import { buildArticleMetadata } from '@/lib/articles'
+import { buildArticleMetadata, formatArticleDate, getArticle } from '@/lib/articles'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowDown, ArrowRight } from 'lucide-react'
 
@@ -325,6 +325,7 @@ function DataFlowDiagram() {
 }
 
 export default function BakeoffHarnessPage() {
+  const article = getArticle('bakeoff-harness')
   return (
     <div className="min-h-screen py-12 sm:py-16 md:py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
@@ -332,6 +333,12 @@ export default function BakeoffHarnessPage() {
         <header id="article-top" tabIndex={-1} className="focus:outline-none">
           <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
             Engineering &middot; Companion to the bake-off writeup
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Published {formatArticleDate(article.datePublished)}
+            {article.dateModified !== article.datePublished && (
+              <> &middot; Updated {formatArticleDate(article.dateModified)}</>
+            )}
           </p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
             The Bake-off Harness — Function-Level Engineering Reference
