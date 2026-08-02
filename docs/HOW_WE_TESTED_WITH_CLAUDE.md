@@ -146,7 +146,7 @@ stateDiagram-v2
 
 *This is what's actually implemented (`test/bakeoff/lib.sh`, `run_candidate.sh`) — not a peer-aware state machine. `bakeoff_is_synced()` checks `sync_distance`, `is_optimistic`, and `el_offline` together, which is already enough to avoid trusting `eth_syncing=false` alone (it's returned both before a sync starts and after it finishes). But it has **no peer-count check at all**, and the stall-watchdog that restarts a stuck unit is opt-in and tracks only flat block/slot progress. nethermind's 13.3h loopback stall (see the table above) predates the watchdog: `bakeoff_is_synced()` correctly never reported it synced, but nothing flagged the run as *stuck* rather than *still syncing* — that gap is exactly what motivated building the watchdog afterward. (The issues log, [§E3](CLIENT_BAKEOFF_ISSUES_LOG.md), still lists a fuller peer-aware verdict scheme as a documented improvement, not yet shipped.)*
 
-That separation is the difference between an agent that can run a 23-day campaign and one that suffocates on its own status checks by day two.
+That separation is the difference between an agent that can run a six-week campaign and one that suffocates on its own status checks by day two.
 
 ### 4. Governance the agent could not override
 
