@@ -7,7 +7,8 @@ import { BackToTop } from '@/components/ui/BackToTop'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { ReadNext } from '@/components/ui/ReadNext'
-import { buildArticleMetadata, formatArticleDate, getArticle } from '@/lib/articles'
+import { ArticleByline } from '@/components/ui/ArticleByline'
+import { buildArticleMetadata } from '@/lib/articles'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowRight } from 'lucide-react'
 
@@ -352,7 +353,6 @@ const rpcConsequentlyBroken = [
 ]
 
 export default function BakeoffResultsPage() {
-  const article = getArticle('bakeoff-results')
   return (
     <div className="min-h-screen py-12 sm:py-16 md:py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
@@ -361,12 +361,7 @@ export default function BakeoffResultsPage() {
           <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
             Raw results
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Published {formatArticleDate(article.datePublished)}
-            {article.dateModified !== article.datePublished && (
-              <> &middot; Updated {formatArticleDate(article.dateModified)}</>
-            )}
-          </p>
+          <ArticleByline slug="bakeoff-results" />
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
             Bake-off results — the raw data
           </h1>
