@@ -285,6 +285,21 @@ const measurementNotes = [
   "**Harness fix `98a52d7` (belongs in PR #190):** `bakeoff_snapshot_disk` guarded its `du | awk` pipeline with `|| true`. Without it, when the live anchor EL churned its datadir during a snapshot, `du` hit a vanishing file → exit 1 → `pipefail` killed the run (this spuriously failed grandine's first attempt; the clean re-run above is authoritative).",
 ]
 
+// Cross-anchor CL footprints (approximate published values, MB) for the dot plot.
+// Log axis: the field spans ~177 MB to ~5 GB. Anchor identity is double-encoded
+// (shape + tone) since the site palette is single-accent.
+const clCrossAnchorPoints = [
+  { name: 'Lodestar', ethrex: 828, geth: 177, nethermind: 178 },
+  { name: 'Lighthouse', ethrex: 739, geth: 518, nethermind: 470 },
+  { name: 'Grandine', ethrex: 946, geth: 725, nethermind: 730 },
+  { name: 'Teku', ethrex: 2100, geth: 936, nethermind: 848 },
+  { name: 'Nimbus', ethrex: 5000, geth: 1200, nethermind: 1300 },
+]
+const clLogMin = 150
+const clLogMax = 6000
+const clX = (mb: number) =>
+  150 + ((Math.log10(mb) - Math.log10(clLogMin)) / (Math.log10(clLogMax) - Math.log10(clLogMin))) * 420
+
 // ---------------------------------------------------------------------------
 // Client limitations
 // ---------------------------------------------------------------------------
@@ -930,6 +945,73 @@ export default function BakeoffResultsPage() {
               <li key={i}><Rich text={point} /></li>
             ))}
           </ul>
+
+          <figure className="mt-5 hidden sm:block" aria-labelledby="cl-anchor-chart-title" aria-describedby="cl-anchor-chart-description">
+            <svg className="h-auto w-full" viewBox="0 0 680 306" role="img">
+              <title id="cl-anchor-chart-title">Consensus-client footprints across all three EL anchors (log scale)</title>
+              <desc id="cl-anchor-chart-description">
+                Each consensus client shows three marks, one per execution-client anchor. The tiers reproduce on every anchor: lodestar and lighthouse smallest, teku and grandine mid, nimbus largest. Ethrex-anchor values are systematically larger because those sweeps were measured longer after checkpoint-sync.
+              </desc>
+              {[200, 500, 1000, 2000, 5000].map((mb) => (
+                <g key={mb}>
+                  <line x1={clX(mb)} x2={clX(mb)} y1="24" y2="252" className="stroke-border" />
+                  <text x={clX(mb)} y="270" textAnchor="middle" className="fill-muted-foreground text-[12px]">
+                    {mb >= 1000 ? `${mb / 1000},000` : mb}
+                  </text>
+                </g>
+              ))}
+              <text x="592" y="270" className="fill-muted-foreground text-[11px]">MB (log scale)</text>
+              {clCrossAnchorPoints.map((row, index) => {
+                const y = 48 + index * 44
+                return (
+                  <g key={row.name}>
+                    <text x="136" y={y + 4} textAnchor="end" className="fill-foreground text-[13px]">
+                      {row.name}
+                    </text>
+                    <rect x={clX(row.geth) - 5} y={y - 5} width="10" height="10" rx="2" fill="#e9d5ff" stroke="#09090b" strokeWidth="2" />
+                    <rect
+                      x={clX(row.nethermind) - 5}
+                      y={y - 5}
+                      width="10"
+                      height="10"
+                      rx="1"
+                      fill="none"
+                      stroke="#c084fc"
+                      strokeWidth="2"
+                      transform={`rotate(45 ${clX(row.nethermind)} ${y})`}
+                    />
+                    <circle cx={clX(row.ethrex)} cy={y} r="5" fill="#a855f7" stroke="#09090b" strokeWidth="2" />
+                  </g>
+                )
+              })}
+              <g>
+                <circle cx="156" cy="292" r="5" fill="#a855f7" stroke="#09090b" strokeWidth="2" />
+                <text x="168" y="296" className="fill-muted-foreground text-[12px]">ethrex anchor (07-06)</text>
+                <rect x="325" y="287" width="10" height="10" rx="2" fill="#e9d5ff" stroke="#09090b" strokeWidth="2" />
+                <text x="342" y="296" className="fill-muted-foreground text-[12px]">geth anchor (07-08)</text>
+                <rect x="498" y="287" width="10" height="10" rx="1" fill="none" stroke="#c084fc" strokeWidth="2" transform="rotate(45 503 292)" />
+                <text x="514" y="296" className="fill-muted-foreground text-[12px]">nethermind anchor (07-26)</text>
+              </g>
+            </svg>
+            <figcaption className="mt-2 text-xs text-muted-foreground">
+              The tier story in one picture: on every anchor the same three tiers appear — {'{'}lodestar,
+              lighthouse{'}'} lightweight, {'{'}teku, grandine{'}'} mid, nimbus heavy. Circles (ethrex
+              anchor) sit right of the others because those runs were measured longer after
+              checkpoint-sync, not because the anchor changes the ranking. lodestar&apos;s geth- and
+              nethermind-anchor marks overlap almost exactly (~177 vs ~178 MB). Values are the published
+              approximations from the matrices above.
+            </figcaption>
+          </figure>
+          <dl className="mt-4 space-y-2 text-sm sm:hidden">
+            {clCrossAnchorPoints.map((row) => (
+              <div key={row.name} className="flex items-baseline justify-between gap-3">
+                <dt className="font-medium text-foreground">{row.name}</dt>
+                <dd className="text-right text-xs text-muted-foreground">
+                  ~{row.ethrex} / {row.geth} / {row.nethermind} MB (ethrex / geth / nethermind anchor)
+                </dd>
+              </div>
+            ))}
+          </dl>
 
           <p className="mt-4 text-sm font-medium text-foreground">Measurement notes:</p>
           <ul className="mt-2 space-y-2 text-sm text-muted-foreground">

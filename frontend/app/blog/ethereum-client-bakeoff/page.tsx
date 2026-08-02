@@ -198,6 +198,36 @@ const restartBisection = [
   { gap: '26 min', blocks: '132', outcome: 'stuck — Failed to fetch headers for sync head', variant: 'default' as const },
 ]
 
+// Steady-state composition (GiB) from the 2026-08-01 live re-measure (du per column family):
+// blocks ~595 + receipts ~249 = ~843 GiB post-merge history; state ~228; headers+code ~19.
+// Fills are a light→dark ramp of the site accent (sequential: parts of one whole, not identities).
+const nethermindComposition = [
+  { label: 'State (flat storage)', gib: 228, valueLabel: '~228 GiB', fill: '#e9d5ff' },
+  { label: 'Block bodies', gib: 595, valueLabel: '~595 GiB', fill: '#c084fc' },
+  { label: 'Receipts', gib: 249, valueLabel: '~249 GiB', fill: '#a855f7' },
+  { label: 'Headers + code', gib: 19, valueLabel: '~19 GiB', fill: '#9333ea' },
+]
+const compositionScaleMaxGib = 1200
+const ethrexNoHistoryGib = 472
+const compositionSegments = (() => {
+  let cum = 0
+  return nethermindComposition.map((seg) => {
+    const start = cum
+    cum += seg.gib
+    return { ...seg, start }
+  })
+})()
+const compositionTotalGib = nethermindComposition.reduce((sum, seg) => sum + seg.gib, 0)
+const compositionX = (gib: number) => 150 + (gib / compositionScaleMaxGib) * 420
+
+// Restart gaps bridged, in blocks (log scale). ethrex rows are the controlled bisection
+// (2026-07-10); nethermind is the 2026-08-01 opportunistic catch-up; geth the 2026-07-10
+// ~52h resume. Position on a log axis is honest where bar length would not be.
+const gapLogMin = 50
+const gapLogMax = 25000
+const gapX = (blocks: number) =>
+  150 + ((Math.log10(blocks) - Math.log10(gapLogMin)) / (Math.log10(gapLogMax) - Math.log10(gapLogMin))) * 420
+
 const sourceLinks = [
   {
     label: 'Full write-up',
@@ -739,6 +769,96 @@ export default function EthereumClientBakeoffPage() {
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--history.chain postmerge</code>.
             Under matched history-retention configs, nethermind and geth are on par.
           </p>
+          <figure className="mt-4 hidden sm:block" aria-labelledby="composition-chart-title" aria-describedby="composition-chart-description">
+            <svg className="h-auto w-full" viewBox="0 0 680 254" role="img">
+              <title id="composition-chart-title">What fills nethermind&apos;s steady-state terabyte, vs ethrex&apos;s no-history datadir</title>
+              <desc id="composition-chart-description">
+                Nethermind&apos;s roughly 1.06 TiB steady-state datadir is about 228 GiB of state, 595 GiB of block bodies, 249 GiB of receipts, and 19 GiB of headers and code. Ethrex&apos;s entire no-history datadir is about 472 GiB — roughly double nethermind&apos;s state component alone.
+              </desc>
+              <defs>
+                <pattern id="composition-hatch" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)">
+                  <rect width="7" height="7" className="fill-muted" />
+                  <rect width="3.5" height="7" className="fill-border" />
+                </pattern>
+              </defs>
+              {[0, 250, 500, 750, 1000].map((gib) => (
+                <g key={gib}>
+                  <line x1={compositionX(gib)} x2={compositionX(gib)} y1="24" y2="186" className="stroke-border" />
+                  <text x={compositionX(gib)} y="204" textAnchor="middle" className="fill-muted-foreground text-[12px]">
+                    {gib}
+                  </text>
+                </g>
+              ))}
+              <text x="600" y="204" className="fill-muted-foreground text-[11px]">GiB</text>
+              <text x="136" y="60" textAnchor="end" className="fill-foreground text-[13px]">Nethermind</text>
+              <text x="136" y="75" textAnchor="end" className="fill-muted-foreground text-[11px]">steady-state</text>
+              {compositionSegments.map((seg) => (
+                <rect
+                  key={seg.label}
+                  x={compositionX(seg.start)}
+                  y="48"
+                  width={Math.max(2, (seg.gib / compositionScaleMaxGib) * 420 - 2)}
+                  height="24"
+                  rx="2"
+                  fill={seg.fill}
+                />
+              ))}
+              <text x={compositionX(compositionTotalGib) + 8} y="64" className="fill-foreground text-[12px]">
+                ~1.06 TiB total
+              </text>
+              <text x="136" y="128" textAnchor="end" className="fill-foreground text-[13px]">Ethrex</text>
+              <text x="136" y="143" textAnchor="end" className="fill-muted-foreground text-[11px]">no-history</text>
+              <rect x="150" y="116" width={(ethrexNoHistoryGib / compositionScaleMaxGib) * 420} height="24" rx="4" fill="url(#composition-hatch)" />
+              <text x={compositionX(ethrexNoHistoryGib) + 8} y="132" className="fill-foreground text-[12px]">
+                ~472 GiB — whole datadir
+              </text>
+              <line
+                x1={compositionX(228)}
+                x2={compositionX(228)}
+                y1="42"
+                y2="146"
+                strokeDasharray="4 4"
+                className="stroke-muted-foreground"
+              />
+              <text x="155" y="172" className="fill-muted-foreground text-[12px]">
+                nethermind&apos;s state alone (~228 GiB, dashed line) ≈ half of ethrex&apos;s entire no-history datadir
+              </text>
+              {compositionSegments.map((seg, index) => {
+                const legendX = [60, 192, 334, 478][index]
+                const legendLabel = ['State ~228 GiB', 'Bodies ~595 GiB', 'Receipts ~249 GiB', 'Headers+code ~19 GiB'][index]
+                return (
+                  <g key={seg.label}>
+                    <rect x={legendX} y="228" width="10" height="10" rx="2" fill={seg.fill} />
+                    <text x={legendX + 16} y="237" className="fill-muted-foreground text-[12px]">
+                      {legendLabel}
+                    </text>
+                  </g>
+                )
+              })}
+            </svg>
+            <figcaption className="mt-2 text-xs text-muted-foreground">
+              Byte-for-byte, the terabyte is mostly history: ~843 GiB of post-merge bodies and receipts —
+              the client-agnostic retention cost — sitting on top of ~228 GiB of actual state. Re-measured
+              live 2026-08-01.
+            </figcaption>
+          </figure>
+          <dl className="mt-4 space-y-3 sm:hidden">
+            {nethermindComposition.map((seg) => (
+              <div key={seg.label}>
+                <div className="flex items-baseline justify-between gap-3 text-xs">
+                  <dt className="font-medium text-foreground">{seg.label}</dt>
+                  <dd className="text-muted-foreground">{seg.valueLabel}</dd>
+                </div>
+                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                  <div className="h-full rounded-full" style={{ width: `${(seg.gib / compositionTotalGib) * 100}%`, backgroundColor: seg.fill }} />
+                </div>
+              </div>
+            ))}
+            <p className="text-xs text-muted-foreground">
+              Nethermind steady-state total ~1.06 TiB; ethrex&apos;s entire no-history datadir (~472 GiB)
+              is only about double nethermind&apos;s state component (~228 GiB).
+            </p>
+          </dl>
           <p className="mt-3 text-sm text-muted-foreground">
             besu lands in the same band too, at ~1.08 TiB — the same order of magnitude, not an
             outlier. reth (window-capped at 72h, ~21% by block) already tracked ~87% of geth&apos;s
@@ -905,6 +1025,74 @@ export default function EthereumClientBakeoffPage() {
             forced to re-pivot. Graceful-resume clients dodge this by importing gap blocks (always
             available) instead of re-fetching state.
           </p>
+          <figure className="mt-5 hidden sm:block" aria-labelledby="resume-chart-title" aria-describedby="resume-chart-description">
+            <svg className="h-auto w-full" viewBox="0 0 680 250" role="img">
+              <title id="resume-chart-title">Largest restart gap each client bridged, in blocks (log scale)</title>
+              <desc id="resume-chart-description">
+                Ethrex resumed gaps of 68, 108, and 124 blocks but stalled and re-snapped at 132 blocks — its cliff sits at roughly 128 blocks, about 25 minutes. Nethermind resumed a 10,607-block gap in 35 minutes 9 seconds, and geth resumed a roughly 15,400-block, 52-hour gap — both about two orders of magnitude past the ethrex cliff.
+              </desc>
+              {[
+                { blocks: 100, label: '100' },
+                { blocks: 1000, label: '1,000' },
+                { blocks: 10000, label: '10,000' },
+              ].map((tick) => (
+                <g key={tick.blocks}>
+                  <line x1={gapX(tick.blocks)} x2={gapX(tick.blocks)} y1="28" y2="186" className="stroke-border" />
+                  <text x={gapX(tick.blocks)} y="204" textAnchor="middle" className="fill-muted-foreground text-[12px]">
+                    {tick.label}
+                  </text>
+                </g>
+              ))}
+              <text x="560" y="204" className="fill-muted-foreground text-[11px]">blocks (log scale)</text>
+              <line x1={gapX(128)} x2={gapX(128)} y1="28" y2="186" strokeDasharray="4 4" className="stroke-muted-foreground" />
+              <text x={gapX(128) + 8} y="20" className="fill-muted-foreground text-[12px]">
+                ethrex re-snap cliff · ~128 blk ≈ 25 min
+              </text>
+              <text x="136" y="68" textAnchor="end" className="fill-foreground text-[13px]">Ethrex</text>
+              {[68, 108, 124].map((blocks) => (
+                <circle key={blocks} cx={gapX(blocks)} cy="64" r="5" fill="#a855f7" stroke="#09090b" strokeWidth="2" />
+              ))}
+              <circle cx={gapX(132)} cy="64" r="5" fill="#09090b" stroke="#fafafa" strokeWidth="2" />
+              <text x="232" y="56" className="fill-muted-foreground text-[12px]">68 / 108 / 124 blk — resumed cleanly</text>
+              <text x="232" y="74" className="fill-muted-foreground text-[12px]">132 blk — stalled, discarded state, ~2h re-snap</text>
+              <text x="136" y="116" textAnchor="end" className="fill-foreground text-[13px]">Nethermind</text>
+              <circle cx={gapX(10607)} cy="112" r="5" fill="#a855f7" stroke="#09090b" strokeWidth="2" />
+              <text x={gapX(10607) - 12} y="116" textAnchor="end" className="fill-muted-foreground text-[12px]">
+                10,607 blk (~35h) — resumed in 35m09s
+              </text>
+              <text x="136" y="164" textAnchor="end" className="fill-foreground text-[13px]">Geth</text>
+              <circle cx={gapX(15400)} cy="160" r="5" fill="#a855f7" stroke="#09090b" strokeWidth="2" />
+              <text x={gapX(15400) - 12} y="164" textAnchor="end" className="fill-muted-foreground text-[12px]">
+                ~15,400 blk (~52h) — resumed, no re-snap
+              </text>
+              <g>
+                <circle cx="156" cy="232" r="5" fill="#a855f7" stroke="#09090b" strokeWidth="2" />
+                <text x="168" y="236" className="fill-muted-foreground text-[12px]">resumed by block import</text>
+                <circle cx="356" cy="232" r="5" fill="#09090b" stroke="#fafafa" strokeWidth="2" />
+                <text x="368" y="236" className="fill-muted-foreground text-[12px]">stalled → re-snap</text>
+              </g>
+            </svg>
+            <figcaption className="mt-2 text-xs text-muted-foreground">
+              The axis is logarithmic: ethrex&apos;s resumed-vs-stalled dots sit 8 blocks apart, while
+              nethermind and geth bridged gaps ~80–120× past that cliff by ordinary block import.
+              ethrex points are the controlled bisection (2026-07-10); nethermind is the opportunistic
+              catch-up (2026-08-01); geth the ~52h resume (2026-07-10).
+            </figcaption>
+          </figure>
+          <dl className="mt-4 space-y-2 text-sm sm:hidden">
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="font-medium text-foreground">Ethrex</dt>
+              <dd className="text-right text-xs text-muted-foreground">resumed ≤124 blk; stalled → re-snap at 132 blk (~25 min)</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="font-medium text-foreground">Nethermind</dt>
+              <dd className="text-right text-xs text-muted-foreground">resumed 10,607 blk (~35h) in 35m09s</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="font-medium text-foreground">Geth</dt>
+              <dd className="text-right text-xs text-muted-foreground">resumed ~15,400 blk (~52h), no re-snap</dd>
+            </div>
+          </dl>
 
           <AnchorHeading id="ethrex-cliff-bisected" as="h3" className="mt-6 font-medium text-foreground">
             ethrex&apos;s cliff, bisected
