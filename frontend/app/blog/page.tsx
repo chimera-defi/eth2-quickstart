@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { ARTICLES } from '@/lib/articles'
+import { ARTICLES, formatArticleDate } from '@/lib/articles'
 import { SITE_CONFIG } from '@/lib/constants'
 
 const BLOG_TITLE = 'Blog - ETH2 Quick Start'
@@ -35,6 +35,7 @@ const posts = ARTICLES.map((article) => ({
   title: article.navTitle,
   description: article.indexDescription,
   href: `/blog/${article.slug}`,
+  updated: article.dateModified !== article.datePublished ? formatArticleDate(article.dateModified) : null,
 }))
 
 export default function BlogPage() {
@@ -69,6 +70,9 @@ export default function BlogPage() {
                 <p className="mt-2 text-sm text-muted-foreground">
                   {post.description}
                 </p>
+                {post.updated && (
+                  <p className="mt-2 text-xs text-muted-foreground">Updated {post.updated}</p>
+                )}
                 <div className="mt-4">
                   <Button href={post.href} variant="ghost" size="sm">
                     Read more
