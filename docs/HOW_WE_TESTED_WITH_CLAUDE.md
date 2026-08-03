@@ -69,6 +69,7 @@ timeline
     2026-07-29 : EL-disk convergence reframe published (no disk winner)
     2026-07-31 : EXP-A — nethermind fresh re-sync 1h53m (establish run)
     2026-08-01 : EXP-A — nethermind resumes a 10,607-block gap in 35 min — restart-resume measured
+    2026-08-03 : EXP-A bisection — no cliff at any gap (12 min to ~35h); prysm clean-resume measured, n=4
 ```
 
 *Every date here is a shipped fix or a completed measurement run — sourced from [`CLIENT_BAKEOFF_RESULTS.md`](CLIENT_BAKEOFF_RESULTS.md) and the repo's merged-PR history, not reconstructed from memory.*

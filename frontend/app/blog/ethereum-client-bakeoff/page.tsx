@@ -152,7 +152,7 @@ const consensusClients = [
 // peer counts, resource caps, re-run counts, config_optimal, and other candidate-level detail.
 const fullMetrics = [
   { candidate: 'geth × prysm', peers: '—', configOptimal: 'yes', reRuns: 0, notable: 'Baseline; no large optimistic gap to close' },
-  { candidate: 'nethermind × prysm', peers: '49', configOptimal: 'yes', reRuns: 1, notable: 'First attempt: 13.3h 0-peer loopback stall; re-run after ExternalIp fix synced clean. Restart-resume now measured (2026-08-01): closed a 10,607-block gap in 35m09s, no re-snap' },
+  { candidate: 'nethermind × prysm', peers: '49', configOptimal: 'yes', reRuns: 1, notable: 'First attempt: 13.3h 0-peer loopback stall; re-run after ExternalIp fix synced clean. Restart-resume measured and bisected (2026-08-01→03): every gap from 12 min to ~35h resumed by plain block import, no re-snap, no cliff' },
   { candidate: 'ethrex × prysm', peers: '50', configOptimal: 'yes', reRuns: 0, notable: 'Datadir plateaus at ~470–476 GiB (confirmed by a follow-up steady-state measurement run on v22.0.0, 4h09m56s snap, drifting 470.2→475.5 GiB over ~42h after); 1 auto-healed stale-pivot event; serves no history beyond its snap pivot' },
   { candidate: 'besu × prysm', peers: '~50', configOptimal: 'n/a (pruned re-run only)', reRuns: 2, notable: 'Un-pruned run synced clean; pruned re-run deadlocked twice, abandoned' },
   { candidate: 'reth × prysm', peers: '—', configOptimal: 'yes', reRuns: 1, notable: '578 samples; relaunched after --full fix; 47% by block / ~21% gas-weighted at cap' },
@@ -221,9 +221,10 @@ const compositionSegments = (() => {
 const compositionTotalGib = nethermindComposition.reduce((sum, seg) => sum + seg.gib, 0)
 const compositionX = (gib: number) => 150 + (gib / compositionScaleMaxGib) * 420
 
-// Restart gaps bridged, in blocks (log scale). ethrex rows are the controlled bisection
-// (2026-07-10); nethermind is the 2026-08-01 opportunistic catch-up; geth the 2026-07-10
-// ~52h resume. Position on a log axis is honest where bar length would not be.
+// Restart gaps bridged, in blocks (log scale). ethrex rows are its 2026-07-10 bisection;
+// nethermind's span the 2026-08-02→03 controlled bisection (69/151/301/1196 blk = 12m/30m/1h/4h)
+// plus the 2026-08-01 opportunistic ~35h catch-up; geth is the 2026-07-10 ~52h resume.
+// Position on a log axis is honest where bar length would not be.
 const gapLogMin = 50
 const gapLogMax = 25000
 const gapX = (blocks: number) =>
@@ -982,22 +983,30 @@ export default function EthereumClientBakeoffPage() {
               expected-by-design but unmeasured.
             </li>
             <li>
-              <span className="font-medium text-foreground">nethermind&apos;s resume, measured
-              (2026-08-01).</span> An opportunistic catch-up, not a controlled bisection: a CL
-              restart at 13:24:55Z left nethermind{' '}
+              <span className="font-medium text-foreground">nethermind&apos;s resume, measured and
+              then bisected (2026-08-01→03).</span> First an opportunistic catch-up: a CL restart at
+              13:24:55Z left nethermind{' '}
               <strong className="text-foreground">10,607 blocks (~35h of chain) behind</strong> the
-              external tip. It closed the entire gap by ordinary block import in{' '}
-              <strong className="text-foreground">35m09s (~307 blocks/min)</strong>; the beacon
-              dropped <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">is_optimistic</code>{' '}
-              at 14:00:04Z. The datadir grew 1.165 → 1.178 TB (+1.1%, exactly the imported
-              bodies/receipts) — no state wipe, no re-snap. That&apos;s ~80× past ethrex&apos;s
-              ~128-block re-snap cliff, and it matches geth&apos;s resume behavior. A separate
-              establish run the day before (2026-07-31) snap-synced nethermind fresh in{' '}
+              external tip, and it closed the entire gap by ordinary block import in{' '}
+              <strong className="text-foreground">35m09s (~307 blocks/min)</strong> with the datadir
+              intact (1.165 → 1.178 TB, +1.1% — exactly the imported bodies/receipts). Then a
+              controlled stop→wait→start bisection at{' '}
+              <strong className="text-foreground">12 min / 30 min / 1 h / 4 h gaps</strong> (2026-08-02→03):
+              every gap resumed geth-style — ordinary Engine-API block import, no re-pivot, no
+              snap/state-sync, zero crashes. The tell is the state-dir delta:{' '}
+              <strong className="text-foreground">~1.0–1.3 MiB per imported block, constant across
+              rungs</strong> — linear import, the opposite of a re-snap, which would rewrite the whole
+              ~238 GiB state. Resume time scales gently (121s at 12 min → 483s at 4 h → 35m09s at
+              ~35 h), dominated by the CL re-syncing its missed slots, not the EL.{' '}
+              <strong className="text-foreground">nethermind has no servable-window cliff</strong> — the
+              direct contrast to ethrex&apos;s ~128-block cliff below. A separate
+              establish run (2026-07-31) snap-synced nethermind fresh in{' '}
               <strong className="text-foreground">1h52m51s</strong> (~280 GiB at snap, pivot
               25,649,064, zero restarts) — far faster than the ~14.5h Stage-B figure because the
               pivot was minutes-old and near-tip, and network conditions differ; a second data
               point under different conditions, not a replacement for the Stage-B number. Artifacts:
-              exp-lab run <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">exp-a-nethermind-restart-resume-2026-07-31</code>.
+              exp-lab runs <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">exp-a-nethermind-restart-resume-2026-07-31</code>{' '}
+              and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">exp-a-bisection-2026-08-02</code>.
             </li>
             <li>
               <span className="font-medium text-foreground">Re-snap cliff.</span> Past a downtime
@@ -1024,7 +1033,7 @@ export default function EthereumClientBakeoffPage() {
             <svg className="h-auto w-full" viewBox="0 0 680 250" role="img">
               <title id="resume-chart-title">Largest restart gap each client bridged, in blocks (log scale)</title>
               <desc id="resume-chart-description">
-                Ethrex resumed gaps of 68, 108, and 124 blocks but stalled and re-snapped at 132 blocks — its cliff sits at roughly 128 blocks, about 25 minutes. Nethermind resumed a 10,607-block gap in 35 minutes 9 seconds, and geth resumed a roughly 15,400-block, 52-hour gap — both about two orders of magnitude past the ethrex cliff.
+                Ethrex resumed gaps of 68, 108, and 124 blocks but stalled and re-snapped at 132 blocks — its cliff sits at roughly 128 blocks, about 25 minutes. Nethermind resumed every tested gap from 69 to 10,607 blocks (12 minutes to about 35 hours) with no cliff anywhere, and geth resumed a roughly 15,400-block, 52-hour gap.
               </desc>
               {[
                 { blocks: 100, label: '100' },
@@ -1051,9 +1060,11 @@ export default function EthereumClientBakeoffPage() {
               <text x="232" y="56" className="fill-muted-foreground text-[12px]">68 / 108 / 124 blk — resumed cleanly</text>
               <text x="232" y="74" className="fill-muted-foreground text-[12px]">132 blk — stalled, discarded state, ~2h re-snap</text>
               <text x="136" y="116" textAnchor="end" className="fill-foreground text-[13px]">Nethermind</text>
-              <circle cx={gapX(10607)} cy="112" r="5" fill="#a855f7" stroke="#09090b" strokeWidth="2" />
-              <text x={gapX(10607) - 12} y="116" textAnchor="end" className="fill-muted-foreground text-[12px]">
-                10,607 blk (~35h) — resumed in 35m09s
+              {[69, 151, 301, 1196, 10607].map((blocks) => (
+                <circle key={blocks} cx={gapX(blocks)} cy="112" r="5" fill="#a855f7" stroke="#09090b" strokeWidth="2" />
+              ))}
+              <text x="232" y="136" className="fill-muted-foreground text-[12px]">
+                69 / 151 / 301 / 1,196 / 10,607 blk (12 min → ~35h) — every gap resumed
               </text>
               <text x="136" y="164" textAnchor="end" className="fill-foreground text-[13px]">Geth</text>
               <circle cx={gapX(15400)} cy="160" r="5" fill="#a855f7" stroke="#09090b" strokeWidth="2" />
@@ -1069,9 +1080,10 @@ export default function EthereumClientBakeoffPage() {
             </svg>
             <figcaption className="mt-2 text-xs text-muted-foreground">
               The axis is logarithmic: ethrex&apos;s resumed-vs-stalled dots sit 8 blocks apart, while
-              nethermind and geth bridged gaps ~80–120× past that cliff by ordinary block import.
-              ethrex points are the controlled bisection (2026-07-10); nethermind is the opportunistic
-              catch-up (2026-08-01); geth the ~52h resume (2026-07-10).
+              nethermind resumed on both sides of that cliff and out to ~80× past it — no cliff at any
+              tested gap. ethrex points are its bisection (2026-07-10); nethermind&apos;s span its
+              controlled bisection (2026-08-02→03) plus the opportunistic ~35h catch-up (2026-08-01);
+              geth is the ~52h resume (2026-07-10).
             </figcaption>
           </figure>
           <dl className="mt-4 space-y-2 text-sm sm:hidden">
@@ -1081,7 +1093,7 @@ export default function EthereumClientBakeoffPage() {
             </div>
             <div className="flex items-baseline justify-between gap-3">
               <dt className="font-medium text-foreground">Nethermind</dt>
-              <dd className="text-right text-xs text-muted-foreground">resumed 10,607 blk (~35h) in 35m09s</dd>
+              <dd className="text-right text-xs text-muted-foreground">resumed every tested gap, 69 → 10,607 blk (12 min → ~35h); largest in 35m09s</dd>
             </div>
             <div className="flex items-baseline justify-between gap-3">
               <dt className="font-medium text-foreground">Geth</dt>
@@ -1311,8 +1323,9 @@ export default function EthereumClientBakeoffPage() {
             <li>
               <span className="font-medium text-foreground">Diversity pick: nethermind.</span>{' '}
               Compact flat-storage state, a minority-client diversity bonus, and restart-resume
-              that is now measured, not just assumed (2026-08-01: closed a 10,607-block/~35h gap
-              in 35m09s, no re-snap — see &ldquo;Restart resilience&rdquo; above). On disk
+              that is now measured and bisected, not just assumed (2026-08-01→03: every gap from
+              12 min to ~35h resumed by plain block import, no re-snap, no cliff — see
+              &ldquo;Restart resilience&rdquo; above). On disk
               it&apos;s on par with geth (~1.06 vs ~1.13 TiB) once full post-merge history is
               counted — not the space-saver its snap-sync-tip snapshot (~251 GiB) suggested. Costs
               a bit more sync time (~14.5h vs geth&apos;s ~8.5h).
