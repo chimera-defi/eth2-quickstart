@@ -113,16 +113,35 @@ else
     log_warn "Could not fetch a finalized snap pivot — omitting PivotNumber/PivotHash; SnapSync will bootstrap its pivot from the consensus client forkchoice once peers connect (slower start, NOT a genesis fast-sync)"
 fi
 
+# History retention mode (see NETHERMIND_FULL_HISTORY in exports.sh).
+#   Minimal (default): AncientBarriers >= pivot => no post-merge body/receipt backfill,
+#     StoreReceipts=false => ~250-280 GiB staking node, NO historical RPC (old blocks null).
+#   Full: AncientBarriers = the merge (15537394) + StoreReceipts=true => ~1.1 TiB with
+#     full post-merge history; serves historical RPC (needed for a public DeFi/indexer RPC).
+# Effective barrier is min(PivotNumber, barrier), so 99999999 => download only from pivot.
+if [[ "${NETHERMIND_FULL_HISTORY:-false}" == "true" ]]; then
+    NM_STORE_RECEIPTS=true
+    NM_ANCIENT_BARRIER=15537394
+    log_info "Nethermind history: FULL post-merge (~1.1 TiB) — serves historical RPC"
+else
+    NM_STORE_RECEIPTS=false
+    NM_ANCIENT_BARRIER=99999999
+    log_info "Nethermind history: MINIMAL staking node (~250-280 GiB) — no historical RPC; set NETHERMIND_FULL_HISTORY=true for a full-history/RPC node"
+fi
+
 # Create custom configuration with variables
 cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
 {
   "Init": {
     "WebSocketsEnabled": true,
-    "StoreReceipts": true,
+    "StoreReceipts": ${NM_STORE_RECEIPTS},
     "IsMining": false,
     "BaseDbPath": "$HOME/.local/share/nethermind/nethermind_db/mainnet",
     "LogFileName": "mainnet.logs.txt",
     "MemoryHint": ${NETHERMIND_CACHE}000000
+  },
+  "Receipt": {
+    "StoreReceipts": ${NM_STORE_RECEIPTS}
   },
   "Network": {
     "DiscoveryPort": 30303,
@@ -158,8 +177,8 @@ ${NETHERMIND_PIVOT_BLOCK}
     "PivotTotalDifficulty": "58750003716598352816469",
     "FastBlocks": true,
     "UseGethLimitsInFastBlocks": false,
-    "AncientBodiesBarrier": 15537394,
-    "AncientReceiptsBarrier": 15537394,
+    "AncientBodiesBarrier": ${NM_ANCIENT_BARRIER},
+    "AncientReceiptsBarrier": ${NM_ANCIENT_BARRIER},
     "FastSyncCatchUpHeightDelta": 10000000000
   },
   "Bloom": {

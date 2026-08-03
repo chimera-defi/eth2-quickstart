@@ -98,12 +98,23 @@ rm -rf ./tmp/
 - **Base Config**: `configs/nethermind/nethermind_base.cfg`
 - **Custom Variables**: Memory, ports, fee recipient, graffiti
 - **Merge Strategy**: Generated JSON + base defaults (not yet standardized on schema-aware merge tooling)
-- **History mode**: **Pruned full node** (not archive). `AncientBodiesBarrier: 15537394` and
-  `AncientReceiptsBarrier: 15537394` drop pre-merge block bodies and receipts. Recent state
-  is fully present; historical state queries before the merge block (e.g. `eth_getBalance` at
-  an ancient block number, `debug_traceTransaction` on a pre-merge tx) will return `null` or
-  an error. If your use-case requires archive state, run Nethermind without the Ancient barriers
-  and without `SnapSync` (use a full `FastSync` or `Archive` config).
+- **History mode**: controlled by `NETHERMIND_FULL_HISTORY` in `exports.sh`.
+  - **`false` (DEFAULT) — minimal-history staking node.** `AncientBodiesBarrier` /
+    `AncientReceiptsBarrier: 99999999` (≥ pivot ⇒ no post-merge backfill) and
+    `StoreReceipts: false` ⇒ **~250–280 GiB, ~4× smaller than full history** (measured
+    2026-08-03: bodies 596 GiB→119 MiB, receipts 249 GiB→4.2 MiB). Reaches steady state at
+    snap-sync completion with no multi-day backfill. Trade-off: **serves no historical RPC** —
+    `eth_getBlockByNumber` / `eth_getLogs` / `eth_getTransactionReceipt` / `eth_call` for any
+    block before your sync pivot return `null` or an error (only post-pivot data is served,
+    like a no-history node). Perfectly fine for a validator; wallet-grade only for RPC.
+  - **`true` — full post-merge-history node (~1.1 TiB).** `AncientBarriers: 15537394` (the
+    merge) + `StoreReceipts: true` ⇒ backfills all post-merge bodies/receipts and serves
+    historical RPC. **Set this if you expose a public DeFi/indexer RPC endpoint** (nginx/Caddy)
+    that must answer historical queries. Note it backfills for hours-to-days after the node is
+    already "following" the chain, and the datadir grows to ~1.1 TiB over that period.
+  - Either mode drops pre-merge bodies/receipts (neither is an archive node). For archive
+    state, run without the Ancient barriers and without `SnapSync`. Changing the mode only
+    takes effect on a **fresh sync** (wipe the datadir).
 
 #### Besu (TOML)
 - **Base Config**: `configs/besu/besu_base.toml`
