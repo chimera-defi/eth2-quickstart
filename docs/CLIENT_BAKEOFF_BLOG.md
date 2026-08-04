@@ -2,13 +2,13 @@
 
 *A full-field execution- and consensus-client bake-off — what we measured, and the operability findings that the raw sync numbers hide.*
 
-> **Companion post:** [How We Ran a 23-Day Ethereum Client Bake-Off With Claude](HOW_WE_TESTED_WITH_CLAUDE.md) — the agent orchestration, the harness, and the methodology behind these numbers.
+> **Companion post:** [How We Ran a Six-Week Ethereum Client Bake-Off With Claude](HOW_WE_TESTED_WITH_CLAUDE.md) — the agent orchestration, the harness, and the methodology behind these numbers.
 
 We ran every execution client (EL) and consensus client (CL) that [eth2-quickstart](https://github.com/chimera-defi/eth2-quickstart) supports through the same mainnet sync, on the same host, one at a time, and recorded two numbers for each: **final synced disk footprint** and **sync duration**. Simple premise. The interesting part is what fell out of it — an operability axis (what a client does *after a restart*) that turns out to be more decision-relevant than either headline number, and which explains a genuine paradox: the client that synced *fastest* in the whole field is one with essentially **zero** real-world adoption.
 
 ## TL;DR
 
-- **Disk: there is no winner — the field converges.** Every EL that carries full post-merge history lands at ~1.0–1.2 TiB (geth 1.13, nethermind ~1.06, besu 1.08 TiB) — disk size is set by history-retention config, not client efficiency. Nethermind's early ~251 GiB reading was a pre-backfill snap-sync-tip snapshot, not its steady state. ethrex plateaus lower still (~472 GiB), but only because it retains no history at all — not a disk win.
+- **Disk: there is no winner — the field converges.** Every EL that carries full post-merge history lands at ~1.0–1.2 TiB (geth 1.13, nethermind ~1.06, besu 1.08 TiB) — disk size is set by history-retention config, not client efficiency. Nethermind's early ~251 GiB reading was a pre-backfill snap-sync-tip snapshot, not its steady state. ethrex plateaus lower still (~470–476 GiB), but only because it retains no history at all — not a disk win.
 - **Speed winner — ethrex, ~2h16m.** Fastest cold sync in the field by a wide margin (next is geth at ~8.5h). A ~0%-adoption minimalist Rust client beat everyone.
 - **The twist — ethrex's restart-resync cliff.** ethrex is fastest to sync, but a gap just beyond the ~128-block (≈24–25 min) edge stalled instead of resuming, and measured 1.5–2h gaps **discarded its synced state and triggered a full re-snap (~2h).** That operability tax is the best explanation we found for why the fastest-syncing client is one almost nobody runs.
 - **Restart resilience is a real, under-reported axis.** Clients split into three distinct behaviors after a restart-with-gap. This matters more to a running operator than cold-sync numbers.
@@ -24,7 +24,7 @@ We ran every execution client (EL) and consensus client (CL) that [eth2-quicksta
 |----|--------|-----------|-----------|-----------|---------------|
 | **nethermind** | ✅ synced | ~14.5h | **~1.06 TiB** steady-state (~251 GiB at snap-sync, pre-backfill) | snap + Halite | 36.0% |
 | **geth** | ✅ synced | ~8h28m | ~1.13 TiB (pruned) | snap + `--history.chain postmerge` | 44.9% |
-| **ethrex** | ✅ synced | **~2h16m** — fastest | **~472 GiB** steady-state plateau (no-history; ~286–300 GiB at snap-sync) | snap (v19.0.0 at sync; v22.0.0 steady-state) | ~0% |
+| **ethrex** | ✅ synced | **~2h16m** — fastest | **~470–476 GiB** steady-state plateau (no-history; ~286–300 GiB at snap-sync) | snap (v19.0.0 at sync; v22.0.0 steady-state) | ~0% |
 | **besu** | ✅ synced (un-pruned) | ~19h18m | ~1.08 TiB (un-pruned) | snap / Bonsai | 17.4% |
 | **reth** | ⏳ 72h cap (~21%) | did not finish | ~0.98 TiB (partial) | full-sync-only | 1.5% |
 | **nimbus_eth1** | ⏳ 72h cap (~21.6%) | did not finish | ~40 GB (partial) | full-sync-only | ~0% |
@@ -60,7 +60,7 @@ A knock-on benefit of that gate: it forced us to *empirically settle* config que
 
 ## The disk story: there is no winner — the field converges
 
-Nethermind's synced-tip snapshot read ~251 GiB, well below geth's ~1.13 TiB — but that number was taken before nethermind's FastBlocks finished backfilling post-merge block bodies and receipts. Its steady-state datadir (measured 2026-07-28) is **~1.06 TiB**: state ~226 GiB (its compact Halite/Paprika flat storage) plus ~842 GiB of post-merge history it retains, the same history geth keeps under `--history.chain postmerge`. Under matched history-retention configs, nethermind and geth are on par:
+Nethermind's synced-tip snapshot read ~251 GiB, well below geth's ~1.13 TiB — but that number was taken before nethermind's FastBlocks finished backfilling post-merge block bodies and receipts. Its steady-state datadir (re-measured 2026-08-01) is **~1.06 TiB (~1,088 GiB)**: state ~226–230 GiB (its compact Halite/Paprika flat storage) plus ~843 GiB of post-merge bodies and receipts plus ~19 GiB of headers and code, the same history geth keeps under `--history.chain postmerge`. Under matched history-retention configs, nethermind and geth are on par:
 
 | EL | Footprint (full post-merge history) | Sync time | Mode | Mainnet share |
 |----|------|------|------|------|
@@ -68,13 +68,13 @@ Nethermind's synced-tip snapshot read ~251 GiB, well below geth's ~1.13 TiB — 
 | geth | ~1.13 TiB | ~8h28m | snap + `--history.chain postmerge` | 44.9% |
 | besu | ~1.08 TiB (un-pruned) | ~19h18m | snap / Bonsai | 17.4% |
 
-besu lands in the same band too — the same order of magnitude, not an outlier. So three ELs with full post-merge history — geth (1.13), nethermind (~1.06), besu (1.08) — converge on roughly the same footprint. Disk size here is set by a client-agnostic knob (how much post-merge history you retain), not by client efficiency, so it isn't a good axis for picking a winner. Nethermind is still a strong pick — compact flat-storage state, clean restart behavior, and a minority-client diversity bonus — just not because of a disk-size win.
+besu lands in the same band too — the same order of magnitude, not an outlier. So three ELs with full post-merge history — geth (1.13), nethermind (~1.06), besu (1.08) — converge on roughly the same footprint. Disk size here is set by a client-agnostic knob (how much post-merge history you retain), not by client efficiency, so it isn't a good axis for picking a winner. Nethermind is still a strong pick — compact flat-storage state, restart-resume now measured (2026-08-01), and a minority-client diversity bonus — just not because of a disk-size win.
 
 Everything else hasn't reached a finished, comparable footprint, for a specific reason each. They're recorded transparently as client limitations:
 
 | EL | Result | Why it's outside a clean comparison |
 |----|--------|-----------------------------------|
-| ethrex | ✅ synced, **~472 GiB plateau** (no-history), ~2h16m | Un-pruned **and** serves almost no history; datadir plateaus, doesn't grow unbounded (confirmed 2026-07-28→29). Neither compact nor a full archive — smaller only because it retains nothing, not a disk win. Speed is its claim, not size. |
+| ethrex | ✅ synced, **~470–476 GiB plateau** (no-history), ~2h16m | Un-pruned **and** serves almost no history; datadir plateaus (drifting 470.2 → 475.5 GiB over ~42h), doesn't grow unbounded (confirmed 2026-07-28→31). Neither compact nor a full archive — smaller only because it retains nothing, not a disk win. Speed is its claim, not size. |
 | reth | ⏳ 72h cap at ~21%, ~0.98 TiB partial | Full-sync-only (no snap) — can't reach tip in a practical window; projects to ~1.1–1.2 TiB finished, the same convergence band. |
 | nimbus_eth1 | ⏳ 72h cap at ~21.6%, ~40 GB partial | Full-sync-only (no snap). Pruning *works* (below), but it can't finish in 72h. |
 | erigon | ❌ deadlocked, no result | Optimistic-sync deadlock against a checkpoint-synced CL (below). |
@@ -91,7 +91,7 @@ ethrex snap-synced to a fully-validating head in **~2h16m**, the fastest in the 
 
 Two things keep it out of the winners' circle:
 
-1. **The footprint is settled now, and it's not comparable.** ethrex prunes nothing, and we watched the datadir climb even at the chain tip with `eth_syncing=false` (286 → 403 → 416 → ~467 GiB across a single day, ~10 GiB/hr, 2026-07-06) — but a follow-up run confirmed that climb was settling, not unbounded: it plateaus at **~472 GiB** (flat for 8.8+ hours, 2026-07-28→29). That still isn't a disk win, because it simultaneously serves almost no history (`eth_getBlockByNumber` returns `null` below its snap pivot). So it is neither compact nor a full-history archive — its settled size just isn't rankable against the full-history clients above. On a state-only basis it isn't even smallest: nethermind's state alone is ~226 GiB, roughly half ethrex's entire total (not a perfectly controlled comparison — different state encodings, and ethrex's total also includes headers/recent blocks).
+1. **The footprint is settled now, and it's not comparable.** ethrex prunes nothing, and we watched the datadir climb even at the chain tip with `eth_syncing=false` (286 → 403 → 416 → ~467 GiB across a single day, ~10 GiB/hr, 2026-07-06) — but a follow-up run confirmed that climb was settling, not unbounded: it plateaus at **~470–476 GiB** (drifting 470.2 → 475.5 GiB over ~42 hours at +0.13 GiB/hr, 2026-07-28→31). That still isn't a disk win, because it simultaneously serves almost no history (`eth_getBlockByNumber` returns `null` below its snap pivot). So it is neither compact nor a full-history archive — its settled size just isn't rankable against the full-history clients above. On a state-only basis it isn't even smallest: nethermind's state alone is ~226–230 GiB, roughly half ethrex's entire total (not a perfectly controlled comparison — different state encodings, and ethrex's total also includes headers/recent blocks).
 2. **The restart cliff** — which is the marquee finding of the whole campaign, so it gets its own section.
 
 ---
@@ -100,7 +100,9 @@ Two things keep it out of the winners' circle:
 
 Cold-sync numbers tell you how a node behaves *once*, on day one. But operators restart nodes constantly — upgrades, config changes, crashes, host maintenance. "What happens after a restart with a gap?" is a first-class operational question, and it cleanly separates the field into three behaviors:
 
-**1. Graceful resume.** The client comes back, imports the blocks it missed during the gap, and keeps its on-disk state. Minutes to catch up, no re-download. This is what makes a client operationally *boring*, in the good way. We **measured** this directly for **geth**: restarted after a ~52-hour gap, it kept its full datadir and caught up purely by sequential block-import (trie-diff application) — never re-snapping — and converged back to the validating tip. That's the exact positive contrast to ethrex's cliff. **nethermind** and **reth** are expected here by design too, though of the three only geth's resume was measured directly (as only ethrex's cliff was bisected).
+**1. Graceful resume.** The client comes back, imports the blocks it missed during the gap, and keeps its on-disk state. Minutes to catch up, no re-download. This is what makes a client operationally *boring*, in the good way. We **measured** this directly for **geth**: restarted after a ~52-hour gap, it kept its full datadir and caught up purely by sequential block-import (trie-diff application) — never re-snapping — and converged back to the validating tip. That's the exact positive contrast to ethrex's cliff. **nethermind's** resume is now measured too — **reth** remains expected-by-design but unmeasured.
+
+**nethermind's resume, measured (2026-08-01).** An opportunistic catch-up, not a controlled bisection: a CL restart at 13:24:55Z left nethermind **10,607 blocks (~35h of chain) behind** the external tip. It closed the entire gap by ordinary block import in **35m09s (~302 blocks/min)**; the beacon dropped `is_optimistic` at 14:00:04Z. The datadir grew 1.165 → 1.178 TB (+1.1%, exactly the imported bodies/receipts) — no state wipe, no re-snap. That's ~80× past ethrex's ~128-block re-snap cliff, and it matches geth's resume behavior. A separate establish run the day before (2026-07-31) snap-synced nethermind fresh in **1h52m51s** (~280 GiB at snap, pivot 25,649,064, zero restarts) — far faster than the ~14.5h Stage-B figure because the pivot was minutes-old and near-tip, and network conditions differ; a second data point under different conditions, not a replacement for the Stage-B number. Artifacts: exp-lab run `exp-a-nethermind-restart-resume-2026-07-31`.
 
 **2. Re-snap cliff.** Past a downtime threshold ethrex first **stalls with a disconnected head**; in the longer measured gaps it discarded its fully-synced state and re-synced from scratch. Only ethrex lands here — and we pinned the onset precisely.
 
@@ -177,9 +179,9 @@ The punchline: on the CL side, all five are operationally effective — none fai
 ## Recommendations
 
 - **Default: geth.** Largest ecosystem, most documentation, the cleanest snap sync (~8.5h), and it resumes gracefully across restarts. Its disk footprint (~1.13 TiB) is on par with the other ELs that carry full post-merge history — not a downside unique to geth. If you don't have a specific reason to run something else, run this.
-- **Diversity pick: nethermind.** Compact flat-storage state, clean restart behavior, and a minority-client diversity bonus. On disk it's on par with geth (~1.06 vs ~1.13 TiB) once full post-merge history is counted — not the space-saver its snap-sync-tip snapshot (~251 GiB) suggested. Costs a bit more sync time (~14.5h vs geth's ~8.5h).
+- **Diversity pick: nethermind.** Compact flat-storage state, a minority-client diversity bonus, and restart-resume that is now measured, not just assumed (2026-08-01: closed a 10,607-block/~35h gap in 35m09s, no re-snap — see "Restart resilience" above). On disk it's on par with geth (~1.06 vs ~1.13 TiB) once full post-merge history is counted — not the space-saver its snap-sync-tip snapshot (~251 GiB) suggested. Costs a bit more sync time (~14.5h vs geth's ~8.5h).
 - **Consensus client: lighthouse** as the lean default; any of the five is operationally fine — pick on footprint and familiarity.
-- **Watch, don't yet deploy: ethrex.** Fascinating and fastest, but the ~25-minute restart cliff makes it operationally costly today. Its footprint is now settled too — a ~472 GiB plateau — but that's not a disk win: it's a no-history node, and running its RPC in place of a full-history endpoint will silently fail on anything historical. Fast-moving client — v19.0.0 at first sync, v22.0.0 by the steady-state measurement — worth revisiting.
+- **Watch, don't yet deploy: ethrex.** Fascinating and fastest, but the ~25-minute restart cliff makes it operationally costly today. Its footprint is now settled too — a ~470–476 GiB plateau — but that's not a disk win: it's a no-history node, and running its RPC in place of a full-history endpoint will silently fail on anything historical. Fast-moving client — v19.0.0 at first sync, v22.0.0 by the steady-state measurement — worth revisiting.
 - **Enterprise with care: besu.** It syncs, but its snap sync is fragile to CL outages; handle upgrades and CL health deliberately.
 - **Know the design limits:** reth and nimbus_eth1 are full-sync-only — excellent clients, but plan for a long initial sync rather than snap-to-tip. Avoid erigon3 + a checkpoint-synced CL until the optimistic-sync deadlock is resolved.
 
