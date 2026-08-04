@@ -119,7 +119,28 @@ fi
 #   Full: AncientBarriers = the merge (15537394) + StoreReceipts=true => ~1.1 TiB with
 #     full post-merge history; serves historical RPC (needed for a public DeFi/indexer RPC).
 # Effective barrier is min(PivotNumber, barrier), so 99999999 => download only from pivot.
-if [[ "${NETHERMIND_FULL_HISTORY:-false}" == "true" ]]; then
+#
+# Re-running the installer must not silently turn an existing full-history datadir
+# into a mixed database. When no explicit downgrade opt-in is supplied, preserve
+# the mode recorded in the existing config and keep storing receipts.
+NETHERMIND_HISTORY_MODE="${NETHERMIND_FULL_HISTORY:-false}"
+NETHERMIND_EXISTING_CONFIG="$NETHERMIND_DIR/nethermind.cfg"
+if [[ -f "$NETHERMIND_EXISTING_CONFIG" ]]; then
+    if grep -Eq '"StoreReceipts"[[:space:]]*:[[:space:]]*true' "$NETHERMIND_EXISTING_CONFIG"; then
+        if [[ "$NETHERMIND_HISTORY_MODE" != "true" && "${NETHERMIND_ALLOW_HISTORY_DOWNGRADE:-false}" != "true" ]]; then
+            log_warn "Existing full-history datadir detected; preserving receipt storage. Set NETHERMIND_ALLOW_HISTORY_DOWNGRADE=true only when intentionally rebuilding/replacing that datadir."
+        fi
+        if [[ "${NETHERMIND_ALLOW_HISTORY_DOWNGRADE:-false}" != "true" ]]; then
+            NETHERMIND_HISTORY_MODE=true
+        fi
+    elif grep -Eq '"StoreReceipts"[[:space:]]*:[[:space:]]*false' "$NETHERMIND_EXISTING_CONFIG"; then
+        log_info "Existing minimal-history datadir detected; retaining minimal receipt mode"
+    else
+        log_warn "Existing Nethermind config has no recognizable receipt mode; using NETHERMIND_FULL_HISTORY=$NETHERMIND_HISTORY_MODE"
+    fi
+fi
+
+if [[ "$NETHERMIND_HISTORY_MODE" == "true" ]]; then
     NM_STORE_RECEIPTS=true
     NM_ANCIENT_BARRIER=15537394
     log_info "Nethermind history: FULL post-merge (~1.1 TiB) — serves historical RPC"
