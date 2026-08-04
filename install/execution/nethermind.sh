@@ -11,13 +11,29 @@ cd "$PROJECT_ROOT" || exit 1
 source "$PROJECT_ROOT/exports.sh"
 source "$PROJECT_ROOT/lib/common_functions.sh"
 
+# Validate mode controls before any download, extraction, or service side effect.
+case "${NETHERMIND_FULL_HISTORY:-false}" in
+    true|false) ;;
+    *) log_error "NETHERMIND_FULL_HISTORY must be exactly true or false (got: ${NETHERMIND_FULL_HISTORY:-unset})"; exit 1 ;;
+esac
+case "${NETHERMIND_ALLOW_HISTORY_DOWNGRADE:-false}" in
+    true|false) ;;
+    *) log_error "NETHERMIND_ALLOW_HISTORY_DOWNGRADE must be exactly true or false (got: ${NETHERMIND_ALLOW_HISTORY_DOWNGRADE:-unset})"; exit 1 ;;
+esac
+
 # Get script directories
 get_script_directories
 
 log_installation_start "Nethermind"
 
-# Check system requirements
-check_system_requirements 16 2000
+# Check system requirements. Minimal-history nodes need substantially less disk than
+# full-history nodes; inspect an existing config so reruns keep the right safety margin.
+NETHERMIND_REQUIRED_DISK_GB=400
+if [[ "${NETHERMIND_FULL_HISTORY:-false}" == "true" ]] ||
+   [[ -d "$HOME/.local/share/nethermind/nethermind_db/mainnet" ]]; then
+    NETHERMIND_REQUIRED_DISK_GB=2000
+fi
+check_system_requirements 16 "$NETHERMIND_REQUIRED_DISK_GB"
 
 
 # Setup firewall rules for Nethermind
@@ -113,16 +129,67 @@ else
     log_warn "Could not fetch a finalized snap pivot — omitting PivotNumber/PivotHash; SnapSync will bootstrap its pivot from the consensus client forkchoice once peers connect (slower start, NOT a genesis fast-sync)"
 fi
 
+# History retention mode (see NETHERMIND_FULL_HISTORY in exports.sh).
+#   Minimal (default): AncientBarriers >= pivot => no post-merge body/receipt backfill,
+#     StoreReceipts=false => ~250-280 GiB staking node, NO historical RPC (old blocks null).
+#   Full: AncientBarriers = the merge (15537394) + StoreReceipts=true => ~1.1 TiB with
+#     full post-merge history; serves historical RPC (needed for a public DeFi/indexer RPC).
+# Effective barrier is min(PivotNumber, barrier), so 99999999 => download only from pivot.
+#
+# Re-running the installer must not silently turn an existing datadir into a
+# mixed database. When no explicit mode-change opt-in is supplied, preserve the
+# mode recorded in the existing config and keep its receipt behavior.
+NETHERMIND_HISTORY_MODE="${NETHERMIND_FULL_HISTORY:-false}"
+NETHERMIND_ALLOW_MODE_CHANGE="${NETHERMIND_ALLOW_HISTORY_DOWNGRADE:-false}"
+NETHERMIND_EXISTING_DB="$HOME/.local/share/nethermind/nethermind_db/mainnet"
+NETHERMIND_EXISTING_CONFIG="$NETHERMIND_DIR/nethermind.cfg"
+if [[ -d "$NETHERMIND_EXISTING_DB" && "$NETHERMIND_ALLOW_MODE_CHANGE" == "true" ]]; then
+    log_error "Refusing to change Nethermind history mode while an existing datadir is present. Wipe/rebuild the datadir first, then rerun with NETHERMIND_ALLOW_HISTORY_DOWNGRADE=true."
+    exit 1
+fi
+if [[ -d "$NETHERMIND_EXISTING_DB" && -f "$NETHERMIND_EXISTING_CONFIG" ]]; then
+    if grep -Eq '"StoreReceipts"[[:space:]]*:[[:space:]]*true' "$NETHERMIND_EXISTING_CONFIG"; then
+        if [[ "$NETHERMIND_HISTORY_MODE" != "true" ]]; then
+            log_warn "Existing full-history datadir detected; preserving receipt storage. Set NETHERMIND_ALLOW_HISTORY_DOWNGRADE=true only when intentionally rebuilding/replacing that datadir."
+        fi
+        NETHERMIND_HISTORY_MODE=true
+    elif grep -Eq '"StoreReceipts"[[:space:]]*:[[:space:]]*false' "$NETHERMIND_EXISTING_CONFIG"; then
+        if [[ "$NETHERMIND_HISTORY_MODE" != "false" ]]; then
+            log_warn "Existing minimal-history datadir detected; retaining minimal mode. Wipe/rebuild the datadir before enabling full history."
+        fi
+        NETHERMIND_HISTORY_MODE=false
+    else
+        log_warn "Existing Nethermind config has no recognizable receipt mode; preserving full receipt storage until the datadir is rebuilt"
+        NETHERMIND_HISTORY_MODE=true
+    fi
+elif [[ -d "$NETHERMIND_EXISTING_DB" ]]; then
+    log_warn "Existing Nethermind datadir has no config to identify its history mode; preserving receipt storage until the datadir is rebuilt"
+    NETHERMIND_HISTORY_MODE=true
+fi
+
+if [[ "$NETHERMIND_HISTORY_MODE" == "true" ]]; then
+    NM_STORE_RECEIPTS=true
+    NM_ANCIENT_BARRIER=15537394
+    log_info "Nethermind history: FULL post-merge (~1.1 TiB) — serves historical RPC"
+else
+    NM_STORE_RECEIPTS=false
+    NM_ANCIENT_BARRIER=99999999
+    log_info "Nethermind history: MINIMAL staking node (~250-280 GiB) — no historical RPC; set NETHERMIND_FULL_HISTORY=true for a full-history/RPC node"
+fi
+
 # Create custom configuration with variables
 cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
 {
   "Init": {
     "WebSocketsEnabled": true,
-    "StoreReceipts": true,
+    "StoreReceipts": ${NM_STORE_RECEIPTS},
     "IsMining": false,
     "BaseDbPath": "$HOME/.local/share/nethermind/nethermind_db/mainnet",
     "LogFileName": "mainnet.logs.txt",
     "MemoryHint": ${NETHERMIND_CACHE}000000
+  },
+  "Receipt": {
+    "StoreReceipts": ${NM_STORE_RECEIPTS}
   },
   "Network": {
     "DiscoveryPort": 30303,
@@ -158,8 +225,8 @@ ${NETHERMIND_PIVOT_BLOCK}
     "PivotTotalDifficulty": "58750003716598352816469",
     "FastBlocks": true,
     "UseGethLimitsInFastBlocks": false,
-    "AncientBodiesBarrier": 15537394,
-    "AncientReceiptsBarrier": 15537394,
+    "AncientBodiesBarrier": ${NM_ANCIENT_BARRIER},
+    "AncientReceiptsBarrier": ${NM_ANCIENT_BARRIER},
     "FastSyncCatchUpHeightDelta": 10000000000
   },
   "Bloom": {
@@ -197,8 +264,21 @@ EXEC_START="/usr/bin/env HOME=$HOME XDG_DATA_HOME=$HOME/.local/share $NETHERMIND
 
 create_systemd_service "eth1" "Nethermind Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
-# Enable and start the service
-enable_and_start_systemd_service "eth1"
+# Apply the generated configuration to the running service. The shared helper
+# intentionally uses `start`, which is a no-op for an already-active unit; restart
+# explicitly so a rerun cannot leave the previous history mode in memory.
+if sudo systemctl is-active --quiet eth1; then
+    log_info "Nethermind is already active; restarting it to load the generated configuration"
+    sudo systemctl restart eth1
+    if ! sudo systemctl is-active --quiet eth1; then
+        log_error "Nethermind failed after configuration restart"
+        sudo systemctl status eth1 --no-pager -l 2>/dev/null | sed 's/^/  /' || true
+        sudo journalctl -u eth1 -n 80 --no-pager 2>/dev/null | sed 's/^/  /' || true
+        exit 1
+    fi
+else
+    enable_and_start_systemd_service "eth1"
+fi
 
 log_installation_complete "Nethermind" "eth1"
 log_info "Configuration file: $NETHERMIND_DIR/nethermind.cfg"
