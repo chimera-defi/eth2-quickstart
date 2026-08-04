@@ -16,8 +16,15 @@ get_script_directories
 
 log_installation_start "Nethermind"
 
-# Check system requirements
-check_system_requirements 16 2000
+# Check system requirements. Minimal-history nodes need substantially less disk than
+# full-history nodes; inspect an existing config so reruns keep the right safety margin.
+NETHERMIND_REQUIRED_DISK_GB=400
+if [[ "${NETHERMIND_FULL_HISTORY:-false}" == "true" ]] ||
+   [[ -f "$HOME/nethermind/nethermind.cfg" ]] &&
+   grep -Eq '"StoreReceipts"[[:space:]]*:[[:space:]]*true' "$HOME/nethermind/nethermind.cfg"; then
+    NETHERMIND_REQUIRED_DISK_GB=2000
+fi
+check_system_requirements 16 "$NETHERMIND_REQUIRED_DISK_GB"
 
 
 # Setup firewall rules for Nethermind
