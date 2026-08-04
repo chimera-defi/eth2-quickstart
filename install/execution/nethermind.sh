@@ -142,7 +142,11 @@ case "$NETHERMIND_ALLOW_MODE_CHANGE" in
 esac
 
 NETHERMIND_EXISTING_CONFIG="$NETHERMIND_DIR/nethermind.cfg"
-if [[ -f "$NETHERMIND_EXISTING_CONFIG" && "$NETHERMIND_ALLOW_MODE_CHANGE" != "true" ]]; then
+if [[ -f "$NETHERMIND_EXISTING_CONFIG" && "$NETHERMIND_ALLOW_MODE_CHANGE" == "true" ]]; then
+    log_error "Refusing to change Nethermind history mode while an existing config is present. Wipe/rebuild the datadir first, then rerun with NETHERMIND_ALLOW_HISTORY_DOWNGRADE=true."
+    exit 1
+fi
+if [[ -f "$NETHERMIND_EXISTING_CONFIG" ]]; then
     if grep -Eq '"StoreReceipts"[[:space:]]*:[[:space:]]*true' "$NETHERMIND_EXISTING_CONFIG"; then
         if [[ "$NETHERMIND_HISTORY_MODE" != "true" ]]; then
             log_warn "Existing full-history datadir detected; preserving receipt storage. Set NETHERMIND_ALLOW_HISTORY_DOWNGRADE=true only when intentionally rebuilding/replacing that datadir."
