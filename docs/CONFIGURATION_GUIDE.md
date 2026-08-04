@@ -107,6 +107,11 @@ rm -rf ./tmp/
     `eth_getBlockByNumber` / `eth_getLogs` / `eth_getTransactionReceipt` / `eth_call` for any
     block before your sync pivot return `null` or an error (only post-pivot data is served,
     like a no-history node). Perfectly fine for a validator; wallet-grade only for RPC.
+    Scoped to this no-history tier it is the **smallest staking node in the field** — ~250–280 GiB
+    vs ethrex's ~470 GiB (nethermind's flat-storage state is the more compact engine), and a
+    footprint geth cannot reach (it has no clean lever to drop post-merge history below ~1.1 TiB).
+    That is a real disk win *for a validator that does not need history* — not a general
+    "4× leaner than geth" claim, which would compare a no-history node against a with-history one.
   - **`true` — full post-merge-history node (~1.1 TiB).** `AncientBarriers: 15537394` (the
     merge) + `StoreReceipts: true` ⇒ backfills all post-merge bodies/receipts and serves
     historical RPC. **Set this if you expose a public DeFi/indexer RPC endpoint** (nginx/Caddy)
