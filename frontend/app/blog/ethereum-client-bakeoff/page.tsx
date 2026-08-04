@@ -764,12 +764,28 @@ export default function EthereumClientBakeoffPage() {
             geth keeps under{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--history.chain postmerge</code>.
             Under matched history-retention configs, nethermind and geth are on par.
+            That history is a config choice, though: as of 2026-08-03 the shipped default turns it
+            off (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">NETHERMIND_FULL_HISTORY=false</code>) —
+            a fresh minimal-history sync drops the post-merge bodies and receipts and holds at{' '}
+            <strong className="text-foreground">~250–280 GiB</strong> (state only) with no backfill, in
+            exchange for serving no history (pre-sync blocks return <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">null</code>,
+            like ethrex). It is the same retention lever turned down — not a client that is
+            &ldquo;smaller&rdquo; — and you turn it back on with{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">NETHERMIND_FULL_HISTORY=true</code>{' '}
+            on a fresh/rebuilt datadir for a public RPC; changing an existing minimal datadir
+            requires a rebuild. The ~1.06 TiB figure and the chart below are that full-history opt-in.
+            Among the measured no-history configurations in this campaign, nethermind is the smallest
+            staking node — <strong className="text-foreground">~250–280 GiB against ethrex&apos;s ~470 GiB</strong>,
+            and a floor geth cannot reach (it has no clean lever to drop post-merge history) — the one
+            place its compact state engine is a genuine disk win, paid for by serving no history. It is
+            not a claim that nethermind is 4× leaner than geth: that would score a no-history node
+            against a with-history one.
           </p>
           <figure className="mt-4 hidden sm:block" aria-labelledby="composition-chart-title" aria-describedby="composition-chart-description">
-            <svg className="h-auto w-full" viewBox="0 0 680 254" role="img">
-              <title id="composition-chart-title">What fills nethermind&apos;s steady-state terabyte, vs ethrex&apos;s no-history datadir</title>
+            <svg className="h-auto w-full" viewBox="0 0 680 288" role="img">
+              <title id="composition-chart-title">Nethermind full-history vs minimal-history default vs ethrex no-history datadir</title>
               <desc id="composition-chart-description">
-                Nethermind&apos;s roughly 1.06 TiB steady-state datadir is about 228 GiB of state, 595 GiB of block bodies, 249 GiB of receipts, and 19 GiB of headers and code. Ethrex&apos;s entire no-history datadir plateaus at about 475 GiB — roughly double nethermind&apos;s state component alone.
+                Nethermind&apos;s ~1.06 TiB full-history datadir is about 228 GiB of state, 595 GiB of block bodies, 249 GiB of receipts, and 19 GiB of headers and code. The minimal-history default (now shipped) drops the bodies and receipts, leaving about 250 GiB of state plus headers with no multi-day backfill. Ethrex&apos;s entire no-history datadir plateaus at about 475 GiB, so minimal nethermind is the smaller of the two no-history nodes; geth cannot drop below its ~1.1 TiB post-merge floor.
               </desc>
               <defs>
                 <pattern id="composition-hatch" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)">
@@ -779,53 +795,65 @@ export default function EthereumClientBakeoffPage() {
               </defs>
               {[0, 250, 500, 750, 1000].map((gib) => (
                 <g key={gib}>
-                  <line x1={compositionX(gib)} x2={compositionX(gib)} y1="24" y2="186" className="stroke-border" />
-                  <text x={compositionX(gib)} y="204" textAnchor="middle" className="fill-muted-foreground text-[12px]">
+                  <line x1={compositionX(gib)} x2={compositionX(gib)} y1="28" y2="176" className="stroke-border" />
+                  <text x={compositionX(gib)} y="192" textAnchor="middle" className="fill-muted-foreground text-[12px]">
                     {gib}
                   </text>
                 </g>
               ))}
-              <text x="600" y="204" className="fill-muted-foreground text-[11px]">GiB</text>
-              <text x="136" y="60" textAnchor="end" className="fill-foreground text-[13px]">Nethermind</text>
-              <text x="136" y="75" textAnchor="end" className="fill-muted-foreground text-[11px]">steady-state</text>
+              <text x="600" y="192" className="fill-muted-foreground text-[11px]">GiB</text>
+
+              <text x="136" y="52" textAnchor="end" className="fill-foreground text-[13px]">Nethermind</text>
+              <text x="136" y="67" textAnchor="end" className="fill-muted-foreground text-[11px]">full history</text>
               {compositionSegments.map((seg) => (
                 <rect
                   key={seg.label}
                   x={compositionX(seg.start)}
-                  y="48"
+                  y="40"
                   width={Math.max(2, (seg.gib / compositionScaleMaxGib) * 420 - 2)}
                   height="24"
                   rx="2"
                   fill={seg.fill}
                 />
               ))}
-              <text x={compositionX(compositionTotalGib) + 8} y="64" className="fill-foreground text-[12px]">
-                ~1.06 TiB total
+              <text x={compositionX(compositionTotalGib) + 8} y="56" className="fill-foreground text-[12px]">
+                ~1.06 TiB · history
               </text>
-              <text x="136" y="128" textAnchor="end" className="fill-foreground text-[13px]">Ethrex</text>
-              <text x="136" y="143" textAnchor="end" className="fill-muted-foreground text-[11px]">no-history</text>
-              <rect x="150" y="116" width={(ethrexNoHistoryGib / compositionScaleMaxGib) * 420} height="24" rx="4" fill="url(#composition-hatch)" />
-              <text x={compositionX(ethrexNoHistoryGib) + 8} y="132" className="fill-foreground text-[12px]">
-                ~475 GiB — whole datadir (plateau)
+
+              <text x="136" y="104" textAnchor="end" className="fill-foreground text-[13px]">Nethermind</text>
+              <text x="136" y="119" textAnchor="end" className="fill-muted-foreground text-[11px]">minimal · default</text>
+              {[{ label: 'min-state', gib: 228, start: 0, fill: '#e9d5ff' }, { label: 'min-headers', gib: 19, start: 228, fill: '#9333ea' }].map((seg) => (
+                <rect
+                  key={seg.label}
+                  x={compositionX(seg.start)}
+                  y="92"
+                  width={Math.max(2, (seg.gib / compositionScaleMaxGib) * 420 - 2)}
+                  height="24"
+                  rx="2"
+                  fill={seg.fill}
+                />
+              ))}
+              <text x={compositionX(247) + 8} y="108" className="fill-foreground text-[12px]">
+                ~250 GiB · no history
               </text>
-              <line
-                x1={compositionX(228)}
-                x2={compositionX(228)}
-                y1="42"
-                y2="146"
-                strokeDasharray="4 4"
-                className="stroke-muted-foreground"
-              />
-              <text x="155" y="172" className="fill-muted-foreground text-[12px]">
-                nethermind&apos;s state alone (~228 GiB, dashed line) ≈ half of ethrex&apos;s entire no-history datadir
+
+              <text x="136" y="156" textAnchor="end" className="fill-foreground text-[13px]">Ethrex</text>
+              <text x="136" y="171" textAnchor="end" className="fill-muted-foreground text-[11px]">no-history</text>
+              <rect x="150" y="144" width={(ethrexNoHistoryGib / compositionScaleMaxGib) * 420} height="24" rx="4" fill="url(#composition-hatch)" />
+              <text x={compositionX(ethrexNoHistoryGib) + 8} y="160" className="fill-foreground text-[12px]">
+                ~475 GiB · no history
+              </text>
+
+              <text x="150" y="212" className="fill-muted-foreground text-[12px]">
+                Minimal drops bodies + receipts → ~250 GiB — a no-history tier geth can&apos;t reach.
               </text>
               {compositionSegments.map((seg, index) => {
                 const legendX = [60, 192, 334, 478][index]
                 const legendLabel = ['State ~228 GiB', 'Bodies ~595 GiB', 'Receipts ~249 GiB', 'Headers+code ~19 GiB'][index]
                 return (
                   <g key={seg.label}>
-                    <rect x={legendX} y="228" width="10" height="10" rx="2" fill={seg.fill} />
-                    <text x={legendX + 16} y="237" className="fill-muted-foreground text-[12px]">
+                    <rect x={legendX} y="234" width="10" height="10" rx="2" fill={seg.fill} />
+                    <text x={legendX + 16} y="243" className="fill-muted-foreground text-[12px]">
                       {legendLabel}
                     </text>
                   </g>
@@ -833,9 +861,10 @@ export default function EthereumClientBakeoffPage() {
               })}
             </svg>
             <figcaption className="mt-2 text-xs text-muted-foreground">
-              Byte-for-byte, the terabyte is mostly history: ~843 GiB of post-merge bodies and receipts —
-              the client-agnostic retention cost — sitting on top of ~228 GiB of actual state. Re-measured
-              live 2026-08-01.
+              The full-history terabyte is mostly history: ~843 GiB of post-merge bodies and receipts on top of
+              ~228 GiB of state. The minimal-history default (shipped 2026-08-03) keeps the state and drops that
+              history — ~250 GiB, held with no backfill — at the cost of serving no historical RPC. Re-measured
+              live 2026-08-01→03.
             </figcaption>
           </figure>
           <dl className="mt-4 space-y-3 sm:hidden">
@@ -851,8 +880,9 @@ export default function EthereumClientBakeoffPage() {
               </div>
             ))}
             <p className="text-xs text-muted-foreground">
-              Nethermind steady-state total ~1.06 TiB; ethrex&apos;s entire no-history datadir (~475 GiB
-              plateau) is only about double nethermind&apos;s state component (~228 GiB).
+              Full-history nethermind ~1.06 TiB. The minimal-history default drops bodies + receipts →
+              ~250 GiB (state + headers), the smaller of the two no-history nodes (ethrex ~475 GiB) — and a
+              tier geth can&apos;t reach.
             </p>
           </dl>
           <p className="mt-3 text-sm text-muted-foreground">
