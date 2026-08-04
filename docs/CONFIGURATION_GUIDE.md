@@ -121,8 +121,8 @@ rm -rf ./tmp/
     state, run without the Ancient barriers and without `SnapSync`. On an existing datadir,
     rerunning the installer preserves the recorded receipt mode by default so later imports
     cannot silently lose receipts. To intentionally replace a full-history datadir with minimal
-    history, rebuild/wipe it and set `NETHERMIND_ALLOW_HISTORY_DOWNGRADE=true`; otherwise the
-    installer keeps full-history receipt storage.
+    history, remove/rebuild the existing datadir and set `NETHERMIND_ALLOW_HISTORY_DOWNGRADE=true`;
+    the installer fails closed while any existing datadir remains, preventing mixed receipt history.
 
 #### Besu (TOML)
 - **Base Config**: `configs/besu/besu_base.toml`
