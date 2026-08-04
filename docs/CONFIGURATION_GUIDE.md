@@ -118,8 +118,11 @@ rm -rf ./tmp/
     that must answer historical queries. Note it backfills for hours-to-days after the node is
     already "following" the chain, and the datadir grows to ~1.1 TiB over that period.
   - Either mode drops pre-merge bodies/receipts (neither is an archive node). For archive
-    state, run without the Ancient barriers and without `SnapSync`. Changing the mode only
-    takes effect on a **fresh sync** (wipe the datadir).
+    state, run without the Ancient barriers and without `SnapSync`. On an existing datadir,
+    rerunning the installer preserves the recorded receipt mode by default so later imports
+    cannot silently lose receipts. To intentionally replace a full-history datadir with minimal
+    history, rebuild/wipe it and set `NETHERMIND_ALLOW_HISTORY_DOWNGRADE=true`; otherwise the
+    installer keeps full-history receipt storage.
 
 #### Besu (TOML)
 - **Base Config**: `configs/besu/besu_base.toml`
