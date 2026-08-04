@@ -269,6 +269,12 @@ create_systemd_service "eth1" "Nethermind Ethereum Execution Client" "$EXEC_STAR
 if sudo systemctl is-active --quiet eth1; then
     log_info "Nethermind is already active; restarting it to load the generated configuration"
     sudo systemctl restart eth1
+    if ! sudo systemctl is-active --quiet eth1; then
+        log_error "Nethermind failed after configuration restart"
+        sudo systemctl status eth1 --no-pager -l 2>/dev/null | sed 's/^/  /' || true
+        sudo journalctl -u eth1 -n 80 --no-pager 2>/dev/null | sed 's/^/  /' || true
+        exit 1
+    fi
 else
     enable_and_start_systemd_service "eth1"
 fi
