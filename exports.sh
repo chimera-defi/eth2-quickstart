@@ -69,8 +69,11 @@ export NETHERMIND_CACHE=8192
 #     old block). Fine for a validator; wallet-grade only for RPC. Measured 2026-08-03.
 #   true  = full post-merge history (~1.1 TiB): serves historical RPC. REQUIRED if you
 #     expose a public DeFi/indexer RPC endpoint (nginx/Caddy) that answers historical
-#     queries. Changing this only takes effect on a fresh sync (wipe the datadir).
+#     queries. On an existing datadir, rerunning the installer preserves the recorded
+#     receipt mode by default; set NETHERMIND_ALLOW_HISTORY_DOWNGRADE=true only when
+#     intentionally rebuilding/replacing a full-history datadir.
 export NETHERMIND_FULL_HISTORY=false
+export NETHERMIND_ALLOW_HISTORY_DOWNGRADE=false
 export BESU_CACHE=8192
 export ERIGON_CACHE=8192
 export RETH_CACHE=8192
