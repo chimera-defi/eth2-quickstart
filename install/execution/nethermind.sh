@@ -124,17 +124,28 @@ fi
 # into a mixed database. When no explicit downgrade opt-in is supplied, preserve
 # the mode recorded in the existing config and keep storing receipts.
 NETHERMIND_HISTORY_MODE="${NETHERMIND_FULL_HISTORY:-false}"
+NETHERMIND_ALLOW_MODE_CHANGE="${NETHERMIND_ALLOW_HISTORY_DOWNGRADE:-false}"
+case "$NETHERMIND_HISTORY_MODE" in
+    true|false) ;;
+    *) log_error "NETHERMIND_FULL_HISTORY must be exactly true or false (got: $NETHERMIND_HISTORY_MODE)"; exit 1 ;;
+esac
+case "$NETHERMIND_ALLOW_MODE_CHANGE" in
+    true|false) ;;
+    *) log_error "NETHERMIND_ALLOW_HISTORY_DOWNGRADE must be exactly true or false (got: $NETHERMIND_ALLOW_MODE_CHANGE)"; exit 1 ;;
+esac
+
 NETHERMIND_EXISTING_CONFIG="$NETHERMIND_DIR/nethermind.cfg"
-if [[ -f "$NETHERMIND_EXISTING_CONFIG" ]]; then
+if [[ -f "$NETHERMIND_EXISTING_CONFIG" && "$NETHERMIND_ALLOW_MODE_CHANGE" != "true" ]]; then
     if grep -Eq '"StoreReceipts"[[:space:]]*:[[:space:]]*true' "$NETHERMIND_EXISTING_CONFIG"; then
-        if [[ "$NETHERMIND_HISTORY_MODE" != "true" && "${NETHERMIND_ALLOW_HISTORY_DOWNGRADE:-false}" != "true" ]]; then
+        if [[ "$NETHERMIND_HISTORY_MODE" != "true" ]]; then
             log_warn "Existing full-history datadir detected; preserving receipt storage. Set NETHERMIND_ALLOW_HISTORY_DOWNGRADE=true only when intentionally rebuilding/replacing that datadir."
         fi
-        if [[ "${NETHERMIND_ALLOW_HISTORY_DOWNGRADE:-false}" != "true" ]]; then
-            NETHERMIND_HISTORY_MODE=true
-        fi
+        NETHERMIND_HISTORY_MODE=true
     elif grep -Eq '"StoreReceipts"[[:space:]]*:[[:space:]]*false' "$NETHERMIND_EXISTING_CONFIG"; then
-        log_info "Existing minimal-history datadir detected; retaining minimal receipt mode"
+        if [[ "$NETHERMIND_HISTORY_MODE" != "false" ]]; then
+            log_warn "Existing minimal-history datadir detected; retaining minimal mode. Wipe/rebuild the datadir before enabling full history."
+        fi
+        NETHERMIND_HISTORY_MODE=false
     else
         log_warn "Existing Nethermind config has no recognizable receipt mode; using NETHERMIND_FULL_HISTORY=$NETHERMIND_HISTORY_MODE"
     fi
@@ -237,8 +248,15 @@ EXEC_START="/usr/bin/env HOME=$HOME XDG_DATA_HOME=$HOME/.local/share $NETHERMIND
 
 create_systemd_service "eth1" "Nethermind Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
 
-# Enable and start the service
-enable_and_start_systemd_service "eth1"
+# Apply the generated configuration to the running service. The shared helper
+# intentionally uses `start`, which is a no-op for an already-active unit; restart
+# explicitly so a rerun cannot leave the previous history mode in memory.
+if sudo systemctl is-active --quiet eth1; then
+    log_info "Nethermind is already active; restarting it to load the generated configuration"
+    sudo systemctl restart eth1
+else
+    enable_and_start_systemd_service "eth1"
+fi
 
 log_installation_complete "Nethermind" "eth1"
 log_info "Configuration file: $NETHERMIND_DIR/nethermind.cfg"
