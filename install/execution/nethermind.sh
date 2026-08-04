@@ -11,6 +11,16 @@ cd "$PROJECT_ROOT" || exit 1
 source "$PROJECT_ROOT/exports.sh"
 source "$PROJECT_ROOT/lib/common_functions.sh"
 
+# Validate mode controls before any download, extraction, or service side effect.
+case "${NETHERMIND_FULL_HISTORY:-false}" in
+    true|false) ;;
+    *) log_error "NETHERMIND_FULL_HISTORY must be exactly true or false (got: ${NETHERMIND_FULL_HISTORY:-unset})"; exit 1 ;;
+esac
+case "${NETHERMIND_ALLOW_HISTORY_DOWNGRADE:-false}" in
+    true|false) ;;
+    *) log_error "NETHERMIND_ALLOW_HISTORY_DOWNGRADE must be exactly true or false (got: ${NETHERMIND_ALLOW_HISTORY_DOWNGRADE:-unset})"; exit 1 ;;
+esac
+
 # Get script directories
 get_script_directories
 
@@ -131,15 +141,6 @@ fi
 # mode recorded in the existing config and keep its receipt behavior.
 NETHERMIND_HISTORY_MODE="${NETHERMIND_FULL_HISTORY:-false}"
 NETHERMIND_ALLOW_MODE_CHANGE="${NETHERMIND_ALLOW_HISTORY_DOWNGRADE:-false}"
-case "$NETHERMIND_HISTORY_MODE" in
-    true|false) ;;
-    *) log_error "NETHERMIND_FULL_HISTORY must be exactly true or false (got: $NETHERMIND_HISTORY_MODE)"; exit 1 ;;
-esac
-case "$NETHERMIND_ALLOW_MODE_CHANGE" in
-    true|false) ;;
-    *) log_error "NETHERMIND_ALLOW_HISTORY_DOWNGRADE must be exactly true or false (got: $NETHERMIND_ALLOW_MODE_CHANGE)"; exit 1 ;;
-esac
-
 NETHERMIND_EXISTING_DB="$HOME/.local/share/nethermind/nethermind_db/mainnet"
 NETHERMIND_EXISTING_CONFIG="$NETHERMIND_DIR/nethermind.cfg"
 if [[ -d "$NETHERMIND_EXISTING_DB" && "$NETHERMIND_ALLOW_MODE_CHANGE" == "true" ]]; then
