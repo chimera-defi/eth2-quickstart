@@ -70,8 +70,9 @@ export NETHERMIND_CACHE=8192
 #   true  = full post-merge history (~1.1 TiB): serves historical RPC. REQUIRED if you
 #     expose a public DeFi/indexer RPC endpoint (nginx/Caddy) that answers historical
 #     queries. On an existing datadir, rerunning the installer preserves the recorded
-#     receipt mode by default; set NETHERMIND_ALLOW_HISTORY_DOWNGRADE=true only when
-#     intentionally rebuilding/replacing a full-history datadir.
+#     receipt mode by default. To change mode, remove/rebuild the existing datadir first;
+#     the installer fails closed if an old config remains, and the explicit opt-in
+#     NETHERMIND_ALLOW_HISTORY_DOWNGRADE=true is still required for that rebuild.
 export NETHERMIND_FULL_HISTORY=false
 export NETHERMIND_ALLOW_HISTORY_DOWNGRADE=false
 export BESU_CACHE=8192
