@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ReadNext } from '@/components/ui/ReadNext'
+import { ArticleByline } from '@/components/ui/ArticleByline'
 import { buildArticleMetadata } from '@/lib/articles'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowDown, ArrowRight } from 'lucide-react'
@@ -30,7 +31,7 @@ const tocLinks = [
 const seeAlsoLinks = [
   {
     file: 'HOW_WE_TESTED_WITH_CLAUDE.md',
-    desc: 'the agent-orchestration model, the 23-day timeline, and the war stories behind the hardening fixes above.',
+    desc: 'the agent-orchestration model, the six-week timeline (23-day initial campaign, then steady-state and restart-resume follow-ups), and the war stories behind the hardening fixes above.',
     href: `${SITE_CONFIG.github}/blob/master/docs/HOW_WE_TESTED_WITH_CLAUDE.md`,
   },
   {
@@ -333,6 +334,7 @@ export default function BakeoffHarnessPage() {
           <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
             Engineering &middot; Companion to the bake-off writeup
           </p>
+          <ArticleByline slug="bakeoff-harness" />
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
             The Bake-off Harness — Function-Level Engineering Reference
           </h1>

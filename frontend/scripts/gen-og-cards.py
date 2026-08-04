@@ -92,19 +92,19 @@ def validate_png(path):
 # name (-> public/<name>.png) : rendered card
 VARIANTS = {
     "og": card(
-        "23-day field report",
+        "Six-week field report",
         'The fastest Ethereum client is one almost <span class="hot">nobody runs</span>.',
         '<b>7 execution + 5 consensus clients</b> · one host · run by AI agents',
         [("Disk", "no clear winner", "acc"), ("Speed winner", "ethrex · 2h16m", "sig"), ("The catch", "restart cliff", "")]),
     "og-bakeoff": card(
-        "23-day field report",
+        "Six-week field report",
         'The fastest Ethereum client is one almost <span class="hot">nobody runs</span>.',
         '<b>7 execution + 5 consensus clients</b> · one host · run by AI agents',
         [("Disk", "no clear winner", "acc"), ("Speed winner", "ethrex · 2h16m", "sig"), ("The catch", "restart cliff", "")]),
     "og-how-we-tested": card(
         "Methodology",
-        'How we ran a 23-day bake-off <span class="hot">with Claude</span>.',
-        '<b>The orchestration model + the harness</b> that kept a three-week benchmark honest',
+        'How we ran a six-week bake-off <span class="hot">with Claude</span>.',
+        '<b>The orchestration model + the harness</b> that kept a six-week benchmark honest',
         [("Orchestrator", "Claude Opus", "acc"), ("Builders", "Sonnet subagents", ""), ("Governed by", "humans", "sig")]),
     "og-harness": card(
         "Engineering",
@@ -115,7 +115,7 @@ VARIANTS = {
         "Raw data",
         'Bake-off results — <span class="hot">the raw data</span>.',
         '<b>Every Stage A row, disk footprint, and CL matrix</b> — unrounded, straight from the run',
-        [("Stage A", "12/12 PASS", "acc"), ("CL anchors", "2 ELs", ""), ("Figures", "exact bytes", "sig")]),
+        [("Stage A", "12/12 PASS", "acc"), ("CL anchors", "3 ELs", ""), ("Figures", "exact bytes", "sig")]),
 }
 
 

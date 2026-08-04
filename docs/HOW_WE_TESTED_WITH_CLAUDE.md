@@ -1,12 +1,12 @@
-# How We Ran a 23-Day Ethereum Client Bake-Off With Claude
+# How We Ran a Six-Week Ethereum Client Bake-Off With Claude
 
-*A companion to [the results write-up](CLIENT_BAKEOFF_BLOG.md). That post is about the clients. This one is about the machine that tested them: the agent orchestration model, the harness we built to keep ourselves honest, and what actually breaks when a benchmark runs for three weeks on a shared host with an AI in the driver's seat.*
+*A companion to [the results write-up](CLIENT_BAKEOFF_BLOG.md). That post is about the clients. This one is about the machine that tested them: the agent orchestration model, the harness we built to keep ourselves honest, and what actually breaks when a benchmark runs for six weeks (an initial 23-day campaign, then a steady-state and restart-resume phase) on a shared host with an AI in the driver's seat.*
 
-The [client bake-off](CLIENT_BAKEOFF_BLOG.md) measured, for every execution and consensus client [eth2-quickstart](https://github.com/chimera-defi/eth2-quickstart) supports, two numbers: final synced disk footprint and sync duration. In practice that meant **seven execution-client syncs** against fixed Prysm, then a **five-way consensus-client sweep** against a fixed execution client (Prysm was held constant only for the execution-client sweep) — one candidate at a time, on one shared semi-production host, from **June 22 to July 14, 2026 — 23 days end-to-end**.
+The [client bake-off](CLIENT_BAKEOFF_BLOG.md) measured, for every execution and consensus client [eth2-quickstart](https://github.com/chimera-defi/eth2-quickstart) supports, two numbers: final synced disk footprint and sync duration. In practice that meant **seven execution-client syncs** against fixed Prysm, then a **five-way consensus-client sweep** against a fixed execution client (Prysm was held constant only for the execution-client sweep) — one candidate at a time, on one shared semi-production host, from **June 22 to July 14, 2026 — the initial 23-day measurement campaign end-to-end**, followed by a steady-state and restart-resume phase that has run ~2.5 more weeks and counting (through August 3).
 
 A campaign that long, that sequential, and that easy to get subtly wrong is exactly the kind of work you don't want a human babysitting around the clock. So we didn't — it was run by **Claude** (Opus orchestrating, fresh Sonnet subagents building, delegate models for the cheap and sandboxed work), with a human operator holding the few levers that genuinely need one.
 
-> **Up front, honestly:** this was AI-*driven*, not AI-*unsupervised*. Every destructive action against the live node was gated behind an explicit human confirmation, every result was committed under conventional-commit review, and no agent could merge its own pull request. The interesting claim here is not "the AI did it alone" — it's that the *right division of labor* between an agent and an operator let a 23-day, disk-and-timing-sensitive benchmark run to completion without a person watching it sync.
+> **Up front, honestly:** this was AI-*driven*, not AI-*unsupervised*. Every destructive action against the live node was gated behind an explicit human confirmation, every result was committed under conventional-commit review, and no agent could merge its own pull request. The interesting claim here is not "the AI did it alone" — it's that the *right division of labor* between an agent and an operator let a disk-and-timing-sensitive benchmark — a 23-day initial campaign, then ~2.5 more weeks and counting of steady-state and restart-resume measurement — run to completion without a person watching it sync.
 
 ## Contents
 
@@ -27,15 +27,15 @@ A campaign that long, that sequential, and that easy to get subtly wrong is exac
 - **Three-tier agent hierarchy for context economy.** Opus orchestrator (plans, reviews every diff) → fresh Sonnet builders (implement, report back a summary) → delegate models (cheap and sandboxed work).
 - **Non-negotiable governance, not vibes.** One candidate at a time, a 72-hour cap, destructive actions gated behind explicit human confirmation, only a human merges.
 - **Four real incidents, all fixed or explicitly documented** — see the table below.
-- **The headline numbers hide operational limits.** ethrex is the fastest cold-sync in the field but is not production-ready as tested: a 26-minute/132-block restart gap stalled, and longer measured gaps caused a full re-snap. Its datadir plateaus at ~470 GiB, but that's not a disk win — it's a no-history node. besu did sync successfully; its pruned re-run exposed fragility after a prolonged outage of the pinned Prysm version.
+- **The headline numbers hide operational limits.** ethrex is the fastest cold-sync in the field but is not production-ready as tested: a 26-minute/132-block restart gap stalled, and longer measured gaps caused a full re-snap. Its datadir plateaus at ~470–476 GiB, but that's not a disk win — it's a no-history node. besu did sync successfully; its pruned re-run exposed fragility after a prolonged outage of the pinned Prysm version.
 
 ## At a glance
 
 | Client | What happened | Root cause | Resolution | Status |
 |---|---|---|---|---|
-| **nethermind** | 13.3h silent stall — head frozen at block 4,651, 0 peers, everything else looked healthy | P2P bind pinned to loopback (`Network.LocalIp=127.0.0.1`) | Advertise the real external IP | ✅ Fixed — production-viable |
+| **nethermind** | 13.3h silent stall — head frozen at block 4,651, 0 peers, everything else looked healthy | P2P bind pinned to loopback (`Network.LocalIp=127.0.0.1`) | Advertise the real external IP | ✅ Fixed — production-viable, restart-resume measured 2026-08-01 |
 | **besu** | Mid-sync deadlock — downloader thread died, process stayed alive and kept answering RPC | Stale pinned CL (prysm v7.1.5) stalled the beacon ~28h; snap-sync pivot aged out of the ~25-min servable-state window | None available (upstream CL issue) — keep CL binaries current; harness gained a stall-watchdog | ⚠️ Fragile to a prolonged CL outage |
-| **ethrex** | Gaps through 23 min / 124 blocks resumed; a 26 min / 132 block gap stalled, and measured 1.5–2h gaps discarded state and re-snapped (~2h). The un-pruned datadir plateaus at ~470 GiB (471.9 GiB) — settled, but a no-history node, not a disk win | Old head ages out of the ~128-block servable-state window; beyond it the head can freeze and longer gaps can trigger a full snap instead of importing the gap | None — inherent to current design (v19.0.0) | ❌ **Not production-ready as tested.** Fastest cold sync in the field, but the likely explanation for its ~0% adoption; young client, may improve |
+| **ethrex** | Gaps through 23 min / 124 blocks resumed; a 26 min / 132 block gap stalled, and measured 1.5–2h gaps discarded state and re-snapped (~2h). The un-pruned datadir plateaus at ~470–476 GiB (drifting 470.2 → 475.5 GiB over ~42h) — settled, but a no-history node, not a disk win | Old head ages out of the ~128-block servable-state window; beyond it the head can freeze and longer gaps can trigger a full snap instead of importing the gap | None — inherent to current design (v19.0.0) | ❌ **Not production-ready as tested.** Fastest cold sync in the field, but the likely explanation for its ~0% adoption; young client, may improve |
 | **erigon** | Head froze a few thousand blocks behind tip; consensus stayed `is_optimistic=true` indefinitely | Genuine gap-close deadlock, erigon3 OtterSync vs. checkpoint-synced Prysm — not resource starvation | None — terminated per operator decision, recorded as a no-sync | ❌ No-sync on this host/CL combination |
 
 ```mermaid
@@ -53,7 +53,7 @@ flowchart LR
 
 ```mermaid
 timeline
-    title 23-day campaign — key dates
+    title Six-week campaign — key dates
     2026-06-22 : Campaign starts, Stage A triage begins
     2026-06-26 : Stage-A installer fixes shipped
     2026-07-01 : besu completes un-pruned sync
@@ -63,7 +63,13 @@ timeline
     2026-07-10 : ethrex restart-cliff bisected, geth 52h resume verified
     2026-07-12 : Installer / config correctness fixes shipped
     2026-07-13 : nimbus_eth1 72h capped run completes
-    2026-07-14 : Campaign ends, harness and results docs shipped
+    2026-07-14 : Initial campaign closes — harness and results docs shipped
+    2026-07-26 : Third anchor — CL sweep re-run against nethermind
+    2026-07-28 : Steady-state re-measures — nethermind ~1.06 TiB, ethrex plateau confirmed
+    2026-07-29 : EL-disk convergence reframe published (no disk winner)
+    2026-07-31 : EXP-A — nethermind fresh re-sync 1h53m (establish run)
+    2026-08-01 : EXP-A — nethermind resumes a 10,607-block gap in 35 min — restart-resume measured
+    2026-08-03 : EXP-A bisection — no cliff at any gap (12 min to ~35h); prysm clean-resume measured, n=4
 ```
 
 *Every date here is a shipped fix or a completed measurement run — sourced from [`CLIENT_BAKEOFF_RESULTS.md`](CLIENT_BAKEOFF_RESULTS.md) and the repo's merged-PR history, not reconstructed from memory.*
@@ -79,13 +85,13 @@ Benchmarking a sync client is deceptively expensive:
 - **It's easy to measure the wrong thing.** A client that "installed and followed the chain" can be silently broken (0 peers, frozen head); a datadir means nothing if it's running in archive mode; a footprint sampled mid-compaction over-counts.
 - **It's destructive.** Measuring the next client means wiping the last one's datadir on a shared box that also runs other people's work.
 
-Multiply that across the whole supported field of clients and three weeks and you have a task defined less by any single hard step than by *sustained correctness* — the discipline to run the same careful protocol dozens of times, preserve the terminal measurement before teardown, and never let a shared-host quirk masquerade as a client property. That is what the harness and the orchestration model exist to enforce.
+Multiply that across the whole supported field of clients and the 23-day initial campaign (which later grew into six weeks of follow-on measurement) and you have a task defined less by any single hard step than by *sustained correctness* — the discipline to run the same careful protocol dozens of times, preserve the terminal measurement before teardown, and never let a shared-host quirk masquerade as a client property. That is what the harness and the orchestration model exist to enforce.
 
 ---
 
 ## The orchestration model
 
-The core design choice was to **decouple node wall-clock from agent wall-clock**, and then to decouple **durable state from agent context**. Get those two right and a three-week campaign stops needing a three-week attention span.
+The core design choice was to **decouple node wall-clock from agent wall-clock**, and then to decouple **durable state from agent context**. Get those two right and a multi-week campaign stops needing a multi-week attention span — and this claim has since been stress-tested harder than this article originally described: the campaign has now run across multiple sessions spanning six weeks, not three, with no change to the architecture. That's the point sharpened, not softened: the bottleneck was never wall-clock, it's agent context, and a design that holds at three weeks holds just as well at six.
 
 ### 1. The node runs; the agent doesn't watch it run
 
@@ -141,7 +147,7 @@ stateDiagram-v2
 
 *This is what's actually implemented (`test/bakeoff/lib.sh`, `run_candidate.sh`) — not a peer-aware state machine. `bakeoff_is_synced()` checks `sync_distance`, `is_optimistic`, and `el_offline` together, which is already enough to avoid trusting `eth_syncing=false` alone (it's returned both before a sync starts and after it finishes). But it has **no peer-count check at all**, and the stall-watchdog that restarts a stuck unit is opt-in and tracks only flat block/slot progress. nethermind's 13.3h loopback stall (see the table above) predates the watchdog: `bakeoff_is_synced()` correctly never reported it synced, but nothing flagged the run as *stuck* rather than *still syncing* — that gap is exactly what motivated building the watchdog afterward. (The issues log, [§E3](CLIENT_BAKEOFF_ISSUES_LOG.md), still lists a fuller peer-aware verdict scheme as a documented improvement, not yet shipped.)*
 
-That separation is the difference between an agent that can run a 23-day campaign and one that suffocates on its own status checks by day two.
+That separation is the difference between an agent that can run a six-week campaign and one that suffocates on its own status checks by day two.
 
 ### 4. Governance the agent could not override
 
@@ -153,7 +159,7 @@ A handful of rules were treated as non-negotiable, and they are what made it saf
 - **Conventional Commits, new commits only**, never a force-push to `master`; secrets stayed in protected local files and were never committed or exposed to agent context.
 - **An agent cannot merge its own pull request.** A human does that.
 
-None of these are clever. All of them are the reason a three-week autonomous benchmark against real client software didn't turn into a three-week autonomous incident.
+None of these are clever. All of them are the reason a six-week autonomous benchmark against real client software didn't turn into a six-week autonomous incident.
 
 ---
 

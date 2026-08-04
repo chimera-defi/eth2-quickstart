@@ -30,9 +30,7 @@ export function ArticleJsonLd({ slug }: ArticleJsonLdProps) {
         description: article.pageDescription,
         image: `${SITE_CONFIG.url}${article.ogImage}`,
         datePublished: article.datePublished,
-        // No updates tracked separately yet — reusing datePublished is explicitly
-        // allowed by Google's structured-data guidance when nothing has changed.
-        dateModified: article.datePublished,
+        dateModified: article.dateModified,
         mainEntityOfPage: url,
         url,
         author: ORGANIZATION,

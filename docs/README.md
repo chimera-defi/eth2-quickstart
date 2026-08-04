@@ -23,7 +23,7 @@ This directory contains all project documentation organized by category.
 - **[COMMIT_MESSAGES.md](COMMIT_MESSAGES.md)** - Commit message conventions
 
 ## Research & Bake-off
-- **[HOW_WE_TESTED_WITH_CLAUDE.md](HOW_WE_TESTED_WITH_CLAUDE.md)** - How the client bake-off was run with Claude: agent orchestration, the harness, and the 23-day campaign
+- **[HOW_WE_TESTED_WITH_CLAUDE.md](HOW_WE_TESTED_WITH_CLAUDE.md)** - How the client bake-off was run with Claude: agent orchestration, the harness, and the six-week campaign (23-day initial phase, then steady-state and restart-resume follow-ups)
 - **[CLIENT_BAKEOFF_HARNESS.md](CLIENT_BAKEOFF_HARNESS.md)** - Function-level engineering reference for the bake-off harness: every script, function, flag, and data file
 - **[CLIENT_BAKEOFF_BLOG.md](CLIENT_BAKEOFF_BLOG.md)** - Findings write-up: the fastest Ethereum client is one almost nobody runs
 - **[CLIENT_BAKEOFF_RESULTS.md](CLIENT_BAKEOFF_RESULTS.md)** - Measured footprints, sync times, and verdicts (the of-record data)

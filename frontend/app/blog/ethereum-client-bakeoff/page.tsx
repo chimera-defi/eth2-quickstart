@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ReadNext } from '@/components/ui/ReadNext'
+import { ArticleByline } from '@/components/ui/ArticleByline'
 import { buildArticleMetadata } from '@/lib/articles'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowRight } from 'lucide-react'
@@ -151,8 +152,8 @@ const consensusClients = [
 // peer counts, resource caps, re-run counts, config_optimal, and other candidate-level detail.
 const fullMetrics = [
   { candidate: 'geth × prysm', peers: '—', configOptimal: 'yes', reRuns: 0, notable: 'Baseline; no large optimistic gap to close' },
-  { candidate: 'nethermind × prysm', peers: '49', configOptimal: 'yes', reRuns: 1, notable: 'First attempt: 13.3h 0-peer loopback stall; re-run after ExternalIp fix synced clean' },
-  { candidate: 'ethrex × prysm', peers: '50', configOptimal: 'yes', reRuns: 0, notable: 'Datadir plateaus at ~470 GiB (confirmed by a follow-up steady-state measurement run on v22.0.0, 4h09m56s snap, 8.8+ flat hours after); 1 auto-healed stale-pivot event; serves no history beyond its snap pivot' },
+  { candidate: 'nethermind × prysm', peers: '49', configOptimal: 'yes', reRuns: 1, notable: 'First attempt: 13.3h 0-peer loopback stall; re-run after ExternalIp fix synced clean. Restart-resume measured and bisected (2026-08-01→03): every gap from 12 min to ~35h resumed by plain block import, no re-snap, no cliff' },
+  { candidate: 'ethrex × prysm', peers: '50', configOptimal: 'yes', reRuns: 0, notable: 'Datadir plateaus at ~470–476 GiB (confirmed by a follow-up steady-state measurement run on v22.0.0, 4h09m56s snap, drifting 470.2→475.5 GiB over ~42h after); 1 auto-healed stale-pivot event; serves no history beyond its snap pivot' },
   { candidate: 'besu × prysm', peers: '~50', configOptimal: 'n/a (pruned re-run only)', reRuns: 2, notable: 'Un-pruned run synced clean; pruned re-run deadlocked twice, abandoned' },
   { candidate: 'reth × prysm', peers: '—', configOptimal: 'yes', reRuns: 1, notable: '578 samples; relaunched after --full fix; 47% by block / ~21% gas-weighted at cap' },
   { candidate: 'nimbus-eth1 × prysm', peers: '20–25', configOptimal: 'yes', reRuns: 1, notable: '72h continuous, 0 restarts; supersedes an earlier ~21 GB aborted run' },
@@ -173,14 +174,15 @@ const syncChartMaxHours = 20
 
 // GiB, verified against docs/CLIENT_BAKEOFF_RESULTS.md exact byte counts (Stage B footprint table + client-limitations table).
 // Nethermind's synced-tip snapshot (~251 GiB) predates FastBlocks backfilling post-merge block
-// bodies/receipts; steady-state (measured 2026-07-28) is ~1.06 TiB (state ~226 GiB + ~842 GiB
-// post-merge history) — on par with the other ELs that retain full post-merge history. Ethrex's
-// steady state is now measured too: it plateaus at ~472 GiB (confirmed 2026-07-28→29, 8.8+ flat
-// hours). Its bar stays hatched as "no-history," not because it's unsettled, but because a
-// no-history node's total isn't comparable to the full-history bars below it.
+// bodies/receipts; steady-state (re-measured 2026-08-01) is ~1.06 TiB (~1,088 GiB: state ~226–230
+// GiB + ~843 GiB post-merge bodies/receipts + ~19 GiB headers/code) — on par with the other ELs
+// that retain full post-merge history. Ethrex's steady state is now measured too: it plateaus at
+// ~470–476 GiB (confirmed 2026-07-28→31, drifting 470.2→475.5 GiB over ~42 flat-ish hours). Its
+// bar stays hatched as "no-history," not because it's unsettled, but because a no-history node's
+// total isn't comparable to the full-history bars below it.
 const elFootprints = [
   { name: 'Nimbus-eth1', gib: 37.3, label: '~40 GB', status: 'partial' as const },
-  { name: 'Ethrex', gib: 471.9, label: '~472 GiB', status: 'no-history' as const },
+  { name: 'Ethrex', gib: 475.5, label: '~475 GiB', status: 'no-history' as const },
   { name: 'Reth', gib: 1003.2, label: '~0.98 TiB', status: 'partial' as const },
   { name: 'Nethermind', gib: 1088.1, label: '~1.06 TiB', status: 'synced' as const },
   { name: 'Besu', gib: 1109.7, label: '~1.08 TiB', status: 'synced' as const },
@@ -196,6 +198,37 @@ const restartBisection = [
   { gap: '23 min', blocks: '124', outcome: 'resumed cleanly', variant: 'primary' as const },
   { gap: '26 min', blocks: '132', outcome: 'stuck — Failed to fetch headers for sync head', variant: 'default' as const },
 ]
+
+// Steady-state composition (GiB) from the 2026-08-01 live re-measure (du per column family):
+// blocks ~595 + receipts ~249 = ~843 GiB post-merge history; state ~228; headers+code ~19.
+// Fills are a light→dark ramp of the site accent (sequential: parts of one whole, not identities).
+const nethermindComposition = [
+  { label: 'State (flat storage)', gib: 228, valueLabel: '~228 GiB', fill: '#e9d5ff' },
+  { label: 'Block bodies', gib: 595, valueLabel: '~595 GiB', fill: '#c084fc' },
+  { label: 'Receipts', gib: 249, valueLabel: '~249 GiB', fill: '#a855f7' },
+  { label: 'Headers + code', gib: 19, valueLabel: '~19 GiB', fill: '#9333ea' },
+]
+const compositionScaleMaxGib = 1200
+const ethrexNoHistoryGib = 475.5
+const compositionSegments = (() => {
+  let cum = 0
+  return nethermindComposition.map((seg) => {
+    const start = cum
+    cum += seg.gib
+    return { ...seg, start }
+  })
+})()
+const compositionTotalGib = nethermindComposition.reduce((sum, seg) => sum + seg.gib, 0)
+const compositionX = (gib: number) => 150 + (gib / compositionScaleMaxGib) * 420
+
+// Restart gaps bridged, in blocks (log scale). ethrex rows are its 2026-07-10 bisection;
+// nethermind's span the 2026-08-02→03 controlled bisection (69/151/301/1196 blk = 12m/30m/1h/4h)
+// plus the 2026-08-01 opportunistic ~35h catch-up; geth is the 2026-07-10 ~52h resume.
+// Position on a log axis is honest where bar length would not be.
+const gapLogMin = 50
+const gapLogMax = 25000
+const gapX = (blocks: number) =>
+  150 + ((Math.log10(blocks) - Math.log10(gapLogMin)) / (Math.log10(gapLogMax) - Math.log10(gapLogMin))) * 420
 
 const sourceLinks = [
   {
@@ -229,6 +262,7 @@ export default function EthereumClientBakeoffPage() {
           <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
             Blog
           </p>
+          <ArticleByline slug="ethereum-client-bakeoff" />
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
             Ethereum client bake-off
           </h1>
@@ -236,12 +270,14 @@ export default function EthereumClientBakeoffPage() {
             &ldquo;The Fastest Ethereum Client Is One Almost Nobody Runs&rdquo;
           </p>
           <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground">
-            A 23-day field campaign comparing seven execution-client syncs and five consensus
-            clients — the same mainnet sync, on the same host, one client at a time, recording two
-            numbers for each: final synced disk footprint and sync duration. The interesting part
-            is what fell out of it: an operability axis that turns out to matter more than either
-            headline number, and a genuine paradox — the client that synced fastest in the whole
-            field has essentially zero real-world adoption.
+            A field campaign that began with a 23-day measurement phase (2026-06-22 → 2026-07-14)
+            and continued with steady-state and restart-resume measurements through 2026-08-03,
+            comparing seven execution-client syncs and five consensus clients — the same mainnet
+            sync, on the same host, one client at a time, recording two numbers for each: final
+            synced disk footprint and sync duration. The interesting part is what fell out of it:
+            an operability axis that turns out to matter more than either headline number, and a
+            genuine paradox — the client that synced fastest in the whole field has essentially
+            zero real-world adoption.
           </p>
           <div className="mt-4 flex flex-wrap gap-3 sm:mt-6">
             <Button href="/deck/bakeoff.html" external variant="secondary" size="sm">
@@ -266,7 +302,7 @@ export default function EthereumClientBakeoffPage() {
             and the numbers. For the agent orchestration, the harness, and the methodology behind
             them, see{' '}
             <Link href="/blog/how-we-tested-with-claude" className="text-primary underline underline-offset-2">
-              How We Ran a 23-Day Ethereum Client Bake-Off With Claude
+              How We Ran a Six-Week Ethereum Client Bake-Off With Claude
             </Link>
             .
           </p>
@@ -376,10 +412,10 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             All seven execution clients. Hatched bars aren&apos;t a comparable finished
             footprint — partial (72h-capped), frozen (erigon&apos;s no-sync deadlock), or
-            no-history (ethrex, which plateaus at ~472 GiB but serves no history) — so a short
+            no-history (ethrex, which plateaus at ~470–476 GiB but serves no history) — so a short
             hatched bar isn&apos;t a win: Nimbus-eth1&apos;s ~40 GB is only ~21% of a sync,
             reth&apos;s ~0.98 TiB is a 72h-capped partial (projected to land in the same band as
-            the solid bars once finished), and ethrex&apos;s ~472 GiB is a settled plateau, not a
+            the solid bars once finished), and ethrex&apos;s ~470–476 GiB is a settled plateau, not a
             pruned-comparable footprint — it&apos;s smaller only because it retains no history at
             all, not because it&apos;s more efficient. The three solid bars (nethermind, besu,
             geth) converge in the same ~1.0–1.2 TiB band once full post-merge history is retained
@@ -389,7 +425,7 @@ export default function EthereumClientBakeoffPage() {
             <svg className="h-auto w-full" viewBox="0 0 680 300" role="img">
               <title id="disk-chart-title">Ethereum execution-client disk footprint</title>
               <desc id="disk-chart-description">
-                Nimbus-eth1 partial about 40 GB, Ethrex no-history plateau about 472 GiB, Reth partial about 0.98 TiB, Nethermind synced about 1.06 TiB steady-state, Besu synced about 1.08 TiB, Geth synced about 1.13 TiB, Erigon frozen partial about 1.21 TiB.
+                Nimbus-eth1 partial about 40 GB, Ethrex no-history plateau about 470 to 476 GiB, Reth partial about 0.98 TiB, Nethermind synced about 1.06 TiB steady-state, Besu synced about 1.08 TiB, Geth synced about 1.13 TiB, Erigon frozen partial about 1.21 TiB.
               </desc>
               <defs>
                 <pattern id="unfinished-bar" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)">
@@ -669,8 +705,10 @@ export default function EthereumClientBakeoffPage() {
             What we measured, and how we kept it honest
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            The campaign ran from 2026-06-22 to 2026-07-14 on a shared semi-production host (not a
-            live validator), with MEV disabled and no validator keys. The bake-off measures, for
+            The campaign began with a 23-day measurement phase (2026-06-22 → 2026-07-14) and
+            continued with steady-state and restart-resume measurements through 2026-08-03, all on
+            a shared semi-production host (not a live validator), with MEV disabled and no
+            validator keys. The bake-off measures, for
             each client, the final synced disk footprint and the sync duration: one candidate at a
             time, a 72-hour cap per candidate, and the footprint taken from the last near-cap{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">du</code> sample —
@@ -720,12 +758,103 @@ export default function EthereumClientBakeoffPage() {
             Nethermind&apos;s synced-tip snapshot read <strong className="text-foreground">~251 GiB</strong>,
             well below geth&apos;s ~1.13 TiB — but that number was taken before nethermind&apos;s
             FastBlocks finished backfilling post-merge block bodies and receipts. Its steady-state
-            datadir (measured 2026-07-28) is <strong className="text-foreground">~1.06 TiB</strong>:
-            state ~226 GiB (its compact Halite/Paprika flat storage) plus ~842 GiB of post-merge
-            history it retains, the same history geth keeps under{' '}
+            datadir (re-measured 2026-08-01) is <strong className="text-foreground">~1.06 TiB</strong>{' '}
+            (~1,088 GiB): state ~226–230 GiB (its compact Halite/Paprika flat storage) plus ~843 GiB
+            of post-merge bodies and receipts plus ~19 GiB of headers and code, the same history
+            geth keeps under{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--history.chain postmerge</code>.
             Under matched history-retention configs, nethermind and geth are on par.
           </p>
+          <figure className="mt-4 hidden sm:block" aria-labelledby="composition-chart-title" aria-describedby="composition-chart-description">
+            <svg className="h-auto w-full" viewBox="0 0 680 254" role="img">
+              <title id="composition-chart-title">What fills nethermind&apos;s steady-state terabyte, vs ethrex&apos;s no-history datadir</title>
+              <desc id="composition-chart-description">
+                Nethermind&apos;s roughly 1.06 TiB steady-state datadir is about 228 GiB of state, 595 GiB of block bodies, 249 GiB of receipts, and 19 GiB of headers and code. Ethrex&apos;s entire no-history datadir plateaus at about 475 GiB — roughly double nethermind&apos;s state component alone.
+              </desc>
+              <defs>
+                <pattern id="composition-hatch" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)">
+                  <rect width="7" height="7" className="fill-muted" />
+                  <rect width="3.5" height="7" className="fill-border" />
+                </pattern>
+              </defs>
+              {[0, 250, 500, 750, 1000].map((gib) => (
+                <g key={gib}>
+                  <line x1={compositionX(gib)} x2={compositionX(gib)} y1="24" y2="186" className="stroke-border" />
+                  <text x={compositionX(gib)} y="204" textAnchor="middle" className="fill-muted-foreground text-[12px]">
+                    {gib}
+                  </text>
+                </g>
+              ))}
+              <text x="600" y="204" className="fill-muted-foreground text-[11px]">GiB</text>
+              <text x="136" y="60" textAnchor="end" className="fill-foreground text-[13px]">Nethermind</text>
+              <text x="136" y="75" textAnchor="end" className="fill-muted-foreground text-[11px]">steady-state</text>
+              {compositionSegments.map((seg) => (
+                <rect
+                  key={seg.label}
+                  x={compositionX(seg.start)}
+                  y="48"
+                  width={Math.max(2, (seg.gib / compositionScaleMaxGib) * 420 - 2)}
+                  height="24"
+                  rx="2"
+                  fill={seg.fill}
+                />
+              ))}
+              <text x={compositionX(compositionTotalGib) + 8} y="64" className="fill-foreground text-[12px]">
+                ~1.06 TiB total
+              </text>
+              <text x="136" y="128" textAnchor="end" className="fill-foreground text-[13px]">Ethrex</text>
+              <text x="136" y="143" textAnchor="end" className="fill-muted-foreground text-[11px]">no-history</text>
+              <rect x="150" y="116" width={(ethrexNoHistoryGib / compositionScaleMaxGib) * 420} height="24" rx="4" fill="url(#composition-hatch)" />
+              <text x={compositionX(ethrexNoHistoryGib) + 8} y="132" className="fill-foreground text-[12px]">
+                ~475 GiB — whole datadir (plateau)
+              </text>
+              <line
+                x1={compositionX(228)}
+                x2={compositionX(228)}
+                y1="42"
+                y2="146"
+                strokeDasharray="4 4"
+                className="stroke-muted-foreground"
+              />
+              <text x="155" y="172" className="fill-muted-foreground text-[12px]">
+                nethermind&apos;s state alone (~228 GiB, dashed line) ≈ half of ethrex&apos;s entire no-history datadir
+              </text>
+              {compositionSegments.map((seg, index) => {
+                const legendX = [60, 192, 334, 478][index]
+                const legendLabel = ['State ~228 GiB', 'Bodies ~595 GiB', 'Receipts ~249 GiB', 'Headers+code ~19 GiB'][index]
+                return (
+                  <g key={seg.label}>
+                    <rect x={legendX} y="228" width="10" height="10" rx="2" fill={seg.fill} />
+                    <text x={legendX + 16} y="237" className="fill-muted-foreground text-[12px]">
+                      {legendLabel}
+                    </text>
+                  </g>
+                )
+              })}
+            </svg>
+            <figcaption className="mt-2 text-xs text-muted-foreground">
+              Byte-for-byte, the terabyte is mostly history: ~843 GiB of post-merge bodies and receipts —
+              the client-agnostic retention cost — sitting on top of ~228 GiB of actual state. Re-measured
+              live 2026-08-01.
+            </figcaption>
+          </figure>
+          <dl className="mt-4 space-y-3 sm:hidden">
+            {nethermindComposition.map((seg) => (
+              <div key={seg.label}>
+                <div className="flex items-baseline justify-between gap-3 text-xs">
+                  <dt className="font-medium text-foreground">{seg.label}</dt>
+                  <dd className="text-muted-foreground">{seg.valueLabel}</dd>
+                </div>
+                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                  <div className="h-full rounded-full" style={{ width: `${(seg.gib / compositionTotalGib) * 100}%`, backgroundColor: seg.fill }} />
+                </div>
+              </div>
+            ))}
+            <p className="text-xs text-muted-foreground">
+              Nethermind steady-state total ~1.06 TiB; ethrex&apos;s entire no-history datadir (~475 GiB
+              plateau) is only about double nethermind&apos;s state component (~228 GiB).
+            </p>
+          </dl>
           <p className="mt-3 text-sm text-muted-foreground">
             besu lands in the same band too, at ~1.08 TiB — the same order of magnitude, not an
             outlier. reth (window-capped at 72h, ~21% by block) already tracked ~87% of geth&apos;s
@@ -750,15 +879,16 @@ export default function EthereumClientBakeoffPage() {
             <li>
               <span className="font-medium text-foreground">ethrex</span> — synced, ~2h16m,
               fastest in the field. Its datadir <strong className="text-foreground">plateaus at
-              ~472 GiB</strong>: it climbed toward ~465 GiB during post-sync settling (+43 GiB/hr),
-              then growth collapsed ~200× to +0.22 GiB/hr and stayed flat for 8.8+ hours (confirmed
-              2026-07-28→29). The earlier ~467 GiB reading was this same plateau caught mid-climb,
-              not evidence of unbounded growth. That doesn&apos;t make it a disk winner, though: it
-              lands smaller only because it serves no history at all — a no-history node, not a
-              pruned-comparable one. On a state-only basis it isn&apos;t even the smallest:
-              nethermind&apos;s state alone is ~226 GiB, roughly half ethrex&apos;s entire total
-              (not a perfectly controlled comparison — ethrex&apos;s total also includes headers
-              and recent blocks, and the two clients use different state encodings).
+              ~470–476 GiB</strong>: it climbed toward ~465 GiB during post-sync settling (+43 GiB/hr),
+              then growth collapsed ~300× to +0.13 GiB/hr and drifted 470.2 → 475.5 GiB over ~42
+              hours (confirmed 2026-07-28→31). The earlier ~467 GiB reading was this same plateau
+              caught mid-climb, not evidence of unbounded growth. That doesn&apos;t make it a disk
+              winner, though: it lands smaller only because it serves no history at all — a
+              no-history node, not a pruned-comparable one. On a state-only basis it isn&apos;t even
+              the smallest: nethermind&apos;s state alone is ~226–230 GiB, roughly half
+              ethrex&apos;s entire total (not a perfectly controlled comparison — ethrex&apos;s
+              total also includes headers and recent blocks, and the two clients use different
+              state encodings).
             </li>
             <li>
               <span className="font-medium text-foreground">reth</span> — 72h cap at ~21%, ~0.98
@@ -815,8 +945,8 @@ export default function EthereumClientBakeoffPage() {
               ethrex prunes nothing, and we watched the datadir climb even at the chain tip with{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing=false</code>{' '}
               (286 → 403 → 416 → ~467 GiB across a single day, ~10 GiB/hr, 2026-07-06) — but a
-              follow-up run confirmed that climb was settling, not unbounded: it plateaus at ~472
-              GiB (flat for 8.8+ hours, 2026-07-28→29). That still doesn&apos;t make it a disk
+              follow-up run confirmed that climb was settling, not unbounded: it plateaus at
+              ~470–476 GiB (drifting 470.2 → 475.5 GiB over ~42 hours, 2026-07-28→31). That still doesn&apos;t make it a disk
               winner, because it simultaneously serves almost no history (
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_getBlockByNumber</code>{' '}
               returns <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">null</code>{' '}
@@ -849,8 +979,34 @@ export default function EthereumClientBakeoffPage() {
               after a ~52-hour gap, it kept its full datadir and caught up purely by sequential
               block-import (trie-diff application) — never re-snapping — and converged back to the
               validating tip. That&apos;s the exact positive contrast to ethrex&apos;s cliff.
-              nethermind and reth are expected here by design too, though of the three only
-              geth&apos;s resume was measured directly (as only ethrex&apos;s cliff was bisected).
+              nethermind&apos;s resume is now measured too (2026-08-01, below) — reth remains
+              expected-by-design but unmeasured.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">nethermind&apos;s resume, measured and
+              then bisected (2026-08-01→03).</span> First an opportunistic catch-up: a CL restart at
+              13:24:55Z left nethermind{' '}
+              <strong className="text-foreground">10,607 blocks (~35h of chain) behind</strong> the
+              external tip, and it closed the entire gap by ordinary block import in{' '}
+              <strong className="text-foreground">35m09s (~302 blocks/min)</strong> with the datadir
+              intact (1.165 → 1.178 TB, +1.1% — exactly the imported bodies/receipts). Then a
+              controlled stop→wait→start bisection at{' '}
+              <strong className="text-foreground">12 min / 30 min / 1 h / 4 h gaps</strong> (2026-08-02→03):
+              every gap resumed geth-style — ordinary Engine-API block import, no re-pivot, no
+              snap/state-sync, zero crashes. The tell is the state-dir delta:{' '}
+              <strong className="text-foreground">~1.0–1.3 MiB per imported block, constant across
+              rungs</strong> — linear import, the opposite of a re-snap, which would rewrite the whole
+              ~238 GiB state. Resume time scales gently (121s at 12 min → 483s at 4 h → 35m09s at
+              ~35 h), dominated by the CL re-syncing its missed slots, not the EL.{' '}
+              <strong className="text-foreground">nethermind has no servable-window cliff</strong> — the
+              direct contrast to ethrex&apos;s ~128-block cliff below. A separate
+              establish run (2026-07-31) snap-synced nethermind fresh in{' '}
+              <strong className="text-foreground">1h52m51s</strong> (~280 GiB at snap, pivot
+              25,649,064, zero restarts) — far faster than the ~14.5h Stage-B figure because the
+              pivot was minutes-old and near-tip, and network conditions differ; a second data
+              point under different conditions, not a replacement for the Stage-B number. Artifacts:
+              exp-lab runs <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">exp-a-nethermind-restart-resume-2026-07-31</code>{' '}
+              and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">exp-a-bisection-2026-08-02</code>.
             </li>
             <li>
               <span className="font-medium text-foreground">Re-snap cliff.</span> Past a downtime
@@ -873,6 +1029,77 @@ export default function EthereumClientBakeoffPage() {
             forced to re-pivot. Graceful-resume clients dodge this by importing gap blocks (always
             available) instead of re-fetching state.
           </p>
+          <figure className="mt-5 hidden sm:block" aria-labelledby="resume-chart-title" aria-describedby="resume-chart-description">
+            <svg className="h-auto w-full" viewBox="0 0 680 250" role="img">
+              <title id="resume-chart-title">Largest restart gap each client bridged, in blocks (log scale)</title>
+              <desc id="resume-chart-description">
+                Ethrex resumed gaps of 68, 108, and 124 blocks but stalled and re-snapped at 132 blocks — its cliff sits at roughly 128 blocks, about 25 minutes. Nethermind resumed every tested gap from 69 to 10,607 blocks (12 minutes to about 35 hours) with no cliff anywhere, and geth resumed a roughly 15,400-block, 52-hour gap.
+              </desc>
+              {[
+                { blocks: 100, label: '100' },
+                { blocks: 1000, label: '1,000' },
+                { blocks: 10000, label: '10,000' },
+              ].map((tick) => (
+                <g key={tick.blocks}>
+                  <line x1={gapX(tick.blocks)} x2={gapX(tick.blocks)} y1="28" y2="186" className="stroke-border" />
+                  <text x={gapX(tick.blocks)} y="204" textAnchor="middle" className="fill-muted-foreground text-[12px]">
+                    {tick.label}
+                  </text>
+                </g>
+              ))}
+              <text x="560" y="204" className="fill-muted-foreground text-[11px]">blocks (log scale)</text>
+              <line x1={gapX(128)} x2={gapX(128)} y1="28" y2="186" strokeDasharray="4 4" className="stroke-muted-foreground" />
+              <text x={gapX(128) + 8} y="20" className="fill-muted-foreground text-[12px]">
+                ethrex re-snap cliff · ~128 blk ≈ 25 min
+              </text>
+              <text x="136" y="68" textAnchor="end" className="fill-foreground text-[13px]">Ethrex</text>
+              {[68, 108, 124].map((blocks) => (
+                <circle key={blocks} cx={gapX(blocks)} cy="64" r="5" fill="#a855f7" stroke="#09090b" strokeWidth="2" />
+              ))}
+              <circle cx={gapX(132)} cy="64" r="5" fill="#09090b" stroke="#fafafa" strokeWidth="2" />
+              <text x="232" y="56" className="fill-muted-foreground text-[12px]">68 / 108 / 124 blk — resumed cleanly</text>
+              <text x="232" y="74" className="fill-muted-foreground text-[12px]">132 blk — stalled, discarded state, ~2h re-snap</text>
+              <text x="136" y="116" textAnchor="end" className="fill-foreground text-[13px]">Nethermind</text>
+              {[69, 151, 301, 1196, 10607].map((blocks) => (
+                <circle key={blocks} cx={gapX(blocks)} cy="112" r="5" fill="#a855f7" stroke="#09090b" strokeWidth="2" />
+              ))}
+              <text x="232" y="136" className="fill-muted-foreground text-[12px]">
+                69 / 151 / 301 / 1,196 / 10,607 blk (12 min → ~35h) — every gap resumed
+              </text>
+              <text x="136" y="164" textAnchor="end" className="fill-foreground text-[13px]">Geth</text>
+              <circle cx={gapX(15400)} cy="160" r="5" fill="#a855f7" stroke="#09090b" strokeWidth="2" />
+              <text x={gapX(15400) - 12} y="164" textAnchor="end" className="fill-muted-foreground text-[12px]">
+                ~15,400 blk (~52h) — resumed, no re-snap
+              </text>
+              <g>
+                <circle cx="156" cy="232" r="5" fill="#a855f7" stroke="#09090b" strokeWidth="2" />
+                <text x="168" y="236" className="fill-muted-foreground text-[12px]">resumed by block import</text>
+                <circle cx="356" cy="232" r="5" fill="#09090b" stroke="#fafafa" strokeWidth="2" />
+                <text x="368" y="236" className="fill-muted-foreground text-[12px]">stalled → re-snap</text>
+              </g>
+            </svg>
+            <figcaption className="mt-2 text-xs text-muted-foreground">
+              The axis is logarithmic: ethrex&apos;s resumed-vs-stalled dots sit 8 blocks apart, while
+              nethermind resumed on both sides of that cliff and out to ~80× past it — no cliff at any
+              tested gap. ethrex points are its bisection (2026-07-10); nethermind&apos;s span its
+              controlled bisection (2026-08-02→03) plus the opportunistic ~35h catch-up (2026-08-01);
+              geth is the ~52h resume (2026-07-10).
+            </figcaption>
+          </figure>
+          <dl className="mt-4 space-y-2 text-sm sm:hidden">
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="font-medium text-foreground">Ethrex</dt>
+              <dd className="text-right text-xs text-muted-foreground">resumed ≤124 blk; stalled → re-snap at 132 blk (~25 min)</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="font-medium text-foreground">Nethermind</dt>
+              <dd className="text-right text-xs text-muted-foreground">resumed every tested gap, 69 → 10,607 blk (12 min → ~35h); largest in 35m09s</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="font-medium text-foreground">Geth</dt>
+              <dd className="text-right text-xs text-muted-foreground">resumed ~15,400 blk (~52h), no re-snap</dd>
+            </div>
+          </dl>
 
           <AnchorHeading id="ethrex-cliff-bisected" as="h3" className="mt-6 font-medium text-foreground">
             ethrex&apos;s cliff, bisected
@@ -1095,10 +1322,13 @@ export default function EthereumClientBakeoffPage() {
             </li>
             <li>
               <span className="font-medium text-foreground">Diversity pick: nethermind.</span>{' '}
-              Compact flat-storage state, clean restart behavior, and a minority-client diversity
-              bonus. On disk it&apos;s on par with geth (~1.06 vs ~1.13 TiB) once full post-merge
-              history is counted — not the space-saver its snap-sync-tip snapshot (~251 GiB)
-              suggested. Costs a bit more sync time (~14.5h vs geth&apos;s ~8.5h).
+              Compact flat-storage state, a minority-client diversity bonus, and restart-resume
+              that is now measured and bisected, not just assumed (2026-08-01→03: every gap from
+              12 min to ~35h resumed by plain block import, no re-snap, no cliff — see
+              &ldquo;Restart resilience&rdquo; above). On disk
+              it&apos;s on par with geth (~1.06 vs ~1.13 TiB) once full post-merge history is
+              counted — not the space-saver its snap-sync-tip snapshot (~251 GiB) suggested. Costs
+              a bit more sync time (~14.5h vs geth&apos;s ~8.5h).
             </li>
             <li>
               <span className="font-medium text-foreground">Consensus client: lighthouse</span> as
@@ -1108,7 +1338,7 @@ export default function EthereumClientBakeoffPage() {
             <li>
               <span className="font-medium text-foreground">Watch, don&apos;t yet deploy: ethrex.</span>{' '}
               Fascinating and fastest, but the ~25-minute restart cliff makes it operationally
-              costly today. Its footprint is now settled too — a ~472 GiB plateau — but that&apos;s
+              costly today. Its footprint is now settled too — a ~470–476 GiB plateau — but that&apos;s
               not a disk win: it&apos;s a no-history node, and running its RPC in place of a
               full-history endpoint (this repo&apos;s nginx/Caddy feature) will silently fail on
               anything historical. Fast-moving client — v19.0.0 at first sync, v22.0.0 by

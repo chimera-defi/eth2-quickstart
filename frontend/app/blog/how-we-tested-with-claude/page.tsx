@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ReadNext } from '@/components/ui/ReadNext'
+import { ArticleByline } from '@/components/ui/ArticleByline'
 import { buildArticleMetadata } from '@/lib/articles'
 import { SITE_CONFIG } from '@/lib/constants'
 import { ArrowDown, ArrowRight, ArrowUp } from 'lucide-react'
@@ -37,7 +38,7 @@ const tldrPoints = [
   },
   {
     title: 'The headline numbers hide operational limits',
-    body: "ethrex is the fastest cold-sync in the field but is not production-ready as tested: a 26-minute/132-block restart gap stalled, and longer measured gaps caused a full re-snap. Its datadir plateaus at ~470 GiB, but that's not a disk win — it's a no-history node. besu did sync successfully; its pruned re-run exposed fragility after a prolonged outage of the pinned Prysm version.",
+    body: "ethrex is the fastest cold-sync in the field but is not production-ready as tested: a 26-minute/132-block restart gap stalled, and longer measured gaps caused a full re-snap. Its datadir plateaus at ~470–476 GiB, but that's not a disk win — it's a no-history node. besu did sync successfully; its pruned re-run exposed fragility after a prolonged outage of the pinned Prysm version.",
   },
 ]
 
@@ -48,7 +49,7 @@ const clientIncidents = [
     rootCause: 'P2P bind pinned to loopback (Network.LocalIp=127.0.0.1)',
     resolution: 'Advertise the real external IP',
     status: 'Fixed',
-    statusNote: 'production-viable',
+    statusNote: 'production-viable — restart-resume measured 2026-08-01',
     variant: 'primary' as const,
   },
   {
@@ -62,7 +63,7 @@ const clientIncidents = [
   },
   {
     client: 'ethrex',
-    whatHappened: 'Gaps through 23 min / 124 blocks resumed; a 26 min / 132 block gap stalled, and measured 1.5–2h gaps discarded state and re-snapped (~2h). The un-pruned datadir plateaus at ~470 GiB (471.9 GiB) — settled, but a no-history node, not a disk win',
+    whatHappened: 'Gaps through 23 min / 124 blocks resumed; a 26 min / 132 block gap stalled, and measured 1.5–2h gaps discarded state and re-snapped (~2h). The un-pruned datadir plateaus at ~470–476 GiB (drifting 470.2 → 475.5 GiB over ~42h) — settled, but a no-history node, not a disk win',
     rootCause: 'Old head ages out of the ~128-block servable-state window; beyond it the head can freeze and longer gaps can trigger a full snap instead of importing the gap',
     resolution: 'None — inherent to current design (v19.0.0)',
     status: 'Not production-ready',
@@ -100,7 +101,13 @@ const campaignTimeline = [
   { date: '2026-07-10', label: 'ethrex restart-cliff bisected, geth 52h resume verified' },
   { date: '2026-07-12', label: 'Installer / config correctness fixes shipped' },
   { date: '2026-07-13', label: 'nimbus_eth1 72h capped run completes' },
-  { date: '2026-07-14', label: 'Campaign ends, harness and results docs shipped' },
+  { date: '2026-07-14', label: 'Initial campaign closes — harness and results docs shipped' },
+  { date: '2026-07-26', label: 'Third anchor: CL sweep re-run against nethermind' },
+  { date: '2026-07-28', label: 'Steady-state re-measures: nethermind ~1.06 TiB, ethrex plateau confirmed' },
+  { date: '2026-07-29', label: 'EL-disk convergence reframe published (no disk winner)' },
+  { date: '2026-07-31', label: 'EXP-A: nethermind fresh re-sync 1h53m (establish run)' },
+  { date: '2026-08-01', label: 'EXP-A: nethermind resumes a 10,607-block gap in 35 min — restart-resume measured' },
+  { date: '2026-08-03', label: 'EXP-A bisection: no cliff at any gap (12 min → ~35h); prysm clean-resume measured, n=4' },
 ]
 
 // What's actually implemented (test/bakeoff/lib.sh, run_candidate.sh) — no peer-count check
@@ -229,7 +236,7 @@ function CampaignTimeline() {
     <div
       className="mt-4 overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       role="region"
-      aria-label="23-day campaign timeline"
+      aria-label="six-week campaign timeline"
       tabIndex={0}
     >
       <div className="flex gap-3 pb-2" style={{ minWidth: 'max-content' }}>
@@ -283,13 +290,15 @@ export default function HowWeTestedWithClaudePage() {
           <p className="font-mono text-sm text-muted-foreground uppercase tracking-wide">
             Blog &middot; Companion to the bake-off writeup
           </p>
+          <ArticleByline slug="how-we-tested-with-claude" />
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
-            How we ran a 23-day Ethereum client bake-off with Claude
+            How we ran a six-week Ethereum client bake-off with Claude
           </h1>
           <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground">
             That post was about the clients. This one is about the machine that tested them: the agent
             orchestration model, the harness we built to keep ourselves honest, and what actually breaks
-            when a benchmark runs for three weeks on a shared host with an AI in the driver&apos;s seat.
+            when a benchmark runs for six weeks (an initial 23-day campaign, then a steady-state and
+            restart-resume phase) on a shared host with an AI in the driver&apos;s seat.
           </p>
           <div className="mt-4 flex flex-wrap gap-3 sm:mt-6">
             <Button href="/blog/ethereum-client-bakeoff" variant="secondary" size="sm">
@@ -314,8 +323,9 @@ export default function HowWeTestedWithClaudePage() {
             explicit human confirmation, every result was committed under conventional-commit review, and
             no agent could merge its own pull request. The interesting claim here isn&apos;t &ldquo;the AI
             did it alone&rdquo; &mdash; it&apos;s that the right division of labor between an agent and an
-            operator let a 23-day, disk-and-timing-sensitive benchmark run to completion without a person
-            watching it sync.
+            operator let a disk-and-timing-sensitive benchmark — a 23-day initial campaign, then ~2.5 more
+            weeks and counting of steady-state and restart-resume measurement — run to completion without
+            a person watching it sync.
           </p>
         </Card>
 
@@ -403,7 +413,7 @@ export default function HowWeTestedWithClaudePage() {
 
           <div className="mt-8">
             <AnchorHeading id="campaign-timeline" as="h3" className="font-medium text-foreground">
-              23-day campaign — key dates
+              Six-week campaign — key dates
             </AnchorHeading>
             <CampaignTimeline />
             <p className="mt-2 text-xs text-muted-foreground">
@@ -424,10 +434,11 @@ export default function HowWeTestedWithClaudePage() {
             <li><span className="font-medium text-foreground">It&apos;s destructive.</span> Measuring the next client means wiping the last one&apos;s datadir on a shared box that also runs other people&apos;s work.</li>
           </ul>
           <p className="mt-4 text-sm text-muted-foreground">
-            Multiply that across the whole supported field of clients and three weeks and you have a task
-            defined less by any single hard step than by <em>sustained correctness</em> &mdash; the
-            discipline to run the same careful protocol dozens of times, preserve the terminal measurement
-            before teardown, and never let a shared-host quirk masquerade as a client property.
+            Multiply that across the whole supported field of clients and the 23-day initial campaign
+            (which later grew into six weeks of follow-on measurement) and you have a task defined less by
+            any single hard step than by <em>sustained correctness</em> &mdash; the discipline to run the
+            same careful protocol dozens of times, preserve the terminal measurement before teardown, and
+            never let a shared-host quirk masquerade as a client property.
           </p>
         </section>
 
@@ -435,8 +446,12 @@ export default function HowWeTestedWithClaudePage() {
           <AnchorHeading id="orchestration-model" className="text-lg sm:text-xl font-semibold text-foreground">The orchestration model</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             The core design choice: decouple node wall-clock from agent wall-clock, and decouple durable
-            state from agent context. Get those two right and a three-week campaign stops needing a
-            three-week attention span.
+            state from agent context. Get those two right and a multi-week campaign stops needing a
+            multi-week attention span &mdash; and this claim has since been stress-tested harder than the
+            article originally described: the campaign has now run across multiple sessions spanning six
+            weeks, not three, with no change to the architecture. That&apos;s the point sharpened, not
+            softened: the bottleneck was never wall-clock, it&apos;s agent context, and a design that holds
+            at three weeks holds just as well at six.
           </p>
 
           <AnchorHeading id="node-runs-agent-doesnt-watch" as="h3" className="mt-6 font-medium text-foreground">

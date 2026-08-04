@@ -27,7 +27,7 @@ export function Blog() {
             Field notes &amp; benchmarks
           </h2>
           <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground">
-            Real results from running these clients for three weeks on a shared server — disk footprints, sync
+            Real results from running these clients for six weeks on a shared server — disk footprints, sync
             times, and hard-won operational lessons.
           </p>
         </motion.div>
@@ -50,7 +50,7 @@ export function Blog() {
               Ethereum client bake-off
             </h3>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground leading-relaxed">
-              Results from a 23-day execution and consensus client sync campaign: disk,
+              Results from a six-week execution and consensus client sync campaign: disk,
               speed, and restart resilience across the full client roster.
             </p>
             <div className="mt-4 flex flex-col flex-wrap items-stretch gap-3 sm:flex-row sm:items-center">
