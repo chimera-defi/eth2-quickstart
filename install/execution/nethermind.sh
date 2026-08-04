@@ -143,7 +143,7 @@ esac
 
 NETHERMIND_EXISTING_DB="$HOME/.local/share/nethermind/nethermind_db/mainnet"
 NETHERMIND_EXISTING_CONFIG="$NETHERMIND_DIR/nethermind.cfg"
-if [[ -d "$NETHERMIND_EXISTING_DB" && -f "$NETHERMIND_EXISTING_CONFIG" && "$NETHERMIND_ALLOW_MODE_CHANGE" == "true" ]]; then
+if [[ -d "$NETHERMIND_EXISTING_DB" && "$NETHERMIND_ALLOW_MODE_CHANGE" == "true" ]]; then
     log_error "Refusing to change Nethermind history mode while an existing datadir is present. Wipe/rebuild the datadir first, then rerun with NETHERMIND_ALLOW_HISTORY_DOWNGRADE=true."
     exit 1
 fi
@@ -159,8 +159,12 @@ if [[ -d "$NETHERMIND_EXISTING_DB" && -f "$NETHERMIND_EXISTING_CONFIG" ]]; then
         fi
         NETHERMIND_HISTORY_MODE=false
     else
-        log_warn "Existing Nethermind config has no recognizable receipt mode; using NETHERMIND_FULL_HISTORY=$NETHERMIND_HISTORY_MODE"
+        log_warn "Existing Nethermind config has no recognizable receipt mode; preserving full receipt storage until the datadir is rebuilt"
+        NETHERMIND_HISTORY_MODE=true
     fi
+elif [[ -d "$NETHERMIND_EXISTING_DB" ]]; then
+    log_warn "Existing Nethermind datadir has no config to identify its history mode; preserving receipt storage until the datadir is rebuilt"
+    NETHERMIND_HISTORY_MODE=true
 fi
 
 if [[ "$NETHERMIND_HISTORY_MODE" == "true" ]]; then
