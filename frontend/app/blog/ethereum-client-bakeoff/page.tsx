@@ -988,7 +988,7 @@ export default function EthereumClientBakeoffPage() {
               13:24:55Z left nethermind{' '}
               <strong className="text-foreground">10,607 blocks (~35h of chain) behind</strong> the
               external tip, and it closed the entire gap by ordinary block import in{' '}
-              <strong className="text-foreground">35m09s (~307 blocks/min)</strong> with the datadir
+              <strong className="text-foreground">35m09s (~302 blocks/min)</strong> with the datadir
               intact (1.165 → 1.178 TB, +1.1% — exactly the imported bodies/receipts). Then a
               controlled stop→wait→start bisection at{' '}
               <strong className="text-foreground">12 min / 30 min / 1 h / 4 h gaps</strong> (2026-08-02→03):
