@@ -271,7 +271,7 @@ export default function EthereumClientBakeoffPage() {
           </p>
           <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground">
             A field campaign that began with a 23-day measurement phase (2026-06-22 → 2026-07-14)
-            and continued with steady-state and restart-resume measurements through 2026-08-01,
+            and continued with steady-state and restart-resume measurements through 2026-08-03,
             comparing seven execution-client syncs and five consensus clients — the same mainnet
             sync, on the same host, one client at a time, recording two numbers for each: final
             synced disk footprint and sync duration. The interesting part is what fell out of it:
@@ -706,7 +706,7 @@ export default function EthereumClientBakeoffPage() {
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             The campaign began with a 23-day measurement phase (2026-06-22 → 2026-07-14) and
-            continued with steady-state and restart-resume measurements through 2026-08-01, all on
+            continued with steady-state and restart-resume measurements through 2026-08-03, all on
             a shared semi-production host (not a live validator), with MEV disabled and no
             validator keys. The bake-off measures, for
             each client, the final synced disk footprint and the sync duration: one candidate at a
