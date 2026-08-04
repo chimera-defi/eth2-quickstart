@@ -34,7 +34,7 @@ const tldrPoints = [
   },
   {
     title: 'Non-negotiable governance, not vibes',
-    body: 'One candidate at a time, a 72-hour cap, destructive actions gated behind explicit human confirmation, only a human merges.',
+    body: 'One candidate at a time, a 72-hour cap, destructive actions gated behind explicit human confirmation, only a human merges. Concretely: the follow-up prune experiment wiped a synced 1.1 TiB node only after an explicit go-ahead, then shipped the measured nethermind minimal-history default as a human-reviewed PR for a human to review — the agent never merged it.',
   },
   {
     title: 'The headline numbers hide operational limits',
@@ -108,6 +108,7 @@ const campaignTimeline = [
   { date: '2026-07-31', label: 'EXP-A: nethermind fresh re-sync 1h53m (establish run)' },
   { date: '2026-08-01', label: 'EXP-A: nethermind resumes a 10,607-block gap in 35 min — restart-resume measured' },
   { date: '2026-08-03', label: 'EXP-A bisection: no cliff at any gap (12 min → ~35h); prysm clean-resume measured, n=4' },
+  { date: '2026-08-03', label: 'EXP-C: nethermind prune tuning → minimal-history default (~250–280 GiB, no-history tier) measured and shipped as a human-reviewed PR' },
 ]
 
 // What's actually implemented (test/bakeoff/lib.sh, run_candidate.sh) — no peer-count check
