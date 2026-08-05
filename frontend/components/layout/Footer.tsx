@@ -7,6 +7,7 @@ const footerLinks = [
   { label: 'Agents', href: '/agents', internal: true },
   { label: 'GitHub', href: SITE_CONFIG.github },
   { label: 'Issues', href: `${SITE_CONFIG.github}/issues` },
+  { label: 'RSS', href: '/rss.xml' },
 ]
 
 export function Footer() {
