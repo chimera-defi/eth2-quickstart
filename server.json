@@ -3,7 +3,7 @@
   "name": "io.github.chimera-defi/eth2-quickstart",
   "description": "Ethereum node ops: install, diagnose, and manage validators via the eth2-quickstart wrapper.",
   "version": "0.1.0",
-  "websiteUrl": "https://eth2quickstart.com",
+  "websiteUrl": "https://eth2quickstart.com/agents",
   "repository": {
     "url": "https://github.com/chimera-defi/eth2-quickstart",
     "source": "github"

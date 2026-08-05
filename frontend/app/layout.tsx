@@ -33,6 +33,13 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://eth2quickstart.com'),
   title: SITE_TITLE,
   description: SITE_DESCRIPTION,
+  // Feed-reader autodiscovery: emits <link rel="alternate" type="application/rss+xml">
+  // in <head> so readers find /rss.xml from any page.
+  alternates: {
+    types: {
+      'application/rss+xml': [{ url: '/rss.xml', title: 'ETH2 Quick Start — Field notes & benchmarks' }],
+    },
+  },
   openGraph: {
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
