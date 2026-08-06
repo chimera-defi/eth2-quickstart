@@ -734,7 +734,8 @@ export default function EthereumClientBakeoffPage() {
               mis-configured client, stamping every row{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes|no</code>.
               The gate itself needed six bug-fixes across three review rounds before we trusted
-              it — which is the point. Every number on this page is stamped optimal.
+              it — which is the point. Every comparable footprint on this page comes from a synced
+              run stamped <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes</code> (capped, no-sync, or pruned-only runs are marked as such and excluded from the ranking).
             </p>
           </Card>
           <p className="mt-3 text-sm text-muted-foreground">
@@ -887,7 +888,7 @@ export default function EthereumClientBakeoffPage() {
           </dl>
           <p className="mt-3 text-sm text-muted-foreground">
             besu lands in the same band too, at ~1.08 TiB — the same order of magnitude, not an
-            outlier. reth (window-capped at 72h, ~21% by block) already tracked ~87% of geth&apos;s
+            outlier. reth (window-capped at 72h, 47% by block / ~21% gas-weighted) already tracked ~87% of geth&apos;s
             size at that point and projects to ~1.1–1.2 TiB finished. So the four ELs with full
             post-merge history — geth (1.13), nethermind (~1.06), besu (1.08), reth (~1.1–1.2
             projected) — converge on roughly the same footprint. Disk size here is set by a

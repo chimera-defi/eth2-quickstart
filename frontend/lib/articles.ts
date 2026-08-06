@@ -46,7 +46,7 @@ export const ARTICLES: Article[] = [
     ogAlt: 'The fastest Ethereum client is one almost nobody runs — a six-week client bake-off',
     headline: 'Ethereum Client Bake-off',
     datePublished: '2026-07-19',
-    dateModified: '2026-08-01',
+    dateModified: '2026-08-06',
     sitemapPriority: 0.9,
   },
   {
@@ -62,7 +62,7 @@ export const ARTICLES: Article[] = [
     ogAlt: 'How we ran a six-week Ethereum client bake-off with Claude',
     headline: 'How We Ran a 6-Week Bake-off With Claude',
     datePublished: '2026-07-22',
-    dateModified: '2026-08-01',
+    dateModified: '2026-08-06',
     sitemapPriority: 0.8,
   },
   {
@@ -94,7 +94,7 @@ export const ARTICLES: Article[] = [
     ogAlt: 'Bake-off results — the raw data',
     headline: 'Bake-off Results',
     datePublished: '2026-07-21',
-    dateModified: '2026-08-01',
+    dateModified: '2026-08-06',
     sitemapPriority: 0.8,
   },
 ]
