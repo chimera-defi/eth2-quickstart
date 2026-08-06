@@ -198,7 +198,7 @@ jobs:
           # The 2026-07-29 outage showed up as new routes 404ing while the old
           # build kept serving, so assert the routes exist, not just the origin.
           fail=0
-          for path in / /quickstart /blog /agents /llms.txt /sitemap.xml /robots.txt \
+          for path in / /quickstart /blog /agents /llms.txt /sitemap.xml /robots.txt /rss.xml \
                       /blog/ethereum-client-bakeoff /blog/bakeoff-results \
                       /blog/bakeoff-harness /blog/how-we-tested-with-claude \
                       /deck/bakeoff.html; do
