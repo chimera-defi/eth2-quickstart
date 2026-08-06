@@ -34,7 +34,7 @@ const tldrPoints = [
   },
   {
     title: 'Non-negotiable governance, not vibes',
-    body: 'One candidate at a time, a 72-hour cap, destructive actions gated behind explicit human confirmation, only a human merges. Concretely: the follow-up prune experiment wiped a synced 1.1 TiB node only after an explicit go-ahead, then shipped the measured nethermind minimal-history default as a human-reviewed PR for a human to review — the agent never merged it.',
+    body: 'One candidate at a time, a 72-hour cap, destructive actions gated behind explicit human confirmation, only a human merges. Concretely: the follow-up prune experiment wiped a synced 1.1 TiB node only after an explicit go-ahead, then put the measured nethermind minimal-history default up as a PR for a human to review and merge — the agent never merged it.',
   },
   {
     title: 'The headline numbers hide operational limits',
@@ -103,9 +103,10 @@ const campaignTimeline = [
   { date: '2026-07-13', label: 'nimbus_eth1 72h capped run completes' },
   { date: '2026-07-14', label: 'Initial campaign closes — harness and results docs shipped' },
   { date: '2026-07-26', label: 'Third anchor: CL sweep re-run against nethermind' },
-  { date: '2026-07-28', label: 'Steady-state re-measures: nethermind ~1.06 TiB, ethrex plateau confirmed' },
+  { date: '2026-07-28', label: 'Steady-state re-measure: ethrex plateau confirmed (~470–476 GiB)' },
   { date: '2026-07-29', label: 'EL-disk convergence reframe published (no disk winner)' },
   { date: '2026-07-31', label: 'EXP-A: nethermind fresh re-sync 1h53m (establish run)' },
+  { date: '2026-08-01', label: 'Steady-state re-measure: nethermind full-history datadir ~1.06 TiB' },
   { date: '2026-08-01', label: 'EXP-A: nethermind resumes a 10,607-block gap in 35 min — restart-resume measured' },
   { date: '2026-08-03', label: 'EXP-A bisection: no cliff at any gap (12 min → ~35h); prysm clean-resume measured, n=4' },
   { date: '2026-08-03', label: 'EXP-C: nethermind prune tuning → minimal-history default (~250–280 GiB, no-history tier) measured and shipped as a human-reviewed PR' },
@@ -347,7 +348,7 @@ export default function HowWeTestedWithClaudePage() {
         <section className="mt-10 sm:mt-16">
           <AnchorHeading id="at-a-glance" className="text-lg sm:text-xl font-semibold text-foreground">At a glance</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            Four real incidents hit during the campaign, all fixed or explicitly documented.
+            Four client-level incidents hit during the campaign, all fixed or explicitly documented.
           </p>
           <div
             className="mt-4 sm:mt-6 hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
