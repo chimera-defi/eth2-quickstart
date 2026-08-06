@@ -10,7 +10,7 @@ import { ReadNext } from '@/components/ui/ReadNext'
 import { ArticleByline } from '@/components/ui/ArticleByline'
 import { buildArticleMetadata } from '@/lib/articles'
 import { SITE_CONFIG } from '@/lib/constants'
-import { ArrowDown, ArrowRight } from 'lucide-react'
+import { ArrowDown, ArrowRight, RotateCw } from 'lucide-react'
 
 export const metadata: Metadata = buildArticleMetadata('bakeoff-harness')
 
@@ -325,6 +325,100 @@ function DataFlowDiagram() {
   )
 }
 
+const observationSteps = [
+  { n: '1', check: 'bakeoff_write_sample', signal: '→ samples.jsonl (every iteration)' },
+  { n: '2', check: 'services_alive?', signal: '→ service_crash_observed=yes' },
+  { n: '3', check: 'crash-loop: ΔNRestarts > 20', signal: '→ .crash-looped · break' },
+  { n: '4', check: 'anchor watchdog: miss ×2 (anchor mode)', signal: '→ .anchor-poisoned (row invalid; loop continues)' },
+  { n: '5', check: 'stall watchdog: no progress ×10 (opt-in)', signal: '→ restart ≤3, then .stalled · break' },
+  { n: '6', check: 'synced-streak: is_synced ×2', signal: '→ disk-synced.tsv · break' },
+]
+
+const observationExits = [
+  { label: 'fully_synced=yes', cause: 'synced streak ×2', ok: true },
+  { label: 'crash_loop_detected', cause: 'ΔNRestarts > 20', ok: false },
+  { label: 'stall_failed', cause: 'after 3 restarts', ok: false },
+  { label: 'window_capped_unsynced', cause: 'window expired', ok: false },
+]
+
+/**
+ * The per-candidate observation loop (§3.5) as a diagram: one sample+watchdog+gate
+ * pass per `interval`, looping until one of four exits trips. Responsive box-and-
+ * arrow layout (matches DataFlowDiagram); the numbered list below carries the detail.
+ */
+function ObservationLoopDiagram() {
+  return (
+    <figure className="mt-4" aria-label="The observation window as a loop: each iteration samples, runs three watchdogs and a synced-streak gate, then either loops after sleeping or breaks to one of four outcomes.">
+      <div className="mx-auto max-w-md rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
+        <span className="font-mono text-xs">install_rc == 0</span>
+        <span className="block text-xs text-muted-foreground">else &rarr; skip the window entirely</span>
+      </div>
+      <ArrowDown className="mx-auto my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <p className="text-center text-xs text-muted-foreground">baseline: <code className="font-mono">NRestarts</code> per unit under test</p>
+      <ArrowDown className="mx-auto my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+
+      <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+        <div className="flex items-center justify-center gap-2 text-sm font-medium text-foreground">
+          <RotateCw className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+          <span>
+            Observation loop &mdash; every <code className="font-mono text-xs text-primary">interval</code>s while{' '}
+            <code className="font-mono text-xs text-primary">now &lt; end_at</code>
+          </span>
+        </div>
+        <ol className="mt-3 space-y-1.5">
+          {observationSteps.map((step) => (
+            <li
+              key={step.n}
+              className="flex flex-col gap-0.5 rounded border border-border/60 bg-background/40 px-3 py-1.5 text-xs sm:flex-row sm:items-baseline sm:justify-between sm:gap-3"
+            >
+              <span className="font-mono text-foreground">
+                <span className="text-muted-foreground">{step.n}.</span> {step.check}
+              </span>
+              <span className="font-mono text-muted-foreground">{step.signal}</span>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          not broken &amp; time remains &rarr; <code className="font-mono">sleep interval</code>, iterate &#8635;
+        </p>
+      </div>
+
+      <ArrowDown className="mx-auto my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <p className="text-center text-xs text-muted-foreground">the loop ends on exactly one of (three break, one times out):</p>
+      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {observationExits.map((exit) => (
+          <div
+            key={exit.label}
+            className={`rounded-lg border px-3 py-2 text-center ${
+              exit.ok ? 'border-primary/40 bg-primary/5' : 'border-border bg-muted/30'
+            }`}
+          >
+            <span className={`block font-mono text-[11px] ${exit.ok ? 'text-primary' : 'text-foreground'}`}>
+              {exit.label}
+            </span>
+            <span className="mt-0.5 block text-[11px] text-muted-foreground">{exit.cause}</span>
+          </div>
+        ))}
+      </div>
+      <ArrowDown className="mx-auto my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <div className="mx-auto max-w-md rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-xs text-foreground">
+        <span className="font-mono">final bakeoff_write_sample</span>
+        <span className="block text-muted-foreground">then finalize <code className="font-mono">env.txt</code> (fully_synced, service_crash_observed, anchor_synced)</span>
+      </div>
+      <figcaption className="mt-2 text-xs text-muted-foreground">
+        One pass per <code className="font-mono">interval</code>: sample &rarr; three watchdogs (crash-loop, anchor,
+        stall) &rarr; synced-streak gate. <code className="font-mono">fully_synced=yes</code> is the loop&apos;s success
+        exit (a valid sync measurement); the other three outcomes invalidate the row. Reaching the <em>ranked</em>{' '}
+        results is a separate <code className="font-mono">summarize.sh</code> gate &mdash;{' '}
+        <code className="font-mono">config_optimal=yes</code> and (anchor mode) <code className="font-mono">anchor_synced != no</code> (§8) &mdash;
+        so a synced row can still be excluded: the anchor watchdog can set <code className="font-mono">.anchor-poisoned</code>{' '}
+        without breaking the loop, and a missing history-prune flag makes <code className="font-mono">config_optimal=no</code>.
+        The detail for each step is below.
+      </figcaption>
+    </figure>
+  )
+}
+
 export default function BakeoffHarnessPage() {
   return (
     <div className="min-h-screen py-12 sm:py-16 md:py-24">
@@ -379,7 +473,7 @@ export default function BakeoffHarnessPage() {
             the exception noted in the layout above: it&apos;s a sourced library, never executed on its own, that
             inherits strict mode from whichever script sources it and does not source{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">common_functions.sh</code> itself — its <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">log_*</code> calls resolve at runtime
-            because every caller (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code>)
+            because every caller (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_queue.sh</code>)
             already sourced <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">common_functions.sh</code> first.
           </p>
 
@@ -643,6 +737,7 @@ export default function BakeoffHarnessPage() {
             in full/establish mode, just <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">cl.service</code> in anchor mode (the pre-existing anchor{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth1.service</code> is out of scope for that row). Each iteration:
           </p>
+          <ObservationLoopDiagram />
           <ol className="mt-3 space-y-3 text-sm text-muted-foreground list-decimal list-inside">
             <li>
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'bakeoff_write_sample "$out" "$REPO_ROOT"'}</code> — the sampling primitive (§5.5).
