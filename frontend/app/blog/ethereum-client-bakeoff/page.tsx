@@ -1003,6 +1003,59 @@ export default function EthereumClientBakeoffPage() {
             happens after a restart with a gap?&rdquo; is a first-class operational question, and
             it cleanly separates the field into three behaviors:
           </p>
+          <figure
+            className="mt-5 rounded-xl border border-border bg-muted/30 p-4 sm:p-6"
+            aria-label="Three fates for an interrupted node: it catches back up (geth, nethermind), starts over past a roughly 25-minute gap (ethrex), or wedges alive but frozen if the interruption happens mid-sync (besu)"
+          >
+            <p className="text-center text-sm font-medium text-foreground">
+              A running node gets interrupted
+            </p>
+            <p className="mt-1 text-center text-xs text-muted-foreground">
+              what happens next depends on one thing: was it already synced, or still syncing?
+            </p>
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="rounded-lg border border-border bg-background/40 p-3">
+                <p className="text-center text-xs text-muted-foreground">Gap after it synced</p>
+                <div className="mt-2 rounded-md border border-[#a855f7]/40 bg-[#a855f7]/10 p-2.5 text-xs">
+                  <p className="text-foreground">
+                    <strong className="text-[#a855f7]">Catches back up</strong> — geth, nethermind
+                  </p>
+                  <p className="mt-1 text-muted-foreground">
+                    imports missed blocks, keeps datadir — minutes
+                  </p>
+                </div>
+                <div className="mt-2 rounded-md border border-[#f5b46b]/40 bg-[#f5b46b]/10 p-2.5 text-xs">
+                  <p className="text-foreground">
+                    <strong className="text-[#f5b46b]">Starts over</strong> — ethrex, past a ~25-min gap
+                  </p>
+                  <p className="mt-1 text-muted-foreground">
+                    discards state, re-snaps from scratch — ~2 h
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-lg border border-border bg-background/40 p-3">
+                <p className="text-center text-xs text-muted-foreground">Interrupted during sync</p>
+                <div className="mt-2 rounded-md border border-[#e5726e]/40 bg-[#e5726e]/10 p-2.5 text-xs">
+                  <p className="text-foreground">
+                    <strong className="text-[#e5726e]">Wedges — alive but frozen</strong> — besu
+                  </p>
+                  <p className="mt-1 text-muted-foreground">
+                    pivot ages out; answers RPC, writes 0 data — manual rebuild
+                  </p>
+                </div>
+              </div>
+            </div>
+            <p className="mt-4 rounded-md border border-border bg-background/40 px-3 py-2 text-center text-xs text-muted-foreground">
+              <strong className="text-foreground">Why:</strong> a full node serves only ~128 recent
+              blocks of state (~25 min); cross that and you can&apos;t resume by state.
+            </p>
+            <figcaption className="mt-3 text-xs text-muted-foreground">
+              Scope: the four clients with an observed restart or interruption outcome — geth,
+              nethermind, and ethrex after syncing; besu mid-sync. reth, nimbus-eth1, and erigon
+              never synced far enough to see one. Consensus layer: prysm resumed cleanly from its
+              own DB in all four restart tests (~2m44s), no re-checkpoint.
+            </figcaption>
+          </figure>
           <ol className="mt-4 list-inside list-decimal space-y-3 text-sm text-muted-foreground">
             <li>
               <span className="font-medium text-foreground">Graceful resume.</span> The client
@@ -1012,34 +1065,8 @@ export default function EthereumClientBakeoffPage() {
               after a ~52-hour gap, it kept its full datadir and caught up purely by sequential
               block-import (trie-diff application) — never re-snapping — and converged back to the
               validating tip. That&apos;s the exact positive contrast to ethrex&apos;s cliff.
-              nethermind&apos;s resume is now measured too (2026-08-01, below) — reth remains
-              expected-by-design but unmeasured.
-            </li>
-            <li>
-              <span className="font-medium text-foreground">nethermind&apos;s resume, measured and
-              then bisected (2026-08-01→03).</span> First an opportunistic catch-up: a CL restart at
-              13:24:55Z left nethermind{' '}
-              <strong className="text-foreground">10,607 blocks (~35h of chain) behind</strong> the
-              external tip, and it closed the entire gap by ordinary block import in{' '}
-              <strong className="text-foreground">35m09s (~302 blocks/min)</strong> with the datadir
-              intact (1.165 → 1.178 TB, +1.1% — exactly the imported bodies/receipts). Then a
-              controlled stop→wait→start bisection at{' '}
-              <strong className="text-foreground">12 min / 30 min / 1 h / 4 h gaps</strong> (2026-08-02→03):
-              every gap resumed geth-style — ordinary Engine-API block import, no re-pivot, no
-              snap/state-sync, zero crashes. The tell is the state-dir delta:{' '}
-              <strong className="text-foreground">~1.0–1.3 MiB per imported block, constant across
-              rungs</strong> — linear import, the opposite of a re-snap, which would rewrite the whole
-              ~238 GiB state. Resume time scales gently (121s at 12 min → 483s at 4 h → 35m09s at
-              ~35 h), dominated by the CL re-syncing its missed slots, not the EL.{' '}
-              <strong className="text-foreground">nethermind has no servable-window cliff</strong> — the
-              direct contrast to ethrex&apos;s ~128-block cliff below. A separate
-              establish run (2026-07-31) snap-synced nethermind fresh in{' '}
-              <strong className="text-foreground">1h52m51s</strong> (~280 GiB at snap, pivot
-              25,649,064, zero restarts) — far faster than the ~14.5h Stage-B figure because the
-              pivot was minutes-old and near-tip, and network conditions differ; a second data
-              point under different conditions, not a replacement for the Stage-B number. Artifacts:
-              exp-lab runs <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">exp-a-nethermind-restart-resume-2026-07-31</code>{' '}
-              and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">exp-a-bisection-2026-08-02</code>.
+              nethermind&apos;s resume is graceful too — see nethermind&apos;s resume, bisected,
+              below — reth remains expected-by-design but unmeasured.
             </li>
             <li>
               <span className="font-medium text-foreground">Re-snap cliff.</span> Past a downtime
@@ -1133,6 +1160,35 @@ export default function EthereumClientBakeoffPage() {
               <dd className="text-right text-xs text-muted-foreground">resumed ~15,400 blk (~52h), no re-snap</dd>
             </div>
           </dl>
+
+          <AnchorHeading id="nethermind-resume-bisected" as="h3" className="mt-6 font-medium text-foreground">
+            nethermind&apos;s resume, bisected
+          </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Measured and then bisected (2026-08-01→03). First an opportunistic catch-up: a CL
+            restart at 13:24:55Z left nethermind{' '}
+            <strong className="text-foreground">10,607 blocks (~35h of chain) behind</strong> the
+            external tip, and it closed the entire gap by ordinary block import in{' '}
+            <strong className="text-foreground">35m09s (~302 blocks/min)</strong> with the datadir
+            intact (1.165 → 1.178 TB, +1.1% — exactly the imported bodies/receipts). Then a
+            controlled stop→wait→start bisection at{' '}
+            <strong className="text-foreground">12 min / 30 min / 1 h / 4 h gaps</strong> (2026-08-02→03):
+            every gap resumed geth-style — ordinary Engine-API block import, no re-pivot, no
+            snap/state-sync, zero crashes. The tell is the state-dir delta:{' '}
+            <strong className="text-foreground">~1.0–1.3 MiB per imported block, constant across
+            rungs</strong> — linear import, the opposite of a re-snap, which would rewrite the whole
+            ~238 GiB state. Resume time scales gently (121s at 12 min → 483s at 4 h → 35m09s at
+            ~35 h), dominated by the CL re-syncing its missed slots, not the EL.{' '}
+            <strong className="text-foreground">nethermind has no servable-window cliff</strong> — the
+            direct contrast to ethrex&apos;s ~128-block cliff below. A separate
+            establish run (2026-07-31) snap-synced nethermind fresh in{' '}
+            <strong className="text-foreground">1h52m51s</strong> (~280 GiB at snap, pivot
+            25,649,064, zero restarts) — far faster than the ~14.5h Stage-B figure because the
+            pivot was minutes-old and near-tip, and network conditions differ; a second data
+            point under different conditions, not a replacement for the Stage-B number. Artifacts:
+            exp-lab runs <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">exp-a-nethermind-restart-resume-2026-07-31</code>{' '}
+            and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">exp-a-bisection-2026-08-02</code>.
+          </p>
 
           <AnchorHeading id="ethrex-cliff-bisected" as="h3" className="mt-6 font-medium text-foreground">
             ethrex&apos;s cliff, bisected
