@@ -131,12 +131,11 @@ const tocLinks = [
   { label: 'Method', href: '#method' },
   { label: 'Stage A results', href: '#stage-a' },
   { label: 'Changes driven by this bake-off', href: '#changes' },
-  { label: 'Recommendation (Stage A)', href: '#recommendation' },
   { label: 'Sync-mode & disk-flag audit', href: '#disk-flag-audit' },
   { label: 'Stage B footprint + CL matrix', href: '#stage-b' },
   { label: 'Client limitations', href: '#client-limitations' },
   { label: 'Q&A: does ethrex serve a usable RPC?', href: '#qa-ethrex-rpc' },
-  { label: 'Operational viability', href: '#operational-viability' },
+  { label: 'Recommendation & operational viability', href: '#operational-viability' },
   { label: 'Gotchas & lessons learned', href: '#gotchas' },
 ]
 
@@ -176,15 +175,6 @@ const changesDriven = [
   'fix(teku): remove invalid config keys blocking beacon startup',
   'fix(bakeoff): authenticate GitHub release API via gh token to avoid rate limits',
   'fix(bakeoff): bound doctor/stats sampling calls with timeout 30s',
-]
-
-// ---------------------------------------------------------------------------
-// Recommendation (final campaign synthesis)
-// ---------------------------------------------------------------------------
-const recommendationPoints = [
-  "Execution client: **there is no disk winner — the field converges.** Every EL that carries full post-merge history lands at ~1.0–1.2 TiB (geth 1.13, nethermind ~1.06, besu 1.08, reth ~1.1–1.2 projected); on-disk size is set by history-retention config, a client-agnostic knob, not by client efficiency. That knob turns both ways: an operator who does not need historical RPC can turn retention down — as of 2026-08-03 nethermind ships **minimal-history by default**, a fresh sync landing at **~250–280 GiB** (post-merge bodies and receipts dropped, state only) and staying there with no backfill, in exchange for serving **no history** (pre-sync blocks return `null`, like ethrex; set `NETHERMIND_FULL_HISTORY=true` on a fresh/rebuilt datadir to keep full post-merge history for a public RPC). Among the measured no-history configurations in this campaign, nethermind is the **smallest staking node** — **~250–280 GiB vs ethrex’s ~470 GiB** (its flat-storage state is the more compact engine), and a floor **geth cannot reach at all** (it has no clean lever to drop post-merge history below ~1.1 TiB). A real operator win when you do not need historical RPC. It is **not**, however, “4× leaner than geth” — that would score a no-history node against a with-history one, the same apples-to-oranges the field-converges point warns against; the win is **within the no-history tier**, at the cost of serving no history. If you do need history, still pick on the axes that actually differ: **snap-sync speed** and **restart-resume stability.** **geth** — conservative default, largest ecosystem, cleanest ~8h28m snap, and resumes gracefully after downtime (imports missed blocks, keeps its datadir). **nethermind** — a strong minority-client pick (improves diversity; compact flat-storage state) whose resume is now directly measured and bisected (2026-08-01→03: every gap from 12 min to ~35h resumed by plain block import — no re-snap, no cliff). **ethrex** — fastest cold sync in the field (~2h16m on v19.0.0; a later re-sync took 4h09m56s on v22.0.0 — different ethrex versions and different day/host state, not a regression trend) but a ~25-min restart cliff (longer gaps trigger a full re-snap); its datadir plateaus at ~470 GiB, smaller than the pack only because it retains no history at all — a no-history node, not a pruned-comparable one, so this is not a disk win. besu snap-synced cleanly (~1.08 TiB) but is fragile to a prolonged CL outage; reth and nimbus_eth1 are full-sync-only (multi-day, capped partial here); erigon deadlocked against checkpoint-synced prysm on this host.",
-  'Recommended consensus client: **lighthouse** — smallest on the ethrex-anchor sweep (~739 MB; lodestar is actually smaller on the geth and nethermind anchors, down to ~177 MiB), checkpoint-syncs in ~22 min, blob pruning on by default. lodestar (~827 MB) and grandine (~946 MB, with `--prune-storage`) are close seconds; teku (~2.1 GB) and nimbus (~5.0 GB) are heavier. All five checkpoint-sync in ~22–23 min, so footprint is the differentiator.',
-  'Stage-A note: geth, besu, nimbus_eth1, ethrex passed with zero installer changes and zero REST contention — the cleanest out-of-the-box ELs against Prysm.',
 ]
 
 // ---------------------------------------------------------------------------
@@ -572,19 +562,10 @@ export default function BakeoffResultsPage() {
         </section>
 
         {/* ---------------------------------------------------------------- */}
-        <section className="mt-10 sm:mt-16">
-          <AnchorHeading id="recommendation" className="text-lg sm:text-xl font-semibold text-foreground">
-            Recommendation (final campaign synthesis)
-          </AnchorHeading>
-          <p className="mt-2 text-sm text-muted-foreground">
-            <Rich text="Stage A established **viability**: all 12 client pairs installed, checkpoint-synced, and authenticated the Engine API on this host. The recommendations below incorporate the completed Stage B footprint, sync-time, and restart-resilience results." />
-          </p>
-          <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
-            {recommendationPoints.map((point, i) => (
-              <li key={i}><Rich text={point} /></li>
-            ))}
-          </ul>
-        </section>
+        <p className="mt-10 sm:mt-16 text-sm italic text-muted-foreground">
+          Final recommendation and operational-viability synthesis follows the Stage B results,{' '}
+          <a href="#operational-viability" className="text-primary hover:underline">below</a>.
+        </p>
 
         {/* ---------------------------------------------------------------- */}
         <section className="mt-10 sm:mt-16">
@@ -1156,10 +1137,10 @@ export default function BakeoffResultsPage() {
         {/* ---------------------------------------------------------------- */}
         <section className="mt-10 sm:mt-16">
           <AnchorHeading id="operational-viability" className="text-lg sm:text-xl font-semibold text-foreground">
-            Operational viability — which clients would we actually run (Stage B + CL matrix synthesis)
+            Recommendation &amp; operational viability — which clients would we actually run (final campaign synthesis)
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            <Rich text="Disk size converges once ELs carry full post-merge history, so it doesn't separate the field — production instead asks “will it survive restarts, upgrades, and weeks of uptime?” Under that operational lens the field narrows sharply — and the two layers tell opposite stories: the **EL layer is where the operational risk lives; the CL layer is basically solved.**" />
+            <Rich text="Stage A established **viability**: all 12 client pairs installed, checkpoint-synced, and authenticated the Engine API on this host. Disk size converges once ELs carry full post-merge history, so it doesn't separate the field — production instead asks “will it survive restarts, upgrades, and weeks of uptime?” Under that operational lens the field narrows sharply — and the two layers tell opposite stories: the **EL layer is where the operational risk lives; the CL layer is basically solved.**" />
           </p>
 
           <AnchorHeading id="execution-clients-viability" as="h3" className="mt-6 font-medium text-foreground">
@@ -1167,7 +1148,10 @@ export default function BakeoffResultsPage() {
           </AnchorHeading>
           <ul className="mt-3 space-y-3 text-sm text-muted-foreground">
             <li>
-              <Rich text="**geth and nethermind both cleared the full operational bar** (snap-sync to a validating tip, clean restart-resume — geth measured 2026-07-10, nethermind measured 2026-08-01 — the two most battle-tested codebases). On disk they're on par (~1.06 vs ~1.13 TiB — the field converges there). Choose **geth** for the largest ecosystem + cleanest resume, or **nethermind** to improve client diversity (minority client, compact flat-storage state, restart-resume now measured too). If you run one EL for the long haul, run one of these two." />
+              <Rich text="**There is no disk winner — the field converges.** Every EL that carries full post-merge history lands at ~1.0–1.2 TiB (geth 1.13, nethermind ~1.06, besu 1.08, reth ~1.1–1.2 projected); on-disk size is set by history-retention config, a client-agnostic knob, not by client efficiency. That knob turns both ways: an operator who does not need historical RPC can turn retention down — as of 2026-08-03 nethermind ships **minimal-history by default**, a fresh sync landing at **~250–280 GiB** (post-merge bodies and receipts dropped, state only) and staying there with no backfill, in exchange for serving **no history** (pre-sync blocks return `null`, like ethrex; set `NETHERMIND_FULL_HISTORY=true` on a fresh/rebuilt datadir to keep full post-merge history for a public RPC). Among the measured no-history configurations in this campaign, nethermind is the **smallest staking node** — **~250–280 GiB vs ethrex’s ~470 GiB** (its flat-storage state is the more compact engine), and a floor **geth cannot reach at all** (it has no clean lever to drop post-merge history below ~1.1 TiB). A real operator win when you do not need historical RPC. It is **not**, however, “4× leaner than geth” — that would score a no-history node against a with-history one, the same apples-to-oranges the field-converges point warns against; the win is **within the no-history tier**, at the cost of serving no history. If you do need history, still pick on the axes that actually differ: **snap-sync speed** and **restart-resume stability.**" />
+            </li>
+            <li>
+              <Rich text="**geth and nethermind both cleared the full operational bar** (snap-sync to a validating tip, clean restart-resume — geth measured 2026-07-10, nethermind measured 2026-08-01 — the two most battle-tested codebases). On disk they're on par (~1.06 vs ~1.13 TiB — the field converges there, as above). Choose **geth** — the conservative default, largest ecosystem, cleanest ~8h28m snap, and it resumes gracefully after downtime (imports missed blocks, keeps its datadir) — or **nethermind** to improve client diversity (minority client, compact flat-storage state; restart-resume is now directly measured and bisected: 2026-08-01→03, every gap from 12 min to ~35h resumed by plain block import — no re-snap, no cliff). If you run one EL for the long haul, run one of these two." />
             </li>
             <li>
               <Rich text="**besu** is a viable enterprise third — it *did* snap-sync to a fully validated head, and its ~1.08 TiB is the same magnitude as geth/nethermind, not an outlier. The real asterisk is operational: its snap sync is **fragile to a prolonged CL outage** (a stalled CL ages the pivot out of the servable-state window → `SnapSyncChainDownloader` thread death, observed twice, un-recoverable). Runnable in a shop that keeps its CL current and watches the pivot; not a set-and-forget solo-staker pick." />
@@ -1176,15 +1160,18 @@ export default function BakeoffResultsPage() {
               <span className="font-medium text-foreground">The rest each missed the bar for a specific, documented reason — not a blanket “bad client”:</span>
               <ul className="mt-2 space-y-2 pl-4">
                 <li>
-                  <Rich text="**ethrex** — fastest cold sync in the whole field (~2h16m), but the restart-cliff is a real operational weakness: a 26-minute/132-block downtime gap stalled instead of resuming, and measured 1.5–2-hour gaps triggered a full ~2-hour re-snap. Separately, its datadir **plateaus at ~470–476 GiB** (confirmed 2026-07-28→31: a +43 GiB/hr post-sync settling climb collapsed ~300× to +0.13 GiB/hr and drifted 470.2 → 475.5 GiB over ~42 hours) — the earlier ~467 GiB reading was this same plateau caught mid-climb, not unbounded growth. That doesn't make it a disk winner: it plateaus low only because it serves no history at all, and on a state-only basis nethermind's ~226–230 GiB state is smaller still. Snap speed is a trap if the restart cliff isn't fixed — fast to stand up, painful to *operate*. Fast-moving young client — v19.0.0 at first sync, v22.0.0 by the 2026-07-28 steady-state run; may improve further." />
+                  <Rich text="**ethrex** — fastest cold sync in the whole field (~2h16m on v19.0.0; a later re-sync took 4h09m56s on v22.0.0 — different ethrex versions and different day/host state, not a regression trend), but the restart-cliff is a real operational weakness: a 26-minute/132-block downtime gap stalled instead of resuming, and measured 1.5–2-hour gaps triggered a full ~2-hour re-snap. Separately, its datadir **plateaus at ~470–476 GiB** (confirmed 2026-07-28→31: a +43 GiB/hr post-sync settling climb collapsed ~300× to +0.13 GiB/hr and drifted 470.2 → 475.5 GiB over ~42 hours) — the earlier ~467 GiB reading was this same plateau caught mid-climb, not unbounded growth. That doesn't make it a disk winner: it plateaus low only because it serves no history at all — a no-history node, not a pruned-comparable one — and on a state-only basis nethermind's ~226–230 GiB state is smaller still. Snap speed is a trap if the restart cliff isn't fixed — fast to stand up, painful to *operate*. Fast-moving young client — v19.0.0 at first sync, v22.0.0 by the 2026-07-28 steady-state run; may improve further." />
                 </li>
                 <li>
-                  <Rich text="**reth, nimbus_eth1** — full-sync-only (no snap) in the mode we tested; can't reach tip inside a practical window on this host. This is a time-to-sync limit under our snap-to-tip bar, **not** a verdict on the clients in every context (reth in particular is widely run elsewhere)." />
+                  <Rich text="**reth, nimbus_eth1** — full-sync-only (no snap) in the mode we tested (multi-day, capped partial here); can't reach tip inside a practical window on this host. This is a time-to-sync limit under our snap-to-tip bar, **not** a verdict on the clients in every context (reth in particular is widely run elsewhere)." />
                 </li>
                 <li>
                   <Rich text="**erigon** — deadlocked against checkpoint-synced prysm on this host (structural, reproducible), so no synced datadir." />
                 </li>
               </ul>
+            </li>
+            <li>
+              <Rich text="**Stage-A note:** geth, besu, nimbus_eth1, ethrex passed Stage A with zero installer changes and zero REST contention — the cleanest out-of-the-box ELs against Prysm." />
             </li>
           </ul>
 
@@ -1196,6 +1183,8 @@ export default function BakeoffResultsPage() {
           </p>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li>
+              <Rich text="**Recommended: lighthouse** — smallest on the ethrex-anchor sweep (~739 MB; lodestar is actually smaller on the geth and nethermind anchors, down to ~177 MiB), checkpoint-syncs in ~22 min, blob pruning on by default. lodestar (~827 MB) and grandine (~946 MB, with `--prune-storage`) are close seconds; teku (~2.1 GB) and nimbus (~5.0 GB) are heavier." />
+              <br />
               <span className="font-medium text-foreground">Disk order (the only differentiator):</span>{' '}
               <strong className="text-foreground">
                 lighthouse (~739 MB) &lt; lodestar (~827 MB) &lt; grandine (~946 MB) &lt; teku (~2.1 GB)
