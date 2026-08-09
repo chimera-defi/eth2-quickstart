@@ -551,7 +551,7 @@ export default function HowWeTestedWithClaudePage() {
             <a href={`${SITE_CONFIG.github}/tree/master/test/bakeoff`} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">
               test/bakeoff
             </a>
-            . It&apos;s plain bash &mdash; deliberately, so it has no runtime that can drift out from under a systemd service:
+            . It&apos;s plain bash (~1,550 lines across eight scripts) &mdash; deliberately, so it has no runtime that can drift out from under a systemd service:
           </p>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
             {harnessScripts.map((script) => (

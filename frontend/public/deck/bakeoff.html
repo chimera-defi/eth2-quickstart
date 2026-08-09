@@ -375,6 +375,9 @@
         <div class="panel"><span class="tag">Durable state</span><h3>Small files, not context</h3><p>Conclusions pushed down to markdown + CSV so a fresh session recovers the run — no context-window bottleneck.</p></div>
         <div class="panel"><span class="tag">Config-optimality gate</span><h3>Fair by construction</h3><p>Before a result counts, the harness verifies the client ran its most disk-efficient mode — else it rejects the run, not the client.</p></div>
       </div>
+      <div class="stat-row">
+        <div class="stat"><div class="n">~1,550</div><div class="l">lines of shell — the whole harness</div></div>
+      </div>
       <p class="kicker">A real benchmark, not a lab result: shared semi-production host, footprint from the final near-cap sample — never a mid-sync peak.</p>
     </div>
   </section>
