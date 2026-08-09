@@ -1048,8 +1048,9 @@ export default function EthereumClientBakeoffPage() {
               blocks of state (~25 min); cross that and you can&apos;t resume by state.
             </p>
             <figcaption className="mt-3 text-xs text-muted-foreground">
-              Scope: the four clients that reached a synced datadir to restart from — reth,
-              nimbus-eth1, and erigon never did. Consensus layer: prysm resumed cleanly from its
+              Scope: the four clients with an observed restart or interruption outcome — geth,
+              nethermind, and ethrex after syncing; besu mid-sync. reth, nimbus-eth1, and erigon
+              never synced far enough to see one. Consensus layer: prysm resumed cleanly from its
               own DB in all four restart tests (~2m44s), no re-checkpoint.
             </figcaption>
           </figure>
