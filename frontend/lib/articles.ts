@@ -50,6 +50,22 @@ export const ARTICLES: Article[] = [
     sitemapPriority: 0.9,
   },
   {
+    slug: 'bakeoff-results',
+    pageTitle: 'Bake-off Results — ETH2 Quick Start',
+    pageDescription:
+      'The raw results from the six-week Ethereum client bake-off — every triage row, footprint measurement, and gotcha — verbatim from CLIENT_BAKEOFF_RESULTS.md.',
+    navTitle: 'Bake-off results',
+    indexDescription:
+      'The raw results: Stage A pass matrix, final synced disk footprints, the consensus-client matrices, and operational-viability notes.',
+    eyebrow: 'Data',
+    ogImage: '/og-results.png',
+    ogAlt: 'Bake-off results — the raw data',
+    headline: 'Bake-off Results',
+    datePublished: '2026-07-21',
+    dateModified: '2026-08-06',
+    sitemapPriority: 0.8,
+  },
+  {
     slug: 'how-we-tested-with-claude',
     pageTitle: 'How We Ran a 6-Week Bake-off With Claude - ETH2 Quick Start',
     pageDescription:
@@ -79,22 +95,6 @@ export const ARTICLES: Article[] = [
     headline: 'The Bake-off Harness',
     datePublished: '2026-07-21',
     dateModified: '2026-08-01',
-    sitemapPriority: 0.8,
-  },
-  {
-    slug: 'bakeoff-results',
-    pageTitle: 'Bake-off Results — ETH2 Quick Start',
-    pageDescription:
-      'The raw results from the six-week Ethereum client bake-off — every triage row, footprint measurement, and gotcha — verbatim from CLIENT_BAKEOFF_RESULTS.md.',
-    navTitle: 'Bake-off results',
-    indexDescription:
-      'The raw results: Stage A pass matrix, final synced disk footprints, the consensus-client matrices, and operational-viability notes.',
-    eyebrow: 'Data',
-    ogImage: '/og-results.png',
-    ogAlt: 'Bake-off results — the raw data',
-    headline: 'Bake-off Results',
-    datePublished: '2026-07-21',
-    dateModified: '2026-08-06',
     sitemapPriority: 0.8,
   },
 ]
