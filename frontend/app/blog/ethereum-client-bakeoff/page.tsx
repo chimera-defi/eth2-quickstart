@@ -696,7 +696,9 @@ export default function EthereumClientBakeoffPage() {
             ))}
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Sourced from <a href={`${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_RESULTS.md`} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">CLIENT_BAKEOFF_RESULTS.md</a>, the campaign&apos;s source-of-truth data.
+            Sourced from <a href={`${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_RESULTS.md`} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">CLIENT_BAKEOFF_RESULTS.md</a>, the campaign&apos;s source-of-truth data — see the full{' '}
+            <Link href="/blog/bakeoff-results" className="text-primary underline underline-offset-2">results on-site</Link>{' '}
+            or the raw doc on GitHub.
           </p>
         </section>
 
