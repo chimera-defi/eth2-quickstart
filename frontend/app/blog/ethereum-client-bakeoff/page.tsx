@@ -958,6 +958,68 @@ export default function EthereumClientBakeoffPage() {
             serves that same history; an ethrex endpoint does not, so it isn&apos;t a drop-in
             replacement for a public DeFi-facing RPC.
           </p>
+          <figure
+            className="mt-5 rounded-xl border border-border bg-muted/30 p-4 sm:p-6"
+            aria-label="Ethrex's servable RPC window: it returns null for all of Ethereum history from genesis through the snap-sync pivot, and serves only from the pivot forward to head"
+          >
+            <div className="flex items-stretch overflow-hidden rounded-lg border border-border">
+              <div
+                className="flex min-h-[2.75rem] flex-1 items-center justify-center border-r-2 border-dashed border-[#e5726e]/40 px-3 py-3 text-center text-[11px] font-medium leading-snug text-[#e5726e] sm:text-xs"
+                style={{
+                  backgroundImage:
+                    'repeating-linear-gradient(45deg, rgba(229,114,110,0.10), rgba(229,114,110,0.10) 6px, transparent 6px, transparent 12px)',
+                }}
+              >
+                <span className="hidden sm:inline">
+                  returns <code className="mx-1 font-mono text-inherit">null</code> — all of
+                  Ethereum history (genesis → pivot)
+                </span>
+              </div>
+              <div className="relative flex w-16 flex-shrink-0 items-center justify-center bg-[#a855f7]/[0.14] px-2 py-3 text-center text-[11px] font-medium text-[#a855f7] sm:w-24 sm:text-xs">
+                <span className="hidden sm:inline">served</span>
+                <span className="absolute inset-y-0 right-0 w-[3px] bg-[#a855f7]" aria-hidden="true" />
+              </div>
+            </div>
+            <div className="mt-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-0.5 text-[11px] text-muted-foreground">
+              <span>genesis · block 0</span>
+              <span>merge · 15,537,394</span>
+              <span className="font-medium text-[#a855f7]">snap pivot · 25,634,445</span>
+              <span>head</span>
+            </div>
+            <div className="mt-3.5 flex flex-wrap gap-x-4 gap-y-2 text-[11px] text-muted-foreground">
+              <span className="inline-flex items-start gap-1.5">
+                <span
+                  className="mt-0.5 inline-block h-3 w-3 flex-shrink-0 rounded-sm border border-[#e5726e]/40 bg-[#e5726e]/10"
+                  aria-hidden="true"
+                />
+                <span>
+                  returns <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">null</code>{' '}
+                  — pre-pivot blocks/logs/receipts (indexers, portfolio history, tax exports break)
+                </span>
+              </span>
+              <span className="inline-flex items-start gap-1.5">
+                <span
+                  className="mt-0.5 inline-block h-3 w-3 flex-shrink-0 rounded-sm border border-[#a855f7]/50 bg-[#a855f7]/[0.14]"
+                  aria-hidden="true"
+                />
+                <span>served — pivot → head (~4,783 blk at measurement; grows forward, never backfills)</span>
+              </span>
+              <span className="inline-flex items-start gap-1.5">
+                <span className="mt-0.5 inline-block h-3 w-3 flex-shrink-0 rounded-sm bg-[#a855f7]" aria-hidden="true" />
+                <span>state only — last ~128 blk (~25 min)</span>
+              </span>
+            </div>
+            <p className="mt-2.5 text-center text-[11px] italic text-muted-foreground">
+              not to scale — the served window is ~0.02% of the chain (4,783 of 25.6M blocks)
+            </p>
+            <figcaption className="mt-3 text-xs text-muted-foreground">
+              ethrex answers from the block it snapped at, forward — the cutoff is <em>exactly</em>{' '}
+              the pivot (probed to single-block precision). Wallet reads at head work fine; anything
+              historical returns{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">null</code>. That&apos;s
+              why its ~470 GiB isn&apos;t a disk win — it keeps almost no chain.
+            </figcaption>
+          </figure>
         </section>
 
         <section className="mt-10 sm:mt-16">
