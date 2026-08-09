@@ -440,6 +440,11 @@ export default function BakeoffHarnessPage() {
           <AnchorHeading id="layout" className="text-lg sm:text-xl font-semibold text-foreground">1. Layout</AnchorHeading>
           <StaticCodeBlock code={layoutTree} className="mt-4" />
           <p className="mt-4 text-sm text-muted-foreground">
+            All told, the harness is about <strong>1,550 lines of shell across eight scripts</strong> —{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code> (~480) and{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">lib.sh</code> (~380) carry most of the logic.
+          </p>
+          <p className="mt-4 text-sm text-muted-foreground">
             The executable driver scripts (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>,{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">apply_resource_caps.sh</code>,{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">summarize.sh</code>) each set <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">set -Eeuo pipefail</code> and source{' '}
