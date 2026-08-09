@@ -964,17 +964,19 @@ export default function EthereumClientBakeoffPage() {
           >
             <div className="flex items-stretch overflow-hidden rounded-lg border border-border">
               <div
-                className="flex flex-1 items-center justify-center border-r-2 border-dashed border-[#e5726e]/40 px-3 py-3 text-center text-[11px] font-medium leading-snug text-[#e5726e] sm:text-xs"
+                className="flex min-h-[2.75rem] flex-1 items-center justify-center border-r-2 border-dashed border-[#e5726e]/40 px-3 py-3 text-center text-[11px] font-medium leading-snug text-[#e5726e] sm:text-xs"
                 style={{
                   backgroundImage:
                     'repeating-linear-gradient(45deg, rgba(229,114,110,0.10), rgba(229,114,110,0.10) 6px, transparent 6px, transparent 12px)',
                 }}
               >
-                returns <code className="font-mono text-inherit">null</code> — all of Ethereum
-                history (genesis → pivot)
+                <span className="hidden sm:inline">
+                  returns <code className="mx-1 font-mono text-inherit">null</code> — all of
+                  Ethereum history (genesis → pivot)
+                </span>
               </div>
               <div className="relative flex w-16 flex-shrink-0 items-center justify-center bg-[#a855f7]/[0.14] px-2 py-3 text-center text-[11px] font-medium text-[#a855f7] sm:w-24 sm:text-xs">
-                served
+                <span className="hidden sm:inline">served</span>
                 <span className="absolute inset-y-0 right-0 w-[3px] bg-[#a855f7]" aria-hidden="true" />
               </div>
             </div>
