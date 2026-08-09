@@ -10,7 +10,7 @@ import { ReadNext } from '@/components/ui/ReadNext'
 import { ArticleByline } from '@/components/ui/ArticleByline'
 import { buildArticleMetadata } from '@/lib/articles'
 import { SITE_CONFIG } from '@/lib/constants'
-import { ArrowDown, ArrowRight, RotateCw } from 'lucide-react'
+import { ArrowDown, ArrowRight } from 'lucide-react'
 
 export const metadata: Metadata = buildArticleMetadata('bakeoff-harness')
 
@@ -325,95 +325,76 @@ function DataFlowDiagram() {
   )
 }
 
-const observationSteps = [
-  { n: '1', check: 'bakeoff_write_sample', signal: '→ samples.jsonl (every iteration)' },
-  { n: '2', check: 'services_alive?', signal: '→ service_crash_observed=yes' },
-  { n: '3', check: 'crash-loop: ΔNRestarts > 20', signal: '→ .crash-looped · break' },
-  { n: '4', check: 'anchor watchdog: miss ×2 (anchor mode)', signal: '→ .anchor-poisoned (row invalid; loop continues)' },
-  { n: '5', check: 'stall watchdog: no progress ×10 (opt-in)', signal: '→ restart ≤3, then .stalled · break' },
-  { n: '6', check: 'synced-streak: is_synced ×2', signal: '→ disk-synced.tsv · break' },
-]
+const raceWatchers = ['crash watch', 'reference-node drift watch', 'stall watch']
 
-const observationExits = [
-  { label: 'fully_synced=yes', cause: 'synced streak ×2', ok: true },
-  { label: 'crash_loop_detected', cause: 'ΔNRestarts > 20', ok: false },
-  { label: 'stall_failed', cause: 'after 3 restarts', ok: false },
-  { label: 'window_capped_unsynced', cause: 'window expired', ok: false },
+const raceOutcomes = [
+  { label: 'Synced', detail: 'reaches the head twice — record its disk size', ok: true },
+  { label: 'Crash-looped', detail: 'restarted too many times', ok: false },
+  { label: 'Stalled out', detail: 'stopped making progress', ok: false },
+  { label: 'Ran out of time', detail: 'hit the time cap unsynced', ok: false },
 ]
 
 /**
- * The per-candidate observation loop (§3.5) as a diagram: one sample+watchdog+gate
- * pass per `interval`, looping until one of four exits trips. Responsive box-and-
- * arrow layout (matches DataFlowDiagram); the numbered list below carries the detail.
+ * The observation window (§3.5) told as a plain-language picture: once a client
+ * pair installs, the harness watches it "race" toward the live chain while three
+ * watchdogs monitor, and the run ends exactly one of four ways. Leads with the
+ * shape of the process; the numbered list below carries the technical detail
+ * (function names, thresholds, files).
  */
 function ObservationLoopDiagram() {
   return (
-    <figure className="mt-4" aria-label="The observation window as a loop: each iteration samples, runs three watchdogs and a synced-streak gate, then either loops after sleeping or breaks to one of four outcomes.">
-      <div className="mx-auto max-w-md rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
-        <span className="font-mono text-xs">install_rc == 0</span>
-        <span className="block text-xs text-muted-foreground">else &rarr; skip the window entirely</span>
-      </div>
-      <ArrowDown className="mx-auto my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-      <p className="text-center text-xs text-muted-foreground">baseline: <code className="font-mono">NRestarts</code> per unit under test</p>
-      <ArrowDown className="mx-auto my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-
-      <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-        <div className="flex items-center justify-center gap-2 text-sm font-medium text-foreground">
-          <RotateCw className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-          <span>
-            Observation loop &mdash; every <code className="font-mono text-xs text-primary">interval</code>s while{' '}
-            <code className="font-mono text-xs text-primary">now &lt; end_at</code>
-          </span>
-        </div>
-        <ol className="mt-3 space-y-1.5">
-          {observationSteps.map((step) => (
-            <li
-              key={step.n}
-              className="flex flex-col gap-0.5 rounded border border-border/60 bg-background/40 px-3 py-1.5 text-xs sm:flex-row sm:items-baseline sm:justify-between sm:gap-3"
-            >
-              <span className="font-mono text-foreground">
-                <span className="text-muted-foreground">{step.n}.</span> {step.check}
-              </span>
-              <span className="font-mono text-muted-foreground">{step.signal}</span>
-            </li>
-          ))}
-        </ol>
-        <p className="mt-3 text-center text-xs text-muted-foreground">
-          not broken &amp; time remains &rarr; <code className="font-mono">sleep interval</code>, iterate &#8635;
+    <figure
+      className="mt-4"
+      aria-label="Once a client pair installs, the harness watches it sync toward the live chain while three watchdogs — crash, reference-node drift, and stall — monitor. The run ends one of four ways: synced, crash-looped, stalled out, or out of time."
+    >
+      <p className="text-center text-xs text-muted-foreground">
+        Runs only if the client pair installed — otherwise the watch is skipped.
+      </p>
+      <div className="mt-2 rounded-xl border border-primary/30 bg-primary/5 p-4 sm:p-5">
+        <p className="text-center text-[11px] uppercase tracking-wide text-muted-foreground">
+          three watchdogs monitor the whole run
         </p>
+        <div className="mt-2 flex flex-wrap justify-center gap-2">
+          {raceWatchers.map((w) => (
+            <span
+              key={w}
+              className="rounded-full border border-border bg-muted px-2.5 py-1 text-[11px] text-muted-foreground"
+            >
+              {w}
+            </span>
+          ))}
+        </div>
+        <div className="relative mx-1.5 mt-4 h-2.5 rounded-full bg-muted" aria-hidden="true">
+          <div className="absolute inset-y-0 left-0 w-[64%] rounded-full bg-gradient-to-r from-primary/50 to-primary" />
+          <div className="absolute left-[64%] top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-primary bg-background" />
+          <span className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 text-sm">&#127937;</span>
+        </div>
+        <div className="mt-2 flex items-baseline justify-between px-1.5 text-xs">
+          <span className="text-muted-foreground">just installed (block 0)</span>
+          <span className="font-medium text-foreground">live chain head</span>
+        </div>
       </div>
 
-      <ArrowDown className="mx-auto my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-      <p className="text-center text-xs text-muted-foreground">the loop ends on exactly one of (three break, one times out):</p>
+      <p className="mt-3 text-center text-xs text-muted-foreground">The run ends exactly one of four ways &darr;</p>
       <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {observationExits.map((exit) => (
+        {raceOutcomes.map((o) => (
           <div
-            key={exit.label}
+            key={o.label}
             className={`rounded-lg border px-3 py-2 text-center ${
-              exit.ok ? 'border-primary/40 bg-primary/5' : 'border-border bg-muted/30'
+              o.ok ? 'border-primary/50 bg-primary/5' : 'border-border bg-muted/30'
             }`}
           >
-            <span className={`block font-mono text-[11px] ${exit.ok ? 'text-primary' : 'text-foreground'}`}>
-              {exit.label}
+            <span className={`block text-xs font-semibold ${o.ok ? 'text-primary' : 'text-foreground'}`}>
+              {o.ok ? `${o.label} ✓` : o.label}
             </span>
-            <span className="mt-0.5 block text-[11px] text-muted-foreground">{exit.cause}</span>
+            <span className="mt-0.5 block text-[11px] text-muted-foreground">{o.detail}</span>
           </div>
         ))}
       </div>
-      <ArrowDown className="mx-auto my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-      <div className="mx-auto max-w-md rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-xs text-foreground">
-        <span className="font-mono">final bakeoff_write_sample</span>
-        <span className="block text-muted-foreground">then finalize <code className="font-mono">env.txt</code> (fully_synced, service_crash_observed, anchor_synced)</span>
-      </div>
-      <figcaption className="mt-2 text-xs text-muted-foreground">
-        One pass per <code className="font-mono">interval</code>: sample &rarr; three watchdogs (crash-loop, anchor,
-        stall) &rarr; synced-streak gate. <code className="font-mono">fully_synced=yes</code> is the loop&apos;s success
-        exit (a valid sync measurement); the other three outcomes invalidate the row. Reaching the <em>ranked</em>{' '}
-        results is a separate <code className="font-mono">summarize.sh</code> gate &mdash;{' '}
-        <code className="font-mono">config_optimal=yes</code> and (anchor mode) <code className="font-mono">anchor_synced != no</code> (§8) &mdash;
-        so a synced row can still be excluded: the anchor watchdog can set <code className="font-mono">.anchor-poisoned</code>{' '}
-        without breaking the loop, and a missing history-prune flag makes <code className="font-mono">config_optimal=no</code>.
-        The detail for each step is below.
+      <figcaption className="mt-3 text-xs text-muted-foreground">
+        Only <span className="font-medium text-foreground">Synced</span> is a usable measurement — and it counts in the
+        rankings only if the node ran the recommended config and the reference node stayed healthy (the full gate is in
+        §8). The step-by-step detail — every threshold, watchdog, and file it writes — is below.
       </figcaption>
     </figure>
   )
