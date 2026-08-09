@@ -25,7 +25,7 @@ const tocLinks = [
 
 const tldrPoints = [
   {
-    title: 'Two clocks, then a third nobody expects',
+    title: 'Two clocks, and a third that binds first',
     body: 'Node wall-clock (detached systemd) and agent wall-clock (event-driven wakeups) are the obvious bottlenecks. The real one is agent context — solved by pushing conclusions down to the data and keeping durable state in small files.',
   },
   {
@@ -208,21 +208,21 @@ function AgentHierarchy() {
   return (
     <div className="mt-4">
       <div className="mx-auto max-w-sm rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-center text-sm text-foreground">
-        Orchestrator / reviewer — Claude Opus 4.8
+        Orchestrator / reviewer &mdash; Claude Opus 4.8
         <span className="block text-xs text-muted-foreground">plans, reviews every diff, writes durable state</span>
       </div>
       <ArrowDown className="mx-auto my-1.5 h-4 w-4 text-muted-foreground" aria-hidden="true" />
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
-          Builder — fresh Sonnet subagent
+          Builder &mdash; fresh Sonnet subagent
           <span className="block text-xs text-muted-foreground">one task, reports a summary back</span>
         </div>
         <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
-          Builder — fresh Sonnet subagent
+          Builder &mdash; fresh Sonnet subagent
           <span className="block text-xs text-muted-foreground">one task, reports a summary back</span>
         </div>
         <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
-          Delegates — cheaper / sandboxed models
+          Delegates &mdash; cheaper / sandboxed models
           <span className="block text-xs text-muted-foreground">cheap read-only work, routed via wrapper binaries</span>
         </div>
       </div>
@@ -324,11 +324,9 @@ export default function HowWeTestedWithClaudePage() {
             <span className="font-medium">Up front, honestly:</span> this was AI-<em>driven</em>, not
             AI-<em>unsupervised</em>. Every destructive action against the live node was gated behind an
             explicit human confirmation, every result was committed under conventional-commit review, and
-            no agent could merge its own pull request. The interesting claim here isn&apos;t &ldquo;the AI
-            did it alone&rdquo; &mdash; it&apos;s that the right division of labor between an agent and an
-            operator let a disk-and-timing-sensitive benchmark — a 23-day initial campaign, then ~2.5 more
-            weeks and counting of steady-state and restart-resume measurement — run to completion without
-            a person watching it sync.
+            no agent could merge its own pull request. The claim isn&apos;t &ldquo;the AI did it
+            alone.&rdquo; It&apos;s that the right division of labor between an agent and an operator let
+            a disk-and-timing-sensitive benchmark run to completion without a person watching it sync.
           </p>
         </Card>
 
@@ -349,7 +347,9 @@ export default function HowWeTestedWithClaudePage() {
         <section className="mt-10 sm:mt-16">
           <AnchorHeading id="at-a-glance" className="text-lg sm:text-xl font-semibold text-foreground">At a glance</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            Four client-level incidents hit during the campaign, all fixed or explicitly documented.
+            Four incidents changed a client&apos;s verdict. They are not the whole list &mdash; the issues
+            log records thirteen client-level problems across triage and full sync &mdash; but these four
+            are the ones that moved a status.
           </p>
           <div
             className="mt-4 sm:mt-6 hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
@@ -408,15 +408,14 @@ export default function HowWeTestedWithClaudePage() {
               loopLabel="fresh session recovers context"
             />
             <p className="mt-2 text-xs text-muted-foreground">
-              The artifacts carry the campaign forward; a new orchestrating session reads the small
-              durable state instead of reconstructing a run from raw logs &mdash; closing the loop back to
-              the orchestrator.
+              The artifacts carry the campaign forward: a new orchestrating session reads the small durable
+              state instead of reconstructing a run from raw logs.
             </p>
           </div>
 
           <div className="mt-8">
             <AnchorHeading id="campaign-timeline" as="h3" className="font-medium text-foreground">
-              Six-week campaign — key dates
+              Six-week campaign &mdash; key dates
             </AnchorHeading>
             <CampaignTimeline />
             <p className="mt-2 text-xs text-muted-foreground">
@@ -433,13 +432,11 @@ export default function HowWeTestedWithClaudePage() {
           <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
             <li><span className="font-medium text-foreground">It&apos;s slow.</span> A single mainnet sync ranges from ~2 hours (ethrex, snap) to never finishes in three days (the full-sync-only clients). Each candidate got a 72-hour cap.</li>
             <li><span className="font-medium text-foreground">It&apos;s sequential.</span> One shared host, one execution slot, one consensus slot &mdash; geth and nethermind side by side would contend for CPU, IO, and peers, so candidates run strictly one at a time.</li>
-            <li><span className="font-medium text-foreground">It&apos;s easy to measure the wrong thing.</span> A client that &ldquo;installed and followed the chain&rdquo; can be silently broken (0 peers, frozen head); a datadir means nothing if it&apos;s running in archive mode; a footprint sampled mid-compaction over-counts.</li>
+            <li><span className="font-medium text-foreground">It&apos;s easy to measure the wrong thing.</span> A client that &ldquo;installed and followed the chain&rdquo; can be silently broken (0 peers, frozen head); a datadir number means nothing if the client was running in archive mode; a footprint sampled mid-compaction over-counts.</li>
             <li><span className="font-medium text-foreground">It&apos;s destructive.</span> Measuring the next client means wiping the last one&apos;s datadir on a shared box that also runs other people&apos;s work.</li>
           </ul>
           <p className="mt-4 text-sm text-muted-foreground">
-            Multiply that across the whole supported field of clients and the 23-day initial campaign
-            (which grew, with the steady-state and restart-resume follow-ups, into a roughly six-week
-            campaign end to end) and you have a task defined less by
+            Multiply that across the whole supported field of clients and you have a task defined less by
             any single hard step than by <em>sustained correctness</em> &mdash; the discipline to run the
             same careful protocol dozens of times, preserve the terminal measurement before teardown, and
             never let a shared-host quirk masquerade as a client property.
@@ -451,10 +448,8 @@ export default function HowWeTestedWithClaudePage() {
           <p className="mt-2 text-sm text-muted-foreground">
             The core design choice: decouple node wall-clock from agent wall-clock, and decouple durable
             state from agent context. Get those two right and a multi-week campaign stops needing a
-            multi-week attention span &mdash; and that held up in practice: the campaign ran across
-            multiple sessions spanning roughly six weeks end to end, with no change to the orchestration
-            model. The bottleneck was never wall-clock, it&apos;s agent context, and a design that holds at
-            three weeks holds just as well at six.
+            multi-week attention span. Extending the initial 23-day run into a six-week one required no
+            change to the orchestration model &mdash; only more entries in the same durable-state files.
           </p>
 
           <AnchorHeading id="node-runs-agent-doesnt-watch" as="h3" className="mt-6 font-medium text-foreground">
@@ -504,10 +499,9 @@ export default function HowWeTestedWithClaudePage() {
             ))}
           </div>
           <p className="mt-3 text-sm text-muted-foreground">
-            The point is context economy. A builder subagent can read ten thousand lines of client source,
-            produce a three-line commit, and return &ldquo;done, here&apos;s the diff&rdquo; &mdash; the
-            orchestrator never has to hold those ten thousand lines. It reviews the diff, not the
-            investigation.
+            The point is context economy. A builder subagent reads the client source, produces the commit,
+            and returns a summary; the orchestrator holds the diff, not the investigation. The reth
+            archive-default fix and the six config-gate corrections were all found this way.
           </p>
 
           <AnchorHeading id="durable-state-backbone" as="h3" className="mt-6 font-medium text-foreground">
@@ -538,7 +532,7 @@ export default function HowWeTestedWithClaudePage() {
           </AnchorHeading>
           <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
             <li><span className="font-medium text-foreground">One candidate at a time. No batching.</span> Ever.</li>
-            <li><span className="font-medium text-foreground">72-hour cap</span> per candidate; footprint is the last near-cap sample, never the peak.</li>
+            <li><span className="font-medium text-foreground">72-hour cap</span> per candidate; footprint is the last sample before teardown &mdash; at sync for a synced client, at the cap for a capped one &mdash; never the peak. On-disk size oscillates during compaction: reth&apos;s max sample read 1.06 TiB against a settled ~0.97 TiB.</li>
             <li><span className="font-medium text-foreground">Destructive data-cleans are gated</span> behind explicit confirmation, and wiping the live shared node always required a fresh human go-ahead.</li>
             <li><span className="font-medium text-foreground">Conventional Commits, new commits only</span>, never a force-push to master; secrets stayed in protected local files and were never committed or exposed to agent context.</li>
             <li><span className="font-medium text-foreground">An agent cannot merge its own pull request.</span> A human does that.</li>
@@ -593,32 +587,41 @@ export default function HowWeTestedWithClaudePage() {
             The consensus-client matrix holds the execution client constant and cycles the CL. Naively
             that&apos;s five full EL re-syncs. Anchor-preserving mode keeps one already-synced execution
             client running and cycles only the CL service per candidate, purging just the consensus
-            datadir between runs: five CL candidates, one EL sync. We ran the sweep three times &mdash;
-            against an ethrex anchor, a geth anchor, and a nethermind anchor &mdash; to prove the EL/CL
-            decoupling empirically. The same three tiers reproduced on all three anchors: a lightweight
-            pair (lodestar, lighthouse), a mid pair (teku, grandine), and nimbus alone at the heavy end
-            &mdash; with the caveat that within-tier order is soft: the lodestar&harr;lighthouse order
-            flipped between the ethrex and geth anchors (geth: lodestar &lt; lighthouse; ethrex:
-            lighthouse &lt; lodestar), and teku moved ~27% between two runs on the <em>same</em>{' '}
+            datadir between runs: five CL candidates, one EL sync.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            We ran the sweep three times &mdash; against an ethrex anchor, a geth anchor, and a nethermind
+            anchor &mdash; to prove the EL/CL decoupling empirically. The same three tiers reproduced on
+            all three anchors: a lightweight pair (lodestar, lighthouse), a mid pair (teku, grandine), and
+            nimbus alone at the heavy end &mdash; with the caveat that within-tier order is soft: the
+            lodestar&harr;lighthouse order flipped between the ethrex and geth anchors (geth: lodestar
+            &lt; lighthouse; ethrex: lighthouse &lt; lodestar), and teku moved ~27% between two runs on
+            the <em>same</em>{' '}
             nethermind anchor (~667 MiB, then ~848 MiB on a clean re-read) &mdash; enough to cross
             grandine (~730 MiB) and back. Each client stayed inside its own tier; the ordering within
             a tier tracks the measurement window more than the client. That instability is itself the
-            finding. The nethermind-anchor sweep also surfaced two harness-fidelity caveats worth
-            carrying forward: lodestar&apos;s first run happened to start while the anchor EL was
+            finding.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            The nethermind-anchor sweep also surfaced two harness-fidelity caveats worth carrying forward:
+          </p>
+          <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
+            <li>lodestar&apos;s first run happened to start while the anchor EL was
             still closing an unrelated block gap, inflating its recorded sync time to ~76 minutes
             versus ~10 for the other four &mdash; a measurement artifact, not a lodestar result, and
-            one we discarded in favour of a clean re-read (~7m36s, ~178 MiB) &mdash; and teku&apos;s
+            one we discarded in favour of a clean re-read (~7m36s, ~178 MiB).</li>
+            <li>teku&apos;s
             run was flagged{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">anchor_synced=no</code>{' '}
             by the watchdog even though the anchor was independently verified healthy &mdash; a false
-            positive in the check, not in the anchor.
-          </p>
+            positive in the check, not in the anchor.</li>
+          </ul>
 
           <AnchorHeading id="two-harness-bugs" as="h3" className="mt-6 font-medium text-foreground">
             Two harness bugs that nearly cost us data
           </AnchorHeading>
           <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
-            <li><span className="font-medium text-foreground">The detached-shell landmine (SIGTTIN).</span> An install step shelled out to a version-check command. Run from a detached tmux session in a non-foreground process group, that read raised SIGTTIN against a tty it didn&apos;t own &mdash; which stops (not kills) the whole subtree &mdash; and hung a run for 90 minutes. Fix: redirect stdin from /dev/null on unattended invocations.</li>
+            <li><span className="font-medium text-foreground">The detached-shell landmine (SIGTTIN).</span> An install step shelled out to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">geth version | head -1</code> to log the binary version. Run from a detached tmux session in a non-foreground process group, that read raised SIGTTIN against a tty it didn&apos;t own &mdash; which stops (not kills) the whole subtree &mdash; and hung a run for 90 minutes. Fix: redirect stdin from /dev/null on unattended invocations.</li>
             <li><span className="font-medium text-foreground">The measurement that vanished at the cap.</span> The disk snapshot was taken only on the synced success branch. When a slow client hit the 72-hour cap, the script fell through to teardown &mdash; which wiped the datadir &mdash; and snapshotted after. Fix: snapshot every terminal run path after installation and before teardown; preflight aborts still exit before sampling. The cap path is the one you forget, and it&apos;s the one a slow client actually takes.</li>
           </ul>
         </section>
@@ -638,9 +641,11 @@ export default function HowWeTestedWithClaudePage() {
             This is a real benchmark, not a lab result. It ran on a shared, semi-production host (12 cores,
             ~62 GB RAM, co-resident workloads) &mdash; representative of how many people actually run
             nodes, but with contention the numbers can&apos;t fully isolate. Each client was measured on
-            one run at a pinned version, so a single result is a data point, not a distribution. An
-            AI-in-the-loop campaign also carries its own risk surface, which is exactly why the governance
-            fence above was non-negotiable rather than advisory.
+            one run at a pinned version, so a single result is a data point, not a distribution. An agent
+            driving a shared host can also destroy the thing it is measuring: the wipe that precedes each
+            candidate is one wrong argument away from the wrong datadir, and a number that is wrong is
+            indistinguishable from a number that is right until someone checks it. That is why the fence
+            above was non-negotiable rather than advisory.
           </p>
         </section>
 
