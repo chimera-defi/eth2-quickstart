@@ -33,7 +33,7 @@ There is no disk winner between these two — they converge once you count full 
 
 The CL layer is the healthy half of the network. Every consensus client we swept checkpoint-synced to a validating head in ~22–23 minutes with zero crashes. None of them *failed* — so your choice is footprint and preference, not survival. Smaller is better:
 
-**lighthouse (~739 MB) < lodestar (~827 MB) < grandine (~946 MB) < teku (~2.1 GB) < nimbus (~5.0 GB)**
+**lighthouse (~739 MiB) < lodestar (~827 MiB) < grandine (~946 MiB) < teku (~2.1 GiB) < nimbus (~5.0 GiB)**
 
 Two operational caveats worth knowing:
 
@@ -60,7 +60,7 @@ Behaviors #2 and #3 come from the *same* root cause: the network only serves rec
 ## TL;DR
 
 - **Run geth or nethermind.** They converge on disk (~1.06 vs ~1.13 TiB); pick nethermind for its compact flat-storage state and diversity, geth if you want boring and well-documented. besu only if you're an enterprise shop that babysits its CL.
-- **Any CL works.** lighthouse is the lean default (~739 MB); lodestar and grandine are close; teku and nimbus are heavier but fine.
+- **Any CL works.** lighthouse is the lean default (~739 MiB); lodestar and grandine are close; teku and nimbus are heavier but fine.
 - **Restart-resilience beats cold-sync speed.** Fast initial sync (ethrex) and small archive-context footprints do not make a client operationally viable — surviving restarts and uptime does, and that's an EL-layer problem.
 - **Keep your consensus client updated.** A stale CL is how the one un-recoverable failure we saw actually happened.
 
