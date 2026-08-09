@@ -99,7 +99,7 @@ const campaignTimeline = [
   { date: '2026-07-06', label: 'CL sweep vs ethrex anchor, 5 CLs' },
   { date: '2026-07-08', label: 'CL cross-check vs geth anchor' },
   { date: '2026-07-10', label: 'ethrex restart-cliff bisected, geth 52h resume verified' },
-  { date: '2026-07-12', label: 'Installer / config correctness fixes shipped' },
+  { date: '2026-07-13', label: 'Installer / config correctness fixes shipped' },
   { date: '2026-07-13', label: 'nimbus_eth1 72h capped run completes' },
   { date: '2026-07-14', label: 'Initial campaign closes — harness and results docs shipped' },
   { date: '2026-07-26', label: 'Third anchor: CL sweep re-run against nethermind' },
@@ -110,6 +110,7 @@ const campaignTimeline = [
   { date: '2026-08-01', label: 'EXP-A: nethermind resumes a 10,607-block gap in 35 min — restart-resume measured' },
   { date: '2026-08-03', label: 'EXP-A bisection: no cliff at any gap (12 min → ~35h); prysm clean-resume measured, n=4' },
   { date: '2026-08-03', label: 'EXP-C: nethermind prune tuning → minimal-history default (~250–280 GiB, no-history tier) measured and shipped as a human-reviewed PR' },
+  { date: '2026-08-04', label: 'Minimal-history default merged to master, live on eth2quickstart.com (#227→#229)' },
 ]
 
 // What's actually implemented (test/bakeoff/lib.sh, run_candidate.sh) — no peer-count check
@@ -437,7 +438,8 @@ export default function HowWeTestedWithClaudePage() {
           </ul>
           <p className="mt-4 text-sm text-muted-foreground">
             Multiply that across the whole supported field of clients and the 23-day initial campaign
-            (which later grew into six weeks of follow-on measurement) and you have a task defined less by
+            (which grew, with the steady-state and restart-resume follow-ups, into a roughly six-week
+            campaign end to end) and you have a task defined less by
             any single hard step than by <em>sustained correctness</em> &mdash; the discipline to run the
             same careful protocol dozens of times, preserve the terminal measurement before teardown, and
             never let a shared-host quirk masquerade as a client property.
@@ -449,11 +451,10 @@ export default function HowWeTestedWithClaudePage() {
           <p className="mt-2 text-sm text-muted-foreground">
             The core design choice: decouple node wall-clock from agent wall-clock, and decouple durable
             state from agent context. Get those two right and a multi-week campaign stops needing a
-            multi-week attention span &mdash; and this claim has since been stress-tested harder than the
-            article originally described: the campaign has now run across multiple sessions spanning six
-            weeks, not three, with no change to the architecture. That&apos;s the point sharpened, not
-            softened: the bottleneck was never wall-clock, it&apos;s agent context, and a design that holds
-            at three weeks holds just as well at six.
+            multi-week attention span &mdash; and that held up in practice: the campaign ran across
+            multiple sessions spanning roughly six weeks end to end, with no change to the orchestration
+            model. The bottleneck was never wall-clock, it&apos;s agent context, and a design that holds at
+            three weeks holds just as well at six.
           </p>
 
           <AnchorHeading id="node-runs-agent-doesnt-watch" as="h3" className="mt-6 font-medium text-foreground">
