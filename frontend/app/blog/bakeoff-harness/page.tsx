@@ -267,57 +267,51 @@ const dataModelRows: { file: string; writtenBy: React.ReactNode; contents: React
   },
 ]
 
-// Renders the same edges as the source flowchart (kept in git history):
-//   candidates.tsv --> run_bakeoff.sh --> run_candidate.sh
-//   run_anchor_rotation.sh --> run_candidate.sh
+// Plain-language retelling of the same flowchart (identifiers kept as sub-labels,
+// full script-by-script edges documented in git history and in the sections below):
+//   [candidates.tsv -> run_bakeoff.sh]  \
+//   run_anchor_rotation.sh (2nd entry) /--> run_candidate.sh
 //   run_candidate.sh --> systemd EL/CL services
-//   run_candidate.sh --> artifacts/run-id/ --> summarize.sh --> summary.csv & report.md
+//   run_candidate.sh --> artifacts/<run-id>/ --> [summarize.sh -> summary.csv & report.md]
 function DataFlowDiagram() {
   return (
     <div className="mt-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex flex-col items-center">
           <div className="w-full rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
-            <span className="font-mono text-xs">candidates.tsv</span>
-            <span className="block text-xs text-muted-foreground">manifest</span>
-          </div>
-          <ArrowDown className="my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <div className="w-full rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
-            <span className="font-mono text-xs">run_bakeoff.sh</span>
-            <span className="block text-xs text-muted-foreground">sequential multi-candidate sweep</span>
+            Pick the next client pair to test
+            <span className="block text-xs text-muted-foreground font-mono">candidates.tsv &rarr; run_bakeoff.sh</span>
           </div>
         </div>
         <div className="flex flex-col items-center justify-end">
           <div className="w-full rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
-            <span className="font-mono text-xs">run_anchor_rotation.sh</span>
-            <span className="block text-xs text-muted-foreground">anchor-preserving CL sweep (separate entry point)</span>
+            Or: reuse one synced EL, swap the consensus client
+            <span className="block text-xs text-muted-foreground font-mono">run_anchor_rotation.sh</span>
           </div>
         </div>
       </div>
       <ArrowDown className="mx-auto my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
       <div className="mx-auto max-w-sm rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-center text-sm text-foreground">
-        <span className="font-mono text-xs text-primary">run_candidate.sh</span>
-        <span className="block text-xs text-muted-foreground">single-candidate driver: reset → install → cap → sample</span>
+        Reset, install, and resource-cap one candidate
+        <span className="block text-xs text-muted-foreground font-mono">run_candidate.sh</span>
       </div>
       <ArrowDown className="mx-auto my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
-          <span className="font-mono text-xs">systemd EL &amp; CL services</span>
-          <span className="block text-xs text-muted-foreground">the running node</span>
+          Run the node
+          <span className="block text-xs text-muted-foreground font-mono">systemd eth1 + cl services</span>
         </div>
         <div className="flex flex-col items-center">
           <div className="w-full rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
-            <span className="font-mono text-xs">artifacts/run-id/</span>
-            <span className="block text-xs text-muted-foreground">env.txt, samples.jsonl, disk snapshots</span>
+            Record everything as it runs
+            <span className="block text-xs text-muted-foreground font-mono">
+              {'artifacts/<run-id>/ (env.txt, samples, disk snapshots)'}
+            </span>
           </div>
           <ArrowDown className="my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           <div className="w-full rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
-            <span className="font-mono text-xs">summarize.sh</span>
-            <span className="block text-xs text-muted-foreground">aggregation</span>
-          </div>
-          <ArrowDown className="my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <div className="w-full rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
-            <span className="font-mono text-xs">summary.csv &amp; report.md</span>
+            Aggregate into the results table
+            <span className="block text-xs text-muted-foreground font-mono">summarize.sh &rarr; summary.csv + report.md</span>
           </div>
         </div>
       </div>
