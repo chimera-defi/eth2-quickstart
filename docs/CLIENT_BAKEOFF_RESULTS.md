@@ -116,12 +116,12 @@ All five CLs **checkpoint-synced to a fully validating head in ~22–23 min**, `
 | **lodestar** | ✅ synced | ~22m | **867,829,601 B (~827 MiB)** | `chain.pruneHistory=true` |
 | **grandine** | ✅ synced | ~22m | **1,343,716,523 B (~946 MiB on disk)** | `--prune-storage` (CRITICAL — stores all states without it) |
 | **teku** | ✅ synced | ~22m | **2,160,709,791 B (~2.1 GiB)** | `data-storage-mode=minimal` |
-| **nimbus** | ✅ synced | ~23m | **5,302,005,871 B (~5.0 GiB)** ← **largest (6.8×)** | `history=prune` |
+| **nimbus** | ✅ synced | ~23m | **5,302,005,871 B (~5.0 GiB)** ← **largest (6.9×)** | `history=prune` |
 
 **CL disk ranking (smaller = better, all config-optimal + checkpoint-synced): lighthouse (~739 MiB) < lodestar (~827 MiB) < grandine (~946 MiB) < teku (~2.1 GiB) < nimbus (~5.0 GiB).**
 
 - **teku required a re-run.** Its first attempt (pre-`TEKU_CACHE=8192m`) JVM-OOM-starved the shared host, took 64 min to sync, and briefly blipped the anchor → `anchor_synced=no` (recorded, discarded as `env.txt.poisoned-run1`). The re-run with `TEKU_CACHE` raised to 8192m (commit `bf043aa`) synced clean in 22 min with a healthy anchor. Lesson: teku's JVM heap must be sized generously on a shared host or its GC pressure spills onto co-resident services. The valid 2.1 GiB row is the re-run.
-- **All CL footprints are roughly <~1.1% of the ethrex anchor's ~468 GiB (502 GB) EL datadir** → confirms EL/CL decoupling: consensus-client choice does not move the EL disk ranking, and vice-versa.
+- **All CL footprints are roughly <~1.1% of the ethrex anchor's ~468 GiB (502 GB) EL datadir** (nimbus, the largest, is ~1.05%) → confirms EL/CL decoupling: consensus-client choice does not move the EL disk ranking, and vice-versa.
 
 ### CL matrix — cross-anchor confirmation (anchor = **geth**, run_id `client-bakeoff-anchor-rotation-2026-07-07`, 2026-07-08)
 
@@ -165,7 +165,7 @@ A third run of the same 5-CL sweep was performed against a **nethermind** anchor
 - **grandine's byte-identical apparent size (1,074,340,425 B) on both the geth-anchor and nethermind-anchor runs is real, not a copy/paste** — it's grandine's fixed ~1 GiB sparse pre-allocation plus deterministic metadata; the actual allocated sizes (~725 MiB vs ~730 MiB) differ as expected.
 
 **Measurement notes:**
-- **grandine uses sparse DB files** → its apparent `du -sb` byte count (1,074,340,425 B) overstates real on-disk usage. `du -sh` reports **~725 MiB actual**, which is the fair number for ranking. The other four CLs had apparent ≈ actual.
+- **grandine uses sparse DB files** → its apparent `du -sb` byte count (1,074,340,425 B) overstates real on-disk usage. `du -sh` reports **~725 MiB actual on the geth anchor and ~730 MiB on the nethermind anchor**; the actual figure is the fair number for ranking. The other four CLs had apparent ≈ actual.
 - **Harness fix `98a52d7` (belongs in PR #190):** `bakeoff_snapshot_disk` guarded its `du | awk` pipeline with `|| true`. Without it, when the live anchor EL churned its datadir during a snapshot, `du` hit a vanishing file → exit 1 → `pipefail` killed the run (this spuriously failed grandine's first attempt; the clean re-run above is authoritative).
 
 ### Client limitations — why each candidate falls outside a clean, finished comparison
@@ -231,7 +231,7 @@ The cutoff is exactly the snap-sync pivot, probed to single-block precision: piv
 
 ## Recommendation & operational viability — which clients would we actually run (final campaign synthesis)
 
-Stage A established **viability**: all 12 client pairs installed, checkpoint-synced, and authenticated the Engine API on this host. Disk size converges once ELs carry full post-merge history, so it doesn't separate the field — production instead asks "will it survive restarts, upgrades, and weeks of uptime?" Under that operational lens the field narrows sharply — and the two layers tell opposite stories: the **EL layer is where the operational risk lives; the CL layer is basically solved.**
+Stage A established **viability**: all 12 client pairs installed, checkpoint-synced, and authenticated the Engine API on this host. Disk size converges once ELs carry full post-merge history, so it doesn't separate the field — production instead asks "will it survive restarts, upgrades, and weeks of uptime?" Under that operational lens the field narrows sharply — and the two layers tell opposite stories: the **EL layer is where the operational risk lives; the CL layer looks solved on the axes we measured** (sync and footprint; only prysm was restart-tested — see the prysm resume note below).
 
 **Execution clients — two clear picks, one qualified third:**
 
@@ -246,8 +246,8 @@ Stage A established **viability**: all 12 client pairs installed, checkpoint-syn
 
 **Consensus clients — the healthy half: all five we swept are operationally effective.** Every CL (lighthouse, lodestar, grandine, teku, nimbus) checkpoint-synced to a validating head in ~22–23 min, `config_optimal=yes`, zero crashes, against a live anchor. Unlike the EL layer, none of them *failed* — so the choice is footprint + preference, not survivability:
 
-- **Recommended: lighthouse** — smallest synced footprint (~739 MiB), checkpoint-syncs in ~22 min, blob pruning on by default. lodestar (~827 MiB) and grandine (~946 MiB, with `--prune-storage`) are close seconds; teku (~2.1 GiB) and nimbus (~5.0 GiB) are heavier. Disk order (the only differentiator): **lighthouse (~739 MiB) < lodestar (~827 MiB) < grandine (~946 MiB) < teku (~2.1 GiB) < nimbus (~5.0 GiB).**
-- Two small operational caveats: **teku** needs a generously sized JVM heap on a shared host (undersized, its GC pressure spilled onto co-resident services and poisoned a first run); **grandine** needs `--prune-storage` or it stores every state. **nimbus** is simply the heaviest (~6.8× lighthouse) but otherwise clean.
+- **Recommended: lighthouse** — smallest synced footprint on the ethrex anchor (~739 MiB; lodestar is smallest on the geth and nethermind anchors — absolute size tracks the measurement window), checkpoint-syncs in ~22 min, blob pruning on by default. lodestar (~827 MiB) and grandine (~946 MiB, with `--prune-storage`) are close seconds; teku (~2.1 GiB) and nimbus (~5.0 GiB) are heavier. Disk order (the only differentiator): **lighthouse (~739 MiB) < lodestar (~827 MiB) < grandine (~946 MiB) < teku (~2.1 GiB) < nimbus (~5.0 GiB).**
+- Two small operational caveats: **teku** needs a generously sized JVM heap on a shared host (undersized, its GC pressure spilled onto co-resident services and poisoned a first run); **grandine** needs `--prune-storage` or it stores every state. **nimbus** is simply the heaviest (~6.9× lighthouse) but otherwise clean.
 - Cross-cutting CL lesson (learned from prysm, the constant anchor): **keep the CL binary current.** A stale prysm v7.1.5 pin stalled ~28h on a PeerDAS/data-column bug and is precisely what aged out besu's pivot. Binary freshness is an operational requirement, not a nicety.
 
 **Bottom line:** on the EL side a real long-running node comes down to **geth or nethermind** (besu if you're an enterprise shop that keeps its CL healthy); on the CL side **any of the five works**, with **lighthouse** the lean default. Fast initial sync (ethrex) and small archive-context footprints do not by themselves make a client operationally viable — durability across restarts and uptime is the deciding axis, and that is an EL-layer problem.
