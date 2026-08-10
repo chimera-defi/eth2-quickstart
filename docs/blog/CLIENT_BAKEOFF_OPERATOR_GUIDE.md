@@ -16,7 +16,7 @@ Two clients cleared every bar we care about — snap-sync to a validating tip, a
 
 | EL | Sync time | Steady-state footprint | Mainnet share | Verdict |
 |----|-----------|------------------------|---------------|---------|
-| **nethermind** | ~14.5h | **~1.06 TiB** (re-measured 2026-08-01: state ~226–230 GiB + ~843 GiB post-merge bodies/receipts + ~19 GiB headers/code; ~251 GiB at snap-sync, before backfill) | 36.0% | **Diversity pick** — on par with geth once full post-merge history is counted, not a disk winner. Compact flat-storage state; a minority client; restart-resume now measured (2026-08-01: closed a 10,607-block/~35h gap in 35m09s, no re-snap). |
+| **nethermind** | ~14.5h | **~1.06 TiB** full-history (re-measured 2026-08-01: state ~226–230 GiB + ~843 GiB post-merge bodies/receipts + ~19 GiB headers/code; ~251 GiB at snap-sync, before backfill). **The shipped installer now defaults to minimal-history** (`NETHERMIND_FULL_HISTORY=false`) → **~250–280 GiB, with no historical RPC**; set `=true` on a fresh datadir to restore the ~1.06 TiB full-history configuration above. | 36.0% | **Diversity pick** — on par with geth once full post-merge history is counted, not a disk winner. Compact flat-storage state; a minority client; restart-resume now measured (2026-08-01: closed a 10,607-block/~35h gap in 35m09s, no re-snap). |
 | **geth** | ~8h28m | ~1.13 TiB | 44.9% | **Conservative default** — biggest ecosystem, most docs, resumes cleanly from multi-day downtime (measured 2026-07-10). |
 
 There is no disk winner between these two — they converge once you count full post-merge history. If you run one EL for the long haul, run one of these. Pick **nethermind** for its genuinely compact flat-storage state and to improve client diversity; pick **geth** if you want the most boring, best-documented option on the network.
@@ -31,15 +31,15 @@ There is no disk winner between these two — they converge once you count full 
 
 ## Consensus client: any of the five, lighthouse as the lean default
 
-The CL layer is the healthy half of the network. Every consensus client we swept checkpoint-synced to a validating head in ~22–23 minutes with zero crashes. None of them *failed* — so your choice is footprint and preference, not survival. Smaller is better:
+The CL layer is the healthy half of the network. Every consensus client we swept checkpoint-synced to a validating head in ~22–23 minutes with zero crashes. None of them *failed* — so your choice is footprint and preference, not survivability — which we only measured for prysm, the constant anchor. Smaller is better:
 
-**lighthouse (~739 MiB) < lodestar (~827 MiB) < grandine (~946 MiB) < teku (~2.1 GiB) < nimbus (~5.0 GiB)**
+On the ethrex anchor: **lighthouse (~739 MiB) < lodestar (~827 MiB) < grandine (~946 MiB) < teku (~2.1 GiB) < nimbus (~5.0 GiB)** (lodestar is smallest on the geth and nethermind anchors — absolute size tracks the measurement window).
 
 Two operational caveats worth knowing:
 
 - **teku** needs a generously sized JVM heap on a shared host (`TEKU_CACHE`). Undersized, its garbage collection spilled onto co-resident services and poisoned one of our runs.
 - **grandine** needs `--prune-storage` or it stores *every* state — the single most important flag for it.
-- **nimbus** is simply the heaviest (~6.8× lighthouse), but otherwise clean.
+- **nimbus** is simply the heaviest (~6.9× lighthouse), but otherwise clean.
 
 We ran this whole sweep three times — anchored to ethrex, then geth, then nethermind — and the same three tiers held: lightweight {lodestar, lighthouse}, mid {teku, grandine}, heavy {nimbus}. Absolute sizes shifted by anchor, and lodestar/lighthouse swapped which one was smallest (lighthouse on ethrex; lodestar on geth and nethermind), so the evidence supports broad EL/CL decoupling without claiming an identical total order.
 
@@ -49,7 +49,7 @@ Cold-sync benchmarks measure day one. You operate a node for months, and you *re
 
 Clients split into three behaviors:
 
-1. **Graceful resume** — comes back, imports the blocks it missed, keeps its state. Minutes to catch up. (geth, measured after a 52-hour gap; nethermind and reth expected here by design.)
+1. **Graceful resume** — comes back, imports the blocks it missed, keeps its state. Minutes to catch up. (geth, measured after a 52-hour gap; **nethermind, measured and bisected across 12 min → ~35 h gaps**; reth never reached a synced datadir to restart.)
 2. **Re-snap cliff** — after a gap past a threshold, discards its synced state and re-syncs from scratch. (**ethrex**, past ~25 minutes.)
 3. **Mid-sync deadlock** — if the CL stops driving the engine during an unfinished sync, the sync wedges permanently while the process still answers RPC. (**besu**, when a stale CL stalled ~28h.)
 
@@ -59,8 +59,8 @@ Behaviors #2 and #3 come from the *same* root cause: the network only serves rec
 
 ## TL;DR
 
-- **Run geth or nethermind.** They converge on disk (~1.06 vs ~1.13 TiB); pick nethermind for its compact flat-storage state and diversity, geth if you want boring and well-documented. besu only if you're an enterprise shop that babysits its CL.
-- **Any CL works.** lighthouse is the lean default (~739 MiB); lodestar and grandine are close; teku and nimbus are heavier but fine.
+- **Run geth or nethermind.** The shipped installer now defaults nethermind to minimal-history (`NETHERMIND_FULL_HISTORY=false`) → **~250–280 GiB, with no historical RPC**; set `=true` on a fresh datadir to restore the ~1.06 TiB full-history configuration that converges with geth's ~1.13 TiB. Pick nethermind for its compact flat-storage state and diversity, geth if you want boring and well-documented. besu only if you're an enterprise shop that babysits its CL.
+- **Any CL works.** lighthouse is the lean default on the ethrex anchor (~739 MiB; lodestar is smallest on the geth and nethermind anchors); grandine is close; teku and nimbus are heavier but fine.
 - **Restart-resilience beats cold-sync speed.** Fast initial sync (ethrex) and small archive-context footprints do not make a client operationally viable — surviving restarts and uptime does, and that's an EL-layer problem.
 - **Keep your consensus client updated.** A stale CL is how the one un-recoverable failure we saw actually happened.
 
