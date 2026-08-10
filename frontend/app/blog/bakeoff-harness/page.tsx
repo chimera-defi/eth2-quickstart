@@ -58,7 +58,7 @@ const layoutTree = `test/bakeoff/
 ├── run_queue.sh                # async TSV rerun-queue drainer (waits for preconditions, then calls run_candidate.sh)
 ├── apply_resource_caps.sh      # systemd CPUQuota/MemoryMax/IOWeight apply|clear
 ├── lib.sh                      # shared probe/sample/alert/config-gate library (sourced, never executed)
-├── summarize.sh                # aggregates artifacts/ into summary.csv, report.md, a results skeleton
+├── summarize.sh                # aggregates artifacts/ into summary.csv, process-summary.csv, report.md, a results skeleton
 ├── candidates.tsv              # the manifest: <execution>\\t<consensus> pairs to run
 ├── rerun_queue.tsv.example     # queue-file format reference for run_queue.sh
 └── test_data_dirs_sync.sh      # CI guard: BAKEOFF_DATA_DIRS must match purge_ethereum_data.sh`
@@ -275,7 +275,7 @@ const dataModelRows: { file: string; writtenBy: React.ReactNode; contents: React
 //   run_anchor_rotation.sh (2nd entry)      >--> run_candidate.sh
 //   rerun_queue.tsv -> run_queue.sh (3rd)  /
 //   run_candidate.sh --> systemd EL/CL services
-//   run_candidate.sh --> artifacts/<run-id>/ --> [summarize.sh -> summary.csv & report.md]
+//   run_candidate.sh --> artifacts/<run-id>/ --> [summarize.sh -> summary.csv, process-summary.csv, report.md, *.generated.md]
 function DataFlowDiagram() {
   return (
     <div className="mt-3">
@@ -320,7 +320,7 @@ function DataFlowDiagram() {
           <ArrowDown className="my-1.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           <div className="w-full rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
             Aggregate into the results table
-            <span className="block text-xs text-muted-foreground font-mono">summarize.sh &rarr; summary.csv + report.md</span>
+            <span className="block text-xs text-muted-foreground font-mono">summarize.sh &rarr; summary.csv + report.md + 2 more</span>
           </div>
         </div>
       </div>

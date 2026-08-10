@@ -12,7 +12,7 @@ We ran every execution client (EL) and consensus client (CL) that [eth2-quicksta
 - **Speed winner — ethrex, ~2h16m.** Fastest cold sync in the field by a wide margin (next is geth at ~8.5h). A ~0%-adoption minimalist Rust client beat everyone.
 - **The twist — ethrex's restart-resync cliff.** ethrex is fastest to sync, but a gap just beyond the ~128-block (≈24–25 min) edge stalled instead of resuming, and measured 1.5–2h gaps **discarded its synced state and triggered a full re-snap (~2h).** That operability tax is the best explanation we found for why the fastest-syncing client is one almost nobody runs.
 - **Restart resilience is a real, under-reported axis.** Clients split into three distinct behaviors after a restart-with-gap. This matters more to a running operator than cold-sync numbers.
-- **The CL layer is effectively solved.** All five consensus clients checkpoint-synced to a validating head in ~22–23 minutes with zero failures; footprint is the only differentiator. Operational risk lives in the **EL** layer.
+- **The CL layer looks solved on the axes we measured.** All five consensus clients checkpoint-synced to a validating head in ~22–23 minutes with zero failures; footprint is the only differentiator — sync and footprint, that is, since only prysm was restart-tested. Operational risk lives in the **EL** layer.
 
 ---
 
@@ -92,11 +92,11 @@ ethrex snap-synced to a fully-validating head in **~2h16m**, the fastest in the 
 Two things keep it out of the winners' circle:
 
 1. **The footprint is settled now, and it's not comparable.** ethrex prunes nothing, and we watched the datadir climb even at the chain tip with `eth_syncing=false` (286 → 403 → 416 → ~467 GiB across a single day, ~10 GiB/hr, 2026-07-06) — but a follow-up run confirmed that climb was settling, not unbounded: it plateaus at **~470–476 GiB** (drifting 470.2 → 475.5 GiB over ~42 hours at +0.13 GiB/hr, 2026-07-28→31). That still isn't a disk win, because it simultaneously serves almost no history (`eth_getBlockByNumber` returns `null` below its snap pivot). So it is neither compact nor a full-history archive — its settled size just isn't rankable against the full-history clients above. On a state-only basis it isn't even smallest: nethermind's state alone is ~226–230 GiB, roughly half ethrex's entire total (not a perfectly controlled comparison — different state encodings, and ethrex's total also includes headers/recent blocks).
-2. **The restart cliff** — which is the marquee finding of the whole campaign, so it gets its own section.
+2. **The restart cliff** — which gets its own section below.
 
 ---
 
-## The novel axis: restart resilience
+## Restart resilience
 
 Cold-sync numbers tell you how a node behaves *once*, on day one. But operators restart nodes constantly — upgrades, config changes, crashes, host maintenance. "What happens after a restart with a gap?" is a first-class operational question, and it cleanly separates the field into three behaviors:
 
@@ -144,7 +144,7 @@ Takeaways: an in-progress besu snap sync is fragile to a prolonged CL outage —
 
 ## The full-sync-only clients — and a contested flag, settled
 
-**reth** and **nimbus_eth1** have no snap-sync path; they full-sync from genesis. Both hit the 72h cap far from tip (reth ~21%, ~0.98 TiB; nimbus_eth1 ~21.6%, ~40 GB). This is a **client-design limitation for our snap-to-tip bar, not a failure** — it would be unfair to rank a from-genesis full sync against a snap sync on either time or disk. reth in particular is widely and successfully run elsewhere.
+**reth** and **nimbus_eth1** have no snap-sync path; they full-sync from genesis. Both hit the 72h cap far from tip (reth ~21% gas-weighted (47% by block count), ~0.98 TiB; nimbus_eth1 ~21.6%, ~40 GB). This is a **client-design limitation for our snap-to-tip bar, not a failure** — it would be unfair to rank a from-genesis full sync against a snap sync on either time or disk. reth in particular is widely and successfully run elsewhere.
 
 nimbus_eth1 did settle one open question for us. Its config carries `prune = true`, and whether that flag actually does anything was genuinely contested: the binary's `--help` claims it prunes expired bodies and receipts, while the online docs say pre-merge history needs a separate era1 export — i.e. that the flag is effectively inert. We'd flagged it "unverified." The 72-hour run answered it directly: the journal logged **continuous online pruning** (`Pruning history … pruned=N`) throughout block import. So the flag is **not** inert — nimbus_eth1 prunes history online as it syncs. (Whether it reaches full pre-merge completeness versus an era1 import stays untestable here, since the node never reached tip — but the "does it do anything?" question is now a clean *yes*.) As a bonus data point, that run stayed up 72 hours with zero restarts: stable, just slow by design.
 
@@ -158,7 +158,7 @@ A tempting story going in was "mainnet share predicts syncability" — the low/z
 
 ---
 
-## The consensus layer is solved
+## The consensus layer — solved on the axes we measured
 
 We ran the five CLs — **lighthouse, lodestar, grandine, teku, nimbus** — against a constant anchor EL, then repeated it against two further anchor ELs to test the EL/CL decoupling claim directly. Every CL checkpoint-synced to a fully-validating head in minutes — **~22–23 min on the ethrex anchor, ~6–9 min on the geth anchor** (whose footprints are tabulated below), and **~7–10 min on the nethermind anchor** — `config_optimal=yes`, zero crashes. Sync *time* is effectively tied within each anchor, so **footprint is the differentiator**:
 
