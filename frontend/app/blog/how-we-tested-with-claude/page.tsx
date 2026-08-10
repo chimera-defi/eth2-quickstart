@@ -501,7 +501,8 @@ export default function HowWeTestedWithClaudePage() {
           <p className="mt-3 text-sm text-muted-foreground">
             The point is context economy. A builder subagent reads the client source, produces the commit,
             and returns a summary; the orchestrator holds the diff, not the investigation. The reth
-            archive-default fix and the six config-gate corrections were all found this way.
+            archive-default fix and the six config-gate corrections were all implemented this way, under
+            orchestrator review.
           </p>
 
           <AnchorHeading id="durable-state-backbone" as="h3" className="mt-6 font-medium text-foreground">
@@ -532,7 +533,7 @@ export default function HowWeTestedWithClaudePage() {
           </AnchorHeading>
           <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
             <li><span className="font-medium text-foreground">One candidate at a time. No batching.</span> Ever.</li>
-            <li><span className="font-medium text-foreground">72-hour cap</span> per candidate; footprint is the last sample before teardown &mdash; at sync for a synced client, at the cap for a capped one &mdash; never the peak. On-disk size oscillates during compaction: reth&apos;s max sample read 1.06 TiB against a settled ~0.97 TiB.</li>
+            <li><span className="font-medium text-foreground">72-hour cap</span> per candidate; footprint is the last sample before teardown &mdash; at sync for a synced client, at the cap for a capped one &mdash; never the peak. On-disk size oscillates during compaction: reth&apos;s max sample read 1.06 TiB against the ~0.98 TiB captured at the 72h cap.</li>
             <li><span className="font-medium text-foreground">Destructive data-cleans are gated</span> behind explicit confirmation, and wiping the live shared node always required a fresh human go-ahead.</li>
             <li><span className="font-medium text-foreground">Conventional Commits, new commits only</span>, never a force-push to master; secrets stayed in protected local files and were never committed or exposed to agent context.</li>
             <li><span className="font-medium text-foreground">An agent cannot merge its own pull request.</span> A human does that.</li>

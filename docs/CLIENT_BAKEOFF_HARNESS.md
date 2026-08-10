@@ -22,7 +22,7 @@ test/bakeoff/
 ├── run_queue.sh                # async TSV rerun-queue drainer: waits for preconditions, then calls run_candidate.sh
 ├── apply_resource_caps.sh      # systemd CPUQuota/MemoryMax/IOWeight apply|clear
 ├── lib.sh                      # shared probe/sample/config-gate library (sourced, never executed)
-├── summarize.sh                # aggregates artifacts/ into summary.csv, report.md, a results skeleton
+├── summarize.sh                # aggregates artifacts/ into summary.csv, process-summary.csv, report.md, a results skeleton
 ├── candidates.tsv              # the manifest: <execution>\t<consensus> pairs to run
 ├── rerun_queue.tsv.example     # template for run_queue.sh's queue file (copy to rerun_queue.tsv, gitignored)
 └── test_data_dirs_sync.sh      # CI guard: BAKEOFF_DATA_DIRS must match purge_ethereum_data.sh
@@ -48,7 +48,7 @@ flowchart LR
     candidate --> services[systemd EL and CL services]
     candidate --> artifacts[artifacts/run-id/]
     artifacts --> summary[summarize.sh]
-    summary --> outputs[summary.csv and report.md]
+    summary --> outputs["summary.csv + report.md + 2 more"]
 ```
 
 `run_bakeoff.sh` owns the ordinary sequential sweep; `run_anchor_rotation.sh` reuses one synced
@@ -113,8 +113,10 @@ Anchor mode has its own precondition gate before touching anything: the `$execut
 `$ETH2QS_BAKEOFF_ANCHOR_EL` (mismatch → `exit 3`), `eth1.service` must be `systemctl is-active`,
 Engine API port 8551 must answer with an HTTP-shaped code (`^[1-5][0-9]{2}$`, since 401 auth-required
 counts as "responding"), and a bounded 5-retry/2s-sleep loop must observe `eth_syncing` resolve to
-"caught up" (`result == false`, or a progress object where `currentBlock == highestBlock` and
-`highestBlock != "0x0"`) before the CL sweep is allowed to start.
+"caught up" (`result == false`, or a progress object whose hex-decoded `currentBlock` is `>=` its
+hex-decoded `highestBlock`, with `highestBlock != "0x0"`) before the CL sweep is allowed to start.
+This numeric `>=` comparison differs from `bakeoff_is_execution_synced`, which instead compares the
+`currentBlock`/`highestBlock` hex strings for exact equality.
 
 ### 3.2 Resume guard
 
@@ -400,10 +402,11 @@ Mechanism:
    for `--config-file=x` that character is `-`, so the lookbehind never fires there.
 3. If the extracted path exists as a file, its contents are appended to the "combined" haystack
    alongside the `ExecStart` line — so tokens can live in either the command line or the config file.
-4. `_has_token <label> <pattern> <haystack>` runs `grep -qP -- "$pattern" "$haystack"`; the `--`
-   before the pattern is required because several patterns start with a dash (e.g.
-   `--prune-storage`) and without `--` those would be parsed as a `grep` option and silently
-   swallowed by the `2>/dev/null` as a false "miss".
+4. `_has_token <label> <pattern> <haystack>` runs `echo "$haystack" | grep -qP -- "$pattern"` — the
+   haystack (the `ExecStart` line plus any referenced config file's contents, per step 3) is piped in
+   as text, not passed as a `grep` file operand. The `--` before the pattern is required because
+   several patterns start with a dash (e.g. `--prune-storage`) and without `--` those would be parsed
+   as a `grep` option and silently swallowed by the `2>/dev/null` as a false "miss".
 5. Per-client token table (kept current with what the install scripts actually emit):
 
    | Client | Token checked |
@@ -540,7 +543,7 @@ rows.
 
 ## 8. `summarize.sh` — aggregation
 
-Reads every `artifacts/<run-id>/<el>__<cl>/` directory and produces three outputs, none of which
+Reads every `artifacts/<run-id>/<el>__<cl>/` directory and produces four outputs, none of which
 overwrite the hand-curated `docs/CLIENT_BAKEOFF_RESULTS.md` (that file is the blog's source of truth
 and this script never touches it):
 
