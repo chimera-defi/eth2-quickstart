@@ -27,7 +27,7 @@ const tocLinks = [
   { label: 'Restart resilience', href: '#restart-resilience' },
   { label: 'Full-sync-only clients', href: '#full-sync-only-clients' },
   { label: 'Distribution as predictor', href: '#distribution-as-predictor' },
-  { label: 'Consensus layer solved', href: '#consensus-layer-solved' },
+  { label: 'Consensus layer', href: '#consensus-layer-solved' },
   { label: 'Recommendations', href: '#recommendations' },
 ]
 
@@ -108,7 +108,7 @@ const executionClients = [
 const consensusClients = [
   {
     name: 'Lighthouse',
-    ethrexAnchorFootprint: '~737 MiB — smallest',
+    ethrexAnchorFootprint: '~739 MiB — smallest',
     gethAnchorFootprint: '~518 MiB',
     nethermindAnchorFootprint: '~470 MiB',
     pruneLever: 'checkpoint-sync-url',
@@ -116,7 +116,7 @@ const consensusClients = [
   },
   {
     name: 'Lodestar',
-    ethrexAnchorFootprint: '~828 MiB',
+    ethrexAnchorFootprint: '~827 MiB',
     gethAnchorFootprint: '~177 MiB — smallest',
     nethermindAnchorFootprint: '~178 MiB — smallest',
     pruneLever: 'pruneHistory=true',
@@ -132,7 +132,7 @@ const consensusClients = [
   },
   {
     name: 'Teku',
-    ethrexAnchorFootprint: '~2.01 GiB',
+    ethrexAnchorFootprint: '~2.1 GiB',
     gethAnchorFootprint: '~936 MiB',
     nethermindAnchorFootprint: '~848 MiB',
     pruneLever: 'data-storage-mode=minimal',
@@ -140,7 +140,7 @@ const consensusClients = [
   },
   {
     name: 'Nimbus',
-    ethrexAnchorFootprint: '~4.94 GiB — largest',
+    ethrexAnchorFootprint: '~5.0 GiB — largest',
     gethAnchorFootprint: '~1.2 GiB — largest',
     nethermindAnchorFootprint: '~1.3 GiB — largest',
     pruneLever: 'history=prune',
@@ -154,7 +154,7 @@ const fullMetrics = [
   { candidate: 'geth × prysm', peers: '—', configOptimal: 'yes', reRuns: 0, notable: 'Baseline; no large optimistic gap to close' },
   { candidate: 'nethermind × prysm', peers: '49', configOptimal: 'yes', reRuns: 1, notable: 'First attempt: 13.3h 0-peer loopback stall; re-run after ExternalIp fix synced clean. Restart-resume measured and bisected (2026-08-01→03): every gap from 12 min to ~35h resumed by plain block import, no re-snap, no cliff' },
   { candidate: 'ethrex × prysm', peers: '50', configOptimal: 'yes', reRuns: 0, notable: 'Datadir plateaus at ~470–476 GiB (confirmed by a follow-up steady-state measurement run on v22.0.0, 4h09m56s snap, drifting 470.2→475.5 GiB over ~42h after); 1 auto-healed stale-pivot event; serves no history beyond its snap pivot' },
-  { candidate: 'besu × prysm', peers: '~50', configOptimal: 'yes (audited: SNAP + Bonsai)', reRuns: 2, notable: 'Un-pruned run synced clean and is the ranked footprint; the pruned re-run deadlocked twice and was abandoned (no verdict)' },
+  { candidate: 'besu × prysm', peers: '~50', configOptimal: 'n/a from the harness gate; sync-flag audit: SNAP + Bonsai ✅', reRuns: 2, notable: 'Un-pruned run synced clean and is the ranked footprint; the pruned re-run deadlocked twice and was abandoned (no verdict)' },
   { candidate: 'reth × prysm', peers: '—', configOptimal: 'yes', reRuns: 1, notable: '578 samples; relaunched after --full fix; 47% by block / ~21% gas-weighted at cap' },
   { candidate: 'nimbus-eth1 × prysm', peers: '20–25', configOptimal: 'yes', reRuns: 1, notable: '72h continuous, 0 restarts; supersedes an earlier ~21 GB aborted run' },
   { candidate: 'erigon × prysm', peers: '—', configOptimal: 'n/a (no-sync)', reRuns: 0, notable: 'CPU cap raised 200%→600% mid-run; advanced ~5k blocks then re-froze' },
@@ -334,9 +334,9 @@ export default function EthereumClientBakeoffPage() {
               </p>
             </Card>
             <Card padding="sm" className="bg-muted/30">
-              <h3 className="font-medium text-foreground">The CL layer is effectively solved</h3>
+              <h3 className="font-medium text-foreground">The CL layer looks solved — on the axes we measured</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                All five consensus clients checkpoint-synced to a validating head in minutes — about 6–9 minutes on the geth anchor, ~10 minutes on the nethermind anchor, and ~22–23 minutes on the ethrex anchor. All five reached a validating head on all three anchors (three runs needed a caveat along the way — teku&apos;s JVM heap sizing and a watchdog false positive, grandine&apos;s harness du bug, and lodestar&apos;s anchor-gap re-read — none of them client faults). Footprint is the main differentiator.
+                All five consensus clients checkpoint-synced to a validating head in minutes — about 6–9 minutes on the geth anchor, ~7–10 minutes on the nethermind anchor, and ~22–23 minutes on the ethrex anchor. All five reached a validating head on all three anchors (three runs needed a caveat along the way — teku&apos;s JVM heap sizing and a watchdog false positive, grandine&apos;s harness du bug, and lodestar&apos;s anchor-gap re-read — none of them client faults). Footprint is the main differentiator.
               </p>
             </Card>
           </div>
@@ -545,7 +545,7 @@ export default function EthereumClientBakeoffPage() {
             ))}
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Mainnet execution-client share as of the campaign window (2026-06).
+            Mainnet execution-client share, sampled once during the campaign; not re-checked.
           </p>
         </section>
 
@@ -728,8 +728,12 @@ export default function EthereumClientBakeoffPage() {
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes|no</code>.
               The gate itself needed six bug-fixes across three review rounds before we trusted
               it — a measurement tool gets no more benefit of the doubt than the thing it measures.
-              Every comparable footprint on this page comes from a synced
-              run stamped <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes</code> (capped, no-sync, or pruned-only runs are marked as such and excluded from the ranking).
+              Every comparable footprint on this page comes from a synced run whose disk
+              configuration was verified — by the harness{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal</code>{' '}
+              gate, or (for besu, whose harness token targets a prune lever the ranked run
+              deliberately didn&apos;t use) by the manual sync-flag audit (capped, no-sync, or
+              pruned-only runs are marked as such and excluded from the ranking).
             </p>
           </Card>
           <p className="mt-3 text-sm text-muted-foreground">
@@ -1031,7 +1035,9 @@ export default function EthereumClientBakeoffPage() {
               it&apos;s not comparable.</span>{' '}
               ethrex prunes nothing, and we watched the datadir climb even at the chain tip with{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing=false</code>{' '}
-              (286 → 403 → 416 → ~467 GiB across a single day, ~10 GiB/hr, 2026-07-06) — but a
+              (286 → 403 → 416 → ~467 GiB across a single day, ~10 GiB/hr averaged across the
+              2026-07-06 run, before the +43 → +0.13 GiB/hr settling curve was resolved by the
+              2026-07-28 steady-state run) — but a
               follow-up run confirmed that climb was settling, not unbounded: it plateaus at
               ~470–476 GiB (drifting 470.2 → 475.5 GiB over ~42 hours, 2026-07-28→31). That still doesn&apos;t make it a disk
               winner, because it simultaneously serves almost no history (
@@ -1259,7 +1265,7 @@ export default function EthereumClientBakeoffPage() {
             at <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">0x0</code>{' '}
             throughout. It re-ran the entire ~2h pipeline. The re-snap itself was timed at{' '}
             <strong className="text-foreground">2h11m</strong> — a full re-run of the cold-sync
-            pipeline, on a datadir that had been fully synced minutes earlier.
+            pipeline, on a datadir that had been fully synced before the gap.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             The obvious follow-up: how big a gap actually trips it? We bisected it with controlled
@@ -1428,7 +1434,7 @@ export default function EthereumClientBakeoffPage() {
             <strong className="text-foreground">~22–23 minutes on the ethrex anchor</strong>,{' '}
             <strong className="text-foreground">~6–9 minutes on the geth anchor</strong> (whose
             footprints are in the CL scorecard above), and{' '}
-            <strong className="text-foreground">~10 minutes on the nethermind anchor</strong>{' '}
+            <strong className="text-foreground">~7–10 minutes on the nethermind anchor</strong>{' '}
             (lodestar&apos;s first attempt on that anchor recorded ~76 minutes, but the anchor EL
             was still importing a ~2-day block gap at the time; the clean re-read is ~7m36s and is
             what the scorecard uses),{' '}
