@@ -73,6 +73,7 @@ test/
 ├── ci_test_run_1.sh        # run_1 structure validation
 ├── ci_test_run_1_e2e.sh    # run_1 E2E (executes run_1.sh, verifies results)
 ├── ci_test_docs_consistency.sh # Active docs link/legacy-reference consistency checks
+├── ci_test_campaign_constants.sh # Bake-off measured-constant consistency across docs/frontend/deck (issue #230)
 ├── prysm_checkpoint_smoke.sh # Optional live Prysm checkpoint-sync smoke
 ├── run_e2e.sh             # Wrapper: Docker + systemd + ci_test_e2e.sh (--phase=1|2)
 ├── lib/
@@ -147,6 +148,7 @@ Previously we only verified binaries installed and MEV services active. We now *
 | `ci_test_run_1_e2e.sh` | Executes run_1.sh and verifies results (run via run_e2e.sh --phase=1) | root |
 | `ci_test_run_2.sh` | Validates run_2.sh structure, syntax, configs, Geth install | testuser |
 | `ci_test_docs_consistency.sh` | Validates active doc links and retired legacy reference absence | n/a |
+| `ci_test_campaign_constants.sh` | Validates measured bake-off constants (restart rate, cutoff date, history-mode caveat) agree across docs, operator guide, blog pages, and deck | n/a |
 
 **Note**: Full E2E testing with systemd services and snap packages requires special Docker setup. CI tests validate structure and components that work in standard Docker.
 

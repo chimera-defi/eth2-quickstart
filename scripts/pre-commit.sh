@@ -71,6 +71,9 @@ bash test/bakeoff/test_data_dirs_sync.sh
 echo "=== Docs consistency ==="
 bash test/ci_test_docs_consistency.sh
 
+echo "=== Campaign constants consistency ==="
+bash test/ci_test_campaign_constants.sh
+
 echo "=== Agent skill checks ==="
 bash test/ci_test_skill_structure.sh
 bash test/ci_test_skill_command_mapping.sh
