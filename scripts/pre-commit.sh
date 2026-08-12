@@ -83,13 +83,13 @@ elif git rev-parse --verify origin/main >/dev/null 2>&1; then
 fi
 if [[ -n "$BASE_REF" ]] && [[ "$(git rev-parse HEAD)" != "$(git rev-parse "$BASE_REF")" ]]; then
   ATTR_RECORD=$(mktemp)
+  trap 'rm -f "$ATTR_RECORD"' EXIT
   git log -z --format='%H%x1f%an%x1f%ae%x1f%B' "$BASE_REF"..HEAD > "$ATTR_RECORD"
   if [[ -s "$ATTR_RECORD" ]]; then
     bash test/ci_test_pr_attribution.sh --commits "$ATTR_RECORD"
   else
     echo "No commits ahead of $BASE_REF — skipping."
   fi
-  rm -f "$ATTR_RECORD"
 else
   echo "No divergent commits from a known base branch — skipping."
 fi
