@@ -74,6 +74,26 @@ bash test/ci_test_docs_consistency.sh
 echo "=== Campaign constants consistency ==="
 bash test/ci_test_campaign_constants.sh
 
+echo "=== PR attribution (commit-side; PR body checked in CI, not here) ==="
+BASE_REF=""
+if git rev-parse --verify origin/master >/dev/null 2>&1; then
+  BASE_REF="origin/master"
+elif git rev-parse --verify origin/main >/dev/null 2>&1; then
+  BASE_REF="origin/main"
+fi
+if [[ -n "$BASE_REF" ]] && [[ "$(git rev-parse HEAD)" != "$(git rev-parse "$BASE_REF")" ]]; then
+  ATTR_RECORD=$(mktemp)
+  trap 'rm -f "$ATTR_RECORD"' EXIT
+  git log -z --format='%H%x1f%an%x1f%ae%x1f%B' "$BASE_REF"..HEAD > "$ATTR_RECORD"
+  if [[ -s "$ATTR_RECORD" ]]; then
+    bash test/ci_test_pr_attribution.sh --commits "$ATTR_RECORD"
+  else
+    echo "No commits ahead of $BASE_REF — skipping."
+  fi
+else
+  echo "No divergent commits from a known base branch — skipping."
+fi
+
 echo "=== Agent skill checks ==="
 bash test/ci_test_skill_structure.sh
 bash test/ci_test_skill_command_mapping.sh
