@@ -62,6 +62,8 @@ A knock-on benefit of that gate: it forced us to *empirically settle* config que
 
 Nethermind's synced-tip snapshot read ~251 GiB, well below geth's ~1.13 TiB — but that number was taken before nethermind's FastBlocks finished backfilling post-merge block bodies and receipts. Its steady-state datadir (re-measured 2026-08-01) is **~1.06 TiB (~1,088 GiB)**: state ~226–230 GiB (its compact Halite/Paprika flat storage) plus ~843 GiB of post-merge bodies and receipts plus ~19 GiB of headers and code, the same history geth keeps under `--history.chain postmerge`. Under matched history-retention configs, nethermind and geth are on par:
 
+**Update 2026-08-03:** that ~1.06 TiB figure is the full-history configuration. The shipped installer now defaults nethermind to minimal-history (`NETHERMIND_FULL_HISTORY=false`) → **~250–280 GiB, with no historical RPC**; set `=true` on a fresh/rebuilt datadir to restore the ~1.06 TiB full-history number above.
+
 | EL | Footprint (full post-merge history) | Sync time | Mode | Mainnet share |
 |----|------|------|------|------|
 | **Nethermind** | **~1.06 TiB** steady-state (~251 GiB at snap-sync, pre-backfill) | ~14.5h | snap + Halite/Paprika | 36.0% |

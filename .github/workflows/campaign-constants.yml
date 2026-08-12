@@ -1,0 +1,63 @@
+# Guards the bake-off campaign's measured constants (issue #230 item 3): the corpus spans
+# docs, the operator guide, four rendered frontend blog pages, and the deck, and none of the
+# other workflows' path filters union all three — a docs-only or frontend/deck-only PR would
+# otherwise skip this check entirely (the exact blind spot that let the deck silently re-stale
+# after the articles were corrected).
+name: Campaign Constants Consistency
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    paths:
+      - 'docs/CLIENT_BAKEOFF_RESULTS.md'
+      - 'docs/CLIENT_BAKEOFF_BLOG.md'
+      - 'docs/CLIENT_BAKEOFF_HARNESS.md'
+      - 'docs/HOW_WE_TESTED_WITH_CLAUDE.md'
+      - 'docs/blog/CLIENT_BAKEOFF_OPERATOR_GUIDE.md'
+      - 'frontend/app/blog/bakeoff-harness/page.tsx'
+      - 'frontend/app/blog/bakeoff-results/page.tsx'
+      - 'frontend/app/blog/ethereum-client-bakeoff/page.tsx'
+      - 'frontend/app/blog/how-we-tested-with-claude/page.tsx'
+      - 'frontend/public/deck/bakeoff.html'
+      - 'test/ci_test_campaign_constants.sh'
+      - '.github/workflows/campaign-constants.yml'
+  pull_request:
+    branches: [ main, master, develop, 'cursor/**' ]
+    paths:
+      - 'docs/CLIENT_BAKEOFF_RESULTS.md'
+      - 'docs/CLIENT_BAKEOFF_BLOG.md'
+      - 'docs/CLIENT_BAKEOFF_HARNESS.md'
+      - 'docs/HOW_WE_TESTED_WITH_CLAUDE.md'
+      - 'docs/blog/CLIENT_BAKEOFF_OPERATOR_GUIDE.md'
+      - 'frontend/app/blog/bakeoff-harness/page.tsx'
+      - 'frontend/app/blog/bakeoff-results/page.tsx'
+      - 'frontend/app/blog/ethereum-client-bakeoff/page.tsx'
+      - 'frontend/app/blog/how-we-tested-with-claude/page.tsx'
+      - 'frontend/public/deck/bakeoff.html'
+      - 'test/ci_test_campaign_constants.sh'
+      - '.github/workflows/campaign-constants.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: campaign-constants-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  campaign-constants:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache apt packages
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: apt-${{ runner.os }}-ripgrep
+          restore-keys: apt-${{ runner.os }}-
+
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
+      - name: Verify measured campaign constants are consistent
+        run: bash ./test/ci_test_campaign_constants.sh
