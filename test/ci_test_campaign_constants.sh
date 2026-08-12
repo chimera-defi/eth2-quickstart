@@ -159,7 +159,12 @@ check_nethermind_history_caveat() {
 check_no_stale_regressions() {
     log_info "Checking for regression to previously-corrected values..."
 
-    local patterns=("307 blocks/min" "307 blk/min" "6.8×")
+    # Word-boundary-anchored: a plain -F fixed-string match would also fire inside an unrelated
+    # future number, e.g. "16.8×" contains "6.8×" and "1307 blocks/min" contains "307 blocks/min".
+    # \b works here because digit-adjacent-to-digit is not a word-boundary transition in the
+    # default (Unicode-aware) regex engine, so no lookbehind is needed.
+    local display=("307 blocks/min" "307 blk/min" "6.8×")
+    local patterns=('\b307 blocks/min\b' '\b307 blk/min\b' '\b6\.8×')
     local reasons=(
         "nethermind's restart-resume rate is measured at ~302 blocks/min, not 307 (see $ARBITER EXP-A)"
         "nethermind's restart-resume rate is measured at ~302 blocks/min, not 307 (see $ARBITER EXP-A)"
@@ -173,13 +178,27 @@ check_no_stale_regressions() {
             [[ -f "$file" ]] || continue
             while IFS=: read -r line _; do
                 [[ -z "$line" ]] && continue
-                log_error "$file:$line found previously-corrected stale value '$pattern' — ${reasons[$i]}"
+                log_error "$file:$line found previously-corrected stale value '${display[$i]}' — ${reasons[$i]}"
                 FAILED=1
-            done < <(rg -n -F -e "$pattern" "$file" 2>/dev/null || true)
+            done < <(rg -n -e "$pattern" "$file" 2>/dev/null || true)
         done
     done
 }
 
+# ---------------------------------------------------------------------------
+# 5. Corpus coverage: warn (don't fail — a deletion may be intentional) if a listed artifact has
+#    gone missing, so a rename silently shrinking this check's coverage doesn't go unnoticed.
+# ---------------------------------------------------------------------------
+check_corpus_files_exist() {
+    local file
+    for file in "${ALL_ARTIFACTS[@]}"; do
+        if [[ ! -f "$file" ]]; then
+            echo "[WARN] $file is listed in ALL_ARTIFACTS but no longer exists — if renamed, update test/ci_test_campaign_constants.sh; if intentionally removed, drop it from the list"
+        fi
+    done
+}
+
+check_corpus_files_exist
 check_restart_rate_consistency
 check_campaign_cutoff_consistency
 check_nethermind_history_caveat
