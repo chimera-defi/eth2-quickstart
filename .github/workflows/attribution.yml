@@ -1,0 +1,39 @@
+# Guards the repo's PR/commit attribution contract (issue #230 item 2, AGENTS.md L6-7):
+# commit author must be the agent identity (not the human), every commit needs the exact
+# Chimera co-author trailer, and the PR body needs matching **Agent:**/**Co-authored-by:**
+# fields. No path filter — attribution is a property of the PR itself, not of which files
+# changed, so this must run on every PR unconditionally (a path-scoped trigger would recreate
+# the same kind of blind spot issue #230 item 3 fixed for the campaign-constants check).
+name: PR Attribution Contract
+
+on:
+  pull_request:
+    branches: [ main, master, develop, 'cursor/**' ]
+  workflow_dispatch:
+
+concurrency:
+  group: attribution-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  pr-attribution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Validate only authored PR commits, not GitHub's synthetic merge commit.
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Generate commit records
+        run: |
+          git log -z --format='%H%x1f%an%x1f%ae%x1f%B' "origin/${{ github.base_ref }}..HEAD" > /tmp/pr_commits.record
+
+      - name: Write PR body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: printf '%s' "$PR_BODY" > /tmp/pr_body.txt
+
+      - name: Verify PR attribution contract
+        run: bash ./test/ci_test_pr_attribution.sh --commits /tmp/pr_commits.record --pr-body /tmp/pr_body.txt
