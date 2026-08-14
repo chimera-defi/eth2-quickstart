@@ -112,7 +112,7 @@ rm -rf ./tmp/
 # Create systemd service
 EXEC_START="$NIMBUS_EXEC executionClient --config-file=$NIMBUS_ETH1_DIR/nimbus_eth1.toml"
 
-create_systemd_service "eth1" "Nimbus Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
+create_systemd_service "eth1" "Nimbus Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "300" "5" "300"
 
 # Enable and start the service
 enable_and_start_systemd_service "eth1"
