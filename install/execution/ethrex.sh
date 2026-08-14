@@ -141,7 +141,7 @@ ETHREX_CMD="$ETHREX_DIR/ethrex \
 --log.level info"
 
 # Create systemd service
-create_systemd_service "eth1" "Ethrex Ethereum Execution Client" "$ETHREX_CMD" "$(whoami)" "on-failure" "600" "5" "300"
+create_systemd_service "eth1" "Ethrex Ethereum Execution Client" "$ETHREX_CMD" "$(whoami)" "on-failure" "300" "5" "300"
 
 # Enable and start the service
 enable_and_start_systemd_service "eth1"

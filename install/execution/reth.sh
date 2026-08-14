@@ -74,7 +74,7 @@ ensure_jwt_secret "$HOME/secrets/jwt.hex"
 # Verified flags against reth node --help on installed binary.
 EXEC_START="$RETH_DIR/reth node --full --prune.bodies.pre-merge --prune.receipts.pre-merge --http --http.addr $LH --http.port 8545 --http.api eth,net,web3 --authrpc.addr $LH --authrpc.port $ENGINE_PORT --authrpc.jwtsecret $HOME/secrets/jwt.hex --datadir $HOME/.local/share/reth"
 
-create_systemd_service "eth1" "Reth Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "6000" "10" "3000"
+create_systemd_service "eth1" "Reth Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "300" "10" "3000"
 
 # Enable and start the service
 enable_and_start_systemd_service "eth1"
