@@ -262,7 +262,7 @@ rm -rf ./tmp/
 # Create systemd service
 EXEC_START="/usr/bin/env HOME=$HOME XDG_DATA_HOME=$HOME/.local/share $NETHERMIND_DIR/Nethermind.Runner --config $NETHERMIND_DIR/nethermind.cfg --KeyStore.KeyStoreDirectory $HOME/nethermind/keystore --JsonRpc.JwtSecretFile $HOME/secrets/jwt.hex --JsonRpc.EngineHost $LH --JsonRpc.EnginePort 8551"
 
-create_systemd_service "eth1" "Nethermind Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "600" "5" "300"
+create_systemd_service "eth1" "Nethermind Ethereum Execution Client" "$EXEC_START" "$(whoami)" "on-failure" "300" "5" "300"
 
 # Apply the generated configuration to the running service. The shared helper
 # intentionally uses `start`, which is a no-op for an already-active unit; restart

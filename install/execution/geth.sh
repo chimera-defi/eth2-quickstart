@@ -67,7 +67,7 @@ chmod 700 "$HOME/secrets"
 ensure_jwt_secret "$HOME/secrets/jwt.hex"
 
 # Create systemd service using common function
-create_systemd_service "eth1" "Geth Ethereum Execution Client" "$GETH_CMD" "$(whoami)" "on-failure" "600" "5" "300"
+create_systemd_service "eth1" "Geth Ethereum Execution Client" "$GETH_CMD" "$(whoami)" "on-failure" "300" "5" "300"
 
 # Enable and start the service
 enable_and_start_systemd_service "eth1"
