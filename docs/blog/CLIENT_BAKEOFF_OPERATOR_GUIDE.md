@@ -35,11 +35,12 @@ The CL layer is the healthy half of the network. Every consensus client we swept
 
 On the ethrex anchor: **lighthouse (~739 MiB) < lodestar (~827 MiB) < grandine (~946 MiB) < teku (~2.1 GiB) < nimbus (~5.0 GiB)** (lodestar is smallest on the geth and nethermind anchors — absolute size tracks the measurement window).
 
-Two operational caveats worth knowing:
+A few operational caveats worth knowing:
 
 - **teku** needs a generously sized JVM heap on a shared host (`TEKU_CACHE`). Undersized, its garbage collection spilled onto co-resident services and poisoned one of our runs.
 - **grandine** needs `--prune-storage` or it stores *every* state — the single most important flag for it.
 - **nimbus** is simply the heaviest (~6.9× lighthouse), but otherwise clean.
+- **prysm** — do **not** set the experimental `enable-discovery-reboot` flag. Under PeerDAS it self-deadlocks the peer-discovery database and silently stalls sync while the process stays "running" (see issues log D4). Our installer no longer ships it; if you carried an older config forward, remove it.
 
 We ran this whole sweep three times — anchored to ethrex, then geth, then nethermind — and the same three tiers held: lightweight {lodestar, lighthouse}, mid {teku, grandine}, heavy {nimbus}. Absolute sizes shifted by anchor, and lodestar/lighthouse swapped which one was smallest (lighthouse on ethrex; lodestar on geth and nethermind), so the evidence supports broad EL/CL decoupling without claiming an identical total order.
 
