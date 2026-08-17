@@ -36,5 +36,9 @@ http-mev-relay: http://$MEV_HOST:$MEV_PORT
 
 # Security & Reliability
 disable-broadcast-slashings: true
-enable-discovery-reboot: true
+# NOTE: enable-discovery-reboot is intentionally NOT set. This experimental flag
+# self-deadlocks under PeerDAS: the periodic discovery-listener reboot re-opens the
+# discovery LevelDB while the same process still holds its LOCK, so the flock EAGAINs
+# ("could not open node's peer database: resource temporarily unavailable") every ~60s.
+# Discovery then degrades and data-column subnet coverage starves, stalling sync.
 ignore-unviable-attestations: true
