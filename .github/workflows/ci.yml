@@ -158,6 +158,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      # ci_test_docs_consistency.sh drives rg, which ubuntu-latest does not preinstall.
+      # Without this the job ran, scanned nothing, and still reported success.
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
       - name: Verify active docs consistency
         run: bash ./test/ci_test_docs_consistency.sh
 
