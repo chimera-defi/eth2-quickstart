@@ -167,7 +167,18 @@ record_service_health() {
 
 service_unit_exec_path() {
     local service="$1"
-    systemctl cat "$service" 2>/dev/null | awk -F= '/^ExecStart=/{print $2; exit}' | awk '{print $1}'
+    local unit_text
+
+    # Capture before matching. Piping `systemctl cat` into an awk that ends with `exit`
+    # is the same SIGPIPE/pipefail race as check_service_status: awk exits at the first
+    # ExecStart and closes the pipe, systemctl dies with SIGPIPE (141), pipefail makes
+    # that the substitution's status, and `set -e` then aborted the whole doctor run
+    # partway through its checks. Observed before this fix: `doctor --json` exited 141
+    # on roughly 6 of 10 invocations on a host where eth1.service exists, truncating
+    # the JSON report the skill wrapper and CI depend on.
+    unit_text="$(systemctl cat "$service" 2>/dev/null || true)"
+
+    awk -F= '/^ExecStart=/{print $2; exit}' <<< "$unit_text" | awk '{print $1}'
 }
 
 service_runtime_command() {
