@@ -75,6 +75,9 @@ bash test/ci_test_docs_consistency.sh
 echo "=== Campaign constants consistency ==="
 bash test/ci_test_campaign_constants.sh
 
+echo "=== Nethermind history-mode regression fixtures ==="
+bash test/ci_test_nethermind_history_modes.sh
+
 echo "=== PR attribution (commit-side; PR body checked in CI, not here) ==="
 BASE_REF=""
 if git rev-parse --verify origin/master >/dev/null 2>&1; then
