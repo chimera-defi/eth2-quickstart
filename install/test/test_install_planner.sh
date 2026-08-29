@@ -72,9 +72,30 @@ test_partial_review_state() {
     assert_plan "ethereum" "false" "true" 1 2 "partial_install_review" "review"
 }
 
+# Unlike the pure planner assertions above, this drives the real ensure.sh. That made it
+# depend on the host: ensure.sh derives its plan from the services actually installed
+# here, and the --confirm guard only applies to phase1/phase2/monad_install. On a machine
+# already running a node the plan is "noop" or "review", neither of which is guarded, so
+# the assertion was wrong through no fault of ensure.sh. Stub systemd out so the planner
+# always sees a bare host and the guarded phase2 path is what gets exercised.
 test_ensure_requires_confirm() {
-    local output
-    if output="$("$PROJECT_ROOT/install/utils/ensure.sh" --apply 2>&1)"; then
+    local sandbox output
+    sandbox="$(mktemp -d)"
+    # shellcheck disable=SC2064  # expand sandbox now, not at trap time
+    trap "rm -rf '$sandbox'" RETURN
+
+    cat > "$sandbox/systemctl" <<'STUB'
+#!/bin/bash
+# A bare host: no units installed, so the planner resolves to a phase install.
+case "${1:-}" in
+    list-unit-files) echo "UNIT FILE                                  STATE" ;;
+    is-active|is-enabled) exit 3 ;;
+esac
+exit 0
+STUB
+    chmod +x "$sandbox/systemctl"
+
+    if output="$(PATH="$sandbox:$PATH" "$PROJECT_ROOT/install/utils/ensure.sh" --apply 2>&1)"; then
         echo "  ERROR: ensure --apply should require --confirm"
         return 1
     fi

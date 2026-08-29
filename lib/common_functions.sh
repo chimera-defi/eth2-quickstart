@@ -154,12 +154,24 @@ check_port() {
 # Returns: running, stopped, disabled, not_installed
 check_service_status() {
     local service="$1"
-    
-    if ! systemctl list-unit-files 2>/dev/null | grep -q "^${service}.service"; then
+    local unit_files
+
+    # Capture the listing first, then match it — do NOT pipe into `grep -q`.
+    # `systemctl list-unit-files | grep -q ...` is a race under `set -o pipefail`
+    # (inherited by every script that sources exports.sh): grep -q exits at its first
+    # match and closes the pipe, systemctl dies with SIGPIPE (141), and pipefail
+    # surfaces 141 as the pipeline's status — so an INSTALLED unit reads as
+    # "not_installed". Measured on a live node: 23/40 calls wrong; with a listing
+    # larger than the 64 KiB pipe buffer it fails every time.
+    # The dot in "${service}.service" is escaped so it matches literally rather than
+    # letting "eth1Xservice" satisfy a query for "eth1".
+    unit_files="$(systemctl list-unit-files 2>/dev/null || true)"
+
+    if ! grep -q "^${service}\.service" <<< "$unit_files"; then
         echo "not_installed"
         return
     fi
-    
+
     if systemctl is-active --quiet "$service" 2>/dev/null; then
         echo "running"
     elif systemctl is-enabled --quiet "$service" 2>/dev/null; then
