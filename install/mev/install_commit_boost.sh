@@ -57,36 +57,31 @@ case "$ARCH" in
 esac
 log_info "Using Commit-Boost artifact architecture: $COMMIT_BOOST_ARCH"
 
-# Download Commit-Boost PBS binary
-log_info "Downloading Commit-Boost PBS binary..."
-PBS_URL="https://github.com/Commit-Boost/commit-boost-client/releases/download/${LATEST_VERSION}/commit-boost-pbs-${LATEST_VERSION}-${COMMIT_BOOST_ARCH}.tar.gz"
-if ! download_file "$PBS_URL" "commit-boost-pbs.tar.gz"; then
-    log_error "Failed to download Commit-Boost PBS binary"
+# Download Commit-Boost.
+#
+# Upstream consolidated its release artifacts at v0.10.0 (2026-08-10). Releases up to
+# v0.9.7-rc1 shipped separate commit-boost-cli / commit-boost-pbs / commit-boost-signer
+# tarballs; from v0.10.0-rc1 onward there is a single
+#   commit-boost-<version>-<arch>.tar.gz
+# containing one multi-command `commit-boost` binary whose subcommands are `pbs`,
+# `signer` and `init`. The old per-service URLs now 404, so this installer downloaded
+# nothing and failed for every user until this was fixed.
+log_info "Downloading Commit-Boost..."
+COMMIT_BOOST_URL="https://github.com/Commit-Boost/commit-boost-client/releases/download/${LATEST_VERSION}/commit-boost-${LATEST_VERSION}-${COMMIT_BOOST_ARCH}.tar.gz"
+if ! download_file "$COMMIT_BOOST_URL" "commit-boost.tar.gz"; then
+    log_error "Failed to download Commit-Boost"
     exit 1
 fi
 
-# Download Commit-Boost Signer binary
-log_info "Downloading Commit-Boost Signer binary..."
-SIGNER_URL="https://github.com/Commit-Boost/commit-boost-client/releases/download/${LATEST_VERSION}/commit-boost-signer-${LATEST_VERSION}-${COMMIT_BOOST_ARCH}.tar.gz"
-if ! download_file "$SIGNER_URL" "commit-boost-signer.tar.gz"; then
-    log_error "Failed to download Commit-Boost Signer binary"
-    exit 1
-fi
+# Extract the binary from the tarball
+log_info "Extracting Commit-Boost binary..."
+tar -xzf commit-boost.tar.gz
+rm -f commit-boost.tar.gz
+chmod +x commit-boost
 
-# Extract binaries from tarballs
-log_info "Extracting Commit-Boost binaries..."
-tar -xzf commit-boost-pbs.tar.gz
-tar -xzf commit-boost-signer.tar.gz
-rm -f commit-boost-pbs.tar.gz commit-boost-signer.tar.gz
-chmod +x commit-boost-pbs commit-boost-signer
-
-# Verify binaries exist
-if [[ ! -f "$COMMIT_BOOST_DIR/commit-boost-pbs" ]]; then
-    log_error "commit-boost-pbs binary not found after extraction"
-    exit 1
-fi
-if [[ ! -f "$COMMIT_BOOST_DIR/commit-boost-signer" ]]; then
-    log_error "commit-boost-signer binary not found after extraction"
+# Verify the binary exists
+if [[ ! -f "$COMMIT_BOOST_DIR/commit-boost" ]]; then
+    log_error "commit-boost binary not found after extraction"
     exit 1
 fi
 
@@ -250,12 +245,14 @@ EOF
 
 log_info "Configuration: $CONFIG_DIR/cb-config.toml"
 
-# Create systemd services (CB_CONFIG env var required for binary mode)
-PBS_EXEC_START="$COMMIT_BOOST_DIR/commit-boost-pbs"
+# Create systemd services (CB_CONFIG env var required for binary mode).
+# One binary, two services: the consolidated v0.10.0+ binary selects the service via a
+# `pbs` / `signer` subcommand, so the two-unit layout and port split are unchanged.
+PBS_EXEC_START="$COMMIT_BOOST_DIR/commit-boost pbs"
 create_systemd_service "commit-boost-pbs" "Commit-Boost PBS (MEV Sidecar)" "$PBS_EXEC_START" "$(whoami)" "always" "600" "5" "300"
 sudo sed -i '/^\[Service\]/a Environment="CB_CONFIG='"$CONFIG_DIR"'/cb-config.toml"' /etc/systemd/system/commit-boost-pbs.service
 
-SIGNER_EXEC_START="$COMMIT_BOOST_DIR/commit-boost-signer"
+SIGNER_EXEC_START="$COMMIT_BOOST_DIR/commit-boost signer"
 create_systemd_service "commit-boost-signer" "Commit-Boost Signer" "$SIGNER_EXEC_START" "$(whoami)" "always" "600" "5" "300"
 sudo sed -i '/^\[Service\]/a Environment="CB_CONFIG='"$CONFIG_DIR"'/cb-config.toml"' /etc/systemd/system/commit-boost-signer.service
 sudo sed -i '/^\[Service\]/a Environment="CB_JWTS=ETHGAS_COMMIT='"$HOME"'/secrets/jwt.hex"' /etc/systemd/system/commit-boost-signer.service

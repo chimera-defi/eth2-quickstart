@@ -222,7 +222,9 @@ check_download_url_prysm() {
     check_http_code_200 "https://raw.githubusercontent.com/prysmaticlabs/prysm/master/prysm.sh"
 }
 
-check_download_url_commit_boost_pbs() {
+# Upstream consolidated its artifacts at v0.10.0 (2026-08-10): one
+# commit-boost-<version>-<arch>.tar.gz replaces the old separate pbs/signer tarballs.
+check_download_url_commit_boost() {
     local latest_version
     local arch
     local url
@@ -242,31 +244,7 @@ check_download_url_commit_boost_pbs() {
 
     latest_version="$(get_latest_release "Commit-Boost/commit-boost-client")" || return 1
     [[ -n "$latest_version" ]] || return 1
-    url="https://github.com/Commit-Boost/commit-boost-client/releases/download/${latest_version}/commit-boost-pbs-${latest_version}-${arch}.tar.gz"
-    check_http_code_200 "$url"
-}
-
-check_download_url_commit_boost_signer() {
-    local latest_version
-    local arch
-    local url
-
-    arch="$(uname -m)"
-    case "$arch" in
-        x86_64|amd64)
-            arch="linux_x86-64"
-            ;;
-        aarch64|arm64)
-            arch="linux_arm64"
-            ;;
-        *)
-            return 1
-            ;;
-    esac
-
-    latest_version="$(get_latest_release "Commit-Boost/commit-boost-client")" || return 1
-    [[ -n "$latest_version" ]] || return 1
-    url="https://github.com/Commit-Boost/commit-boost-client/releases/download/${latest_version}/commit-boost-signer-${latest_version}-${arch}.tar.gz"
+    url="https://github.com/Commit-Boost/commit-boost-client/releases/download/${latest_version}/commit-boost-${latest_version}-${arch}.tar.gz"
     check_http_code_200 "$url"
 }
 
@@ -320,7 +298,7 @@ run_test "paradigmxyz/reth" get_latest_release "paradigmxyz/reth" || FAILED_TEST
 
 echo ""
 echo "=== get_github_release_asset_url ==="
-run_test "Commit-Boost PBS linux_x86-64" get_github_release_asset_url "Commit-Boost/commit-boost-client" "commit-boost-pbs-.*-linux_x86-64\.tar\.gz" || FAILED_TESTS+=("Commit-Boost PBS linux_x86-64")
+run_test "Commit-Boost linux_x86-64" get_github_release_asset_url "Commit-Boost/commit-boost-client" "commit-boost-v.*-linux_x86-64\.tar\.gz" || FAILED_TESTS+=("Commit-Boost linux_x86-64")
 run_test "Lighthouse x86_64 linux" get_github_release_asset_url "sigp/lighthouse" "lighthouse-.*-x86_64-unknown-linux-gnu\.tar\.gz" || FAILED_TESTS+=("Lighthouse x86_64 linux")
 run_test_any_pattern "Nimbus-eth1 linux-amd64" "status-im/nimbus-eth1" \
     "nimbus-eth1-linux-amd64-.*\\.tar\\.gz" \
@@ -341,8 +319,7 @@ run_test "consensus: Lighthouse download URL" check_download_url_lighthouse || F
 run_test "consensus: Nimbus download URL" check_download_url_nimbus_consensus || FAILED_TESTS+=("consensus: Nimbus download URL")
 run_test "consensus: Prysm download URL" check_download_url_prysm || FAILED_TESTS+=("consensus: Prysm download URL")
 run_test "consensus: Teku download URL" check_download_url_teku || FAILED_TESTS+=("consensus: Teku download URL")
-run_test "mev: Commit-Boost PBS download URL" check_download_url_commit_boost_pbs || FAILED_TESTS+=("mev: Commit-Boost PBS download URL")
-run_test "mev: Commit-Boost Signer download URL" check_download_url_commit_boost_signer || FAILED_TESTS+=("mev: Commit-Boost Signer download URL")
+run_test "mev: Commit-Boost download URL" check_download_url_commit_boost || FAILED_TESTS+=("mev: Commit-Boost download URL")
 run_test "mev: MEV Boost download URL" check_download_url_mev_boost || FAILED_TESTS+=("mev: MEV Boost download URL")
 run_test "mev: ETHGas source repo URL" check_download_url_ethgas_repo || FAILED_TESTS+=("mev: ETHGas source repo URL")
 run_test "mev: Flashbots Builder Geth repo URL" check_download_url_fb_builder_geth || FAILED_TESTS+=("mev: Flashbots Builder Geth repo URL")
