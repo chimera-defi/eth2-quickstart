@@ -168,6 +168,14 @@ jobs:
       - name: Verify active docs consistency
         run: bash ./test/ci_test_docs_consistency.sh
 
+  nethermind-history-modes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Nethermind history-mode regression fixtures
+        run: bash ./test/ci_test_nethermind_history_modes.sh
+
   agent-skill:
     runs-on: ubuntu-latest
     timeout-minutes: 10
