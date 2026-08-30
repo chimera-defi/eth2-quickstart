@@ -112,6 +112,9 @@ jobs:
           echo "::group::Install planner unit tests"
           docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_install_planner.sh
           echo "::endgroup::"
+          echo "::group::check_service_status regression tests"
+          docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_check_service_status.sh
+          echo "::endgroup::"
           echo "::group::EL installer security assertions"
           docker run --rm -e USE_MOCKS=true eth-node-test bash /workspace/install/test/test_installer_security_assertions.sh
           echo "::endgroup::"
