@@ -311,7 +311,7 @@ Full Caddy guide: [docs/CADDY_INSTALLATION.md](docs/CADDY_INSTALLATION.md).
 | **Prysm** | Checkpoint sync failing → update `PRYSM_CPURL` in `exports.sh` |
 | **Lighthouse** | Ships as a prebuilt binary — no local compilation needed |
 | **Teku** | Java out of memory → increase heap size in the service file |
-| **Nimbus** | Designed for low-resource systems — resource errors likely mean a config issue, not underpowered hardware |
+| **Nimbus** | Designed for low-resource systems — resource errors here are worth double-checking against config first |
 | **Lodestar** | Ships as a prebuilt binary — no local Node.js/npm install needed |
 | **Grandine** | Newest client here — check [upstream docs](https://github.com/grandinetech/grandine) for recent changes |
 
