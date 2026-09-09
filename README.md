@@ -5,62 +5,67 @@
 [![Frontend CI](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/frontend.yml/badge.svg)](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/frontend.yml)
 [![Security Validation](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/security.yml/badge.svg)](https://github.com/chimera-defi/eth2-quickstart/actions/workflows/security.yml)
 
+Shell scripts that turn a fresh Ubuntu VPS or bare-metal box into a production-ready Ethereum node: security hardening, an execution + consensus client pair, MEV integration, and an optional RPC-facing web server. Supports multiple client combinations for solo stakers, pool operators, and RPC providers who want client diversity.
+
 **🌐 Website & blog:** [eth2quickstart.com](https://eth2quickstart.com) — quick start, supported clients, and the [Ethereum client bake-off](https://eth2quickstart.com/blog/ethereum-client-bakeoff) write-up. Presenting or sharing the blog and slide deck? See the **[Blog & Presentation Guide](docs/BLOG_GUIDE.md)** — deep-link sharing, speaker notes, print-to-PDF, and the live [slide deck](https://eth2quickstart.com/deck/bakeoff.html).
 
-Get an ETH2 compatible RPC node setup in seconds!   
-Save at least 2 days compared to CoinCashew and Somersats guides using the automated scripts and built-in checkpoint-sync configuration support.   
-With your own uncensored & unmetered RPC node!   
-And get ready for the ETH2 merge!
+**⚠️ Security notice:** This handles real validator funds. Read a script before you run it — never run scripts you haven't reviewed near sensitive data or keys.
 
-Setup an Ethereum node quickly with simple shell scripts containing community best practices. 
-Supports multiple client combinations for servers, home solo stakers, and pool node operators.
-Choose from various execution and consensus clients for optimal client diversity.
+## Quick Start
 
-**⚠️ Security Notice:** Don't blindly run scripts near sensitive data. Review scripts before execution.
+### Prerequisites
 
-## Mission
+1. A cloud VPS or bare-metal server — recommended 2–4+ TB SSD/NVMe, 16–64+ GB RAM, 4–8+ cores, Ubuntu 20+. Bare metal is preferred; some cloud instances never finish syncing.
+2. SSH key access to the server, added *before* you start (`ssh-copy-id root@<ip>`) — Phase 1 disables password login.
+3. If your provider asks: set `swraid 1` and `swraidlevel 0` for full disk access.
+4. Your SSH fingerprint changes after Phase 1 — remove the old one from `known_hosts` when you reconnect.
 
-We try to setup guidelines to quickly, safely and securely setup ETH2 capable nodes on a cloud VPS or bare metal server.   
+Optional: [$20 free Hetzner credit via referral link](https://hetzner.cloud/?ref=d4Hoyi2u3pwn).
 
-The goal is to allow sovereign individuals to set up independent validators, and validating services easily.    
-On their own hardware, in their own location, safe from government overreach and censorship.    
-
-Additionally, by using a VPS, they can more easily offer a censorship resistant RPC node for their fellow etherians.   
-(Do you really want to open up an RPC node on your home wifi for the world to use?)
-
-## Prerequisites
-
-1. **Server Setup**: Cloud VPS with SSH key or local server
-   - **Recommended specs**: 2-4+ TB SSD/NVMe, 16-64+ GB RAM, 4-8+ cores, Ubuntu 20+
-   - **Bare metal VPS preferred** (cloud instances may not finish syncing)
-   - **SSH setup**: Configure SSH keys and server access
-   - **Referral link**: $20 free in cloud credits https://hetzner.cloud/?ref=d4Hoyi2u3pwn
-
-2. **System Configuration**:
-   - Set swraid 1 & swraidlevel 0 for full disk access
-   - Note: SSH fingerprint changes after setup - remove from known_hosts
-
-## Quickstart
-
-### One-Liner Bootstrap (Recommended for fresh hosts)
+### Option A — One-liner bootstrap (recommended for a fresh host)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash
 ```
 
-- The bootstrap installer now auto-falls back to non-interactive defaults when run via a pipe.
-- Force non-interactive explicitly:
-```bash
-curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash -s -- --non-interactive
-```
-- Force interactive TUI explicitly (requires a usable TTY):
-```bash
-curl -fsSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/install.sh | sudo bash -s -- --interactive
-```
+- Auto-detects a non-interactive shell (e.g. piped from `curl`) and falls back to defaults.
+- Force non-interactive: add `-s -- --non-interactive`.
+- Force the interactive TUI (needs a real TTY): add `-s -- --interactive`.
 
-### Unified Command Wrapper (Human + Agent Friendly)
+### Option B — Manual, step by step
 
-Use one stable entrypoint for common workflows:
+1. **Clone and prepare:**
+   ```bash
+   git clone https://github.com/chimera-defi/eth2-quickstart
+   cd eth2-quickstart
+   chmod +x run_1.sh
+   ```
+2. **Run Phase 1 as root** (read the script first — it can bork your server):
+   ```bash
+   ssh-copy-id root@<your-server-ip>   # do this first, or you'll lock yourself out
+   ./run_1.sh
+   ```
+   Upgrades the OS, hardens the firewall/SSH, enables the Snort IDS profile (disable with `ENABLE_SNORT=false` in `config/user_config.env`), and creates a non-root user carrying your SSH key.
+3. **Reboot, then log back in as the new user:**
+   ```bash
+   sudo reboot
+   # ssh eth@<your-server-ip>   (default username)
+   ```
+4. **Configure and run Phase 2:**
+   - Edit `exports.sh` with your settings.
+   - Run `./install/utils/select_clients.sh` for client recommendations.
+   - Run `./run_2.sh` (or install clients manually — see [Available Ethereum Clients](#available-ethereum-clients)).
+5. **Start and check services:**
+   ```bash
+   ./install/utils/start.sh
+   ./install/utils/stats.sh
+   ```
+
+**Never chain Phase 1 and Phase 2 (`./run_1.sh && ./run_2.sh`).** The reboot and re-login in between are mandatory — Phase 1 changes the SSH port and disables root login.
+
+### Unified command wrapper
+
+One entrypoint for the common workflows, for humans or agents:
 
 ```bash
 ./scripts/eth2qs.sh help
@@ -76,22 +81,267 @@ Use one stable entrypoint for common workflows:
 ./scripts/eth2qs.sh monitor export --json
 ./scripts/eth2qs.sh repair
 ./scripts/eth2qs.sh restart --smart
+```
 
-# Validator management (full guide: docs/VALIDATOR_MANAGEMENT.md)
+Validator management (full guide: [docs/VALIDATOR_MANAGEMENT.md](docs/VALIDATOR_MANAGEMENT.md)):
+
+```bash
 ./scripts/eth2qs.sh validators --json --withdrawal-type 0x01 --min-balance 32
 ./scripts/eth2qs.sh validator-deploy --num-validators 1 --withdrawal-type 0x02 --withdrawal-address 0xYourAddr
 ./scripts/eth2qs.sh validator-exit
 ./scripts/eth2qs.sh validator-withdrawal-changes          # 0x00 -> 0x01 (BLS-to-execution)
-./scripts/eth2qs.sh validator-manage --consolidate        # EIP-7251 (incl. 0x01 -> 0x02 compounding)
-./scripts/eth2qs.sh validator-manage --eip7002-exit       # EIP-7002 EL-triggered exit/withdrawal
+./scripts/eth2qs.sh validator-manage --consolidate        # EIP-7251 (0x01 -> 0x02 compounding)
 ```
 
-For agent integrations, the published skill source lives at `skills/eth2-quickstart/` and is intended to be used inside an `eth2-quickstart` checkout.
-The skill entrypoint is [`skills/eth2-quickstart/SKILL.md`](skills/eth2-quickstart/SKILL.md) and includes operator, sizing, safety, and improvement references for agent users.
+- For machine-readable client names and tested presets: `./scripts/eth2qs.sh client-options --json`.
+- For machine-readable monitoring, issue classification, and repair previews: `./scripts/eth2qs.sh stats --json`.
+- For structured per-service root-cause analysis: `./scripts/eth2qs.sh debug --json --service <name>`.
+- For software freshness and repo drift: `./scripts/eth2qs.sh update-check --json`.
+- For a compact bot/dashboard summary: `./scripts/eth2qs.sh monitor export --json`.
+- For a bounded auto-repair preview/apply path: `./scripts/eth2qs.sh repair` and `./scripts/eth2qs.sh repair --apply --confirm`.
 
-### For External Agents
+### Service Unit Names (canonical)
 
-The skill is repo-aware: install it, then use it from inside an `eth2-quickstart` checkout.
+Core units, installed by the execution/consensus scripts:
+- `eth1.service` — execution client
+- `cl.service` — consensus beacon node
+- `validator.service` — validator client
+
+MEV units, installed based on your selection:
+- `mev.service` — MEV-Boost
+- `commit-boost-pbs.service` / `commit-boost-signer.service` — Commit-Boost
+- `ethgas.service` — optional, requires Commit-Boost
+
+Web units, optional:
+- `nginx.service` / `caddy.service` — reverse proxy
+
+## Sync and Configure
+
+1. **Prysm checkpoint sync is on by default.** `install/consensus/prysm.sh` writes both `checkpoint-sync-url` and `genesis-beacon-api-url` from `$PRYSM_CPURL`, so the beacon node starts from a trusted checkpoint instead of syncing from genesis.
+2. **Set up a validator** using the [Prysm validator guide](https://docs.prylabs.network/docs/install/install-with-script#step-5-run-a-validator-using-prysm) — create a `pass.txt` file in `~/prysm` with your wallet password first.
+3. **Geth sync timing:** expect 1–3 days running in the background.
+4. **MEV setup:** see [MEV Solutions](#mev-solutions) below.
+
+## MEV Solutions
+
+Three MEV (Maximal Extractable Value) solutions are supported. **Choose ONE base solution** — MEV-Boost or Commit-Boost, never both.
+
+| Solution | Type | Best for | Install script |
+|----------|------|----------|----------------|
+| **MEV-Boost** | Standard | Most users (stable, proven) | `install_mev_boost.sh` |
+| **Commit-Boost** | Advanced | Preconfirmations, modular features | `install_commit_boost.sh` |
+| **ETHGas** | Add-on | Preconfirmation revenue (requires Commit-Boost) | `install_ethgas.sh` |
+
+**Option A — Standard (recommended):**
+```bash
+cd install/mev
+./install_mev_boost.sh
+sudo systemctl start mev
+```
+
+**Option B — Advanced (with preconfirmations):**
+```bash
+cd install/mev
+./install_commit_boost.sh
+./install_ethgas.sh  # optional
+sudo systemctl start commit-boost-pbs commit-boost-signer
+sudo systemctl start ethgas  # if installed
+```
+
+Ports: MEV-Boost `18550` · Commit-Boost PBS `18550` (drop-in) · Commit-Boost Signer `20000` · ETHGas `18552`.
+
+Full guide: [docs/MEV_GUIDE.md](docs/MEV_GUIDE.md).
+
+## Available Ethereum Clients
+
+### Execution clients
+
+| Client | Language | Best for | Install script |
+|--------|----------|----------|-----------------|
+| **Geth** | Go | Beginners, stability | `geth.sh` |
+| **Erigon** | Go | Performance, fast sync, low memory | `erigon.sh` |
+| **Reth** | Rust | Performance, modularity | `reth.sh` |
+| **Nethermind** | C# | Enterprise, advanced features | `nethermind.sh` |
+| **Besu** | Java | Private networks, compliance | `besu.sh` |
+| **Nimbus-eth1** | Nim | Raspberry Pi, low resources | `nimbus_eth1.sh` |
+| **Ethrex** | Rust | Testing, client diversity (experimental) | `ethrex.sh` |
+
+### Consensus clients
+
+| Client | Language | Best for | Install script |
+|--------|----------|----------|-----------------|
+| **Prysm** | Go | Beginners, documentation | `prysm.sh` |
+| **Lighthouse** | Rust | Performance, security | `lighthouse.sh` |
+| **Teku** | Java | Institutional, monitoring | `teku.sh` |
+| **Nimbus** | Nim | Raspberry Pi, low resources | `nimbus.sh` |
+| **Lodestar** | TypeScript | Development, TypeScript devs | `lodestar.sh` |
+| **Grandine** | Rust | Advanced users, performance | `grandine.sh` |
+
+### Client selection guide
+
+| Priority | Execution | Consensus |
+|----------|-----------|-----------|
+| Beginners | Geth (stable, well-documented) | Prysm (user-friendly) |
+| Performance | Reth or Erigon (fast sync, low resources) | Lighthouse (fast, efficient) |
+| Enterprise | Besu, Nethermind, or Nimbus-eth1 | Teku (monitoring, support) |
+| Resource-constrained | Erigon (low memory) | Nimbus (lightweight) |
+
+## Configuration Architecture
+
+All configuration lives in `exports.sh`, the single source of truth:
+
+```
+exports.sh → base template + your overrides → final client config
+```
+
+- Each client has its own template directory, e.g. `configs/teku/teku_beacon_base.yaml` and `configs/teku/teku_validator_base.yaml`.
+- Install scripts (e.g. `install/consensus/teku.sh`) merge the base template with your variables from `exports.sh`.
+- Key variable groups: user settings (email, domain, fee recipient, graffiti), network settings (peers, ports, relay URLs), client settings (cache sizes, sync modes), and per-client caches (`NETHERMIND_CACHE`, `BESU_CACHE`, `TEKU_CACHE`, etc.).
+
+## System Requirements
+
+| Resource | Minimum | Recommended | Notes |
+|----------|---------|--------------|-------|
+| CPU | 4 cores | 8+ cores | More cores help with sync |
+| RAM | 16 GB | 32 GB+ | Nimbus can run on 8 GB |
+| Storage | 2 TB SSD | 4 TB NVMe | Fast storage matters most |
+| Network | Stable broadband | Unmetered | Avoid metered connections |
+
+Client-specific: Geth 16 GB RAM / 2 TB SSD · Erigon 8 GB RAM / 1 TB SSD · Reth 16 GB RAM / 2 TB SSD · Nimbus-eth1 4 GB RAM / 500 GB SSD · Prysm 8 GB RAM / 1 TB SSD · Lighthouse 4 GB RAM / 1 TB SSD.
+
+## Web Server (RPC Exposure)
+
+Run your own uncensored, unmetered RPC endpoint for yourself and your community, behind Nginx or Caddy.
+
+### Nginx
+
+```bash
+./install/web/install_nginx.sh
+./install/ssl/install_acme_ssl.sh
+```
+
+Verify:
+```bash
+# Locally
+curl -X POST http://$(curl -s v4.ident.me)/rpc --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":32}' -H 'Content-Type: application/json'
+
+# With a domain
+curl -X POST https://yourdomain.com/rpc --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":32}' -H 'Content-Type: application/json'
+```
+
+Optional domain setup: get a domain (e.g. Namecheap), point its A record at your server, then let the Nginx install script configure it.
+
+SSL options: `./install/ssl/install_acme_ssl.sh` (recommended) or `./install/ssl/install_ssl_certbot.sh` (Certbot).
+
+### Caddy (alternative to Nginx)
+
+Automatic HTTPS, HTTP/2 and HTTP/3, and security headers built in.
+
+```bash
+cd install/web
+sudo ./install_caddy.sh
+# or, with manual SSL certificates:
+sudo ./install_caddy_ssl.sh
+```
+
+`install_caddy.sh` automatically runs `install/security/caddy_harden.sh`, which enables the bundled `rate_limit` module and adds fail2ban jails for spam/429s on the Caddy access log — no separate step needed.
+
+| Feature | Caddy | Nginx |
+|---------|-------|-------|
+| Configuration | Simple Caddyfile | `nginx.conf` |
+| HTTPS | Automatic | Manual setup |
+| Security headers | Built in | Manual configuration |
+| Rate limiting | On by default (`rate_limit` module) | Built in (`limit_req`/`limit_conn`) |
+| HTTP/3 | Native | Requires modules |
+
+Both Nginx and Caddy share one edge policy, generated by `install/web/proxy_config_renderer.sh` and tunable in `config/user_config.env`:
+
+| Variable | Purpose |
+|----------|---------|
+| `EDGE_RPC_UPSTREAMS` / `EDGE_WS_UPSTREAMS` | Comma-separated upstream backends (fanout/failover) |
+| `EDGE_LB_POLICY` | `least_conn` or `ip_hash` |
+| `EDGE_*_RATE_LIMIT_RPM` / `EDGE_*_BURST` / `EDGE_*_CONN_LIMIT_PER_IP` | Per-route abuse limits (RPC/WS/general) |
+| `EDGE_TRUSTED_PROXIES` | Trusted proxy CIDRs for forwarded client IPs |
+| `EDGE_ENABLE_METRICS` + `EDGE_METRICS_PATH` | Local-only metrics endpoint (on by default) |
+| `CADDY_LB_*` / `CADDY_MAX_FAILS` / `CADDY_FAIL_DURATION` | Caddy retry/failover tuning |
+| `CADDY_REQUIRE_RATE_LIMIT` / `CADDY_REQUIRE_DNS_CHALLENGE` | Fail closed if a required Caddy capability is unavailable |
+
+Validate a config:
+```bash
+bash ./test/validate_review_guardrails.sh
+bash ./test/validate_nginx_config.sh
+bash ./test/validate_caddy_config.sh
+sudo caddy validate --config /etc/caddy/Caddyfile
+```
+
+Full Caddy guide: [docs/CADDY_INSTALLATION.md](docs/CADDY_INSTALLATION.md).
+
+## Security Features
+
+- **Network:** UFW firewall with strict rules, fail2ban against brute force, all services bound to localhost by default.
+- **Files:** config files at `600`, directories at `700`, sanitized error messages.
+- **Monitoring:** real-time threat and suspicious-process detection, automated log rotation.
+
+## Troubleshooting
+
+### Common issues
+
+| Symptom | Fix |
+|---------|-----|
+| Service not starting | `journalctl -u <service_name>` |
+| Sync stalled | Check network connectivity and client status |
+| Permission errors | Check file ownership and permissions |
+| Port conflicts | Check for other processes on the same port |
+
+### Execution clients
+
+| Client | Cause → Fix |
+|--------|-------------|
+| **Geth** | Most stable; if it won't start, check for port conflicts on `8545`, `8546`, `30303` |
+| **Erigon** | Needs more RAM during sync; check `config.yaml` settings |
+| **Reth** | Ships as a prebuilt binary — no local compilation. If the download fails, check the GitHub release for your architecture |
+| **Nethermind** | Ships self-contained with its own runtime — no separate .NET install needed. If it won't start, check the install log for the release archive it fetched |
+| **Besu** | Java heap size issues — adjust memory settings in the service file |
+| **Nimbus-eth1** | Check the [GitHub releases page](https://github.com/status-im/nimbus-eth1/releases) for the latest build if install fails |
+
+### Consensus clients
+
+| Client | Cause → Fix |
+|--------|-------------|
+| **Prysm** | Checkpoint sync failing → update `PRYSM_CPURL` in `exports.sh` |
+| **Lighthouse** | Ships as a prebuilt binary — no local compilation needed |
+| **Teku** | Java out of memory → increase heap size in the service file |
+| **Nimbus** | Designed for low-resource systems — resource errors likely mean a config issue, not underpowered hardware |
+| **Lodestar** | Ships as a prebuilt binary — no local Node.js/npm install needed |
+| **Grandine** | Newest client here — check [upstream docs](https://github.com/grandinetech/grandine) for recent changes |
+
+### Getting help
+
+1. Check service logs: `journalctl -u <service_name> -f`
+2. Verify configuration: `./docs/verify_security.sh`
+3. Review the [`docs/`](docs/) directory
+4. Re-check [System Requirements](#system-requirements)
+5. Open a [GitHub issue](https://github.com/chimera-defi/eth2-quickstart/issues) or [discussion](https://github.com/chimera-defi/eth2-quickstart/discussions)
+
+## Network-Specific Setup
+
+### Testnets (Sepolia/Holesky)
+
+Before running the client install scripts:
+- Update the checkpoint URL in `exports.sh` for your target testnet.
+- Add the matching network flag to client commands (e.g. `--sepolia`, `--holesky`) — check each client's own `--help`, since supported testnets and flag names shift as networks are deprecated (Goerli is retired).
+- Use testnet-specific genesis and checkpoint files, not mainnet ones.
+
+### Mainnet optimization
+
+- Enable checkpoint sync for a fast initial sync.
+- Configure MEV-Boost (or Commit-Boost) with multiple relays.
+- Size caches to your available RAM.
+- Use fast NVMe storage.
+
+## Agent & Automation Integration
+
+For agent integrations, the published skill source lives at `skills/eth2-quickstart/`, meant to be used from inside an `eth2-quickstart` checkout. Entry point: [`skills/eth2-quickstart/SKILL.md`](skills/eth2-quickstart/SKILL.md) (operator, sizing, safety, and improvement references). This is a repo-backed operations skill, not a standalone package.
 
 ```bash
 # once published
@@ -102,13 +352,12 @@ git clone --depth 1 https://github.com/chimera-defi/eth2-quickstart.git
 cd eth2-quickstart
 ```
 
-- Raw-ingest fallback for agents that can load a text URL directly: [`llms.txt`](./llms.txt) and [`llms-full.txt`](./llms-full.txt)
+- Raw-ingest fallback for agents that load a text URL directly: [`llms.txt`](./llms.txt) and [`llms-full.txt`](./llms-full.txt)
 - Codex fallback: `python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py --repo chimera-defi/eth2-quickstart --path skills/eth2-quickstart`
 - Native tool fallback for Claude Code / Codex via MCP: [`mcp_server/run_eth2qs_mcp.sh`](mcp_server/run_eth2qs_mcp.sh) and [`skills/eth2-quickstart/references/mcp.md`](skills/eth2-quickstart/references/mcp.md)
-- Claude plugin packaging for local validation and marketplace-style install lives under [`.claude-plugin/`](./.claude-plugin/) and [`.claude/settings.json`](./.claude/settings.json)
+- Claude plugin packaging for local validation and marketplace-style install: [`.claude-plugin/`](./.claude-plugin/) and [`.claude/settings.json`](./.claude/settings.json)
 
 MCP quickstart:
-
 ```bash
 python3 -m pip install mcp
 codex mcp add eth2-quickstart ./mcp_server/run_eth2qs_mcp.sh
@@ -116,412 +365,35 @@ codex mcp add eth2-quickstart ./mcp_server/run_eth2qs_mcp.sh
 # or: ./scripts/install_claude_eth2qs_mcp.sh
 ```
 
-The MCP server can expose the core lifecycle directly: Phase 1 hardening, Phase 2 Ethereum client install, planner-driven install, health checks, logs, and safe cleanup.
-- For machine-readable client names and tested presets, use `./scripts/eth2qs.sh client-options --json`.
-- For machine-readable monitoring, issue classification, and repair previews, use `./scripts/eth2qs.sh stats --json`.
-- For structured per-service RCA, use `./scripts/eth2qs.sh debug --json --service <name>`.
-- For software freshness and repo drift, use `./scripts/eth2qs.sh update-check --json`.
-- For a compact bot/dashboard summary, use `./scripts/eth2qs.sh monitor export --json`.
-- For a bounded auto-repair preview/apply path, use `./scripts/eth2qs.sh repair` and `./scripts/eth2qs.sh repair --apply --confirm`.
-- For validator inventory + filtering from an agent, use the read-only MCP tool `eth2qs_validators` (filters: `min_balance`/`max_balance` ETH, `withdrawal_type` 0x00/0x01/0x02, `status`). Funds-affecting operations (exit, withdrawal-credential change, consolidation, EIP-7002 exit, deploy) are exposed read-only via `eth2qs_validator_op_preview`, which returns the exact node CLI command to run — they are **never executed via MCP**. Run those on the node CLI (they prompt for confirmation). Full guide: [`docs/VALIDATOR_MANAGEMENT.md`](docs/VALIDATOR_MANAGEMENT.md).
-- For the command surface and safety rules, start with [`skills/eth2-quickstart/SKILL.md`](skills/eth2-quickstart/SKILL.md)
+The MCP server exposes the core lifecycle directly: Phase 1 hardening, Phase 2 client install, planner-driven install, health checks, logs, and safe cleanup. For validator inventory and filtering, use the read-only MCP tool `eth2qs_validators` (filters: `min_balance`/`max_balance` ETH, `withdrawal_type` 0x00/0x01/0x02, `status`). Funds-affecting operations (exit, withdrawal-credential change, consolidation, EIP-7002 exit, deploy) are exposed read-only via `eth2qs_validator_op_preview`, which returns the exact CLI command to run — they are **never executed via MCP**. Run those on the node CLI, where they prompt for confirmation. Full guide: [`docs/VALIDATOR_MANAGEMENT.md`](docs/VALIDATOR_MANAGEMENT.md). For the full command surface and safety rules, start with [`skills/eth2-quickstart/SKILL.md`](skills/eth2-quickstart/SKILL.md).
 
-This is a repo-backed operations skill, not a standalone blockchain package.
+## Why This Project Exists
 
-### Installation
-
-1. **Download and prepare**:
-   ```bash
-   git clone https://github.com/chimera-defi/eth2-quickstart
-   cd eth2-quickstart
-   chmod +x run_1.sh
-   ```
-
-2. **Run server setup** (as root):
-   ```bash
-   # Add your SSH key first (required - prevents lockout):
-   ssh-copy-id root@<your-server-ip>
-   ./run_1.sh
-   ```
-   **Read through scripts first** to make sure you understand what is happening and it's correct. It can bork your server.
-   
-   - Upgrades Ubuntu and programs
-   - Sets up firewalls and security hardening
-   - Snort IDS profile (enabled by default; disable via `ENABLE_SNORT=false` in `config/user_config.env`)
-   - Creates non-root user (SSH key-only, migrates root's keys)
-   - Installs required programs
-
-3. **Reboot and configure**:
-   ```bash
-   sudo reboot
-   # Login as new user (default: eth@ip)
-   ```
-
-4. **Configure and install clients**:
-   - Edit `exports.sh` with your settings
-   - Run `./install/utils/select_clients.sh` for recommendations
-   - Run `./run_2.sh` or install clients manually
-
-5. **Start services**:
-   ```bash
-   ./install/utils/start.sh
-   ./install/utils/stats.sh
-   ```
-
-### Service Unit Names (Canonical)
-
-Core units (installed by execution/consensus scripts):
-- `eth1.service` (execution client)
-- `cl.service` (consensus beacon node)
-- `validator.service` (validator client)
-
-MEV units (installed based on selection):
-- `mev.service` (MEV-Boost)
-- `commit-boost-pbs.service` (Commit-Boost PBS)
-- `commit-boost-signer.service` (Commit-Boost signer)
-- `ethgas.service` (optional, requires Commit-Boost)
-
-Web units (optional):
-- `nginx.service` (Nginx reverse proxy)
-- `caddy.service` (Caddy reverse proxy)
-
-## Sync and Configure
-
-1. **Prysm checkpoint sync is configured by default in this repo**:
-   - `install/consensus/prysm.sh` writes both:
-     - `checkpoint-sync-url: $PRYSM_CPURL`
-     - `genesis-beacon-api-url: $PRYSM_CPURL`
-   - This means initial beacon sync starts from a trusted checkpoint URL instead of syncing from genesis.
-
-2. **Set up validator** using Prysm documentation:
-   - Create a `pass.txt` file in `~/prysm` with your wallet password
-   - Follow: https://docs.prylabs.network/docs/install/install-with-script#step-5-run-a-validator-using-prysm
-
-3. **Geth sync timing**: Benchmark is 1-3 days running in the background
-
-4. **MEV Setup**: Configure MEV solution for validator rewards (see [MEV Solutions](#mev-solutions) below)
-
-## MEV Solutions
-
-This project supports three MEV (Maximal Extractable Value) solutions. **Choose ONE base solution** (MEV-Boost OR Commit-Boost):
-
-| Solution | Type | Best For | Install Script |
-|----------|------|----------|----------------|
-| **MEV-Boost** | Standard | Most users (stable, proven) | `install_mev_boost.sh` |
-| **Commit-Boost** | Advanced | Preconfirmations, modular features | `install_commit_boost.sh` |
-| **ETHGas** | Add-on | Preconfirmation revenue (requires Commit-Boost) | `install_ethgas.sh` |
-
-⚠️ **IMPORTANT**: MEV-Boost and Commit-Boost are **mutually exclusive** - choose ONE, not both!
-
-### Quick MEV Setup
-
-**Option A - Standard (RECOMMENDED):**
-```bash
-cd install/mev
-./install_mev_boost.sh
-sudo systemctl start mev
-```
-
-**Option B - Advanced (with preconfirmations):**
-```bash
-cd install/mev
-./install_commit_boost.sh
-./install_ethgas.sh  # Optional
-sudo systemctl start commit-boost-pbs commit-boost-signer
-sudo systemctl start ethgas  # If installed
-```
-
-### MEV Port Reference
-| Service | Port |
-|---------|------|
-| MEV-Boost | 18550 |
-| Commit-Boost PBS | 18550 (drop-in) |
-| Commit-Boost Signer | 20000 |
-| ETHGas | 18552 |
-
-For detailed MEV setup, see [docs/MEV_GUIDE.md](docs/MEV_GUIDE.md).
-
-## Available Ethereum Clients
-
-### Execution Clients (ETH1)
-| Client | Language | Description | Best For | Install Script |
-|--------|----------|-------------|----------|----------------|
-| **Geth** | Go | Original Go implementation, most stable | Beginners, stability | `geth.sh` |
-| **Erigon** | Go | Re-architected for efficiency | Performance, fast sync | `erigon.sh` |
-| **Reth** | Rust | Modern Rust implementation | Performance, modularity | `reth.sh` |
-| **Nethermind** | C# | Enterprise-focused .NET client | Enterprise, advanced features | `nethermind.sh` |
-| **Besu** | Java | Apache 2.0 licensed, enterprise-ready | Private networks, compliance | `besu.sh` |
-| **Nimbus-eth1** | Nim | Lightweight, resource efficient | Raspberry Pi, low resources | `nimbus_eth1.sh` |
-| **Ethrex** | Rust | Experimental Rust execution client | Testing, client diversity | `ethrex.sh` |
-
-### Consensus Clients (ETH2)
-| Client | Language | Description | Best For | Install Script |
-|--------|----------|-------------|----------|----------------|
-| **Prysm** | Go | Well-documented, reliable | Beginners, documentation | `prysm.sh` |
-| **Lighthouse** | Rust | Security-focused, high performance | Performance, security | `lighthouse.sh` |
-| **Teku** | Java | ConsenSys-developed, enterprise features | Institutional, monitoring | `teku.sh` |
-| **Nimbus** | Nim | Lightweight, resource efficient | Raspberry Pi, low resources | `nimbus.sh` |
-| **Lodestar** | TypeScript | Developer-friendly, modern | Development, TypeScript devs | `lodestar.sh` |
-| **Grandine** | Rust | High-performance, cutting-edge | Advanced users, performance | `grandine.sh` |
-
-## Configuration Architecture
-
-### Configuration Conventions
-1. **Centralized Variables**: All client-specific settings are defined in `exports.sh`
-2. **Template + Custom Pattern**: Each client has base template configs and custom variable overlays
-3. **Directory Structure**: Each client has its own config directory (e.g., `teku/`, `nimbus/`)
-4. **Merge Strategy**: Install scripts combine base templates with user-specific variables
-
-### Configuration Flow
-```
-exports.sh → Base Template + Custom Variables → Final Client Config
-```
-
-### Example Structure
-```
-├── exports.sh                    # All configuration variables
-├── configs/
-│   └── teku/
-│       ├── teku_beacon_base.yaml     # Base beacon config template
-│       └── teku_validator_base.yaml  # Base validator config template
-└── install/consensus/teku.sh     # Merges base + custom configs
-```
-
-### Key Variables in exports.sh
-- **User settings**: Email, domain, fee recipient, graffiti
-- **Network settings**: Peers, ports, relay URLs
-- **Client settings**: Cache sizes, sync modes, features
-- **Client-specific**: `NETHERMIND_CACHE`, `BESU_CACHE`, `TEKU_CACHE`, etc.
-
-## Client Selection Guide
-
-### For Beginners
-- **Execution**: Geth (stable, well-documented)
-- **Consensus**: Prysm (user-friendly, good documentation)
-
-### For Performance
-- **Execution**: Reth or Erigon (fast sync, low resource usage)
-- **Consensus**: Lighthouse (fast, efficient)
-
-### For Enterprise
-- **Execution**: Besu, Nethermind, or Nimbus-eth1 (enterprise features or lightweight)
-- **Consensus**: Teku (monitoring, enterprise support)
-
-### For Resource-Constrained
-- **Execution**: Erigon (low memory usage)
-- **Consensus**: Nimbus (lightweight)
-
-## System Requirements
-
-### System Requirements by Client
-
-| Resource | Minimum | Recommended | Notes |
-|----------|---------|-------------|-------|
-| **CPU** | 4 cores | 8+ cores | More cores help with sync |
-| **RAM** | 16GB | 32GB+ | Nimbus can run on 8GB |
-| **Storage** | 2TB SSD | 4TB NVMe | Fast storage crucial |
-| **Network** | Stable broadband | Unlimited data | Avoid metered connections |
-
-### Client-Specific Requirements
-- **Geth**: 16 GB RAM, 2 TB SSD
-- **Erigon**: 8 GB RAM, 1 TB SSD  
-- **Reth**: 16 GB RAM, 2 TB SSD
-- **Nimbus-eth1**: 4 GB RAM, 500 GB SSD (lightweight)
-- **Prysm**: 8 GB RAM, 1 TB SSD
-- **Lighthouse**: 4 GB RAM, 1 TB SSD
-
-## Nginx RPC Setup
-
-Setup a secure uncensored outward facing Ethereum RPC for you and your friends! It's been faster than Infura/Alchemy etc for me.
-
-### Basic Setup
-```bash
-./install/web/install_nginx.sh
-./install/ssl/install_acme_ssl.sh
-```
-
-### Verify RPC Endpoint
-```bash
-# Test locally
-curl -X POST http://$(curl -s v4.ident.me)/rpc --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":32}' -H 'Content-Type: application/json'
-
-# Test with domain (replace with your domain)
-curl -X POST https://yourdomain.com/rpc --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":32}' -H 'Content-Type: application/json'
-```
-
-### Domain Setup (Optional)
-1. **Get a domain**: e.g., via Namecheap
-2. **Setup DNS**: Point A record to your server's public IP
-3. **Configure Nginx**: Handle requests and provide RPC
-
-### SSL Options
-- **ACME.sh**: `./install/ssl/install_acme_ssl.sh` (recommended)
-- **Certbot**: `./install/ssl/install_ssl_certbot.sh`
-
-## Caddy Web Server (Alternative to Nginx)
-
-Caddy is a modern web server with automatic HTTPS, built-in security features, and easier configuration than Nginx.
-
-### Basic Setup
-```bash
-# Install Caddy with automatic HTTPS
-cd install/web
-sudo ./install_caddy.sh
-
-# Or install with manual SSL certificates
-sudo ./install_caddy_ssl.sh
-```
-
-### Caddy Features
-- **Automatic HTTPS**: Built-in Let's Encrypt integration
-- **HTTP/2 and HTTP/3**: Modern protocol support
-- **Security Headers**: Comprehensive security by default
-- **Rate Limiting**: Batteries-included (installer bootstraps Caddy with `rate_limit` module by default)
-- **Fail2ban Jails**: Default spam/429 ban rules for Caddy access logs
-- **Easy Configuration**: Simple Caddyfile syntax
-- **Security Hardening**: `./caddy_harden.sh` for enhanced security
-- **Shared Edge Policy**: Nginx + Caddy route/hardening policy is generated from `install/web/proxy_config_renderer.sh`
-
-### Shared Edge Tuning (Nginx + Caddy)
-Override in `config/user_config.env` when needed:
-- `EDGE_RPC_UPSTREAMS` / `EDGE_WS_UPSTREAMS`: comma-separated upstream backends (for fanout/failover).
-- `EDGE_LB_POLICY`: `least_conn` or `ip_hash`.
-- `EDGE_UPSTREAM_KEEPALIVE`: upstream keepalive pool size.
-- `EDGE_DNS_RESOLVER`: resolver list for hostname upstreams in Nginx (`resolve` mode).
-- `EDGE_ENABLE_COMPRESSION`: shared response compression toggle.
-- `EDGE_ENABLE_METRICS` + `EDGE_METRICS_PATH`: local-only metrics endpoint toggle/path (enabled by default).
-- `EDGE_TRUSTED_PROXIES`: trusted proxy CIDRs for forwarded client IP handling.
-- `EDGE_*_RATE_LIMIT_RPM` (`EDGE_RPC_RATE_LIMIT_RPM`, `EDGE_WS_RATE_LIMIT_RPM`, `EDGE_GENERAL_RATE_LIMIT_RPM`): shared anti-abuse rate limits used by both Nginx + Caddy renders.
-- `EDGE_*_BURST` (`EDGE_RPC_BURST`, `EDGE_WS_BURST`) + `EDGE_*_CONN_LIMIT_PER_IP` (`EDGE_RPC_CONN_LIMIT_PER_IP`, `EDGE_WS_CONN_LIMIT_PER_IP`): shared burst/connection ceilings for Nginx request shaping.
-- `EDGE_RPC_CACHE_MIN_USES`: Nginx RPC cache threshold.
-- `CADDY_LB_*`: Caddy retry/failover tuning (`CADDY_LB_RETRIES`, `CADDY_LB_TRY_DURATION`, `CADDY_LB_TRY_INTERVAL`, `CADDY_FAIL_DURATION`, `CADDY_MAX_FAILS`).
-- `CADDY_ENSURE_MODULES` + `CADDY_REQUIRED_MODULES` + `CADDY_REQUIRED_PACKAGES`: Caddy installer module bootstrap controls (default ensures `http.handlers.rate_limit,dns.providers.cloudflare` via `github.com/mholt/caddy-ratelimit,github.com/caddy-dns/cloudflare`).
-- `CADDY_INSTALL_ENFORCE_RATE_LIMIT`: force `install_caddy.sh` to fail if rate-limiting cannot be enabled (default `true`).
-- `CADDY_REQUIRE_RATE_LIMIT` / `CADDY_REQUIRE_DNS_CHALLENGE`: strict mode flags to fail render/install when required Caddy capabilities are unavailable.
-
-### Test Caddy Installation
-Testing helpers were removed. Use:
-```bash
-bash ./test/validate_review_guardrails.sh
-bash ./test/validate_nginx_config.sh
-bash ./test/validate_caddy_config.sh
-sudo caddy validate --config /etc/caddy/Caddyfile
-```
-
-### Caddy vs Nginx
-| Feature | Caddy | Nginx |
-|---------|-------|-------|
-| Configuration | Simple Caddyfile | Complex nginx.conf |
-| HTTPS | Automatic | Manual setup |
-| Security | Built-in headers | Manual configuration |
-| Rate Limiting | Enabled by default via installer-bundled `rate_limit` module | Built-in (`limit_req`/`limit_conn`) |
-| HTTP/3 | Native support | Requires modules |
-
-For detailed Caddy setup instructions, see [Caddy Installation Guide](docs/CADDY_INSTALLATION.md).
-
-### Features
-- **RPC/WS endpoints**: Secure access to Ethereum node
-- **SSL/TLS**: Automatic certificate management
-- **Rate limiting**: Abuse protection enabled by default for both Caddy and Nginx
-- **Authentication**: JWT-based access control
-
-## Security Features
-
-### Network Security
-- **Firewall**: UFW with comprehensive rules
-- **Fail2ban**: Protection against brute force attacks
-- **Localhost binding**: Services only accessible locally
-
-### File Security
-- **Secure permissions**: Configuration files (600), directories (700)
-- **Input validation**: Comprehensive validation functions
-- **Error handling**: Sanitized error messages
-
-### Monitoring
-- **Security monitoring**: Real-time threat detection
-- **Process monitoring**: Suspicious activity detection
-- **Log management**: Automated log rotation and analysis
-
-## Troubleshooting
-
-### Common Issues
-1. **Services not starting**: Check logs with `journalctl -u service_name`
-2. **Sync issues**: Verify network connectivity and client status
-3. **Permission errors**: Ensure proper file ownership and permissions
-4. **Port conflicts**: Check for conflicting services
-
-### Client-Specific Issues
-
-#### Execution Clients
-- **Geth**: Most stable, check for port conflicts on 8545, 8546, 30303
-- **Erigon**: Requires more RAM during sync, check `config.yaml` settings
-- **Reth**: Compilation issues? Ensure Rust toolchain is updated
-- **Nethermind**: .NET runtime issues? Check .NET installation
-- **Besu**: Java heap size issues? Adjust memory settings in config
-- **Nimbus-eth1**: Uses nightly builds, check for latest release updates
-
-#### Consensus Clients
-- **Prysm**: Checkpoint sync failing? Update `PRYSM_CPURL` in `exports.sh`
-- **Lighthouse**: Rust compilation issues? Update Rust toolchain
-- **Teku**: Java out of memory? Increase heap size in service file
-- **Nimbus**: Resource constraints? It's designed for low-resource systems
-- **Lodestar**: Node.js issues? Ensure Node.js 16+ is installed
-- **Grandine**: Very new client, check official docs for latest updates
-
-### Getting Help
-1. Check service logs: `journalctl -u service_name -f`
-2. Verify configuration: `./docs/verify_security.sh`
-3. Review documentation: `docs/` directory
-4. Check system requirements
-
-## Network-Specific Setup
-
-### Testnet Usage (Goerli/Holesky)
-Before running client install scripts, modify configurations:
-- Update checkpoint URLs in `exports.sh`
-- Add network flags (e.g., `--goerli`, `--holesky`) to client commands
-- Ensure testnet-specific genesis and checkpoint files
-
-### Mainnet Optimization
-- Enable checkpoint sync for faster initial sync
-- Configure MEV-Boost with multiple relays
-- Set appropriate cache sizes based on available RAM
-- Use fast NVMe storage for better performance
+The goal: let sovereign individuals run independent validators on their own hardware, in their own location, free of censorship — and, by using a VPS, offer a censorship-resistant RPC node to fellow Ethereum users rather than exposing a home connection to the world.
 
 ## Benefits
 
-- **Client Diversity**: Support for multiple client implementations
-- **Interactive Selection**: Guided client selection with recommendations
-- **Security**: Comprehensive security hardening
-- **Flexibility**: Choose optimal client combinations
-- **Automation**: Streamlined installation and configuration
-- **Monitoring**: Built-in security and performance monitoring
-- **MEV-Boost Integration**: Maximize validator rewards
-- **Uncensored RPC**: Run your own censorship-resistant endpoint (faster than Infura/Alchemy!)
-- **Enterprise Features**: Advanced monitoring and management
-- **Infrastructure Friendly**: Firewall rules and settings to prevent alerts from your infra provider
+- **Client diversity**, guided by an interactive selector with recommendations
+- **Security hardening** built in — firewall, fail2ban, real-time monitoring
+- **One command** from bare server to running validator, with MEV-Boost integration for rewards
+- **Your own uncensored, unmetered RPC endpoint** — for you and your community
+- **Infra-friendly by default** — firewall rules and settings tuned to avoid provider abuse alerts
 
 ## Credits
 
-This was made possible by the great guides written by Somersat and coincashew.    
+This was made possible by the guides written by Somersat and CoinCashew, and by the beacon checkpoint states Sharedstake.org makes available and hosts for its community.
 
-Additionally, the beacon checkpoint states have been made available by Sharedstake.org and the servers run for its community.   
+- **Somersat:** https://someresat.medium.com/guide-to-staking-on-ethereum-ubuntu-prysm-581fb1969460?utm_source=substack&utm_medium=email
+- **CoinCashew:** https://www.coincashew.com/coins/overview-eth/guide-or-how-to-setup-a-validator-on-eth2-mainnet/part-i-installation/installing-execution-client
+- **Sharedstake.org:** https://Sharedstake.org
+- **Sharedtools.org:** https://sharedtools.org
 
-**Someresat**: https://someresat.medium.com/guide-to-staking-on-ethereum-ubuntu-prysm-581fb1969460?utm_source=substack&utm_medium=email
+## Contact for Questions / Collaboration
 
-**Coincashew**: https://www.coincashew.com/coins/overview-eth/guide-or-how-to-setup-a-validator-on-eth2-mainnet/part-i-installation/installing-execution-client
-
-**Sharedstake.org**: https://Sharedstake.org  
-**Sharedtools.org**: https://sharedtools.org
-
-## Contact for questions / collaboration
-
-**Chimera_defi@protonmail.com**
-
-**Twitter**: https://twitter.com/chimeradefi
-
-**Issues**: [GitHub Issues](https://github.com/chimera-defi/eth2-quickstart/issues)  
-**Discussions**: [GitHub Discussions](https://github.com/chimera-defi/eth2-quickstart/discussions)
+- **Email:** Chimera_defi@protonmail.com
+- **Twitter:** https://twitter.com/chimeradefi
+- **Issues:** [GitHub Issues](https://github.com/chimera-defi/eth2-quickstart/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/chimera-defi/eth2-quickstart/discussions)
 
 ## Additional Documentation
 
