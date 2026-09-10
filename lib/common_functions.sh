@@ -250,7 +250,7 @@ github_latest_release_json() {
     local repo="$1"
     local release_url="https://api.github.com/repos/${repo}/releases/latest"
     local response=""
-    local curl_opts=(-sf --retry 3 --retry-delay 2 --retry-all-errors)
+    local curl_opts=(-sfL --retry 3 --retry-delay 2 --retry-all-errors)
     local attempt
     [[ -n "${GITHUB_TOKEN:-}${GH_TOKEN:-}" ]] && curl_opts+=(-H "Authorization: Bearer ${GITHUB_TOKEN:-$GH_TOKEN}")
 
