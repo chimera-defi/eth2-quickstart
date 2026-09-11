@@ -154,7 +154,7 @@ const atAGlance = [
   },
   {
     title: 'Disk converges at ~1.0–1.2 TiB',
-    body: 'At steady state, with full post-merge history, geth (1.13), nethermind (~1.06), and besu (1.08) all land in the same band — completed measurements. reth’s ~1.1–1.2 is a projection from its partial 72h-capped run, not a finished sync. Footprint is a config knob, not a winner axis.',
+    body: 'At steady state, with full post-merge history, geth (1.13), nethermind (~1.06), and besu (1.08) land in the same band; reth\'s ~1.1–1.2 is a projection from its partial 72h-capped run. Footprint is a config knob, not a winner axis.',
   },
   {
     title: 'Pick on speed + restart-resume',
