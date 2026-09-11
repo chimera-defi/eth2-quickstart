@@ -1597,7 +1597,7 @@ export default function BakeoffResultsPage() {
           </p>
           <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
             <li>
-              <Rich text="**Disk converges, it doesn't rank.** Every EL that carries full post-merge history lands at ~1.0–1.2 TiB (geth 1.13, nethermind ~1.06 full-history, besu 1.08, reth ~1.1–1.2 projected). The two small footprints — nethermind's minimal-history default (~250–280 GiB) and ethrex's ~470–476 GiB plateau — are smaller because they retain no history, not because they're leaner. That is the corrected reading; an earlier pass through this data read nethermind's pre-backfill ~251 GiB snapshot as its final size and called it dramatically leaner than geth, which was wrong." />
+              <Rich text="**Disk converges, it doesn't rank.** Every EL that carries full post-merge history lands at ~1.0–1.2 TiB (geth 1.13, nethermind ~1.06 full-history, besu 1.08, reth ~1.1–1.2 projected). The two small footprints — nethermind's minimal-history default (~250–280 GiB) and ethrex's ~470–476 GiB plateau — are smaller because they retain no history, not because they're leaner." />
             </li>
             <li>
               <Rich text="**Speed has a real order:** ethrex (~2h16m) &lt; geth (~8h28m) &lt; nethermind (~14.5h) &lt; besu (~19h18m). reth and nimbus_eth1 never reached tip in the 72h cap (full-sync-only), and erigon deadlocked entirely against a checkpoint-synced CL." />
