@@ -21,6 +21,7 @@ const tocLinks = [
   { label: 'The orchestration model', href: '#orchestration-model' },
   { label: 'The harness', href: '#the-harness' },
   { label: "What we'd tell the next person", href: '#next-person' },
+  { label: 'Bottom line', href: '#bottom-line' },
   { label: 'Reproduce it', href: '#reproduce-it' },
 ]
 
@@ -551,7 +552,7 @@ export default function HowWeTestedWithClaudePage() {
           <AnchorHeading id="at-a-glance" className="text-lg sm:text-xl font-semibold text-foreground">At a glance</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Four incidents changed a client&apos;s verdict. They are not the whole list &mdash; the issues
-            log records thirteen client-level problems across triage and full sync &mdash; but these four
+            log records fourteen client-level problems across triage and full sync &mdash; but these four
             are the ones that moved a status.
           </p>
           <div
@@ -801,7 +802,7 @@ export default function HowWeTestedWithClaudePage() {
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Beyond the four client incidents above, two bugs lived in the harness itself &mdash; the kind
-            you only meet once automation genuinely runs unattended:
+            you only meet once automation runs unattended:
           </p>
           <LeadList items={harnessBugPoints} />
         </section>
@@ -823,6 +824,23 @@ export default function HowWeTestedWithClaudePage() {
             precedes each candidate is one wrong argument away from the wrong datadir, and a number that is
             wrong is indistinguishable from a number that is right until someone checks it. That is why the
             fence above was non-negotiable rather than advisory.
+          </p>
+        </section>
+
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="bottom-line" className="text-lg sm:text-xl font-semibold text-foreground">Bottom line</AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            The point to take away: an agent can run a multi-week, disk-and-timing-sensitive benchmark
+            unattended, but only because the design put its constraints in the right place &mdash; node
+            time decoupled from agent time, conclusions pushed down into small durable files instead of
+            carried in context, and every destructive or mergeable step routed through a human.
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            None of that made the agent smarter about Ethereum clients; it made the campaign survive
+            session deaths, context clears, and its own mistakes (the config-optimality gate&apos;s
+            bug-fixes, the harness&apos;s SIGTTIN and cap-path landmines) without losing the measurements
+            that mattered. The client verdicts in the results write-up hold up because the process that
+            produced them did.
           </p>
         </section>
 
