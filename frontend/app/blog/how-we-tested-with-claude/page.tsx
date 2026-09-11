@@ -97,16 +97,16 @@ const campaignPhases = [
   {
     name: 'Phase 3 — Restart-resume & prune follow-ons',
     range: 'Jul 31 → Aug 4, 2026',
-    note: 'EXP-A / EXP-C',
+    note: 'no restart cliff found',
     summary:
-      'Restart-resume experiments (EXP-A), the minimal-history prune default (EXP-C), and shipping it as a human-reviewed PR.',
+      'Restart-resume experiments, the minimal-history prune default, and shipping it as a human-reviewed PR.',
     milestones: [
-      { date: '2026-07-31', label: 'EXP-A: nethermind fresh re-sync 1h53m (establish run)' },
+      { date: '2026-07-31', label: 'Nethermind fresh re-sync in 1h53m (establish run)' },
       { date: '2026-08-01', label: 'Steady-state re-measure: nethermind full-history datadir ~1.06 TiB' },
-      { date: '2026-08-01', label: 'EXP-A: nethermind resumes a 10,607-block gap in 35 min — restart-resume measured' },
-      { date: '2026-08-03', label: 'EXP-A bisection: no cliff at any gap (12 min → ~35h); prysm clean-resume measured, n=4' },
-      { date: '2026-08-03', label: 'EXP-C: nethermind prune tuning → minimal-history default (~250–280 GiB, no-history tier) measured and shipped as a human-reviewed PR' },
-      { date: '2026-08-04', label: 'Minimal-history default merged to master, live on eth2quickstart.com (#227→#229)' },
+      { date: '2026-08-01', label: 'Nethermind resumes a 10,607-block gap in 35 min — restart-resume measured' },
+      { date: '2026-08-03', label: 'Bisection finds no cliff at any gap (12 min → ~35h); prysm clean-resume measured, n=4' },
+      { date: '2026-08-03', label: 'Nethermind prune tuning produces a minimal-history default (~250–280 GiB, no-history tier), measured and shipped as a human-reviewed PR' },
+      { date: '2026-08-04', label: 'Minimal-history default merged to master, live on eth2quickstart.com' },
     ],
   },
 ]
@@ -503,7 +503,7 @@ export default function HowWeTestedWithClaudePage() {
 
         <ArticleToc links={tocLinks} />
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="tldr" className="text-lg sm:text-xl font-semibold text-foreground">TL;DR</AnchorHeading>
           <div className="mt-4 grid gap-3 sm:gap-4 md:grid-cols-2">
             {tldrPoints.map((point) => (
@@ -515,7 +515,7 @@ export default function HowWeTestedWithClaudePage() {
           </div>
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="the-plan" className="text-lg sm:text-xl font-semibold text-foreground">The plan</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             One question, measured the same way for every client that finished: two numbers &mdash; final
@@ -549,7 +549,7 @@ export default function HowWeTestedWithClaudePage() {
           </div>
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="at-a-glance" className="text-lg sm:text-xl font-semibold text-foreground">At a glance</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Four incidents changed a client&apos;s verdict. They are not the whole list &mdash; the issues
@@ -619,7 +619,7 @@ export default function HowWeTestedWithClaudePage() {
           </div>
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="shape-of-the-problem" className="text-lg sm:text-xl font-semibold text-foreground">The shape of the problem</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">Benchmarking a sync client is deceptively expensive:</p>
           <LeadList items={shapePoints} />
@@ -631,7 +631,7 @@ export default function HowWeTestedWithClaudePage() {
           </p>
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="orchestration-model" className="text-lg sm:text-xl font-semibold text-foreground">The orchestration model</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             The core design choice: decouple node wall-clock from agent wall-clock, and decouple durable
@@ -724,7 +724,7 @@ export default function HowWeTestedWithClaudePage() {
           <LeadList items={governancePoints} />
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="the-harness" className="text-lg sm:text-xl font-semibold text-foreground">The harness</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             The measurement machinery lives in{' '}
@@ -808,7 +808,7 @@ export default function HowWeTestedWithClaudePage() {
           <LeadList items={harnessBugPoints} />
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="next-person" className="text-lg sm:text-xl font-semibold text-foreground">What we&apos;d tell the next person</AnchorHeading>
           <LeadList items={nextPersonPoints} />
           <AnchorHeading id="honest-limitations" as="h3" className="mt-6 font-medium text-foreground">
@@ -828,7 +828,7 @@ export default function HowWeTestedWithClaudePage() {
           </p>
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="bottom-line" className="text-lg sm:text-xl font-semibold text-foreground">Bottom line</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             An agent can run a multi-week, disk-and-timing-sensitive benchmark
@@ -845,7 +845,7 @@ export default function HowWeTestedWithClaudePage() {
           </p>
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="reproduce-it" className="text-lg sm:text-xl font-semibold text-foreground">Reproduce it</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">The harness is in the repo and the data is committed:</p>
           <div className="mt-4 flex flex-wrap gap-3">
