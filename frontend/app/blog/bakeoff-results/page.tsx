@@ -271,9 +271,9 @@ const clCrossAnchorMatrix = [
   },
   {
     cl: 'grandine',
-    ethrex: { time: '~22m', size: '946 MB (actual)' },
-    geth: { time: '~8m50s', size: '725 MB (actual)' },
-    nethermind: { time: '~9m58s', size: '730 MB (actual)' },
+    ethrex: { time: '~22m', size: '~992 MB (actual)' },
+    geth: { time: '~8m50s', size: '~760 MB (actual)' },
+    nethermind: { time: '~9m58s', size: '~765 MB (actual)' },
     lever: '--prune-storage — required, or it stores every state',
   },
   {
@@ -293,35 +293,35 @@ const clCrossAnchorMatrix = [
 ]
 
 const clRankingsByAnchor = [
-  { anchor: 'Ethrex anchor', order: 'lighthouse (773 MB) < lodestar (868 MB) < grandine (946 MB) < teku (2,161 MB) < nimbus (5,302 MB)' },
-  { anchor: 'Geth anchor', order: 'lodestar (185 MB) < lighthouse (542 MB) < grandine (725 MB) < teku (977 MB) < nimbus (1,198 MB)' },
-  { anchor: 'Nethermind anchor', order: 'lodestar (186 MB) < lighthouse (492 MB) < grandine (730 MB) < teku (875 MB) < nimbus (1,338 MB)' },
+  { anchor: 'Ethrex anchor', order: 'lighthouse (773 MB) < lodestar (868 MB) < grandine (~992 MB) < teku (2,161 MB) < nimbus (5,302 MB)' },
+  { anchor: 'Geth anchor', order: 'lodestar (185 MB) < lighthouse (542 MB) < grandine (~760 MB) < teku (977 MB) < nimbus (1,198 MB)' },
+  { anchor: 'Nethermind anchor', order: 'lodestar (186 MB) < lighthouse (492 MB) < grandine (~765 MB) < teku (875 MB) < nimbus (1,338 MB)' },
 ]
 
 const clMatrixNotes = [
   "**teku needed a re-run on the ethrex anchor.** Its first attempt starved the shared host's JVM heap, took 64 min to sync, and produced a discarded reading. Raising `TEKU_CACHE` to 8192m fixed it — the re-run synced clean in 22 min. Lesson: size teku's JVM heap generously on a shared host, or its GC pressure spills onto co-resident services.",
   "**lodestar's first nethermind-anchor run (~76m) was a fluke, not a lodestar property.** It started while the anchor EL was still importing an unrelated ~2-day block gap left by a separate crash-loop incident. Re-measured after the anchor recovered: ~7m36s / 186 MB — in line with the other four CLs and its own geth-anchor number.",
-  '**teku showed a false "not synced" reading twice on the nethermind anchor — a watchdog bug, not a real problem.** In both cases the anchor was healthy by the time the measurement was taken; the watchdog had latched onto an early warm-up blip and never re-checked. Both runs\' footprints are valid; the published figure (875 MB) is the clean re-read (a first run measured ~667 MB).',
-  "**grandine's apparent size overstates real usage.** It uses sparse DB files: a raw byte count reads ~1,074 MB on the geth/nethermind anchors and ~1,344 MB on the longer-running ethrex anchor — not measurement error, just a bigger sparse pre-allocation from more time since sync. Actual on-disk usage is what's used above: ~725–730 MB on the geth/nethermind anchors, ~946 MB on the ethrex anchor.",
+  '**teku showed a false "not synced" reading twice on the nethermind anchor — a watchdog bug, not a real problem.** In both cases the anchor was healthy by the time the measurement was taken; the watchdog had latched onto an early warm-up blip and never re-checked. Both runs\' footprints are valid; the published figure (875 MB) is the clean re-read (a first run measured ~700 MB).',
+  "**grandine's apparent size overstates real usage.** It uses sparse DB files: a raw byte count reads ~1,074 MB on the geth/nethermind anchors and ~1,344 MB on the longer-running ethrex anchor — not measurement error, just a bigger sparse pre-allocation from more time since sync. Actual on-disk usage is what's used above: ~760–765 MB on the geth/nethermind anchors, ~992 MB on the ethrex anchor.",
 ]
 
 const crossAnchorVerdict = [
   '**nimbus is the largest CL on all three anchors** — the one ranking that holds without exception.',
   '**{lodestar, lighthouse} are the two smallest CLs on all three anchors**, but which one is smallest is measurement-window-sensitive: lighthouse is smallest on the ethrex anchor; lodestar is smallest on the geth and nethermind anchors.',
-  "**{teku, grandine} form a \"mid\" tier with a soft internal order.** teku's two nethermind-anchor readings (~667 → 875 MB, see note above) cross grandine's ~730 MB. Taking the clean re-read as authoritative, grandine < teku holds on all three anchors — but that pair's order is measurement-sensitive, not a stable client property.",
+  "**{teku, grandine} form a \"mid\" tier with a soft internal order.** teku's two nethermind-anchor readings (~700 → 875 MB, see note above) cross grandine's ~765 MB. Taking the clean re-read as authoritative, grandine < teku holds on all three anchors — but that pair's order is measurement-sensitive, not a stable client property.",
   '**Absolute footprints scale with observation time, not just the anchor.** The geth- and nethermind-anchor numbers are much smaller than the ethrex-anchor ones (e.g. nimbus ~1.2–1.3 GB vs ~5.3 GB) because those sweeps were measured minutes after checkpoint-sync, while the ethrex-anchor runs ran longer post-sync. The tiers hold anyway; exact within-tier order does not.',
   '**Net:** three different EL anchors reproduce the same three tiers — lightweight {lodestar, lighthouse}, mid {teku, grandine}, heavy {nimbus} — supporting EL/CL decoupling, without an identical total order across anchors.',
 ]
 
-// Cross-anchor CL footprints (approximate published values, MiB) for the dot plot.
-// Log axis: the field spans ~177 MiB to ~5 GiB. Anchor identity is double-encoded
-// (shape + tone) since the site palette is single-accent.
+// Cross-anchor CL footprints (published values from the matrix above, decimal MB)
+// for the dot plot. Log axis: the field spans ~185 MB to ~5.3 GB. Anchor identity
+// is double-encoded (shape + tone) since the site palette is single-accent.
 const clCrossAnchorPoints = [
-  { name: 'Lodestar', ethrex: 827, geth: 177, nethermind: 178 },
-  { name: 'Lighthouse', ethrex: 739, geth: 518, nethermind: 470 },
-  { name: 'Grandine', ethrex: 946, geth: 725, nethermind: 730 },
-  { name: 'Teku', ethrex: 2150, geth: 936, nethermind: 848 },
-  { name: 'Nimbus', ethrex: 5120, geth: 1229, nethermind: 1331 },
+  { name: 'Lodestar', ethrex: 868, geth: 185, nethermind: 186 },
+  { name: 'Lighthouse', ethrex: 773, geth: 542, nethermind: 492 },
+  { name: 'Grandine', ethrex: 992, geth: 760, nethermind: 765 },
+  { name: 'Teku', ethrex: 2161, geth: 977, nethermind: 875 },
+  { name: 'Nimbus', ethrex: 5302, geth: 1198, nethermind: 1338 },
 ]
 const clLogMin = 150
 const clLogMax = 6000
@@ -691,7 +691,7 @@ export default function BakeoffResultsPage() {
               <ul className="mt-2 space-y-1.5 pl-4">
                 <li>ELs × prysm: geth, erigon, reth, nethermind, besu, nimbus_eth1, ethrex</li>
                 <li>
-                  <Rich text="CLs × fixed anchor EL: lighthouse, teku, nimbus, lodestar, grandine. The first sweep used **ethrex**, already synced at tip. The originally planned geth sweep was initially deferred, then completed on 2026-07-08 as a cross-anchor check, and a third sweep against a **nethermind** anchor followed on 2026-07-26. Across all three anchors the same three tiers reproduce — lightweight {lodestar, lighthouse}, mid {teku, grandine}, heavy {nimbus} — while the order within each pair is measurement-window-sensitive (lodestar↔lighthouse between ethrex and geth; on the nethermind anchor, teku itself moved ~27% across two runs — ~667 MB → ~875 MB — enough to cross grandine's ~730 MB; grandine < teku holds on all three anchors, so this is teku's own re-read variance, not a genuine swap with grandine)." />
+                  <Rich text="CLs × fixed anchor EL: lighthouse, teku, nimbus, lodestar, grandine. The first sweep used **ethrex**, already synced at tip. The originally planned geth sweep was initially deferred, then completed on 2026-07-08 as a cross-anchor check, and a third sweep against a **nethermind** anchor followed on 2026-07-26. Across all three anchors the same three tiers reproduce — lightweight {lodestar, lighthouse}, mid {teku, grandine}, heavy {nimbus} — while the order within each pair is measurement-window-sensitive (lodestar↔lighthouse between ethrex and geth; on the nethermind anchor, teku itself moved ~25% across two runs — ~700 MB → ~875 MB — enough to cross grandine's ~765 MB; grandine < teku holds on all three anchors, so this is teku's own re-read variance, not a genuine swap with grandine)." />
                 </li>
               </ul>
             </li>
@@ -1134,7 +1134,7 @@ export default function BakeoffResultsPage() {
                   </text>
                 </g>
               ))}
-              <text x="592" y="270" className="fill-muted-foreground text-[11px]">MiB (log scale, approximate)</text>
+              <text x="592" y="270" className="fill-muted-foreground text-[11px]">MB (log scale)</text>
               {clCrossAnchorPoints.map((row, index) => {
                 const y = 48 + index * 44
                 return (
@@ -1170,8 +1170,8 @@ export default function BakeoffResultsPage() {
             <figcaption className="mt-2 text-xs text-muted-foreground">
               Circles (ethrex anchor) sit right of the others because those runs were measured
               longer after checkpoint-sync, not because the anchor changes the ranking.
-              lodestar&apos;s geth- and nethermind-anchor marks overlap almost exactly (~177 vs ~178
-              MB). Values are the published approximations from the matrix above.
+              lodestar&apos;s geth- and nethermind-anchor marks overlap almost exactly (~185 vs ~186
+              MB). Values are the published figures from the matrix above.
             </figcaption>
           </figure>
           <dl className="mt-4 space-y-2 text-sm sm:hidden">
@@ -1179,7 +1179,7 @@ export default function BakeoffResultsPage() {
               <div key={row.name} className="flex items-baseline justify-between gap-3">
                 <dt className="font-medium text-foreground">{row.name}</dt>
                 <dd className="text-right text-xs text-muted-foreground">
-                  ~{row.ethrex} / {row.geth} / {row.nethermind} MiB (ethrex / geth / nethermind anchor)
+                  ~{row.ethrex} / {row.geth} / {row.nethermind} MB (ethrex / geth / nethermind anchor)
                 </dd>
               </div>
             ))}
@@ -1342,11 +1342,11 @@ export default function BakeoffResultsPage() {
           </p>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li>
-              <Rich text="**Recommended: lighthouse** — smallest on the ethrex-anchor sweep (~773 MB; lodestar is actually smaller on the geth and nethermind anchors, down to ~185 MB), checkpoint-syncs in ~22 min, blob pruning on by default. lodestar (~868 MB) and grandine (~946 MB, with `--prune-storage`) are close seconds; teku (~2,161 MB) and nimbus (~5,302 MB) are heavier." />
+              <Rich text="**Recommended: lighthouse** — smallest on the ethrex-anchor sweep (~773 MB; lodestar is actually smaller on the geth and nethermind anchors, down to ~185 MB), checkpoint-syncs in ~22 min, blob pruning on by default. lodestar (~868 MB) and grandine (~992 MB, with `--prune-storage`) are close seconds; teku (~2,161 MB) and nimbus (~5,302 MB) are heavier." />
               <br />
               <span className="font-medium text-foreground">Disk order (the only differentiator):</span>{' '}
               <strong className="text-foreground">
-                lighthouse (~773 MB) &lt; lodestar (~868 MB) &lt; grandine (~946 MB) &lt; teku (~2,161 MB)
+                lighthouse (~773 MB) &lt; lodestar (~868 MB) &lt; grandine (~992 MB) &lt; teku (~2,161 MB)
                 &lt; nimbus (~5,302 MB).
               </strong>
             </li>
