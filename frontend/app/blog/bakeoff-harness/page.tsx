@@ -81,8 +81,8 @@ erigon\\tteku\\trerun: previous row crash-looped before the watchdog existed`
 const atAGlance = [
   { title: '8 scripts, 1 manifest', body: 'candidates.tsv lists the pairs to run; six executable driver scripts drive, sample, and aggregate them, plus a sourced library (lib.sh) and a CI guard.' },
   { title: '3 ways to launch a run', body: 'a fixed manifest (run_bakeoff.sh), a rotating EL anchor (run_anchor_rotation.sh), or an async rerun queue (run_queue.sh) — all three end up calling run_candidate.sh.' },
-  { title: 'Up to 3 watchdogs per run', body: 'crash-loop (always on), anchor-drift (anchor mode only), stall (opt-in) — each one only marks state and logs; none but the stall watchdog ever restarts anything.' },
-  { title: 'Every artifact is machine-readable', body: 'env.txt and samples.jsonl feed summarize.sh; advisor-alerts.jsonl is the separate structured channel operators tail live.' },
+  { title: 'Up to 3 watchdogs per run', body: 'crash-loop (always on), anchor-drift (anchor mode only), stall (opt-in) — only the opt-in stall watchdog ever restarts anything, and its restarts are capped; the other two just mark state and log.' },
+  { title: 'The structured artifacts are machine-readable', body: 'env.txt and samples.jsonl feed summarize.sh; advisor-alerts.jsonl is the separate structured channel operators tail live.' },
 ]
 
 function StaticCodeBlock({ code, className = '' }: { code: string; className?: string }) {
@@ -233,7 +233,14 @@ const dataModelRows: { file: string; writtenBy: React.ReactNode; contents: React
   },
   {
     file: '.done / .anchor-poisoned / .config-not-optimal / .stalled / .crash-looped',
-    writtenBy: 'marker files',
+    writtenBy: (
+      <>
+        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code> (touch), except{' '}
+        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.config-not-optimal</code> — touched by{' '}
+        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_check_config_optimal</code> in{' '}
+        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">lib.sh</code> (§5.6)
+      </>
+    ),
     contents: 'Resume guard, anchor-invalidation flag, config-gate miss flag, stall-watchdog exhaustion flag, crash-loop-watchdog trip flag — all checked by filename existence, never by content',
   },
   {
