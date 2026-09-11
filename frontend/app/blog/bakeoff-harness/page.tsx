@@ -436,7 +436,7 @@ function CandidateLifecycleDiagram() {
   return (
     <figure
       className="mt-4"
-      aria-label="run_candidate.sh state machine: resume guard, pre-install sequence, install, observation window, teardown, run in order on a clean pass — a resume-guard trip or failed disk-floor check skips straight to done, a failed install skips only the observation window"
+      aria-label="run_candidate.sh state machine: resume guard, pre-install sequence, install, observation window, teardown, run in order on a clean pass — a resume-guard trip or failed disk-floor check exits before install and teardown, a failed install skips only the observation window"
     >
       <div className="flex flex-col gap-1.5 sm:flex-row sm:items-stretch sm:gap-2">
         {candidateStages.map((stage, i) => (
@@ -454,8 +454,8 @@ function CandidateLifecycleDiagram() {
       </div>
       <figcaption className="mt-2 text-xs text-muted-foreground">
         A clean run passes through all five stages in order &mdash; a resume-guard trip or a failed disk-floor
-        check skips straight to done, and a failed install skips only the observation window. Click any stage
-        below for its exact thresholds, env vars, and exit codes.
+        check exits before install and teardown, and a failed install skips only the observation window. Click
+        any stage below for its exact thresholds, env vars, and exit codes.
       </figcaption>
     </figure>
   )
