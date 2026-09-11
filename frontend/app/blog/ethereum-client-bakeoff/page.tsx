@@ -54,6 +54,68 @@ const campaignFacts = [
   },
 ]
 
+// The scannable answer to "which EL is worth running": one row per execution
+// client, its known issue from this campaign, and a verdict. Every claim here
+// is already established in more detail elsewhere on this page (EL scorecard,
+// "The disk story," "Restart resilience," "The full-sync-only clients") — this
+// table exists so a reader doesn't have to read the whole article to get it.
+const clientIssues = [
+  {
+    name: 'Geth',
+    verdict: 'Recommended' as const,
+    issue: 'None found. Cleanest snap sync (~8.5h) and the only EL measured resuming a multi-day (~52h) gap without a re-snap.',
+  },
+  {
+    name: 'Nethermind',
+    verdict: 'Recommended' as const,
+    issue: 'One installer bug, fixed: P2P defaulted to the loopback address, so the first run peered with 0 nodes for 13.3h before anyone noticed. Every gap tested after the fix resumed cleanly, up to ~35h.',
+  },
+  {
+    name: 'Besu',
+    verdict: 'Caution' as const,
+    issue: "Synced cleanly once, but a pruned re-run deadlocked twice: if the CL stalls long enough mid-sync, besu's snap pivot ages out and the sync engine dies silently (the process keeps answering RPC).",
+  },
+  {
+    name: 'Ethrex',
+    verdict: 'Caution' as const,
+    issue: 'Fastest cold sync in the field (~2h16m), but a restart gap past ~25 minutes triggers a full re-snap from scratch. Also serves no history before its sync pivot — not a drop-in public RPC.',
+  },
+  {
+    name: 'Reth',
+    verdict: 'Full-sync-only' as const,
+    issue: 'No snap-sync path. Never reached tip inside the 72h cap on this host (47% by block count when capped) — a slow bootstrap, not a broken client.',
+  },
+  {
+    name: 'Nimbus-eth1',
+    verdict: 'Full-sync-only' as const,
+    issue: 'Same limitation as reth: no snap-sync path. Ran a full 72 hours with zero restarts but reached only ~21.6% of tip.',
+  },
+  {
+    name: 'Erigon',
+    verdict: 'Avoid for now' as const,
+    issue: "OtterSync deadlocked against a checkpoint-synced consensus client — each side waited on the other and neither issued the handshake that would break the tie. Never produced a synced datadir in this campaign, even after raising its CPU cap 3x.",
+  },
+]
+
+const verdictStyle: Record<(typeof clientIssues)[number]['verdict'], { fg: string; bg: string; border: string }> = {
+  Recommended: { fg: '#a855f7', bg: 'rgba(168,85,247,0.1)', border: 'rgba(168,85,247,0.4)' },
+  Caution: { fg: '#f5b46b', bg: 'rgba(245,180,107,0.1)', border: 'rgba(245,180,107,0.4)' },
+  'Full-sync-only': { fg: '#f5b46b', bg: 'rgba(245,180,107,0.1)', border: 'rgba(245,180,107,0.4)' },
+  'Avoid for now': { fg: '#e5726e', bg: 'rgba(229,114,110,0.1)', border: 'rgba(229,114,110,0.4)' },
+}
+
+function VerdictBadge({ verdict }: { verdict: (typeof clientIssues)[number]['verdict'] }) {
+  const s = verdictStyle[verdict]
+  return (
+    <span
+      className="inline-flex items-center whitespace-nowrap rounded-md border px-2.5 py-0.5 font-mono text-xs font-medium"
+      style={{ color: s.fg, backgroundColor: s.bg, borderColor: s.border }}
+    >
+      {verdict}
+    </span>
+  )
+}
+
 const executionClients = [
   {
     name: 'Nethermind',
@@ -1541,6 +1603,47 @@ export default function EthereumClientBakeoffPage() {
           <AnchorHeading id="recommendations" className="text-lg sm:text-xl font-semibold text-foreground">
             Recommendations
           </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            The scannable version — every execution client, its known issue from this campaign,
+            and whether it&apos;s worth running today:
+          </p>
+          <div
+            className="mt-4 hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
+            role="region"
+            aria-label="Execution client known issues and verdict"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[42rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
+              <thead>
+                <tr className="border-b border-border text-left">
+                  <th className="pb-3 font-medium text-muted-foreground">EL</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Verdict</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Known issue</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {clientIssues.map((row) => (
+                  <tr key={row.name}>
+                    <td className="py-3 align-top font-medium text-foreground whitespace-nowrap">{row.name}</td>
+                    <td className="py-3 align-top"><VerdictBadge verdict={row.verdict} /></td>
+                    <td className="py-3 align-top text-muted-foreground min-w-[24rem]">{row.issue}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-4 space-y-3 sm:hidden">
+            {clientIssues.map((row) => (
+              <div key={row.name} className="rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-medium text-foreground">{row.name}</span>
+                  <VerdictBadge verdict={row.verdict} />
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">{row.issue}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground">The detail behind each verdict:</p>
           <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
             <li>
               <span className="font-medium text-foreground">Default: geth.</span> Largest
