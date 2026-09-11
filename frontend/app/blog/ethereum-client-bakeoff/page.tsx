@@ -3,9 +3,11 @@ import Link from 'next/link'
 import { AnchorHeading } from '@/components/ui/AnchorHeading'
 import { ArticleJsonLd } from '@/components/ui/ArticleJsonLd'
 import { ArticleToc } from '@/components/ui/ArticleToc'
+import { BackToTop } from '@/components/ui/BackToTop'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { Details } from '@/components/ui/Details'
 import { ReadNext } from '@/components/ui/ReadNext'
 import { ArticleByline } from '@/components/ui/ArticleByline'
 import { buildArticleMetadata } from '@/lib/articles'
@@ -29,7 +31,91 @@ const tocLinks = [
   { label: 'Distribution as predictor', href: '#distribution-as-predictor' },
   { label: 'Consensus layer', href: '#consensus-layer-solved' },
   { label: 'Recommendations', href: '#recommendations' },
+  { label: 'Bottom line', href: '#bottom-line' },
 ]
+
+// The when/where/scope/how of the campaign, as one scannable card so the
+// numbers below have context without the lede or "What we measured" repeating it.
+const campaignFacts = [
+  {
+    title: 'When',
+    body: '23-day measurement phase, 2026-06-22 → 2026-07-14; steady-state and restart-resume follow-ups through 2026-08-03.',
+  },
+  {
+    title: 'Where',
+    body: 'One shared semi-production host — not a live validator. MEV disabled, no validator keys.',
+  },
+  {
+    title: 'Scope',
+    body: 'Seven execution clients and five consensus clients, through the same mainnet sync — one client at a time, a 72-hour cap on each.',
+  },
+  {
+    title: 'What we recorded',
+    body: 'Two numbers per client: final synced disk footprint and cold-sync duration. Footprint is the end-of-run datadir — for capped runs, the last du sample before the cap — never the mid-sync peak.',
+  },
+]
+
+// The scannable answer to "which EL is worth running": one row per execution
+// client, its known issue from this campaign, and a verdict. Every claim here
+// is already established in more detail elsewhere on this page (EL scorecard,
+// "The disk story," "Restart resilience," "The full-sync-only clients") — this
+// table exists so a reader doesn't have to read the whole article to get it.
+const clientIssues = [
+  {
+    name: 'Geth',
+    verdict: 'Recommended' as const,
+    issue: 'None found. Cleanest snap sync (~8.5h) and the only EL measured resuming a multi-day (~52h) gap without a re-snap.',
+  },
+  {
+    name: 'Nethermind',
+    verdict: 'Recommended' as const,
+    issue: 'One installer bug, fixed: P2P defaulted to the loopback address, so the first run peered with 0 nodes for 13.3h before anyone noticed. Every gap tested after the fix resumed cleanly, up to ~35h.',
+  },
+  {
+    name: 'Besu',
+    verdict: 'Caution' as const,
+    issue: "Synced cleanly once, but a pruned re-run deadlocked twice: if the CL stalls long enough mid-sync, besu's snap pivot ages out and the sync engine dies silently (the process keeps answering RPC).",
+  },
+  {
+    name: 'Ethrex',
+    verdict: 'Caution' as const,
+    issue: 'Fastest cold sync in the field (~2h16m), but a restart gap past ~25 minutes stalls, and a gap of ~1.5–2h triggers a full re-snap from scratch. Serves no history before its sync pivot — not a drop-in public RPC.',
+  },
+  {
+    name: 'Reth',
+    verdict: 'Full-sync-only' as const,
+    issue: 'No snap-sync path. Never reached tip inside the 72h cap on this host (47% by block count when capped) — a slow bootstrap, not a broken client.',
+  },
+  {
+    name: 'Nimbus-eth1',
+    verdict: 'Full-sync-only' as const,
+    issue: 'Same limitation as reth: no snap-sync path. Ran a full 72 hours with zero restarts but reached only ~21.6% of tip.',
+  },
+  {
+    name: 'Erigon',
+    verdict: 'Avoid for now' as const,
+    issue: "OtterSync deadlocked against a checkpoint-synced consensus client — each side waited on the other and neither issued the forkchoiceUpdated call that would break the tie. Never produced a synced datadir in this campaign, even after the consensus client's CPU cap was raised 3x.",
+  },
+]
+
+const verdictStyle: Record<(typeof clientIssues)[number]['verdict'], { fg: string; bg: string; border: string }> = {
+  Recommended: { fg: '#a855f7', bg: 'rgba(168,85,247,0.1)', border: 'rgba(168,85,247,0.4)' },
+  Caution: { fg: '#f5b46b', bg: 'rgba(245,180,107,0.1)', border: 'rgba(245,180,107,0.4)' },
+  'Full-sync-only': { fg: '#f5b46b', bg: 'rgba(245,180,107,0.1)', border: 'rgba(245,180,107,0.4)' },
+  'Avoid for now': { fg: '#e5726e', bg: 'rgba(229,114,110,0.1)', border: 'rgba(229,114,110,0.4)' },
+}
+
+function VerdictBadge({ verdict }: { verdict: (typeof clientIssues)[number]['verdict'] }) {
+  const s = verdictStyle[verdict]
+  return (
+    <span
+      className="inline-flex items-center whitespace-nowrap rounded-md border px-2.5 py-0.5 font-mono text-xs font-medium"
+      style={{ color: s.fg, backgroundColor: s.bg, borderColor: s.border }}
+    >
+      {verdict}
+    </span>
+  )
+}
 
 const executionClients = [
   {
@@ -101,7 +187,7 @@ const executionClients = [
 // the primary/complete sweep; geth anchor is the first cross-anchor confirmation re-run; nethermind
 // anchor is the second). Sorted by the ethrex-anchor footprint, the primary run. One pair swaps
 // order between anchors — lodestar/lighthouse (ethrex vs geth); on the nethermind anchor, teku
-// instead shows ~27% variance against itself across two runs (~667 MiB vs ~848 MiB), crossing
+// instead shows ~25% variance against itself across two runs (~667 MiB vs ~835 MiB), crossing
 // grandine's ~730 MiB and back — grandine < teku holds on all three anchors — but each pair stays
 // within its own tier (lightweight / mid), where the gap is small and measurement-window-sensitive
 // (RESULTS.md).
@@ -134,7 +220,7 @@ const consensusClients = [
     name: 'Teku',
     ethrexAnchorFootprint: '~2.1 GiB',
     gethAnchorFootprint: '~936 MiB',
-    nethermindAnchorFootprint: '~848 MiB',
+    nethermindAnchorFootprint: '~835 MiB',
     pruneLever: 'data-storage-mode=minimal',
     variant: 'default' as const,
   },
@@ -148,6 +234,17 @@ const consensusClients = [
   },
 ]
 
+// No verdict table for CLs: unlike the EL side, all five are "Recommended" —
+// none failed to sync, none deadlocked. The only real signal is these three
+// harness-side caveats, which read as instability if skimmed past in the
+// prose paragraph above — worth a compact "was this the client's fault?" panel.
+const consensusCaveats = [
+  { cl: 'Teku', anchor: 'ethrex anchor', what: 'First attempt JVM-OOM-starved the shared host (64 min sync, briefly blipped the anchor); re-run with a larger JVM heap synced clean in 22 min.' },
+  { cl: 'Grandine', anchor: 'ethrex anchor', what: 'First attempt crashed when du hit a datadir file that vanished mid-snapshot (a harness pipefail bug, since fixed); the re-run synced clean.' },
+  { cl: 'Lodestar', anchor: 'nethermind anchor', what: 'First run took ~76 min — not a lodestar property; the anchor EL was still importing an unrelated 2-day gap at the time. Clean re-read: ~7m36s.' },
+  { cl: 'Teku', anchor: 'nethermind anchor', what: "Watchdog reported a false anchor-health miss on both runs, latched during teku's JVM warm-up; the anchor was healthy when each measurement was actually taken." },
+]
+
 // Every other metric CLIENT_BAKEOFF_RESULTS.md records that isn't in the scorecards above —
 // peer counts, resource caps, re-run counts, config_optimal, and other candidate-level detail.
 const fullMetrics = [
@@ -157,10 +254,10 @@ const fullMetrics = [
   { candidate: 'besu × prysm', peers: '~50', configOptimal: 'n/a from the harness gate; sync-flag audit: SNAP + Bonsai ✅', reRuns: 2, notable: 'Un-pruned run synced clean and is the ranked footprint; the pruned re-run deadlocked twice and was abandoned (no verdict)' },
   { candidate: 'reth × prysm', peers: '—', configOptimal: 'yes', reRuns: 1, notable: '578 samples; relaunched after --full fix; 47% by block / ~21% gas-weighted at cap' },
   { candidate: 'nimbus-eth1 × prysm', peers: '20–25', configOptimal: 'yes', reRuns: 1, notable: '72h continuous, 0 restarts; supersedes an earlier ~21 GB aborted run' },
-  { candidate: 'erigon × prysm', peers: '—', configOptimal: 'n/a (no-sync)', reRuns: 0, notable: 'CPU cap raised 200%→600% mid-run; advanced ~5k blocks then re-froze' },
+  { candidate: 'erigon × prysm', peers: '—', configOptimal: 'n/a (no-sync)', reRuns: 0, notable: 'CL CPU cap raised 200%→600% mid-run; advanced ~5k blocks then re-froze' },
   { candidate: 'CL sweep × ethrex anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 2, notable: "teku: JVM-OOM on first attempt (TEKU_CACHE fix); grandine's first attempt failed on a harness du bug" },
   { candidate: 'CL sweep × geth anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 0, notable: 'Cross-anchor confirmation re-run; the lightweight/mid/heavy tiers reproduced (lodestar↔lighthouse swapped within the lightweight pair, vs. the ethrex primary)' },
-  { candidate: 'CL sweep × nethermind anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 1, notable: "Second cross-anchor confirmation; teku re-measured (~667→~848 MiB across two runs on the same anchor, showing how window-sensitive the mid tier is); lodestar was re-measured after the anchor returned to head (~7m36s / ~178 MiB); its first attempt (~76m14s) was an anchor-gap artifact, not a lodestar property" },
+  { candidate: 'CL sweep × nethermind anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 2, notable: "Second cross-anchor confirmation; teku re-measured (~667→~835 MiB across two runs on the same anchor, showing how window-sensitive the mid tier is); lodestar was re-measured after the anchor returned to head (~7m36s / ~178 MiB); its first attempt (~76m14s) was an anchor-gap artifact, not a lodestar property" },
 ]
 
 const completedExecutionSyncs = [
@@ -270,14 +367,11 @@ export default function EthereumClientBakeoffPage() {
             &ldquo;The Fastest Ethereum Client Is One Almost Nobody Runs&rdquo;
           </p>
           <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground">
-            A field campaign that began with a 23-day measurement phase (2026-06-22 → 2026-07-14)
-            and continued with steady-state and restart-resume measurements through 2026-08-03,
-            comparing seven execution-client syncs and five consensus clients — the same mainnet
-            sync, on the same host, one client at a time, recording two numbers for each: final
-            synced disk footprint and sync duration. The interesting part is what fell out of it:
-            an operability axis that turns out to matter more than either headline number, and a
-            genuine paradox — the client that synced fastest in the whole field has essentially
-            zero real-world adoption.
+            We put every execution and consensus client this project supports through the same
+            mainnet sync, one at a time, and recorded two numbers for each. The interesting part is
+            what fell out of it: an operability axis that matters more than either headline number,
+            and a paradox — the client that synced fastest in the whole field has
+            essentially zero real-world adoption.
           </p>
           <div className="mt-4 flex flex-wrap gap-3 sm:mt-6">
             <Button href="/deck/bakeoff.html" external variant="secondary" size="sm">
@@ -308,9 +402,23 @@ export default function EthereumClientBakeoffPage() {
           </p>
         </Card>
 
+        <section className="mt-8" aria-label="Campaign at a glance: when, where, scope, and method">
+          <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+            At a glance: when &amp; how
+          </h2>
+          <div className="mt-3 grid gap-3 sm:gap-4 md:grid-cols-2">
+            {campaignFacts.map((fact) => (
+              <Card key={fact.title} padding="sm" className="bg-muted/30">
+                <h3 className="font-medium text-foreground">{fact.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{fact.body}</p>
+              </Card>
+            ))}
+          </div>
+        </section>
+
         <ArticleToc links={tocLinks} />
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="tldr" className="text-lg sm:text-xl font-semibold text-foreground">
             TL;DR
           </AnchorHeading>
@@ -330,19 +438,19 @@ export default function EthereumClientBakeoffPage() {
             <Card padding="sm" className="bg-muted/30">
               <h3 className="font-medium text-foreground">The twist — ethrex&apos;s restart-resync cliff</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Gaps through 23 minutes / 124 blocks resumed, while a 26-minute / 132-block gap stalled. Measured 1.5–2-hour gaps discarded synced state and triggered a full re-snap (~2h). This operability tax is the likely reason the fastest-syncing client in the field has close to zero real-world mainnet adoption.
+                Gaps through 23 minutes / 124 blocks resumed, while a 26-minute / 132-block gap stalled. Measured 1.5–2-hour gaps discarded synced state and triggered a full re-snap (~2h). This operability tax is a strong candidate explanation for why the fastest-syncing client in the field has close to zero real-world mainnet adoption.
               </p>
             </Card>
             <Card padding="sm" className="bg-muted/30">
               <h3 className="font-medium text-foreground">The CL layer looks solved — on the axes we measured</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                All five consensus clients checkpoint-synced to a validating head in minutes — about 6–9 minutes on the geth anchor, ~7–10 minutes on the nethermind anchor, and ~22–23 minutes on the ethrex anchor. All five reached a validating head on all three anchors (three runs needed a caveat along the way — teku&apos;s JVM heap sizing and a watchdog false positive, grandine&apos;s harness du bug, and lodestar&apos;s anchor-gap re-read — none of them client faults). Footprint is the main differentiator.
+                All five consensus clients checkpoint-synced to a validating head in minutes, on all three EL anchors — about 6–9 min on geth, ~7–10 min on nethermind, ~22–23 min on ethrex. Four runs needed a caveat along the way (a teku heap fix and a grandine harness bug on the ethrex anchor; a lodestar anchor-gap re-read and a teku watchdog false positive on the nethermind anchor), none of them client faults. Footprint is the main differentiator.
               </p>
             </Card>
           </div>
         </section>
 
-        <section className="mt-10 sm:mt-16" aria-labelledby="sync-time-heading">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6" aria-labelledby="sync-time-heading">
           <AnchorHeading id="sync-time-heading" className="text-lg sm:text-xl font-semibold text-foreground">
             Cold-sync time, at a glance
           </AnchorHeading>
@@ -402,7 +510,7 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-3 text-xs text-muted-foreground sm:hidden">Bars use a shared 0–20 hour scale.</p>
         </section>
 
-        <section className="mt-10 sm:mt-16" aria-labelledby="disk-heading">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6" aria-labelledby="disk-heading">
           <AnchorHeading id="disk-heading" className="text-lg sm:text-xl font-semibold text-foreground">
             Disk footprint, at a glance
           </AnchorHeading>
@@ -478,7 +586,7 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-3 text-xs text-muted-foreground sm:hidden">Bars use a shared 0–1300 GiB scale.</p>
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="el-scorecard" className="text-lg sm:text-xl font-semibold text-foreground">
             EL scorecard
           </AnchorHeading>
@@ -549,7 +657,7 @@ export default function EthereumClientBakeoffPage() {
           </p>
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="cl-scorecard" className="text-lg sm:text-xl font-semibold text-foreground">
             CL scorecard
           </AnchorHeading>
@@ -616,27 +724,31 @@ export default function EthereumClientBakeoffPage() {
             The same client&apos;s three columns differ because absolute footprint tracks how long
             the CL had been following the chain when it was sampled, rather than which EL it paired
             with. The geth- and nethermind-anchor runs were measured minutes after checkpoint-sync,
-            on a fresher datadir. It is the broad tiers (lightweight, mid, heavy), not the absolute
-            size or exact within-tier order, that reproduce across anchors.
+            on a fresher datadir.
           </p>
           <p className="mt-4 text-sm text-muted-foreground">
             The CL tiers also reproduced across three different EL anchors: a lightweight pair
             (lodestar, lighthouse), a mid pair (grandine, teku), and nimbus alone at the heavy end.
-            Within-tier order is measurement-window-sensitive — teku itself moved ~667 &rarr; ~848
-            MiB across two runs on the same nethermind anchor, crossing grandine (~730 MiB) and back.
+            Within-tier order is measurement-window-sensitive — two order-instabilities, detailed
+            in the consensus-layer section below.
           </p>
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="additional-run-details" className="text-lg sm:text-xl font-semibold text-foreground">
             Additional run details
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             The scorecards above are the curated view. This table adds peer counts,
-            config-optimality verification, re-run history, and other notable per-candidate detail.
+            config-optimality verification, re-run history, and other notable per-candidate detail —
+            supplementary depth, collapsed so it doesn&apos;t interrupt the read.
           </p>
+          <Details
+            summary={`Show all ${fullMetrics.length} per-candidate rows — peers, config-optimality, re-runs, notes`}
+            className="mt-4"
+          >
           <div
-            className="mt-4 sm:mt-6 hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
+            className="hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
             role="region"
             aria-label="Additional per-candidate run details"
             tabIndex={0}
@@ -664,7 +776,7 @@ export default function EthereumClientBakeoffPage() {
               </tbody>
             </table>
           </div>
-          <div className="mt-4 space-y-3 sm:hidden">
+          <div className="space-y-3 sm:hidden">
             {fullMetrics.map((row) => (
               <div key={row.candidate} className="rounded-lg border border-border p-3">
                 <span className="font-medium text-foreground">{row.candidate}</span>
@@ -686,26 +798,25 @@ export default function EthereumClientBakeoffPage() {
               </div>
             ))}
           </div>
-          <p className="mt-3 text-xs text-muted-foreground">
+          <p className="mt-4 text-xs text-muted-foreground">
             Sourced from <a href={`${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_RESULTS.md`} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">CLIENT_BAKEOFF_RESULTS.md</a>, the campaign&apos;s source-of-truth data — see the full{' '}
             <Link href="/blog/bakeoff-results" className="text-primary underline underline-offset-2">results on-site</Link>{' '}
             or the raw doc on GitHub.
           </p>
+          </Details>
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="what-we-measured" className="text-lg sm:text-xl font-semibold text-foreground">
             What we measured, and how we kept it honest
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            The campaign began with a 23-day measurement phase (2026-06-22 → 2026-07-14) and
-            continued with steady-state and restart-resume measurements through 2026-08-03, all on
-            a shared semi-production host (not a live validator), with MEV disabled and no
-            validator keys. The bake-off measures, for
-            each client, the final synced disk footprint and the sync duration: one candidate at a
-            time, a 72-hour cap per candidate, and the footprint taken from the last near-cap{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">du</code> sample —
-            never the peak mid-sync.
+            The when, where, and scope are in the card above. The method that shapes every number:
+            each candidate runs alone under a 72-hour cap, with its footprint read at the end of the
+            run — for capped runs, the last{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">du</code> sample before
+            the cap — never the mid-sync peak. Two choices then need spelling out — why we hold the consensus
+            client constant, and how we kept a mis-configured run from poisoning the results.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             For the EL scorecard we hold the CL constant at Prysm. That&apos;s defensible because
@@ -731,9 +842,9 @@ export default function EthereumClientBakeoffPage() {
               Every comparable footprint on this page comes from a synced run whose disk
               configuration was verified — by the harness{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal</code>{' '}
-              gate, or (for besu, whose harness token targets a prune lever the ranked run
-              deliberately didn&apos;t use) by the manual sync-flag audit (capped, no-sync, or
-              pruned-only runs are marked as such and excluded from the ranking).
+              gate, or, for besu (whose harness token targets a prune lever the ranked run
+              deliberately didn&apos;t use), by a manual sync-flag audit. Capped, no-sync, or
+              pruned-only runs are marked as such and excluded from the ranking.
             </p>
           </Card>
           <p className="mt-3 text-sm text-muted-foreground">
@@ -749,9 +860,9 @@ export default function EthereumClientBakeoffPage() {
           </p>
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="the-disk-story" className="text-lg sm:text-xl font-semibold text-foreground">
-            The disk story: there is no winner — the field converges
+            The disk story
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Nethermind&apos;s synced-tip snapshot read <strong className="text-foreground">~251 GiB</strong>,
@@ -765,16 +876,30 @@ export default function EthereumClientBakeoffPage() {
             Under matched history-retention configs, nethermind and geth are on par.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
-            That history is a config choice, though: as of 2026-08-03 the shipped default turns it
-            off (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">NETHERMIND_FULL_HISTORY=false</code>) —
-            a fresh minimal-history sync drops the post-merge bodies and receipts and holds at{' '}
-            <strong className="text-foreground">~250–280 GiB</strong> (state only) with no backfill, in
-            exchange for serving no history (pre-sync blocks return <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">null</code>,
-            like ethrex). It is the same retention lever turned down — not a client that is
-            &ldquo;smaller&rdquo; — and you turn it back on with{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">NETHERMIND_FULL_HISTORY=true</code>{' '}
-            on a fresh/rebuilt datadir for a public RPC; changing an existing minimal datadir
-            requires a rebuild. The ~1.06 TiB figure and the chart below are that full-history opt-in.
+            That history is a config choice, though — and as of 2026-08-03 the shipped default turns
+            it off:
+          </p>
+          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+            <li>
+              <span className="font-medium text-foreground">Default is minimal-history</span>{' '}
+              (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">NETHERMIND_FULL_HISTORY=false</code>) —
+              a fresh sync drops the post-merge bodies and receipts and holds at{' '}
+              <strong className="text-foreground">~250–280 GiB</strong> (state only), with no backfill.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">The cost is served history:</span>{' '}
+              pre-sync blocks return{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">null</code>, like ethrex.
+              It is the same retention lever turned down — not a client that is &ldquo;smaller.&rdquo;
+            </li>
+            <li>
+              <span className="font-medium text-foreground">To serve a public RPC,</span> set{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">NETHERMIND_FULL_HISTORY=true</code>{' '}
+              on a fresh or rebuilt datadir; converting an existing minimal datadir needs a rebuild.
+            </li>
+          </ul>
+          <p className="mt-3 text-sm text-muted-foreground">
+            The ~1.06 TiB figure and the chart below are that full-history opt-in.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             Among the measured no-history configurations in this campaign, nethermind is the smallest
@@ -891,17 +1016,15 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-3 text-sm text-muted-foreground">
             besu lands in the same band too, at ~1.08 TiB — the same order of magnitude, not an
             outlier. reth (window-capped at 72h, 47% by block / ~21% gas-weighted) already tracked ~87% of geth&apos;s
-            size at that point and projects to ~1.1–1.2 TiB finished. So the four ELs with full
+            size at that point and projects to ~1.1–1.2 TiB finished. All four ELs with full
             post-merge history — geth (1.13), nethermind (~1.06), besu (1.08), reth (~1.1–1.2
-            projected) — converge on roughly the same footprint. Disk size here is set by a
-            client-agnostic knob (how much post-merge history you retain), not by client
-            efficiency, so it isn&apos;t a good axis for picking a winner.
+            projected) — converge on roughly the same footprint.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             That leaves the axes that actually differ: <strong className="text-foreground">snap-sync
             speed</strong> and <strong className="text-foreground">restart-resume stability</strong>{' '}
             (both covered below). nethermind is still a good pick — its flat-storage state is
-            genuinely compact, and it&apos;s a minority client, so running it improves mainnet
+            compact, and it&apos;s a minority client, so running it improves mainnet
             client diversity — just not because it&apos;s smaller on disk than geth.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
@@ -1018,28 +1141,25 @@ export default function EthereumClientBakeoffPage() {
           </figure>
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="the-speed-story" className="text-lg sm:text-xl font-semibold text-foreground">
-            The speed story: ethrex wins, by a lot — and then loses it on restart
+            The speed story
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             ethrex snap-synced to a fully-validating head in{' '}
             <strong className="text-foreground">~2h16m</strong>, the fastest in the field by
             nearly 4×. Fifty peers throughout, one automatic stale-pivot self-heal (~4 min, no
-            intervention), no crash. On paper it&apos;s the star.
+            intervention), no crash. On paper it wins.
           </p>
-          <p className="mt-3 text-sm text-muted-foreground">Two things keep it out of the winners&apos; circle:</p>
+          <p className="mt-3 text-sm text-muted-foreground">Two things keep it off the recommended list:</p>
           <ol className="mt-3 list-inside list-decimal space-y-2 text-sm text-muted-foreground">
             <li>
               <span className="font-medium text-foreground">The footprint is settled now, and
               it&apos;s not comparable.</span>{' '}
               ethrex prunes nothing, and we watched the datadir climb even at the chain tip with{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing=false</code>{' '}
-              (286 → 403 → 416 → ~467 GiB across a single day, ~10 GiB/hr averaged across the
-              2026-07-06 run, before the +43 → +0.13 GiB/hr settling curve was resolved by the
-              2026-07-28 steady-state run) — but a
-              follow-up run confirmed that climb was settling, not unbounded: it plateaus at
-              ~470–476 GiB (drifting 470.2 → 475.5 GiB over ~42 hours, 2026-07-28→31). That still doesn&apos;t make it a disk
+              (286 → 403 → 416 → ~467 GiB across a single day, 2026-07-06) before it settled into
+              the ~470–476 GiB plateau covered above. That still doesn&apos;t make it a disk
               winner, because it simultaneously serves almost no history (
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_getBlockByNumber</code>{' '}
               returns <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">null</code>{' '}
@@ -1053,7 +1173,7 @@ export default function EthereumClientBakeoffPage() {
           </ol>
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="restart-resilience" className="text-lg sm:text-xl font-semibold text-foreground">
             Restart resilience
           </AnchorHeading>
@@ -1245,11 +1365,9 @@ export default function EthereumClientBakeoffPage() {
             direct contrast to ethrex&apos;s ~128-block cliff below. A separate
             establish run (2026-07-31) snap-synced nethermind fresh in{' '}
             <strong className="text-foreground">1h52m51s</strong> (~280 GiB at snap, pivot
-            25,649,064, zero restarts) — far faster than the ~14.5h Stage-B figure because the
-            pivot was minutes-old and near-tip, and network conditions differ; a second data
-            point under different conditions, not a replacement for the Stage-B number. Artifacts:
-            exp-lab runs <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">exp-a-nethermind-restart-resume-2026-07-31</code>{' '}
-            and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">exp-a-bisection-2026-08-02</code>.
+            25,649,064, zero restarts) — far faster than the ~14.5h Stage-B figure, because the
+            pivot was minutes-old and near-tip and network conditions differ. It&apos;s a second
+            data point under different conditions, not a replacement for the Stage-B number.
           </p>
 
           <AnchorHeading id="ethrex-cliff-bisected" as="h3" className="mt-6 font-medium text-foreground">
@@ -1319,7 +1437,7 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-3 text-sm text-muted-foreground">
             <strong className="text-foreground">Why it matters:</strong> a client that can stop
             resuming after ~25 minutes and, on longer measured gaps, fall into a ~2h re-snap is
-            genuinely painful to operate. That&apos;s a strong candidate explanation for
+            painful to operate. That&apos;s a strong candidate explanation for
             ethrex&apos;s ~0% adoption despite best-in-field cold-sync numbers: great benchmark,
             painful to actually run.
           </p>
@@ -1359,18 +1477,28 @@ export default function EthereumClientBakeoffPage() {
             </li>
             <li>Restarting resumed on the same stale pivot and re-deadlocked identically.</li>
           </ol>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Takeaways: an in-progress besu snap sync is fragile to a prolonged CL outage — a stale
-            CL binary can poison the EL&apos;s pivot irrecoverably; and besu answering RPC ≠ besu
-            syncing (judge by disk growth and DB writes rather than RPC liveness). Note the shared root
-            with ethrex&apos;s cliff: same ~128-block servable-state window, one hitting mid-sync,
-            the other post-sync-on-restart.
-          </p>
+          <p className="mt-3 text-sm text-muted-foreground">Three takeaways:</p>
+          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+            <li>
+              <span className="font-medium text-foreground">An in-progress besu snap sync is
+              fragile to a prolonged CL outage</span> — a stale CL binary can poison the EL&apos;s
+              pivot irrecoverably.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">besu answering RPC ≠ besu syncing</span>{' '}
+              — judge by disk growth and DB writes, not RPC liveness.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Same root cause as ethrex&apos;s
+              cliff</span> — the ~128-block servable-state window, one client hitting it mid-sync,
+              the other post-sync on restart.
+            </li>
+          </ul>
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="full-sync-only-clients" className="text-lg sm:text-xl font-semibold text-foreground">
-            The full-sync-only clients — and a contested flag, settled
+            Full-sync-only clients
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             reth and nimbus_eth1 have no snap-sync path; they full-sync from genesis. Both hit the
@@ -1383,7 +1511,7 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-3 text-sm text-muted-foreground">
             nimbus_eth1 did settle one open question for us. Its config carries{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">prune = true</code>,
-            and whether that flag actually does anything was genuinely contested: the binary&apos;s{' '}
+            and whether that flag actually does anything was contested: the binary&apos;s{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--help</code> claims
             it prunes expired bodies and receipts, while the online docs say pre-merge history
             needs a separate era1 export — i.e. that the flag is effectively inert. We&apos;d
@@ -1406,9 +1534,9 @@ export default function EthereumClientBakeoffPage() {
           </p>
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="distribution-as-predictor" className="text-lg sm:text-xl font-semibold text-foreground">
-            Mainnet share half-predicts syncability — and ethrex breaks it
+            Distribution as predictor
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             A tempting story going in was &ldquo;mainnet share predicts syncability&rdquo; — the
@@ -1422,35 +1550,62 @@ export default function EthereumClientBakeoffPage() {
           </p>
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="consensus-layer-solved" className="text-lg sm:text-xl font-semibold text-foreground">
-            The consensus layer looks solved — on the axes we measured
+            Consensus layer
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             We ran the five CLs — lighthouse, lodestar, grandine, teku, nimbus — against a constant
-            anchor EL, and then repeated it twice more against different anchor ELs to test the
+            anchor EL, then repeated the sweep twice more against different anchor ELs to test the
             EL/CL decoupling claim directly. Every CL checkpoint-synced to a fully-validating head
-            in minutes —{' '}
-            <strong className="text-foreground">~22–23 minutes on the ethrex anchor</strong>,{' '}
-            <strong className="text-foreground">~6–9 minutes on the geth anchor</strong> (whose
-            footprints are in the CL scorecard above), and{' '}
-            <strong className="text-foreground">~7–10 minutes on the nethermind anchor</strong>{' '}
-            (lodestar&apos;s first attempt on that anchor recorded ~76 minutes, but the anchor EL
-            was still importing a ~2-day block gap at the time; the clean re-read is ~7m36s and is
-            what the scorecard uses),{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes</code>,
-            zero crashes (teku and grandine each needed a caveat across the sweeps — a JVM
-            heap-sizing fix, a harness artifact, and, on the nethermind anchor, a watchdog false
-            positive on teku&apos;s anchor-health verdict — not client faults). Sync time is
-            effectively tied within each anchor, so footprint is the differentiator.
+            in minutes, on all three anchors:
           </p>
+          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+            <li>
+              <strong className="text-foreground">~6–9 minutes on the geth anchor</strong>{' '}
+              (footprints in the CL scorecard above).
+            </li>
+            <li>
+              <strong className="text-foreground">~7–10 minutes on the nethermind anchor</strong>{' '}
+              — using lodestar&apos;s clean re-read; its slow first attempt was an anchor artifact,
+              covered in the caveats below.
+            </li>
+            <li>
+              <strong className="text-foreground">~22–23 minutes on the ethrex anchor</strong> — the
+              slowest of the three, still well under an hour.
+            </li>
+          </ul>
           <p className="mt-3 text-sm text-muted-foreground">
-            The tiers reproduced across all three anchor ELs — a lightweight pair
-            (lodestar, lighthouse), a mid pair (teku, grandine), and nimbus alone at the heavy end —
-            with two swaps: lodestar↔lighthouse within the lightweight pair (ethrex vs geth), and
-            teku itself across two runs on one anchor (~667 vs ~848 MiB). Three different EL anchors, the
-            same three tiers, no identical total order: EL/CL decoupling, supported empirically —
-            which retroactively validates holding CL=prysm constant for the whole EL scorecard.
+            Every run logged{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes</code>{' '}
+            with zero crashes. Four runs needed a caveat — a teku JVM heap-sizing fix and a grandine
+            harness artifact on the ethrex anchor; a lodestar anchor-gap re-read and a watchdog false
+            positive on teku&apos;s anchor-health verdict on the nethermind anchor — none of them
+            client faults (detail below). Sync time is effectively tied within each anchor, so
+            footprint is the differentiator.
+          </p>
+          <div className="mt-4 space-y-2">
+            {consensusCaveats.map((row, i) => (
+              <div key={i} className="flex items-start gap-3 rounded-lg border border-border p-3 text-sm">
+                <span className="mt-0.5 shrink-0 whitespace-nowrap rounded-md border px-2 py-0.5 font-mono text-xs" style={{ color: '#a855f7', backgroundColor: 'rgba(168,85,247,0.1)', borderColor: 'rgba(168,85,247,0.4)' }}>
+                  not a client fault
+                </span>
+                <p className="text-muted-foreground">
+                  <span className="font-medium text-foreground">{row.cl}</span>{' '}
+                  <span className="text-xs text-muted-foreground">({row.anchor})</span> — {row.what}
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">
+            The tiers held across all three anchors (see the CL scorecard above), with two
+            order-instabilities: lodestar↔lighthouse swapped within the lightweight pair (ethrex
+            vs geth), and teku&apos;s own re-read variance on one anchor (~667 vs ~835 MiB)
+            crossed grandine and back. Grandine &lt; teku held on all three anchors, so that
+            second one is measurement noise, not a real swap. Same three tiers, no identical
+            total order, on three different EL anchors — that&apos;s EL/CL decoupling, supported
+            empirically, and it retroactively validates holding CL=prysm constant for the whole
+            EL scorecard.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             The punchline: on the CL side, all five are operationally effective — none failed, and
@@ -1463,10 +1618,51 @@ export default function EthereumClientBakeoffPage() {
           </p>
         </section>
 
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="recommendations" className="text-lg sm:text-xl font-semibold text-foreground">
             Recommendations
           </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            The scannable version — every execution client, its known issue from this campaign,
+            and whether it&apos;s worth running today:
+          </p>
+          <div
+            className="mt-4 hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
+            role="region"
+            aria-label="Execution client known issues and verdict"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[42rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
+              <thead>
+                <tr className="border-b border-border text-left">
+                  <th className="pb-3 font-medium text-muted-foreground">EL</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Verdict</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Known issue</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {clientIssues.map((row) => (
+                  <tr key={row.name}>
+                    <td className="py-3 align-top font-medium text-foreground whitespace-nowrap">{row.name}</td>
+                    <td className="py-3 align-top"><VerdictBadge verdict={row.verdict} /></td>
+                    <td className="py-3 align-top text-muted-foreground min-w-[24rem]">{row.issue}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-4 space-y-3 sm:hidden">
+            {clientIssues.map((row) => (
+              <div key={row.name} className="rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-medium text-foreground">{row.name}</span>
+                  <VerdictBadge verdict={row.verdict} />
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">{row.issue}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground">The detail behind each verdict:</p>
           <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
             <li>
               <span className="font-medium text-foreground">Default: geth.</span> Largest
@@ -1492,8 +1688,8 @@ export default function EthereumClientBakeoffPage() {
             </li>
             <li>
               <span className="font-medium text-foreground">Watch, don&apos;t yet deploy: ethrex.</span>{' '}
-              Fascinating and fastest, but the ~25-minute restart cliff makes it operationally
-              costly today. Its footprint is now settled too — a ~470–476 GiB plateau — but that&apos;s
+              The fastest cold sync in the field, but the ~25-minute restart cliff makes it
+              operationally costly today. Its footprint is now settled too — a ~470–476 GiB plateau — but that&apos;s
               not a disk win: it&apos;s a no-history node, and running its RPC in place of a
               full-history endpoint (this repo&apos;s nginx/Caddy feature) will silently fail on
               anything historical. Fast-moving client — v19.0.0 at first sync, v22.0.0 by
@@ -1511,12 +1707,25 @@ export default function EthereumClientBakeoffPage() {
               optimistic-sync deadlock is resolved.
             </li>
           </ul>
-          <p className="mt-4 text-sm text-muted-foreground">
-            The most useful thing this bake-off surfaced isn&apos;t a single winner — it&apos;s
-            that the number that matters to a running operator is often not the one on the
-            benchmark chart. Cold-sync time and disk footprint are easy to measure and easy to
-            publish. Restart resilience is neither — and it&apos;s the best candidate explanation
-            we found for why the fastest-syncing client in this field is also the one nobody runs.
+        </section>
+
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
+          <AnchorHeading id="bottom-line" className="text-lg sm:text-xl font-semibold text-foreground">
+            Bottom line
+          </AnchorHeading>
+          <p className="mt-3 text-sm text-muted-foreground">
+            For a long-running node, run <strong className="text-foreground">geth</strong> by
+            default, or <strong className="text-foreground">nethermind</strong> for client
+            diversity — both clear the bar that actually matters here, a clean sync followed by a
+            graceful restart, and land in the same disk band once full history is kept.{' '}
+            <strong className="text-foreground">Ethrex</strong> and{' '}
+            <strong className="text-foreground">besu</strong> earn a caveat rather than a pass:
+            ethrex&apos;s ~25-minute restart cliff and besu&apos;s fragility to a stalled
+            consensus client are exactly the kind of risk a cold-sync number never shows. That gap
+            is the finding worth remembering — the axis that decides whether a client survives
+            production isn&apos;t the one on the benchmark chart, and it&apos;s the strongest
+            candidate explanation for why the fastest-syncing client in this field is also the one
+            almost nobody runs.
           </p>
         </section>
 
@@ -1542,6 +1751,7 @@ export default function EthereumClientBakeoffPage() {
           </ul>
         </section>
       </div>
+      <BackToTop />
     </div>
   )
 }
