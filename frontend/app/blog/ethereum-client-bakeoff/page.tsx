@@ -270,10 +270,10 @@ export default function EthereumClientBakeoffPage() {
             &ldquo;The Fastest Ethereum Client Is One Almost Nobody Runs&rdquo;
           </p>
           <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground">
-            A field campaign that began with a 23-day measurement phase (2026-06-22 → 2026-07-14)
-            and continued with steady-state and restart-resume measurements through 2026-08-03,
-            comparing seven execution-client syncs and five consensus clients — the same mainnet
-            sync, on the same host, one client at a time, recording two numbers for each: final
+            A field campaign ran a 23-day measurement phase (2026-06-22 → 2026-07-14), then
+            continued with steady-state and restart-resume measurements through 2026-08-03. It
+            compared seven execution-client syncs and five consensus clients — the same mainnet
+            sync, on the same host, one client at a time — recording two numbers for each: final
             synced disk footprint and sync duration. The interesting part is what fell out of it:
             an operability axis that turns out to matter more than either headline number, and a
             genuine paradox — the client that synced fastest in the whole field has essentially
@@ -410,11 +410,11 @@ export default function EthereumClientBakeoffPage() {
             All seven execution clients. Hatched bars aren&apos;t a comparable finished
             footprint — partial (72h-capped), frozen (erigon&apos;s no-sync deadlock), or
             no-history (ethrex, which plateaus at ~470–476 GiB but serves no history) — so a short
-            hatched bar isn&apos;t a win: Nimbus-eth1&apos;s ~40 GB is only ~21% of a sync,
-            reth&apos;s ~0.98 TiB is a 72h-capped partial (projected to land in the same band as
-            the solid bars once finished), and ethrex&apos;s ~470–476 GiB is a settled plateau, not a
-            pruned-comparable footprint — it&apos;s smaller only because it retains no history at
-            all, not because it&apos;s more efficient. The three solid bars (nethermind, besu,
+            hatched bar isn&apos;t a win. Nimbus-eth1&apos;s ~40 GB is only ~21% of a sync;
+            reth&apos;s ~0.98 TiB is a 72h-capped partial, projected to land in the same band as
+            the solid bars once finished; and ethrex&apos;s ~470–476 GiB is a settled plateau, not
+            a pruned-comparable footprint — it&apos;s smaller only because it retains no history
+            at all, not because it&apos;s more efficient. The three solid bars (nethermind, besu,
             geth) converge in the same ~1.0–1.2 TiB band once full post-merge history is retained
             — disk size is set by that retention config, not client efficiency.
           </p>
@@ -701,9 +701,9 @@ export default function EthereumClientBakeoffPage() {
             The campaign began with a 23-day measurement phase (2026-06-22 → 2026-07-14) and
             continued with steady-state and restart-resume measurements through 2026-08-03, all on
             a shared semi-production host (not a live validator), with MEV disabled and no
-            validator keys. The bake-off measures, for
-            each client, the final synced disk footprint and the sync duration: one candidate at a
-            time, a 72-hour cap per candidate, and the footprint taken from the last near-cap{' '}
+            validator keys. The bake-off measures, for each client, the final synced disk
+            footprint and the sync duration. One candidate runs at a time, each under a 72-hour
+            cap, with the footprint taken from the last near-cap{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">du</code> sample —
             never the peak mid-sync.
           </p>
@@ -1227,23 +1227,27 @@ export default function EthereumClientBakeoffPage() {
             nethermind&apos;s resume, bisected
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            Measured and then bisected (2026-08-01→03). First an opportunistic catch-up: a CL
-            restart at 13:24:55Z left nethermind{' '}
+            Measured and then bisected (2026-08-01→03):{' '}
+            <strong className="text-foreground">nethermind has no servable-window cliff</strong> —
+            the direct contrast to ethrex&apos;s ~128-block cliff below. First an opportunistic
+            catch-up: a CL restart at 13:24:55Z left nethermind{' '}
             <strong className="text-foreground">10,607 blocks (~35h of chain) behind</strong> the
             external tip, and it closed the entire gap by ordinary block import in{' '}
             <strong className="text-foreground">35m09s (~302 blocks/min)</strong> with the datadir
-            intact (1.165 → 1.178 TB, +1.1% — exactly the imported bodies/receipts). Then a
-            controlled stop→wait→start bisection at{' '}
+            intact (1.165 → 1.178 TB, +1.1% — exactly the imported bodies/receipts).
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Then a controlled stop→wait→start bisection at{' '}
             <strong className="text-foreground">12 min / 30 min / 1 h / 4 h gaps</strong> (2026-08-02→03):
             every gap resumed geth-style — ordinary Engine-API block import, no re-pivot, no
             snap/state-sync, zero crashes. The tell is the state-dir delta:{' '}
             <strong className="text-foreground">~1.0–1.3 MiB per imported block, constant across
             rungs</strong> — linear import, the opposite of a re-snap, which would rewrite the whole
             ~238 GiB state. Resume time scales gently (121s at 12 min → 483s at 4 h → 35m09s at
-            ~35 h), dominated by the CL re-syncing its missed slots rather than by EL import.{' '}
-            <strong className="text-foreground">nethermind has no servable-window cliff</strong> — the
-            direct contrast to ethrex&apos;s ~128-block cliff below. A separate
-            establish run (2026-07-31) snap-synced nethermind fresh in{' '}
+            ~35 h), dominated by the CL re-syncing its missed slots rather than by EL import.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            A separate establish run (2026-07-31) snap-synced nethermind fresh in{' '}
             <strong className="text-foreground">1h52m51s</strong> (~280 GiB at snap, pivot
             25,649,064, zero restarts) — far faster than the ~14.5h Stage-B figure because the
             pivot was minutes-old and near-tip, and network conditions differ; a second data
@@ -1428,21 +1432,24 @@ export default function EthereumClientBakeoffPage() {
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             We ran the five CLs — lighthouse, lodestar, grandine, teku, nimbus — against a constant
-            anchor EL, and then repeated it twice more against different anchor ELs to test the
+            anchor EL, then repeated the sweep twice more against different anchor ELs to test the
             EL/CL decoupling claim directly. Every CL checkpoint-synced to a fully-validating head
-            in minutes —{' '}
+            in minutes:{' '}
             <strong className="text-foreground">~22–23 minutes on the ethrex anchor</strong>,{' '}
             <strong className="text-foreground">~6–9 minutes on the geth anchor</strong> (whose
             footprints are in the CL scorecard above), and{' '}
             <strong className="text-foreground">~7–10 minutes on the nethermind anchor</strong>{' '}
             (lodestar&apos;s first attempt on that anchor recorded ~76 minutes, but the anchor EL
             was still importing a ~2-day block gap at the time; the clean re-read is ~7m36s and is
-            what the scorecard uses),{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes</code>,
-            zero crashes (teku and grandine each needed a caveat across the sweeps — a JVM
+            what the scorecard uses).
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Every run logged{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes</code>{' '}
+            and zero crashes — teku and grandine each needed a caveat across the sweeps (a JVM
             heap-sizing fix, a harness artifact, and, on the nethermind anchor, a watchdog false
-            positive on teku&apos;s anchor-health verdict — not client faults). Sync time is
-            effectively tied within each anchor, so footprint is the differentiator.
+            positive on teku&apos;s anchor-health verdict), none of them client faults. Sync time
+            is effectively tied within each anchor, so footprint is the differentiator.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             The tiers reproduced across all three anchor ELs — a lightweight pair
