@@ -233,6 +233,17 @@ const consensusClients = [
   },
 ]
 
+// No verdict table for CLs: unlike the EL side, all five are "Recommended" —
+// none failed to sync, none deadlocked. The only real signal is these three
+// harness-side caveats, which read as instability if skimmed past in the
+// prose paragraph above — worth a compact "was this the client's fault?" panel.
+const consensusCaveats = [
+  { cl: 'Teku', anchor: 'ethrex anchor', what: 'First attempt JVM-OOM-starved the shared host (64 min sync, briefly blipped the anchor); re-run with a larger JVM heap synced clean in 22 min.' },
+  { cl: 'Grandine', anchor: 'ethrex anchor', what: 'First attempt crashed when du hit a datadir file that vanished mid-snapshot (a harness pipefail bug, since fixed); the re-run synced clean.' },
+  { cl: 'Lodestar', anchor: 'nethermind anchor', what: 'First run took ~76 min — not a lodestar property; the anchor EL was still importing an unrelated 2-day gap at the time. Clean re-read: ~7m36s.' },
+  { cl: 'Teku', anchor: 'nethermind anchor', what: "Watchdog reported a false anchor-health miss on both runs, latched during teku's JVM warm-up; the anchor was healthy when each measurement was actually taken." },
+]
+
 // Every other metric CLIENT_BAKEOFF_RESULTS.md records that isn't in the scorecards above —
 // peer counts, resource caps, re-run counts, config_optimal, and other candidate-level detail.
 const fullMetrics = [
@@ -432,7 +443,7 @@ export default function EthereumClientBakeoffPage() {
             <Card padding="sm" className="bg-muted/30">
               <h3 className="font-medium text-foreground">The CL layer looks solved — on the axes we measured</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                All five consensus clients checkpoint-synced to a validating head in minutes, on all three EL anchors — about 6–9 min on geth, ~7–10 min on nethermind, ~22–23 min on ethrex. Three runs needed a caveat along the way (a teku heap fix, a grandine harness bug, a lodestar anchor-gap re-read), none of them client faults. Footprint is the main differentiator.
+                All five consensus clients checkpoint-synced to a validating head in minutes, on all three EL anchors — about 6–9 min on geth, ~7–10 min on nethermind, ~22–23 min on ethrex. Four runs needed a caveat along the way (a teku heap fix and a grandine harness bug on the ethrex anchor; a lodestar anchor-gap re-read and a teku watchdog false positive on the nethermind anchor), none of them client faults. Footprint is the main differentiator.
               </p>
             </Card>
           </div>
@@ -1575,11 +1586,25 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-3 text-sm text-muted-foreground">
             Every run logged{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes</code>{' '}
-            with zero crashes. Three runs needed a caveat — a teku JVM heap-sizing fix, a grandine
-            harness artifact, and a watchdog false positive on teku&apos;s anchor-health verdict —
-            none of them client faults. Sync time is effectively tied within each anchor, so
+            with zero crashes. Four runs needed a caveat — a teku JVM heap-sizing fix and a grandine
+            harness artifact on the ethrex anchor; a lodestar anchor-gap re-read and a watchdog false
+            positive on teku&apos;s anchor-health verdict on the nethermind anchor — none of them
+            client faults (detail below). Sync time is effectively tied within each anchor, so
             footprint is the differentiator.
           </p>
+          <div className="mt-4 space-y-2">
+            {consensusCaveats.map((row, i) => (
+              <div key={i} className="flex items-start gap-3 rounded-lg border border-border p-3 text-sm">
+                <span className="mt-0.5 shrink-0 whitespace-nowrap rounded-md border px-2 py-0.5 font-mono text-xs" style={{ color: '#a855f7', backgroundColor: 'rgba(168,85,247,0.1)', borderColor: 'rgba(168,85,247,0.4)' }}>
+                  not a client fault
+                </span>
+                <p className="text-muted-foreground">
+                  <span className="font-medium text-foreground">{row.cl}</span>{' '}
+                  <span className="text-xs text-muted-foreground">({row.anchor})</span> — {row.what}
+                </p>
+              </div>
+            ))}
+          </div>
           <p className="mt-3 text-sm text-muted-foreground">
             The tiers reproduced across all three anchor ELs — a lightweight pair
             (lodestar, lighthouse), a mid pair (teku, grandine), and nimbus alone at the heavy end —
