@@ -1290,11 +1290,10 @@ export default function BakeoffHarnessPage() {
             <li>
               <strong>Anchor readiness</strong>, only when <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_ANCHOR_EL</code> is set:{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth1.service</code> active <strong>and</strong>{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_execution_synced</code> (§5.4) — deliberately{' '}
-              <strong>execution-only</strong>, not the beacon-inclusive <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced</code>:
-              anchor-mode cleanup stops the CL and purges its datadir between candidates, so a beacon-inclusive
-              predicate could never be satisfied here and every queued row would wait out the timeout and be
-              skipped for no reason. This matches <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>&apos;s own anchor preflight
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_execution_synced</code> — deliberately{' '}
+              <strong>execution-only</strong>, not the beacon-inclusive <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced</code>, which
+              can never pass against a shared anchor (§5.4) — requiring it here would make every queued row wait
+              out the timeout and be skipped for no reason. This matches <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>&apos;s own anchor preflight
               (§3.1), which also checks the EL only.
             </li>
           </ol>
