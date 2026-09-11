@@ -132,14 +132,13 @@ function Rich({ text }: { text: string }) {
 const tocLinks = [
   { label: '1. Method', href: '#method' },
   { label: '2. Stage A results — 12/12 PASS', href: '#stage-a' },
-  { label: '3. Changes driven by this bake-off', href: '#changes' },
+  { label: '3. Client limitations', href: '#client-limitations' },
   { label: '4. Sync-mode & disk-flag audit', href: '#disk-flag-audit' },
   { label: '5. Stage B footprint + CL matrix', href: '#stage-b' },
-  { label: '6. Client limitations', href: '#client-limitations' },
-  { label: '7. Q&A: does ethrex serve a usable RPC?', href: '#qa-ethrex-rpc' },
-  { label: '8. Recommendation & operational viability', href: '#operational-viability' },
-  { label: '9. Gotchas & lessons learned', href: '#gotchas' },
-  { label: '10. Bottom line', href: '#bottom-line' },
+  { label: '6. Q&A: does ethrex serve a usable RPC?', href: '#qa-ethrex-rpc' },
+  { label: '7. Recommendation & operational viability', href: '#operational-viability' },
+  { label: '8. Gotchas & lessons learned', href: '#gotchas' },
+  { label: '9. Bottom line', href: '#bottom-line' },
 ]
 
 // ---------------------------------------------------------------------------
@@ -211,21 +210,7 @@ const perCandidateNotes = [
 ]
 
 // ---------------------------------------------------------------------------
-// Changes driven by this bake-off
-// ---------------------------------------------------------------------------
-const changesDriven = [
-  'fix(reth): wire shared JWT + explicit authrpc/datadir for Engine API',
-  'fix(reth): enable HTTP-RPC on 127.0.0.1 (eth,net,web3) for monitoring and consumers',
-  'fix(nethermind): drop Engine from main JsonRpc.EnabledModules',
-  'fix(lodestar): load node options via --rcConfig not --paramsFile',
-  'fix(nimbus): checkpoint-sync via trustedNodeSync bootstrap',
-  'fix(teku): remove invalid config keys blocking beacon startup',
-  'fix(bakeoff): authenticate GitHub release API via gh token to avoid rate limits',
-  'fix(bakeoff): bound doctor/stats sampling calls with timeout 30s',
-]
-
-// ---------------------------------------------------------------------------
-// Sync-mode & disk-flag audit (2026-06-25)
+// Sync-mode & disk-flag audit
 // ---------------------------------------------------------------------------
 const diskFlagAudit = [
   { el: 'geth', flags: '`--syncmode snap` + `--history.chain postmerge`', status: 'optimal', variant: 'primary' as const, notes: '**Verified ON in the actual 1.13 TiB baseline run** (service-status.txt). Snap-sync + post-merge history prune is the disk floor for geth.' },
@@ -233,94 +218,99 @@ const diskFlagAudit = [
   { el: 'nethermind', flags: '`SnapSync: true` + `FastBlocks: true`', status: 'optimal', variant: 'primary' as const, notes: 'Snap on; Halite/Paprika flat storage is the modern default.' },
   { el: 'ethrex', flags: '`--syncmode snap`', status: 'optimal', variant: 'primary' as const, notes: 'Snap is the only efficient mode it exposes.' },
   { el: 'erigon', flags: 'OtterSync (default) + `prune.mode: "full"`', status: 'disk-optimal', variant: 'primary' as const, notes: '`prune.mode: full` is the smallest erigon3 footprint. (Separately deadlocks → no-sync; see erigon row.)' },
-  { el: 'nimbus_eth1', flags: 'fast-sync (default) + `prune = true`', status: 'online-prune confirmed', variant: 'primary' as const, notes: '`prune = true` (commit `0a1730f`) is now **empirically confirmed to prune online**: across the 2026-07-11→13 72h run the journal logged continuous `Pruning history topics="pruner" tail=1262189 … pruned=N` as it imported blocks — so the flag is **not** inert (this contradicts the "pre-merge history needs a separate era1 export" reading of the docs; the online history-pruner demonstrably runs). At-tip *completeness* vs a full era1 export stays untestable here because the node is full-sync-only and never reached tip inside 72h, but the contested-lever question ("does `prune=true` do anything online?") is answered: **yes.**' },
-  { el: 'reth', flags: 'was archive (no flag) → now `--full`', status: 'fixed 2026-06-25', variant: 'default' as const, notes: 'The **only misconfigured EL.** Default reth = archive (~2.8 TiB). `--full` = pruned full node (~1.2 TiB): keeps full block/receipt history, prunes historical state changesets+indices (retains last ~10k blocks). Committed `fix(reth): run pruned full node (--full)`; reth__prysm relaunched.' },
+  { el: 'nimbus_eth1', flags: 'fast-sync (default) + `prune = true`', status: 'online-prune confirmed', variant: 'primary' as const, notes: '`prune = true` is now **empirically confirmed to prune online**: across a 72h run the journal logged continuous `Pruning history … pruned=N` entries as it imported blocks. The flag is **not** inert — it resolves an earlier open question about whether online pruning actually runs (it does). At-tip completeness vs. a full era1 export stays untested, since the node is full-sync-only and never reached tip inside 72h.' },
+  { el: 'reth', flags: 'was archive (no flag) → now `--full`', status: 'fixed', variant: 'default' as const, notes: 'The **only misconfigured EL.** Default reth runs archive (~2.8 TiB). `--full` gives a pruned full node (~1.2 TiB): full block/receipt history, but pruned state changesets and indices (retains the last ~10k blocks). reth__prysm was relaunched with the fix.' },
 ]
 
 // ---------------------------------------------------------------------------
 // Final synced disk footprint (Stage B)
 // ---------------------------------------------------------------------------
 const stageBFootprint = [
-  { candidate: 'geth__prysm', result: 'synced', variant: 'primary' as const, syncTime: '~8h28m', footprint: '**1.13 TiB** — geth 1,245,128,582,247 B + prysm 654,985,849 B', notes: 'Baseline. snap-sync EL hands prysm an already-validated head, so there is no large optimistic gap to close. fully_synced=yes, no crash.' },
-  { candidate: 'erigon__prysm', result: 'no-sync', variant: 'default' as const, syncTime: 'n/a (terminated)', footprint: '~1.21 TiB* — erigon 1,333,017,755,599 B + prysm 1,646,160,347 B', notes: '*Partial, captured at a near-tip **frozen** head — NOT a clean synced datadir. erigon3 OtterSync + checkpoint-synced prysm deadlock: the EL execution head freezes a few thousand blocks behind tip while the beacon stays `is_optimistic=true`; neither side issues the `forkchoiceUpdated` that would close the >96-block backward-download gap. Raising the CL CPU cap 200%→600% advanced the head ~5k blocks then re-froze — confirming a genuine gap-close deadlock, not resource starvation. Terminated per operator decision (“record no-sync, move on”). See artifact `findings.md`.' },
-  { candidate: 'reth__prysm', result: 'capped (72h)', variant: 'default' as const, syncTime: 'n/a', footprint: '~0.98 TiB* — reth 1,064,695,764,125 B + prysm 12,468,756,540 B', notes: '*Partial — window-capped at Execution stage block 11,970,965/25,395,872 (47% by block count, ~21% gas-weighted; ended 2026-06-28T16:53:20Z). reth `--full` is the only no-snap EL; sequential full block execution too slow to finish in 72h under caps. Clean SIGTERM stop (ExecMainStatus=0), no crash, 578 samples. Footprint recovered from `samples.jsonl` last entry (16:52:46Z) — `disk-final.tsv` absent due to harness capped-path gap (fixed commit `af0d77f`). Extrapolation: at ~21% gas-exec already ~87% of geth\'s 1.13 TiB; projected final `--full` footprint ~1.1–1.2 TiB.' },
-  { candidate: 'nethermind__prysm', result: 'synced', variant: 'primary' as const, syncTime: '~14.5h (snap)', footprint: '**~1.06 TiB steady-state** (re-measured 2026-08-01: ~1,088 GiB — state ~226–230 GiB compact flat storage + ~843 GiB post-merge bodies/receipts + ~19 GiB headers/code) — **~251 GiB at snap-sync, before FastBlocks backfilled post-merge history** (268,110,243,338 B at that point) + prysm 1,431,145,921 B', notes: 'Snap-synced to head 25,428,620, 49 peers, no crash — compact flat-storage STATE (~226–230 GiB) but full post-merge history backfills to ~1.06 TiB — on par with geth. **Update 2026-08-03:** since post-merge history is a config knob, the shipped default is now **minimal-history** (`NETHERMIND_FULL_HISTORY=false`) — a fresh sync with the Ancient barriers raised past the pivot + `StoreReceipts=false` lands at **~250–280 GiB** (state only, bodies/receipts ≈ 0) and stays there (no backfill); this ~1.06 TiB figure is the full-history opt-in for RPC providers. NOTE: nethermind\'s FIRST attempt was a 13.3h 0-peer loopback stall (P2P pinned to 127.0.0.1, execution head frozen ~block 4,651 while the beacon looked healthy) — the origin of the "triage is blind to a stalled EL" lesson below. After the installer was fixed to advertise a routable `ExternalIp` (commit `676e4da`), the re-run synced cleanly.' },
-  { candidate: 'besu__prysm', result: 'synced; pruned re-run abandoned', variant: 'primary' as const, syncTime: '~19h18m', footprint: '**~1.08 TiB** — besu 1,189,836,723,674 B + prysm 1,682,488,084 B', notes: '**besu synced successfully.** The 2026-06-30 run snap-synced cleanly to a fully validating head (~50 peers, prysm `is_optimistic=false` at 2026-07-01T01:37:10Z → ~19h18m, fully_synced=yes) — a working, production-viable node. Its **~1.08 TiB is the same ~1.1 TiB magnitude** as geth (1.13 TiB) and nethermind (~1.06 TiB) once they carry full post-merge history — comparable, not an outlier; geth\'s 1.13 TiB is itself the `--history.chain postmerge` floor, not a pruned-smaller number besu skipped. A follow-up re-run (`history-expiry-prune=true`, 2026-07-04) to see if a further prune lever shrinks it **deadlocked twice and was abandoned** (operator: “Stop; accept limitation note”, 2026-07-05 — see the besu snap-sync deadlock gotcha below; the deadlock trigger was a stale-CL stall, **not** a besu sync failure). besu **did** sync; its open issue is that snap sync is **fragile to a prolonged CL outage**, not its disk size.' },
-  { candidate: 'ethrex__prysm', result: 'synced', variant: 'primary' as const, syncTime: '~2h16m (snap, v19.0.0); a later re-sync (steady-state run, v22.0.0) took 4h09m56s', footprint: '**~470–476 GiB steady-state plateau** (as of 2026-07-31: drifting 470.2 → 475.5 GiB over ~42 hours at +0.13 GiB/hr) — **~286 GiB at first sync** (306,564,007,339 B, 2026-07-06); **~300 GiB at sync this run** (2026-07-28, 4h09m56s)', notes: 'Snap-synced to a fully validating head in ~2h16m — **fastest EL sync in the field.** 50 peers throughout. 1 automatic stale-pivot update (block 25,469,233→25,469,696) self-healed in ~4 min with no intervention (ethrex clock-based detection, as designed). No crash (service_crash_observed=no, install_exit_code=0). Footprint is un-pruned and **NOT full-history** — ethrex serves ~no history (`eth_getBlockByNumber` returns `null` below head; verified 2026-07-06 and again 2026-07-29). Its datadir **plateaus, it does not grow unbounded**: run `client-bakeoff-ethrex-steadystate-2026-07-28` (NRestarts=0) climbed +43 GiB/hr during post-sync settling (0→465 GiB, 19:02→05:48Z), then growth collapsed ~300× to +0.13 GiB/hr and held a slow drift for ~42 hours (2026-07-29T06:18Z→2026-07-31T00:03Z, 168 samples, 470.2 → 475.5 GiB — RocksDB compaction; `sync_distance=0`, `is_optimistic=false` throughout; see `artifacts/client-bakeoff-ethrex-steadystate-2026-07-28/ethrex__prysm/ethrex-steadystate-trend.tsv`). The earlier ~467 GiB reading (2026-07-06) was this same plateau caught mid-climb — that run was wiped believing it was still growing, when it was actually within ~1% of where it settles. **Not a disk win:** ethrex is smaller only because it retains no history — a no-history node, not a pruned-comparable one — so footprint here tracks retention config, not client efficiency. On a state-only basis it isn\'t even smallest: nethermind\'s state alone is ~226–230 GiB, roughly half ethrex\'s entire ~475 GiB (not a perfectly controlled comparison — ethrex\'s total also includes headers/recent blocks, and the two clients use different state encodings). At +0.13 GiB/hr, adding 0.1 TiB would take ~33 days (and 1 TiB would take ~328 days); the ~42h drift window demonstrates the post-sync settling plateau, not proof state never grows long-term. See client limitations and gotchas for the restart cliff (unchanged, still its main operational drawback) and the no-history RPC cost. First sync ran v19.0.0; the 2026-07-28 steady-state run ran v22.0.0 (`ethrex/v22.0.0-HEAD-aa6c5f04750595…`) — fully_synced=yes, hit_72h_cap=no.' },
+  { candidate: 'geth__prysm', result: 'synced', variant: 'primary' as const, syncTime: '~8h28m', footprint: '**1.13 TiB** — geth 1,245 GB + prysm 655 MB', notes: 'Baseline. A snap-synced EL hands Prysm an already-validated head, so there is no large optimistic gap to close (verified clean, no crash).' },
+  { candidate: 'erigon__prysm', result: 'no-sync', variant: 'default' as const, syncTime: 'n/a', footprint: '~1.21 TiB* — erigon 1,333 GB + prysm 1,646 MB', notes: '*Partial — captured at a near-tip **frozen** head, not a clean synced datadir. erigon3 OtterSync deadlocks against a checkpoint-synced Prysm: the EL head freezes a few thousand blocks behind tip while the beacon stays `is_optimistic=true`, and neither side issues the `forkchoiceUpdated` that would close the gap. Raising the CL CPU cap 200%→600% advanced the head ~5k blocks, then it re-froze — a genuine deadlock, not resource starvation. Terminated; no synced datadir was ever reached.' },
+  { candidate: 'reth__prysm', result: 'capped (72h)', variant: 'default' as const, syncTime: 'n/a', footprint: '~0.98 TiB* — reth 1,065 GB + prysm 12.5 GB', notes: '*Partial — capped at block 11,970,965 of 25,395,872 (47% by block count, ~21% gas-weighted) after 72h. reth `--full` is the only no-snap EL here; sequential full block execution is too slow to finish inside the cap. Clean stop, no crash. This figure is reconstructed from the last sample before the cap, not a final disk scan. Extrapolation: at ~21% gas-executed it was already ~87% of geth\'s 1.13 TiB, projecting a final footprint of ~1.1–1.2 TiB.' },
+  { candidate: 'nethermind__prysm', result: 'synced', variant: 'primary' as const, syncTime: '~14.5h', footprint: '**~1.06 TiB steady-state** (re-measured 2026-08-01: ~1,088 GiB — state ~226–230 GiB compact flat storage + ~843 GiB post-merge bodies/receipts + ~19 GiB headers/code) — **~251 GiB at snap-sync, before FastBlocks backfilled post-merge history** (268 GB at that point) + prysm 1,431 MB', notes: 'Snap-synced to head 25,428,620 with 49 peers, no crash. Compact flat-storage state (~226–230 GiB), but full post-merge history backfills it to ~1.06 TiB — on par with geth. **Update 2026-08-03:** post-merge history is a config knob, and the shipped default is now **minimal-history** (`NETHERMIND_FULL_HISTORY=false`): a fresh sync lands at **~250–280 GiB** (state only, no bodies/receipts) and stays there. This ~1.06 TiB figure is the full-history opt-in for RPC providers. The first attempt hit a 13.3h zero-peer loopback stall (P2P bound to 127.0.0.1, execution head frozen while the beacon looked healthy) — the origin of the "triage is blind to a stalled EL" lesson below. Fixing the installer to advertise a routable external IP resolved it; the re-run synced cleanly.' },
+  { candidate: 'besu__prysm', result: 'synced; pruned re-run abandoned', variant: 'primary' as const, syncTime: '~19h18m', footprint: '**~1.08 TiB** — besu 1,190 GB + prysm 1,682 MB', notes: '**besu synced successfully** — snap-synced cleanly to a fully validating head (~50 peers) in ~19h18m, a working, production-viable node. Its **~1.08 TiB is the same magnitude** as geth (1.13 TiB) and nethermind (~1.06 TiB) at full post-merge history — comparable, not an outlier. A follow-up re-run testing a further prune lever **deadlocked twice and was abandoned** (see the besu snap-sync deadlock gotcha below — the trigger was a stale CL stall, **not** a besu fault). besu\'s real open issue is that snap sync is **fragile to a prolonged CL outage**, not its disk size.' },
+  { candidate: 'ethrex__prysm', result: 'synced', variant: 'primary' as const, syncTime: '~2h16m–4h10m', footprint: '**~470–476 GiB steady-state plateau** (as of 2026-07-31: drifting 470.2 → 475.5 GiB over ~42 hours at +0.13 GiB/hr) — **~286 GiB at first sync** (307 GB, 2026-07-06); **~300 GiB at a later re-sync** (4h09m56s)', notes: 'Snap-synced to a fully validating head in ~2h16m on v19.0.0 — **fastest EL sync in the field.** A later re-sync on v22.0.0 took 4h09m56s (different day/host load, not a regression). 50 peers throughout; one automatic stale-pivot update self-healed in ~4 min with no intervention. No crash. Footprint is un-pruned and **not full-history** — ethrex serves ~no history (`eth_getBlockByNumber` returns `null` below head, verified live). Its datadir **plateaus, it does not grow unbounded**: after sync it climbed +43 GiB/hr during post-sync settling, then growth collapsed ~300× to +0.13 GiB/hr and drifted 470.2 → 475.5 GiB over ~42 hours (verified clean throughout). The earlier ~467 GiB reading was this same plateau caught mid-climb, not evidence of unbounded growth. **Not a disk win:** it\'s smaller only because it retains no history — nethermind\'s state alone is ~226–230 GiB, roughly half ethrex\'s total (not a perfectly controlled comparison — different state encodings, and ethrex\'s total also includes headers/recent blocks). See client limitations and gotchas for the restart cliff (unchanged) and the no-history RPC cost.' },
 ]
 
 // ---------------------------------------------------------------------------
 // Fresh-sync vs. steady-state disk footprint — several ELs were captured at
-// more than one point in their lifecycle; reporting only one number produced
-// the two wrong disk claims this page has had to correct (nethermind's
-// pre-backfill ~251 GiB read as final; ethrex's mid-climb ~467 GiB read as
-// still-growing). Where only one figure was ever captured, that's stated
-// explicitly rather than left ambiguous.
+// more than one point in their lifecycle. A single number can mislead: a
+// fresh (at-sync) figure and a settled steady-state figure can differ by up
+// to ~4x, so both are recorded where both exist.
 // ---------------------------------------------------------------------------
 const freshVsSteadyFootprint = [
-  { el: 'nethermind', fresh: '~251 GiB (268,110,243,338 B)', steady: '**~1.06 TiB** (re-measured 2026-08-01: ~1,088 GiB — state ~226–230 GiB + ~843 GiB post-merge bodies/receipts + ~19 GiB headers/code)', note: 'Grew after sync as FastBlocks backfilled post-merge history.' },
-  { el: 'ethrex', fresh: '~286 GiB (306,564,007,339 B, 2026-07-06 run, v19.0.0); ~300 GiB (this run, 2026-07-28, v22.0.0, at 4h09m56s)', steady: '**~470–476 GiB plateau** (drifts 470.2 → 475.5 GiB over ~42h)', note: '+43 GiB/hr during post-sync settling, then collapsed ~300× to +0.13 GiB/hr, drifting for ~42 hours (2026-07-29T06:18Z→2026-07-31T00:03Z, 168 samples). No-history node — not pruned-comparable to the rows below. The two runs used different ethrex versions (v19.0.0 → v22.0.0) as well as different days/host load.' },
-  { el: 'geth', fresh: 'not separately captured', steady: '**1.13 TiB** (1,245,128,582,247 B)', note: '`--history.chain postmerge`.' },
-  { el: 'besu', fresh: 'not separately captured', steady: '**1.08 TiB** (1,189,836,723,674 B)', note: '' },
+  { el: 'nethermind', fresh: '~251 GiB (268 GB)', steady: '**~1.06 TiB** (re-measured 2026-08-01: ~1,088 GiB — state ~226–230 GiB + ~843 GiB post-merge bodies/receipts + ~19 GiB headers/code)', note: 'Grew after sync as FastBlocks backfilled post-merge history.' },
+  { el: 'ethrex', fresh: '~286 GiB (307 GB, 2026-07-06, v19.0.0); ~300 GiB (2026-07-28, v22.0.0, at 4h09m56s)', steady: '**~470–476 GiB plateau** (drifts 470.2 → 475.5 GiB over ~42h)', note: '+43 GiB/hr during post-sync settling, then collapsed ~300× to +0.13 GiB/hr, drifting for ~42 hours. No-history node — not pruned-comparable to the rows below. The two runs used different ethrex versions (v19.0.0 → v22.0.0) as well as different days/host load.' },
+  { el: 'geth', fresh: 'not separately captured', steady: '**1.13 TiB** (1,245 GB)', note: '`--history.chain postmerge`.' },
+  { el: 'besu', fresh: 'not separately captured', steady: '**1.08 TiB** (1,190 GB)', note: '' },
   { el: 'reth', fresh: '—', steady: '~0.98 TiB partial @72h cap (projected ~1.1–1.2 TiB finished)', note: "Full-sync-only; never reaches a moment distinct from its capped steady state." },
 ]
 
 // ---------------------------------------------------------------------------
-// Consensus-client matrix — COMPLETE (anchor = ethrex)
+// Consensus-client matrix — one table, three EL anchors (ethrex, geth,
+// nethermind) as columns. Every anchor reproduces the same tier order, so
+// this replaced three separate per-anchor tables that repeated the same 5
+// clients.
 // ---------------------------------------------------------------------------
-const clMatrixEthrex = [
-  { cl: 'lighthouse', result: 'synced', syncTime: '~22m', footprint: '773,282,157 B (~739 MiB) ← smallest', lever: '`checkpoint-sync-url` (blob-prune default)' },
-  { cl: 'lodestar', result: 'synced', syncTime: '~22m', footprint: '867,829,601 B (~827 MiB)', lever: '`chain.pruneHistory=true`' },
-  { cl: 'grandine', result: 'synced', syncTime: '~22m', footprint: '1,343,716,523 B (~946 MiB on disk)', lever: '`--prune-storage` (CRITICAL — stores all states without it)' },
-  { cl: 'teku', result: 'synced', syncTime: '~22m', footprint: '2,160,709,791 B (~2.1 GiB)', lever: '`data-storage-mode=minimal`' },
-  { cl: 'nimbus', result: 'synced', syncTime: '~23m', footprint: '5,302,005,871 B (~5.0 GiB) ← largest (6.9×)', lever: '`history=prune`' },
+const clCrossAnchorMatrix = [
+  {
+    cl: 'lighthouse',
+    ethrex: { time: '~22m', size: '773 MB', tag: 'smallest' },
+    geth: { time: '~8m54s', size: '542 MB' },
+    nethermind: { time: '~10m07s', size: '492 MB' },
+    lever: 'checkpoint-sync-url (blob pruning by default)',
+  },
+  {
+    cl: 'lodestar',
+    ethrex: { time: '~22m', size: '868 MB' },
+    geth: { time: '~6m27s', size: '185 MB', tag: 'smallest' },
+    nethermind: { time: '~7m36s', size: '186 MB', tag: 'smallest' },
+    lever: 'pruneHistory=true',
+  },
+  {
+    cl: 'grandine',
+    ethrex: { time: '~22m', size: '946 MB (actual)' },
+    geth: { time: '~8m50s', size: '725 MB (actual)' },
+    nethermind: { time: '~9m58s', size: '730 MB (actual)' },
+    lever: '--prune-storage — required, or it stores every state',
+  },
+  {
+    cl: 'teku',
+    ethrex: { time: '~22m', size: '2,161 MB' },
+    geth: { time: '~8m52s', size: '977 MB' },
+    nethermind: { time: '~10m07s', size: '875 MB' },
+    lever: 'data-storage-mode=minimal',
+  },
+  {
+    cl: 'nimbus',
+    ethrex: { time: '~23m', size: '5,302 MB', tag: 'largest (6.9×)' },
+    geth: { time: '~7m58s', size: '1,198 MB', tag: 'largest' },
+    nethermind: { time: '~10m13s', size: '1,338 MB', tag: 'largest' },
+    lever: 'history=prune',
+  },
 ]
 
-const clEthrexNotes = [
-  "**teku required a re-run.** Its first attempt (pre-`TEKU_CACHE=8192m`) JVM-OOM-starved the shared host, took 64 min to sync, and briefly blipped the anchor → `anchor_synced=no` (recorded, discarded as `env.txt.poisoned-run1`). The re-run with `TEKU_CACHE` raised to 8192m (commit `bf043aa`) synced clean in 22 min with a healthy anchor. Lesson: teku's JVM heap must be sized generously on a shared host or its GC pressure spills onto co-resident services. The valid 2.1 GiB row is the re-run.",
-  "**All CL footprints are roughly <~1.1% of the ethrex anchor's ~468 GiB (502 GB) EL datadir** (nimbus, the largest, is ~1.05%) → confirms EL/CL decoupling: consensus-client choice does not move the EL disk ranking, and vice-versa.",
+const clRankingsByAnchor = [
+  { anchor: 'Ethrex anchor', order: 'lighthouse (773 MB) < lodestar (868 MB) < grandine (946 MB) < teku (2,161 MB) < nimbus (5,302 MB)' },
+  { anchor: 'Geth anchor', order: 'lodestar (185 MB) < lighthouse (542 MB) < grandine (725 MB) < teku (977 MB) < nimbus (1,198 MB)' },
+  { anchor: 'Nethermind anchor', order: 'lodestar (186 MB) < lighthouse (492 MB) < grandine (730 MB) < teku (875 MB) < nimbus (1,338 MB)' },
 ]
 
-// ---------------------------------------------------------------------------
-// CL matrix — cross-anchor confirmation (anchor = geth)
-// ---------------------------------------------------------------------------
-const clMatrixGeth = [
-  { cl: 'lodestar', result: 'synced', syncTime: '~6m27s', footprint: '185,100,788 B (~177 MiB) ← smallest', lever: '`pruneHistory=true`' },
-  { cl: 'lighthouse', result: 'synced', syncTime: '~8m54s', footprint: '542,301,237 B (~518 MiB)', lever: '`checkpoint-sync-url`' },
-  { cl: 'grandine', result: 'synced', syncTime: '~8m50s', footprint: '1,074,340,425 B apparent / ~725 MiB actual (sparse DB)', lever: '`prune-storage`' },
-  { cl: 'teku', result: 'synced', syncTime: '~8m52s', footprint: '977,108,456 B (~936 MiB)', lever: '`data-storage-mode=minimal`' },
-  { cl: 'nimbus', result: 'synced', syncTime: '~7m58s', footprint: '1,198,275,155 B (~1.2 GiB) ← largest', lever: '`history=prune`' },
-]
-
-// ---------------------------------------------------------------------------
-// CL matrix — second cross-anchor confirmation (anchor = nethermind)
-// ---------------------------------------------------------------------------
-const clMatrixNethermind = [
-  { cl: 'lodestar', result: 'synced', syncTime: '~7m36s (clean re-read — see caveat 1)', footprint: '186,083,466 B (~178 MiB) ← smallest', lever: '`--chain.pruneHistory`' },
-  { cl: 'lighthouse', result: 'synced', syncTime: '~10m07s', footprint: '491,525,193 B (~470 MiB)', lever: '`checkpoint-sync-url`' },
-  { cl: 'teku', result: 'synced (`anchor_synced=no` — watchdog false positive, see caveat 2)', syncTime: '~10m07s', footprint: '875,146,169 B (~848 MiB) (clean re-read; a first run measured ~667 MiB — see caveat 2)', lever: '`data-storage-mode=minimal`' },
-  { cl: 'grandine', result: 'synced', syncTime: '~9m58s', footprint: '1,074,340,425 B apparent / ~730 MiB actual (sparse DB)', lever: '`--prune-storage`' },
-  { cl: 'nimbus', result: 'synced', syncTime: '~10m13s', footprint: '1,337,611,316 B (~1.3 GiB) ← largest', lever: '`history=prune`' },
-]
-
-const clNethermindNotes = [
-  "**lodestar's row is a clean re-read; the discarded first attempt is instructive.** lodestar's first run on this anchor recorded ~76m14s — not a lodestar property at all: that run started while the anchor EL was still importing a ~2-day block gap (left by an unrelated lodestar crash-loop incident on this host), so lodestar's beacon could not report `is_optimistic=false` until the EL closed that gap. Once the anchor was back at head and the crash-loop's root cause was fixed, lodestar was re-measured from scratch: **~7m36s / 186,083,466 B (~178 MiB)**, `anchor_synced=yes`, `config_optimal=yes` — in line with the other four CLs and within ~1 MiB of its geth-anchor footprint (~177 MiB). The published row is the re-read; the superseded run is retained in the artifacts (`nethermind__lodestar.gapped-run-76m`) for provenance. That gapped run had itself recorded **259,578,455 B (~248 MiB)** — ~40% above the clean re-read, another reason not to carry it forward.",
-    "**teku finalized `anchor_synced=no` on both of its runs — a reproducible watchdog false positive, not an anchor problem.** The full sample sequence of the re-read shows why: at 18:14:13Z the anchor was 56 blocks behind (`currentBlock=0x18720c3` vs `highestBlock=0x18720fb`), and at 18:16:51Z **both sides** were transiently behind — the anchor by 21 blocks and teku itself at `sync_distance=49, is_syncing=true`. From 18:19:30Z onward every sample is clean on both sides (`eth_syncing=false`, `sync_distance=0`, `is_optimistic=false`), including at teku's own `synced_at_utc` of 18:22:08Z. So the anchor was healthy when the measurement was taken; the watchdog had already latched on the warm-up samples and never re-evaluated. The cause is teku's slow JVM warm-up: it leaves the anchor briefly undriven, the anchor's head lags, and the watchdog's two-consecutive-sample rule trips. That it reproduced on a deliberate clean re-read is what makes it a known harness limitation rather than a fluke — the watchdog should tolerate a bounded head lag, or only sample once the CL reports synced. Both runs' footprints are valid; the published row is the re-read (~848 MiB, against ~667 MiB on the first run).",
-  '**grandine sparse DB, again:** apparent `du -sb` (1,074,340,425 B) overstates real on-disk usage; actual on-disk usage is **~730 MiB**, the fair number for ranking — the same caveat as the geth-anchor row above.',
+const clMatrixNotes = [
+  "**teku needed a re-run on the ethrex anchor.** Its first attempt starved the shared host's JVM heap, took 64 min to sync, and produced a discarded reading. Raising `TEKU_CACHE` to 8192m fixed it — the re-run synced clean in 22 min. Lesson: size teku's JVM heap generously on a shared host, or its GC pressure spills onto co-resident services.",
+  "**lodestar's first nethermind-anchor run (~76m) was a fluke, not a lodestar property.** It started while the anchor EL was still importing an unrelated ~2-day block gap left by a separate crash-loop incident. Re-measured after the anchor recovered: ~7m36s / 186 MB — in line with the other four CLs and its own geth-anchor number.",
+  '**teku showed a false "not synced" reading twice on the nethermind anchor — a watchdog bug, not a real problem.** In both cases the anchor was healthy by the time the measurement was taken; the watchdog had latched onto an early warm-up blip and never re-checked. Both runs\' footprints are valid; the published figure (875 MB) is the clean re-read (a first run measured ~667 MB).',
+  "**grandine's apparent size overstates real usage.** It uses sparse DB files: a raw byte count reads ~1,074 MB on the geth/nethermind anchors and ~1,344 MB on the longer-running ethrex anchor — not measurement error, just a bigger sparse pre-allocation from more time since sync. Actual on-disk usage is what's used above: ~725–730 MB on the geth/nethermind anchors, ~946 MB on the ethrex anchor.",
 ]
 
 const crossAnchorVerdict = [
   '**nimbus is the largest CL on all three anchors** — the one ranking that holds without exception.',
-  '**{lodestar, lighthouse} are the two smallest CLs on all three anchors**, but which one is smallest is measurement-window-sensitive: lighthouse is smallest on the ethrex anchor; lodestar is smallest on both the geth and nethermind anchors.',
-  '**{teku, grandine} form a "mid" tier, and teku shows how soft within-tier ordering is.** teku was measured twice on this same anchor and moved ~27%: ~667 MiB on the first run, **~848 MiB on a deliberate clean re-read** — enough to flip it from below grandine (~730 MiB) to above it. Taking the re-read as authoritative, grandine < teku holds on all three anchors; the honest reading is that this pair\'s internal order is measurement-window-sensitive, not a stable client property.',
-  '**Absolute footprints scale with observation time, not just the EL anchor.** The geth- and nethermind-anchor numbers are much smaller than the ethrex-anchor ones (e.g. nimbus ~1.2–1.3 GiB vs ~5.0 GiB) because those sweeps were measured minutes after checkpoint-sync (a fresh datadir), while the ethrex-anchor runs ran longer post-sync and had filled more of the blob-retention / state-history window. The tiers are anchor-independent here; exact within-tier order is measurement-window-sensitive.',
-  '**Net:** three different EL anchors (ethrex, geth, nethermind) reproduce the same three tiers — lightweight {lodestar, lighthouse}, mid {teku, grandine}, heavy {nimbus} — empirically supporting EL/CL decoupling, **without** claiming an identical total order across anchors.',
-  "**grandine's byte-identical apparent size (1,074,340,425 B) on both the geth-anchor and nethermind-anchor runs is real, not a copy/paste** — it's grandine's fixed ~1 GiB sparse pre-allocation plus deterministic metadata; the actual allocated sizes (~725 MiB vs ~730 MiB) differ as expected.",
-]
-
-const measurementNotes = [
-  '**grandine uses sparse DB files** → its apparent `du -sb` byte count (1,074,340,425 B) overstates real on-disk usage. `du -sh` reports **~725 MiB actual on the geth anchor and ~730 MiB on the nethermind anchor**; the actual figure is the fair number for ranking. The other four CLs had apparent ≈ actual.',
-  "**Harness fix `98a52d7` (belongs in PR #190):** `bakeoff_snapshot_disk` guarded its `du | awk` pipeline with `|| true`. Without it, when the live anchor EL churned its datadir during a snapshot, `du` hit a vanishing file → exit 1 → `pipefail` killed the run (this spuriously failed grandine's first attempt; the clean re-run above is authoritative).",
+  '**{lodestar, lighthouse} are the two smallest CLs on all three anchors**, but which one is smallest is measurement-window-sensitive: lighthouse is smallest on the ethrex anchor; lodestar is smallest on the geth and nethermind anchors.',
+  "**{teku, grandine} form a \"mid\" tier with a soft internal order.** teku's two nethermind-anchor readings (~667 → 875 MB, see note above) cross grandine's ~730 MB. Taking the clean re-read as authoritative, grandine < teku holds on all three anchors — but that pair's order is measurement-sensitive, not a stable client property.",
+  '**Absolute footprints scale with observation time, not just the anchor.** The geth- and nethermind-anchor numbers are much smaller than the ethrex-anchor ones (e.g. nimbus ~1.2–1.3 GB vs ~5.3 GB) because those sweeps were measured minutes after checkpoint-sync, while the ethrex-anchor runs ran longer post-sync. The tiers hold anyway; exact within-tier order does not.',
+  '**Net:** three different EL anchors reproduce the same three tiers — lightweight {lodestar, lighthouse}, mid {teku, grandine}, heavy {nimbus} — supporting EL/CL decoupling, without an identical total order across anchors.',
 ]
 
 // Cross-anchor CL footprints (approximate published values, MiB) for the dot plot.
@@ -534,9 +524,9 @@ const elPicks = [
 const clientLimitations = [
   { el: 'besu', footprint: '~1.08 TiB', synced: 'yes', syncedDetail: '(~19h18m, fully validated)', why: 'besu **synced fine**, and its ~1.08 TiB is the same magnitude as geth/nethermind at full post-merge history — comparable, not an outlier. It\'s listed here for its operational caveat, not its disk size: a follow-up re-run to test a further prune lever deadlocked twice and was abandoned (stale-pivot → `SnapSyncChainDownloader` thread death; root-caused to a ~28h prysm-v7.1.5 CL stall, **not** a besu fault — see gotcha below), underscoring that besu\'s snap sync is fragile to a prolonged CL outage.' },
   { el: 'reth', footprint: '~0.98 TiB partial (72h-capped)', synced: 'partial', syncedDetail: '', why: '`--full`-only (no snap); sequential full block execution can\'t finish mainnet inside the 72h cap. Speed-bound, not config-bound.' },
-  { el: 'nimbus_eth1', footprint: '**~40 GB partial @72h cap** (2026-07-13; supersedes an earlier ~21 GB aborted run)', synced: 'partial', syncedDetail: '(~21.6%)', why: 'Full-sync-only (no snap). The 72h governance-cap run (2026-07-11→13, run_id `client-bakeoff-nimbuseth1-2026-07-11`) ran **72h continuously with 0 restarts** (stable throughout, 20–25 peers) and reached **~21.6%** — head 5,509,858 / target 25,505,378, eta ~1w3d still remaining — so it never neared tip. **New, measured this run:** `prune = true` is **empirically confirmed pruning online** (journal `Pruning history … pruned=N` logged continuously during import), which **resolves the earlier "contested / era1-only / unverified" open question** — the lever is NOT inert. It\'s listed here only because a full-sync-only client can\'t reach tip in a practical window on this host, **not** because the prune lever fails.' },
+  { el: 'nimbus_eth1', footprint: '**~40 GB partial @72h cap** (2026-07-13; supersedes an earlier ~21 GB aborted run)', synced: 'partial', syncedDetail: '(~21.6%)', why: 'Full-sync-only (no snap). A 72h capped run (2026-07-11 to 07-13) ran **72h continuously with zero restarts** (stable throughout, 20–25 peers) and reached **~21.6%** of tip — nowhere close. Separately confirmed this run: `prune = true` **does prune online** (the journal logged continuous pruning during import), resolving an earlier open question about whether the flag does anything. It\'s listed here only because a full-sync-only client can\'t reach tip in a practical window on this host, **not** because the prune lever fails.' },
   { el: 'erigon', footprint: '~1.21 TiB frozen partial', synced: 'no', syncedDetail: '', why: 'Structural no-sync: erigon3 OtterSync + checkpoint-synced-prysm optimistic gap-close deadlock. Not a synced datadir.' },
-  { el: 'ethrex', footprint: '~286–300 GiB at sync (fresh) → **~470–476 GiB steady-state plateau** (drifting 470.2 → 475.5 GiB over ~42h)', synced: 'yes', syncedDetail: '(~2h16m on v19.0.0, fully validated; a later re-sync on v22.0.0 took 4h09m56s — different day/host load too, not a regression)', why: 'ethrex **synced cleanly and fastest in the field (~2h16m snap).** No history-prune lever (`--syncmode snap` only; no state-prune flag) — moot, since it retains no history to prune. It serves ~no history (`eth_getBlockByNumber` `null` below head, verified 2026-07-06 and 2026-07-29) and its datadir **plateaus rather than growing unbounded**: +43 GiB/hr while post-sync settling, then a ~300× collapse to +0.13 GiB/hr, drifting for ~42 hours (2026-07-29T06:18Z→2026-07-31T00:03Z, 168 samples, run `client-bakeoff-ethrex-steadystate-2026-07-28`, NRestarts=0). The earlier ~467 GiB (2026-07-06) was this same plateau caught mid-climb, ~1% below the settled figure — not evidence of unbounded growth. **Not a disk win:** it\'s smaller only because it\'s a no-history node; nethermind\'s state alone (~226–230 GiB) is roughly half ethrex\'s entire total on a state-only basis (caveat: not a perfectly controlled comparison — different state encodings, and ethrex\'s total includes headers/recent blocks). config_optimal=yes (snap is optimal-by-absence; 1 stale-pivot auto-healed). service_crash_observed=no. See gotchas for the restart cliff (unchanged) and the no-history RPC cost.' },
+  { el: 'ethrex', footprint: '~286–300 GiB at sync (fresh) → **~470–476 GiB steady-state plateau** (drifting 470.2 → 475.5 GiB over ~42h)', synced: 'yes', syncedDetail: '(~2h16m on v19.0.0, fully validated; a later re-sync on v22.0.0 took 4h09m56s — different day/host load too, not a regression)', why: 'ethrex **synced cleanly and fastest in the field (~2h16m snap).** It has no history-prune lever (`--syncmode snap` only) — moot, since it retains no history to prune. It serves ~no history (`eth_getBlockByNumber` returns `null` below head, verified live) and its datadir **plateaus rather than growing unbounded**: +43 GiB/hr while post-sync settling, then a ~300× collapse to +0.13 GiB/hr, drifting for ~42 hours (verified clean throughout). The earlier ~467 GiB reading was this same plateau caught mid-climb, not evidence of unbounded growth. **Not a disk win:** it\'s smaller only because it\'s a no-history node — nethermind\'s state alone (~226–230 GiB) is roughly half ethrex\'s entire total on a state-only basis (not a perfectly controlled comparison — different state encodings, and ethrex\'s total includes headers/recent blocks). See gotchas for the restart cliff and the no-history RPC cost.' },
 ]
 
 // ---------------------------------------------------------------------------
@@ -549,7 +539,7 @@ const gotchaGroups = [
     items: [
       '**Stage-A triage is blind to a stalled EL.** Triage only checks that the CL reaches tip and the Engine-API JWT handshake works. A node whose CL checkpoint-syncs optimistically PASSES triage even with 0 EL peers and a frozen execution head (nethermind hid a 13.3h zero-progress stall this way). A sync-health verdict must combine peer-count>0 + EL-head advancing + beacon `sync_distance` — never `sync_distance` alone.',
       '**`eth_syncing=false` is a trap, not a done-signal.** It returns `false` BOTH before snap-sync starts (no pivot yet) and after it finishes. The authoritative "synced" gate is prysm `is_optimistic=false` (EL validated the head payload). besu\'s `eth_syncing` also returns `false` mid-sync — same trap.',
-      '**A synced nethermind\'s `eth_syncing` returns an OBJECT, not boolean false** (`currentBlock==highestBlock`). The bakeoff harness now treats the EL as synced on `currentBlock==highestBlock`, not only boolean `false` (commit `5e7a93d`).',
+      '**A synced nethermind\'s `eth_syncing` returns an OBJECT, not boolean false** (`currentBlock==highestBlock`). The bakeoff harness now treats the EL as synced on `currentBlock==highestBlock`, not only boolean `false`.',
       "**besu snap sync is two tracks:** block-import reaches head first (a premature “done” signal), but world-state download/heal (Bonsai) is the real bottleneck and where the footprint balloons.",
     ],
   },
@@ -557,14 +547,14 @@ const gotchaGroups = [
     id: 'gotchas-restart-resume',
     title: 'Restart & resume — the deciding axis',
     items: [
-      '**besu snap-sync deadlocks if the CL stalls long enough (stability finding, 2026-07-05).** The besu pruned re-run deadlocked **twice** and was abandoned. Chain: a **prysm v7.1.5** data-column-sidecar/PeerDAS bug stalled the CL ~28h (besu logged `Execution engine not called in 120 seconds` continuously) → with no `forkchoiceUpdated` driving it, besu\'s snap-sync **pivot block aged out** of the network\'s servable-state window (full nodes serve state for only ~128 recent blocks ≈ 25 min) → world-state heal became un-completable → besu threw `java.lang.IllegalStateException: The pivot block number has not increased` in `SnapSyncChainDownloader.consumePivotUpdate`, cancelled the download, and the downloader **thread died without restarting**. The process stayed alive and answered RPC while the sync engine was dead (datadir frozen, zero DB writes). A restart resumed on the SAME persisted stale pivot and re-deadlocked identically. **Takeaways:** keep the CL binary current before a long besu snap-sync (the stall came from a stale prysm pin); besu answering `eth_blockNumber` ≠ besu syncing (watch DB writes); and this is the prime motivation for the harness stall-watchdog — **now implemented** (#31, PR #190) as an opt-in watchdog: with `ETH2QS_BAKEOFF_STALL_RESTART=yes`, if the unit under test makes no forward progress (EL block number / CL `head_slot` flat) for `ETH2QS_BAKEOFF_STALL_SAMPLES` polls (default 10) it performs up to `ETH2QS_BAKEOFF_STALL_MAX_RESTARTS` bounded restarts (default 3) of *only that unit*, then marks the row `.stalled` and fails it instead of spinning to the 72h cap.',
+      '**besu snap-sync deadlocks if the CL stalls long enough.** The besu pruned re-run deadlocked **twice** and was abandoned. Chain of events: a stale **prysm v7.1.5** build hit a PeerDAS bug and stalled the CL for ~28h, so with no `forkchoiceUpdated` driving it, besu\'s snap-sync pivot **aged out** of the network\'s servable-state window (full nodes only serve state for ~128 recent blocks, ≈25 min). World-state heal became un-completable, besu threw `IllegalStateException: The pivot block number has not increased`, and the sync thread **died without restarting** — the process stayed alive and answered RPC while frozen (datadir untouched, zero DB writes). A restart just resumed on the same stale pivot and re-deadlocked identically. **Takeaways:** keep the CL binary current before a long besu snap-sync; besu answering `eth_blockNumber` does not mean besu is syncing (watch DB writes instead). This is also why the harness now ships an opt-in stall-watchdog: if a client makes no forward progress for a bounded number of polls, it restarts that unit a few times, then fails the row instead of spinning to the cap.',
       "**ethrex restart cliff: gaps past ~25 min stall, and gaps of ~1.5–2h trigger a full re-snap from scratch (operational cliff, v19.0.0).** A routine restart with a ~1.5–2h gap made ethrex **discard its fully-synced 286 GiB state and start a fresh snap sync from near-genesis** (datadir collapsed 286 GiB → ~9 GiB → climbing; journal `SNAP SYNC STARTED` → `PHASE 1/8: BLOCK HEADERS` from ~198k/25.47M; `eth_blockNumber`=`0x0` throughout). Root cause: ethrex's old head aged out of the network's ~128-block (~25 min) servable-state window, so when prysm drove `forkchoiceUpdated` to the current head, ethrex re-pivoted to a full snap instead of importing the missed gap — contrast **geth**, which resumes by importing the missed blocks and keeps its state. Two measured re-sync costs: **~2h16m (cold) + ~2h11m (post-downtime re-snap)**; the re-snapped datadir then rebuilt *past* the old 286 GiB. **Blog through-line:** a client that stops resuming beyond ~25 minutes and can full-re-sync on longer gaps is operationally painful — a strong candidate explanation for ethrex's ~0% adoption despite the field's fastest cold sync.",
       "**ethrex's resume cliff is precisely bracketed at ~128 blocks / ~24–25 min (2026-07-10 restart bisection).** Controlled `systemctl stop eth1` → wait → `start` runs with a live prysm driving forkchoice: gaps of **12 min / 68 blk, 20 min / 108 blk, and 23 min / 124 blk all resumed cleanly** (ethrex imported the missed blocks, datadir intact, canonical head climbed back to tip). A **26 min / 132 blk gap stuck** instead: the canonical head froze (`eth_blockNumber` flat at the pre-stop block for 12+ min, `eth_syncing.currentBlock=0x0`), ethrex logged `FCU head state not reachable from DB state … Starting sync toward head` and `Failed to fetch headers for sync head — peer(s) queried but did not serve headers`, and the gap widened as the tip advanced (no datadir collapse *within* the 12-min watch — the stuck disconnected-head state is the onset that escalates to the full re-snap at larger gaps). The cliff edge (**~128 blocks ≈ 24–25 min**) matches the servable window exactly: inside it, peers still serve the gap headers and ethrex bridges; beyond it, they don't, the head freezes, and the ~1.5–2h gap above drove the full datadir-collapse re-snap. Caveat: young client (v19.0.0, may improve); this does **not** change the recorded sync-time result (2h16m, captured at synced time).",
       '**geth resumes gracefully after a ~52h (multi-day) downtime — measured 2026-07-10 (the positive contrast to ethrex).** Restarted after a stop that had left it ~15,400 blocks / ~52h behind (`eth_syncing.startingBlock`=25,487,154 — *not* genesis, no snap-pivot reset), geth **kept its full multi-hundred-GB datadir** and caught up purely by **sequential block-import with trie-diff application** — journal `Imported new chain segment … triediffs=… triedirty=…` on every segment, *not* a re-snap. Throughout: no datadir collapse (contrast ethrex\'s 286 GiB → ~9 GiB), `eth_syncing` returned an import object (never `0x0`), state healing ran to completion (`healingTrienodes=0x0`), and it **converged back to the validating tip** (`eth_syncing=false` at block 25,502,592). This is the resume profile you want for an EL you upgrade/restart regularly, and it is *why* geth clears the operational bar above where ethrex\'s re-snap cliff does not. (Wall-clock resume time not cleanly bounded on this shared host, so only the mechanism + datadir preservation are claimed.)',
-      '**nethermind\'s restart-resume is measured and bisected (2026-08-01→03, EXP-A): no servable-window cliff** — the direct contrast to ethrex\'s ~128-block cliff and besu\'s pivot-aging deadlock. An opportunistic CL-outage catch-up came first (2026-08-01): a CL restart at 13:24:55Z left nethermind **10,607 blocks (~35h of chain) behind** the external tip, and it closed the entire gap by ordinary block import in **35m09s (~302 blocks/min)**. The beacon dropped `is_optimistic` at 14:00:04Z, and the datadir grew **1.165 → 1.178 TB (+1.1%** — exactly the imported bodies/receipts) with **no state wipe, no re-snap**.',
-      '**A controlled stop→wait→start bisection (2026-08-02→03) confirms the same resume path at every gap size tested.** At 12 min / 30 min / 1 h / 4 h gaps (69 / 151 / 301 / 1,196 blocks), **every rung resumed geth-style** — ordinary Engine-API block import, no re-pivot, no snap/state-sync in the journal, NRestarts 0. The re-pivot tell stayed silent: the state dir moved **~1.0–1.3 MiB per imported block, constant across rungs** (a re-snap would rewrite the whole ~238 GiB state dir). Resume time scales gently with gap (121s @ 12 min → 186s @ 1 h → 483s @ 4 h → 35m09s @ ~35 h), dominated by the CL re-syncing its missed slots, not by EL import.',
-      '**A separate establish run (2026-07-31) is a second data point, not a replacement for the Stage-B figure.** It snap-synced nethermind fresh in **1h52m51s** (00:04:45Z→01:57:36Z, ~280 GiB at snap, pivot 25,649,064, zero restarts) — far faster than the ~14.5h Stage-B figure because the pivot was minutes-old and near-tip, and network conditions differ. Artifacts: exp-lab runs `exp-a-nethermind-restart-resume-2026-07-31` (`env.txt`, `disk-synced.tsv`, `exp-a1-resume.tsv`) and `exp-a-bisection-2026-08-02` (`RESULTS.md`, per-rung `rung-*/`).',
-      '**prysm restarts cleanly from its own DB — measured, n=4 (2026-08-02→03, EXP-D).** A deliberate 30-min CL stop (past ethrex\'s ~25-min cliff, the EL left undriven with its head frozen) resumed from the existing beacon DB and was back driving the EL at `sync_distance=0` within **~2m44s** of start — journal-proven no re-checkpoint-sync (`checkpoint-sync: Origin checkpoint found in the database, ignoring checkpoint sync flags` + `Blockchain data already exists in DB`). The three EXP-A bisection rungs (12 min / 1 h / 4 h) each repeated the same re-checkpoint-free resume, making **four clean resume events**. Scope honestly stated: **prysm only** — this earns "prysm resumes cleanly," not "the CL layer is solved" (the other CLs are untested for resume, and prysm\'s intermittent discovery-listener wedge simply didn\'t occur in these runs — absent, not disproven). The node was beacon-only (no validator keys), so the deliberate stops were zero-risk. Artifacts: exp-lab run `exp-d-cl-restart-resume-2026-08-01` (`EXP-D-FINDINGS.md`, `exp-d-prysm-resume.tsv`).',
+      '**nethermind\'s restart-resume is measured and bisected (2026-08-01 to 08-03): no servable-window cliff** — the direct contrast to ethrex\'s ~128-block cliff and besu\'s pivot-aging deadlock. An opportunistic CL-outage catch-up came first: a CL restart left nethermind **10,607 blocks (~35h of chain) behind** the external tip, and it closed the entire gap by ordinary block import in **35m09s (~302 blocks/min)**. The datadir grew **1.165 → 1.178 TB (+1.1%**, exactly the imported bodies/receipts) with **no state wipe, no re-snap**.',
+      '**A controlled stop→wait→start bisection confirms the same resume path at every gap size tested.** At 12 min / 30 min / 1 h / 4 h gaps (69 / 151 / 301 / 1,196 blocks), **every rung resumed geth-style** — ordinary Engine-API block import, no re-pivot, no snap/state-sync (verified clean throughout). The re-pivot tell stayed silent: the state dir moved **~1.0–1.3 MiB per imported block, constant across rungs** (a re-snap would rewrite the whole ~238 GiB state dir). Resume time scales gently with the gap (121s @ 12 min → 186s @ 1 h → 483s @ 4 h → 35m09s @ ~35 h), dominated by the CL re-syncing its missed slots, not by EL import.',
+      '**A separate fresh-sync run (2026-07-31) is a second data point, not a replacement for the Stage-B figure.** It snap-synced nethermind fresh in **1h52m51s** (~280 GiB at snap, zero restarts) — far faster than the ~14.5h Stage-B figure because the pivot was minutes-old and near-tip, and network conditions differ.',
+      '**prysm restarts cleanly from its own DB — measured, n=4 (2026-08-02 to 08-03).** A deliberate 30-min CL stop (past ethrex\'s ~25-min cliff, the EL left undriven with its head frozen) resumed from the existing beacon DB and was back driving the EL at `sync_distance=0` within **~2m44s** of start — with no re-checkpoint-sync. The three bisection rungs (12 min / 1 h / 4 h) each repeated the same re-checkpoint-free resume, for **four clean resume events total**. Scope honestly stated: **prysm only** — this earns "prysm resumes cleanly," not "the CL layer is solved" (the other CLs are untested for resume, and prysm\'s intermittent discovery-listener wedge simply didn\'t occur in these runs — absent, not disproven). The node was beacon-only (no validator keys), so the deliberate stops were zero-risk.',
     ],
   },
   {
@@ -615,18 +605,18 @@ export default function BakeoffResultsPage() {
             Bake-off results — the raw data
           </h1>
           <p className="mt-3 text-sm italic text-muted-foreground">
-            <Rich text="Stage A (triage) synthesized from `artifacts/client-bakeoff-2026-06-22/` on 2026-06-23. Raw artifacts are gitignored; this doc is the committed summary." />
+            <Rich text="Stage A (triage) was synthesized on 2026-06-23 from the raw campaign logs; this page is the committed summary." />
           </p>
           <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground">
-            This is the exhaustive reference appendix: every Stage A triage row, every Stage B
-            disk-footprint measurement, the consensus-client matrix on three anchors, the
+            This is the full reference appendix: every Stage A triage row, every Stage B
+            disk-footprint measurement, the consensus-client matrix across three anchors, the
             client-limitations table, and every gotcha from{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
               docs/CLIENT_BAKEOFF_RESULTS.md
-            </code>{' '}
-            — unrounded. Charts and collapsible sections make it scannable; no number, date, or
-            hedge is dropped, and a few passages are expanded inline where later measurements
-            refined them. For the story instead of the raw data, read{' '}
+            </code>
+            . Disk figures are rounded to whole GB/MB for readability, and charts and collapsible
+            sections make the whole appendix scannable. For the story instead of the raw data,
+            read{' '}
             <Link href="/blog/ethereum-client-bakeoff" className="text-primary hover:underline">
               the bake-off blog post
             </Link>
@@ -661,7 +651,7 @@ export default function BakeoffResultsPage() {
         <ArticleToc links={tocLinks} />
 
         {/* ---------------------------------------------------------------- */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="method" className="text-lg sm:text-xl font-semibold text-foreground">Method</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Two stages, run strictly sequentially — one candidate at a time on a shared semi-prod host,
@@ -701,7 +691,7 @@ export default function BakeoffResultsPage() {
               <ul className="mt-2 space-y-1.5 pl-4">
                 <li>ELs × prysm: geth, erigon, reth, nethermind, besu, nimbus_eth1, ethrex</li>
                 <li>
-                  <Rich text="CLs × fixed anchor EL: lighthouse, teku, nimbus, lodestar, grandine. The first sweep used **ethrex**, already synced at tip. The originally planned geth sweep was initially deferred, then completed on 2026-07-08 as a cross-anchor check, and a third sweep against a **nethermind** anchor followed on 2026-07-26. Across all three anchors the same three tiers reproduce — lightweight {lodestar, lighthouse}, mid {teku, grandine}, heavy {nimbus} — while the order within each pair is measurement-window-sensitive (lodestar↔lighthouse between ethrex and geth; on the nethermind anchor, teku itself moved ~27% across two runs — ~667 MiB → ~848 MiB — enough to cross grandine's ~730 MiB; grandine < teku holds on all three anchors, so this is teku's own re-read variance, not a genuine swap with grandine)." />
+                  <Rich text="CLs × fixed anchor EL: lighthouse, teku, nimbus, lodestar, grandine. The first sweep used **ethrex**, already synced at tip. The originally planned geth sweep was initially deferred, then completed on 2026-07-08 as a cross-anchor check, and a third sweep against a **nethermind** anchor followed on 2026-07-26. Across all three anchors the same three tiers reproduce — lightweight {lodestar, lighthouse}, mid {teku, grandine}, heavy {nimbus} — while the order within each pair is measurement-window-sensitive (lodestar↔lighthouse between ethrex and geth; on the nethermind anchor, teku itself moved ~27% across two runs — ~667 MB → ~875 MB — enough to cross grandine's ~730 MB; grandine < teku holds on all three anchors, so this is teku's own re-read variance, not a genuine swap with grandine)." />
                 </li>
               </ul>
             </li>
@@ -736,7 +726,7 @@ export default function BakeoffResultsPage() {
         </section>
 
         {/* ---------------------------------------------------------------- */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="stage-a" className="text-lg sm:text-xl font-semibold text-foreground">
             Stage A results — 12/12 PASS
           </AnchorHeading>
@@ -839,7 +829,7 @@ export default function BakeoffResultsPage() {
           </ul>
 
           <AnchorHeading id="resource-contention" as="h3" className="mt-8 font-medium text-foreground">
-            Resource contention (shared semi-prod host)
+            Resource contention
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             <Rich text="Heavier-client startups (non-geth ELs, and lodestar) showed Prysm's beacon REST briefly unavailable for the first 1–3 minutes (`restErr` counts above) before recovering — consistent with startup contending for CPU/IO against co-resident agents on this shared host. It did **not** block any checkpoint sync, but it is the headline risk for Stage B: a multi-day, IO-heavy full sync will compete with co-resident workloads. Stage B execution strategy (sequential vs. small parallel batches) must account for this." />
@@ -847,32 +837,51 @@ export default function BakeoffResultsPage() {
         </section>
 
         {/* ---------------------------------------------------------------- */}
-        <section className="mt-10 sm:mt-16">
-          <AnchorHeading id="changes" className="text-lg sm:text-xl font-semibold text-foreground">
-            Changes driven by this bake-off
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
+          <AnchorHeading id="client-limitations" className="text-lg sm:text-xl font-semibold text-foreground">
+            Client limitations
           </AnchorHeading>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Installer/harness fixes landed on the bake-off branch as a direct result of triage:
-          </p>
-          <ul className="mt-4 space-y-2 text-sm">
-            {changesDriven.map((commit) => (
-              <li key={commit}>
-                <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">{commit}</code>
-              </li>
-            ))}
-          </ul>
+
+          <div
+            className="mt-4 overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            role="region"
+            aria-label="Execution client limitations"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[52rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
+              <thead>
+                <tr className="border-b border-border text-left">
+                  <th className="pb-3 font-medium text-muted-foreground">EL</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Footprint recorded</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Synced?</th>
+                  <th className="pb-3 font-medium text-muted-foreground">
+                    Why it&apos;s listed here
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {clientLimitations.map((row) => (
+                  <tr key={row.el}>
+                    <td className="py-3 align-top font-medium text-foreground">{row.el}</td>
+                    <td className="py-3 align-top text-muted-foreground min-w-[16rem]"><Rich text={row.footprint} /></td>
+                    <td className="py-3 align-top">
+                      <Badge variant={row.synced === 'yes' ? 'primary' : 'default'}>{row.synced}</Badge>
+                      {row.syncedDetail && (
+                        <p className="mt-1 text-xs text-muted-foreground">{row.syncedDetail}</p>
+                      )}
+                    </td>
+                    <td className="py-3 align-top text-muted-foreground min-w-[28rem]"><Rich text={row.why} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
 
         {/* ---------------------------------------------------------------- */}
-        <p className="mt-10 sm:mt-16 text-sm italic text-muted-foreground">
-          Final recommendation and operational-viability synthesis follows the Stage B results,{' '}
-          <a href="#operational-viability" className="text-primary hover:underline">below</a>.
-        </p>
-
-        {/* ---------------------------------------------------------------- */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="disk-flag-audit" className="text-lg sm:text-xl font-semibold text-foreground">
-            Sync-mode &amp; disk-flag audit (2026-06-25)
+            Sync-mode &amp; disk-flag audit
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             <Rich text="Before letting the slow full-sync ELs run, we audited every execution client to confirm it uses the most disk- and time-efficient sync mode available — so the Stage B footprint numbers reflect each client's *best* configuration, not an accidental archive run. Trigger: geth's `--history.chain postmerge` flag (prunes pre-merge block history, a large disk saving). We verified it was on for the baseline, then checked the rest." />
@@ -914,12 +923,12 @@ export default function BakeoffResultsPage() {
         </section>
 
         {/* ---------------------------------------------------------------- */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="stage-b" className="text-lg sm:text-xl font-semibold text-foreground">
             Final synced disk footprint (Stage B)
           </AnchorHeading>
           <p className="mt-2 text-sm italic text-muted-foreground">
-            <Rich text="Complete (run_id `client-bakeoff-stageB-2026-06-23`). Runs were sequential, one candidate at a time; every candidate now has a final synced, capped, or no-sync verdict. Footprint = final synced datadir size (EL + CL); secrets/validator material excluded." />
+            <Rich text="Complete. Runs were sequential, one candidate at a time; every candidate now has a final synced, capped, or no-sync verdict. Footprint = final synced datadir size (EL + CL); secrets/validator material excluded." />
           </p>
           <p className="mt-4 text-sm text-muted-foreground">
             <Rich text="**Disk does not rank the field.** Every EL that carries full post-merge history converges on ~1.0–1.2 TiB — size is set by history-retention config, a client-agnostic knob. The two small footprints below (ethrex, minimal-history nethermind) sit left of the band only because they retain *no* history, not because they are leaner. Choose an EL on snap-sync speed and restart-resume instead (see the recommendation section)." />
@@ -973,7 +982,7 @@ export default function BakeoffResultsPage() {
             Fresh-sync vs. steady-state disk footprint
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            <Rich text="Several ELs were captured at more than one point in their lifecycle, and reporting only one number produced the two wrong disk claims this page has had to correct so far (nethermind's pre-backfill ~251 GiB read as final; ethrex's mid-climb ~467 GiB read as still-growing). Where both a fresh (at-sync) and a steady-state (settled) figure exist, both are recorded below; where only one was ever captured, that's stated explicitly rather than left ambiguous." />
+            <Rich text="Several execution clients were captured at more than one point in their lifecycle, and a single number can mislead: nethermind's pre-backfill ~251 GiB looked like a final figure, and ethrex's mid-climb ~467 GiB looked like it was still growing. Neither was. Where both a fresh (at-sync) and a steady-state (settled) figure exist, both are recorded below; where only one was ever captured, that's stated explicitly." />
           </p>
 
           <FreshVsSteadyChart />
@@ -1018,71 +1027,68 @@ export default function BakeoffResultsPage() {
           <p className="mt-3 text-xs text-muted-foreground">
             nethermind and ethrex are the only two ELs where a fresh-sync number was captured meaningfully before the steady-state figure; geth and besu were only ever measured at their finished, steady-state size, and reth never finished within the 72h cap.
           </p>
-          <p className="mt-3 rounded-lg border border-border p-3 text-sm font-medium text-foreground">
-            <Rich text="**Rule going forward: every disk figure in this corpus states which lifecycle phase it came from.** Use *at snap-sync* / *fresh*, *steady-state* / *settled*, or *partial @cap*, and say so even when only one phase was ever measured. A bare footprint is the specific mistake that produced both corrections above: an EL's number can move by 4x between the moment it reports synced and the moment it stops growing, so a figure without its phase is not a measurement anyone can compare or reproduce." />
-          </p>
-
           {/* -------------------------------------------------------------- */}
-          <AnchorHeading id="cl-matrix-ethrex-anchor" as="h3" className="mt-10 font-medium text-foreground">
-            Consensus-client matrix — COMPLETE (anchor = ethrex, run_id{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">client-bakeoff-clsweep-2026-07-06</code>)
+          <AnchorHeading id="cl-matrix" as="h3" className="mt-10 font-medium text-foreground">
+            Consensus-client matrix across three anchors
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            <Rich text="The CL matrix holds the **execution client constant** and cycles the consensus client, the mirror of the EL scorecard above. The constant anchor is **ethrex** (not geth as first planned): ethrex was already synced at mainnet tip from its EL run, so reusing it as the fixed anchor saved a multi-day re-sync. Because the EL and CL are decoupled across the Engine API (the CL datadir is <1% of the EL and does not depend on which EL it pairs with), the anchor choice does **not** bias the CL comparison. To *prove* that empirically rather than assert it, the full 5-CL sweep was subsequently re-run against a **geth** anchor (2026-07-08, run_id `client-bakeoff-anchor-rotation-2026-07-07`) — the cross-anchor confirmation is recorded below and reproduces the ranking. The ethrex anchor stayed active and `eth_syncing=false` (~468 GiB / 502 GB, never restarted) across all five runs; each run cycled only `cl`+`validator`." />
+            <Rich text="This matrix holds the **execution client constant** and cycles the consensus client — the mirror of the EL scorecard above. Three EL anchors were swept in turn: **ethrex** (already synced at tip, so reusing it saved a multi-day re-sync), then **geth** and **nethermind** as cross-anchor checks. Because the EL and CL are decoupled across the Engine API — every CL footprint here is under ~1.1% of its anchor's EL datadir, and doesn't depend on which EL it pairs with — the anchor choice does **not** bias the comparison, and all three sweeps land on the same three-tier ranking below. Each anchor's EL datadir stayed untouched and at tip throughout its sweep; every run only cycled the CL and validator keys." />
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
-            <Rich text="All five CLs **checkpoint-synced to a fully validating head in ~22–23 min**, `config_optimal=yes`, `anchor_synced=yes`, `service_crash_observed=no`. Sync **time** is effectively tied (checkpoint sync dominates), so **the CL datadir footprint is the differentiator** (figures are `du -sh` binary units — MiB/GiB)." />
+            <Rich text="All five CLs checkpoint-synced to a fully validating head on every anchor, no crashes. Sync took **~22–23 min on the ethrex anchor** (already at tip) and a faster **~6–10 min on the fresh geth and nethermind anchors** — sync time tracks anchor freshness, not the CL, so **footprint is the real differentiator** (figures below are decimal MB/GB)." />
           </p>
 
-          <Details summary="ethrex-anchor CL sweep — full per-client table" className="mt-4">
+          <Details summary="Full per-client table — all three anchors" className="mt-4">
           <div
             className="hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
             role="region"
-            aria-label="Consensus client matrix, ethrex anchor"
+            aria-label="Consensus client matrix across the ethrex, geth, and nethermind anchors"
             tabIndex={0}
           >
-            <table className="w-full min-w-[42rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
+            <table className="w-full min-w-[52rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="pb-3 font-medium text-muted-foreground">CL</th>
-                  <th className="pb-3 font-medium text-muted-foreground">Result</th>
-                  <th className="pb-3 font-medium text-muted-foreground">Sync time</th>
-                  <th className="pb-3 font-medium text-muted-foreground">CL datadir footprint</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Ethrex anchor</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Geth anchor</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Nethermind anchor</th>
                   <th className="pb-3 font-medium text-muted-foreground">Disk-optimal lever</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {clMatrixEthrex.map((row) => (
+                {clCrossAnchorMatrix.map((row) => (
                   <tr key={row.cl}>
                     <td className="py-3 align-top font-medium text-foreground">{row.cl}</td>
-                    <td className="py-3 align-top"><Badge variant="primary">{row.result}</Badge></td>
-                    <td className="py-3 align-top text-muted-foreground">{row.syncTime}</td>
-                    <td className="py-3 align-top text-muted-foreground">{row.footprint}</td>
-                    <td className="py-3 align-top text-muted-foreground"><Rich text={row.lever} /></td>
+                    {(['ethrex', 'geth', 'nethermind'] as const).map((anchor) => (
+                      <td key={anchor} className="py-3 align-top text-muted-foreground">
+                        <div>{row[anchor].time}</div>
+                        <div className="text-foreground">
+                          {row[anchor].size}{row[anchor].tag ? ` (${row[anchor].tag})` : ''}
+                        </div>
+                      </td>
+                    ))}
+                    <td className="py-3 align-top text-muted-foreground min-w-[16rem]">{row.lever}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
           <div className="mt-4 space-y-3 sm:hidden">
-            {clMatrixEthrex.map((row) => (
+            {clCrossAnchorMatrix.map((row) => (
               <div key={row.cl} className="rounded-lg border border-border p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-medium text-foreground">{row.cl}</span>
-                  <Badge variant="primary">{row.result}</Badge>
-                </div>
+                <div className="font-medium text-foreground">{row.cl}</div>
                 <dl className="mt-3 space-y-2 text-sm">
+                  {(['ethrex', 'geth', 'nethermind'] as const).map((anchor) => (
+                    <div key={anchor} className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground capitalize">{anchor} anchor</dt>
+                      <dd className="text-right text-foreground">
+                        {row[anchor].time} · {row[anchor].size}{row[anchor].tag ? ` (${row[anchor].tag})` : ''}
+                      </dd>
+                    </div>
+                  ))}
                   <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Sync time</dt>
-                    <dd className="text-right text-foreground">{row.syncTime}</dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Footprint</dt>
-                    <dd className="text-right text-foreground">{row.footprint}</dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Disk-optimal lever</dt>
-                    <dd className="text-right text-foreground"><Rich text={row.lever} /></dd>
+                    <dt className="text-muted-foreground">Lever</dt>
+                    <dd className="text-right text-foreground">{row.lever}</dd>
                   </div>
                 </dl>
               </div>
@@ -1090,181 +1096,31 @@ export default function BakeoffResultsPage() {
           </div>
           </Details>
 
-          <p className="mt-4 text-sm text-foreground">
-            <strong>
-              CL disk ranking (smaller = better, all config-optimal + checkpoint-synced): lighthouse
-              (~739 MiB) &lt; lodestar (~827 MiB) &lt; grandine (~946 MiB) &lt; teku (~2.1 GiB) &lt; nimbus
-              (~5.0 GiB).
-            </strong>
-          </p>
-          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-            {clEthrexNotes.map((note, i) => (
+          <p className="mt-4 text-sm font-medium text-foreground">Disk ranking, smallest → largest:</p>
+          <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+            {clRankingsByAnchor.map((row) => (
+              <li key={row.anchor}>
+                <span className="font-medium text-foreground">{row.anchor}:</span> {row.order}
+              </li>
+            ))}
+          </ul>
+
+          <p className="mt-4 text-sm font-medium text-foreground">Caveats:</p>
+          <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
+            {clMatrixNotes.map((note, i) => (
               <li key={i}><Rich text={note} /></li>
             ))}
           </ul>
 
-          {/* -------------------------------------------------------------- */}
-          <AnchorHeading id="cl-matrix-geth-anchor" as="h3" className="mt-10 font-medium text-foreground">
-            CL matrix — cross-anchor confirmation (anchor = geth, run_id{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">client-bakeoff-anchor-rotation-2026-07-07</code>
-            , 2026-07-08)
-          </AnchorHeading>
-          <p className="mt-2 text-sm text-muted-foreground">
-            <Rich text="The same 5-CL sweep was re-run against a **geth** anchor to verify the ranking is not an artifact of the ethrex anchor. All five runs were `config_optimal=yes`, `anchor_synced=yes`, no service crash; each cycled only `cl`+`validator` against the preserved geth EL datadir (~1.13 TiB, never wiped)." />
-          </p>
-
-          <Details summary="geth-anchor CL sweep — full per-client table" className="mt-4">
-          <div
-            className="hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
-            role="region"
-            aria-label="Consensus client matrix, geth anchor (cross-anchor confirmation)"
-            tabIndex={0}
-          >
-            <table className="w-full min-w-[42rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
-              <thead>
-                <tr className="border-b border-border text-left">
-                  <th className="pb-3 font-medium text-muted-foreground">Consensus</th>
-                  <th className="pb-3 font-medium text-muted-foreground">Sync status</th>
-                  <th className="pb-3 font-medium text-muted-foreground">Sync time</th>
-                  <th className="pb-3 font-medium text-muted-foreground">Final CL datadir</th>
-                  <th className="pb-3 font-medium text-muted-foreground">History-prune lever</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {clMatrixGeth.map((row) => (
-                  <tr key={row.cl}>
-                    <td className="py-3 align-top font-medium text-foreground">{row.cl}</td>
-                    <td className="py-3 align-top"><Badge variant="primary">{row.result}</Badge></td>
-                    <td className="py-3 align-top text-muted-foreground">{row.syncTime}</td>
-                    <td className="py-3 align-top text-muted-foreground">{row.footprint}</td>
-                    <td className="py-3 align-top text-muted-foreground"><Rich text={row.lever} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="mt-4 space-y-3 sm:hidden">
-            {clMatrixGeth.map((row) => (
-              <div key={row.cl} className="rounded-lg border border-border p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-medium text-foreground">{row.cl}</span>
-                  <Badge variant="primary">{row.result}</Badge>
-                </div>
-                <dl className="mt-3 space-y-2 text-sm">
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Sync time</dt>
-                    <dd className="text-right text-foreground">{row.syncTime}</dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Final CL datadir</dt>
-                    <dd className="text-right text-foreground">{row.footprint}</dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">History-prune lever</dt>
-                    <dd className="text-right text-foreground"><Rich text={row.lever} /></dd>
-                  </div>
-                </dl>
-              </div>
-            ))}
-          </div>
-          </Details>
-
-          <p className="mt-4 text-sm text-foreground">
-            <strong>
-              geth-anchor CL disk ranking (actual disk, smaller = better): lodestar (~177 MiB) &lt;
-              lighthouse (~518 MiB) &lt; grandine (~725 MiB actual) &lt; teku (~936 MiB) &lt; nimbus
-              (~1.2 GiB).
-            </strong>
-          </p>
-
-          {/* -------------------------------------------------------------- */}
-          <AnchorHeading id="cl-matrix-nethermind-anchor" as="h3" className="mt-10 font-medium text-foreground">
-            CL matrix — second cross-anchor confirmation (anchor = nethermind, run_id{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">client-bakeoff-anchor-nethermind-2026-07-26b</code>
-            , 2026-07-26)
-          </AnchorHeading>
-          <p className="mt-2 text-sm text-muted-foreground">
-            <Rich text="A third run of the same 5-CL sweep was performed against a **nethermind** anchor (nethermind 1.39.2, the same instance recorded in the Stage B row above) to further stress-test the EL/CL decoupling claim beyond the ethrex↔geth check. The anchor EL was brought current to mainnet tip in ~2h04m before this sweep began — a catch-up, not a re-sync; its datadir was preserved untouched — and stayed at tip across all five runs; each run cycled only `cl`+`validator`. All five: `fully_synced=yes`, `config_optimal=yes`, `service_crash_observed=no`." />
-          </p>
-
-          <Details summary="nethermind-anchor CL sweep — full per-client table" className="mt-4">
-          <div
-            className="hidden overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:block"
-            role="region"
-            aria-label="Consensus client matrix, nethermind anchor (second cross-anchor confirmation)"
-            tabIndex={0}
-          >
-            <table className="w-full min-w-[42rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
-              <thead>
-                <tr className="border-b border-border text-left">
-                  <th className="pb-3 font-medium text-muted-foreground">Consensus</th>
-                  <th className="pb-3 font-medium text-muted-foreground">Sync status</th>
-                  <th className="pb-3 font-medium text-muted-foreground">Sync time</th>
-                  <th className="pb-3 font-medium text-muted-foreground">Final CL datadir</th>
-                  <th className="pb-3 font-medium text-muted-foreground">History-prune lever</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {clMatrixNethermind.map((row) => (
-                  <tr key={row.cl}>
-                    <td className="py-3 align-top font-medium text-foreground">{row.cl}</td>
-                    <td className="py-3 align-top"><Badge variant="primary">{row.result}</Badge></td>
-                    <td className="py-3 align-top text-muted-foreground">{row.syncTime}</td>
-                    <td className="py-3 align-top text-muted-foreground">{row.footprint}</td>
-                    <td className="py-3 align-top text-muted-foreground"><Rich text={row.lever} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="mt-4 space-y-3 sm:hidden">
-            {clMatrixNethermind.map((row) => (
-              <div key={row.cl} className="rounded-lg border border-border p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-medium text-foreground">{row.cl}</span>
-                  <Badge variant="primary">{row.result}</Badge>
-                </div>
-                <dl className="mt-3 space-y-2 text-sm">
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Sync time</dt>
-                    <dd className="text-right text-foreground">{row.syncTime}</dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Final CL datadir</dt>
-                    <dd className="text-right text-foreground">{row.footprint}</dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">History-prune lever</dt>
-                    <dd className="text-right text-foreground"><Rich text={row.lever} /></dd>
-                  </div>
-                </dl>
-              </div>
-            ))}
-          </div>
-          </Details>
-
-          <p className="mt-4 text-sm text-foreground">
-            <strong>
-              nethermind-anchor CL disk ranking (actual disk, smaller = better): lodestar (~178
-              MiB) &lt; lighthouse (~470 MiB) &lt; grandine (~730 MiB actual) &lt; teku (~848 MiB)
-              &lt; nimbus (~1.3 GiB).
-            </strong>
-          </p>
-          <p className="mt-4 text-sm font-medium text-foreground">Caveats (mandatory — accuracy over a clean story):</p>
-          <ol className="mt-2 list-inside list-decimal space-y-2 text-sm text-muted-foreground">
-            {clNethermindNotes.map((note, i) => (
-              <li key={i}><Rich text={note} /></li>
-            ))}
-          </ol>
-
-          <p className="mt-4 text-sm font-medium text-foreground">Cross-anchor verdict — the tiers reproduce, not an identical order (now three anchors: ethrex, geth, nethermind):</p>
+          <p className="mt-4 text-sm font-medium text-foreground">Cross-anchor verdict — the tiers reproduce, not an identical order:</p>
           <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
             {crossAnchorVerdict.map((point, i) => (
               <li key={i}><Rich text={point} /></li>
             ))}
           </ul>
 
-          <figure className="mt-5 hidden sm:block" aria-labelledby="cl-anchor-chart-title" aria-describedby="cl-anchor-chart-description">
+          <h3 className="mt-8 text-sm font-semibold text-foreground">The tier story across anchors</h3>
+          <figure className="mt-2 hidden sm:block" aria-labelledby="cl-anchor-chart-title" aria-describedby="cl-anchor-chart-description">
             <svg className="h-auto w-full" viewBox="0 0 680 306" role="img">
               <title id="cl-anchor-chart-title">Consensus-client footprints across all three EL anchors (log scale)</title>
               <desc id="cl-anchor-chart-description">
@@ -1312,12 +1168,10 @@ export default function BakeoffResultsPage() {
               </g>
             </svg>
             <figcaption className="mt-2 text-xs text-muted-foreground">
-              The tier story: on every anchor the same three tiers appear — {'{'}lodestar,
-              lighthouse{'}'} lightweight, {'{'}teku, grandine{'}'} mid, nimbus heavy. Circles (ethrex
-              anchor) sit right of the others because those runs were measured longer after
-              checkpoint-sync, not because the anchor changes the ranking. lodestar&apos;s geth- and
-              nethermind-anchor marks overlap almost exactly (~177 vs ~178 MiB). Values are the published
-              approximations from the matrices above.
+              Circles (ethrex anchor) sit right of the others because those runs were measured
+              longer after checkpoint-sync, not because the anchor changes the ranking.
+              lodestar&apos;s geth- and nethermind-anchor marks overlap almost exactly (~177 vs ~178
+              MB). Values are the published approximations from the matrix above.
             </figcaption>
           </figure>
           <dl className="mt-4 space-y-2 text-sm sm:hidden">
@@ -1330,67 +1184,15 @@ export default function BakeoffResultsPage() {
               </div>
             ))}
           </dl>
-
-          <p className="mt-4 text-sm font-medium text-foreground">Measurement notes:</p>
-          <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
-            {measurementNotes.map((note, i) => (
-              <li key={i}><Rich text={note} /></li>
-            ))}
-          </ul>
         </section>
 
         {/* ---------------------------------------------------------------- */}
-        <section className="mt-10 sm:mt-16">
-          <AnchorHeading id="client-limitations" className="text-lg sm:text-xl font-semibold text-foreground">
-            Client limitations — why each candidate falls outside a clean, finished comparison
-          </AnchorHeading>
-          <p className="mt-2 text-sm text-muted-foreground">
-            <Rich text="At full post-merge history the ELs converge on disk (~1.0–1.2 TiB: geth 1.13, nethermind ~1.06, besu 1.08, reth ~1.1–1.2 projected), so there is no meaningful on-disk ranking to draw — size is config-determined. The clients are separated below on the axes that actually differ: sync speed and restart-resume behavior. **This table does not mean “failed to sync”** — besu in particular synced cleanly (see below); it's here because it hit an operational limitation (fragile to a CL outage) or, for reth/nimbus_eth1/erigon, never reached a finished, tip-synced datadir." />
-          </p>
-
-          <div
-            className="mt-4 overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            role="region"
-            aria-label="Execution client limitations"
-            tabIndex={0}
-          >
-            <table className="w-full min-w-[52rem] text-sm [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:pl-0 [&_td:first-child]:pl-0 [&_th:last-child]:pr-0 [&_td:last-child]:pr-0">
-              <thead>
-                <tr className="border-b border-border text-left">
-                  <th className="pb-3 font-medium text-muted-foreground">EL</th>
-                  <th className="pb-3 font-medium text-muted-foreground">Footprint recorded</th>
-                  <th className="pb-3 font-medium text-muted-foreground">Synced?</th>
-                  <th className="pb-3 font-medium text-muted-foreground">
-                    Why it&apos;s listed here
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {clientLimitations.map((row) => (
-                  <tr key={row.el}>
-                    <td className="py-3 align-top font-medium text-foreground">{row.el}</td>
-                    <td className="py-3 align-top text-muted-foreground min-w-[16rem]"><Rich text={row.footprint} /></td>
-                    <td className="py-3 align-top">
-                      <Badge variant={row.synced === 'yes' ? 'primary' : 'default'}>{row.synced}</Badge>
-                      {row.syncedDetail && (
-                        <p className="mt-1 text-xs text-muted-foreground">{row.syncedDetail}</p>
-                      )}
-                    </td>
-                    <td className="py-3 align-top text-muted-foreground min-w-[28rem]"><Rich text={row.why} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* ---------------------------------------------------------------- */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="qa-ethrex-rpc" className="text-lg sm:text-xl font-semibold text-foreground">
             Reader Q&amp;A: does ethrex serve a usable RPC?
           </AnchorHeading>
           <p className="mt-2 text-sm italic text-muted-foreground">
-            <Rich text="Everything below was measured live on 2026-07-29/30 against our own synced ethrex node (`ethrex/v22.0.0-HEAD-aa6c5f04750595…`), across several probes taken at different moments as the head advanced." />
+            <Rich text="Everything below was measured live on 2026-07-29/30 against our own synced ethrex node (v22.0.0), across several probes taken at different moments as the head advanced." />
           </p>
 
           <p className="mt-4 text-base font-medium text-foreground">Q: Does ethrex serve a usable RPC?</p>
@@ -1406,7 +1208,7 @@ export default function BakeoffResultsPage() {
           </p>
 
           <AnchorHeading id="qa-deploy-today" as="h3" className="mt-6 font-medium text-foreground">
-            The deploy-today test (the decisive one)
+            The deploy-today test
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             <Rich text="We took a real contract-creation transaction from 17 blocks back — head ~25,646,566 at the time, block 25,646,549, tx `0xc909b51c…`, contract `0x227efd38ef38a798ae5ec9af062c437ee4bbef35` — and every dapp read worked: `eth_getCode` returned **8,043 bytes of bytecode**, plus `eth_getStorageAt`, `eth_getTransactionByHash`, `eth_getTransactionReceipt`, and `eth_getLogs` from its deploy block to `latest`." />
@@ -1451,10 +1253,10 @@ export default function BakeoffResultsPage() {
           </p>
 
           <AnchorHeading id="qa-historical-state" as="h3" className="mt-6 font-medium text-foreground">
-            A second, much tighter limit — historical state
+            Historical state limit
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            <Rich text="`eth_call` succeeds at head−100 but fails at head−500 with `Vm execution error: DB error: state root missing for block N`. So historical state is roughly the last ~128 blocks (~25 minutes). “What was this balance at block X” does not work." />
+            <Rich text="A second, much tighter limit: `eth_call` succeeds at head−100 but fails at head−500 with `Vm execution error: DB error: state root missing for block N`. Historical state is roughly the last ~128 blocks (~25 minutes). “What was this balance at block X” does not work." />
           </p>
 
           <p className="mt-4 text-sm font-medium text-foreground">Consequently broken:</p>
@@ -1476,12 +1278,12 @@ export default function BakeoffResultsPage() {
         </section>
 
         {/* ---------------------------------------------------------------- */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="operational-viability" className="text-lg sm:text-xl font-semibold text-foreground">
-            Recommendation &amp; operational viability — which clients would we actually run (final campaign synthesis)
+            Recommendation &amp; operational viability
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            <Rich text="Stage A established **viability**: all 12 client pairs installed, checkpoint-synced, and authenticated the Engine API on this host. Disk size converges once ELs carry full post-merge history, so it doesn't separate the field — production instead asks “will it survive restarts, upgrades, and weeks of uptime?” Under that operational lens the field narrows sharply — and the two layers tell opposite stories: the **EL layer is where the operational risk lives; the CL layer looks solved on the axes we measured (sync and footprint; only prysm was restart-tested).**" />
+            <Rich text="All 12 client pairs installed, checkpoint-synced, and passed Stage A. Disk size converges once ELs carry full post-merge history, so it doesn't separate the field — the real question is durability: will it survive restarts, upgrades, and weeks of uptime? Under that lens the two layers tell opposite stories: the **EL layer carries the operational risk; the CL layer looks solved** on the axes measured here (sync and footprint — only prysm was restart-tested)." />
           </p>
 
           <div className="mt-6 grid gap-3 sm:gap-4 md:grid-cols-3">
@@ -1501,26 +1303,26 @@ export default function BakeoffResultsPage() {
           </p>
 
           <AnchorHeading id="execution-clients-viability" as="h3" className="mt-6 font-medium text-foreground">
-            Execution clients — two clear picks, one qualified third
+            Execution clients
           </AnchorHeading>
           <ul className="mt-3 space-y-3 text-sm text-muted-foreground">
             <li>
-              <Rich text="**There is no disk winner — the field converges.** Every EL that carries full post-merge history lands at ~1.0–1.2 TiB (geth 1.13, nethermind ~1.06, besu 1.08, reth ~1.1–1.2 projected); on-disk size is set by history-retention config, a client-agnostic knob, not by client efficiency. An operator who does not need historical RPC can turn retention down — **Update 2026-08-03:** nethermind ships **minimal-history by default**, a fresh sync landing at **~250–280 GiB** (post-merge bodies and receipts dropped, state only) and staying there with no backfill, in exchange for serving **no history** (pre-sync blocks return `null`, like ethrex; set `NETHERMIND_FULL_HISTORY=true` on a fresh/rebuilt datadir to keep full post-merge history for a public RPC). Among the measured no-history configurations in this campaign, nethermind is the **smallest staking node** — **~250–280 GiB vs ethrex’s ~470 GiB** (its flat-storage state is the more compact engine), and a floor **geth cannot reach** (it has no clean lever to drop post-merge history below ~1.1 TiB). It is **not**, however, “4× leaner than geth” — that would score a no-history node against a with-history one, the same apples-to-oranges the field-converges point warns against; the win is **within the no-history tier**, at the cost of serving no history. If you do need history, still pick on the axes that actually differ: **snap-sync speed** and **restart-resume stability.**" />
+              <Rich text="**There is no disk winner — the field converges.** Every EL with full post-merge history lands at ~1.0–1.2 TiB (geth 1.13, nethermind ~1.06, besu 1.08, reth ~1.1–1.2 projected). Size is set by history-retention config, not client efficiency. If you don't need historical RPC, turn retention down: **Update 2026-08-03** — nethermind now ships **minimal-history by default**, landing at ~250–280 GiB (state only) and staying there. The tradeoff is serving **no history** (pre-sync blocks return `null`, like ethrex; set `NETHERMIND_FULL_HISTORY=true` on a fresh datadir to keep full history for a public RPC). Among no-history configs, nethermind is the smallest — ~250–280 GiB vs ethrex's ~470 GiB — and a floor geth can't reach. It is **not**, however, “4× leaner than geth”: that compares a no-history node to a with-history one, so the win is within the no-history tier only. If you do need history, pick on **snap-sync speed** and **restart-resume stability** instead." />
             </li>
             <li>
-              <Rich text="**geth and nethermind both cleared the full operational bar** (snap-sync to a validating tip, clean restart-resume — geth measured 2026-07-10, nethermind measured 2026-08-01 — the two most battle-tested codebases). On disk they're on par (~1.06 vs ~1.13 TiB — the field converges there, as above). Choose **geth** — the conservative default, largest ecosystem, cleanest ~8h28m snap, and it resumes gracefully after downtime (imports missed blocks, keeps its datadir) — or **nethermind** to improve client diversity (minority client, compact flat-storage state; restart-resume is now directly measured and bisected: 2026-08-01→03, every gap from 12 min to ~35h resumed by plain block import — no re-snap, no cliff). If you run one EL for the long haul, run one of these two." />
+              <Rich text="**geth and nethermind both cleared the operational bar** — snap-sync to a validating tip, clean restart-resume, the two most battle-tested codebases here. On disk they're on par (~1.06 vs ~1.13 TiB). Choose **geth** for the conservative default: largest ecosystem, cleanest ~8h28m snap, resumes gracefully after downtime. Choose **nethermind** for client diversity: compact flat-storage state, and restart-resume is directly measured — every gap from 12 min to ~35h resumed by plain block import, no re-snap, no cliff. Run one of these two for the long haul." />
             </li>
             <li>
-              <Rich text="**besu** is a viable enterprise third — it *did* snap-sync to a fully validated head, and its ~1.08 TiB is the same magnitude as geth/nethermind, not an outlier. The real asterisk is operational: its snap sync is **fragile to a prolonged CL outage** (a stalled CL ages the pivot out of the servable-state window → `SnapSyncChainDownloader` thread death, observed twice, un-recoverable). Runnable in a shop that keeps its CL current and watches the pivot; not a set-and-forget solo-staker pick." />
+              <Rich text="**besu is a viable enterprise third.** It synced cleanly to a fully validated head, and its ~1.08 TiB is the same magnitude as geth/nethermind — not an outlier. The catch is operational: its snap sync is **fragile to a prolonged CL outage** (a stalled CL ages the pivot out of the servable-state window, and the sync thread dies — observed twice, unrecoverable). Fine for a shop that keeps its CL current; not a set-and-forget solo-staker pick." />
             </li>
             <li>
               <span className="font-medium text-foreground">The rest each missed the bar for a specific, documented reason — not a blanket “bad client”:</span>
               <ul className="mt-2 space-y-2 pl-4">
                 <li>
-                  <Rich text="**ethrex** — fastest cold sync in the whole field (~2h16m on v19.0.0; a later re-sync took 4h09m56s on v22.0.0 — different ethrex versions and different day/host state, not a regression trend), but the restart-cliff is a real operational weakness: a 26-minute/132-block downtime gap stalled instead of resuming, and measured 1.5–2-hour gaps triggered a full ~2-hour re-snap. Separately, its datadir **plateaus at ~470–476 GiB** (confirmed 2026-07-28→31: a +43 GiB/hr post-sync settling climb collapsed ~300× to +0.13 GiB/hr and drifted 470.2 → 475.5 GiB over ~42 hours) — the earlier ~467 GiB reading was this same plateau caught mid-climb, not unbounded growth. That doesn't make it a disk winner: it plateaus low only because it serves no history at all — a no-history node, not a pruned-comparable one — and on a state-only basis nethermind's ~226–230 GiB state is smaller still. Snap speed is a trap if the restart cliff isn't fixed — fast to stand up, painful to *operate*. Fast-moving young client — v19.0.0 at first sync, v22.0.0 by the 2026-07-28 steady-state run; may improve further." />
+                  <Rich text="**ethrex** — fastest cold sync in the field (~2h16m), but the restart cliff is a real weakness: a 26-minute downtime gap stalled instead of resuming, and gaps of 1.5–2 hours triggered a full re-snap. Its datadir also **plateaus at ~470–476 GiB** rather than growing unbounded — but that's not a disk win either, since it plateaus low only because it serves no history at all; nethermind's state alone (~226–230 GiB) is smaller still (not a perfectly controlled comparison — different state encodings). Snap speed is a trap if the restart cliff isn't fixed: fast to stand up, painful to operate. Young, fast-moving client (v19.0.0 → v22.0.0 across this campaign) — may improve." />
                 </li>
                 <li>
-                  <Rich text="**reth, nimbus_eth1** — full-sync-only (no snap) in the mode we tested (multi-day, capped partial here); can't reach tip inside a practical window on this host. This is a time-to-sync limit under our snap-to-tip bar, **not** a verdict on the clients in every context (reth in particular is widely run elsewhere)." />
+                  <Rich text="**reth, nimbus_eth1** — full-sync-only (no snap); can't reach tip in a practical window on this host. This is a time-to-sync limit under our snap-to-tip bar, **not** a verdict on the clients in every context (reth in particular is widely run elsewhere)." />
                 </li>
                 <li>
                   <Rich text="**erigon** — deadlocked against checkpoint-synced prysm on this host (structural, reproducible), so no synced datadir." />
@@ -1533,19 +1335,19 @@ export default function BakeoffResultsPage() {
           </ul>
 
           <AnchorHeading id="consensus-clients-viability" as="h3" className="mt-6 font-medium text-foreground">
-            Consensus clients — the healthy half: all five we swept are operationally effective
+            Consensus clients
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            <Rich text="Every CL (lighthouse, lodestar, grandine, teku, nimbus) checkpoint-synced to a validating head in ~22–23 min, `config_optimal=yes`, zero crashes, against a live anchor. Unlike the EL layer, none of them *failed* — so the choice is footprint + preference, not survivability:" />
+            <Rich text="All five swept CLs (lighthouse, lodestar, grandine, teku, nimbus) checkpoint-synced to a validating head in ~22–23 min with zero crashes. Unlike the EL layer, none of them failed — the choice here is footprint and preference, not survivability:" />
           </p>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li>
-              <Rich text="**Recommended: lighthouse** — smallest on the ethrex-anchor sweep (~739 MiB; lodestar is actually smaller on the geth and nethermind anchors, down to ~177 MiB), checkpoint-syncs in ~22 min, blob pruning on by default. lodestar (~827 MiB) and grandine (~946 MiB, with `--prune-storage`) are close seconds; teku (~2.1 GiB) and nimbus (~5.0 GiB) are heavier." />
+              <Rich text="**Recommended: lighthouse** — smallest on the ethrex-anchor sweep (~773 MB; lodestar is actually smaller on the geth and nethermind anchors, down to ~185 MB), checkpoint-syncs in ~22 min, blob pruning on by default. lodestar (~868 MB) and grandine (~946 MB, with `--prune-storage`) are close seconds; teku (~2,161 MB) and nimbus (~5,302 MB) are heavier." />
               <br />
               <span className="font-medium text-foreground">Disk order (the only differentiator):</span>{' '}
               <strong className="text-foreground">
-                lighthouse (~739 MiB) &lt; lodestar (~827 MiB) &lt; grandine (~946 MiB) &lt; teku (~2.1 GiB)
-                &lt; nimbus (~5.0 GiB).
+                lighthouse (~773 MB) &lt; lodestar (~868 MB) &lt; grandine (~946 MB) &lt; teku (~2,161 MB)
+                &lt; nimbus (~5,302 MB).
               </strong>
             </li>
             <li>
@@ -1557,19 +1359,18 @@ export default function BakeoffResultsPage() {
           </ul>
 
           <p className="mt-4 text-sm text-muted-foreground">
-            <Rich text="**Bottom line:** on the EL side a real long-running node comes down to **geth or nethermind** (besu if you're an enterprise shop that keeps its CL healthy); on the CL side **any of the five works**, with **lighthouse** the lean default. Fast initial sync (ethrex) and small archive-context footprints do not by themselves make a client operationally viable — durability across restarts and uptime is the deciding axis, and that is an EL-layer problem." />
+            <Rich text="**Net:** on the EL side a real long-running node comes down to **geth or nethermind** (besu if you're an enterprise shop that keeps its CL healthy); on the CL side **any of the five works**, with **lighthouse** the lean default. Fast initial sync and small footprints do not by themselves make a client operationally viable — durability across restarts and uptime is the deciding axis, and that's an EL-layer problem." />
           </p>
         </section>
 
         {/* ---------------------------------------------------------------- */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="gotchas" className="text-lg sm:text-xl font-semibold text-foreground">
             Gotchas &amp; lessons learned
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Every lesson learned across the campaign, grouped by theme. Each bullet leads with its
-            verdict; the measurement detail — dates, thresholds, commit hashes, artifact paths —
-            follows unrounded.
+            verdict; the supporting dates and thresholds follow.
           </p>
           {gotchaGroups.map((group) => (
             <div key={group.id} className="mt-8 first:mt-6">
@@ -1586,7 +1387,7 @@ export default function BakeoffResultsPage() {
         </section>
 
         {/* ---------------------------------------------------------------- */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="bottom-line" className="text-lg sm:text-xl font-semibold text-foreground">
             Bottom line
           </AnchorHeading>
