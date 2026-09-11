@@ -709,8 +709,8 @@ export default function BakeoffHarnessPage() {
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">result == false</code>, or a progress object whose hex-decoded{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">currentBlock</code> is <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'>='}</code> its hex-decoded{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">highestBlock</code>, with <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">highestBlock != &quot;0x0&quot;</code>) before
-            the CL sweep is allowed to start. Note this is a numeric comparison, unlike{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_execution_synced</code> (§5.4), which compares the hex strings for exact
+            the CL sweep is allowed to start. Numeric comparison, unlike{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_execution_synced</code> (§5.4), which compares hex strings for exact
             equality.
           </p>
           </Details>
@@ -735,8 +735,8 @@ export default function BakeoffHarnessPage() {
               post-install security validation — which expects active UFW and{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">security_monitor</code> — would exit 1 and abort every install.{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">CI_E2E</code> is the codebase&apos;s existing switch for a{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_1</code>-less <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">phase2</code>; it also skips UFW
-              setup. It does not change the installed binary, config, datadir, or sync footprint.
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_1</code>-less <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">phase2</code>; it skips UFW
+              setup but doesn&apos;t change the installed binary, config, datadir, or sync footprint.
             </li>
             <li>
               Stop+disable the relevant services (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth1.service cl.service validator.service</code>, or just{' '}
@@ -1106,9 +1106,8 @@ export default function BakeoffHarnessPage() {
           <Details id="bakeoff-check-config-optimal" summary={<>5.6 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'bakeoff_check_config_optimal()'}</code> — the config-optimality gate</>} className="mt-3">
           <p className="text-sm text-muted-foreground">
             The config-optimality gate. A disk-footprint benchmark is meaningless if you can&apos;t prove the client
-            was actually running in its most disk-efficient mode, so this gate stamps that proof onto every row.
-            Non-blocking (always returns 0), but stamps a verdict that later filters the
-            results tables.
+            was actually running in its most disk-efficient mode, so this non-blocking gate (always returns 0)
+            stamps every row with a verdict that later filters the results tables.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">Mechanism:</p>
           <ol className="mt-2 space-y-3 text-sm text-muted-foreground list-decimal list-inside">
