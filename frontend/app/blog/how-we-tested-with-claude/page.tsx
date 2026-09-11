@@ -51,7 +51,7 @@ const planCards = [
   },
   {
     title: 'How',
-    body: 'Native systemd services, no Docker, one candidate at a time on a shared 12-core / ~62 GB host. Each run is capped at 72 hours; footprint is the last sample before teardown, never the peak.',
+    body: 'Native systemd services, no Docker, one candidate at a time on a shared 12-core / ~62 GB host, each run capped at 72 hours.',
   },
   {
     title: 'When',
@@ -518,9 +518,8 @@ export default function HowWeTestedWithClaudePage() {
         <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="the-plan" className="text-lg sm:text-xl font-semibold text-foreground">The plan</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            One question, measured the same way for every client that finished: two numbers &mdash; final
-            synced disk footprint and cold-sync duration &mdash; on one shared host, one candidate at a
-            time.
+            One question, measured the same way for every client that finished &mdash; what, how, and
+            when:
           </p>
           <div className="mt-4 grid gap-3 sm:gap-4 sm:grid-cols-3">
             {planCards.map((card) => (
