@@ -139,6 +139,7 @@ const tocLinks = [
   { label: '7. Q&A: does ethrex serve a usable RPC?', href: '#qa-ethrex-rpc' },
   { label: '8. Recommendation & operational viability', href: '#operational-viability' },
   { label: '9. Gotchas & lessons learned', href: '#gotchas' },
+  { label: '10. Bottom line', href: '#bottom-line' },
 ]
 
 // ---------------------------------------------------------------------------
@@ -386,7 +387,7 @@ function FreshVsSteadyChart() {
         })}
       </svg>
       <figcaption className="mt-2 text-xs text-muted-foreground">
-        The lifecycle-phase rule in one picture: a bare footprint can move up to ~4x between the moment a client reports
+        The lifecycle-phase rule: a bare footprint can move up to ~4x between the moment a client reports
         synced and the moment it stops growing. nethermind&apos;s post-merge history backfills after snap; ethrex settles
         onto a no-history plateau. Exact byte figures are in the table below.
       </figcaption>
@@ -1311,7 +1312,7 @@ export default function BakeoffResultsPage() {
               </g>
             </svg>
             <figcaption className="mt-2 text-xs text-muted-foreground">
-              The tier story in one picture: on every anchor the same three tiers appear — {'{'}lodestar,
+              The tier story: on every anchor the same three tiers appear — {'{'}lodestar,
               lighthouse{'}'} lightweight, {'{'}teku, grandine{'}'} mid, nimbus heavy. Circles (ethrex
               anchor) sit right of the others because those runs were measured longer after
               checkpoint-sync, not because the anchor changes the ranking. lodestar&apos;s geth- and
@@ -1464,7 +1465,7 @@ export default function BakeoffResultsPage() {
           </ul>
 
           <p className="mt-4 text-sm text-muted-foreground">
-            <Rich text="**One spec deviation worth calling out:** ethrex's `eth_getLogs` **requires** a `topics` parameter — omitting it returns `Expected parameter: topics is missing`, while geth treats `topics` as optional. Conformant tooling can therefore fail even inside the window ethrex does serve." />
+            <Rich text="**One spec deviation:** ethrex's `eth_getLogs` **requires** a `topics` parameter — omitting it returns `Expected parameter: topics is missing`, while geth treats `topics` as optional. Conformant tooling can therefore fail even inside the window ethrex does serve." />
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             <Rich text="**What this means for the RPC setup we ship:** we ship an nginx/Caddy RPC setup. On geth (`--history.chain postmerge`) that endpoint serves post-merge history properly. The same setup on ethrex answers current-state and wallet traffic fine but returns `null`/errors for anything historical — so it is not a drop-in public RPC if your users expect history. If exposing an endpoint is the goal, that's an independent reason to prefer geth or nethermind." />
@@ -1582,6 +1583,32 @@ export default function BakeoffResultsPage() {
               </ul>
             </div>
           ))}
+        </section>
+
+        {/* ---------------------------------------------------------------- */}
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="bottom-line" className="text-lg sm:text-xl font-semibold text-foreground">
+            Bottom line
+          </AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Across six weeks and 12 client pairs, disk footprint turned out to be the wrong axis to
+            rank this field on — sync speed and restart-resume are the ones that actually separate
+            the clients:
+          </p>
+          <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
+            <li>
+              <Rich text="**Disk converges, it doesn't rank.** Every EL that carries full post-merge history lands at ~1.0–1.2 TiB (geth 1.13, nethermind ~1.06 full-history, besu 1.08, reth ~1.1–1.2 projected). The two small footprints — nethermind's minimal-history default (~250–280 GiB) and ethrex's ~470–476 GiB plateau — are smaller because they retain no history, not because they're leaner. That is the corrected reading; an earlier pass through this data read nethermind's pre-backfill ~251 GiB snapshot as its final size and called it dramatically leaner than geth, which was wrong." />
+            </li>
+            <li>
+              <Rich text="**Speed has a real order:** ethrex (~2h16m) &lt; geth (~8h28m) &lt; nethermind (~14.5h) &lt; besu (~19h18m). reth and nimbus_eth1 never reached tip in the 72h cap (full-sync-only), and erigon deadlocked entirely against a checkpoint-synced CL." />
+            </li>
+            <li>
+              <Rich text="**Restart-resume is the deciding axis.** geth and nethermind both resume cleanly from any gap tested (12 min up to ~52h/~35h) by ordinary block import — no re-snap, no cliff. ethrex hits a hard wall beyond ~25 minutes/~128 blocks and re-snaps from near-scratch; besu's snap sync deadlocks if a CL outage ages its pivot out of the ~128-block servable-state window." />
+            </li>
+            <li>
+              <Rich text="**Net pick:** geth or nethermind for a long-running node (besu as a qualified enterprise third if you keep the CL current); on the consensus side, any of the five swept CLs works, with lighthouse the leanest default. ethrex is the fastest cold sync in the field but its restart cliff and lack of history keep it a watch-don't-deploy pick today." />
+            </li>
+          </ul>
         </section>
 
         <ReadNext currentSlug="bakeoff-results" />
