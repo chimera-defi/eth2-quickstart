@@ -26,6 +26,7 @@ const tocLinks = [
   { label: '8. summarize.sh', href: '#summarize' },
   { label: '9. Data model reference', href: '#data-model' },
   { label: '10. Hardening fixes', href: '#hardening-fixes' },
+  { label: 'Bottom line', href: '#bottom-line' },
   { label: 'See also', href: '#see-also' },
 ]
 
@@ -78,7 +79,7 @@ nethermind\\tlodestar\\trerun: lodestar pruneHistory CLI-flag fix (77d939d)
 erigon\\tteku\\trerun: previous row crash-looped before the watchdog existed`
 
 const atAGlance = [
-  { title: '8 scripts, 1 manifest', body: 'candidates.tsv lists the pairs to run; the 8 executable scripts drive, sample, or aggregate them.' },
+  { title: '8 scripts, 1 manifest', body: 'candidates.tsv lists the pairs to run; six executable driver scripts drive, sample, and aggregate them, plus a sourced library (lib.sh) and a CI guard.' },
   { title: '3 ways to launch a run', body: 'a fixed manifest (run_bakeoff.sh), a rotating EL anchor (run_anchor_rotation.sh), or an async rerun queue (run_queue.sh) — all three end up calling run_candidate.sh.' },
   { title: 'Up to 3 watchdogs per run', body: 'crash-loop (always on), anchor-drift (anchor mode only), stall (opt-in) — each one only marks state and logs; none but the stall watchdog ever restarts anything.' },
   { title: 'Every artifact is machine-readable', body: 'env.txt and samples.jsonl feed summarize.sh; advisor-alerts.jsonl is the separate structured channel operators tail live.' },
@@ -871,8 +872,9 @@ export default function BakeoffHarnessPage() {
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'anchor_synced=yes|no'}</code> depending on whether <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.anchor-poisoned</code> exists.
             A <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">window_capped_unsynced</code> warn-level advisor alert (§5.2) fires only when install
             succeeded, the window expired without <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">fully_synced=yes</code>, and neither the crash-loop
-            nor the stall watchdog already alerted this same row — so one dead candidate never files three
-            overlapping alerts.
+            nor the stall watchdog already alerted this same row — it&apos;s the third and last of the three
+            &ldquo;give up&rdquo; paths a row can take, after crash-loop and stall, so a dead candidate never fires
+            more than one give-up alert.
           </p>
           </Details>
 
@@ -1540,6 +1542,36 @@ export default function BakeoffHarnessPage() {
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_execution_synced</code>, not the beacon-inclusive{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced</code> — see §5.4 for why a beacon-inclusive check on a
               shared anchor can never pass.
+            </li>
+          </ul>
+        </section>
+
+        {/* Bottom line */}
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="bottom-line" className="text-lg sm:text-xl font-semibold text-foreground">Bottom line</AnchorHeading>
+          <ul className="mt-4 space-y-2 text-sm text-muted-foreground list-disc list-inside">
+            <li>
+              Three entry points (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code>,{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code>,{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_queue.sh</code>) all funnel into one state machine,{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code> — every candidate row in the results tables, however it was
+              launched, produced its artifacts the same way.
+            </li>
+            <li>
+              Two of the three watchdogs (crash-loop, anchor-drift) are detection-only by design: they touch a marker
+              file and log, never restart or kill a service, because the thing they&apos;re watching — a flapping
+              client, a shared anchor EL — is either not theirs to fix or shared across the whole run. Only the
+              opt-in stall watchdog restarts anything, and even that is capped.
+            </li>
+            <li>
+              The config-optimality gate (§5.6) is what keeps a disk-footprint number honest: a client synced with
+              history-pruning silently off gets filed under &ldquo;Superseded — non-optimal config,&rdquo; not into
+              the ranked results.
+            </li>
+            <li>
+              Every failure mode the harness detects — crash-loop, anchor-poisoned, stall, a malformed queue row —
+              funnels into one file, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">advisor-alerts.jsonl</code>, regardless of which of the three
+              drivers produced the row.
             </li>
           </ul>
         </section>
