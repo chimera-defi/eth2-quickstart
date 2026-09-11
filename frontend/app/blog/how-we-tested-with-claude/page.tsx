@@ -518,9 +518,9 @@ export default function HowWeTestedWithClaudePage() {
         <section className="mt-10 sm:mt-16">
           <AnchorHeading id="the-plan" className="text-lg sm:text-xl font-semibold text-foreground">The plan</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            One question, measured the same way for every client that finished (three didn&apos;t &mdash; erigon
-            deadlocked, reth and nimbus_eth1 hit the 72-hour cap): two numbers &mdash; final synced disk
-            footprint and cold-sync duration &mdash; on one shared host, one candidate at a time.
+            One question, measured the same way for every client that finished: two numbers &mdash; final
+            synced disk footprint and cold-sync duration &mdash; on one shared host, one candidate at a
+            time.
           </p>
           <div className="mt-4 grid gap-3 sm:gap-4 sm:grid-cols-3">
             {planCards.map((card) => (
@@ -636,8 +636,8 @@ export default function HowWeTestedWithClaudePage() {
           <p className="mt-2 text-sm text-muted-foreground">
             The core design choice: decouple node wall-clock from agent wall-clock, and decouple durable
             state from agent context. Get those two right and a multi-week campaign stops needing a
-            multi-week attention span. Extending the initial 23-day run into a six-week one required no
-            change to the orchestration model &mdash; only more entries in the same durable-state files.
+            multi-week attention span &mdash; extending it to six weeks meant more durable-state entries,
+            not a different design.
           </p>
 
           <AnchorHeading id="node-runs-agent-doesnt-watch" as="h3" className="mt-6 font-medium text-foreground">
