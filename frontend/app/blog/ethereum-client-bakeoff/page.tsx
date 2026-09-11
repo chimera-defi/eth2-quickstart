@@ -79,7 +79,7 @@ const clientIssues = [
   {
     name: 'Ethrex',
     verdict: 'Caution' as const,
-    issue: 'Fastest cold sync in the field (~2h16m), but a restart gap past ~25 minutes stalls, and a gap of ~1.5–2h triggers a full re-snap from scratch. Also serves no history before its sync pivot — not a drop-in public RPC.',
+    issue: 'Fastest cold sync in the field (~2h16m), but a restart gap past ~25 minutes stalls, and a gap of ~1.5–2h triggers a full re-snap from scratch. Serves no history before its sync pivot — not a drop-in public RPC.',
   },
   {
     name: 'Reth',
@@ -724,8 +724,7 @@ export default function EthereumClientBakeoffPage() {
             The same client&apos;s three columns differ because absolute footprint tracks how long
             the CL had been following the chain when it was sampled, rather than which EL it paired
             with. The geth- and nethermind-anchor runs were measured minutes after checkpoint-sync,
-            on a fresher datadir. It is the broad tiers (lightweight, mid, heavy), not the absolute
-            size or exact within-tier order, that reproduce across anchors.
+            on a fresher datadir.
           </p>
           <p className="mt-4 text-sm text-muted-foreground">
             The CL tiers also reproduced across three different EL anchors: a lightweight pair
@@ -814,9 +813,9 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             The when, where, and scope are in the card above. The method that shapes every number:
             each candidate runs alone under a 72-hour cap, with its footprint read at the end of the
-            run — for capped runs, from the last{' '}
+            run — for capped runs, the last{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">du</code> sample before
-            the cap — rather than the mid-sync peak. Two choices then need spelling out — why we hold the consensus
+            the cap — never the mid-sync peak. Two choices then need spelling out — why we hold the consensus
             client constant, and how we kept a mis-configured run from poisoning the results.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
