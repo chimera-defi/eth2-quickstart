@@ -729,8 +729,8 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-4 text-sm text-muted-foreground">
             The CL tiers also reproduced across three different EL anchors: a lightweight pair
             (lodestar, lighthouse), a mid pair (grandine, teku), and nimbus alone at the heavy end.
-            Within-tier order is measurement-window-sensitive — teku itself moved ~667 &rarr; ~848
-            MiB across two runs on the same nethermind anchor, crossing grandine (~730 MiB) and back.
+            Within-tier order is measurement-window-sensitive — two order-instabilities, detailed
+            in the consensus-layer section below.
           </p>
         </section>
 
@@ -1566,10 +1566,9 @@ export default function EthereumClientBakeoffPage() {
               (footprints in the CL scorecard above).
             </li>
             <li>
-              <strong className="text-foreground">~7–10 minutes on the nethermind anchor.</strong>{' '}
-              lodestar&apos;s first attempt there recorded ~76 minutes, but the anchor EL was still
-              importing a ~2-day block gap at the time; the clean re-read is ~7m36s, and that is what
-              the scorecard uses.
+              <strong className="text-foreground">~7–10 minutes on the nethermind anchor</strong>{' '}
+              — using lodestar&apos;s clean re-read; its slow first attempt was an anchor artifact,
+              covered in the caveats below.
             </li>
             <li>
               <strong className="text-foreground">~22–23 minutes on the ethrex anchor</strong> — the
