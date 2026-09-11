@@ -429,7 +429,7 @@ function CandidateLifecycleDiagram() {
   return (
     <figure
       className="mt-4"
-      aria-label="run_candidate.sh state machine: resume guard, pre-install sequence, install, observation window, teardown — in that order for every candidate"
+      aria-label="run_candidate.sh state machine: resume guard, pre-install sequence, install, observation window, teardown, run in order on a clean pass — a resume-guard trip or a failed disk-floor check exits early before install and teardown, and a failed install skips only the observation window"
     >
       <div className="flex flex-col gap-1.5 sm:flex-row sm:items-stretch sm:gap-2">
         {candidateStages.map((stage, i) => (
@@ -440,14 +440,16 @@ function CandidateLifecycleDiagram() {
               <span className="mt-0.5 hidden text-[11px] text-muted-foreground sm:block">{stage.hint}</span>
             </div>
             {i < candidateStages.length - 1 && (
-              <ArrowDown className="mx-auto h-4 w-4 shrink-0 -rotate-90 text-muted-foreground sm:my-0 sm:rotate-0" aria-hidden="true" />
+              <ArrowDown className="mx-auto h-4 w-4 shrink-0 text-muted-foreground sm:my-0 sm:-rotate-90" aria-hidden="true" />
             )}
           </div>
         ))}
       </div>
       <figcaption className="mt-2 text-xs text-muted-foreground">
-        Every candidate passes through these five stages in order (skipped entirely if the resume guard trips).
-        Click any stage below for its exact thresholds, env vars, and exit codes.
+        A clean run passes through all five stages in order. Two early exits skip straight past install and
+        teardown: a resume-guard trip (already done) and a failed disk-floor check. A failed install skips only
+        the observation window — teardown still runs. Click any stage below for its exact thresholds, env vars,
+        and exit codes.
       </figcaption>
     </figure>
   )
