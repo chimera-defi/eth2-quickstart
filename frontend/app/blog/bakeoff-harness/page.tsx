@@ -779,10 +779,10 @@ export default function BakeoffHarnessPage() {
               <strong>Anchor watchdog</strong> (anchor mode only, and only while <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.anchor-poisoned</code> doesn&apos;t
               already exist): detects if the anchor EL silently dropped out of sync (service down, or{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing</code> no longer reporting caught-up). &ldquo;Caught-up&rdquo; allows the anchor to trail
-              the network head by up to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_ANCHOR_LAG_BLOCKS</code> (default 128) &mdash; some ELs
+              the network head by up to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_ANCHOR_LAG_BLOCKS</code> (default 128). Some ELs
               keep returning an <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing</code> object at tip with <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">highestBlock</code> set to the network
-              head, so while a CL is still warming up and nothing drives forkchoice the anchor legitimately trails by
-              a few blocks. Demanding an exact catch-up there poisoned healthy rows. A real re-snap drops 
+              head, so while a CL is still warming up and nothing drives forkchoice, the anchor legitimately trails by
+              a few blocks. Demanding an exact catch-up there poisoned healthy rows. A real re-snap drops
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">currentBlock</code> to ~0, so it still trips far inside the tolerance. Two consecutive misses (
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">anchor_miss_streak -ge 2</code>) touches <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.anchor-poisoned</code> and logs
               an error — <strong>detection only, it never restarts or kills anything</strong>, because the anchor EL
@@ -836,9 +836,11 @@ export default function BakeoffHarnessPage() {
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">disk-synced.tsv</code> doesn&apos;t exist). Then <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">apply_resource_caps.sh clear</code>,
             then <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">clean-data</code> again (scoped the same way as pre-install), then a final{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">disk-after-cleanup.tsv</code> snapshot, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ended_at_utc</code>,{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">touch .done</code>, and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'exit "$install_rc"'}</code> —{' '}
-            <strong>unless the crash-loop watchdog tripped</strong>, in which case the script exits{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">4</code> regardless of <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">install_rc</code>. A crash-looped row can still have{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">touch .done</code>, and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'exit "$install_rc"'}</code>.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            <strong>Unless the crash-loop watchdog tripped</strong> — then the script exits{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">4</code> regardless of <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">install_rc</code> instead. A crash-looped row can still have{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">install_exit_code=0</code> (the install itself succeeded; the client only started
             flapping afterward), so exiting 0 here would let <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code>/
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_queue.sh</code> record an invalid measurement as a clean run. All cleanup and
