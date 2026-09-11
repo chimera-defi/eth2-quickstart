@@ -187,7 +187,7 @@ const executionClients = [
 // the primary/complete sweep; geth anchor is the first cross-anchor confirmation re-run; nethermind
 // anchor is the second). Sorted by the ethrex-anchor footprint, the primary run. One pair swaps
 // order between anchors — lodestar/lighthouse (ethrex vs geth); on the nethermind anchor, teku
-// instead shows ~27% variance against itself across two runs (~667 MiB vs ~848 MiB), crossing
+// instead shows ~25% variance against itself across two runs (~667 MiB vs ~835 MiB), crossing
 // grandine's ~730 MiB and back — grandine < teku holds on all three anchors — but each pair stays
 // within its own tier (lightweight / mid), where the gap is small and measurement-window-sensitive
 // (RESULTS.md).
@@ -220,7 +220,7 @@ const consensusClients = [
     name: 'Teku',
     ethrexAnchorFootprint: '~2.1 GiB',
     gethAnchorFootprint: '~936 MiB',
-    nethermindAnchorFootprint: '~848 MiB',
+    nethermindAnchorFootprint: '~835 MiB',
     pruneLever: 'data-storage-mode=minimal',
     variant: 'default' as const,
   },
@@ -257,7 +257,7 @@ const fullMetrics = [
   { candidate: 'erigon × prysm', peers: '—', configOptimal: 'n/a (no-sync)', reRuns: 0, notable: 'CL CPU cap raised 200%→600% mid-run; advanced ~5k blocks then re-froze' },
   { candidate: 'CL sweep × ethrex anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 2, notable: "teku: JVM-OOM on first attempt (TEKU_CACHE fix); grandine's first attempt failed on a harness du bug" },
   { candidate: 'CL sweep × geth anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 0, notable: 'Cross-anchor confirmation re-run; the lightweight/mid/heavy tiers reproduced (lodestar↔lighthouse swapped within the lightweight pair, vs. the ethrex primary)' },
-  { candidate: 'CL sweep × nethermind anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 2, notable: "Second cross-anchor confirmation; teku re-measured (~667→~848 MiB across two runs on the same anchor, showing how window-sensitive the mid tier is); lodestar was re-measured after the anchor returned to head (~7m36s / ~178 MiB); its first attempt (~76m14s) was an anchor-gap artifact, not a lodestar property" },
+  { candidate: 'CL sweep × nethermind anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 2, notable: "Second cross-anchor confirmation; teku re-measured (~667→~835 MiB across two runs on the same anchor, showing how window-sensitive the mid tier is); lodestar was re-measured after the anchor returned to head (~7m36s / ~178 MiB); its first attempt (~76m14s) was an anchor-gap artifact, not a lodestar property" },
 ]
 
 const completedExecutionSyncs = [
@@ -1600,7 +1600,7 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-3 text-sm text-muted-foreground">
             The tiers held across all three anchors (see the CL scorecard above), with two
             order-instabilities: lodestar↔lighthouse swapped within the lightweight pair (ethrex
-            vs geth), and teku&apos;s own re-read variance on one anchor (~667 vs ~848 MiB)
+            vs geth), and teku&apos;s own re-read variance on one anchor (~667 vs ~835 MiB)
             crossed grandine and back. Grandine &lt; teku held on all three anchors, so that
             second one is measurement noise, not a real swap. Same three tiers, no identical
             total order, on three different EL anchors — that&apos;s EL/CL decoupling, supported
