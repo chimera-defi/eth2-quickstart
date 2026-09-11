@@ -51,7 +51,7 @@ const campaignFacts = [
   },
   {
     title: 'What we recorded',
-    body: 'Two numbers per client: final synced disk footprint and cold-sync duration. Footprint is the last near-cap du sample, never the mid-sync peak.',
+    body: 'Two numbers per client: final synced disk footprint and cold-sync duration. Footprint is the end-of-run datadir — for capped runs, the last du sample before the cap — never the mid-sync peak.',
   },
 ]
 
@@ -94,7 +94,7 @@ const clientIssues = [
   {
     name: 'Erigon',
     verdict: 'Avoid for now' as const,
-    issue: "OtterSync deadlocked against a checkpoint-synced consensus client — each side waited on the other and neither issued the handshake that would break the tie. Never produced a synced datadir in this campaign, even after raising its CPU cap 3x.",
+    issue: "OtterSync deadlocked against a checkpoint-synced consensus client — each side waited on the other and neither issued the forkchoiceUpdated call that would break the tie. Never produced a synced datadir in this campaign, even after the consensus client's CPU cap was raised 3x.",
   },
 ]
 
@@ -254,10 +254,10 @@ const fullMetrics = [
   { candidate: 'besu × prysm', peers: '~50', configOptimal: 'n/a from the harness gate; sync-flag audit: SNAP + Bonsai ✅', reRuns: 2, notable: 'Un-pruned run synced clean and is the ranked footprint; the pruned re-run deadlocked twice and was abandoned (no verdict)' },
   { candidate: 'reth × prysm', peers: '—', configOptimal: 'yes', reRuns: 1, notable: '578 samples; relaunched after --full fix; 47% by block / ~21% gas-weighted at cap' },
   { candidate: 'nimbus-eth1 × prysm', peers: '20–25', configOptimal: 'yes', reRuns: 1, notable: '72h continuous, 0 restarts; supersedes an earlier ~21 GB aborted run' },
-  { candidate: 'erigon × prysm', peers: '—', configOptimal: 'n/a (no-sync)', reRuns: 0, notable: 'CPU cap raised 200%→600% mid-run; advanced ~5k blocks then re-froze' },
+  { candidate: 'erigon × prysm', peers: '—', configOptimal: 'n/a (no-sync)', reRuns: 0, notable: 'CL CPU cap raised 200%→600% mid-run; advanced ~5k blocks then re-froze' },
   { candidate: 'CL sweep × ethrex anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 2, notable: "teku: JVM-OOM on first attempt (TEKU_CACHE fix); grandine's first attempt failed on a harness du bug" },
   { candidate: 'CL sweep × geth anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 0, notable: 'Cross-anchor confirmation re-run; the lightweight/mid/heavy tiers reproduced (lodestar↔lighthouse swapped within the lightweight pair, vs. the ethrex primary)' },
-  { candidate: 'CL sweep × nethermind anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 1, notable: "Second cross-anchor confirmation; teku re-measured (~667→~848 MiB across two runs on the same anchor, showing how window-sensitive the mid tier is); lodestar was re-measured after the anchor returned to head (~7m36s / ~178 MiB); its first attempt (~76m14s) was an anchor-gap artifact, not a lodestar property" },
+  { candidate: 'CL sweep × nethermind anchor (5 CLs)', peers: '—', configOptimal: 'yes (all 5)', reRuns: 2, notable: "Second cross-anchor confirmation; teku re-measured (~667→~848 MiB across two runs on the same anchor, showing how window-sensitive the mid tier is); lodestar was re-measured after the anchor returned to head (~7m36s / ~178 MiB); its first attempt (~76m14s) was an anchor-gap artifact, not a lodestar property" },
 ]
 
 const completedExecutionSyncs = [
@@ -438,7 +438,7 @@ export default function EthereumClientBakeoffPage() {
             <Card padding="sm" className="bg-muted/30">
               <h3 className="font-medium text-foreground">The twist — ethrex&apos;s restart-resync cliff</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Gaps through 23 minutes / 124 blocks resumed, while a 26-minute / 132-block gap stalled. Measured 1.5–2-hour gaps discarded synced state and triggered a full re-snap (~2h). This operability tax is the likely reason the fastest-syncing client in the field has close to zero real-world mainnet adoption.
+                Gaps through 23 minutes / 124 blocks resumed, while a 26-minute / 132-block gap stalled. Measured 1.5–2-hour gaps discarded synced state and triggered a full re-snap (~2h). This operability tax is a strong candidate explanation for why the fastest-syncing client in the field has close to zero real-world mainnet adoption.
               </p>
             </Card>
             <Card padding="sm" className="bg-muted/30">
@@ -813,10 +813,10 @@ export default function EthereumClientBakeoffPage() {
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             The when, where, and scope are in the card above. The method that shapes every number:
-            each candidate runs alone under a 72-hour cap, with its footprint read from the last
-            near-cap{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">du</code> sample rather
-            than the mid-sync peak. Two choices then need spelling out — why we hold the consensus
+            each candidate runs alone under a 72-hour cap, with its footprint read at the end of the
+            run — for capped runs, from the last{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">du</code> sample before
+            the cap — rather than the mid-sync peak. Two choices then need spelling out — why we hold the consensus
             client constant, and how we kept a mis-configured run from poisoning the results.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
@@ -1152,9 +1152,9 @@ export default function EthereumClientBakeoffPage() {
             ethrex snap-synced to a fully-validating head in{' '}
             <strong className="text-foreground">~2h16m</strong>, the fastest in the field by
             nearly 4×. Fifty peers throughout, one automatic stale-pivot self-heal (~4 min, no
-            intervention), no crash. On paper it&apos;s the star.
+            intervention), no crash. On paper it wins.
           </p>
-          <p className="mt-3 text-sm text-muted-foreground">Two things keep it out of the winners&apos; circle:</p>
+          <p className="mt-3 text-sm text-muted-foreground">Two things keep it off the recommended list:</p>
           <ol className="mt-3 list-inside list-decimal space-y-2 text-sm text-muted-foreground">
             <li>
               <span className="font-medium text-foreground">The footprint is settled now, and
@@ -1609,8 +1609,10 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-3 text-sm text-muted-foreground">
             The tiers reproduced across all three anchor ELs — a lightweight pair
             (lodestar, lighthouse), a mid pair (teku, grandine), and nimbus alone at the heavy end —
-            with two swaps: lodestar↔lighthouse within the lightweight pair (ethrex vs geth), and
-            teku itself across two runs on one anchor (~667 vs ~848 MiB). Three different EL anchors, the
+            with two order-instabilities: lodestar↔lighthouse swapped within the lightweight pair
+            (ethrex vs geth), and teku&apos;s own re-read variance on one anchor (~667 vs ~848 MiB)
+            crossed grandine and back — grandine &lt; teku held on all three anchors, so that one is
+            measurement noise, not a swap. Three different EL anchors, the
             same three tiers, no identical total order: EL/CL decoupling, supported empirically —
             which retroactively validates holding CL=prysm constant for the whole EL scorecard.
           </p>
@@ -1695,8 +1697,8 @@ export default function EthereumClientBakeoffPage() {
             </li>
             <li>
               <span className="font-medium text-foreground">Watch, don&apos;t yet deploy: ethrex.</span>{' '}
-              Fascinating and fastest, but the ~25-minute restart cliff makes it operationally
-              costly today. Its footprint is now settled too — a ~470–476 GiB plateau — but that&apos;s
+              The fastest cold sync in the field, but the ~25-minute restart cliff makes it
+              operationally costly today. Its footprint is now settled too — a ~470–476 GiB plateau — but that&apos;s
               not a disk win: it&apos;s a no-history node, and running its RPC in place of a
               full-history endpoint (this repo&apos;s nginx/Caddy feature) will silently fail on
               anything historical. Fast-moving client — v19.0.0 at first sync, v22.0.0 by
@@ -1730,8 +1732,9 @@ export default function EthereumClientBakeoffPage() {
             ethrex&apos;s ~25-minute restart cliff and besu&apos;s fragility to a stalled
             consensus client are exactly the kind of risk a cold-sync number never shows. That gap
             is the finding worth remembering — the axis that decides whether a client survives
-            production isn&apos;t the one on the benchmark chart, and it&apos;s why the
-            fastest-syncing client in this field is also the one almost nobody runs.
+            production isn&apos;t the one on the benchmark chart, and it&apos;s the strongest
+            candidate explanation for why the fastest-syncing client in this field is also the one
+            almost nobody runs.
           </p>
         </section>
 
