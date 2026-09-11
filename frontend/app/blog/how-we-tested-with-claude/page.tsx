@@ -276,7 +276,7 @@ const anchorInstabilityPoints = [
   },
   {
     lead: 'teku swung ~27% on the same anchor:',
-    body: '~667 MiB, then ~848 MiB on a clean re-read of the nethermind anchor — enough to cross grandine (~730 MiB) and back.',
+    body: '~667 MiB, then ~848 MiB on a clean re-read of the nethermind anchor — enough to flip it from below grandine (~730 MiB) to above it.',
   },
 ]
 
@@ -832,7 +832,7 @@ export default function HowWeTestedWithClaudePage() {
         <section className="mt-10 sm:mt-16">
           <AnchorHeading id="bottom-line" className="text-lg sm:text-xl font-semibold text-foreground">Bottom line</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            The point to take away: an agent can run a multi-week, disk-and-timing-sensitive benchmark
+            An agent can run a multi-week, disk-and-timing-sensitive benchmark
             unattended, but only because the design put its constraints in the right place &mdash; node
             time decoupled from agent time, conclusions pushed down into small durable files instead of
             carried in context, and every destructive or mergeable step routed through a human.
