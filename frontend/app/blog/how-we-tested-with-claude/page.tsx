@@ -47,7 +47,7 @@ const tldrPoints = [
 const planCards = [
   {
     title: 'What',
-    body: 'Two numbers per client that finished syncing: final synced disk footprint and cold-sync duration. Seven execution clients ran against a fixed Prysm — three never finished (erigon deadlocked; reth and nimbus_eth1 hit the 72h cap) and are reported as partial-at-cap instead. Five consensus clients ran against a fixed execution client.',
+    body: 'Two numbers for each client that finished syncing: final synced disk footprint and cold-sync duration. Seven execution clients ran against a fixed Prysm (three never finished — erigon deadlocked, reth and nimbus_eth1 hit the 72h cap), then a five-way consensus sweep against a fixed execution client.',
   },
   {
     title: 'How',
@@ -518,10 +518,9 @@ export default function HowWeTestedWithClaudePage() {
         <section className="mt-10 sm:mt-16">
           <AnchorHeading id="the-plan" className="text-lg sm:text-xl font-semibold text-foreground">The plan</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            One question, measured the same way for every client that finished: two numbers &mdash; final synced
-            disk footprint and cold-sync duration &mdash; on one shared host, one candidate at a time. Three
-            execution clients never finished (erigon deadlocked; reth and nimbus_eth1 hit the 72-hour cap) and are
-            reported as partial-at-cap instead.
+            One question, measured the same way for every client that finished (three didn&apos;t &mdash; erigon
+            deadlocked, reth and nimbus_eth1 hit the 72-hour cap): two numbers &mdash; final synced disk
+            footprint and cold-sync duration &mdash; on one shared host, one candidate at a time.
           </p>
           <div className="mt-4 grid gap-3 sm:gap-4 sm:grid-cols-3">
             {planCards.map((card) => (
