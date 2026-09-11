@@ -74,8 +74,8 @@ last_disk_bytes,residual_bytes,config_optimal,config_optimal_detail,fully_synced
 sync_duration,sync_only,last_el_block,el_bytes,cl_bytes,anchor_synced,crash_loop_detected`
 
 const queueFileExample = `# execution\\tconsensus\\treason  (TAB-separated; # comments and blank lines ignored)
-geth\\tprysm\\trerun after extract_archive -o fix (97541bd)
-nethermind\\tlodestar\\trerun: lodestar pruneHistory CLI-flag fix (77d939d)
+geth\\tprysm\\trerun after extract_archive -o fix
+nethermind\\tlodestar\\trerun: lodestar pruneHistory CLI-flag fix
 erigon\\tteku\\trerun: previous row crash-looped before the watchdog existed`
 
 const atAGlance = [
@@ -484,8 +484,7 @@ export default function BakeoffHarnessPage() {
           <p className="mt-3 text-sm text-muted-foreground">
             Results and methodology are documented in{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">CLIENT_BAKEOFF_RESULTS.md</code> (the source of truth for every number) and{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">CLIENT_BAKEOFF_BLOG.md</code> (the narrative writeup). This doc is about the <em>harness</em>,
-            not the findings.
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">CLIENT_BAKEOFF_BLOG.md</code> (the narrative writeup).
           </p>
           <div className="mt-4 flex flex-wrap gap-3 sm:mt-6">
             <Button href="/blog/ethereum-client-bakeoff" variant="secondary" size="sm">
@@ -511,7 +510,7 @@ export default function BakeoffHarnessPage() {
         <ArticleToc links={tocLinks} />
 
         {/* 1. Layout */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="layout" className="text-lg sm:text-xl font-semibold text-foreground">1. Layout</AnchorHeading>
           <StaticCodeBlock code={layoutTree} className="mt-4" />
           <p className="mt-4 text-sm text-muted-foreground">
@@ -526,10 +525,10 @@ export default function BakeoffHarnessPage() {
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">summarize.sh</code>) each set <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">set -Eeuo pipefail</code> and source{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">lib/common_functions.sh</code> for logging (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">log_info</code>/
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">log_warn</code>/<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">log_error</code>). <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">lib.sh</code> is
-            the exception noted in the layout above: it&apos;s a sourced library, never executed on its own, that
-            inherits strict mode from whichever script sources it and does not source{' '}
+            the exception noted in the layout above: it&apos;s a sourced library, never executed on its own. It
+            inherits strict mode from whichever script sources it, and doesn&apos;t source{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">common_functions.sh</code> itself — its <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">log_*</code> calls resolve at runtime
-            because every caller that uses its <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">log_*</code> paths (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_queue.sh</code>)
+            because every caller that uses those paths (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_queue.sh</code>)
             sourced <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">common_functions.sh</code> first. The one caller that doesn&apos;t —
             the CI guard <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">test_data_dirs_sync.sh</code> — only reads{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">BAKEOFF_DATA_DIRS</code> and never reaches a <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">log_*</code> call.
@@ -549,7 +548,7 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* 2. run_bakeoff.sh */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="run-bakeoff" className="text-lg sm:text-xl font-semibold text-foreground">
             2. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code> — the sequential orchestrator
           </AnchorHeading>
@@ -616,7 +615,7 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* 3. run_candidate.sh */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="run-candidate" className="text-lg sm:text-xl font-semibold text-foreground">
             3. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code> — the single-candidate state machine
           </AnchorHeading>
@@ -912,7 +911,7 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* 4. apply_resource_caps.sh */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="apply-resource-caps" className="text-lg sm:text-xl font-semibold text-foreground">
             4. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">apply_resource_caps.sh</code> — systemd runtime caps
           </AnchorHeading>
@@ -947,7 +946,7 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* 5. lib.sh */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="lib-sh" className="text-lg sm:text-xl font-semibold text-foreground">
             5. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">lib.sh</code> — the shared probe/sample/gate library
           </AnchorHeading>
@@ -1195,7 +1194,7 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* 6. run_anchor_rotation.sh */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="run-anchor-rotation" className="text-lg sm:text-xl font-semibold text-foreground">
             6. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code> — multi-EL anchor rotation
           </AnchorHeading>
@@ -1247,7 +1246,7 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* 7. run_queue.sh */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="run-queue" className="text-lg sm:text-xl font-semibold text-foreground">
             7. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_queue.sh</code> — async rerun-queue drain
           </AnchorHeading>
@@ -1355,7 +1354,7 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* 8. summarize.sh */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="summarize" className="text-lg sm:text-xl font-semibold text-foreground">
             8. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">summarize.sh</code> — aggregation
           </AnchorHeading>
@@ -1431,15 +1430,14 @@ export default function BakeoffHarnessPage() {
                 Plus placeholder <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">## Recommendation</code> /{' '}
                 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">## Final synced disk footprint</code> /{' '}
                 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">## Changes driven by this bake-off</code> sections with HTML comments telling the
-                human reviewer what to fill in — this file is a <em>skeleton</em> for the curated doc, not a
-                replacement for it.
+                human reviewer what to fill in.
               </p>
             </li>
           </ul>
         </section>
 
         {/* 9. Data model reference */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="data-model" className="text-lg sm:text-xl font-semibold text-foreground">9. Data model reference</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             Every file the harness writes, what writes it, and what&apos;s in it — {dataModelRows.length} entries.
@@ -1476,8 +1474,8 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* 10. Hardening fixes */}
-        <section className="mt-10 sm:mt-16">
-          <AnchorHeading id="hardening-fixes" className="text-lg sm:text-xl font-semibold text-foreground">10. Hardening fixes visible in the code</AnchorHeading>
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
+          <AnchorHeading id="hardening-fixes" className="text-lg sm:text-xl font-semibold text-foreground">10. Hardening fixes</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
             These are defensive patterns baked into the harness as a result of real failures during the campaign
             (see <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">CLIENT_BAKEOFF_ISSUES_LOG.md</code> for the incidents that motivated them):
@@ -1554,7 +1552,7 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* Bottom line */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="bottom-line" className="text-lg sm:text-xl font-semibold text-foreground">Bottom line</AnchorHeading>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground list-disc list-inside">
             <li>
@@ -1584,7 +1582,7 @@ export default function BakeoffHarnessPage() {
         </section>
 
         {/* See also */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="see-also" className="text-lg sm:text-xl font-semibold text-foreground">See also</AnchorHeading>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
             {seeAlsoLinks.map((link) => (
