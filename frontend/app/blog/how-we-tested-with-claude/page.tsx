@@ -15,6 +15,7 @@ export const metadata: Metadata = buildArticleMetadata('how-we-tested-with-claud
 
 const tocLinks = [
   { label: 'TL;DR', href: '#tldr' },
+  { label: 'The plan', href: '#the-plan' },
   { label: 'At a glance', href: '#at-a-glance' },
   { label: 'The shape of the problem', href: '#shape-of-the-problem' },
   { label: 'The orchestration model', href: '#orchestration-model' },
@@ -34,11 +35,78 @@ const tldrPoints = [
   },
   {
     title: 'Non-negotiable governance, not vibes',
-    body: 'One candidate at a time, a 72-hour cap, destructive actions gated behind explicit human confirmation, only a human merges. Concretely: the follow-up prune experiment wiped a synced 1.1 TiB node only after an explicit go-ahead, then put the measured nethermind minimal-history default up as a PR for a human to review and merge — the agent never merged it.',
+    body: 'One candidate at a time, a 72-hour cap, destructive actions gated behind explicit human confirmation, only a human merges. The prune experiment wiped a synced 1.1 TiB node only after an explicit go-ahead, then put the measured nethermind minimal-history default up as a PR for a human to review and merge — the agent never merged it.',
   },
   {
     title: 'The headline numbers hide operational limits',
-    body: "ethrex is the fastest cold-sync in the field but is not production-ready as tested: a 26-minute/132-block restart gap stalled, and longer measured gaps caused a full re-snap. Its datadir plateaus at ~470–476 GiB, but that's not a disk win — it's a no-history node. besu did sync successfully; its pruned re-run exposed fragility after a prolonged outage of the pinned Prysm version.",
+    body: "ethrex is the fastest cold-sync in the field but is not production-ready as tested: a 26-minute/132-block restart gap stalled, and longer measured gaps caused a full re-snap. Its datadir plateaus at ~470–476 GiB, but that's not a disk win — it's a no-history node. besu synced successfully; its pruned re-run exposed fragility after a prolonged outage of the pinned Prysm version.",
+  },
+]
+
+const planCards = [
+  {
+    title: 'What',
+    body: 'Two numbers per client: final synced disk footprint and cold-sync duration. Seven execution clients against a fixed Prysm, then a five-way consensus sweep against a fixed execution client.',
+  },
+  {
+    title: 'How',
+    body: 'Native systemd services, no Docker, one candidate at a time on a shared 12-core / ~62 GB host. Each run is capped at 72 hours; footprint is the last sample before teardown, never the peak.',
+  },
+  {
+    title: 'When',
+    body: 'A 23-day initial campaign (Jun 22 → Jul 14, 2026), then a steady-state re-measure and restart-resume follow-ons through Aug 4 — six weeks end to end.',
+  },
+]
+
+// Every date is a shipped fix or completed measurement run, cross-checked against
+// CLIENT_BAKEOFF_RESULTS.md and the repo's merged-PR history — none invented or approximated.
+// The flat date list is grouped into three phases; every milestone is preserved.
+const campaignPhases = [
+  {
+    name: 'Phase 1 — Initial measurement campaign',
+    range: 'Jun 22 → Jul 14, 2026',
+    note: '23 days',
+    summary:
+      'Seven execution clients against a fixed Prysm, then a five-way consensus sweep. Triage, installer fixes, and the first full syncs.',
+    milestones: [
+      { date: '2026-06-22', label: 'Campaign starts, Stage A triage begins' },
+      { date: '2026-06-26', label: 'Stage-A installer fixes shipped' },
+      { date: '2026-07-01', label: 'besu completes un-pruned sync' },
+      { date: '2026-07-05', label: 'besu pruned re-run abandoned, deadlocked twice' },
+      { date: '2026-07-06', label: 'CL sweep vs ethrex anchor, 5 CLs' },
+      { date: '2026-07-08', label: 'CL cross-check vs geth anchor' },
+      { date: '2026-07-10', label: 'ethrex restart-cliff bisected, geth 52h resume verified' },
+      { date: '2026-07-13', label: 'Installer / config correctness fixes shipped' },
+      { date: '2026-07-13', label: 'nimbus_eth1 72h capped run completes' },
+      { date: '2026-07-14', label: 'Initial campaign closes — harness and results docs shipped' },
+    ],
+  },
+  {
+    name: 'Phase 2 — Steady-state re-measure',
+    range: 'Jul 26 → Jul 29, 2026',
+    note: 'footprints settled',
+    summary:
+      'Re-read footprints once compaction settled, plus a third CL sweep against a nethermind anchor.',
+    milestones: [
+      { date: '2026-07-26', label: 'Third anchor: CL sweep re-run against nethermind' },
+      { date: '2026-07-28', label: 'Steady-state re-measure: ethrex plateau confirmed (~470–476 GiB)' },
+      { date: '2026-07-29', label: 'EL-disk convergence reframe published (no disk winner)' },
+    ],
+  },
+  {
+    name: 'Phase 3 — Restart-resume & prune follow-ons',
+    range: 'Jul 31 → Aug 4, 2026',
+    note: 'EXP-A / EXP-C',
+    summary:
+      'Restart-resume experiments (EXP-A), the minimal-history prune default (EXP-C), and shipping it as a human-reviewed PR.',
+    milestones: [
+      { date: '2026-07-31', label: 'EXP-A: nethermind fresh re-sync 1h53m (establish run)' },
+      { date: '2026-08-01', label: 'Steady-state re-measure: nethermind full-history datadir ~1.06 TiB' },
+      { date: '2026-08-01', label: 'EXP-A: nethermind resumes a 10,607-block gap in 35 min — restart-resume measured' },
+      { date: '2026-08-03', label: 'EXP-A bisection: no cliff at any gap (12 min → ~35h); prysm clean-resume measured, n=4' },
+      { date: '2026-08-03', label: 'EXP-C: nethermind prune tuning → minimal-history default (~250–280 GiB, no-history tier) measured and shipped as a human-reviewed PR' },
+      { date: '2026-08-04', label: 'Minimal-history default merged to master, live on eth2quickstart.com (#227→#229)' },
+    ],
   },
 ]
 
@@ -89,28 +157,23 @@ const controlLoopSteps = [
   'Small durable state: results, queue, handoff',
 ]
 
-// Every date is a shipped fix or completed measurement run, cross-checked against
-// CLIENT_BAKEOFF_RESULTS.md and the repo's merged-PR history — none invented or approximated.
-const campaignTimeline = [
-  { date: '2026-06-22', label: 'Campaign starts, Stage A triage begins' },
-  { date: '2026-06-26', label: 'Stage-A installer fixes shipped' },
-  { date: '2026-07-01', label: 'besu completes un-pruned sync' },
-  { date: '2026-07-05', label: 'besu pruned re-run abandoned, deadlocked twice' },
-  { date: '2026-07-06', label: 'CL sweep vs ethrex anchor, 5 CLs' },
-  { date: '2026-07-08', label: 'CL cross-check vs geth anchor' },
-  { date: '2026-07-10', label: 'ethrex restart-cliff bisected, geth 52h resume verified' },
-  { date: '2026-07-13', label: 'Installer / config correctness fixes shipped' },
-  { date: '2026-07-13', label: 'nimbus_eth1 72h capped run completes' },
-  { date: '2026-07-14', label: 'Initial campaign closes — harness and results docs shipped' },
-  { date: '2026-07-26', label: 'Third anchor: CL sweep re-run against nethermind' },
-  { date: '2026-07-28', label: 'Steady-state re-measure: ethrex plateau confirmed (~470–476 GiB)' },
-  { date: '2026-07-29', label: 'EL-disk convergence reframe published (no disk winner)' },
-  { date: '2026-07-31', label: 'EXP-A: nethermind fresh re-sync 1h53m (establish run)' },
-  { date: '2026-08-01', label: 'Steady-state re-measure: nethermind full-history datadir ~1.06 TiB' },
-  { date: '2026-08-01', label: 'EXP-A: nethermind resumes a 10,607-block gap in 35 min — restart-resume measured' },
-  { date: '2026-08-03', label: 'EXP-A bisection: no cliff at any gap (12 min → ~35h); prysm clean-resume measured, n=4' },
-  { date: '2026-08-03', label: 'EXP-C: nethermind prune tuning → minimal-history default (~250–280 GiB, no-history tier) measured and shipped as a human-reviewed PR' },
-  { date: '2026-08-04', label: 'Minimal-history default merged to master, live on eth2quickstart.com (#227→#229)' },
+const shapePoints = [
+  {
+    lead: "It's slow.",
+    body: 'A single mainnet sync ranges from ~2 hours (ethrex, snap) to never finishes in three days (the full-sync-only clients). Each candidate got a 72-hour cap.',
+  },
+  {
+    lead: "It's sequential.",
+    body: 'One shared host, one execution slot, one consensus slot — geth and nethermind side by side would contend for CPU, IO, and peers, so candidates run strictly one at a time.',
+  },
+  {
+    lead: "It's easy to measure the wrong thing.",
+    body: 'A client that "installed and followed the chain" can be silently broken (0 peers, frozen head); a datadir number means nothing if the client was running in archive mode; a footprint sampled mid-compaction over-counts.',
+  },
+  {
+    lead: "It's destructive.",
+    body: "Measuring the next client means wiping the last one's datadir on a shared box that also runs other people's work.",
+  },
 ]
 
 // What's actually implemented (test/bakeoff/lib.sh, run_candidate.sh) — no peer-count check
@@ -131,6 +194,44 @@ const stalledOutcome = {
   trigger: 'restart budget exhausted (opt-in stall-watchdog) after block number or head slot fails to advance; the harness flags the row instead of spinning to the 72-hour cap',
   variant: 'default' as const,
 }
+
+const durableStatePoints = [
+  {
+    lead: 'Push conclusions down to where the data lives.',
+    body: 'Each sample collapses to a couple of flags in env.txt — fully_synced=yes after two consecutive clean samples, or (with the stall-watchdog armed) .stalled once bounded restarts are exhausted — so the agent reads a file, not a log.',
+  },
+  {
+    lead: 'Keep durable state small and in files.',
+    body: 'Results, governance rules, the queue, and a live self-handoff note live in a handful of markdown files — a mid-campaign context clear becomes a non-event.',
+  },
+  {
+    lead: 'Keep transient investigation off the context path.',
+    body: 'Logs, probes, and sample dumps are ephemeral: computed, summarized, dropped — never carried.',
+  },
+]
+
+const governancePoints = [
+  {
+    lead: 'One candidate at a time. No batching.',
+    body: 'Ever.',
+  },
+  {
+    lead: '72-hour cap',
+    body: "per candidate; footprint is the last sample before teardown — at sync for a synced client, at the cap for a capped one — never the peak. On-disk size oscillates during compaction: reth's max sample read 1.06 TiB against the ~0.98 TiB captured at the 72h cap.",
+  },
+  {
+    lead: 'Destructive data-cleans are gated',
+    body: 'behind explicit confirmation, and wiping the live shared node always required a fresh human go-ahead.',
+  },
+  {
+    lead: 'Conventional Commits, new commits only,',
+    body: 'never a force-push to master; secrets stayed in protected local files and were never committed or exposed to agent context.',
+  },
+  {
+    lead: 'An agent cannot merge its own pull request.',
+    body: 'A human does that.',
+  },
+]
 
 const harnessPipelineSteps = [
   'Candidate manifest → run_bakeoff.sh (walks one candidate at a time)',
@@ -167,6 +268,58 @@ const harnessScripts = [
   { name: 'run_anchor_rotation.sh', path: 'test/bakeoff/run_anchor_rotation.sh', desc: 'the anchor-preserving mode used for the consensus-client sweep.' },
 ]
 
+const anchorInstabilityPoints = [
+  {
+    lead: 'lodestar ↔ lighthouse flipped between anchors:',
+    body: 'geth: lodestar < lighthouse; ethrex: lighthouse < lodestar.',
+  },
+  {
+    lead: 'teku swung ~27% on the same anchor:',
+    body: '~667 MiB, then ~848 MiB on a clean re-read of the nethermind anchor — enough to cross grandine (~730 MiB) and back.',
+  },
+]
+
+const anchorCaveatPoints = [
+  {
+    lead: "lodestar's first run was a measurement artifact.",
+    body: 'It started while the anchor EL was still closing an unrelated block gap, inflating its recorded sync time to ~76 minutes versus ~10 for the other four. We discarded it for a clean re-read (~7m36s, ~178 MiB).',
+  },
+  {
+    lead: "teku's run tripped a false positive.",
+    body: 'The watchdog flagged it anchor_synced=no even though the anchor was independently verified healthy — a false positive in the check, not in the anchor.',
+  },
+]
+
+const harnessBugPoints = [
+  {
+    lead: 'The detached-shell landmine (SIGTTIN).',
+    body: "An install step shelled out to geth version | head -1 to log the binary version. Run from a detached tmux session in a non-foreground process group, that read raised SIGTTIN against a tty it didn't own — which stops (not kills) the whole subtree — and hung a run for 90 minutes. Fix: redirect stdin from /dev/null on unattended invocations.",
+  },
+  {
+    lead: 'The measurement that vanished at the cap.',
+    body: "The disk snapshot was taken only on the synced success branch. When a slow client hit the 72-hour cap, the script fell through to teardown — which wiped the datadir — and snapshotted after. Fix: snapshot every terminal run path after installation and before teardown; preflight aborts still exit before sampling. The cap path is the one you forget, and it's the one a slow client actually takes.",
+  },
+]
+
+const nextPersonPoints = [
+  {
+    lead: 'The third clock is the real limit.',
+    body: 'Node wall-clock and agent wall-clock are solvable with infrastructure; agent context only scales if you push conclusions to the data and keep durable state in small files.',
+  },
+  {
+    lead: 'Measure on every exit path, before you destroy anything.',
+    body: 'Success is the easy path. The cap and the error paths are where your data quietly disappears.',
+  },
+  {
+    lead: 'Gate your benchmark on config, not just on outcome.',
+    body: 'Stamp every number with "was this the client’s best mode?" or you will eventually publish a measurement of your own mistake.',
+  },
+  {
+    lead: 'Give an agent a job and a fence.',
+    body: 'The agent owns the tedious, sustained correctness; the human owns the few irreversible levers.',
+  },
+]
+
 const reproduceLinks = [
   { label: 'The harness', href: `${SITE_CONFIG.github}/tree/master/test/bakeoff` },
   { label: 'The harness, function-by-function', href: `${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_HARNESS.md` },
@@ -175,6 +328,18 @@ const reproduceLinks = [
   { label: 'The war stories', href: `${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_ISSUES_LOG.md` },
   { label: 'Running a node for real', href: `${SITE_CONFIG.github}/blob/master/docs/blog/CLIENT_BAKEOFF_OPERATOR_GUIDE.md` },
 ]
+
+function LeadList({ items }: { items: { lead: string; body: string }[] }) {
+  return (
+    <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+      {items.map((item) => (
+        <li key={item.lead}>
+          <span className="font-medium text-foreground">{item.lead}</span> {item.body}
+        </li>
+      ))}
+    </ul>
+  )
+}
 
 function FlowDiagram({ steps, loopBackTo, loopLabel }: { steps: string[]; loopBackTo?: string; loopLabel?: string }) {
   return (
@@ -204,6 +369,32 @@ function FlowDiagram({ steps, loopBackTo, loopLabel }: { steps: string[]; loopBa
   )
 }
 
+function PhasedTimeline() {
+  return (
+    <div className="mt-4 space-y-4">
+      {campaignPhases.map((phase) => (
+        <div key={phase.name} className="rounded-lg border border-border bg-muted/20 p-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <h4 className="font-medium text-foreground">{phase.name}</h4>
+            <span className="font-mono text-xs text-primary">{phase.range}</span>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {phase.summary} <span className="text-foreground">({phase.note})</span>
+          </p>
+          <ol className="mt-3 space-y-1.5">
+            {phase.milestones.map((milestone, index) => (
+              <li key={`${milestone.date}-${index}`} className="flex gap-3 text-xs">
+                <span className="w-[5.5rem] shrink-0 font-mono text-primary">{milestone.date}</span>
+                <span className="text-muted-foreground">{milestone.label}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function AgentHierarchy() {
   return (
     <div className="mt-4">
@@ -229,26 +420,6 @@ function AgentHierarchy() {
       <div className="mx-auto mt-3 flex w-fit flex-col items-center gap-1 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-1.5">
         <ArrowUp className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
         <span className="text-xs text-muted-foreground">summary only, not full context &mdash; returns to the orchestrator</span>
-      </div>
-    </div>
-  )
-}
-
-function CampaignTimeline() {
-  return (
-    <div
-      className="mt-4 overflow-x-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-      role="region"
-      aria-label="six-week campaign timeline"
-      tabIndex={0}
-    >
-      <div className="flex gap-3 pb-2" style={{ minWidth: 'max-content' }}>
-        {campaignTimeline.map((item) => (
-          <div key={item.date} className="w-40 shrink-0 rounded-lg border border-border bg-muted/30 p-3">
-            <p className="font-mono text-xs text-primary">{item.date}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{item.label}</p>
-          </div>
-        ))}
       </div>
     </div>
   )
@@ -298,10 +469,9 @@ export default function HowWeTestedWithClaudePage() {
             How we ran a six-week Ethereum client bake-off with Claude
           </h1>
           <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground">
-            That post was about the clients. This one is about the machine that tested them: the agent
-            orchestration model, the harness we built to keep ourselves honest, and what actually breaks
-            when a benchmark runs for six weeks (an initial 23-day campaign, then a steady-state and
-            restart-resume phase) on a shared host with an AI in the driver&apos;s seat.
+            The results post is about the clients. This one is about the machine that tested them: the
+            agent orchestration model, the harness that kept us honest, and what actually breaks when a
+            benchmark runs for six weeks on a shared host with an AI in the driver&apos;s seat.
           </p>
           <div className="mt-4 flex flex-wrap gap-3 sm:mt-6">
             <Button href="/blog/ethereum-client-bakeoff" variant="secondary" size="sm">
@@ -321,12 +491,12 @@ export default function HowWeTestedWithClaudePage() {
 
         <Card padding="sm" className="mt-8 border-primary/20 bg-primary/5">
           <p className="text-sm text-foreground">
-            <span className="font-medium">Up front, honestly:</span> this was AI-<em>driven</em>, not
-            AI-<em>unsupervised</em>. Every destructive action against the live node was gated behind an
-            explicit human confirmation, every result was committed under conventional-commit review, and
-            no agent could merge its own pull request. The claim isn&apos;t &ldquo;the AI did it
-            alone.&rdquo; It&apos;s that the right division of labor between an agent and an operator let
-            a disk-and-timing-sensitive benchmark run to completion without a person watching it sync.
+            This was AI-<em>driven</em>, not AI-<em>unsupervised</em>. Every destructive action against
+            the live node was gated behind an explicit human confirmation, every result was committed
+            under conventional-commit review, and no agent could merge its own pull request. The claim
+            isn&apos;t &ldquo;the AI did it alone&rdquo; &mdash; it&apos;s that the right division of
+            labor between an agent and an operator let a disk-and-timing-sensitive benchmark run to
+            completion without a person watching it sync.
           </p>
         </Card>
 
@@ -341,6 +511,39 @@ export default function HowWeTestedWithClaudePage() {
                 <p className="mt-1 text-sm text-muted-foreground">{point.body}</p>
               </Card>
             ))}
+          </div>
+        </section>
+
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="the-plan" className="text-lg sm:text-xl font-semibold text-foreground">The plan</AnchorHeading>
+          <p className="mt-2 text-sm text-muted-foreground">
+            One question, measured the same way for every client: two numbers &mdash; final synced disk
+            footprint and cold-sync duration &mdash; on one shared host, one candidate at a time.
+          </p>
+          <div className="mt-4 grid gap-3 sm:gap-4 sm:grid-cols-3">
+            {planCards.map((card) => (
+              <Card key={card.title} padding="sm" className="bg-muted/30">
+                <h3 className="font-medium text-foreground">{card.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{card.body}</p>
+              </Card>
+            ))}
+          </div>
+
+          <div className="mt-8">
+            <AnchorHeading id="campaign-timeline" as="h3" className="font-medium text-foreground">
+              Six weeks, in three phases
+            </AnchorHeading>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Phase 1 was the 23-day initial campaign; Phases 2 and 3 are the steady-state and
+              restart-resume follow-ons that extended it to six weeks &mdash; on the same host, with no
+              change to the orchestration model.
+            </p>
+            <PhasedTimeline />
+            <p className="mt-2 text-xs text-muted-foreground">
+              Every date is a shipped fix or a completed measurement run, sourced from{' '}
+              <a href={`${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_RESULTS.md`} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">CLIENT_BAKEOFF_RESULTS.md</a>
+              {' '}and the repo&apos;s merged-PR history &mdash; not reconstructed from memory.
+            </p>
           </div>
         </section>
 
@@ -412,34 +615,17 @@ export default function HowWeTestedWithClaudePage() {
               state instead of reconstructing a run from raw logs.
             </p>
           </div>
-
-          <div className="mt-8">
-            <AnchorHeading id="campaign-timeline" as="h3" className="font-medium text-foreground">
-              Six-week campaign &mdash; key dates
-            </AnchorHeading>
-            <CampaignTimeline />
-            <p className="mt-2 text-xs text-muted-foreground">
-              Every date is a shipped fix or a completed measurement run, sourced from{' '}
-              <a href={`${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_RESULTS.md`} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">CLIENT_BAKEOFF_RESULTS.md</a>
-              {' '}and the repo&apos;s merged-PR history &mdash; not reconstructed from memory.
-            </p>
-          </div>
         </section>
 
         <section className="mt-10 sm:mt-16">
           <AnchorHeading id="shape-of-the-problem" className="text-lg sm:text-xl font-semibold text-foreground">The shape of the problem</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">Benchmarking a sync client is deceptively expensive:</p>
-          <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
-            <li><span className="font-medium text-foreground">It&apos;s slow.</span> A single mainnet sync ranges from ~2 hours (ethrex, snap) to never finishes in three days (the full-sync-only clients). Each candidate got a 72-hour cap.</li>
-            <li><span className="font-medium text-foreground">It&apos;s sequential.</span> One shared host, one execution slot, one consensus slot &mdash; geth and nethermind side by side would contend for CPU, IO, and peers, so candidates run strictly one at a time.</li>
-            <li><span className="font-medium text-foreground">It&apos;s easy to measure the wrong thing.</span> A client that &ldquo;installed and followed the chain&rdquo; can be silently broken (0 peers, frozen head); a datadir number means nothing if the client was running in archive mode; a footprint sampled mid-compaction over-counts.</li>
-            <li><span className="font-medium text-foreground">It&apos;s destructive.</span> Measuring the next client means wiping the last one&apos;s datadir on a shared box that also runs other people&apos;s work.</li>
-          </ul>
+          <LeadList items={shapePoints} />
           <p className="mt-4 text-sm text-muted-foreground">
-            Multiply that across the whole supported field of clients and you have a task defined less by
-            any single hard step than by <em>sustained correctness</em> &mdash; the discipline to run the
-            same careful protocol dozens of times, preserve the terminal measurement before teardown, and
-            never let a shared-host quirk masquerade as a client property.
+            Multiply that across the whole supported field of clients, and the real difficulty isn&apos;t
+            any single hard step &mdash; it&apos;s <em>sustained correctness</em>: the discipline to run
+            the same careful protocol dozens of times, preserve the terminal measurement before teardown,
+            and never let a shared-host quirk masquerade as a client property.
           </p>
         </section>
 
@@ -456,7 +642,10 @@ export default function HowWeTestedWithClaudePage() {
             1. The node runs; the agent doesn&apos;t watch it run
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            Every client runs as a native systemd service (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth1.service</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">cl.service</code>, no Docker) in a detached tmux session &mdash; a sync proceeds for 72 hours whether or not any Claude session is alive. The orchestrating session did die mid-run more than once (once to an out-of-memory event); the systemd unit and its sampler kept going, and a fresh session picked the campaign back up from durable state with nothing lost. Instead of polling logs, the agent armed event-driven watchers that fire one notification on a terminal condition, so the orchestrator slept until something decision-worthy happened.
+            Every client runs as a native systemd service (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth1.service</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">cl.service</code>, no Docker) in a detached tmux session &mdash; a sync proceeds for 72 hours whether or not any Claude session is alive. The orchestrating session did die mid-run more than once (once to an out-of-memory event); the systemd unit and its sampler kept going, and a fresh session picked the campaign back up from durable state with nothing lost.
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Instead of polling logs, the agent armed event-driven watchers that fire one notification on a terminal condition, so the orchestrator slept until something decision-worthy happened.
           </p>
 
           <AnchorHeading id="three-tiers-of-agent" as="h3" className="mt-6 font-medium text-foreground">
@@ -518,26 +707,19 @@ export default function HowWeTestedWithClaudePage() {
             The harness had already solved node time. But every status check, every &ldquo;is it
             stalled?&rdquo; pulled raw <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">journalctl</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">du</code>, and RPC output into the context window, and that filled up in hours, not weeks. The fix was architectural:
           </p>
-          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-            <li><span className="font-medium text-foreground">Push conclusions down to where the data lives.</span> Each sample collapses to a couple of flags in <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">env.txt</code> &mdash; <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">fully_synced=yes</code> after two consecutive clean samples, or (with the stall-watchdog armed) <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.stalled</code> once bounded restarts are exhausted &mdash; so the agent reads a file, not a log.</li>
-            <li><span className="font-medium text-foreground">Keep durable state small and in files.</span> Results, governance rules, the queue, and a live self-handoff note live in a handful of markdown files &mdash; a mid-campaign context clear becomes a non-event.</li>
-            <li><span className="font-medium text-foreground">Keep transient investigation off the context path.</span> Logs, probes, and sample dumps are ephemeral: computed, summarized, dropped &mdash; never carried.</li>
-          </ul>
+          <LeadList items={durableStatePoints} />
           <VerdictDiagram />
           <p className="mt-3 text-xs text-muted-foreground">
-            This is what&apos;s actually implemented, not a peer-aware state machine: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced()</code> checks <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">sync_distance</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">is_optimistic</code>, and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">el_offline</code> together &mdash; already enough to avoid trusting <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing=false</code> alone &mdash; but there&apos;s no peer-count check anywhere, and the stall-watchdog is opt-in. nethermind&apos;s 13.3h loopback stall (see the table above) predates the watchdog: the harness correctly never reported it synced, but nothing flagged the run as <em>stuck</em> rather than <em>still syncing</em> &mdash; that gap is exactly what motivated building the watchdog afterward.
+            This is what&apos;s actually implemented, not a peer-aware state machine: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced()</code> checks <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">sync_distance</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">is_optimistic</code>, and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">el_offline</code> together &mdash; already enough to avoid trusting <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing=false</code> alone &mdash; but there&apos;s no peer-count check anywhere, and the stall-watchdog is opt-in.
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            nethermind&apos;s 13.3h loopback stall (see the table above) predates the watchdog: the harness correctly never reported it synced, but nothing flagged the run as <em>stuck</em> rather than <em>still syncing</em> &mdash; that gap is exactly what motivated building the watchdog afterward.
           </p>
 
           <AnchorHeading id="governance" as="h3" className="mt-6 font-medium text-foreground">
             4. Governance the agent could not override
           </AnchorHeading>
-          <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
-            <li><span className="font-medium text-foreground">One candidate at a time. No batching.</span> Ever.</li>
-            <li><span className="font-medium text-foreground">72-hour cap</span> per candidate; footprint is the last sample before teardown &mdash; at sync for a synced client, at the cap for a capped one &mdash; never the peak. On-disk size oscillates during compaction: reth&apos;s max sample read 1.06 TiB against the ~0.98 TiB captured at the 72h cap.</li>
-            <li><span className="font-medium text-foreground">Destructive data-cleans are gated</span> behind explicit confirmation, and wiping the live shared node always required a fresh human go-ahead.</li>
-            <li><span className="font-medium text-foreground">Conventional Commits, new commits only</span>, never a force-push to master; secrets stayed in protected local files and were never committed or exposed to agent context.</li>
-            <li><span className="font-medium text-foreground">An agent cannot merge its own pull request.</span> A human does that.</li>
-          </ul>
+          <LeadList items={governancePoints} />
         </section>
 
         <section className="mt-10 sm:mt-16">
@@ -559,6 +741,10 @@ export default function HowWeTestedWithClaudePage() {
               </li>
             ))}
           </ul>
+          <p className="mt-3 text-sm text-muted-foreground">
+            The function-by-function breakdown &mdash; every script, flag, and watchdog &mdash; lives in{' '}
+            <a href="/blog/bakeoff-harness" className="text-primary underline underline-offset-2">the bake-off harness post</a>. This section keeps to the parts that shaped how the campaign ran.
+          </p>
 
           <div className="mt-8">
             <AnchorHeading id="harness-pipeline" as="h3" className="font-medium text-foreground">
@@ -578,7 +764,10 @@ export default function HowWeTestedWithClaudePage() {
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             So the harness grew a config-optimality gate: before trusting a footprint, it inspects the
-            actually-running config and stamps every row <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes|no</code>; <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">summarize.sh</code> quarantines non-optimal rows in a &ldquo;superseded&rdquo; section. The gate needed six bug-fixes across three review rounds before we trusted it &mdash; every one the same species (&ldquo;the flag I asserted on doesn&apos;t match the real generated config&rdquo;) &mdash; the exact failure mode the gate exists to catch, turned on itself.
+            actually-running config and stamps every row <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes|no</code>; <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">summarize.sh</code> quarantines non-optimal rows in a &ldquo;superseded&rdquo; section.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            The gate needed six bug-fixes across three review rounds before we trusted it &mdash; every one the same species (&ldquo;the flag I asserted on doesn&apos;t match the real generated config&rdquo;). That&apos;s the exact failure mode the gate exists to catch, turned on itself.
           </p>
 
           <AnchorHeading id="anchor-preserving-mode" as="h3" className="mt-6 font-medium text-foreground">
@@ -594,47 +783,32 @@ export default function HowWeTestedWithClaudePage() {
             We ran the sweep three times &mdash; against an ethrex anchor, a geth anchor, and a nethermind
             anchor &mdash; to prove the EL/CL decoupling empirically. The same three tiers reproduced on
             all three anchors: a lightweight pair (lodestar, lighthouse), a mid pair (teku, grandine), and
-            nimbus alone at the heavy end &mdash; with the caveat that within-tier order is soft: the
-            lodestar&harr;lighthouse order flipped between the ethrex and geth anchors (geth: lodestar
-            &lt; lighthouse; ethrex: lighthouse &lt; lodestar), and teku moved ~27% between two runs on
-            the <em>same</em>{' '}
-            nethermind anchor (~667 MiB, then ~848 MiB on a clean re-read) &mdash; enough to cross
-            grandine (~730 MiB) and back. Each client stayed inside its own tier; the ordering within
-            a tier tracks the measurement window more than the client. That instability is itself the
-            finding.
+            nimbus alone at the heavy end.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
-            The nethermind-anchor sweep also surfaced two harness-fidelity caveats worth carrying forward:
+            Within-tier order is soft, though &mdash; and that instability is itself the finding:
           </p>
-          <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
-            <li>lodestar&apos;s first run happened to start while the anchor EL was
-            still closing an unrelated block gap, inflating its recorded sync time to ~76 minutes
-            versus ~10 for the other four &mdash; a measurement artifact, not a lodestar result, and
-            one we discarded in favour of a clean re-read (~7m36s, ~178 MiB).</li>
-            <li>teku&apos;s
-            run was flagged{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">anchor_synced=no</code>{' '}
-            by the watchdog even though the anchor was independently verified healthy &mdash; a false
-            positive in the check, not in the anchor.</li>
-          </ul>
+          <LeadList items={anchorInstabilityPoints} />
+          <p className="mt-3 text-sm text-muted-foreground">
+            Each client stayed inside its own tier; the ordering within a tier tracks the measurement
+            window more than the client. The nethermind-anchor sweep also surfaced two harness-fidelity
+            caveats worth carrying forward:
+          </p>
+          <LeadList items={anchorCaveatPoints} />
 
           <AnchorHeading id="two-harness-bugs" as="h3" className="mt-6 font-medium text-foreground">
             Two harness bugs that nearly cost us data
           </AnchorHeading>
-          <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
-            <li><span className="font-medium text-foreground">The detached-shell landmine (SIGTTIN).</span> An install step shelled out to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">geth version | head -1</code> to log the binary version. Run from a detached tmux session in a non-foreground process group, that read raised SIGTTIN against a tty it didn&apos;t own &mdash; which stops (not kills) the whole subtree &mdash; and hung a run for 90 minutes. Fix: redirect stdin from /dev/null on unattended invocations.</li>
-            <li><span className="font-medium text-foreground">The measurement that vanished at the cap.</span> The disk snapshot was taken only on the synced success branch. When a slow client hit the 72-hour cap, the script fell through to teardown &mdash; which wiped the datadir &mdash; and snapshotted after. Fix: snapshot every terminal run path after installation and before teardown; preflight aborts still exit before sampling. The cap path is the one you forget, and it&apos;s the one a slow client actually takes.</li>
-          </ul>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Beyond the four client incidents above, two bugs lived in the harness itself &mdash; the kind
+            you only meet once automation genuinely runs unattended:
+          </p>
+          <LeadList items={harnessBugPoints} />
         </section>
 
         <section className="mt-10 sm:mt-16">
           <AnchorHeading id="next-person" className="text-lg sm:text-xl font-semibold text-foreground">What we&apos;d tell the next person</AnchorHeading>
-          <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-            <li><span className="font-medium text-foreground">The third clock is the real limit.</span> Node wall-clock and agent wall-clock are solvable with infrastructure; agent context only scales if you push conclusions to the data and keep durable state in small files.</li>
-            <li><span className="font-medium text-foreground">Measure on every exit path, before you destroy anything.</span> Success is the easy path. The cap and the error paths are where your data quietly disappears.</li>
-            <li><span className="font-medium text-foreground">Gate your benchmark on config, not just on outcome.</span> Stamp every number with &ldquo;was this the client&apos;s best mode?&rdquo; or you will eventually publish a measurement of your own mistake.</li>
-            <li><span className="font-medium text-foreground">Give an agent a job and a fence.</span> The agent owns the tedious, sustained correctness; the human owns the few irreversible levers.</li>
-          </ul>
+          <LeadList items={nextPersonPoints} />
           <AnchorHeading id="honest-limitations" as="h3" className="mt-6 font-medium text-foreground">
             Honest limitations
           </AnchorHeading>
@@ -642,11 +816,13 @@ export default function HowWeTestedWithClaudePage() {
             This is a real benchmark, not a lab result. It ran on a shared, semi-production host (12 cores,
             ~62 GB RAM, co-resident workloads) &mdash; representative of how many people actually run
             nodes, but with contention the numbers can&apos;t fully isolate. Each client was measured on
-            one run at a pinned version, so a single result is a data point, not a distribution. An agent
-            driving a shared host can also destroy the thing it is measuring: the wipe that precedes each
-            candidate is one wrong argument away from the wrong datadir, and a number that is wrong is
-            indistinguishable from a number that is right until someone checks it. That is why the fence
-            above was non-negotiable rather than advisory.
+            one run at a pinned version, so a single result is a data point, not a distribution.
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            An agent driving a shared host can also destroy the thing it is measuring: the wipe that
+            precedes each candidate is one wrong argument away from the wrong datadir, and a number that is
+            wrong is indistinguishable from a number that is right until someone checks it. That is why the
+            fence above was non-negotiable rather than advisory.
           </p>
         </section>
 
