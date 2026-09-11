@@ -31,6 +31,7 @@ const tocLinks = [
   { label: 'Distribution as predictor', href: '#distribution-as-predictor' },
   { label: 'Consensus layer', href: '#consensus-layer-solved' },
   { label: 'Recommendations', href: '#recommendations' },
+  { label: 'Bottom line', href: '#bottom-line' },
 ]
 
 // The when/where/scope/how of the campaign, as one scannable card so the
@@ -78,7 +79,7 @@ const clientIssues = [
   {
     name: 'Ethrex',
     verdict: 'Caution' as const,
-    issue: 'Fastest cold sync in the field (~2h16m), but a restart gap past ~25 minutes triggers a full re-snap from scratch. Also serves no history before its sync pivot — not a drop-in public RPC.',
+    issue: 'Fastest cold sync in the field (~2h16m), but a restart gap past ~25 minutes stalls, and a gap of ~1.5–2h triggers a full re-snap from scratch. Also serves no history before its sync pivot — not a drop-in public RPC.',
   },
   {
     name: 'Reth',
@@ -369,7 +370,7 @@ export default function EthereumClientBakeoffPage() {
             We put every execution and consensus client this project supports through the same
             mainnet sync, one at a time, and recorded two numbers for each. The interesting part is
             what fell out of it: an operability axis that matters more than either headline number,
-            and a genuine paradox — the client that synced fastest in the whole field has
+            and a paradox — the client that synced fastest in the whole field has
             essentially zero real-world adoption.
           </p>
           <div className="mt-4 flex flex-wrap gap-3 sm:mt-6">
@@ -1026,7 +1027,7 @@ export default function EthereumClientBakeoffPage() {
             That leaves the axes that actually differ: <strong className="text-foreground">snap-sync
             speed</strong> and <strong className="text-foreground">restart-resume stability</strong>{' '}
             (both covered below). nethermind is still a good pick — its flat-storage state is
-            genuinely compact, and it&apos;s a minority client, so running it improves mainnet
+            compact, and it&apos;s a minority client, so running it improves mainnet
             client diversity — just not because it&apos;s smaller on disk than geth.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
@@ -1444,7 +1445,7 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-3 text-sm text-muted-foreground">
             <strong className="text-foreground">Why it matters:</strong> a client that can stop
             resuming after ~25 minutes and, on longer measured gaps, fall into a ~2h re-snap is
-            genuinely painful to operate. That&apos;s a strong candidate explanation for
+            painful to operate. That&apos;s a strong candidate explanation for
             ethrex&apos;s ~0% adoption despite best-in-field cold-sync numbers: great benchmark,
             painful to actually run.
           </p>
@@ -1518,7 +1519,7 @@ export default function EthereumClientBakeoffPage() {
           <p className="mt-3 text-sm text-muted-foreground">
             nimbus_eth1 did settle one open question for us. Its config carries{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">prune = true</code>,
-            and whether that flag actually does anything was genuinely contested: the binary&apos;s{' '}
+            and whether that flag actually does anything was contested: the binary&apos;s{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--help</code> claims
             it prunes expired bodies and receipts, while the online docs say pre-merge history
             needs a separate era1 export — i.e. that the flag is effectively inert. We&apos;d
@@ -1713,12 +1714,24 @@ export default function EthereumClientBakeoffPage() {
               optimistic-sync deadlock is resolved.
             </li>
           </ul>
-          <p className="mt-4 text-sm text-muted-foreground">
-            The most useful thing this bake-off surfaced isn&apos;t a single winner — it&apos;s
-            that the number that matters to a running operator is often not the one on the
-            benchmark chart. Cold-sync time and disk footprint are easy to measure and easy to
-            publish. Restart resilience is neither — and it&apos;s the best candidate explanation
-            we found for why the fastest-syncing client in this field is also the one nobody runs.
+        </section>
+
+        <section className="mt-10 sm:mt-16">
+          <AnchorHeading id="bottom-line" className="text-lg sm:text-xl font-semibold text-foreground">
+            Bottom line
+          </AnchorHeading>
+          <p className="mt-3 text-sm text-muted-foreground">
+            For a long-running node, run <strong className="text-foreground">geth</strong> by
+            default, or <strong className="text-foreground">nethermind</strong> for client
+            diversity — both clear the bar that actually matters here, a clean sync followed by a
+            graceful restart, and land in the same disk band once full history is kept.{' '}
+            <strong className="text-foreground">Ethrex</strong> and{' '}
+            <strong className="text-foreground">besu</strong> earn a caveat rather than a pass:
+            ethrex&apos;s ~25-minute restart cliff and besu&apos;s fragility to a stalled
+            consensus client are exactly the kind of risk a cold-sync number never shows. That gap
+            is the finding worth remembering — the axis that decides whether a client survives
+            production isn&apos;t the one on the benchmark chart, and it&apos;s why the
+            fastest-syncing client in this field is also the one almost nobody runs.
           </p>
         </section>
 
