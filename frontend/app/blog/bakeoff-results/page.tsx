@@ -1603,10 +1603,10 @@ export default function BakeoffResultsPage() {
               <Rich text="**Speed has a real order:** ethrex (~2h16m) &lt; geth (~8h28m) &lt; nethermind (~14.5h) &lt; besu (~19h18m). reth and nimbus_eth1 never reached tip in the 72h cap (full-sync-only), and erigon deadlocked entirely against a checkpoint-synced CL." />
             </li>
             <li>
-              <Rich text="**Restart-resume is the deciding axis.** geth and nethermind both resume cleanly from any gap tested (12 min up to ~52h/~35h) by ordinary block import — no re-snap, no cliff. ethrex hits a hard wall beyond ~25 minutes/~128 blocks and re-snaps from near-scratch; besu's snap sync deadlocks if a CL outage ages its pivot out of the ~128-block servable-state window." />
+              <Rich text="**Restart-resume is the deciding axis.** geth and nethermind both resume cleanly from any gap tested (12 min up to ~52h/~35h) by ordinary block import — no re-snap, no cliff. ethrex stalls beyond ~25 minutes/~128 blocks, and measured ~1.5–2h gaps triggered a full re-snap from near-scratch; besu's snap sync deadlocks if a CL outage ages its pivot out of the ~128-block servable-state window." />
             </li>
             <li>
-              <Rich text="**Net pick:** geth or nethermind for a long-running node (besu as a qualified enterprise third if you keep the CL current); on the consensus side, any of the five swept CLs works, with lighthouse the leanest default. ethrex is the fastest cold sync in the field but its restart cliff and lack of history keep it a watch-don't-deploy pick today." />
+              <Rich text="**Net pick:** geth or nethermind for a long-running node (besu as a qualified enterprise third if you keep the CL current); on the consensus side, any of the five swept CLs works, with lighthouse the lean default. ethrex is the fastest cold sync in the field but its restart cliff and lack of history keep it a watch-don't-deploy pick today." />
             </li>
           </ul>
         </section>
