@@ -78,10 +78,10 @@ nethermind\\tlodestar\\trerun: lodestar pruneHistory CLI-flag fix (77d939d)
 erigon\\tteku\\trerun: previous row crash-looped before the watchdog existed`
 
 const atAGlance = [
-  { title: '10 scripts, 1 manifest', body: 'candidates.tsv lists the pairs; everything else drives, samples, or aggregates them.' },
+  { title: '8 scripts, 1 manifest', body: 'candidates.tsv lists the pairs to run; the 8 executable scripts drive, sample, or aggregate them.' },
   { title: '3 ways to launch a run', body: 'a fixed manifest (run_bakeoff.sh), a rotating EL anchor (run_anchor_rotation.sh), or an async rerun queue (run_queue.sh) — all three end up calling run_candidate.sh.' },
   { title: 'Up to 3 watchdogs per run', body: 'crash-loop (always on), anchor-drift (anchor mode only), stall (opt-in) — each one only marks state and logs; none but the stall watchdog ever restarts anything.' },
-  { title: 'Every artifact is machine-readable', body: 'env.txt, samples.jsonl, and advisor-alerts.jsonl are the contract — summarize.sh reads them, never the other way around.' },
+  { title: 'Every artifact is machine-readable', body: 'env.txt and samples.jsonl feed summarize.sh; advisor-alerts.jsonl is the separate structured channel operators tail live.' },
 ]
 
 function StaticCodeBlock({ code, className = '' }: { code: string; className?: string }) {
