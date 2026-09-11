@@ -321,12 +321,12 @@ export default function HowWeTestedWithClaudePage() {
 
         <Card padding="sm" className="mt-8 border-primary/20 bg-primary/5">
           <p className="text-sm text-foreground">
-            <span className="font-medium">Up front, honestly:</span> this was AI-<em>driven</em>, not
-            AI-<em>unsupervised</em>. Every destructive action against the live node was gated behind an
-            explicit human confirmation, every result was committed under conventional-commit review, and
-            no agent could merge its own pull request. The claim isn&apos;t &ldquo;the AI did it
-            alone.&rdquo; It&apos;s that the right division of labor between an agent and an operator let
-            a disk-and-timing-sensitive benchmark run to completion without a person watching it sync.
+            This was AI-<em>driven</em>, not AI-<em>unsupervised</em>. Every destructive action against
+            the live node was gated behind an explicit human confirmation, every result was committed
+            under conventional-commit review, and no agent could merge its own pull request. The claim
+            isn&apos;t &ldquo;the AI did it alone&rdquo; &mdash; it&apos;s that the right division of
+            labor between an agent and an operator let a disk-and-timing-sensitive benchmark run to
+            completion without a person watching it sync.
           </p>
         </Card>
 
@@ -436,10 +436,10 @@ export default function HowWeTestedWithClaudePage() {
             <li><span className="font-medium text-foreground">It&apos;s destructive.</span> Measuring the next client means wiping the last one&apos;s datadir on a shared box that also runs other people&apos;s work.</li>
           </ul>
           <p className="mt-4 text-sm text-muted-foreground">
-            Multiply that across the whole supported field of clients and you have a task defined less by
-            any single hard step than by <em>sustained correctness</em> &mdash; the discipline to run the
-            same careful protocol dozens of times, preserve the terminal measurement before teardown, and
-            never let a shared-host quirk masquerade as a client property.
+            Multiply that across the whole supported field of clients, and the real difficulty isn&apos;t
+            any single hard step &mdash; it&apos;s <em>sustained correctness</em>: the discipline to run
+            the same careful protocol dozens of times, preserve the terminal measurement before teardown,
+            and never let a shared-host quirk masquerade as a client property.
           </p>
         </section>
 
@@ -456,7 +456,10 @@ export default function HowWeTestedWithClaudePage() {
             1. The node runs; the agent doesn&apos;t watch it run
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            Every client runs as a native systemd service (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth1.service</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">cl.service</code>, no Docker) in a detached tmux session &mdash; a sync proceeds for 72 hours whether or not any Claude session is alive. The orchestrating session did die mid-run more than once (once to an out-of-memory event); the systemd unit and its sampler kept going, and a fresh session picked the campaign back up from durable state with nothing lost. Instead of polling logs, the agent armed event-driven watchers that fire one notification on a terminal condition, so the orchestrator slept until something decision-worthy happened.
+            Every client runs as a native systemd service (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth1.service</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">cl.service</code>, no Docker) in a detached tmux session &mdash; a sync proceeds for 72 hours whether or not any Claude session is alive. The orchestrating session did die mid-run more than once (once to an out-of-memory event); the systemd unit and its sampler kept going, and a fresh session picked the campaign back up from durable state with nothing lost.
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Instead of polling logs, the agent armed event-driven watchers that fire one notification on a terminal condition, so the orchestrator slept until something decision-worthy happened.
           </p>
 
           <AnchorHeading id="three-tiers-of-agent" as="h3" className="mt-6 font-medium text-foreground">
@@ -525,7 +528,10 @@ export default function HowWeTestedWithClaudePage() {
           </ul>
           <VerdictDiagram />
           <p className="mt-3 text-xs text-muted-foreground">
-            This is what&apos;s actually implemented, not a peer-aware state machine: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced()</code> checks <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">sync_distance</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">is_optimistic</code>, and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">el_offline</code> together &mdash; already enough to avoid trusting <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing=false</code> alone &mdash; but there&apos;s no peer-count check anywhere, and the stall-watchdog is opt-in. nethermind&apos;s 13.3h loopback stall (see the table above) predates the watchdog: the harness correctly never reported it synced, but nothing flagged the run as <em>stuck</em> rather than <em>still syncing</em> &mdash; that gap is exactly what motivated building the watchdog afterward.
+            This is what&apos;s actually implemented, not a peer-aware state machine: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced()</code> checks <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">sync_distance</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">is_optimistic</code>, and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">el_offline</code> together &mdash; already enough to avoid trusting <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing=false</code> alone &mdash; but there&apos;s no peer-count check anywhere, and the stall-watchdog is opt-in.
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            nethermind&apos;s 13.3h loopback stall (see the table above) predates the watchdog: the harness correctly never reported it synced, but nothing flagged the run as <em>stuck</em> rather than <em>still syncing</em> &mdash; that gap is exactly what motivated building the watchdog afterward.
           </p>
 
           <AnchorHeading id="governance" as="h3" className="mt-6 font-medium text-foreground">
@@ -578,7 +584,10 @@ export default function HowWeTestedWithClaudePage() {
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             So the harness grew a config-optimality gate: before trusting a footprint, it inspects the
-            actually-running config and stamps every row <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes|no</code>; <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">summarize.sh</code> quarantines non-optimal rows in a &ldquo;superseded&rdquo; section. The gate needed six bug-fixes across three review rounds before we trusted it &mdash; every one the same species (&ldquo;the flag I asserted on doesn&apos;t match the real generated config&rdquo;) &mdash; the exact failure mode the gate exists to catch, turned on itself.
+            actually-running config and stamps every row <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config_optimal=yes|no</code>; <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">summarize.sh</code> quarantines non-optimal rows in a &ldquo;superseded&rdquo; section.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            The gate needed six bug-fixes across three review rounds before we trusted it &mdash; every one the same species (&ldquo;the flag I asserted on doesn&apos;t match the real generated config&rdquo;). That&apos;s the exact failure mode the gate exists to catch, turned on itself.
           </p>
 
           <AnchorHeading id="anchor-preserving-mode" as="h3" className="mt-6 font-medium text-foreground">
@@ -594,14 +603,16 @@ export default function HowWeTestedWithClaudePage() {
             We ran the sweep three times &mdash; against an ethrex anchor, a geth anchor, and a nethermind
             anchor &mdash; to prove the EL/CL decoupling empirically. The same three tiers reproduced on
             all three anchors: a lightweight pair (lodestar, lighthouse), a mid pair (teku, grandine), and
-            nimbus alone at the heavy end &mdash; with the caveat that within-tier order is soft: the
+            nimbus alone at the heavy end.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Within-tier order is soft, though &mdash; that instability is itself the finding. The
             lodestar&harr;lighthouse order flipped between the ethrex and geth anchors (geth: lodestar
             &lt; lighthouse; ethrex: lighthouse &lt; lodestar), and teku moved ~27% between two runs on
             the <em>same</em>{' '}
             nethermind anchor (~667 MiB, then ~848 MiB on a clean re-read) &mdash; enough to cross
             grandine (~730 MiB) and back. Each client stayed inside its own tier; the ordering within
-            a tier tracks the measurement window more than the client. That instability is itself the
-            finding.
+            a tier tracks the measurement window more than the client.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             The nethermind-anchor sweep also surfaced two harness-fidelity caveats worth carrying forward:
@@ -642,11 +653,13 @@ export default function HowWeTestedWithClaudePage() {
             This is a real benchmark, not a lab result. It ran on a shared, semi-production host (12 cores,
             ~62 GB RAM, co-resident workloads) &mdash; representative of how many people actually run
             nodes, but with contention the numbers can&apos;t fully isolate. Each client was measured on
-            one run at a pinned version, so a single result is a data point, not a distribution. An agent
-            driving a shared host can also destroy the thing it is measuring: the wipe that precedes each
-            candidate is one wrong argument away from the wrong datadir, and a number that is wrong is
-            indistinguishable from a number that is right until someone checks it. That is why the fence
-            above was non-negotiable rather than advisory.
+            one run at a pinned version, so a single result is a data point, not a distribution.
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            An agent driving a shared host can also destroy the thing it is measuring: the wipe that
+            precedes each candidate is one wrong argument away from the wrong datadir, and a number that is
+            wrong is indistinguishable from a number that is right until someone checks it. That is why the
+            fence above was non-negotiable rather than advisory.
           </p>
         </section>
 
