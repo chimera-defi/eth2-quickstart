@@ -34,6 +34,7 @@ ALL_ARTIFACTS=(
     "$ARBITER"
     "docs/blog/CLIENT_BAKEOFF_OPERATOR_GUIDE.md"
     "docs/CLIENT_BAKEOFF_BLOG.md"
+    "docs/CLIENT_BAKEOFF_BLOG_NOTES.md"
     "docs/CLIENT_BAKEOFF_HARNESS.md"
     "docs/HOW_WE_TESTED_WITH_CLAUDE.md"
     "frontend/app/blog/bakeoff-harness/page.tsx"
@@ -163,12 +164,13 @@ check_no_stale_regressions() {
     # future number, e.g. "16.8×" contains "6.8×" and "1307 blocks/min" contains "307 blocks/min".
     # \b works here because digit-adjacent-to-digit is not a word-boundary transition in the
     # default (Unicode-aware) regex engine, so no lookbehind is needed.
-    local display=("307 blocks/min" "307 blk/min" "6.8×")
-    local patterns=('\b307 blocks/min\b' '\b307 blk/min\b' '\b6\.8×')
+    local display=("307 blocks/min" "307 blk/min" "6.8×" "848 MiB")
+    local patterns=('\b307 blocks/min\b' '\b307 blk/min\b' '\b6\.8×' '\b848 MiB\b')
     local reasons=(
         "nethermind's restart-resume rate is measured at ~302 blocks/min, not 307 (see $ARBITER EXP-A)"
         "nethermind's restart-resume rate is measured at ~302 blocks/min, not 307 (see $ARBITER EXP-A)"
         "the nimbus/lighthouse CL footprint ratio is ~6.9x (6.856 rounds up), not 6.8x"
+        "teku's nethermind-anchor re-read is 875,146,169 B = ~835 MiB, not the imprecise ~848 (corrected corpus-wide in a707a47 / #271; the frontend page was missed by that sweep, which is why this guard exists)"
     )
 
     local i pattern file line
