@@ -744,6 +744,10 @@ export default function HowWeTestedWithClaudePage() {
             benchmark runs for six weeks on a shared host with an AI in the driver&apos;s seat.
           </p>
           <div className="mt-4 flex flex-wrap gap-3 sm:mt-6">
+            <Button href="/deck/how-we-tested.html" external variant="secondary" size="sm">
+              View as slides
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
             <Button href="/blog/ethereum-client-bakeoff" variant="secondary" size="sm">
               Read the results writeup
               <ArrowRight className="ml-2 h-4 w-4" />

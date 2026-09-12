@@ -24,6 +24,7 @@ const routes: { path: string; priority: number }[] = [
   ...staticRoutes,
   ...blogRoutes,
   { path: '/deck/bakeoff.html', priority: 0.6 },
+  { path: '/deck/how-we-tested.html', priority: 0.6 },
 ]
 
 export default function sitemap(): MetadataRoute.Sitemap {

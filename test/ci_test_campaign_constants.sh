@@ -42,6 +42,7 @@ ALL_ARTIFACTS=(
     "frontend/app/blog/ethereum-client-bakeoff/page.tsx"
     "frontend/app/blog/how-we-tested-with-claude/page.tsx"
     "frontend/public/deck/bakeoff.html"
+    "frontend/public/deck/how-we-tested.html"
 )
 
 # The current-state result/guidance surface: files that state nethermind's footprint as an
