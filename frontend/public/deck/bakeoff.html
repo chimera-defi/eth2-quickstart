@@ -193,6 +193,11 @@
     .bar .val{grid-column:1 / -1;font-size:12px;text-align:right}
     .axis{display:none}
     .stat-row{gap:22px}
+    /* body{overflow:hidden} stops the slide stack scrolling as one page. At this width the
+       stacked panels can outgrow the viewport, so the active slide scrolls inside itself.
+       flex-start is the fallback for engines without `safe` alignment, where a centred
+       overflow puts the top of a tall slide out of reach entirely. */
+    .slide{overflow-y:auto;overscroll-behavior:contain;justify-content:flex-start;justify-content:safe center}
   }
 </style>
 </head>
