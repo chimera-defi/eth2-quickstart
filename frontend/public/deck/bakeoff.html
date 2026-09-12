@@ -366,7 +366,7 @@
         <div class="tier"><span class="badge">Builders</span><span><b>Fresh Sonnet subagents</b> — one task each, report a short summary back.</span></div>
         <div class="tier"><span class="badge">Delegates</span><span><b>Cheaper / sandboxed models</b> — read-only research, routed through wrapper binaries.</span></div>
       </div>
-      <p class="kicker">Governance, non-negotiable: one candidate at a time · destructive actions human-gated · conventional commits · <b>an agent cannot merge its own PR.</b></p>
+      <p class="kicker">Governance, non-negotiable: one candidate at a time · destructive actions human-gated · conventional commits · <b>nothing merges without an explicit human go-ahead.</b></p>
     </div>
   </section>
 
@@ -454,7 +454,7 @@
     "The point of the whole talk: restart resilience is a third axis, and it predicts who people keep running better than speed or disk. Three behaviors — clean resume, re-snap cliff, mid-sync deadlock.",
     "The full field at a glance. Be fair to the clients: besu and ethrex synced fine but their footprints aren't pruned-comparable (besu un-pruned; ethrex a no-history plateau); reth and nimbus-eth1 are full-sync-only by design, not failures.",
     "The consensus layer looks solved on the axes we measured — all five sync in minutes, so footprint is the only differentiator. Lighthouse is the lean, safe default. The same three tiers held across three EL anchors, with a small within-tier order flip. If asked: we swept the five for sync and footprint, not restart-resume — prysm is the only CL we restart-tested, so this earns 'prysm resumes cleanly', not 'the CL layer survives anything'.",
-    "Pivot to methodology — the other story people want. Three tiers keep token cost sane and judgment where it belongs. Governance is the punchline: an agent cannot merge its own PR.",
+    "Pivot to methodology — the other story people want. Three tiers keep token cost sane and judgment where it belongs. Governance is the punchline: nothing merges without an explicit human go-ahead.",
     "The harness is what kept it honest: decouple node time from agent time, push conclusions into small durable files (not the context window), and gate every result on config-optimality.",
     "Four real incidents in the initial 23-day campaign — every one caught and documented. This is the concrete proof of 'we kept ourselves honest.'",
     "The takeaways to leave them with: diversity pick run Nethermind, boring default run Geth, consensus run Lighthouse (~518 MiB on the geth anchor; ~739 MiB on the ethrex anchor — absolute size tracks the measurement window) — and operational risk lives in the execution layer, not consensus.",
