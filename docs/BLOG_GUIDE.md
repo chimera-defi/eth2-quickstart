@@ -53,7 +53,9 @@ twitter:  { card: 'summary_large_image', images: ['/og-bakeoff.png'], ... },
 
 ## Diagrams (no Mermaid)
 
-The frontend has **no Mermaid renderer** — never paste raw Mermaid source into a `CodeBlock`, it renders as broken text. Diagrams are hand-authored div/SVG components. See the pattern in `how-we-tested-with-claude/page.tsx` (`FlowDiagram`, `AgentHierarchy`, `VerdictDiagram`, `CampaignTimeline`) and `bakeoff-harness/page.tsx` (`DataFlowDiagram`).
+The frontend has **no Mermaid renderer** — never paste raw Mermaid source into a `CodeBlock`, it renders as broken text. Diagrams are hand-authored div/SVG components. See the pattern in `how-we-tested-with-claude/page.tsx` (`ThreeClocksFigure`, `CampaignPhasesFigure`, `AgentHierarchy`, `GovernanceFence`, `VerdictDiagram`, `FlowDiagram`) and `bakeoff-harness/page.tsx` (`DataFlowDiagram`).
+
+Wrap each diagram in a `<figure>` with a full-sentence `aria-label` and a `<figcaption>`; reserve `aria-labelledby`/`aria-describedby` with `<title>`/`<desc>` for real `<svg>` charts. Status colours are a shared three-tone scale — `#a855f7` good, `#f5b46b` caution, `#e5726e` failed — used categorically, so don't reach for one of them to mean "other" or "not a status". The lighter purples (`#e9d5ff`, `#c084fc`) pair with `#a855f7` as a sequential ramp instead: parts of one whole, or two stages of the same measurement (see the fresh-vs-steady bars in `bakeoff-results/page.tsx`).
 
 ---
 

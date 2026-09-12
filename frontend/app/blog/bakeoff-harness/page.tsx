@@ -30,7 +30,10 @@ const tocLinks = [
   { label: 'See also', href: '#see-also' },
 ]
 
-const seeAlsoLinks = [
+// The rendered siblings are already linked as cards by <ReadNext /> just above this section, so
+// these entries earn their place only as raw source: the markdown each article was adapted from.
+// Same split the bake-off page makes under its own "Source docs on GitHub" heading.
+const sourceLinks = [
   {
     file: 'HOW_WE_TESTED_WITH_CLAUDE.md',
     desc: 'the agent-orchestration model, the six-week timeline (23-day initial campaign, then steady-state and restart-resume follow-ups), and the war stories behind the hardening fixes above.',
@@ -1584,7 +1587,7 @@ export default function BakeoffHarnessPage() {
         <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="see-also" className="text-lg sm:text-xl font-semibold text-foreground">See also</AnchorHeading>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-            {seeAlsoLinks.map((link) => (
+            {sourceLinks.map((link) => (
               <li key={link.href}>
                 <a href={link.href} target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-primary hover:underline">
                   {link.file}
