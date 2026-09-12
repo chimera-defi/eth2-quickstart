@@ -71,7 +71,7 @@ const atAGlance = [
   },
   {
     title: 'Who',
-    body: "A Claude Opus 4.8 orchestrator planned the queue and reviewed every diff; fresh Sonnet subagents implemented against written briefs; Codex, OpenAI's agent, worked the campaign as an independent peer — landing fixes on bake-off branches under its own git identity and adversarially reviewing the pull requests. A human held the destructive and merge levers throughout.",
+    body: 'Three tiers of AI agent did the work; a human held the destructive and merge levers throughout.',
   },
 ]
 
@@ -183,7 +183,7 @@ const clientIncidents = [
   },
   {
     client: 'ethrex',
-    whatHappened: 'Gaps through 23 min / 124 blocks resumed; a 26 min / 132 block gap stalled, and measured 1.5–2h gaps discarded state and re-snapped (~2h). The un-pruned datadir plateaus at ~470–476 GiB (drifting 470.2 → 475.5 GiB over ~42h) — settled, but a no-history node, not a disk win',
+    whatHappened: 'Gaps through 23 min / 124 blocks resumed; a 26 min / 132 block gap stalled, and measured 1.5–2h gaps discarded state and re-snapped (~2h). The un-pruned datadir plateaus at ~470–476 GiB (drifting 470.2 → 475.5 GiB over ~42h)',
     rootCause: 'Old head ages out of the ~128-block servable-state window; beyond it the head can freeze and longer gaps can trigger a full snap instead of importing the gap',
     resolution: 'None — inherent to current design (v19.0.0)',
     status: 'Not production-ready',
@@ -409,10 +409,6 @@ const harnessBugs = [
 
 const nextPersonPoints = [
   {
-    lead: 'The third clock is the real limit.',
-    body: 'Node wall-clock and agent wall-clock are solvable with infrastructure; agent context only scales if you push conclusions to the data and keep durable state in small files.',
-  },
-  {
     lead: 'Measure on every exit path, before you destroy anything.',
     body: 'Success is the easy path. The cap and the error paths are where your data quietly disappears.',
   },
@@ -420,12 +416,11 @@ const nextPersonPoints = [
     lead: 'Gate your benchmark on config, not just on outcome.',
     body: 'Stamp every number with "was this the client’s best mode?" or you will eventually publish a measurement of your own mistake.',
   },
-  {
-    lead: 'Give an agent a job and a fence.',
-    body: 'The agent owns the tedious, sustained correctness; the human owns the few irreversible levers.',
-  },
 ]
 
+// Deliberately all repo links, matching this section's "the harness is in the repo and the data is
+// committed" framing. The rendered siblings are one block below, as <ReadNext /> cards — pointing
+// these at /blog/* too would duplicate that and break the promise the intro sentence makes.
 const reproduceLinks = [
   { label: 'The harness', href: `${SITE_CONFIG.github}/tree/master/test/bakeoff` },
   { label: 'The harness, function-by-function', href: `${SITE_CONFIG.github}/blob/master/docs/CLIENT_BAKEOFF_HARNESS.md` },
@@ -1173,7 +1168,7 @@ export default function HowWeTestedWithClaudePage() {
             An agent can run a multi-week, disk-and-timing-sensitive benchmark
             unattended, but only because the design put its constraints in the right place &mdash; node
             time decoupled from agent time, conclusions pushed down into small durable files instead of
-            carried in context, and every destructive or mergeable step routed through a human.
+            carried in context, and every irreversible step routed through a human.
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
             None of that made the agent smarter about Ethereum clients; it made the campaign survive
