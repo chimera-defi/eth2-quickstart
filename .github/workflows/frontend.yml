@@ -201,7 +201,7 @@ jobs:
           for path in / /quickstart /blog /agents /llms.txt /sitemap.xml /robots.txt /rss.xml \
                       /blog/ethereum-client-bakeoff /blog/bakeoff-results \
                       /blog/bakeoff-harness /blog/how-we-tested-with-claude \
-                      /deck/bakeoff.html; do
+                      /deck/bakeoff.html /deck/how-we-tested.html; do
             code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$SITE$path?cb=$RANDOM")"
             if [ "$code" = "200" ]; then
               echo "  ok   $code $path"

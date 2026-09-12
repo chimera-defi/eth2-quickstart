@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/icon.svg">
+<meta name="description" content="A 14-slide deck on the AI-agent methodology behind the six-week Ethereum client bake-off: the orchestration model, the harness that kept it honest, and what almost broke it.">
+<meta property="og:title" content="How We Tested With Claude — deck">
+<meta property="og:description" content="The machine that ran a six-week Ethereum client bake-off: three tiers of agent, a durable-state control loop, and the gate that caught its own near-miss.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://eth2quickstart.com/deck/how-we-tested.html">
+<meta property="og:image" content="https://eth2quickstart.com/og-how-we-tested.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://eth2quickstart.com/og-how-we-tested.png">
+<title>How We Tested With Claude — deck</title>
+<style>
+  :root{
+    --ground:#0a0b12; --panel:#13141f; --panel-2:#191b28;
+    --ink:#e9eaf2; --muted:#8b8ea8; --faint:#8085a3;
+    --line:#23253a; --line-2:#2e3150;
+    --accent:#a78bfa; --accent-dim:#7c6bd6;
+    --signal:#f5a524; --good:#34d399; --bad:#fb7185;
+    --hatch-a:#3c3f5c; --hatch-b:#2a2c44;
+    --mono:ui-monospace,"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --maxw:1080px;
+  }
+  :root[data-theme="light"]{
+    --ground:#f3f2ef; --panel:#ffffff; --panel-2:#f7f6f3;
+    --ink:#191a24; --muted:#5c6072; --faint:#676c85;
+    --line:#e2e0da; --line-2:#d3d1c9;
+    --accent:#6d47d9; --accent-dim:#8b6bea;
+    --signal:#966008; --good:#0c7c54; --bad:#c7304a;
+    --hatch-a:#d3d1c9; --hatch-b:#b9b6ac;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--ground); color:var(--ink);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  /* faint instrument grid on the ground */
+  body::before{
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:52px 52px; opacity:.16;
+    -webkit-mask-image:radial-gradient(120% 90% at 70% 0%,#000 30%,transparent 78%);
+            mask-image:radial-gradient(120% 90% at 70% 0%,#000 30%,transparent 78%);
+  }
+
+  .deck{position:relative;height:100vh;width:100vw;z-index:1}
+  .slide{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; justify-content:center;
+    padding:clamp(18px,3.2vh,44px) clamp(28px,6vw,84px);
+    opacity:0; visibility:hidden; transform:translateY(14px) scale(.995);
+    transition:opacity .5s ease,transform .5s ease,visibility .5s;
+  }
+  .slide.active{opacity:1;visibility:visible;transform:none;transition-delay:.05s}
+  .slide.prev{transform:translateY(-14px) scale(.995)}
+  @media (prefers-reduced-motion:reduce){ .slide{transition:opacity .2s} .slide,.slide.prev{transform:none} }
+  .wrap{width:100%;max-width:var(--maxw);margin:0 auto}
+
+  .eyebrow{
+    font-family:var(--mono); font-size:clamp(11px,1.05vw,13px);
+    letter-spacing:.24em; text-transform:uppercase; color:var(--accent);
+    display:flex; align-items:center; gap:12px; margin:0 0 12px;
+  }
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--accent);opacity:.7}
+  h1{
+    font-size:clamp(28px,4.8vw,58px); line-height:1.06; letter-spacing:-.022em;
+    font-weight:800; margin:0; text-wrap:balance; max-width:18ch;
+  }
+  h2{
+    font-size:clamp(25px,3.9vw,44px); line-height:1.06; letter-spacing:-.018em;
+    font-weight:750; margin:0 0 8px; text-wrap:balance; max-width:20ch;
+  }
+  .lede{font-size:clamp(15px,1.5vw,18px);color:var(--muted);line-height:1.5;max-width:60ch;margin:14px 0 0}
+  .kicker{font-family:var(--mono);color:var(--muted);font-size:13.5px;letter-spacing:.02em;margin-top:16px}
+  .kicker b{color:var(--ink);font-weight:600}
+  strong.hot{color:var(--signal)}
+  strong.win{color:var(--good)}
+  em{color:var(--accent);font-style:normal}
+
+  /* data readouts */
+  .stat-row{display:flex;gap:clamp(16px,3.4vw,52px);flex-wrap:wrap;margin-top:20px}
+  .stat .n{font-family:var(--mono);font-size:clamp(26px,3.8vw,46px);font-weight:700;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .stat .n.acc{color:var(--accent)} .stat .n.sig{color:var(--signal)} .stat .n.good{color:var(--good)}
+  .stat .l{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:9px}
+
+  /* gauge chart */
+  .chart{margin-top:20px;display:flex;flex-direction:column;gap:9px}
+  .bar{display:grid;grid-template-columns:132px 1fr 196px;align-items:center;gap:16px}
+  .bar .name{font-family:var(--mono);font-size:14px;color:var(--ink);text-align:right}
+  .bar .track{position:relative;height:26px;background:var(--panel);border:1px solid var(--line);border-radius:5px;overflow:hidden}
+  .bar .fill{position:absolute;inset:0;
+    background:linear-gradient(90deg,var(--accent-dim),var(--accent));
+    transform-origin:left;transform:scaleX(var(--v,0));transition:transform 1s cubic-bezier(.2,.7,.2,1)}
+  .slide:not(.active) .bar .fill{transform:scaleX(0)}
+  .bar.muted .fill{background:repeating-linear-gradient(45deg,var(--hatch-a),var(--hatch-a) 5px,var(--hatch-b) 5px,var(--hatch-b) 10px)}
+  .bar.sig .fill{background:linear-gradient(90deg,#c07d12,var(--signal))}
+  .bar .val{font-family:var(--mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .bar .val b{color:var(--ink);font-weight:600}
+  .axis{font-family:var(--mono);font-size:11px;color:var(--faint);margin-left:148px;margin-top:2px}
+
+  /* scorecard table */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:15px}
+  th,td{text-align:left;padding:13px 18px;border-bottom:1px solid var(--line)}
+  thead th{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:500}
+  tbody tr:last-child td{border-bottom:0}
+  td.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .name-cell{font-weight:650}
+  .pill{font-family:var(--mono);font-size:11px;letter-spacing:.04em;padding:3px 9px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);white-space:nowrap}
+  .pill.ok{color:var(--good);border-color:color-mix(in srgb,var(--good) 45%,transparent)}
+  .pill.warn{color:var(--signal);border-color:color-mix(in srgb,var(--signal) 45%,transparent)}
+  .pill.bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,transparent)}
+
+  /* generic panels / grids */
+  .grid{display:grid;gap:12px;margin-top:18px}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 18px}
+  .panel h3{margin:0 0 6px;font-size:16px;letter-spacing:-.01em}
+  .panel p{margin:0;color:var(--muted);font-size:14px;line-height:1.45}
+  .panel .tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:9px}
+  .panel.hot .tag{color:var(--signal)}
+
+  /* agent tiers flow */
+  .tiers{display:flex;flex-direction:column;gap:10px;margin-top:16px;max-width:760px}
+  .tier{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 18px}
+  .tier .badge{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);border:1px solid var(--line-2);border-radius:6px;padding:6px 10px;white-space:nowrap}
+  .tier b{font-weight:650}
+  .tier span{color:var(--muted);font-size:14.5px}
+  .flowmark{font-family:var(--mono);color:var(--faint);text-align:center;font-size:13px}
+  .flowmark.loop{color:var(--accent)}
+
+  /* variant: loop-back tier (slide 11) — dashed, distinct fill, still joined by an arrow */
+  .tier.loopback{border-style:dashed;border-color:var(--line-2);background:var(--panel-2)}
+  .tier.loopback .badge{color:var(--muted);border-style:dashed}
+
+  /* variant: peer box outside the hierarchy (slide 6) — dashed, deliberately NO connecting arrow */
+  .hr-note{border-top:1px dashed var(--line-2);margin-top:18px;padding-top:14px;max-width:760px}
+  .hr-note .hr-label{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:0 0 10px}
+  .peer-note{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;background:var(--panel);border:1px dashed var(--line-2);border-radius:10px;padding:12px 18px}
+  .peer-note .badge{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border:1px dashed var(--line-2);border-radius:6px;padding:6px 10px;white-space:nowrap}
+  .peer-note b{font-weight:650;color:var(--ink)}
+  .peer-note span{color:var(--muted);font-size:14.5px}
+
+  /* segmented proportional bar (slide 5) — flex-basis carries the day-count weighting */
+  .phasebar{display:flex;height:48px;border-radius:8px;overflow:hidden;border:1px solid var(--line);margin-top:22px}
+  .phasebar .seg{flex-grow:var(--w);flex-shrink:1;flex-basis:0;position:relative}
+  .phasebar .seg+.seg{border-left:1px solid var(--ground)}
+  .phasebar .seg.on{background:linear-gradient(90deg,var(--accent-dim),var(--accent))}
+  .phasebar .seg.off{background:repeating-linear-gradient(45deg,var(--hatch-a),var(--hatch-a) 5px,var(--hatch-b) 5px,var(--hatch-b) 10px)}
+  .phaselegend{display:flex;flex-wrap:wrap;column-gap:22px;row-gap:6px;margin-top:12px;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  .phaselegend b{color:var(--ink)}
+  .phaselegend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:7px;vertical-align:middle}
+  .phaselegend .sw.on{background:var(--accent)}
+  .phaselegend .sw.off{background:repeating-linear-gradient(45deg,var(--hatch-a),var(--hatch-a) 3px,var(--hatch-b) 3px,var(--hatch-b) 6px)}
+
+  ul.clean{list-style:none;padding:0;margin:18px 0 0;display:flex;flex-direction:column;gap:11px;max-width:60ch}
+  ul.clean li{padding-left:26px;position:relative;color:var(--muted);font-size:15px;line-height:1.4}
+  ul.clean li::before{content:"›";position:absolute;left:2px;color:var(--accent);font-family:var(--mono);font-weight:700}
+  ul.clean li b{color:var(--ink);font-weight:650}
+
+  .final-links{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px;font-family:var(--mono);font-size:13.5px}
+  .final-links a{color:var(--ink);text-decoration:none;border:1px solid var(--line-2);border-radius:8px;padding:9px 14px;transition:border-color .2s,color .2s}
+  .final-links a:hover,.final-links a:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
+  .url{font-family:var(--mono);color:var(--accent);font-size:clamp(15px,2vw,20px);letter-spacing:.01em}
+
+  /* chrome: rail, counter, hint, theme */
+  .rail{position:fixed;left:0;right:0;bottom:0;height:3px;background:var(--line);z-index:5}
+  .rail>i{display:block;height:100%;background:var(--accent);width:0;transition:width .45s ease}
+  .hud{position:fixed;bottom:16px;left:clamp(20px,5vw,64px);z-index:6;font-family:var(--mono);font-size:12px;color:var(--faint);letter-spacing:.08em;display:flex;gap:14px;align-items:center}
+  .hud b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .hud .live{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 0 0 color-mix(in srgb,var(--good) 60%,transparent);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--good) 55%,transparent)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+  @media (prefers-reduced-motion:reduce){.hud .live{animation:none}}
+  .nav{position:fixed;bottom:14px;right:clamp(20px,5vw,64px);z-index:6;display:flex;gap:8px}
+  .nav button,.theme{background:var(--panel);border:1px solid var(--line-2);color:var(--ink);
+    width:38px;height:34px;border-radius:8px;cursor:pointer;font-size:15px;display:grid;place-items:center;transition:border-color .2s,color .2s}
+  .nav button:hover,.theme:hover{border-color:var(--accent);color:var(--accent)}
+  .theme{position:fixed;top:16px;right:clamp(20px,5vw,64px);z-index:6;width:36px;height:36px;font-size:15px}
+  button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .brandmark{position:fixed;top:18px;left:clamp(20px,5vw,64px);z-index:6;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .brandmark b{color:var(--ink)}
+
+  /* speaker-notes panel */
+  .notes{position:fixed;left:0;right:0;bottom:0;z-index:7;background:var(--panel);border-top:1px solid var(--line-2);
+    padding:16px clamp(20px,5vw,64px) 24px;transform:translateY(102%);transition:transform .3s ease;max-height:34vh;overflow:auto}
+  .notes.show{transform:none}
+  .notes .lab{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin:0 0 8px}
+  .notes p{margin:0;color:var(--ink);font-size:15.5px;line-height:1.5;max-width:80ch}
+  .hint{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:6;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--faint)}
+  .hint b{color:var(--muted)}
+  @media (max-width:720px){.hint{display:none}}
+
+  /* print → each slide becomes one landscape page (handout deck) */
+  @page{size:1280px 720px;margin:0}
+  @media print{
+    :root{--ground:#0a0b12}
+    html,body{height:auto;overflow:visible;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    body::before{position:absolute;height:100%}
+    .brandmark,.theme,.nav,.hud,.rail,.hint,.notes,#themeBtn{display:none !important}
+    .deck{height:auto}
+    .slide{position:relative;inset:auto;height:720px;width:1280px;opacity:1 !important;visibility:visible !important;
+      transform:none !important;page-break-after:always;break-after:page;overflow:hidden}
+    .slide:last-child{page-break-after:auto}
+    .bar .fill{transform:scaleX(var(--v,0)) !important}
+  }
+
+  @media (max-width:720px){
+    .g3,.g2{grid-template-columns:1fr}
+    .bar{grid-template-columns:92px 1fr;gap:8px 10px}
+    .bar .val{grid-column:1 / -1;font-size:12px;text-align:right}
+    .axis{display:none}
+    .stat-row{gap:22px}
+    .tier,.peer-note{grid-template-columns:1fr}
+    .phaselegend{gap:6px 14px}
+    /* body{overflow:hidden} stops the slide stack scrolling as one page. At this width the
+       stacked panels can outgrow the viewport, so the active slide scrolls inside itself.
+       flex-start is the fallback for engines without `safe` alignment, where a centred
+       overflow puts the top of a tall slide out of reach entirely. */
+    .slide{overflow-y:auto;overscroll-behavior:contain;justify-content:flex-start;justify-content:safe center}
+  }
+</style>
+</head>
+<body>
+
+
+<div class="brandmark"><b>ETH2QS</b> · agent-lab</div>
+<button class="theme" id="themeBtn" aria-label="Toggle light/dark">◐</button>
+
+<div class="deck" id="deck">
+
+  <!-- 1 — title -->
+  <section class="slide active">
+    <div class="wrap">
+      <p class="eyebrow">Field report · six weeks · AI-driven, not AI-unsupervised</p>
+      <h1>A six-week campaign ran on infrastructure that was mostly solved. <strong class="hot">Context</strong> was not.</h1>
+      <p class="lede">Node wall-clock and agent wall-clock are decoupled with tools everyone already has: detached systemd, event-driven wakeups. What actually threatened a six-week, AI-driven Ethereum client benchmark was the one clock nobody budgets for &mdash; the orchestrating agent's own context window.</p>
+      <p class="kicker"><b>eth2quickstart.com</b> &nbsp;·&nbsp; companion to the bake-off deck &nbsp;·&nbsp; 2026-06-22 &rarr; 2026-08-04 (last measurement 08-03; final installer fix merged 08-04)</p>
+    </div>
+  </section>
+
+  <!-- 2 — the rig -->
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">The rig</p>
+      <h2>What, how, when, who &mdash; one screen.</h2>
+      <div class="grid g2">
+        <div class="panel"><span class="tag">What</span><h3>Two numbers, per finisher</h3><p>Final synced disk footprint and cold-sync duration. Seven execution clients vs. a fixed Prysm (three never finished), then a five-way consensus sweep vs. a fixed execution client.</p></div>
+        <div class="panel"><span class="tag">How</span><h3>Native, sequential, capped</h3><p>systemd services, no Docker, one candidate at a time on a shared 12-core / ~62 GB host. Each run capped at 72 hours.</p></div>
+        <div class="panel"><span class="tag">When</span><h3>Six weeks, three phases</h3><p>A 23-day initial campaign (Jun 22 &rarr; Jul 14, 2026), then steady-state and restart-resume follow-ons through Aug 4.</p></div>
+        <div class="panel"><span class="tag">Who</span><h3>Agents, with a human holding the fence</h3><p>Claude Opus orchestrating, fresh Sonnet subagents building, a standing delegate lane for cheap and sandboxed work &mdash; a human operator holding the few levers that genuinely need one.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 — three clocks -->
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">The three clocks</p>
+      <h2>Two clocks are solved. The third is short &mdash; and it binds.</h2>
+      <div class="chart" aria-label="Three clocks: node time, agent time, and agent context (not to scale)">
+        <div class="bar"><div class="name">Node wall-clock</div><div class="track"><div class="fill" style="--v:1"></div></div><div class="val"><b>Solved</b> &middot; detached systemd, 72h</div></div>
+        <div class="bar"><div class="name">Agent wall-clock</div><div class="track"><div class="fill" style="--v:1"></div></div><div class="val"><b>Solved</b> &middot; event-driven wakeups</div></div>
+        <div class="bar sig"><div class="name">Agent context</div><div class="track"><div class="fill" style="--v:.16"></div></div><div class="val"><b>The real constraint</b> &middot; not to scale</div></div>
+      </div>
+      <p class="kicker">The context bar has no fixed duration to plot &mdash; it's short by construction, not measurement. That's the point of the next eleven slides.</p>
+    </div>
+  </section>
+
+  <!-- 4 — the spine -->
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">The spine</p>
+      <h2>The spine of it: <strong class="hot">context</strong> is the constraint that binds first.</h2>
+      <p class="lede">Node time and agent time are both solvable with infrastructure that already exists. Agent context only scales if conclusions get pushed down into small durable files instead of carried across a growing conversation &mdash; that single design choice is what the agent hierarchy, the durable-state control loop, and the governance rails all exist to serve.</p>
+    </div>
+  </section>
+
+  <!-- 5 — six weeks, three phases -->
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">The timeline</p>
+      <h2>Six weeks, three phases &mdash; 32 of 44 calendar days active.</h2>
+      <div class="phasebar" aria-label="44-day span, active measurement phases vs. gaps between them">
+        <div class="seg on" style="--w:23" title="Phase 1 — 23 days"></div>
+        <div class="seg off" style="--w:11" title="Gap — 11 days"></div>
+        <div class="seg on" style="--w:4" title="Phase 2 — 4 days"></div>
+        <div class="seg off" style="--w:1" title="Gap — 1 day"></div>
+        <div class="seg on" style="--w:5" title="Phase 3 — 5 days"></div>
+      </div>
+      <div class="phaselegend">
+        <span><i class="sw on"></i><b>Phase 1</b> &middot; 23d</span>
+        <span><i class="sw off"></i>gaps &middot; 12d</span>
+        <span><i class="sw on"></i><b>Phase 2</b> &middot; 4d</span>
+        <span><i class="sw on"></i><b>Phase 3</b> &middot; 5d</span>
+      </div>
+      <div class="grid g3">
+        <div class="panel"><span class="tag">Phase 1 &middot; Jun 22&ndash;Jul 14</span><h3>Initial campaign</h3><p>Seven execution clients, then the five-way consensus sweep. Triage, installer fixes, first full syncs.</p></div>
+        <div class="panel"><span class="tag">Phase 2 &middot; Jul 26&ndash;29</span><h3>Steady-state re-measure</h3><p>Footprints re-read once compaction settled, plus a third CL sweep against a nethermind anchor.</p></div>
+        <div class="panel"><span class="tag">Phase 3 &middot; Jul 31&ndash;Aug 4</span><h3>Restart-resume follow-ons</h3><p>Bisected restart gaps from 12 minutes to ~35 hours, found no cliff, and tuned nethermind's minimal-history installer default.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 — who ran it -->
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Who ran it</p>
+      <h2>Three tiers by design. One peer, outside it entirely.</h2>
+      <div class="tiers">
+        <div class="tier"><span class="badge">Orchestrator</span><span><b>Claude Opus</b> &mdash; plans, reviews every diff, writes the durable state. Doesn't hand-write client code.</span></div>
+        <div class="flowmark">&darr; dispatch &nbsp;&middot;&nbsp; &uarr; summary only, not full context</div>
+        <div class="tier"><span class="badge">Builders</span><span><b>Fresh Sonnet subagents</b> &mdash; one task each, report a short summary back.</span></div>
+        <!-- The Delegates tier describes the routing DESIGN (the repo's delegation table and its
+             wrapper binaries), not measured campaign activity. An evidence sweep for PR #272 found no
+             delegate commits in the campaign window, so the article's AgentHierarchy figure shows only
+             the two tiers that did dispatch work. Keeping the tier here is a deliberate operator
+             decision, not an oversight — leave it unless the operator says otherwise. The
+             "no delegate landed work inside this campaign's window" clause below is what keeps that
+             decision honest to a reader who never sees this comment; do not drop it. -->
+        <div class="tier"><span class="badge">Delegates</span><span><b>Cheaper / sandboxed models</b> &mdash; the standing lane for read-only research, routed through wrapper binaries. A design the orchestrator can reach for; no delegate landed work inside this campaign's window.</span></div>
+      </div>
+      <div class="hr-note">
+        <p class="hr-label">Outside the hierarchy &mdash; not dispatched, not reviewed as a child</p>
+        <div class="peer-note"><span class="badge">Independent peer</span><span><b>Codex</b> reviews PRs adversarially, on its own initiative &mdash; it flagged an unproven "live on the site" deployment claim in this campaign's own write-ups. No arrow to this box: the orchestrator never routes work to it the way it routes work to a builder.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 — governance -->
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Governance</p>
+      <h2>Rails the agent runs inside &mdash; and the two levers only a human pulls.</h2>
+      <div class="grid g2">
+        <div class="panel"><span class="tag">Always-on rails</span><h3>The agent runs inside these, every time</h3><p>One candidate at a time, no batching, ever. A 72-hour cap per candidate &mdash; footprint is the last sample before teardown, at sync for a finisher and at the cap for a capped run, never the peak. Conventional Commits only, never a force-push to master.</p></div>
+        <div class="panel hot"><span class="tag">The 2 human levers</span><h3>Only a human pulls these</h3><p>Every destructive data-clean is gated behind an explicit human go-ahead, never assumed. And no pull request merges without an explicit human go-ahead &mdash; the operator holds that lever, the agent never takes it.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 — the gate that caught itself -->
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow" style="color:var(--signal)">The near-miss</p>
+      <h2>The gate that caught itself.</h2>
+      <p class="lede">reth's out-of-the-box default is an archive node. Nothing would have flagged that as wrong &mdash; until the config-optimality gate started stamping every footprint <code>config_optimal=yes|no</code>. It caught the misconfiguration before a number shipped.</p>
+      <div class="stat-row">
+        <div class="stat"><div class="n sig">~2.8 TiB</div><div class="l">reth's undetected default &middot; archive mode</div></div>
+        <div class="stat"><div class="n good">~1.2 TiB</div><div class="l">reth pruned (--full) &middot; projected finish</div></div>
+        <div class="stat"><div class="n">6</div><div class="l">bug-fixes it took to trust the gate itself</div></div>
+      </div>
+      <p class="kicker">Fixed 2026-06-25, before a single reth result was recorded &mdash; the rerun then hit the 72h cap at ~0.98 TiB partial, so the pruned figure stays a projection. We nearly published our own misconfiguration.</p>
+    </div>
+  </section>
+
+  <!-- 9 — what broke -->
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Four incidents, all caught &amp; documented</p>
+      <h2>What actually breaks over six weeks.</h2>
+      <div class="grid g2">
+        <div class="panel"><span class="tag">nethermind</span><h3>13.3h silent stall</h3><p>Head frozen at block 4,651, 0 peers &mdash; everything else looked healthy. P2P bind pinned to loopback; fixed by advertising the real external IP.</p></div>
+        <div class="panel"><span class="tag">besu</span><h3>Mid-sync deadlock</h3><p>Downloader thread died; the process stayed alive and kept answering RPC. A stale pinned CL aged the sync pivot out of its servable window.</p></div>
+        <div class="panel hot"><span class="tag">ethrex</span><h3>Restart-resync cliff</h3><p>Gaps through 23 min resumed; a 26-min gap stalled. Longer measured gaps discarded state and re-synced from scratch (~2h). Inherent to the current design.</p></div>
+        <div class="panel"><span class="tag">erigon</span><h3>Gap-close deadlock</h3><p>OtterSync + a checkpoint-synced CL never issued the forkchoice update that would close the gap. Terminated per operator decision, recorded as a no-sync.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 — two harness bugs -->
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Bugs in our own measurement machinery</p>
+      <h2>Two harness bugs that nearly cost us data.</h2>
+      <div class="grid g2">
+        <div class="panel hot"><span class="tag">SIGTTIN</span><h3>A version check hung a run for 90 minutes</h3><p>A detached tmux install step piped a version check through <code>head -1</code>. Outside the foreground process group, that raised SIGTTIN against a tty it didn't own &mdash; which stops, not kills, the whole subtree. Fixed by redirecting stdin from /dev/null.</p></div>
+        <div class="panel hot"><span class="tag">The cap path</span><h3>The disk snapshot only fired on the synced branch</h3><p>A slow client hitting the 72-hour cap fell through to teardown &mdash; which wiped the datadir &mdash; before any snapshot was taken. One footprint survived only because it could be reconstructed from raw samples.</p></div>
+      </div>
+      <p class="kicker">The cap path is the one you forget, and it's the one a slow client actually takes.</p>
+    </div>
+  </section>
+
+  <!-- 11 — the control loop -->
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">The durable control loop</p>
+      <h2>A session dying mid-run loses nothing.</h2>
+      <p class="lede">Not because the session doesn't die &mdash; it did, more than once, once to an out-of-memory event. Because what carries the campaign forward is durable state, not context.</p>
+      <div class="tiers">
+        <div class="tier"><span class="badge">1</span><span><b>Human operator</b> &mdash; approves destructive steps</span></div>
+        <div class="flowmark">&darr;</div>
+        <div class="tier"><span class="badge">2</span><span><b>Claude orchestrator</b> &mdash; starts and resumes runs</span></div>
+        <div class="flowmark">&darr;</div>
+        <div class="tier"><span class="badge">3</span><span><b>Detached tmux driver</b> &mdash; bake-off harness &rarr; systemd EL/CL services</span></div>
+        <div class="flowmark">&darr;</div>
+        <div class="tier"><span class="badge">4</span><span><b>Small durable state</b> &mdash; results, queue, and a handoff note, in a few markdown files</span></div>
+        <div class="flowmark loop">&uarr; a fresh session reads the state, not the logs</div>
+        <div class="tier loopback"><span class="badge">back to</span><span><b>Claude orchestrator</b> &mdash; resumes exactly where the dead session left off</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 — what we'd tell the next person -->
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">If you're building the next one of these</p>
+      <h2>What we'd tell the next person.</h2>
+      <ul class="clean">
+        <li><b>The third clock is the real limit.</b> Node wall-clock and agent wall-clock are solvable with infrastructure; agent context only scales if you push conclusions to the data and keep durable state in small files.</li>
+        <li><b>Measure on every exit path, before you destroy anything.</b> Success is the easy path &mdash; the cap and the error paths are where your data quietly disappears.</li>
+        <li><b>Gate your benchmark on config, not just on outcome.</b> Stamp every number with "was this the client's best mode?" or you will eventually publish a measurement of your own mistake.</li>
+        <li><b>Give an agent a job and a fence.</b> The agent owns the tedious, sustained correctness; the human owns the few irreversible levers.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 13 — bottom line -->
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Bottom line</p>
+      <h2>The process, not the model, is why the verdicts hold up.</h2>
+      <p class="lede">None of this made the agent smarter about Ethereum clients. It made the campaign survive session deaths, context clears, and its own mistakes &mdash; the config gate's six bug-fixes, the SIGTTIN and cap-path landmines &mdash; without losing the measurements that mattered.</p>
+    </div>
+  </section>
+
+  <!-- 14 — CTA -->
+  <section class="slide">
+    <div class="wrap">
+      <p class="eyebrow">Read it, reproduce it</p>
+      <h2>The numbers, the harness, and every gotcha &mdash; on-site.</h2>
+      <p class="url">eth2quickstart.com/blog</p>
+      <div class="final-links">
+        <a href="https://eth2quickstart.com/blog/ethereum-client-bakeoff">The bake-off write-up</a>
+        <a href="https://eth2quickstart.com/blog/how-we-tested-with-claude">How we tested with Claude</a>
+        <a href="https://eth2quickstart.com/blog/bakeoff-harness">The harness reference</a>
+        <a href="https://eth2quickstart.com/blog/bakeoff-results">Raw results</a>
+        <a href="https://eth2quickstart.com/deck/bakeoff.html">The bake-off deck</a>
+      </div>
+      <p class="kicker">One-line install &rarr; hardened Ethereum node, 12 clients, MEV integration. <b>github.com/chimera-defi/eth2-quickstart</b></p>
+    </div>
+  </section>
+
+</div>
+
+<div class="hint"><b>&larr; &rarr;</b> navigate &nbsp;&middot;&nbsp; <b>N</b> notes &nbsp;&middot;&nbsp; <b>P</b> print / PDF</div>
+<div class="hud"><span class="live" aria-hidden="true"></span> SLIDE <b id="cur">01</b> / <span id="tot">14</span></div>
+<div class="nav"><button id="notesBtn" aria-label="Toggle speaker notes">&#9776;</button><button id="prev" aria-label="Previous slide">&lsaquo;</button><button id="next" aria-label="Next slide">&rsaquo;</button></div>
+<div class="notes" id="notes"><p class="lab">Speaker notes</p><p id="noteText"></p></div>
+<div class="rail"><i id="railfill"></i></div>
+
+<script>
+(function(){
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  var i=0, n=slides.length;
+  document.getElementById('tot').textContent=String(n).padStart(2,'0');
+  var NOTES=[
+    "Open on the frame, not the punchline: we ran a six-week, AI-driven Ethereum client benchmark, and the part that almost broke it wasn't sync speed or disk — it was the agent's own context window. Everything after this slide is how we solved for that.",
+    "One screen, four facts: what we measured, how, over what window, and who ran it. Say the headline number once — six weeks, one candidate at a time — and move on; the how-we-tested article has the rest.",
+    "Two clocks are solved with infrastructure everyone already has — detached systemd for node time, event-driven wakeups for agent time. The third bar is short and deliberately not to scale: agent context is the one that actually binds, and it's what the rest of the talk is about.",
+    "Land the thesis sentence and pause. Every other design choice in this campaign — the tiers, the durable state, the governance rails — exists because context is the constraint that binds first.",
+    "The campaign wasn't six continuous weeks of activity — 32 of the 44 calendar days were active measurement, the rest were gaps between phases. Walk the three phases left to right: initial campaign, steady-state re-measure, restart-resume follow-ons.",
+    "Three tiers, cost-ordered: Opus reviews every diff and never hand-writes client code; fresh Sonnet subagents implement one task each and report back a summary, not their full investigation; the delegate lane sits below them as a standing routing option, and say plainly that nothing came down it in this window. Point at the dashed box last: Codex reviewed PRs independently and flagged an unproven deployment claim in this campaign's own write-ups on its own initiative — but it was never a child the orchestrator dispatched. No arrow, on purpose.",
+    "Two columns: the rails the agent runs inside of constantly, and the two levers that stayed human no matter what. Say it plainly: nothing merges without an explicit human go-ahead, and a destructive wipe of the live node always needed a fresh one.",
+    "This is the near-miss. reth's out-of-the-box default is a ~2.8 TiB archive node; we almost recorded that as its footprint before the config-optimality gate caught it and forced the pruned --full mode instead — say out loud that ~1.2 TiB is that mode's projected finish, not a measurement, because reth never got past ~0.98 TiB partial inside the 72h cap. Land the twist: that gate itself needed six bug-fixes before we trusted it — the same failure mode it exists to catch, caught in itself.",
+    "Four real incidents that actually changed a verdict, not a hypothetical list. Nethermind and besu were fixable or explainable; ethrex's restart cliff is inherent to its current design; erigon's deadlock ended the run entirely. This is the receipts slide for 'we kept ourselves honest.'",
+    "These two aren't client bugs, they're bugs in our own measurement machinery. SIGTTIN hung a run for 90 minutes from one unguarded version-check command. The cap-path bug is the scarier one: it silently skipped the one measurement it was supposed to capture, and only survived because we could reconstruct it from raw samples.",
+    "This is the payoff of the durable-state design: the orchestrating session actually died mid-campaign, more than once, once from an out-of-memory event. Nothing was lost, because a fresh session reads a handful of markdown files, not a fifty-turn conversation history.",
+    "Four transferable lessons, and none of them are Ethereum-specific. Read them slowly — this is the slide people screenshot.",
+    "Close the loop on the thesis from slide four. The client verdicts hold up not because the model was smart about Ethereum clients, but because the process around it was built to survive its own mistakes.",
+    "Point them to the four write-ups and the sibling bake-off deck. Thank the room, open for questions."
+  ];
+  var noteText=document.getElementById('noteText');
+  function go(to){
+    to=Math.max(0,Math.min(n-1,to));
+    slides.forEach(function(s,k){
+      s.classList.toggle('active',k===to);
+      s.classList.toggle('prev',k<to);
+      s.setAttribute('aria-hidden',k===to?'false':'true');
+    });
+    i=to;
+    document.getElementById('cur').textContent=String(i+1).padStart(2,'0');
+    document.getElementById('railfill').style.width=((i)/(n-1)*100)+'%';
+    noteText.textContent=NOTES[i]||'';
+    if(('#'+(i+1))!==location.hash){history.replaceState(null,'','#'+(i+1))}
+  }
+  var notesEl=document.getElementById('notes');
+  function toggleNotes(){notesEl.classList.toggle('show')}
+  // Chrome buttons (next/prev/notes/theme) keep focus after a mouse click,
+  // which would otherwise make e.target a <button> for every subsequent
+  // keydown and (a) get swallowed by the guard below and/or (b) let a later
+  // Space keypress both re-activate the focused button *and* advance the
+  // slide. Blurring right after the click side-steps both failure modes.
+  function blurAfter(fn){
+    return function(e){ fn(); if(e&&e.currentTarget&&e.currentTarget.blur){e.currentTarget.blur();} };
+  }
+  document.getElementById('notesBtn').addEventListener('click',blurAfter(toggleNotes));
+  function next(){go(i+1)} function prev(){go(i-1)}
+  document.getElementById('next').addEventListener('click',blurAfter(next));
+  document.getElementById('prev').addEventListener('click',blurAfter(prev));
+  document.addEventListener('keydown',function(e){
+    // Only genuine text-entry widgets should block slide-nav shortcuts.
+    // Buttons (next/prev/notes/theme) must NOT be in this list: they can
+    // retain focus after a click, and excluding them here would silently
+    // swallow every arrow/N/P keypress until the user clicks elsewhere.
+    if(e.target.closest&&e.target.closest('input,textarea,select,[contenteditable]'))return;
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();next()}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();prev()}
+    else if(e.key==='Home'){go(0)} else if(e.key==='End'){go(n-1)}
+    else if(e.key==='n'||e.key==='N'){toggleNotes()}
+    else if(e.key==='p'||e.key==='P'){e.preventDefault();window.print()}
+  });
+  // click right/left third of screen to advance (but not on links/buttons)
+  document.getElementById('deck').addEventListener('click',function(e){
+    if(e.target.closest('a,button'))return;
+    (e.clientX > window.innerWidth*0.5) ? next() : prev();
+  });
+  // theme toggle (persisted in localStorage; defaults to dark when unset
+  // or when storage is unavailable, e.g. privacy mode / file:// contexts)
+  var root=document.documentElement;
+  var THEME_KEY='howwetested-theme';
+  function readStoredTheme(){
+    try{ return localStorage.getItem(THEME_KEY); }catch(e){ return null; }
+  }
+  function writeStoredTheme(t){
+    try{ localStorage.setItem(THEME_KEY, t); }catch(e){ /* ignore */ }
+  }
+  var stored=readStoredTheme();
+  if(stored==='light'||stored==='dark'){ root.setAttribute('data-theme', stored); }
+  document.getElementById('themeBtn').addEventListener('click',blurAfter(function(){
+    var cur=root.getAttribute('data-theme');
+    // The deck's default render is committed-dark (no prefers-color-scheme:light
+    // override), so treat "unset" as dark — first click always reaches light.
+    var isDark = cur ? cur==='dark' : true;
+    var next=isDark?'light':'dark';
+    root.setAttribute('data-theme', next);
+    writeStoredTheme(next);
+  }));
+  var start=parseInt((location.hash||'').slice(1),10);
+  go(isNaN(start)?0:start-1);
+  addEventListener('hashchange',function(){var h=parseInt(location.hash.slice(1),10);if(!isNaN(h)&&h-1!==i)go(h-1)});
+})();
+</script>
+
+</body>
+</html>
