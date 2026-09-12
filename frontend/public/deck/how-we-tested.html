@@ -220,6 +220,11 @@
     .stat-row{gap:22px}
     .tier,.peer-note{grid-template-columns:1fr}
     .phaselegend{gap:6px 14px}
+    /* body{overflow:hidden} stops the slide stack scrolling as one page. At this width the
+       stacked panels can outgrow the viewport, so the active slide scrolls inside itself.
+       flex-start is the fallback for engines without `safe` alignment, where a centred
+       overflow puts the top of a tall slide out of reach entirely. */
+    .slide{overflow-y:auto;overscroll-behavior:contain;justify-content:flex-start;justify-content:safe center}
   }
 </style>
 </head>
@@ -347,10 +352,10 @@
       <p class="lede">reth's out-of-the-box default is an archive node. Nothing would have flagged that as wrong &mdash; until the config-optimality gate started stamping every footprint <code>config_optimal=yes|no</code>. It caught the misconfiguration before a number shipped.</p>
       <div class="stat-row">
         <div class="stat"><div class="n sig">~2.8 TiB</div><div class="l">reth's undetected default &middot; archive mode</div></div>
-        <div class="stat"><div class="n good">~1.2 TiB</div><div class="l">reth pruned (--full) &middot; the number we shipped</div></div>
+        <div class="stat"><div class="n good">~1.2 TiB</div><div class="l">reth pruned (--full) &middot; projected finish</div></div>
         <div class="stat"><div class="n">6</div><div class="l">bug-fixes it took to trust the gate itself</div></div>
       </div>
-      <p class="kicker">Fixed 2026-06-25, before a single reth result was recorded. We nearly published our own misconfiguration.</p>
+      <p class="kicker">Fixed 2026-06-25, before a single reth result was recorded &mdash; the rerun then hit the 72h cap at ~0.98 TiB partial, so the pruned figure stays a projection. We nearly published our own misconfiguration.</p>
     </div>
   </section>
 
@@ -462,7 +467,7 @@
     "The campaign wasn't six continuous weeks of activity — 32 of the 44 calendar days were active measurement, the rest were gaps between phases. Walk the three phases left to right: initial campaign, steady-state re-measure, restart-resume follow-ons.",
     "Three tiers, cost-ordered: Opus reviews every diff and never hand-writes client code; fresh Sonnet subagents implement one task each and report back a summary, not their full investigation; delegates handle cheap, sandboxed work. Point at the dashed box last: Codex reviewed PRs independently and flagged an unproven deployment claim in this campaign's own write-ups on its own initiative — but it was never a child the orchestrator dispatched. No arrow, on purpose.",
     "Two columns: the rails the agent runs inside of constantly, and the two levers that stayed human no matter what. Say it plainly: an agent never merges its own PR, and a destructive wipe of the live node always needed a fresh human go-ahead.",
-    "This is the near-miss. reth's out-of-the-box default is a ~2.8 TiB archive node; we almost recorded that as its footprint before the config-optimality gate caught it and forced the pruned ~1.2 TiB number instead. Land the twist: that gate itself needed six bug-fixes before we trusted it — the same failure mode it exists to catch, caught in itself.",
+    "This is the near-miss. reth's out-of-the-box default is a ~2.8 TiB archive node; we almost recorded that as its footprint before the config-optimality gate caught it and forced the pruned --full mode instead — say out loud that ~1.2 TiB is that mode's projected finish, not a measurement, because reth never got past ~0.98 TiB partial inside the 72h cap. Land the twist: that gate itself needed six bug-fixes before we trusted it — the same failure mode it exists to catch, caught in itself.",
     "Four real incidents that actually changed a verdict, not a hypothetical list. Nethermind and besu were fixable or explainable; ethrex's restart cliff is inherent to its current design; erigon's deadlock ended the run entirely. This is the receipts slide for 'we kept ourselves honest.'",
     "These two aren't client bugs, they're bugs in our own measurement machinery. SIGTTIN hung a run for 90 minutes from one unguarded version-check command. The cap-path bug is the scarier one: it silently skipped the one measurement it was supposed to capture, and only survived because we could reconstruct it from raw samples.",
     "This is the payoff of the durable-state design: the orchestrating session actually died mid-campaign, more than once, once from an out-of-memory event. Nothing was lost, because a fresh session reads a handful of markdown files, not a fifty-turn conversation history.",
