@@ -149,7 +149,7 @@ const campaignPhases = [
       { date: '2026-08-01', label: 'Nethermind resumes a 10,607-block gap in 35 min — restart-resume measured' },
       { date: '2026-08-03', label: 'Bisection finds no cliff at any gap (12 min → ~35h); prysm clean-resume measured, n=4' },
       { date: '2026-08-03', label: 'Nethermind prune tuning produces a minimal-history default (~250–280 GiB, no-history tier), measured and shipped as a human-reviewed PR' },
-      { date: '2026-08-04', label: 'Minimal-history default merged to master, live on eth2quickstart.com' },
+      { date: '2026-08-04', label: 'Minimal-history default merged to master, shipped as the installer default' },
     ],
   },
 ]
@@ -376,8 +376,8 @@ const anchorInstabilityPoints = [
     body: 'geth: lodestar < lighthouse; ethrex: lighthouse < lodestar.',
   },
   {
-    lead: 'teku swung ~27% on the same anchor:',
-    body: '~667 MiB, then ~848 MiB on a clean re-read of the nethermind anchor — enough to flip it from below grandine (~730 MiB) to above it.',
+    lead: 'teku swung ~25% on the same anchor:',
+    body: '~667 MiB, then ~835 MiB on a clean re-read of the nethermind anchor — enough to flip it from below grandine (~730 MiB) to above it.',
   },
 ]
 
@@ -401,8 +401,8 @@ const harnessBugs = [
   },
   {
     title: 'The measurement that vanished at the cap',
-    cost: 'lost the footprint on every capped run',
-    what: 'The disk snapshot was taken only on the synced success branch. When a slow client hit the 72-hour cap, the script fell through to teardown — which wiped the datadir — and snapshotted after.',
+    cost: 'cost reth its clean footprint',
+    what: 'The disk snapshot was taken only on the synced success branch. When a slow client hit the 72-hour cap, the script fell through to teardown — which wiped the datadir — and snapshotted after. Only reth ever hit the cap, and its partial footprint survived at all only because it could be reconstructed from samples.jsonl.',
     fix: "Snapshot every terminal run path after installation and before teardown; preflight aborts still exit before sampling. The cap path is the one you forget, and it's the one a slow client actually takes.",
   },
 ]
@@ -611,7 +611,7 @@ function AgentHierarchy() {
         <span className="block text-xs text-muted-foreground">plans, reviews every diff, writes durable state</span>
       </div>
       <ArrowDown className="mx-auto my-1.5 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg border border-border bg-background/40 px-4 py-3 text-center text-sm text-foreground">
           Builder &mdash; fresh Sonnet subagent
           <span className="block text-xs text-muted-foreground">one task, reports a summary back</span>
@@ -619,23 +619,30 @@ function AgentHierarchy() {
         <div className="rounded-lg border border-border bg-background/40 px-4 py-3 text-center text-sm text-foreground">
           Builder &mdash; fresh Sonnet subagent
           <span className="block text-xs text-muted-foreground">one task, reports a summary back</span>
-        </div>
-        <div className="rounded-lg border border-[#f5b46b]/40 bg-[#f5b46b]/10 px-4 py-3 text-center text-sm text-foreground">
-          Independent peer &mdash; <span className="font-medium text-[#f5b46b]">Codex</span>
-          <span className="block text-xs text-muted-foreground">
-            its own identity and branches: lands fixes, reviews the PRs adversarially
-          </span>
         </div>
       </div>
       <div className="mx-auto mt-3 flex w-fit flex-col items-center gap-1 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-1.5">
         <ArrowUp className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
         <span className="text-xs text-muted-foreground">summary only, not full context &mdash; returns to the orchestrator</span>
       </div>
+      {/* Codex sits below the rule, with no arrow to the orchestrator: it was not dispatched
+          by this hierarchy, so drawing it as a third child would assert the opposite of the copy. */}
+      <div className="mt-5 border-t border-dashed border-border pt-4">
+        <p className="mb-2 text-center text-[11px] uppercase tracking-wide text-muted-foreground">
+          outside the hierarchy
+        </p>
+        <div className="mx-auto max-w-sm rounded-lg border border-dashed border-muted-foreground/50 bg-background/40 px-4 py-3 text-center text-sm text-foreground">
+          Independent peer &mdash; <span className="font-medium">Codex</span>
+          <span className="block text-xs text-muted-foreground">
+            its own identity and branches: lands fixes, reviews the PRs adversarially
+          </span>
+        </div>
+      </div>
       <figcaption className="mt-3 text-xs text-muted-foreground">
         The builders exist to keep the expensive model&apos;s context free: one reads the client source
-        and returns a commit plus three sentences, so the orchestrator holds the diff, not the
+        and returns a diff and a short summary, so the orchestrator holds the diff, not the
         investigation. Codex exists for the opposite reason &mdash; a reviewer that shares none of the
-        orchestrator&apos;s assumptions.
+        orchestrator&apos;s assumptions, and that nothing in this diagram dispatched.
       </figcaption>
     </figure>
   )
@@ -1006,14 +1013,10 @@ export default function HowWeTestedWithClaudePage() {
           <AnchorHeading id="durable-state-backbone" as="h3" className="mt-6 font-medium text-foreground">
             3. Durable state is the backbone
           </AnchorHeading>
-          <Card padding="sm" className="mt-2 border-primary/20 bg-primary/5">
-            <p className="text-sm text-foreground">
-              The orchestrating agent&apos;s context window &mdash; not node wall-clock &mdash; is the real
-              scaling bottleneck of a long agent-driven campaign.
-            </p>
-          </Card>
+          {/* The context-window-is-the-bottleneck claim is made by ThreeClocksFigure above;
+              restating it here as a pull-quote was duplication, so this leads with the fix. */}
           <p className="mt-3 text-sm text-muted-foreground">
-            Three moves keep it from filling:
+            Three moves keep the orchestrator&apos;s context from filling:
           </p>
           <LeadList items={durableStatePoints} />
           <VerdictDiagram />
@@ -1051,9 +1054,8 @@ export default function HowWeTestedWithClaudePage() {
             >
               <FlowDiagram steps={harnessPipelineSteps} />
               <figcaption className="mt-3 text-xs text-muted-foreground">
-                One path, five stages, every candidate. Whichever verdict a run lands on, the disk
-                snapshot happens before teardown &mdash; the ordering that the second harness bug below
-                got wrong.
+                One path, five stages, every candidate &mdash; from the manifest that lists what to
+                test to the summarizer that turns the artifacts into the results table.
               </figcaption>
             </figure>
             <Details
@@ -1198,7 +1200,7 @@ export default function HowWeTestedWithClaudePage() {
 
         <Card padding="sm" className="mt-10 sm:mt-16 bg-muted/30">
           <p className="text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Sources:</span> this page renders{' '}
+            <span className="font-medium text-foreground">Sources:</span> this page is adapted from{' '}
             <a
               href={`${SITE_CONFIG.github}/blob/master/docs/HOW_WE_TESTED_WITH_CLAUDE.md`}
               target="_blank"
