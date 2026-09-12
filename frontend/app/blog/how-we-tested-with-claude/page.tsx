@@ -402,7 +402,7 @@ const harnessBugs = [
   {
     title: 'The measurement that vanished at the cap',
     cost: 'cost reth its clean footprint',
-    what: 'The disk snapshot was taken only on the synced success branch. When a slow client hit the 72-hour cap, the script fell through to teardown — which wiped the datadir — and snapshotted after. Only reth ever hit the cap, and its partial footprint survived at all only because it could be reconstructed from samples.jsonl.',
+    what: 'The disk snapshot was taken only on the synced success branch. When a slow client hit the 72-hour cap, the script fell through to teardown — which wiped the datadir — and snapshotted after. reth was the only client to hit the cap while the bug was live, and its partial footprint survived at all only because it could be reconstructed from samples.jsonl.',
     fix: "Snapshot every terminal run path after installation and before teardown; preflight aborts still exit before sampling. The cap path is the one you forget, and it's the one a slow client actually takes.",
   },
 ]
@@ -1076,8 +1076,8 @@ export default function HowWeTestedWithClaudePage() {
           <p className="mt-2 text-sm text-muted-foreground">
             Early on we corrupted our own results by recording a footprint before confirming the client was
             in its most disk-efficient mode: reth at its defaults runs a ~2.8 TiB archive node, and we
-            nearly recorded that as &ldquo;reth&apos;s footprint&rdquo; when the pruned number
-            (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--full</code>) is ~1.2 TiB. A benchmark that measures your own misconfiguration is worse than no benchmark &mdash; it just looks authoritative.
+            nearly recorded that as &ldquo;reth&apos;s footprint&rdquo; when the pruned mode
+            (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--full</code>) projects to ~1.2 TiB. A benchmark that measures your own misconfiguration is worse than no benchmark &mdash; it just looks authoritative.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             So the harness grew a config-optimality gate: before trusting a footprint, it inspects the
