@@ -242,7 +242,7 @@
       <p class="eyebrow">Field report · six weeks · AI-driven, not AI-unsupervised</p>
       <h1>A six-week campaign ran on infrastructure that was mostly solved. <strong class="hot">Context</strong> was not.</h1>
       <p class="lede">Node wall-clock and agent wall-clock are decoupled with tools everyone already has: detached systemd, event-driven wakeups. What actually threatened a six-week, AI-driven Ethereum client benchmark was the one clock nobody budgets for &mdash; the orchestrating agent's own context window.</p>
-      <p class="kicker"><b>eth2quickstart.com</b> &nbsp;·&nbsp; companion to the bake-off deck &nbsp;·&nbsp; 2026-06-22 &rarr; 2026-08-04</p>
+      <p class="kicker"><b>eth2quickstart.com</b> &nbsp;·&nbsp; companion to the bake-off deck &nbsp;·&nbsp; 2026-06-22 &rarr; 2026-08-04 (last measurement 08-03; final installer fix merged 08-04)</p>
     </div>
   </section>
 
@@ -255,7 +255,7 @@
         <div class="panel"><span class="tag">What</span><h3>Two numbers, per finisher</h3><p>Final synced disk footprint and cold-sync duration. Seven execution clients vs. a fixed Prysm (three never finished), then a five-way consensus sweep vs. a fixed execution client.</p></div>
         <div class="panel"><span class="tag">How</span><h3>Native, sequential, capped</h3><p>systemd services, no Docker, one candidate at a time on a shared 12-core / ~62 GB host. Each run capped at 72 hours.</p></div>
         <div class="panel"><span class="tag">When</span><h3>Six weeks, three phases</h3><p>A 23-day initial campaign (Jun 22 &rarr; Jul 14, 2026), then steady-state and restart-resume follow-ons through Aug 4.</p></div>
-        <div class="panel"><span class="tag">Who</span><h3>Agents, with a human holding the fence</h3><p>Claude Opus orchestrating, fresh Sonnet subagents building, delegate models on cheap and sandboxed work &mdash; a human operator holding the few levers that genuinely need one.</p></div>
+        <div class="panel"><span class="tag">Who</span><h3>Agents, with a human holding the fence</h3><p>Claude Opus orchestrating, fresh Sonnet subagents building, a standing delegate lane for cheap and sandboxed work &mdash; a human operator holding the few levers that genuinely need one.</p></div>
       </div>
     </div>
   </section>
@@ -313,7 +313,7 @@
   <section class="slide">
     <div class="wrap">
       <p class="eyebrow">Who ran it</p>
-      <h2>Three tiers, dispatched. One peer, never dispatched.</h2>
+      <h2>Three tiers by design. One peer, outside it entirely.</h2>
       <div class="tiers">
         <div class="tier"><span class="badge">Orchestrator</span><span><b>Claude Opus</b> &mdash; plans, reviews every diff, writes the durable state. Doesn't hand-write client code.</span></div>
         <div class="flowmark">&darr; dispatch &nbsp;&middot;&nbsp; &uarr; summary only, not full context</div>
@@ -321,9 +321,11 @@
         <!-- The Delegates tier describes the routing DESIGN (the repo's delegation table and its
              wrapper binaries), not measured campaign activity. An evidence sweep for PR #272 found no
              delegate commits in the campaign window, so the article's AgentHierarchy figure shows only
-             the two dispatched tiers. Keeping the tier here is a deliberate operator decision, not an
-             oversight — leave it unless the operator says otherwise. -->
-        <div class="tier"><span class="badge">Delegates</span><span><b>Cheaper / sandboxed models</b> &mdash; read-only research, routed through wrapper binaries.</span></div>
+             the two tiers that did dispatch work. Keeping the tier here is a deliberate operator
+             decision, not an oversight — leave it unless the operator says otherwise. The
+             "no delegate landed work inside this campaign's window" clause below is what keeps that
+             decision honest to a reader who never sees this comment; do not drop it. -->
+        <div class="tier"><span class="badge">Delegates</span><span><b>Cheaper / sandboxed models</b> &mdash; the standing lane for read-only research, routed through wrapper binaries. A design the orchestrator can reach for; no delegate landed work inside this campaign's window.</span></div>
       </div>
       <div class="hr-note">
         <p class="hr-label">Outside the hierarchy &mdash; not dispatched, not reviewed as a child</p>
@@ -338,7 +340,7 @@
       <p class="eyebrow">Governance</p>
       <h2>Rails the agent runs inside &mdash; and the two levers only a human pulls.</h2>
       <div class="grid g2">
-        <div class="panel"><span class="tag">Always-on rails</span><h3>The agent runs inside these, every time</h3><p>One candidate at a time, no batching, ever. A 72-hour cap per candidate &mdash; footprint is the last near-cap sample, never the peak. Conventional Commits only, never a force-push to master.</p></div>
+        <div class="panel"><span class="tag">Always-on rails</span><h3>The agent runs inside these, every time</h3><p>One candidate at a time, no batching, ever. A 72-hour cap per candidate &mdash; footprint is the last sample before teardown, at sync for a finisher and at the cap for a capped run, never the peak. Conventional Commits only, never a force-push to master.</p></div>
         <div class="panel hot"><span class="tag">The 2 human levers</span><h3>Only a human pulls these</h3><p>Every destructive data-clean is gated behind an explicit human go-ahead, never assumed. And an agent cannot merge its own pull request &mdash; a human does that.</p></div>
       </div>
     </div>
@@ -465,7 +467,7 @@
     "Two clocks are solved with infrastructure everyone already has — detached systemd for node time, event-driven wakeups for agent time. The third bar is short and deliberately not to scale: agent context is the one that actually binds, and it's what the rest of the talk is about.",
     "Land the thesis sentence and pause. Every other design choice in this campaign — the tiers, the durable state, the governance rails — exists because context is the constraint that binds first.",
     "The campaign wasn't six continuous weeks of activity — 32 of the 44 calendar days were active measurement, the rest were gaps between phases. Walk the three phases left to right: initial campaign, steady-state re-measure, restart-resume follow-ons.",
-    "Three tiers, cost-ordered: Opus reviews every diff and never hand-writes client code; fresh Sonnet subagents implement one task each and report back a summary, not their full investigation; delegates handle cheap, sandboxed work. Point at the dashed box last: Codex reviewed PRs independently and flagged an unproven deployment claim in this campaign's own write-ups on its own initiative — but it was never a child the orchestrator dispatched. No arrow, on purpose.",
+    "Three tiers, cost-ordered: Opus reviews every diff and never hand-writes client code; fresh Sonnet subagents implement one task each and report back a summary, not their full investigation; the delegate lane sits below them as a standing routing option, and say plainly that nothing came down it in this window. Point at the dashed box last: Codex reviewed PRs independently and flagged an unproven deployment claim in this campaign's own write-ups on its own initiative — but it was never a child the orchestrator dispatched. No arrow, on purpose.",
     "Two columns: the rails the agent runs inside of constantly, and the two levers that stayed human no matter what. Say it plainly: an agent never merges its own PR, and a destructive wipe of the live node always needed a fresh human go-ahead.",
     "This is the near-miss. reth's out-of-the-box default is a ~2.8 TiB archive node; we almost recorded that as its footprint before the config-optimality gate caught it and forced the pruned --full mode instead — say out loud that ~1.2 TiB is that mode's projected finish, not a measurement, because reth never got past ~0.98 TiB partial inside the 72h cap. Land the twist: that gate itself needed six bug-fixes before we trusted it — the same failure mode it exists to catch, caught in itself.",
     "Four real incidents that actually changed a verdict, not a hypothetical list. Nethermind and besu were fixable or explainable; ethrex's restart cliff is inherent to its current design; erigon's deadlock ended the run entirely. This is the receipts slide for 'we kept ourselves honest.'",

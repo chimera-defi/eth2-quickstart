@@ -88,7 +88,7 @@ light/dark preference.
 
 ### Editing a deck
 
-Each deck is one HTML file (inline CSS/JS, no build step) — edit `frontend/public/deck/bakeoff.html` or `frontend/public/deck/how-we-tested.html` directly: slide content is in the `<section class="slide">` blocks; speaker notes are the `NOTES` array in the `<script>`, index-matched 1:1 to slide order; the data-gauge values are the `--v` CSS custom properties on each bar. A new deck must also be added to `test/ci_test_campaign_constants.sh`'s `ALL_ARTIFACTS`, `.github/workflows/campaign-constants.yml`'s path filters, and the post-deploy smoke test in `.github/workflows/frontend.yml` — see the comments at each site.
+Each deck is one HTML file (inline CSS/JS, no build step) — edit `frontend/public/deck/bakeoff.html` or `frontend/public/deck/how-we-tested.html` directly: slide content is in the `<section class="slide">` blocks; speaker notes are the `NOTES` array in the `<script>`, index-matched 1:1 to slide order; the data-gauge values are the `--v` CSS custom properties on each bar. A new deck must also be added to `frontend/app/sitemap.ts`'s route list, `test/ci_test_campaign_constants.sh`'s `ALL_ARTIFACTS`, `.github/workflows/campaign-constants.yml`'s path filters, and the post-deploy smoke test in `.github/workflows/frontend.yml` — see the comments at each site. Miss the sitemap and the deck ships unlisted; miss the smoke test and a broken deck ships silently.
 
 ---
 
