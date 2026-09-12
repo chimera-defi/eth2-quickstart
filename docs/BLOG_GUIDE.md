@@ -59,12 +59,15 @@ Wrap each diagram in a `<figure>` with a full-sentence `aria-label` and a `<figc
 
 ---
 
-## The presentation deck
+## The presentation decks
 
-A self-contained slide deck of the bake-off, for presenting and sharing.
+Self-contained slide decks, for presenting and sharing. Each is one HTML file with its own
+inline CSS/JS and its own `localStorage` theme key, so they don't fight over each other's
+light/dark preference.
 
-- **Live on the site:** [`/deck/bakeoff.html`](https://eth2quickstart.com/deck/bakeoff.html) — source: `frontend/public/deck/bakeoff.html`.
-- **Hosted artifact (private, shareable):** https://claude.ai/code/artifact/42f02b4d-3a8e-4601-9ded-5ac2dd4bb643
+- **Bake-off findings:** [`/deck/bakeoff.html`](https://eth2quickstart.com/deck/bakeoff.html) — source: `frontend/public/deck/bakeoff.html`. Theme key `bakeoff-theme`.
+- **How we tested (methodology):** [`/deck/how-we-tested.html`](https://eth2quickstart.com/deck/how-we-tested.html) — source: `frontend/public/deck/how-we-tested.html`. Theme key `howwetested-theme`.
+- **Hosted artifact (private, shareable, bake-off deck):** https://claude.ai/code/artifact/42f02b4d-3a8e-4601-9ded-5ac2dd4bb643
 
 ### Controls
 
@@ -83,9 +86,9 @@ A self-contained slide deck of the bake-off, for presenting and sharing.
 - Present full-screen from the live URL or the artifact; press `N` to bring up your notes.
 - To hand out slides, press `P` and "Save as PDF" (or `Cmd/Ctrl+P`). It's already sized for one 16:9 page per slide.
 
-### Editing the deck
+### Editing a deck
 
-The deck is one HTML file (inline CSS/JS, no build step). Edit `frontend/public/deck/bakeoff.html`: slide content is in the `<section class="slide">` blocks; speaker notes are the `NOTES` array in the `<script>`; the data-gauge values are the `--v` CSS custom properties on each bar.
+Each deck is one HTML file (inline CSS/JS, no build step) — edit `frontend/public/deck/bakeoff.html` or `frontend/public/deck/how-we-tested.html` directly: slide content is in the `<section class="slide">` blocks; speaker notes are the `NOTES` array in the `<script>`, index-matched 1:1 to slide order; the data-gauge values are the `--v` CSS custom properties on each bar. A new deck must also be added to `test/ci_test_campaign_constants.sh`'s `ALL_ARTIFACTS`, `.github/workflows/campaign-constants.yml`'s path filters, and the post-deploy smoke test in `.github/workflows/frontend.yml` — see the comments at each site.
 
 ---
 
