@@ -273,13 +273,13 @@ prove EL/CL decoupling:
   grandine (~725 MiB) < teku (~936 MiB) < nimbus (~1.2 GiB).**
 - **nethermind anchor** second cross-anchor confirmation (run_id `client-bakeoff-anchor-nethermind-2026-07-26b`,
   2026-07-26). **nethermind-anchor CL disk ranking (smaller = better): lodestar (~178 MiB) <
-  lighthouse (~470 MiB) < grandine (~730 MiB actual) < teku (~848 MiB) < nimbus (~1.3 GiB).**
+  lighthouse (~470 MiB) < grandine (~730 MiB actual) < teku (~835 MiB) < nimbus (~1.3 GiB).**
 
 **Cross-anchor verdict — the tiers reproduce:** the heavy tier (nimbus, largest on all three anchors,
 without exception) and the lightweight tier (lodestar, lighthouse — the two smallest on all three) hold on
 all three anchors; the lodestar↔lighthouse order flips by anchor (lighthouse smallest on ethrex; lodestar
 smallest on geth and nethermind). teku and grandine form a "mid" tier; grandine stays below teku on all
-three anchors — there is no genuine teku↔grandine swap — but teku itself moved ~667 MiB → ~848 MiB across
+three anchors — there is no genuine teku↔grandine swap — but teku itself moved ~667 MiB → ~835 MiB across
 two runs on the nethermind anchor, which is measurement-window variance, not a tier change. Absolute sizes
 scale with post-sync observation time, not the EL anchor. Three different EL anchors → the same broad CL
 tiers = **EL/CL decoupling supported empirically.** (The nethermind anchor above supplied that third

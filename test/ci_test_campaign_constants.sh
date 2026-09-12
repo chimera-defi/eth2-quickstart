@@ -34,6 +34,7 @@ ALL_ARTIFACTS=(
     "$ARBITER"
     "docs/blog/CLIENT_BAKEOFF_OPERATOR_GUIDE.md"
     "docs/CLIENT_BAKEOFF_BLOG.md"
+    "docs/CLIENT_BAKEOFF_BLOG_NOTES.md"
     "docs/CLIENT_BAKEOFF_HARNESS.md"
     "docs/HOW_WE_TESTED_WITH_CLAUDE.md"
     "frontend/app/blog/bakeoff-harness/page.tsx"
