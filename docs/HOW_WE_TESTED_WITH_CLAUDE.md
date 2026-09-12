@@ -6,7 +6,7 @@ The [client bake-off](CLIENT_BAKEOFF_BLOG.md) measured, for every execution and 
 
 A campaign that long, that sequential, and that easy to get subtly wrong is exactly the kind of work you don't want a human babysitting around the clock. So we didn't — it was run by **Claude** (Opus orchestrating, fresh Sonnet subagents building, delegate models for the cheap and sandboxed work), with a human operator holding the few levers that genuinely need one.
 
-> **Up front, honestly:** this was AI-*driven*, not AI-*unsupervised*. Every destructive action against the live node was gated behind an explicit human confirmation, every result was committed under conventional-commit review, and no agent could merge its own pull request. The interesting claim here is not "the AI did it alone" — it's that the *right division of labor* between an agent and an operator let a disk-and-timing-sensitive benchmark — a 23-day initial campaign, then ~2.5 more weeks and counting of steady-state and restart-resume measurement — run to completion without a person watching it sync.
+> **Up front, honestly:** this was AI-*driven*, not AI-*unsupervised*. Every destructive action against the live node was gated behind an explicit human confirmation, every result was committed under conventional-commit review, and no pull request merged without an explicit human go-ahead. The interesting claim here is not "the AI did it alone" — it's that the *right division of labor* between an agent and an operator let a disk-and-timing-sensitive benchmark — a 23-day initial campaign, then ~2.5 more weeks and counting of steady-state and restart-resume measurement — run to completion without a person watching it sync.
 
 ## Contents
 
@@ -25,7 +25,7 @@ A campaign that long, that sequential, and that easy to get subtly wrong is exac
 
 - **Two clocks, then a third nobody expects.** Node wall-clock (detached systemd) and agent wall-clock (event-driven wakeups) are the obvious bottlenecks. The real one is **agent context** — solved by pushing conclusions down to the data and keeping durable state in small files.
 - **Three-tier agent hierarchy for context economy.** Opus orchestrator (plans, reviews every diff) → fresh Sonnet builders (implement, report back a summary) → delegate models (cheap and sandboxed work).
-- **Non-negotiable governance, not vibes.** One candidate at a time, a 72-hour cap, destructive actions gated behind explicit human confirmation, only a human merges.
+- **Non-negotiable governance, not vibes.** One candidate at a time, a 72-hour cap, destructive actions gated behind explicit human confirmation, and nothing merges without an explicit human go-ahead.
 - **Four real incidents, all fixed or explicitly documented** — see the table below.
 - **The headline numbers hide operational limits.** ethrex is the fastest cold-sync in the field but is not production-ready as tested: a 26-minute/132-block restart gap stalled, and longer measured gaps caused a full re-snap. Its datadir plateaus at ~470–476 GiB, but that's not a disk win — it's a no-history node. besu did sync successfully; its pruned re-run exposed fragility after a prolonged outage of the pinned Prysm version.
 
@@ -157,7 +157,7 @@ A handful of rules were treated as non-negotiable, and they are what made it saf
 - **72-hour cap** per candidate; **footprint is the last near-cap sample, never the peak** (on-disk size oscillates during compaction — see [issues log §E2](CLIENT_BAKEOFF_ISSUES_LOG.md)).
 - **Destructive data-cleans are gated** behind an explicit `ETH2QS_BAKEOFF_CONFIRMED=yes`, and wiping the *live* shared node always required a fresh human go-ahead — surfaced as a structured decision prompt, never assumed.
 - **Conventional Commits, new commits only**, never a force-push to `master`; secrets stayed in protected local files and were never committed or exposed to agent context.
-- **An agent cannot merge its own pull request.** A human does that.
+- **No pull request merges without an explicit human go-ahead.** The operator holds that lever; the agent never takes it on its own judgment.
 
 None of these are clever. All of them are the reason a six-week autonomous benchmark against real client software didn't turn into a six-week autonomous incident.
 

@@ -86,7 +86,7 @@ const tldrPoints = [
   },
   {
     title: 'Non-negotiable governance, not vibes',
-    body: 'One candidate at a time, a 72-hour cap, destructive actions gated behind explicit human confirmation, only a human merges. The prune experiment wiped a synced 1.1 TiB node only after an explicit go-ahead, then put the measured nethermind minimal-history default up as a PR for a human to review and merge — the agent never merged it.',
+    body: 'One candidate at a time, a 72-hour cap, destructive actions gated behind explicit human confirmation, and nothing merges without an explicit human go-ahead. The prune experiment wiped a synced 1.1 TiB node only after an explicit go-ahead, then put the measured nethermind minimal-history default up as a PR for a human to review — the agent never decided to merge it.',
   },
   {
     title: 'The headline numbers hide operational limits',
@@ -322,7 +322,7 @@ const governanceLevers = [
   },
   {
     lead: 'Merging.',
-    body: 'An agent cannot merge its own pull request. A human does that.',
+    body: 'No pull request merges without an explicit human go-ahead. The operator holds that lever; the agent never takes it on its own judgment.',
   },
 ]
 
@@ -689,7 +689,7 @@ function GovernanceFence() {
   return (
     <figure
       className="mt-4 rounded-xl border border-border bg-muted/30 p-4 sm:p-6"
-      aria-label="Governance had two sides. Standing rails the agent always ran inside: one candidate at a time with no batching, a 72-hour cap per candidate with the footprint taken from the last sample before teardown, and new commits only under Conventional Commits with no force-push and secrets kept out of agent context. Levers only the human pulled: destructive data-cleans, which needed a fresh go-ahead per run, and merging, because an agent cannot merge its own pull request."
+      aria-label="Governance had two sides. Standing rails the agent always ran inside: one candidate at a time with no batching, a 72-hour cap per candidate with the footprint taken from the last sample before teardown, and new commits only under Conventional Commits with no force-push and secrets kept out of agent context. Levers only the human pulled: destructive data-cleans, which needed a fresh go-ahead per run, and merging, because no pull request merges without an explicit human go-ahead."
     >
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg border border-[#a855f7]/40 bg-[#a855f7]/10 p-3">
@@ -763,7 +763,7 @@ export default function HowWeTestedWithClaudePage() {
           <p className="text-sm text-foreground">
             This was AI-<em>driven</em>, not AI-<em>unsupervised</em>. Every destructive action against
             the live node was gated behind an explicit human confirmation, every result was committed
-            under conventional-commit review, and no agent could merge its own pull request. The claim
+            under conventional-commit review, and no pull request merged without an explicit human go-ahead. The claim
             isn&apos;t &ldquo;the AI did it alone&rdquo; &mdash; it&apos;s that the right division of
             labor between an agent and an operator let a disk-and-timing-sensitive benchmark run to
             completion without a person watching it sync.
