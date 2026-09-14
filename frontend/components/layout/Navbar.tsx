@@ -69,6 +69,9 @@ export function Navbar() {
                 </Link>
               )
             ))}
+            <Button href={SITE_CONFIG.contactHref} variant="secondary" size="sm">
+              Contact
+            </Button>
             <Button href="/quickstart" size="sm">
               Get Started
             </Button>
@@ -95,7 +98,7 @@ export function Navbar() {
       <div
         className={cn(
           'border-t border-border bg-background md:hidden overflow-hidden transition-all duration-200 ease-out',
-          mobileMenuOpen ? 'visible max-h-80 opacity-100' : 'invisible max-h-0 opacity-0 border-t-0'
+          mobileMenuOpen ? 'visible max-h-96 opacity-100' : 'invisible max-h-0 opacity-0 border-t-0'
         )}
         aria-hidden={!mobileMenuOpen}
       >
@@ -123,6 +126,13 @@ export function Navbar() {
               </Link>
             )
           ))}
+          <a
+            href={SITE_CONFIG.contactHref}
+            className="block py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Contact
+          </a>
           <div className="pt-3">
             <Button href="/quickstart" className="w-full justify-center" onClick={() => setMobileMenuOpen(false)}>
               Get Started

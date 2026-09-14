@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import { SITE_CONFIG } from '@/lib/constants'
 
-const footerLinks = [
+const footerLinks: { label: string; href: string; internal?: boolean; mailto?: boolean }[] = [
   { label: 'Blog', href: '/blog', internal: true },
   { label: 'Get Started', href: '/quickstart', internal: true },
   { label: 'Agents', href: '/agents', internal: true },
+  { label: 'Contact', href: SITE_CONFIG.contactHref, mailto: true },
   { label: 'GitHub', href: SITE_CONFIG.github },
   { label: 'Issues', href: `${SITE_CONFIG.github}/issues` },
   { label: 'RSS', href: '/rss.xml' },
@@ -29,6 +30,14 @@ export function Footer() {
                 >
                   {link.label}
                 </Link>
+              ) : link.mailto ? (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {link.label}
+                </a>
               ) : (
                 <a
                   key={link.label}

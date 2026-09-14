@@ -54,6 +54,45 @@ export function CallToAction() {
             </div>
           </div>
         </Card>
+
+        <Card className="relative overflow-hidden border-border/60 bg-muted/40 p-5 sm:p-6 md:p-8 mt-6 sm:mt-8">
+          <div className="relative flex flex-col gap-3 sm:gap-4">
+            <Badge variant="primary">Consulting &amp; support</Badge>
+            <motion.h3
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.4 }}
+              transition={{ duration: 0.5 }}
+              className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl"
+            >
+              Want to run an Ethereum server?
+            </motion.h3>
+            <motion.p
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.4 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="text-base sm:text-lg text-muted-foreground max-w-2xl"
+            >
+              We offer consulting and infrastructure support &mdash; node setup, validators, RPC
+              endpoints, and ongoing operations. Tell us what you need.
+            </motion.p>
+            <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 sm:gap-4">
+              <Button href={SITE_CONFIG.contactHref} size="lg" className="justify-center shrink-0">
+                Contact Us
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                or email{' '}
+                <a
+                  href={SITE_CONFIG.contactHref}
+                  className="underline hover:text-foreground"
+                >
+                  {SITE_CONFIG.email}
+                </a>
+              </p>
+            </div>
+          </div>
+        </Card>
       </div>
     </section>
   )

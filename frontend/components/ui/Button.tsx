@@ -31,6 +31,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const classes = cn(baseStyles, variants[variant], sizes[size], className)
     
     if (href) {
+      if (href.startsWith('mailto:')) {
+        return (
+          <a href={href} className={classes}>
+            {children}
+          </a>
+        )
+      }
       if (external) {
         return (
           <a href={href} target="_blank" rel="noopener noreferrer" className={classes}>
