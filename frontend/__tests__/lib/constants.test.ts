@@ -16,6 +16,8 @@ import {
 describe('constants', () => {
   it('SITE_CONFIG has required properties', () => {
     expect(SITE_CONFIG.github).toMatch(/^https:\/\/github\.com\//)
+    expect(SITE_CONFIG.email).toMatch(/^[^@\s]+@[^@\s]+\.[^@\s]+$/)
+    expect(SITE_CONFIG.contactHref).toBe('mailto:' + SITE_CONFIG.email)
   })
 
   it('arrays are not empty', () => {

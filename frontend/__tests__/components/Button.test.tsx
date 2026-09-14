@@ -61,4 +61,12 @@ describe('Button', () => {
     render(<Button disabled>Disabled</Button>)
     expect(screen.getByRole('button')).toBeDisabled()
   })
+
+  it('renders a mailto link without target or rel attributes', () => {
+    render(<Button href="mailto:test@example.com">Email</Button>)
+    const link = screen.getByRole('link', { name: /email/i })
+    expect(link).toHaveAttribute('href', 'mailto:test@example.com')
+    expect(link).not.toHaveAttribute('target')
+    expect(link).not.toHaveAttribute('rel')
+  })
 })

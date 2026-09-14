@@ -2,12 +2,16 @@
  * Application constants
  */
 
+const CONTACT_EMAIL = 'chimera_defi@protonmail.com'
+
 export const SITE_CONFIG = {
   name: 'Ethereum Node Quick Setup',
   shortName: 'ETH2 Quick Start',
   description: 'Transform a fresh cloud server into a fully-configured Ethereum node.',
   github: 'https://github.com/chimera-defi/eth2-quickstart',
   url: 'https://eth2quickstart.com',
+  email: CONTACT_EMAIL,
+  contactHref: `mailto:${CONTACT_EMAIL}`,
 }
 
 export const NAV_LINKS = [
