@@ -26,9 +26,10 @@
 
 ## Install And Share Paths
 
-- Preferred packaged path after publish: `clawhub install eth2-quickstart`
+- Primary path: `git clone https://github.com/chimera-defi/eth2-quickstart.git && cd eth2-quickstart`
 - Codex-style fallback: install from the GitHub path `skills/eth2-quickstart`
 - Raw-ingest fallback: tell the agent to read this repo's `llms.txt` or `llms-full.txt`
+- Registry path (ClawHub): not yet published — `clawhub install eth2-quickstart` does not work today
 
 ## Canonical Commands
 
