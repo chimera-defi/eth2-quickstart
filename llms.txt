@@ -9,7 +9,7 @@ Important constraints:
 - Prefer `./scripts/eth2qs.sh doctor --json` for machine-readable health.
 - Prefer dry-run cleanup first.
 - Do not remove validator keys or secrets.
-- Treat ClawHub as the package install path. Treat this file as the raw-ingest fallback for agents that can read a text URL directly.
+- Install path: `git clone https://github.com/chimera-defi/eth2-quickstart.git && cd eth2-quickstart`. The skill is not yet published to any package registry (e.g. ClawHub) — do not use registry install commands. Treat this file as the raw-ingest fallback for agents that can read a text URL directly.
 
 ## Core Files
 

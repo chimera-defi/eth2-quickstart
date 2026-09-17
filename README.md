@@ -94,12 +94,11 @@ The skill entrypoint is [`skills/eth2-quickstart/SKILL.md`](skills/eth2-quicksta
 The skill is repo-aware: install it, then use it from inside an `eth2-quickstart` checkout.
 
 ```bash
-# once published
-clawhub install eth2-quickstart
-
-# fallback: local workspace
 git clone --depth 1 https://github.com/chimera-defi/eth2-quickstart.git
 cd eth2-quickstart
+
+# registry install (ClawHub) — not yet published, this does not work today
+# clawhub install eth2-quickstart
 ```
 
 - Raw-ingest fallback for agents that can load a text URL directly: [`llms.txt`](./llms.txt) and [`llms-full.txt`](./llms-full.txt)
