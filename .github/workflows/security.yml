@@ -31,7 +31,14 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
+    - name: Static security checks (fail-closed)
+      run: |
+        # Enforced gate: 0.0.0.0-binding scan of configs/ + input-validation
+        # regression tests. Unlike the informational checks below, a violation
+        # here fails the job.
+        bash install/security/test_security_fixes.sh --static
+
     - name: Run security validation script
       run: |
         echo "Running security validation script..."
@@ -103,13 +110,10 @@ jobs:
             client_name=$(basename "$client_dir")
             echo "Checking $client_name configurations..."
             
-            # Look for any 0.0.0.0 bindings (should be avoided)
-            if find "$client_dir" -name "*.yaml" -o -name "*.toml" -o -name "*.cfg" -o -name "*.json" | xargs grep -l "0\.0\.0\.0" 2>/dev/null; then
-              echo "⚠️  Found 0.0.0.0 bindings in $client_name configs"
-            else
-              echo "✅ No 0.0.0.0 bindings in $client_name configs"
-            fi
-            
+            # 0.0.0.0-binding detection is ENFORCED (fail-closed) by the
+            # "Static security checks" step above via test_security_fixes.sh
+            # --static; no warning-only duplicate here.
+
             # Look for localhost bindings (good)
             if find "$client_dir" -name "*.yaml" -o -name "*.toml" -o -name "*.cfg" -o -name "*.json" | xargs grep -l "127\.0\.0\.1\|localhost" 2>/dev/null; then
               echo "✅ Found localhost bindings in $client_name configs"

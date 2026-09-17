@@ -395,10 +395,22 @@ run_config_verification() {
         "configs/teku/teku_validator_base.yaml"
     )
     
+    # Probe for PyYAML once (loop-invariant). In CI its absence is a hard
+    # FAIL - otherwise every YAML check silently degrades to a warning and
+    # the job stays green, which is exactly the fake-pass this check replaces.
+    local yaml_parser_available=false
+    if python3 -c 'import yaml' 2>/dev/null; then
+        yaml_parser_available=true
+    elif [[ -n "${CI:-}${GITHUB_ACTIONS:-}" ]]; then
+        log_test "FAIL" "PyYAML missing in CI - YAML templates cannot be validated"
+    else
+        log_test "WARN" "PyYAML missing - YAML template validation skipped"
+    fi
+
     for config in "${config_files[@]}"; do
         if [[ -f "$PROJECT_ROOT/$config" ]]; then
             log_test "PASS" "config exists: $config"
-            
+
             # Basic syntax check based on file type
             case "$config" in
                 *.json)
@@ -409,12 +421,15 @@ run_config_verification() {
                     fi
                     ;;
                 *.yaml|*.yml)
-                    # Basic YAML check - verify file has valid structure
-                    # Check for key: value patterns (allowing URLs with http://)
-                    if grep -qE "^[a-zA-Z_-]+:" "$PROJECT_ROOT/$config"; then
-                        log_test "PASS" "config valid YAML structure: $config"
-                    else
-                        log_test "WARN" "config may have YAML issues: $config"
+                    # Real YAML parse (GH runners and the test Docker image
+                    # both ship PyYAML; parser absence is reported once above)
+                    if [[ "$yaml_parser_available" == "true" ]]; then
+                        # Parse errors go to the log so a FAIL says WHY
+                        if python3 -c 'import sys, yaml; yaml.safe_load(open(sys.argv[1]))' "$PROJECT_ROOT/$config"; then
+                            log_test "PASS" "config valid YAML: $config"
+                        else
+                            log_test "FAIL" "config invalid YAML: $config"
+                        fi
                     fi
                     ;;
             esac

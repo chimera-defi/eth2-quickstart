@@ -63,7 +63,8 @@ Validator helpers:
 - `./scripts/eth2qs.sh validator-manage` for the combined exit / consolidation menu.
 
 Maintenance utilities:
-- `./install/utils/clean_geth_history.sh` to prune geth's ancient freezer on an already-synced node and keep `eth1.service` pinned to `--history.chain postmerge`.
+- `./clean_geth_history.sh` (repo root) to prune geth's ancient freezer on an already-synced node and keep `eth1.service` pinned to `--history.chain postmerge`.
+- `./install/utils/update_all.sh` / `./install/utils/update_git.sh` for repo + software-stack updates — full guide: [`install/utils/README_UPDATE_SCRIPTS.md`](../install/utils/README_UPDATE_SCRIPTS.md).
 
 ## Environment Configuration (exports.sh)
 

@@ -31,15 +31,23 @@ if ! command -v expect &>/dev/null || ! command -v whiptail &>/dev/null; then
     exit 0
 fi
 
+# whiptail (newt/slang) refuses to start without a capable TERM ("TERM
+# environment variable needs set." / "Your terminal lacks the ability..."),
+# and GitHub Actions runners export no TERM — which bash then defaults to
+# "dumb", so a plain ${TERM:-xterm} fallback never fires. TERM is a harness
+# prerequisite, not the behavior under test (</dev/tty with piped stdin).
+if [[ -z "${TERM:-}" || "$TERM" == "dumb" || "$TERM" == "unknown" ]]; then
+    export TERM=xterm
+fi
+
 # Test 1: whiptail msgbox with </dev/tty - should work when stdin is pipe
 # SC2016: expect -c requires single-quoted Tcl script; shell must not expand
 # shellcheck disable=SC2016
 expect -c '
     set timeout 10
-    exit_code 0
     spawn sh -c "echo pipe | bash -c \"whiptail --title Test --msgbox test 5 20 </dev/tty\""
     expect {
-        -re "test|OK" {
+        -re {[Oo][Kk]} {
             send "\r"
             exp_continue
         }

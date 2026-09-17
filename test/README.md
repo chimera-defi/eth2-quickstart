@@ -181,9 +181,9 @@ E2E_CONSENSUS=prysm E2E_PRYSM_CHECKPOINT_SMOKE=true ./test/run_e2e.sh --phase=2
 # Example workaround: run from a temp copy owned by a non-root user
 TMP_REPO=/tmp/eth2-quickstart-ci-run2
 rm -rf "$TMP_REPO"
-cp -a /root/.openclaw/workspace/dev/eth2-quickstart/.worktrees/master "$TMP_REPO"
-chown -R abhishek:abhishek "$TMP_REPO"
-su -s /bin/bash abhishek -c "cd $TMP_REPO && bash test/ci_test_run_2.sh"
+cp -a /path/to/eth2-quickstart "$TMP_REPO"
+chown -R youruser:youruser "$TMP_REPO"
+su -s /bin/bash youruser -c "cd $TMP_REPO && bash test/ci_test_run_2.sh"
 ```
 
 ### Full End-to-End Testing

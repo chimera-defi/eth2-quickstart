@@ -128,7 +128,9 @@ else
 fi
 
 # Caddy config validation (CI_E2E minimal config must validate with default Caddy)
-if command -v caddy &>/dev/null && [[ -f "$PROJECT_ROOT/test/validate_caddy_config.sh" ]]; then
+# Fail closed like the nginx check below: the Docker image installs caddy, so a
+# missing binary here is an image regression, not a reason to silently skip.
+if [[ -f "$PROJECT_ROOT/test/validate_caddy_config.sh" ]]; then
     if "$PROJECT_ROOT/test/validate_caddy_config.sh"; then
         record_test "Caddy config validates" "PASS"
     else

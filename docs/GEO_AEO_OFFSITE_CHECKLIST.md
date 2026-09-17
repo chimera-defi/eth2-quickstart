@@ -82,8 +82,11 @@ mcp-publisher publish          # reads ./server.json
 
 Read by humans and by the crawlers that feed answer-engines; also raise traditional SEO authority.
 
-- [ ] `awesome-ethereum` — PR adding eth2-quickstart under node/staking tooling.
-- [ ] `awesome-staking` (and similar curated staking lists) — PR.
+- [x] `awesome-ethereum` — **PR filed 2026-09-17**: [bekatom/awesome-ethereum#99](https://github.com/bekatom/awesome-ethereum/pull/99)
+      (912★, active; entry under Developer Tools). Awaiting maintainer merge — verify the rendered page once merged.
+- [x] ~~`awesome-staking`~~ — **no viable target (checked 2026-09-17)**: every candidate list found
+      (`0xarmagan/Awesome-Ethereum-Staking-Resources-`, `awesome-staking-pools` ×2, `pinglamb/awesome-eth2`)
+      is dead (last push 2021–2023). Re-check if a maintained list appears.
 - [ ] Check whether ethereum.org "run a node" / "staking" resource pages accept a link or PR.
 - **Verify (each):** merged link is present on the list's rendered page.
 

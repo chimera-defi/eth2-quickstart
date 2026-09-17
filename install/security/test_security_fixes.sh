@@ -272,12 +272,38 @@ test_ssl_configuration() {
 }
 
 # Main testing function
+# Static mode: only the repo-content checks that need no provisioned host.
+# Used by CI (security.yml) as a fail-closed gate; the full suite below also
+# probes host state (UFW, AIDE, SSL) and only makes sense on a real node.
+main_static() {
+    local total_issues=0
+    local rc
+
+    log_info "=== SECURITY TESTING SUITE (static checks) ==="
+
+    # `|| rc=$?` keeps set -e (inherited from exports.sh) from aborting on the
+    # first failing check, so both checks always run and get reported.
+    rc=0; test_network_exposure || rc=$?
+    total_issues=$((total_issues + rc))
+
+    rc=0; test_input_validation || rc=$?
+    total_issues=$((total_issues + rc))
+
+    if [[ $total_issues -eq 0 ]]; then
+        log_info "✓ Static security checks passed"
+    else
+        log_error "✗ $total_issues static security issues found"
+    fi
+
+    return $total_issues
+}
+
 main() {
     local total_issues=0
     local test_results=()
-    
+
     log_info "=== SECURITY TESTING SUITE ==="
-    
+
     # Run all tests
     test_network_exposure
     total_issues=$((total_issues + $?))
@@ -334,4 +360,8 @@ main() {
 }
 
 # Run tests
-main
+if [[ "${1:-}" == "--static" ]]; then
+    main_static
+else
+    main
+fi
