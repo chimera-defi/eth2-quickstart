@@ -36,10 +36,9 @@ fi
 # shellcheck disable=SC2016
 expect -c '
     set timeout 10
-    exit_code 0
     spawn sh -c "echo pipe | bash -c \"whiptail --title Test --msgbox test 5 20 </dev/tty\""
     expect {
-        -re "test|OK" {
+        -re {[Oo][Kk]} {
             send "\r"
             exp_continue
         }

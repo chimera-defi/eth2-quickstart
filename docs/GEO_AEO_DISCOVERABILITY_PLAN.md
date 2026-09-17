@@ -35,7 +35,7 @@ Every recommendation maps to one stage of the target scenario:
 ## Current-state audit (credit where due — do NOT rebuild)
 
 **Already in place (DRIVE — mature):**
-- `skills/eth2-quickstart/SKILL.md` — Anthropic skill-creator format, strong trigger-phrase `description`, routing, safety rules, 10 reference docs (`workflow`, `operator`, `commands`, `safety`, `sizing`, `outputs`, `examples`, `mcp`, `improvement`, `evals`).
+- `skills/eth2-quickstart/SKILL.md` — Anthropic skill-creator format, strong trigger-phrase `description`, routing, safety rules, 9 reference docs (`workflow`, `operator`, `commands`, `safety`, `sizing`, `outputs`, `examples`, `mcp`, `improvement`).
 - `mcp_server/` — Python MCP server (`eth2qs_mcp_server.py` + tools), `run_eth2qs_mcp.sh`, `scripts/install_claude_eth2qs_mcp.sh`. Read-only funds-safety contract (`eth2qs_validators`, `eth2qs_validator_op_preview`).
 - `scripts/eth2qs.sh` — one wrapper, ~28 subcommands, `--json` on `doctor`/`stats`/`plan`/`debug`/`update-check`/`monitor export`/`client-options`/`validators`. Non-interactive `bootstrap --non-interactive`, `phase1`, `phase2 --execution=… --consensus=… --mev=…`.
 - `llms.txt` + `llms-full.txt` at repo root — valid llms.txt format, links to skill/refs/MCP.
@@ -57,7 +57,7 @@ Every recommendation maps to one stage of the target scenario:
 ### A1. GitHub repo metadata *(P0 — trivial, high impact)*
 The repo is the most likely agent landing point and its metadata is weak.
 - **Description** (current: `"Scripts to get a eth2 merge ready node setup in seconds "` — dated "merge" framing, trailing space). Proposed:
-  `Set up a production Ethereum validator/node (12 clients, MEV, hardening) via one script — with an AI-agent skill, MCP server & JSON CLI.`
+  `Set up a production Ethereum validator/node (13 clients, MEV, hardening) via one script — with an AI-agent skill, MCP server & JSON CLI.`
 - **Topics** (current: **none**). Propose: `ethereum`, `ethereum-node`, `validator`, `staking`, `proof-of-stake`, `geth`, `prysm`, `lighthouse`, `mev-boost`, `node-operator`, `devops`, `ai-agents`, `mcp`, `claude`, `llms-txt`.
 - **Homepage URL** (current: empty) → `https://eth2quickstart.com`.
 - **Custom social-preview image** (`usesCustomOpenGraphImage: false`) → upload a branded 1280×640 (reuse `frontend/public/og.png` styling).
@@ -119,7 +119,7 @@ Mirror the repo agent layer so an agent that lands on the site discovers how to 
 - Add `SoftwareApplication`/`HowTo` `potentialAction` or at least prominent internal links so crawlers associate the agent layer with the product.
 
 ### B3. Homepage above-the-fold quick-answer + question-shaped headings *(P1 — content)*
-- Add a one- to two-sentence quick-answer block near the top ("eth2-quickstart turns a fresh Ubuntu server into a hardened Ethereum validator/RPC node in ~30 min, across 12 clients, with one script — drivable by humans or AI agents").
+- Add a one- to two-sentence quick-answer block near the top ("eth2-quickstart turns a fresh Ubuntu server into a hardened Ethereum validator/RPC node in ~30 min, across 13 clients, with one script — drivable by humans or AI agents").
 - Reword some section H2s into question form where natural (helps extraction).
 - **Verify:** quick-answer appears in initial HTML (SSR), not client-only.
 
