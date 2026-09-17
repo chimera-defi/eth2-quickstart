@@ -8,7 +8,7 @@
 
 ## TL;DR — the one strategic insight
 
-The **repo already has a mature agent-operability layer** (a skill-creator-format skill, an MCP server, a stable `./scripts/eth2qs.sh` wrapper with `--json` everywhere, `llms.txt` + `llms-full.txt`, ClawHub/Claude-plugin packaging). The "an agent CAN drive it" half is **largely solved and should not be rebuilt.**
+The **repo already has a mature agent-operability layer** (a skill-creator-format skill, an MCP server, a stable `./scripts/eth2qs.sh` wrapper with `--json` everywhere, `llms.txt` + `llms-full.txt`, Claude-plugin packaging; ClawHub publication still pending). The "an agent CAN drive it" half is **largely solved and should not be rebuilt.**
 
 The gap is **discovery and the website**, in three specific ways:
 
@@ -111,7 +111,7 @@ Answer-engines extract Q&A blocks. Add a visible FAQ (homepage or `/quickstart`)
 ### B2. A "For AI Agents" page on the website — `/agents` *(P1 — the most on-thesis new artifact)*
 Mirror the repo agent layer so an agent that lands on the site discovers how to drive the tool without spelunking GitHub:
 - Copy-paste **MCP add** command (`claude mcp add …`, `codex mcp add …`).
-- **Skill install** (ClawHub + GitHub-path fallback).
+- **Skill install** (git clone primary; ClawHub not yet published).
 - The **wrapper JSON** commands (`doctor --json`, `plan --json`, `phase2 --execution=…`).
 - Link to `llms.txt`, `SKILL.md`, `docs/VALIDATOR_MANAGEMENT.md`, the safety contract.
 - One-paragraph **safety contract** (no key-gen, no secret removal, human-confirm for root/reboot/destructive).

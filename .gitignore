@@ -28,7 +28,7 @@ __pycache__/
 
 # Agent-local skill symlinks (absolute paths; not portable across machines)
 skills/token-reduce
+skills/devin-delegate
 
 # Runtime scratch dir used by config merging + bakeoff harness; never commit contents
 tmp/
-skills/devin-delegate
