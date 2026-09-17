@@ -404,10 +404,11 @@ echo ""
 if command -v ufw &> /dev/null; then
     if sudo ufw status | grep -q "Status: active"; then
         record_test "Firewall: UFW Active" "PASS" "UFW firewall is active"
-        
-        # Note: Firewall rules for MEV ports may not be configured
-        # This is OK as MEV services bind to localhost by default
-        record_test "Firewall: MEV Ports" "PASS" "MEV services bind to localhost (no external access needed)"
+
+        # No MEV-port firewall assertion here: MEV services bind to localhost
+        # by default, so there is no external rule to verify. (A previous
+        # version recorded an unconditional PASS for "Firewall: MEV Ports",
+        # which tested nothing.)
     else
         record_test "Firewall: UFW Active" "SKIP" "UFW is installed but not active"
     fi

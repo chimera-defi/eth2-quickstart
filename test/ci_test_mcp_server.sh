@@ -56,7 +56,7 @@ else
     record_test "python MCP files compile" "FAIL"
 fi
 
-if python3 -m unittest discover -s "$PROJECT_ROOT/test" -p "test_mcp_tools.py"; then
+if python3 -m unittest discover -s "$PROJECT_ROOT/test" -p "test_*.py"; then
     record_test "python MCP unit tests pass" "PASS"
 else
     record_test "python MCP unit tests pass" "FAIL"

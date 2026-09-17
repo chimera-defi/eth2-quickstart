@@ -67,7 +67,6 @@ light/dark preference.
 
 - **Bake-off findings:** [`/deck/bakeoff.html`](https://eth2quickstart.com/deck/bakeoff.html) — source: `frontend/public/deck/bakeoff.html`. Theme key `bakeoff-theme`.
 - **How we tested (methodology):** [`/deck/how-we-tested.html`](https://eth2quickstart.com/deck/how-we-tested.html) — source: `frontend/public/deck/how-we-tested.html`. Theme key `howwetested-theme`.
-- **Hosted artifact (private, shareable, bake-off deck):** https://claude.ai/code/artifact/42f02b4d-3a8e-4601-9ded-5ac2dd4bb643
 
 ### Controls
 

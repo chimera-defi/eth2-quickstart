@@ -7,26 +7,27 @@
 
 **🌐 Website & blog:** [eth2quickstart.com](https://eth2quickstart.com) — quick start, supported clients, and the [Ethereum client bake-off](https://eth2quickstart.com/blog/ethereum-client-bakeoff) write-up. Presenting or sharing the blog and slide deck? See the **[Blog & Presentation Guide](docs/BLOG_GUIDE.md)** — deep-link sharing, speaker notes, print-to-PDF, and the live [slide deck](https://eth2quickstart.com/deck/bakeoff.html).
 
-Get an ETH2 compatible RPC node setup in seconds!   
-Save at least 2 days compared to CoinCashew and Somersats guides using the automated scripts and built-in checkpoint-sync configuration support.   
-With your own uncensored & unmetered RPC node!   
-And get ready for the ETH2 merge!
+Set up a full Ethereum node (execution + consensus client, MEV, hardened OS) on a fresh Linux
+server with simple shell scripts containing community best practices. Checkpoint sync is
+preconfigured, so you save at least 2 days compared to the CoinCashew and Somersat guides — and
+you end up with your own uncensored, unmetered RPC node. Supports 7 execution × 6 consensus
+clients for servers, home solo stakers, and pool node operators.
 
-Setup an Ethereum node quickly with simple shell scripts containing community best practices. 
-Supports multiple client combinations for servers, home solo stakers, and pool node operators.
-Choose from various execution and consensus clients for optimal client diversity.
+**Start here:** [Quickstart](#quickstart) — one command on a fresh host.
 
 **⚠️ Security Notice:** Don't blindly run scripts near sensitive data. Review scripts before execution.
 
-## Mission
+## Table of Contents
 
-We try to setup guidelines to quickly, safely and securely setup ETH2 capable nodes on a cloud VPS or bare metal server.   
-
-The goal is to allow sovereign individuals to set up independent validators, and validating services easily.    
-On their own hardware, in their own location, safe from government overreach and censorship.    
-
-Additionally, by using a VPS, they can more easily offer a censorship resistant RPC node for their fellow etherians.   
-(Do you really want to open up an RPC node on your home wifi for the world to use?)
+- [Quickstart](#quickstart) — [one-liner bootstrap](#one-liner-bootstrap-recommended-for-fresh-hosts), [command wrapper](#unified-command-wrapper-human--agent-friendly), [step-by-step install](#installation), [service unit names](#service-unit-names-canonical)
+- [For External Agents](#for-external-agents) — skill, MCP server, `llms.txt`
+- [Prerequisites](#prerequisites) · [System Requirements](#system-requirements)
+- [Available Ethereum Clients](#available-ethereum-clients) · [Client Selection Guide](#client-selection-guide)
+- [MEV Solutions](#mev-solutions)
+- [Sync and Configure](#sync-and-configure) · [Configuration Architecture](#configuration-architecture) · [Network-Specific Setup](#network-specific-setup)
+- [RPC exposure: Nginx](#nginx-rpc-setup) · [Caddy](#caddy-web-server-alternative-to-nginx)
+- [Security Features](#security-features) · [Troubleshooting](#troubleshooting)
+- [Mission](#mission) · [Benefits](#benefits) · [Credits](#credits) · [Contact](#contact-for-questions--collaboration) · [More docs](#additional-documentation)
 
 ## Prerequisites
 
@@ -475,10 +476,10 @@ For detailed Caddy setup instructions, see [Caddy Installation Guide](docs/CADDY
 
 ## Network-Specific Setup
 
-### Testnet Usage (Goerli/Holesky)
+### Testnet Usage (e.g., Sepolia, Hoodi)
 Before running client install scripts, modify configurations:
 - Update checkpoint URLs in `exports.sh`
-- Add network flags (e.g., `--goerli`, `--holesky`) to client commands
+- Add network flags (e.g., `--sepolia`, `--hoodi`) to client commands
 - Ensure testnet-specific genesis and checkpoint files
 
 ### Mainnet Optimization
@@ -487,18 +488,24 @@ Before running client install scripts, modify configurations:
 - Set appropriate cache sizes based on available RAM
 - Use fast NVMe storage for better performance
 
+## Mission
+
+We try to set up guidelines to quickly, safely and securely set up Ethereum validator-capable
+nodes on a cloud VPS or bare metal server.
+
+The goal is to allow sovereign individuals to set up independent validators, and validating
+services, easily — on their own hardware, in their own location, safe from government overreach
+and censorship. And by using a VPS, they can offer a censorship-resistant RPC node to their
+fellow etherians. (Do you really want to open up an RPC node on your home wifi for the world to
+use?)
+
 ## Benefits
 
-- **Client Diversity**: Support for multiple client implementations
-- **Interactive Selection**: Guided client selection with recommendations
-- **Security**: Comprehensive security hardening
-- **Flexibility**: Choose optimal client combinations
-- **Automation**: Streamlined installation and configuration
-- **Monitoring**: Built-in security and performance monitoring
-- **MEV-Boost Integration**: Maximize validator rewards
-- **Uncensored RPC**: Run your own censorship-resistant endpoint (faster than Infura/Alchemy!)
-- **Enterprise Features**: Advanced monitoring and management
-- **Infrastructure Friendly**: Firewall rules and settings to prevent alerts from your infra provider
+- **Client diversity**: 7 execution × 6 consensus clients, with guided selection and recommendations
+- **Security**: comprehensive OS hardening, firewall, fail2ban, and monitoring out of the box
+- **Automation**: streamlined installation, configuration, and updates
+- **MEV integration**: MEV-Boost or Commit-Boost for validator rewards
+- **Uncensored RPC**: run your own endpoint (faster than Infura/Alchemy!), with infra-provider-friendly firewall defaults
 
 ## Credits
 
