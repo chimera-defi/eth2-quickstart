@@ -12,8 +12,8 @@ Bootstrap, operate, diagnose, update, and safely clean Ethereum node stacks thro
 
 ## Install
 
-- Primary: `clawhub install eth2-quickstart`
-- Fallback: `git clone --depth 1 https://github.com/chimera-defi/eth2-quickstart.git && cd eth2-quickstart`
+- Primary: `git clone --depth 1 https://github.com/chimera-defi/eth2-quickstart.git && cd eth2-quickstart`
+- Registry (not yet published): `clawhub install eth2-quickstart` will only work once the skill is published to ClawHub
 - Codex fallback: `python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py --repo chimera-defi/eth2-quickstart --path skills/eth2-quickstart`
 - Raw-ingest fallback: share `llms.txt` or `llms-full.txt`
 

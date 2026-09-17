@@ -8,8 +8,8 @@ import { Bot, Shield, TerminalSquare, Binary } from 'lucide-react'
 
 const AGENT_POINTS = [
   {
-    title: 'ClawHub-ready, repo-aware',
-    description: 'Install via ClawHub, operate inside a real repo checkout.',
+    title: 'Git-native, repo-aware',
+    description: 'Clone the repo, operate inside a real checkout — no package manager needed.',
     icon: Bot,
   },
   {
@@ -29,7 +29,7 @@ const AGENT_POINTS = [
   },
   {
     title: 'Raw-ingest fallback',
-    description: 'Ingest llms.txt directly when ClawHub is unavailable.',
+    description: 'Ingest llms.txt directly when an agent cannot clone the repo.',
     icon: Bot,
   },
   {
@@ -39,8 +39,7 @@ const AGENT_POINTS = [
   },
 ]
 
-const AGENT_SNIPPET = `# packaged install after publishing to ClawHub
-clawhub install eth2-quickstart
+const AGENT_SNIPPET = `# install: clone the repo
 git clone https://github.com/chimera-defi/eth2-quickstart.git
 cd eth2-quickstart
 
@@ -84,10 +83,10 @@ export function Agents() {
             </motion.p>
           </div>
 
-          <Card className="border-border/60 bg-muted/40">
+          <Card className="min-w-0 border-border/60 bg-muted/40">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span className="font-mono uppercase tracking-wide">Agent demo flow</span>
-              <span>publish then install</span>
+              <span>clone then operate</span>
             </div>
             <div className="mt-3 overflow-x-auto">
               <CodeBlock code={AGENT_SNIPPET} language="bash" />

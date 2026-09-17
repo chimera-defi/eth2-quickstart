@@ -80,7 +80,7 @@ The single most credible structured-data win — this *is* a software tool.
 ### A4. Public registry / directory listings *(P1 — propose-only; the most *direct* "agent finds an invokable tool" path)*
 Plausibly higher real ROI than llms.txt because these are where agents look for tools.
 - **MCP registries:** submit the eth2qs MCP server to the emerging registries (Anthropic's MCP registry, `mcp.so`, PulseMCP, Smithery). Needs a short server manifest + README section.
-- **Skill directory:** publish the skill to ClawHub (already referenced as the intended path) and any Claude skill/plugin marketplace the `.claude-plugin/` files target.
+- **Skill directory:** publish the skill to ClawHub (currently unpublished; docs frame it as a future path) and any Claude skill/plugin marketplace the `.claude-plugin/` files target.
 - **Verify:** the listing resolves and `install`/`add` instructions work from a clean environment.
 - **Ownership:** needs external accounts → **decision A** below (who executes).
 

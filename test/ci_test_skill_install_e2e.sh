@@ -3,7 +3,7 @@
 #
 # Validates both real-world installation paths:
 # 1. Codex GitHub-path installer (ecosystem-native fallback)
-# 2. npx clawhub install (registry path when published)
+# 2. git clone checkout (primary install path)
 
 set -Eeuo pipefail
 
@@ -92,55 +92,63 @@ else
 fi
 
 # =============================================================================
-log_info "--- Test 2: npx clawhub install (contract verification) ---"
+log_info "--- Test 2: git clone checkout (primary install path) ---"
 # =============================================================================
 
-CLAWHUB_INSTALL_DIR="$TEMP_INSTALL_BASE/clawhub-checkout"
-mkdir -p "$CLAWHUB_INSTALL_DIR"
-CLAWHUB_WORKSPACE="$CLAWHUB_INSTALL_DIR/eth2-quickstart"
-cp -r "$PROJECT_ROOT" "$CLAWHUB_WORKSPACE"
-chmod +x "$CLAWHUB_WORKSPACE/scripts"/*.sh 2>/dev/null || true
-chmod +x "$CLAWHUB_WORKSPACE/skills/eth2-quickstart/scripts"/*.sh 2>/dev/null || true
+CLONE_INSTALL_DIR="$TEMP_INSTALL_BASE/clone-checkout"
+mkdir -p "$CLONE_INSTALL_DIR"
+CLONE_WORKSPACE="$CLONE_INSTALL_DIR/eth2-quickstart"
+cp -r "$PROJECT_ROOT" "$CLONE_WORKSPACE"
+chmod +x "$CLONE_WORKSPACE/scripts"/*.sh 2>/dev/null || true
+chmod +x "$CLONE_WORKSPACE/skills/eth2-quickstart/scripts"/*.sh 2>/dev/null || true
 
-CLAWHUB_SKILL_DIR="$CLAWHUB_WORKSPACE/skills/eth2-quickstart"
+CLONE_SKILL_DIR="$CLONE_WORKSPACE/skills/eth2-quickstart"
 
-if grep -q '^metadata:$' "$CLAWHUB_SKILL_DIR/SKILL.md" &&
-   grep -q '^  openclaw:$' "$CLAWHUB_SKILL_DIR/SKILL.md" &&
-   grep -q '^    skillKey: eth2-quickstart$' "$CLAWHUB_SKILL_DIR/SKILL.md"; then
-    record_test "clawhub: SKILL.md has OpenClaw metadata" "PASS"
+if grep -q '^metadata:$' "$CLONE_SKILL_DIR/SKILL.md" &&
+   grep -q '^  openclaw:$' "$CLONE_SKILL_DIR/SKILL.md" &&
+   grep -q '^    skillKey: eth2-quickstart$' "$CLONE_SKILL_DIR/SKILL.md"; then
+    record_test "clone: SKILL.md has OpenClaw metadata" "PASS"
 else
-    record_test "clawhub: SKILL.md has OpenClaw metadata" "FAIL"
+    record_test "clone: SKILL.md has OpenClaw metadata" "FAIL"
 fi
 
-if [[ -x "$CLAWHUB_SKILL_DIR/scripts/resolve_repo_root.sh" ]]; then
-    record_test "clawhub: resolver is executable" "PASS"
+if [[ -x "$CLONE_SKILL_DIR/scripts/resolve_repo_root.sh" ]]; then
+    record_test "clone: resolver is executable" "PASS"
 else
-    record_test "clawhub: resolver is executable" "FAIL"
+    record_test "clone: resolver is executable" "FAIL"
 fi
 
-if resolved_root="$(cd "$CLAWHUB_SKILL_DIR" && bash "$CLAWHUB_SKILL_DIR/scripts/resolve_repo_root.sh")"; then
+if resolved_root="$(cd "$CLONE_SKILL_DIR" && bash "$CLONE_SKILL_DIR/scripts/resolve_repo_root.sh")"; then
     if [[ -f "$resolved_root/exports.sh" && -x "$resolved_root/scripts/eth2qs.sh" ]]; then
-        record_test "clawhub: resolver finds repo from skill" "PASS"
+        record_test "clone: resolver finds repo from skill" "PASS"
     else
-        record_test "clawhub: resolver finds repo from skill" "FAIL"
+        record_test "clone: resolver finds repo from skill" "FAIL"
     fi
 else
-    record_test "clawhub: resolver finds repo from skill" "FAIL"
+    record_test "clone: resolver finds repo from skill" "FAIL"
 fi
 
-if grep -Fq "npx clawhub install eth2-quickstart" "$CLAWHUB_SKILL_DIR/references/workflow.md"; then
-    record_test "clawhub: workflow docs reference clawhub install" "PASS"
+if grep -Fq "git clone https://github.com/chimera-defi/eth2-quickstart.git" "$CLONE_SKILL_DIR/references/workflow.md"; then
+    record_test "clone: workflow docs reference git clone install" "PASS"
 else
-    record_test "clawhub: workflow docs reference clawhub install" "FAIL"
+    record_test "clone: workflow docs reference git clone install" "FAIL"
 fi
 
-if [[ -f "$CLAWHUB_SKILL_DIR/references/safety.md" &&
-      -f "$CLAWHUB_SKILL_DIR/references/commands.md" &&
-      -f "$CLAWHUB_SKILL_DIR/references/operator.md" &&
-      -f "$CLAWHUB_SKILL_DIR/references/examples.md" ]]; then
-    record_test "clawhub: all reference docs exist" "PASS"
+# ClawHub is unpublished: if workflow.md mentions it, it must be framed as such.
+if ! grep -qi "clawhub" "$CLONE_SKILL_DIR/references/workflow.md" ||
+   grep -qi "not yet published" "$CLONE_SKILL_DIR/references/workflow.md"; then
+    record_test "clone: clawhub mentions framed as unpublished" "PASS"
 else
-    record_test "clawhub: all reference docs exist" "FAIL"
+    record_test "clone: clawhub mentions framed as unpublished" "FAIL"
+fi
+
+if [[ -f "$CLONE_SKILL_DIR/references/safety.md" &&
+      -f "$CLONE_SKILL_DIR/references/commands.md" &&
+      -f "$CLONE_SKILL_DIR/references/operator.md" &&
+      -f "$CLONE_SKILL_DIR/references/examples.md" ]]; then
+    record_test "clone: all reference docs exist" "PASS"
+else
+    record_test "clone: all reference docs exist" "FAIL"
 fi
 
 # =============================================================================
@@ -148,10 +156,10 @@ log_info "--- Test 3: Cross-installation consistency ---"
 # =============================================================================
 
 CODEX_DOCTOR_OUTPUT="$("$CODEX_REPO_DIR/scripts/eth2qs.sh" doctor --json 2>&1 || true)"
-CLAWHUB_DOCTOR_OUTPUT="$("$CLAWHUB_WORKSPACE/scripts/eth2qs.sh" doctor --json 2>&1 || true)"
+CLONE_DOCTOR_OUTPUT="$("$CLONE_WORKSPACE/scripts/eth2qs.sh" doctor --json 2>&1 || true)"
 
 if echo "$CODEX_DOCTOR_OUTPUT" | grep -q "^{" && \
-   echo "$CLAWHUB_DOCTOR_OUTPUT" | grep -q "^{"; then
+   echo "$CLONE_DOCTOR_OUTPUT" | grep -q "^{"; then
     record_test "both paths: doctor outputs valid JSON" "PASS"
 else
     log_warn "doctor output format check skipped (may fail in test environment)"
@@ -159,9 +167,9 @@ else
 fi
 
 CODEX_HELP="$("$CODEX_REPO_DIR/scripts/eth2qs.sh" help 2>&1 || true)"
-CLAWHUB_HELP="$("$CLAWHUB_WORKSPACE/scripts/eth2qs.sh" help 2>&1 || true)"
+CLONE_HELP="$("$CLONE_WORKSPACE/scripts/eth2qs.sh" help 2>&1 || true)"
 
-if [[ "$CODEX_HELP" == "$CLAWHUB_HELP" ]]; then
+if [[ "$CODEX_HELP" == "$CLONE_HELP" ]]; then
     record_test "both paths: wrapper help identical" "PASS"
 else
     record_test "both paths: wrapper help identical" "FAIL"

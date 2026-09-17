@@ -70,7 +70,7 @@ mcp-publisher publish          # reads ./server.json
 - [ ] **mcp.so** — community MCP directory listing.
 - [ ] **PulseMCP** — MCP server directory.
 - [ ] **Smithery** — MCP registry/host (also relevant if we pursue hosted MCP — see `HOSTED_MCP_SCOPE.md`).
-- [ ] **ClawHub** — publish the skill (already the intended packaging path per `llms.txt` / SKILL.md).
+- [ ] **ClawHub** — publish the skill (`llms.txt` / SKILL.md frame it as not yet published; git clone is the documented install path until this ships).
       Note: no `clawhub` CLI is installed in the agent environment, so this needs a human or a published CLI.
 - [ ] Any Claude plugin marketplace the `.claude-plugin/{marketplace.json,plugin.json}` target.
 - **Verify (each):** the listing resolves and its `install`/`add` instructions work from a clean environment.
