@@ -42,12 +42,26 @@ else
     record_test "SKILL.md has OpenClaw metadata" "FAIL"
 fi
 
-if grep -Fq "npx clawhub install eth2-quickstart" "$WORKFLOW_REF" &&
-   grep -Fq "ClawHub" "$SKILL_FILE" &&
+if grep -Fq "git clone https://github.com/chimera-defi/eth2-quickstart.git" "$WORKFLOW_REF" &&
+   grep -Fq "git clone https://github.com/chimera-defi/eth2-quickstart.git" "$SKILL_FILE" &&
    grep -Fq "resolve_repo_root.sh" "$WORKFLOW_REF"; then
-    record_test "distribution docs state clawhub install contract" "PASS"
+    record_test "distribution docs state git-clone install contract" "PASS"
 else
-    record_test "distribution docs state clawhub install contract" "FAIL"
+    record_test "distribution docs state git-clone install contract" "FAIL"
+fi
+
+# ClawHub is unpublished: any mention of it in the skill docs must carry the
+# "not yet published" framing so it never reads as the current install path.
+clawhub_framing_ok=true
+for distribution_doc in "$SKILL_FILE" "$WORKFLOW_REF"; do
+    if grep -qi "clawhub" "$distribution_doc" && ! grep -qi "not yet published" "$distribution_doc"; then
+        clawhub_framing_ok=false
+    fi
+done
+if [[ "$clawhub_framing_ok" == "true" ]]; then
+    record_test "clawhub mentions framed as unpublished" "PASS"
+else
+    record_test "clawhub mentions framed as unpublished" "FAIL"
 fi
 
 if grep -Fq "Skill entrypoint" "$LLMS_FILE" &&

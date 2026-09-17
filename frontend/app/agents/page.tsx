@@ -32,10 +32,11 @@ export const metadata: Metadata = {
   },
 }
 
-const SKILL_INSTALL_SNIPPET = `# once published to ClawHub
-clawhub install eth2-quickstart
+const SKILL_INSTALL_SNIPPET = `# clone the repo — the skill ships in-repo at skills/eth2-quickstart
+git clone https://github.com/chimera-defi/eth2-quickstart.git
+cd eth2-quickstart
 
-# GitHub-path fallback (Codex-style skill installer)
+# Codex-style skill installer (installs from the GitHub path)
 python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \\
   --repo chimera-defi/eth2-quickstart --path skills/eth2-quickstart`
 
@@ -113,8 +114,11 @@ export default function AgentsPage() {
               <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
               <span className="text-muted-foreground">
                 <span className="font-medium text-foreground">A packaged skill</span> —
-                Anthropic skill-creator format, published via ClawHub, with 9 reference
-                docs covering workflow, operator flows, safety, and sizing.
+                Anthropic skill-creator format, shipped in the repo under{' '}
+                <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
+                  skills/eth2-quickstart/
+                </code>
+                , with 9 reference docs covering workflow, operator flows, safety, and sizing.
               </span>
             </li>
             <li className="flex items-start gap-3">
@@ -149,9 +153,9 @@ export default function AgentsPage() {
             Install the skill
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            The skill is repo-aware: install it, then use it from inside an
+            The skill is repo-aware: clone the repo, then use the skill from inside the
             <code className="mx-1 rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth2-quickstart</code>
-            checkout.
+            checkout. It is not yet published to a skill registry.
           </p>
           <div className="mt-4 overflow-x-auto">
             <CodeBlock code={SKILL_INSTALL_SNIPPET} language="bash" />
