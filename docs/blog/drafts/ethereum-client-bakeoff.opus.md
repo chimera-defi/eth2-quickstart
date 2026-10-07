@@ -12,15 +12,15 @@ benchmarks usually publish.
 | If you want… | Run | Why |
 |---|---|---|
 | The safe default | **geth** | Synced cleanly in ~8h28m and picked up where it left off after a ~52-hour shutdown. |
-| A minority client, or a smaller disk | **nethermind** | Recovered from every restart gap we tried. The installer's default setup settles at ~250–280 GiB. |
-| A consensus client | **lighthouse** (or any of the five) | All five synced in minutes without crashing. They differ mainly in disk use. |
+| A less common client, or a smaller disk | **nethermind** | Recovered from every restart gap we tried. The installer's default setup is ~250–280 GiB right after sync. |
+| A consensus client | **lighthouse** (or any of the five we compared) | All five synced in minutes without crashing. They differ mainly in disk use. |
 | The fastest sync | ethrex, but not yet | Synced in ~2h16m, then stalled after a 26-minute stop and started over after a ~2-hour one. |
 
 ## How we tested
 
 We ran one client at a time on a single test server (no validator keys) and gave each up to
-72 hours to reach the head of mainnet, the newest block. Each client was set up the way the
-open-source eth2-quickstart installer sets it up.
+72 hours to reach the head of mainnet, the newest block. Each client was installed with the
+open-source eth2-quickstart installer.
 
 An Ethereum node is two programs. The **execution client** (geth, nethermind, besu, …)
 holds the chain's state and runs transactions. The **consensus client** (prysm,
@@ -38,11 +38,11 @@ Time to a fully synced, validating node:
 
 | Execution client | Sync time | Result |
 |---|---|---|
-| ethrex | ~2h16m | synced |
+| ethrex | ~2h16m (v19) | synced |
 | geth | ~8h28m | synced |
 | nethermind | ~14.5h | synced |
 | besu | ~19h18m | synced |
-| reth | — | ~47% of blocks when the 72h cap hit |
+| reth | — | ~47% of blocks (~21% of the work) when the 72h cap hit |
 | nimbus_eth1 | — | ~21.6% when the 72h cap hit |
 | erigon | — | stuck, never synced |
 
@@ -53,22 +53,23 @@ downloads a recent copy of the state instead of replaying every block since 2015
 design choice, not a bug, and reth is widely run elsewhere. Plan on days, not hours, for
 the first sync if you pick one.
 
-erigon (version 3) never synced. Paired with prysm started from a recent checkpoint, each side waited for the other to make the next move, and neither did.
+erigon (version 3) never synced. Paired with prysm started from a recent trusted snapshot (a checkpoint), each side waited for the other to make the next move, and neither did.
 Avoid that combination for now.
 
 ## Disk: no winner, because the setting decides
 
-Here is what the clients that finished settled at:
+Disk use for the clients that finished, once it stopped growing unless noted:
 
-| Execution client | Disk at steady state | What it keeps |
+| Execution client | Disk | What it keeps |
 |---|---|---|
-| geth | ~1.13 TiB | all history since the Merge |
-| besu | ~1.08 TiB | all history since the Merge |
-| nethermind, full history | ~1.06 TiB | all history since the Merge |
-| ethrex | ~470–476 GiB | almost no history |
-| nethermind, minimal history (installer default) | ~250–280 GiB | no old blocks or receipts |
+| geth | ~1.13 TiB | blocks and receipts since the Merge |
+| besu | ~1.08 TiB | full block history |
+| nethermind, full history | ~1.06 TiB | blocks and receipts since the Merge |
+| ethrex (a later re-sync) | ~470–476 GiB | almost no history |
+| nethermind, minimal history (installer default) | ~250–280 GiB right after sync | no old blocks or receipts |
 
-The three clients that keep full post-Merge history all land around 1.1 TiB. Disk size
+The three clients that keep block history (since the Merge, Ethereum's 2022 switch to proof
+of stake, or longer) all land around 1.1 TiB. Disk size
 comes from how much history you keep, not from which client you run.
 
 So the useful question is: **do you need old history at all?** A validator doesn't. It
@@ -77,10 +78,10 @@ over RPC (the API wallets and apps use to read the chain) for past transactions:
 block explorers, tax tools.
 
 That's why the installer sets nethermind to minimal history by default
-(`NETHERMIND_FULL_HISTORY=false`): about a quarter of the full-history size, and requests
-for old blocks, logs or receipts return nothing. If you'll serve public RPC, set
+(`NETHERMIND_FULL_HISTORY=false`): a fraction of the full-history size, but it can't serve
+old blocks, logs or receipts. If you'll serve public RPC, set
 `NETHERMIND_FULL_HISTORY=true` before the first sync; switching later means rebuilding the
-datadir. ethrex makes the same trade without asking: it serves nothing older than where its
+data directory. ethrex makes the same trade without asking: it serves nothing older than where its
 sync started, so it can't stand in for a geth RPC endpoint.
 
 One trap when reading anyone's disk numbers, ours included: with full history on,
@@ -100,9 +101,9 @@ stopped gets stuck once those are older than the window.
 
 **1. Picks up where it left off: geth and nethermind.** We stopped geth for ~52 hours
 (~15,400 blocks); on restart it imported the missed blocks and got back to the head. We
-stopped nethermind (full history on) for 12 minutes up to 4 hours: a 12-minute gap took ~2
+stopped nethermind for 12 minutes up to 4 hours: a 12-minute gap took ~2
 minutes to close, a 4-hour gap ~8 minutes. Separately, a consensus-client restart left it
-~35 hours behind, and it caught up in ~35 minutes, about 302 blocks a minute. No gap broke it.
+~35 hours behind, and it caught up in ~35 minutes. No gap broke it.
 
 **2. Falls off a cliff: ethrex.** We stopped ethrex for longer and longer gaps:
 
@@ -113,17 +114,17 @@ minutes to close, a 4-hour gap ~8 minutes. Separately, a consensus-client restar
 | 23 min | 124 | resumed |
 | 26 min | 132 | stuck: head frozen, couldn't fetch the missing headers |
 
-After a routine 1.5–2 hour stop it went further: it threw away its fully synced datadir
-(~286 GiB at first sync) and started over, a re-sync that took 2h11m. That was v19.0.0,
+After a routine 1.5–2 hour stop it went further: it threw away its fully synced data
+directory and started over, a re-sync that took 2h11m. That was v19.0.0,
 and ethrex moves fast, so newer versions may do better. But a node that can wipe itself after a two-hour
 maintenance window is a hard sell for something meant to run unattended.
 
 **3. Can break mid-sync: besu.** besu's first sync was fine. On a later re-sync, our
-consensus client stalled for ~28 hours. With nothing telling it which block was current,
+consensus client (an outdated prysm release) stalled for ~28 hours. With nothing telling it which block was current,
 besu's sync fell outside that ~25-minute window and its sync thread died, while the process
 kept running and answering RPC. It *looked* healthy. Restarting got stuck the same way. Two
-lessons: keep your consensus client healthy while besu syncs, and judge a node by whether its
-disk and block height are moving, not by whether it answers.
+lessons: keep your consensus client up to date and healthy while besu syncs, and don't take a node that
+answers requests as proof that it's still syncing.
 
 ## Consensus clients: pick on disk and familiarity
 
@@ -153,7 +154,7 @@ back in sync ~2m44s after a 30-minute stop.)
 - Size your disk for steady state, not for the number a client shows the moment it syncs.
 - Test what happens when you restart, not just how fast the first sync goes.
 - Keep an eye on **ethrex**, but check its restart behaviour on a current release first.
-- **reth** and **nimbus_eth1** need days for a first sync; don't pair **erigon 3** with a
+- As we ran them, **reth** and **nimbus_eth1** need days for a first sync; don't pair **erigon 3** with a
   checkpoint-synced prysm yet.
 
 ---
