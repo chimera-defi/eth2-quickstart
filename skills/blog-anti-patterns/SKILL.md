@@ -84,7 +84,9 @@ markdown draft. Note them when auditing a TSX page; skip them for a `.md` draft.
 - **Fact-check passes bloat; re-cut after them.** Each accuracy fix tends to add a qualifier
   or a sentence. Make the qualifier a clause, and if a claim needs a long hedge or has no
   source (market share, "our best explanation"), cut the claim. Word count should end
-  lower than the draft you started fixing.
+  lower than the draft you started fixing. Then fact-check the cut version too: trimming
+  drops qualifiers ("tiers" becomes "order", "as we ran it" disappears) that carried the
+  accuracy.
 
 ## Before and after
 
