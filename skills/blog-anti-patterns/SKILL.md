@@ -78,15 +78,15 @@ markdown draft. Note them when auditing a TSX page; skip them for a `.md` draft.
   correction paragraph after it.
 - **Lean beats complete.** If a section serves a different reader (harness internals,
   raw logs, campaign history), cut it and link to the page that owns it, at the end.
-- **A rewrite subtracts.** Bring in no fact the reader didn't need before. Only add a
-  detail if it answers a question the reader would ask; incident trivia (which run, which
-  host, why a rerun happened) stays on the results page.
+- **A rewrite subtracts.** Add no new fact unless it answers a question the reader would
+  ask; incident trivia (which run, which host, why a rerun happened) stays on the
+  results page.
 - **Fact-check passes bloat; re-cut after them.** Each accuracy fix tends to add a qualifier
   or a sentence. Make the qualifier a clause, and if a claim needs a long hedge or has no
-  source (market share, "our best explanation"), cut the claim. Word count should end
-  lower than the draft you started fixing. Then fact-check the cut version too: trimming
-  drops qualifiers ("tiers" becomes "order", "as we ran it" disappears) that carried the
-  accuracy.
+  source (market share, "our best explanation"), cut the claim. Word count should usually
+  end lower, but phase labels, versions and scope qualifiers ("as we ran it") are exempt:
+  never cut one to hit a length. Fact-check the cut version too, because trimming drops
+  exactly those: "the same tiers held" trimmed to "the same order held" claims more.
 
 ## Before and after
 
@@ -108,6 +108,6 @@ from the arbiter.)
 ## How to audit with this
 
 For each post, score each of checks 1–6 as 0 (clean), 1 (minor) or 2 (bad), cite one
-line as evidence for every non-zero score, and add the scores. Note checks 7–8 separately
-for rendered pages. The post with the highest total, weighted toward checks 1–3 because
-they lose readers earliest, benefits most from a rewrite.
+line as evidence for every non-zero score, and add the scores, counting checks 1–3 double
+because they lose readers earliest. Note checks 7–8 separately for rendered pages. The
+highest total benefits most from a rewrite.
