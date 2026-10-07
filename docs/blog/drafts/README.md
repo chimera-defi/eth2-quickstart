@@ -4,20 +4,9 @@ Unpublished article rewrites waiting for an editorial pick. Nothing in this dire
 routed: the live site renders only `frontend/app/blog/*/page.tsx`, so these files never
 reach eth2quickstart.com unless someone ports one into a page.
 
-Drafts are still covered by CI: `test/ci_test_campaign_constants.sh` checks their measured
+Drafts are covered by CI: `test/ci_test_campaign_constants.sh` checks their measured
 figures against `docs/CLIENT_BAKEOFF_RESULTS.md`, and `test/ci_test_docs_consistency.sh`
 checks their links.
-
-## Current drafts
-
-| File | Rewrite of | Writer |
-|---|---|---|
-| [ethereum-client-bakeoff.opus.md](ethereum-client-bakeoff.opus.md) | `/blog/ethereum-client-bakeoff` | Claude Opus 5.5 |
-| [ethereum-client-bakeoff.fable.md](ethereum-client-bakeoff.fable.md) | `/blog/ethereum-client-bakeoff` | Claude Fable 5.1 |
-
-Both were written independently against
-[`skills/blog-anti-patterns/SKILL.md`](../../../skills/blog-anti-patterns/SKILL.md) and a
-facts packet checked line by line against the results arbiter.
 
 ## Audit (2026-10-07)
 

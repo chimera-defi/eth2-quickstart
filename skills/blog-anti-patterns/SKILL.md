@@ -78,6 +78,13 @@ markdown draft. Note them when auditing a TSX page; skip them for a `.md` draft.
   correction paragraph after it.
 - **Lean beats complete.** If a section serves a different reader (harness internals,
   raw logs, campaign history), cut it and link to the page that owns it, at the end.
+- **A rewrite subtracts.** Bring in no fact the reader didn't need before. Only add a
+  detail if it answers a question the reader would ask; incident trivia (which run, which
+  host, why a rerun happened) stays on the results page.
+- **Fact-check passes bloat; re-cut after them.** Each accuracy fix tends to add a qualifier
+  or a sentence. Make the qualifier a clause, and if a claim needs a long hedge or has no
+  source (market share, "our best explanation"), cut the claim. Word count should end
+  lower than the draft you started fixing.
 
 ## Before and after
 
