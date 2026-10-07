@@ -13,9 +13,11 @@ FAILED=0
 # docs/blog/*.md is a real, published doc directory (the bake-off operator guide lives
 # there and campaign-constants.yml already guards it). A non-recursive docs/*.md glob
 # silently excluded it, so nothing under docs/blog/ was ever link-checked.
+# docs/blog/drafts/*.md holds unpublished article rewrites awaiting an editorial pick; they
+# are link-checked too so a chosen draft does not carry a dead link onto the site.
 # nullglob keeps an empty subdirectory from degrading to a literal unexpanded pattern.
 shopt -s nullglob
-ACTIVE_DOCS=(README.md docs/*.md docs/blog/*.md)
+ACTIVE_DOCS=(README.md docs/*.md docs/blog/*.md docs/blog/drafts/*.md)
 shopt -u nullglob
 RETIREMENT_SCOPE_DOCS=()
 
