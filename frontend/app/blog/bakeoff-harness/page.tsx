@@ -32,7 +32,6 @@ const tocLinks = [
 
 // The rendered siblings are already linked as cards by <ReadNext /> just above this section, so
 // these entries earn their place only as raw source: the markdown each article was adapted from.
-// Same split the bake-off page makes under its own "Source docs on GitHub" heading.
 const sourceLinks = [
   {
     file: 'HOW_WE_TESTED_WITH_CLAUDE.md',

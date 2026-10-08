@@ -50,8 +50,8 @@ export function Blog() {
               Ethereum client bake-off
             </h3>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground leading-relaxed">
-              Results from a six-week execution and consensus client sync campaign: disk,
-              speed, and restart resilience across the full client roster.
+              Which Ethereum clients are worth running at home? We tried seven execution and six
+              consensus clients on one machine and compared sync speed, disk and restarts.
             </p>
             <div className="mt-4 flex flex-col flex-wrap items-stretch gap-3 sm:flex-row sm:items-center">
               <Button
