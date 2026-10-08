@@ -37,10 +37,10 @@ export const ARTICLES: Article[] = [
     slug: 'ethereum-client-bakeoff',
     pageTitle: 'Ethereum Client Bake-off - ETH2 Quick Start',
     pageDescription:
-      'Choosing an Ethereum validator client for home: we tested seven execution and six consensus clients on one machine for sync speed and restart behaviour.',
+      'Choosing an Ethereum client for a home validator: we tried seven execution and six consensus clients on one machine and compared sync speed and restarts.',
     navTitle: 'Ethereum client bake-off',
     indexDescription:
-      'Which Ethereum clients are worth running at home? Seven execution and six consensus clients tested on one machine, with geth, nethermind, and lighthouse as the short answer.',
+      'Which Ethereum clients are worth running at home? We tried seven execution and six consensus clients on one machine. Short answer: geth or nethermind, with lighthouse.',
     eyebrow: 'Client research',
     ogImage: '/og-bakeoff.png',
     ogAlt: 'The fastest Ethereum client is one almost nobody runs — a six-week client bake-off',
