@@ -37,16 +37,16 @@ export const ARTICLES: Article[] = [
     slug: 'ethereum-client-bakeoff',
     pageTitle: 'Ethereum Client Bake-off - ETH2 Quick Start',
     pageDescription:
-      'Results from a six-week Ethereum execution and consensus client sync campaign, including the restart-resilience findings the headline numbers hide.',
+      'Choosing an Ethereum validator client for home: we tested seven execution and six consensus clients on one machine for sync speed and restart behaviour.',
     navTitle: 'Ethereum client bake-off',
     indexDescription:
-      'Results from a six-week execution and consensus client sync campaign: disk, speed, and restart resilience across the full client roster.',
+      'Which Ethereum clients are worth running at home? Seven execution and six consensus clients tested on one machine, with geth, nethermind, and lighthouse as the short answer.',
     eyebrow: 'Client research',
     ogImage: '/og-bakeoff.png',
     ogAlt: 'The fastest Ethereum client is one almost nobody runs — a six-week client bake-off',
     headline: 'Ethereum Client Bake-off',
     datePublished: '2026-07-19',
-    dateModified: '2026-08-06',
+    dateModified: '2026-10-08',
     sitemapPriority: 0.9,
   },
   {
