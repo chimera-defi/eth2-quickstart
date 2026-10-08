@@ -43,7 +43,7 @@ export const ARTICLES: Article[] = [
       'Which Ethereum clients are worth running at home? We tried seven execution and six consensus clients on one machine. Short answer: geth or nethermind, with lighthouse.',
     eyebrow: 'Client research',
     ogImage: '/og-bakeoff.png',
-    ogAlt: 'The fastest Ethereum client is one almost nobody runs — a six-week client bake-off',
+    ogAlt: 'Which Ethereum client should you run at home? Seven execution and six consensus clients compared on sync speed and restarts',
     headline: 'Ethereum Client Bake-off',
     datePublished: '2026-07-19',
     dateModified: '2026-10-08',

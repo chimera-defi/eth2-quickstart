@@ -59,11 +59,11 @@ export default function EthereumClientBakeoffPage() {
                 <tr>
                   <td className="py-3 align-top text-muted-foreground">A less common client, or a smaller disk</td>
                   <td className="py-3 align-top text-muted-foreground"><strong className="text-foreground">nethermind</strong></td>
-                  <td className="py-3 align-top text-muted-foreground">Recovered from every restart gap we tried (with full history on). The installer&apos;s default setup is ~250–280 GiB right after sync.</td>
+                  <td className="py-3 align-top text-muted-foreground">Recovered from every restart gap we tried (with full history on). The installer&apos;s default setup used ~250–280 GiB right after sync and ~345 GiB 54 days later.</td>
                 </tr>
                 <tr>
                   <td className="py-3 align-top text-muted-foreground">A consensus client</td>
-                  <td className="py-3 align-top text-muted-foreground"><strong className="text-foreground">lighthouse</strong> (or any of the five we compared)</td>
+                  <td className="py-3 align-top text-muted-foreground"><strong className="text-foreground">lighthouse</strong> (or lodestar, grandine, teku, nimbus)</td>
                   <td className="py-3 align-top text-muted-foreground">All five synced in minutes without crashing. They differ mainly in disk use.</td>
                 </tr>
                 <tr>
@@ -196,7 +196,7 @@ export default function EthereumClientBakeoffPage() {
                 </tr>
                 <tr>
                   <td className="py-3 align-top text-muted-foreground">nethermind, minimal history (installer default)</td>
-                  <td className="py-3 align-top text-muted-foreground">~250–280 GiB right after sync</td>
+                  <td className="py-3 align-top text-muted-foreground">~250–280 GiB right after sync; ~345 GiB after 54 days</td>
                   <td className="py-3 align-top text-muted-foreground">no old blocks or receipts</td>
                 </tr>
               </tbody>
