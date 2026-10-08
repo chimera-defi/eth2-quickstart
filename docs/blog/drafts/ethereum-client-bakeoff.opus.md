@@ -12,7 +12,7 @@ benchmarks usually publish.
 | If you want… | Run | Why |
 |---|---|---|
 | The safe default | **geth** | Synced cleanly in ~8h28m and picked up where it left off after a ~52-hour shutdown. |
-| A less common client, or a smaller disk | **nethermind** | Recovered from every restart gap we tried. The installer's default setup is ~250–280 GiB right after sync. |
+| A less common client, or a smaller disk | **nethermind** | Recovered from every restart gap we tried (with full history on). The installer's default setup is ~250–280 GiB right after sync. |
 | A consensus client | **lighthouse** (or any of the five we compared) | All five synced in minutes without crashing. They differ mainly in disk use. |
 | The fastest sync | ethrex, but not yet | Synced in ~2h16m, then stalled after a 26-minute stop and started over after a ~2-hour one. |
 
@@ -100,10 +100,12 @@ doesn't need that state. A client that needs peers to hand it state or headers f
 stopped gets stuck once those are older than the window.
 
 **1. Picks up where it left off: geth and nethermind.** We stopped geth for ~52 hours
-(~15,400 blocks); on restart it imported the missed blocks and got back to the head. We
-stopped nethermind for 12 minutes up to 4 hours: a 12-minute gap took ~2
+(~15,400 blocks); on restart it imported the missed blocks and got back to the head. With full
+history on, we stopped nethermind for 12 minutes up to 4 hours: a 12-minute gap took ~2
 minutes to close, a 4-hour gap ~8 minutes. Separately, a consensus-client restart left it
-~35 hours behind, and it caught up in ~35 minutes. No gap broke it.
+~35 hours behind, and it caught up in ~35 minutes. No gap broke it. We didn't restart-test
+the installer's minimal-history default, so its restart behaviour is likely the same but
+unmeasured.
 
 **2. Falls off a cliff: ethrex.** We stopped ethrex for longer and longer gaps:
 
