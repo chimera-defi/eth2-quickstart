@@ -1,3 +1,8 @@
+> **Superseded. Do not port or cite.** Kept only to compare the two rewrites. The Opus draft
+> (`ethereum-client-bakeoff.opus.md`) was chosen and ported to the live page in #279. This
+> draft is less accurate: it does not say that the nethermind restart tests ran with full
+> history on, not the installer's minimal-history default.
+
 # Which Ethereum Clients Should a Home Validator Run? We Tested Twelve to Find Out
 
 If you run one validator at home and want to know which execution client and consensus client to pick, this is what we measured and what we'd do with it. We tried to sync seven execution clients and five consensus clients to Ethereum mainnet on one machine, one at a time, with prysm held fixed as the consensus client for every execution-client run, and then we stopped and restarted the synced ones to see how they recovered. The short answer: run geth, or nethermind if you want to help client diversity; pick any of the five consensus clients; and the thing most likely to bite you is not how long the first sync takes but what the client does after a restart.
