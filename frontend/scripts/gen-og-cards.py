@@ -97,10 +97,10 @@ VARIANTS = {
         '<b>7 execution + 5 consensus clients</b> · one host · run by AI agents',
         [("Disk", "no clear winner", "acc"), ("Speed winner", "ethrex · 2h16m", "sig"), ("The catch", "restart cliff", "")]),
     "og-bakeoff": card(
-        "Six-week field report",
-        'The fastest Ethereum client is one almost <span class="hot">nobody runs</span>.',
-        '<b>7 execution + 5 consensus clients</b> · one host · run by AI agents',
-        [("Disk", "no clear winner", "acc"), ("Speed winner", "ethrex · 2h16m", "sig"), ("The catch", "restart cliff", "")]),
+        "Field report",
+        'Which Ethereum client should you run <span class="hot">at home</span>?',
+        '<b>7 execution + 6 consensus clients</b> · sync speed and restarts',
+        [("Safe default", "geth", "acc"), ("Minority pick", "nethermind", ""), ("Fastest", "ethrex · not yet", "sig")]),
     "og-how-we-tested": card(
         "Methodology",
         'How we ran a six-week bake-off <span class="hot">with Claude</span>.',
