@@ -45,6 +45,13 @@ ALL_ARTIFACTS=(
     "frontend/public/deck/how-we-tested.html"
 )
 
+# Unpublished rewrites under docs/blog/drafts/ restate the same measured claims; any one of
+# them may be promoted to a live page, so they must agree with the arbiter before that pick.
+shopt -s nullglob
+DRAFT_ARTIFACTS=(docs/blog/drafts/*.md)
+shopt -u nullglob
+ALL_ARTIFACTS+=("${DRAFT_ARTIFACTS[@]}")
+
 # The current-state result/guidance surface: files that state nethermind's footprint as an
 # operator-facing headline. Excludes the two methodology/timeline narratives (HOW_WE_TESTED /
 # its page, and the harness doc/page), where the same figure legitimately appears as a dated
@@ -58,6 +65,7 @@ RESULTS_SURFACE=(
     "frontend/app/blog/ethereum-client-bakeoff/page.tsx"
     "frontend/app/blog/bakeoff-results/page.tsx"
     "frontend/public/deck/bakeoff.html"
+    "${DRAFT_ARTIFACTS[@]}"
 )
 
 # ---------------------------------------------------------------------------
