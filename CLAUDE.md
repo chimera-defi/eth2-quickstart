@@ -86,7 +86,9 @@ eth2-quickstart/
 ├── install.sh                     # Bootstrap one-liner (curl | bash entry point)
 │
 ├── lib/
-│   └── common_functions.sh        # 35 shared functions (logging, services, security)
+│   ├── common_functions.sh        # 71 shared functions (logging, services, security)
+│   ├── install_planner.sh
+│   └── utils.sh
 │
 ├── install/
 │   ├── consensus/                 # Consensus client installers
@@ -163,7 +165,7 @@ eth2-quickstart/
 │   ├── SECURITY_GUIDE.md
 │   ├── SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md
 │   ├── COMMON_FUNCTIONS_REFERENCE.md
-│   ├── CI_WORKFLOWS.md / CI_TROUBLESHOOTING.md
+│   ├── CI_WORKFLOWS.md
 │   ├── COMMIT_MESSAGES.md
 │   ├── WORKFLOW.md
 │   └── GLOSSARY.md
@@ -206,7 +208,7 @@ Each client has base YAML/TOML/JSON templates in `configs/<client>/`. Install sc
 
 ## Common Functions Library (`lib/common_functions.sh`)
 
-All install scripts MUST source this file. It provides 35 functions:
+All install scripts MUST source this file. It provides 71 functions (count via `grep -cE '^[a-zA-Z_]+\(\) *\{' lib/common_functions.sh`):
 
 | Category | Functions |
 |----------|-----------|
@@ -507,12 +509,11 @@ curl -sSL https://raw.githubusercontent.com/chimera-defi/eth2-quickstart/master/
 |------|---------|
 | `configs/AGENT_REFERENCE.md` | Config architecture quick reference |
 | `docs/CONFIGURATION_GUIDE.md` | Full configuration architecture |
-| `docs/COMMON_FUNCTIONS_REFERENCE.md` | All 35 functions with examples |
+| `docs/COMMON_FUNCTIONS_REFERENCE.md` | Shared function reference with examples |
 | `docs/MEV_GUIDE.md` | Complete MEV setup guide |
 | `docs/SECURITY_GUIDE.md` | Security hardening details |
 | `docs/SHELL_SCRIPTING_BEST_PRACTICES_AND_LINTING_GUIDE.md` | Shell script standards |
 | `docs/CI_WORKFLOWS.md` | When each CI workflow runs |
-| `docs/CI_TROUBLESHOOTING.md` | CI debugging guide |
 | `docs/COMMIT_MESSAGES.md` | Commit message examples |
 | `docs/WORKFLOW.md` | End-to-end setup workflow |
 | `docs/GLOSSARY.md` | Terminology definitions |

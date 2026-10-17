@@ -176,11 +176,6 @@ This document provides a comprehensive reference for all functions available in 
 **Parameters:** `service_name` - Name of the service  
 **Usage:** `enable_and_start_systemd_service "prysm-beacon"`
 
-#### `enable_and_start_system_service(service_name)`
-**Purpose:** Alias for enable_and_start_systemd_service  
-**Parameters:** `service_name` - Name of the service  
-**Usage:** `enable_and_start_system_service "prysm-beacon"`
-
 #### `enable_systemd_service(service_name)`
 **Purpose:** Enable systemd service without starting  
 **Parameters:** `service_name` - Name of the service  
