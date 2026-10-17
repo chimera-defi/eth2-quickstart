@@ -123,6 +123,12 @@ rm -rf ./tmp/
     cannot silently lose receipts. To intentionally replace a full-history datadir with minimal
     history, remove/rebuild the existing datadir and set `NETHERMIND_ALLOW_HISTORY_DOWNGRADE=true`;
     the installer fails closed while any existing datadir remains, preventing mixed receipt history.
+- **Full pruning**: the generated config sets `Pruning.FullPruningTrigger=VolumeFreeSpace` with
+  `Pruning.FullPruningThresholdMb` = `NETHERMIND_FULL_PRUNING_THRESHOLD_MB` (default `256000`,
+  Nethermind's documented value). Without a trigger, state grows ~1.5 GiB/day until a manual
+  prune; with it, Nethermind starts a full prune when free disk space drops below the threshold
+  (minimum 240 h between prunes). Key names verified against Nethermind 1.39.2 `--help`. Keep at
+  least this much free space, or pruning will never have room to run.
 
 #### Besu (TOML)
 - **Base Config**: `configs/besu/besu_base.toml`
