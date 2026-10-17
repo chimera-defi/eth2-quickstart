@@ -190,7 +190,7 @@ if [[ -z "$NM_PRUNING_THRESHOLD_MB" ]]; then
     else
         NM_PRUNING_THRESHOLD_MB=256000
     fi
-elif ! [[ "$NM_PRUNING_THRESHOLD_MB" =~ ^[0-9]+$ ]]; then
+elif ! [[ "$NM_PRUNING_THRESHOLD_MB" =~ ^[1-9][0-9]*$ ]]; then
     log_error "NETHERMIND_FULL_PRUNING_THRESHOLD_MB must be a positive integer (MB), got '$NM_PRUNING_THRESHOLD_MB'"
     exit 1
 fi
