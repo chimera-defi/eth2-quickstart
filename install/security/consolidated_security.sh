@@ -67,9 +67,8 @@ setup_firewall() {
     # Use the configured SSH port (not hardcoded 22) to match sshd_config
     local SSH_PORT="${YourSSHPortNumber:-22}"
 
-    # TODO: firewall setup is no longer chain-agnostic now that multiple chains are
-    # supported. Consider extracting into a separate parameterized firewall phase
-    # (requiring sudo) in a future refactor, so Phase 1 can remain chain-agnostic.
+    # Firewall rules are chain-specific (CHAIN selects the port set); Phase 1 stays a
+    # single root-context step so SSH/UFW hardening completes before the mandatory reboot.
     local CHAIN_VAR="${CHAIN:-ethereum}"
 
     if [[ "$CHAIN_VAR" == "monad" ]]; then
