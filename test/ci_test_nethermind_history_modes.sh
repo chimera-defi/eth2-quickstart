@@ -565,7 +565,24 @@ test_fresh_install_minimal_default() {
     assert_generated_cfg_mode "$CASE_NETHERMIND_DIR/nethermind_custom.cfg" minimal "D12/E"
     local cfg_pruning
     cfg_pruning="$(python3 -c 'import json,sys; p=json.load(open(sys.argv[1])).get("Pruning",{}); print(p.get("FullPruningTrigger"), p.get("FullPruningThresholdMb"))' "$CASE_NETHERMIND_DIR/nethermind_custom.cfg" 2>&1 || true)"
-    assert_contains "$cfg_pruning" "VolumeFreeSpace 256000" "D12/P: generated cfg sets full-pruning trigger + threshold"
+    local auto_mb="${cfg_pruning#VolumeFreeSpace }"
+    if [[ "$cfg_pruning" == VolumeFreeSpace\ * && "$auto_mb" =~ ^[0-9]+$ ]] && (( auto_mb >= 100000 && auto_mb <= 256000 )); then
+        record_test "D12/P: auto-sized pruning threshold in 100000-256000 MB ($auto_mb)" "PASS"
+    else
+        record_test "D12/P: auto-sized pruning threshold in 100000-256000 MB (got '$cfg_pruning')" "FAIL"
+    fi
+}
+
+test_pruning_threshold_override_and_validation() {
+    local sandbox cfg
+    sandbox="$(new_sandbox)"
+    run_in_sandbox "$sandbox" "NETHERMIND_FULL_HISTORY=false" "NETHERMIND_FULL_PRUNING_THRESHOLD_MB=123456"
+    assert_exit_eq 0 "$CASE_EXIT" "D12/P2: explicit pruning threshold accepted"
+    cfg="$(python3 -c 'import json,sys; p=json.load(open(sys.argv[1]))["Pruning"]; print(p["FullPruningThresholdMb"])' "$CASE_NETHERMIND_DIR/nethermind_custom.cfg" 2>&1 || true)"
+    assert_contains "$cfg" "123456" "D12/P2: explicit threshold wins over auto-size"
+    sandbox="$(new_sandbox)"
+    run_in_sandbox "$sandbox" "NETHERMIND_FULL_HISTORY=false" "NETHERMIND_FULL_PRUNING_THRESHOLD_MB=abc"
+    assert_exit_eq 1 "$CASE_EXIT" "D12/P3: non-numeric pruning threshold rejected"
 }
 
 test_fresh_install_full_history_opt_in() {
@@ -647,6 +664,7 @@ test_existing_datadir_no_config_defaults_full
 
 test_fresh_install_minimal_default
 test_fresh_install_full_history_opt_in
+test_pruning_threshold_override_and_validation
 test_disk_sizing_existing_datadir_forces_2000gb
 
 test_active_service_restart_succeeds
