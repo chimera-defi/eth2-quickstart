@@ -63,7 +63,7 @@ export GETH_CACHE=8192
 export NETHERMIND_CACHE=8192
 # Nethermind history retention.
 #   false (DEFAULT) = minimal-history staking node: ~250-280 GiB at sync, ~345 GiB
-#     54 days later (it grows ~1.5 GiB/day), still far below full post-merge history
+#     54 days later (averaged ~1.5 GiB/day), still far below full post-merge history
 #     (~1.1 TiB). Does NOT backfill post-merge bodies/receipts
 #     and does not store receipts, so historical RPC returns null for old blocks
 #     (eth_getBlockByNumber / eth_getLogs / eth_getTransactionReceipt / eth_call at an
