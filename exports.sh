@@ -62,11 +62,12 @@ export GETH_CACHE=8192
 # Execution clients
 export NETHERMIND_CACHE=8192
 # Nethermind history retention.
-#   false (DEFAULT) = minimal-history staking node: ~250-280 GiB, ~4x smaller than
-#     full post-merge history (~1.1 TiB). Does NOT backfill post-merge bodies/receipts
+#   false (DEFAULT) = minimal-history staking node: ~250-280 GiB at sync, ~345 GiB
+#     54 days later (it grows ~1.5 GiB/day), still far below full post-merge history
+#     (~1.1 TiB). Does NOT backfill post-merge bodies/receipts
 #     and does not store receipts, so historical RPC returns null for old blocks
 #     (eth_getBlockByNumber / eth_getLogs / eth_getTransactionReceipt / eth_call at an
-#     old block). Fine for a validator; wallet-grade only for RPC. Measured 2026-08-03.
+#     old block). Fine for a validator; wallet-grade only for RPC. Measured 2026-08-03 and 2026-09-26.
 #   true  = full post-merge history (~1.1 TiB): serves historical RPC. REQUIRED if you
 #     expose a public DeFi/indexer RPC endpoint (nginx/Caddy) that answers historical
 #     queries. On an existing datadir, rerunning the installer preserves the recorded

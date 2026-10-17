@@ -28,7 +28,9 @@ log_installation_start "Nethermind"
 
 # Check system requirements. Minimal-history nodes need substantially less disk than
 # full-history nodes; inspect an existing config so reruns keep the right safety margin.
-NETHERMIND_REQUIRED_DISK_GB=400
+# Minimal history is ~250-280 GiB at sync but grows ~1.5 GiB/day (~345 GiB after 54 days,
+# measured 2026-09-26), so 500 leaves a few months of headroom; plan on a 1 TB disk.
+NETHERMIND_REQUIRED_DISK_GB=500
 if [[ "${NETHERMIND_FULL_HISTORY:-false}" == "true" ]] ||
    [[ -d "$HOME/.local/share/nethermind/nethermind_db/mainnet" ]]; then
     NETHERMIND_REQUIRED_DISK_GB=2000
@@ -131,7 +133,7 @@ fi
 
 # History retention mode (see NETHERMIND_FULL_HISTORY in exports.sh).
 #   Minimal (default): AncientBarriers >= pivot => no post-merge body/receipt backfill,
-#     StoreReceipts=false => ~250-280 GiB staking node, NO historical RPC (old blocks null).
+#     StoreReceipts=false => ~250-280 GiB at sync (grows ~1.5 GiB/day), NO historical RPC (old blocks null).
 #   Full: AncientBarriers = the merge (15537394) + StoreReceipts=true => ~1.1 TiB with
 #     full post-merge history; serves historical RPC (needed for a public DeFi/indexer RPC).
 # Effective barrier is min(PivotNumber, barrier), so 99999999 => download only from pivot.
@@ -174,7 +176,7 @@ if [[ "$NETHERMIND_HISTORY_MODE" == "true" ]]; then
 else
     NM_STORE_RECEIPTS=false
     NM_ANCIENT_BARRIER=99999999
-    log_info "Nethermind history: MINIMAL staking node (~250-280 GiB) — no historical RPC; set NETHERMIND_FULL_HISTORY=true for a full-history/RPC node"
+    log_info "Nethermind history: MINIMAL staking node (~250-280 GiB at sync, grows ~1.5 GiB/day; plan on 1 TB) — no historical RPC; set NETHERMIND_FULL_HISTORY=true for a full-history/RPC node"
 fi
 
 # Create custom configuration with variables
