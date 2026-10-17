@@ -104,7 +104,7 @@ When working with this codebase:
 4. Reference appropriate documentation for context and standards
 
 ## Common Functions Library
-The `lib/common_functions.sh` contains 35 centralized functions for:
+The `lib/common_functions.sh` contains 71 centralized functions for:
 - **Logging**: `log_info()`, `log_warn()`, `log_error()`
 - **Installation**: `log_installation_start()`, `log_installation_complete()`
 - **Directory Management**: `get_script_directories()`, `ensure_directory()`, `create_temp_config_dir()`
@@ -115,7 +115,7 @@ The `lib/common_functions.sh` contains 35 centralized functions for:
 - **System Checks**: `check_system_requirements()`, `check_system_compatibility()`
 
 ## Refactoring Status
-- ✅ **REFACTORING COMPLETE**: All 35 functions implemented and tested
+- ✅ **REFACTORING COMPLETE**: All 71 functions implemented and tested
 - ✅ **Code Duplication**: Reduced by ~40% through centralized functions
 - ✅ **Shellcheck Compliance**: 100% compliance achieved
 - ✅ **Architecture**: Centralized configuration and function patterns maintained
