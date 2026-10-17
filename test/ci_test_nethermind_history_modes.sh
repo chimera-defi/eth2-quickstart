@@ -580,6 +580,14 @@ test_pruning_threshold_override_and_validation() {
     assert_exit_eq 0 "$CASE_EXIT" "D12/P2: explicit pruning threshold accepted"
     cfg="$(python3 -c 'import json,sys; p=json.load(open(sys.argv[1]))["Pruning"]; print(p["FullPruningThresholdMb"])' "$CASE_NETHERMIND_DIR/nethermind_custom.cfg" 2>&1 || true)"
     assert_contains "$cfg" "123456" "D12/P2: explicit threshold wins over auto-size"
+    # Auto-size measures the DB path's filesystem (nearest existing ancestor), not just $HOME.
+    sandbox="$(new_sandbox)"
+    seed_existing_datadir "$sandbox" '{"Init": {"StoreReceipts": false}}'
+    run_in_sandbox "$sandbox" "NETHERMIND_FULL_HISTORY=false"
+    assert_contains "$CASE_OUT" "filesystem of $sandbox/home/.local/share/nethermind/nethermind_db/mainnet" "D12/P4: pruning threshold measured on the datadir filesystem"
+    sandbox="$(new_sandbox)"
+    run_in_sandbox "$sandbox" "NETHERMIND_FULL_HISTORY=false"
+    assert_contains "$CASE_OUT" "filesystem of $sandbox/home" "D12/P5: fresh install falls back to nearest existing ancestor"
     sandbox="$(new_sandbox)"
     run_in_sandbox "$sandbox" "NETHERMIND_FULL_HISTORY=false" "NETHERMIND_FULL_PRUNING_THRESHOLD_MB=abc"
     assert_exit_eq 1 "$CASE_EXIT" "D12/P3: non-numeric pruning threshold rejected"

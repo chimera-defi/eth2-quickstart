@@ -182,7 +182,16 @@ fi
 # NETHERMIND_FULL_PRUNING_THRESHOLD_MB always wins. Falls back to 256000 if df is unusable.
 NM_PRUNING_THRESHOLD_MB="${NETHERMIND_FULL_PRUNING_THRESHOLD_MB:-}"
 if [[ -z "$NM_PRUNING_THRESHOLD_MB" ]]; then
-    NM_DISK_TOTAL_MB="$(df -Pm "$HOME" 2>/dev/null | awk 'NR==2 {print $2}' || true)"
+    # Measure the filesystem that holds the Nethermind DB: the nearest existing ancestor of
+    # BaseDbPath (it may not exist yet on a fresh install), falling back to $HOME.
+    NM_DB_PATH="$HOME/.local/share/nethermind/nethermind_db/mainnet"
+    NM_DF_TARGET="$NM_DB_PATH"
+    while [[ ! -d "$NM_DF_TARGET" && "$NM_DF_TARGET" != "/" && "$NM_DF_TARGET" != "." ]]; do
+        NM_DF_TARGET="$(dirname "$NM_DF_TARGET")"
+    done
+    [[ -d "$NM_DF_TARGET" ]] || NM_DF_TARGET="$HOME"
+    log_info "Sizing pruning threshold from the filesystem of $NM_DF_TARGET"
+    NM_DISK_TOTAL_MB="$(df -Pm "$NM_DF_TARGET" 2>/dev/null | awk 'NR==2 {print $2}' || true)"
     if [[ "$NM_DISK_TOTAL_MB" =~ ^[0-9]+$ ]] && (( NM_DISK_TOTAL_MB > 0 )); then
         NM_PRUNING_THRESHOLD_MB=$(( NM_DISK_TOTAL_MB / 5 ))
         (( NM_PRUNING_THRESHOLD_MB < 100000 )) && NM_PRUNING_THRESHOLD_MB=100000
