@@ -128,7 +128,7 @@ eth2-quickstart/
 │   ├── teku/
 │   ├── nimbus/
 │   ├── lodestar/
-│   ├── grandine/
+│   ├── ethrex/
 │   ├── besu/
 │   ├── nethermind/
 │   └── AGENT_REFERENCE.md
@@ -157,7 +157,12 @@ eth2-quickstart/
 │   └── bun.lock
 │
 ├── scripts/
-│   └── pre-commit.sh              # Local CI simulation — run before pushing
+│   ├── pre-commit.sh              # Local CI simulation — run before pushing
+│   ├── eth2qs.sh                  # CLI entry point
+│   ├── install_claude_eth2qs_mcp.sh
+│   ├── check-cli-anything-pr.sh
+│   ├── install-cli-anything-pr-watch-cron.sh
+│   └── uninstall-cli-anything-pr-watch-cron.sh
 │
 ├── docs/                          # Extended documentation
 │   ├── CONFIGURATION_GUIDE.md
@@ -176,6 +181,8 @@ eth2-quickstart/
     │   ├── shellcheck.yml   # Shellcheck + shebang + dependency validation
     │   ├── frontend.yml     # Bun-based frontend CI
     │   ├── security.yml     # Security validation
+    │   ├── attribution.yml  # PR attribution contract
+    │   ├── campaign-constants.yml # Bake-off corpus consistency
     │   └── pr-checks.yml
     └── actions/docker-prep/ # Reusable Docker setup action
 ```
