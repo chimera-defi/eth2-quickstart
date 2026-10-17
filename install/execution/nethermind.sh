@@ -232,6 +232,10 @@ ${NETHERMIND_PIVOT_BLOCK}
   "Bloom": {
     "IndexLevelBucketSizes": [4, 8, 8]
   },
+  "Pruning": {
+    "FullPruningTrigger": "VolumeFreeSpace",
+    "FullPruningThresholdMb": ${NETHERMIND_FULL_PRUNING_THRESHOLD_MB:-256000}
+  },
   "Mining": {
     "Enabled": false,
     "Coinbase": "${FEE_RECIPIENT}",
