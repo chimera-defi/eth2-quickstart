@@ -74,7 +74,7 @@ export NETHERMIND_CACHE=8192
 #     the installer fails closed if an old config remains, and the explicit opt-in
 #     NETHERMIND_ALLOW_HISTORY_DOWNGRADE=true is still required for that rebuild.
 export NETHERMIND_FULL_HISTORY=false
-export NETHERMIND_FULL_PRUNING_THRESHOLD_MB=256000  # Full-prune when free disk drops below this (MB)
+export NETHERMIND_FULL_PRUNING_THRESHOLD_MB="${NETHERMIND_FULL_PRUNING_THRESHOLD_MB:-}"  # Full-prune when free disk drops below this (MB); empty = auto-size from disk
 export NETHERMIND_ALLOW_HISTORY_DOWNGRADE=false
 export BESU_CACHE=8192
 export ERIGON_CACHE=8192
