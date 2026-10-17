@@ -177,6 +177,34 @@ else
     log_info "Nethermind history: MINIMAL staking node (~250-280 GiB) — no historical RPC; set NETHERMIND_FULL_HISTORY=true for a full-history/RPC node"
 fi
 
+# Size the free-space pruning trigger to the real disk: 20% of the filesystem, clamped to
+# 100000-256000 MB (256000 is Nethermind's documented default). An explicit
+# NETHERMIND_FULL_PRUNING_THRESHOLD_MB always wins. Falls back to 256000 if df is unusable.
+NM_PRUNING_THRESHOLD_MB="${NETHERMIND_FULL_PRUNING_THRESHOLD_MB:-}"
+if [[ -z "$NM_PRUNING_THRESHOLD_MB" ]]; then
+    # Measure the filesystem that holds the Nethermind DB: the nearest existing ancestor of
+    # BaseDbPath (it may not exist yet on a fresh install), falling back to $HOME.
+    NM_DB_PATH="$HOME/.local/share/nethermind/nethermind_db/mainnet"
+    NM_DF_TARGET="$NM_DB_PATH"
+    while [[ ! -d "$NM_DF_TARGET" && "$NM_DF_TARGET" != "/" && "$NM_DF_TARGET" != "." ]]; do
+        NM_DF_TARGET="$(dirname "$NM_DF_TARGET")"
+    done
+    [[ -d "$NM_DF_TARGET" ]] || NM_DF_TARGET="$HOME"
+    log_info "Sizing pruning threshold from the filesystem of $NM_DF_TARGET"
+    NM_DISK_TOTAL_MB="$(df -Pm "$NM_DF_TARGET" 2>/dev/null | awk 'NR==2 {print $2}' || true)"
+    if [[ "$NM_DISK_TOTAL_MB" =~ ^[0-9]+$ ]] && (( NM_DISK_TOTAL_MB > 0 )); then
+        NM_PRUNING_THRESHOLD_MB=$(( NM_DISK_TOTAL_MB / 5 ))
+        (( NM_PRUNING_THRESHOLD_MB < 100000 )) && NM_PRUNING_THRESHOLD_MB=100000
+        (( NM_PRUNING_THRESHOLD_MB > 256000 )) && NM_PRUNING_THRESHOLD_MB=256000
+    else
+        NM_PRUNING_THRESHOLD_MB=256000
+    fi
+elif ! [[ "$NM_PRUNING_THRESHOLD_MB" =~ ^[1-9][0-9]*$ ]]; then
+    log_error "NETHERMIND_FULL_PRUNING_THRESHOLD_MB must be a positive integer (MB), got '$NM_PRUNING_THRESHOLD_MB'"
+    exit 1
+fi
+log_info "Nethermind full-pruning trigger: VolumeFreeSpace below ${NM_PRUNING_THRESHOLD_MB} MB free"
+
 # Create custom configuration with variables
 cat > "$NETHERMIND_DIR/nethermind_custom.cfg" << EOF
 {
@@ -234,7 +262,7 @@ ${NETHERMIND_PIVOT_BLOCK}
   },
   "Pruning": {
     "FullPruningTrigger": "VolumeFreeSpace",
-    "FullPruningThresholdMb": ${NETHERMIND_FULL_PRUNING_THRESHOLD_MB:-256000}
+    "FullPruningThresholdMb": ${NM_PRUNING_THRESHOLD_MB}
   },
   "Mining": {
     "Enabled": false,

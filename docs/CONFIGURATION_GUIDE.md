@@ -124,8 +124,8 @@ rm -rf ./tmp/
     history, remove/rebuild the existing datadir and set `NETHERMIND_ALLOW_HISTORY_DOWNGRADE=true`;
     the installer fails closed while any existing datadir remains, preventing mixed receipt history.
 - **Full pruning**: the generated config sets `Pruning.FullPruningTrigger=VolumeFreeSpace` with
-  `Pruning.FullPruningThresholdMb` = `NETHERMIND_FULL_PRUNING_THRESHOLD_MB` (default `256000`,
-  Nethermind's documented value). Without a trigger, state grows ~1.5 GiB/day until a manual
+  `Pruning.FullPruningThresholdMb` = `NETHERMIND_FULL_PRUNING_THRESHOLD_MB` (default: auto,
+  20% of the filesystem clamped to 100000-256000 MB; 256000 is Nethermind's documented default). Without a trigger, state grows ~1.5 GiB/day until a manual
   prune; with it, Nethermind starts a full prune when free disk space drops below the threshold
   (minimum 240 h between prunes). Key names verified against Nethermind 1.39.2 `--help`. Keep at
   least this much free space, or pruning will never have room to run.
