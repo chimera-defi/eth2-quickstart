@@ -563,6 +563,9 @@ test_fresh_install_minimal_default() {
     assert_contains "$CASE_OUT" "Nethermind history: MINIMAL staking node" "D12: resolves to minimal mode"
     assert_contains "$(cat "$CASE_STUB_LOG" 2>/dev/null || true)" "check_system_requirements|16 400" "F14: fresh + FULL_HISTORY=false requires 400GB disk"
     assert_generated_cfg_mode "$CASE_NETHERMIND_DIR/nethermind_custom.cfg" minimal "D12/E"
+    local cfg_pruning
+    cfg_pruning="$(python3 -c 'import json,sys; p=json.load(open(sys.argv[1])).get("Pruning",{}); print(p.get("FullPruningTrigger"), p.get("FullPruningThresholdMb"))' "$CASE_NETHERMIND_DIR/nethermind_custom.cfg" 2>&1 || true)"
+    assert_contains "$cfg_pruning" "VolumeFreeSpace 256000" "D12/P: generated cfg sets full-pruning trigger + threshold"
 }
 
 test_fresh_install_full_history_opt_in() {
