@@ -101,13 +101,14 @@ rm -rf ./tmp/
 - **History mode**: controlled by `NETHERMIND_FULL_HISTORY` in `exports.sh`.
   - **`false` (DEFAULT) — minimal-history staking node.** `AncientBodiesBarrier` /
     `AncientReceiptsBarrier: 99999999` (≥ pivot ⇒ no post-merge backfill) and
-    `StoreReceipts: false` ⇒ **~250–280 GiB, ~4× smaller than full history** (measured
-    2026-08-03: bodies 596 GiB→119 MiB, receipts 249 GiB→4.2 MiB). Reaches steady state at
-    snap-sync completion with no multi-day backfill. Trade-off: **serves no historical RPC** —
+    `StoreReceipts: false` ⇒ **~250–280 GiB at sync, ~4× smaller than full history** (measured
+    2026-08-03: bodies 596 GiB→119 MiB, receipts 249 GiB→4.2 MiB), with no multi-day backfill.
+    It is not flat afterwards: new blocks and state growth add ~1.5 GiB/day, and the same node
+    measured **~345 GiB 54 days later** (2026-09-26). Plan on a 1 TB disk. Trade-off: **serves no historical RPC** —
     `eth_getBlockByNumber` / `eth_getLogs` / `eth_getTransactionReceipt` / `eth_call` for any
     block before your sync pivot return `null` or an error (only post-pivot data is served,
     like a no-history node). Perfectly fine for a validator; wallet-grade only for RPC.
-    Scoped to this no-history tier it is the **smallest staking node in the field** — ~250–280 GiB
+    Scoped to this no-history tier it is the **smallest staking node in the field** — ~250–280 GiB at sync
     vs ethrex's ~470 GiB (nethermind's flat-storage state is the more compact engine), and a
     footprint geth cannot reach (it has no clean lever to drop post-merge history below ~1.1 TiB).
     That is a real disk win *for a validator that does not need history* — not a general
