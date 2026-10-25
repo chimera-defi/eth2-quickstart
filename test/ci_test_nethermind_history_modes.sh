@@ -95,7 +95,7 @@ _stub_log() {
     local fn="$1"
     shift
     # exports.sh sets IFS=$'\n\t'; without pinning IFS=' ' here, "$*" would join multi-arg
-    # calls (e.g. check_system_requirements "16" "400") with a newline instead of a space.
+    # calls (e.g. check_system_requirements "16" "500") with a newline instead of a space.
     local IFS=' '
     printf '%s|%s\n' "$fn" "$*" >> "$NMD_STUB_LOG"
 }
@@ -561,7 +561,7 @@ test_fresh_install_minimal_default() {
     run_in_sandbox "$sandbox" "NETHERMIND_FULL_HISTORY=false" "NETHERMIND_ALLOW_HISTORY_DOWNGRADE=false"
     assert_exit_eq 0 "$CASE_EXIT" "D12: fresh install, FULL_HISTORY=false"
     assert_contains "$CASE_OUT" "Nethermind history: MINIMAL staking node" "D12: resolves to minimal mode"
-    assert_contains "$(cat "$CASE_STUB_LOG" 2>/dev/null || true)" "check_system_requirements|16 400" "F14: fresh + FULL_HISTORY=false requires 400GB disk"
+    assert_contains "$(cat "$CASE_STUB_LOG" 2>/dev/null || true)" "check_system_requirements|16 500" "F14: fresh + FULL_HISTORY=false requires 500GB disk"
     assert_generated_cfg_mode "$CASE_NETHERMIND_DIR/nethermind_custom.cfg" minimal "D12/E"
     local cfg_pruning
     cfg_pruning="$(python3 -c 'import json,sys; p=json.load(open(sys.argv[1])).get("Pruning",{}); print(p.get("FullPruningTrigger"), p.get("FullPruningThresholdMb"))' "$CASE_NETHERMIND_DIR/nethermind_custom.cfg" 2>&1 || true)"
