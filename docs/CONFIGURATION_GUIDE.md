@@ -101,7 +101,7 @@ rm -rf ./tmp/
     `AncientReceiptsBarrier: 99999999` (≥ pivot ⇒ no post-merge backfill) and
     `StoreReceipts: false` ⇒ **~250–280 GiB at sync, ~4× smaller than full history** (measured
     2026-08-03: bodies 596 GiB→119 MiB, receipts 249 GiB→4.2 MiB), with no multi-day backfill.
-    It is not flat afterwards: on one node it averaged ~1.5 GiB/day of growth, reaching
+    It is not flat afterwards: on one node with no pruning trigger (see Full pruning below) it averaged ~1.5 GiB/day, reaching
     **~345 GiB 54 days later** (2026-09-26). Plan on a 1 TB disk. Trade-off: **serves no historical RPC** —
     `eth_getBlockByNumber` / `eth_getLogs` / `eth_getTransactionReceipt` / `eth_call` for any
     block before your sync pivot return `null` or an error (only post-pivot data is served,
