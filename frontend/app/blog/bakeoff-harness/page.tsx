@@ -82,10 +82,10 @@ nethermind\\tlodestar\\trerun: lodestar pruneHistory CLI-flag fix
 erigon\\tteku\\trerun: previous row crash-looped before the watchdog existed`
 
 const atAGlance = [
-  { title: '8 scripts, 1 manifest', body: 'candidates.tsv lists the pairs to run; six executable driver scripts drive, sample, and aggregate them, plus a sourced library (lib.sh) and a CI guard.' },
-  { title: '3 ways to launch a run', body: 'a fixed manifest (run_bakeoff.sh), a rotating EL anchor (run_anchor_rotation.sh), or an async rerun queue (run_queue.sh) — all three end up calling run_candidate.sh.' },
-  { title: 'Up to 3 watchdogs per run', body: 'crash-loop (always on), anchor-drift (anchor mode only), stall (opt-in) — only the opt-in stall watchdog ever restarts anything, and its restarts are capped; the other two just mark state and log.' },
-  { title: 'The structured artifacts are machine-readable', body: 'env.txt and samples.jsonl feed summarize.sh; advisor-alerts.jsonl is the separate structured channel operators tail live.' },
+  '8 scripts, 1 manifest: six executable drivers, a sourced library, and a CI guard; candidates.tsv lists the pairs.',
+  '3 launch paths share run_candidate.sh: a fixed manifest, a rotating execution-layer (EL) anchor, or an asynchronous rerun queue. Consensus-layer (CL) clients cycle against the synced anchor.',
+  '3 watchdogs detect trouble: crash-loop (always on), anchor-drift (anchor mode only), stall (opt-in). Only stall restarts services, within a cap; the others only mark state and log.',
+  'env.txt and samples.jsonl feed summarize.sh. Operators tail advisor-alerts.jsonl as a separate structured alert channel.',
 ]
 
 function StaticCodeBlock({ code, className = '' }: { code: string; className?: string }) {
@@ -114,7 +114,7 @@ const configTokenRows: { client: string; token: React.ReactNode }[] = [
     client: 'erigon',
     token: (
       <>
-        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">prune.mode</code> set to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">full</code>, matching both YAML-colon
+        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">prune.mode</code> set to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">full</code>. Matches both YAML-colon
         (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'prune.mode: "full"'}</code>) and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">=</code> separator styles, quotes optional
       </>
     ),
@@ -154,11 +154,9 @@ const configTokenRows: { client: string; token: React.ReactNode }[] = [
     client: 'nimbus (CL)',
     token: (
       <>
-        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">history = prune</code> in the persistent config — deliberately <strong>not</strong> checking{' '}
-        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">trustedNodeSync</code>/<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--trusted-node-url</code>, because those only
-        appear in the one-shot bootstrap subcommand that runs <em>before</em> the service starts, never in the persistent{' '}
-        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ExecStart</code> or <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">nimbus.toml</code>, so they&apos;re unobservable
-        here and out of scope for this &ldquo;is the running config optimal&rdquo; gate
+        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">history = prune</code> in persistent config. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">trustedNodeSync</code>/<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--trusted-node-url</code>{' '}
+        only appear in the one-shot bootstrap subcommand, before service startup. Neither appears in persistent <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ExecStart</code>{' '}
+        or <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">nimbus.toml</code>, so this running-config gate cannot observe them and excludes them.
       </>
     ),
   },
@@ -464,6 +462,61 @@ function CandidateLifecycleDiagram() {
   )
 }
 
+function WatchdogActionsFigure() {
+  const watchers = [
+    { name: 'Crash-loop', when: 'Always on', trigger: 'Restart delta > 20 by default', action: 'Mark and log; exit the loop', color: '#e5726e' },
+    { name: 'Anchor-drift', when: 'Anchor mode', trigger: '2 consecutive misses', action: 'Mark and log; preserve the shared EL', color: '#e5726e' },
+    { name: 'Stall', when: 'Opt-in', trigger: '10 non-advancing samples by default', action: 'Restart the stalled unit, up to 3 times', color: '#f5b46b' },
+  ]
+
+  return (
+    <figure className="mt-4" aria-label="Only the opt-in stall watchdog restarts services; crash-loop and anchor-drift watchdogs mark state and log.">
+      <div className="grid gap-3 sm:grid-cols-3">
+        {watchers.map((watcher) => (
+          <div key={watcher.name} className="min-w-0 rounded-lg border border-border bg-muted/30 p-3">
+            <p className="text-xs text-muted-foreground">{watcher.when}</p>
+            <p className="mt-1 text-sm font-medium text-foreground">{watcher.name}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{watcher.trigger}</p>
+            <ArrowDown className="my-2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <p className="border-l-2 pl-2 text-xs text-foreground" style={{ borderColor: watcher.color }}>{watcher.action}</p>
+          </div>
+        ))}
+      </div>
+      <figcaption className="mt-3 text-xs text-muted-foreground">
+        Crash-loop and anchor-drift detection never restart or kill services. Stall recovery stops when its restart budget is exhausted (§3.5).
+      </figcaption>
+    </figure>
+  )
+}
+
+function ResultClassificationFigure() {
+  const routes = [
+    { condition: 'config_optimal=yes; anchor_synced != no', label: 'Results (optimal config only)', color: '#a855f7' },
+    { condition: 'config_optimal=no', label: 'Superseded — non-optimal config', color: '#e5726e' },
+    { condition: 'No config verdict', label: 'Pre-gate — unknown config', color: '#f5b46b' },
+  ]
+
+  return (
+    <figure className="mt-4" aria-label="The generated results skeleton separates optimal, non-optimal, and unknown configurations using the recorded verdict.">
+      <div className="rounded-lg border border-border bg-muted/30 p-3 sm:p-4">
+        <p className="text-center text-sm font-medium text-foreground">Candidate artifacts → summarize.sh</p>
+        <ArrowDown className="mx-auto my-2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+        <div className="space-y-2">
+          {routes.map((route) => (
+            <div key={route.label} className="min-w-0 rounded-md border-l-2 bg-background p-3" style={{ borderColor: route.color }}>
+              <p className="break-words font-mono text-xs text-muted-foreground">{route.condition}</p>
+              <p className="mt-1 text-sm font-medium text-foreground">{route.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <figcaption className="mt-3 text-xs text-muted-foreground">
+        Non-optimal footprints are incomparable and excluded from ranking. Unknown rows are pre-gate or triage-only.
+      </figcaption>
+    </figure>
+  )
+}
+
 export default function BakeoffHarnessPage() {
   return (
     <div className="min-h-screen py-12 sm:py-16 md:py-24">
@@ -478,11 +531,9 @@ export default function BakeoffHarnessPage() {
             The Bake-off Harness — Function-Level Engineering Reference
           </h1>
           <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground">
-            This is the reference for the bake-off harness. Where the results and narrative
-            writeups cover the measurements, orchestration model, and war stories, this document covers every
-            script under <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">test/bakeoff/</code>, every function it calls, every flag it reads, and the data
-            files it produces. Read it alongside the scripts themselves — the function and flag names below are the
-            stable contract; the code around them moves.
+            This reference covers every <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">test/bakeoff/</code> script, function, flag, and output file.
+            Read it alongside the scripts: function and flag names form the stable contract, while surrounding code changes.
+            Companion writeups cover measurements, orchestration, and incidents.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             Results and methodology are documented in{' '}
@@ -501,53 +552,51 @@ export default function BakeoffHarnessPage() {
           </div>
         </header>
 
-        <div className="mt-8 grid gap-3 sm:gap-4 md:grid-cols-2">
-          {atAGlance.map((item) => (
-            <Card key={item.title} padding="sm" className="bg-muted/30">
-              <h3 className="font-medium text-foreground">{item.title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{item.body}</p>
-            </Card>
-          ))}
-        </div>
+        <Card padding="sm" className="mt-8 bg-muted/30">
+          <h2 className="font-medium text-foreground">In 30 seconds</h2>
+          <ul className="mt-3 space-y-2 text-sm text-muted-foreground list-disc list-inside">
+            {atAGlance.map((item) => <li key={item}>{item}</li>)}
+          </ul>
+        </Card>
 
         <ArticleToc links={tocLinks} />
 
         {/* 1. Layout */}
         <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="layout" className="text-lg sm:text-xl font-semibold text-foreground">1. Layout</AnchorHeading>
-          <StaticCodeBlock code={layoutTree} className="mt-4" />
           <p className="mt-4 text-sm text-muted-foreground">
-            All told, the harness is about <strong>1,550 lines of shell across eight scripts</strong> —{' '}
+            The harness has about <strong>1,550 lines of shell across eight scripts</strong> —{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code> (~480) and{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">lib.sh</code> (~380) carry most of the logic.
           </p>
+          <Details summary="Script layout and shared logging" className="mt-4">
+          <StaticCodeBlock code={layoutTree} />
           <p className="mt-4 text-sm text-muted-foreground">
-            The executable driver scripts (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>,{' '}
+            The executable drivers (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>,{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_queue.sh</code>,{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">apply_resource_caps.sh</code>,{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">summarize.sh</code>) each set <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">set -Eeuo pipefail</code> and source{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">lib/common_functions.sh</code> for logging (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">log_info</code>/
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">log_warn</code>/<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">log_error</code>). <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">lib.sh</code> is
-            the exception noted in the layout above: it&apos;s a sourced library, never executed on its own. It
-            inherits strict mode from whichever script sources it, and doesn&apos;t source{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">common_functions.sh</code> itself — its <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">log_*</code> calls resolve at runtime
-            because every caller that uses those paths (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_queue.sh</code>)
-            sourced <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">common_functions.sh</code> first. The one caller that doesn&apos;t —
-            the CI guard <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">test_data_dirs_sync.sh</code> — only reads{' '}
+            a sourced library, never executed directly. It inherits strict mode from its caller and doesn&apos;t source{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">common_functions.sh</code> itself. Its <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">log_*</code> calls resolve at runtime
+            because its logging callers (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_queue.sh</code>)
+            source <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">common_functions.sh</code> first. The CI guard <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">test_data_dirs_sync.sh</code> only reads{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">BAKEOFF_DATA_DIRS</code> and never reaches a <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">log_*</code> call.
           </p>
+
+          </Details>
 
           <AnchorHeading id="data-flow" as="h3" className="mt-6 font-medium text-foreground">
             Data flow at a glance
           </AnchorHeading>
-          <DataFlowDiagram />
-          <p className="mt-3 text-sm text-muted-foreground">
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code> owns the ordinary sequential sweep; <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code>{' '}
-            reuses one synced execution-layer anchor while cycling consensus clients; <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_queue.sh</code>{' '}
-            (§7) is a third, async entry point that drains a TSV rerun queue instead of a fixed manifest. All three
-            call <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code> and produce the same per-candidate artifacts, so{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">summarize.sh</code> has one source of truth regardless of which path produced a row.
-          </p>
+          <figure className="mt-3" aria-label="Three launch paths share one candidate driver and artifact format.">
+            <DataFlowDiagram />
+            <figcaption className="mt-3 text-xs text-muted-foreground">
+              The sequential sweep, shared-anchor sweep, and asynchronous TSV rerun queue (§7) all call run_candidate.sh.
+              Their identical artifacts give summarize.sh one source of truth.
+            </figcaption>
+          </figure>
         </section>
 
         {/* 2. run_bakeoff.sh */}
@@ -556,25 +605,24 @@ export default function BakeoffHarnessPage() {
             2. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code> — the sequential orchestrator
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
+            Runs selected client pairs sequentially, continuing after failures.
             Usage: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'run_bakeoff.sh --stage=triage|full [--only=el__cl,el__cl,...] [--force]'}</code>
           </p>
-          <p className="mt-3 text-sm text-muted-foreground">What it does, in order:</p>
+          <p className="mt-3 text-sm text-muted-foreground">Run sequence:</p>
           <ol className="mt-3 space-y-3 text-sm text-muted-foreground list-decimal list-inside">
             <li>
               <span className="font-medium text-foreground">Stage-dependent windows.</span>{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--stage=triage</code> sets a 5400s (90 min) sync window with 120s sampling (
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_SYNC_WINDOW_SECONDS</code>,{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_SAMPLE_INTERVAL_SECONDS</code>); <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--stage=full</code> sets a
-              259200s (72h) window with 600s sampling. Both are overridable via env (the script only supplies the
-              default with <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'${VAR:-default}'}</code>).
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_SAMPLE_INTERVAL_SECONDS</code>). <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--stage=full</code> sets a
+              259200s (72h) window with 600s sampling. Environment variables override both defaults, supplied with <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'${VAR:-default}'}</code>.
             </li>
             <li>
               <span className="font-medium text-foreground">Config swap with restore-on-exit.</span> It backs up the
               current <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config/user_config.env</code> to{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config/user_config.env.bakeoff-backup</code>, installs{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">config/bakeoff.env</code> in its place, and registers{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">trap restore_cfg EXIT</code> so the operator&apos;s real config is always restored — even
-              on Ctrl-C or a crash mid-run.
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">trap restore_cfg EXIT</code> so the operator&apos;s real config is always restored, even after Ctrl-C or a mid-run crash.
             </li>
             <li>
               <span className="font-medium text-foreground">Candidate selection from <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">candidates.tsv</code>.</span> The manifest is{' '}
@@ -588,10 +636,8 @@ export default function BakeoffHarnessPage() {
                 <li>
                   <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--stage=full</code> <strong>without</strong>{' '}
                   <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--only</code> auto-selects only candidates whose triage{' '}
-                  <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">env.txt</code> already recorded <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">install_exit_code=0</code> — this
-                  is the resume guard: a full run only re-attempts candidates that passed triage, and running{' '}
-                  <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--stage=full</code> twice is safe (it re-derives the same selection from disk, it
-                  doesn&apos;t remember state in the orchestrator itself).
+                  <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">env.txt</code> already recorded <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">install_exit_code=0</code>. This resume guard retries only triage successes. Running{' '}
+                  <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--stage=full</code> twice is safe: selection comes from disk, without internal orchestrator state.
                 </li>
                 <li>
                   <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--stage=triage</code> with no <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--only</code> runs every manifest row.
@@ -611,8 +657,7 @@ export default function BakeoffHarnessPage() {
           </ol>
           <p className="mt-4 text-sm text-muted-foreground">
             Artifact root:{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'artifacts/${ETH2QS_BAKEOFF_RUN_ID:-client-bakeoff-2026-06-22}/'}</code>. Every subsequent
-            script keys off the same env var, so a fresh campaign is just a new{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'artifacts/${ETH2QS_BAKEOFF_RUN_ID:-client-bakeoff-2026-06-22}/'}</code>. All scripts share this environment variable. Start a fresh campaign with a new{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_RUN_ID</code>.
           </p>
         </section>
@@ -623,10 +668,10 @@ export default function BakeoffHarnessPage() {
             3. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code> — the single-candidate state machine
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            Usage: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'run_candidate.sh <execution> <consensus>'}</code>. This is the workhorse; every
-            candidate row in the results tables is one invocation of this script. It refuses to run at all unless{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_CONFIRMED=yes</code> is set (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">log_error … exit 2</code>) — a
-            deliberate manual safety gate because the script purges data directories and stops/disables services.
+            Every results-table candidate row comes from one invocation of this script.
+            Usage: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'run_candidate.sh <execution> <consensus>'}</code>.{' '}
+            It requires <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_CONFIRMED=yes</code> (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">log_error … exit 2</code>).
+            This manual safety gate protects against purging data directories and stopping/disabling services.
           </p>
 
           <CandidateLifecycleDiagram />
@@ -665,8 +710,7 @@ export default function BakeoffHarnessPage() {
                     <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_KEEP_EL=yes</code>
                   </td>
                   <td className="py-3 align-top text-muted-foreground">
-                    same as full, but on teardown only the CL datadir is purged — the EL is left running and synced,
-                    to become the next anchor
+                    Same as full. Teardown purges only the CL data directory (datadir), leaving the EL running and synced as the next anchor.
                   </td>
                 </tr>
                 <tr>
@@ -677,8 +721,7 @@ export default function BakeoffHarnessPage() {
                     <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'ETH2QS_BAKEOFF_ANCHOR_EL=<el>'}</code>
                   </td>
                   <td className="py-3 align-top text-muted-foreground">
-                    only stop/disable/purge the CL; the EL must already be active and synced; only the CL is
-                    installed and cycled
+                    Stop, disable, purge, install, and cycle only the CL. The EL must already be active and synced.
                   </td>
                 </tr>
               </tbody>
@@ -693,28 +736,28 @@ export default function BakeoffHarnessPage() {
             <div className="rounded-lg border border-border p-3">
               <Badge variant="primary">establish</Badge>
               <p className="mt-2 text-xs text-muted-foreground"><span className="font-medium">Trigger:</span> <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_KEEP_EL=yes</code></p>
-              <p className="mt-1 text-sm text-muted-foreground">same as full, but on teardown only the CL datadir is purged — the EL is left running and synced, to become the next anchor</p>
+              <p className="mt-1 text-sm text-muted-foreground">Same as full. Teardown purges only the CL data directory (datadir), leaving the EL running and synced as the next anchor.</p>
             </div>
             <div className="rounded-lg border border-border p-3">
               <Badge variant="primary">anchor</Badge>
               <p className="mt-2 text-xs text-muted-foreground"><span className="font-medium">Trigger:</span> <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">{'ETH2QS_BAKEOFF_ANCHOR_EL=<el>'}</code></p>
-              <p className="mt-1 text-sm text-muted-foreground">only stop/disable/purge the CL; the EL must already be active and synced; only the CL is installed and cycled</p>
+              <p className="mt-1 text-sm text-muted-foreground">Stop, disable, purge, install, and cycle only the CL. The EL must already be active and synced.</p>
             </div>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            Anchor mode has its own precondition gate before touching anything: the{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">$execution</code> arg must equal <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">$ETH2QS_BAKEOFF_ANCHOR_EL</code> (mismatch
-            → <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">exit 3</code>), <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth1.service</code> must be{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">systemctl is-active</code>, Engine API port 8551 must answer with an HTTP-shaped code (
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'^[1-5][0-9]{2}$'}</code>, since 401 auth-required counts as &ldquo;responding&rdquo;), and a
-            bounded 5-retry/2s-sleep loop must observe <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing</code> resolve to &ldquo;caught up&rdquo; (
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">result == false</code>, or a progress object whose hex-decoded{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">currentBlock</code> is <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'>='}</code> its hex-decoded{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">highestBlock</code>, with <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">highestBlock != &quot;0x0&quot;</code>) before
-            the CL sweep is allowed to start. Numeric comparison, unlike{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_execution_synced</code> (§5.4), which compares hex strings for exact
-            equality.
+            Anchor mode checks these preconditions before changing anything:
           </p>
+          <ul className="mt-3 space-y-2 text-sm text-muted-foreground list-disc list-inside">
+            <li><code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">$execution</code> must equal <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">$ETH2QS_BAKEOFF_ANCHOR_EL</code>; mismatch → <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">exit 3</code>.</li>
+            <li><code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth1.service</code> must pass <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">systemctl is-active</code>.</li>
+            <li>Engine API port 8551 must return an HTTP-shaped code (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'^[1-5][0-9]{2}$'}</code>). Authentication-required 401 counts as responding.</li>
+            <li>
+              A bounded 5-retry/2s-sleep loop must see <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing</code> caught up before the CL sweep starts:{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">result == false</code>, or hex-decoded <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">currentBlock</code> <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'>='}</code>{' '}
+              hex-decoded <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">highestBlock</code>, with <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">highestBlock != &quot;0x0&quot;</code>.
+              This comparison is numeric; <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_execution_synced</code> (§5.4) requires exact hex-string equality.
+            </li>
+          </ul>
           </Details>
 
           <Details id="resume-guard" summary="3.2 Resume guard — .done marker + FORCE" className="mt-3">
@@ -722,9 +765,7 @@ export default function BakeoffHarnessPage() {
             If <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">$out/.done</code> exists and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_FORCE</code> isn&apos;t{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">yes</code>, the candidate is skipped entirely (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">exit 0</code>). Setting{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_FORCE=yes</code> also clears <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.anchor-poisoned</code>,{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.crash-looped</code> and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.done</code> so a forced rerun doesn&apos;t inherit a stale poison marker from a previous
-            attempt — without that clear, the anchor watchdog guard later in the script would bypass itself and
-            finalize <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">anchor_synced=no</code> for what is actually a clean rerun.
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.crash-looped</code> and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.done</code> before rerunning. A stale poison marker would bypass the anchor watchdog and falsely finalize <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">anchor_synced=no</code> for a clean rerun.
           </p>
           </Details>
 
@@ -750,9 +791,7 @@ export default function BakeoffHarnessPage() {
               (logged, non-fatal), then <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--confirm</code> (must succeed). Anchor mode passes{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--scope=consensus</code> so the EL anchor is never touched.{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'< /dev/null'}</code> on every <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">clean-data</code> and install call
-              prevents <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">SIGTTIN</code> when the harness runs detached (backgrounded/tmux) — a non-interactive
-              process group reading from a controlling TTY gets stopped by the kernel, not an error the script can
-              catch.
+              prevents <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">SIGTTIN</code> when detached (backgrounded/tmux). The kernel stops a background process group that reads its controlling terminal (TTY). The script cannot catch this as an error.
             </li>
             <li>
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'bakeoff_snapshot_disk "$out/disk-before.tsv"'}</code> — baseline footprint.
@@ -787,12 +826,10 @@ export default function BakeoffHarnessPage() {
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">env.txt</code> as <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">install_exit_code=</code>.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
-            Immediately after install: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">apply_resource_caps.sh apply</code> (§4), then a battery of
-            post-install snapshots (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">doctor</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">stats</code>,{' '}
+            After install: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">apply_resource_caps.sh apply</code> (§4), then snapshots (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">doctor</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">stats</code>,{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">monitor export</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">debug --service eth1</code>,{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">debug --service cl</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">systemctl status eth1 cl validator</code>), then
-            the config-optimality gate, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_check_config_optimal</code> (§5.6) — non-blocking, it
-            stamps <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'config_optimal=yes|no'}</code> into <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">env.txt</code> and never aborts the run.
+            the config-optimality gate, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_check_config_optimal</code> (§5.6). This non-blocking gate stamps <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'config_optimal=yes|no'}</code> into <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">env.txt</code> and never aborts the run.
           </p>
           </Details>
 
@@ -819,39 +856,28 @@ export default function BakeoffHarnessPage() {
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">env.txt</code>, a hard fail signal downstream).
             </li>
             <li>
-              <strong>Crash-loop watchdog</strong> (always-on, not opt-in). It detects a unit <em>flapping</em> under
-              systemd&apos;s <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Restart=</code> — a config error that exits immediately and
-              respawns every few seconds — as opposed to the stall watchdog below, which detects flat{' '}
-              <em>no progress</em>. Each iteration re-reads <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">NRestarts</code> for every unit
+              <strong>Crash-loop watchdog</strong> (always-on, not opt-in). It detects <em>flapping</em>: repeated exits and restarts under systemd&apos;s <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Restart=</code>. A config error can cause immediate exits and respawns every few seconds. The stall watchdog detects <em>no progress</em>. Each iteration re-reads <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">NRestarts</code> for every unit
               under test and computes the delta from the pre-loop baseline. If any unit&apos;s delta exceeds{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_MAX_RESTARTS</code> (default <strong>20</strong>: far above what
-              a healthy candidate ever sees, far below a real crash loop), the row is invalidated immediately: it{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_MAX_RESTARTS</code> (default <strong>20</strong>: well above healthy behavior, well below a real crash loop), the row is invalidated immediately: it{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">touch</code>es <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">$out/.crash-looped</code>; writes{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">crash_loop_detected=yes</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">crash_loop_unit=</code>, and{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">crash_loop_restarts=</code> (the delta) to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">env.txt</code>;{' '}
               logs an error; fires a <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_advisor_alert</code> (
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">error</code>, kind <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">crash_loop</code>, §5.2); and breaks the
-              observation loop rather than waiting out the rest of the window. Unlike the stall watchdog, this
-              watchdog never restarts anything itself — systemd is already doing the (unwanted) restarting, and the
-              watchdog&apos;s only job is to notice and bail. Motivating incident: lodestar&apos;s{' '}
+              observation loop rather than waiting out the rest of the window. It never restarts services. Systemd already does that; the watchdog detects the loop and exits. Motivating incident: lodestar&apos;s{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">cl.service</code> crash-looped on <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Unknown argument: chain</code>{' '}
               (exit 1, ~5s per cycle) and was respawned 20,892 times over ~2 days. Before this watchdog existed, the
               harness kept sampling to the full 72h window on generic &ldquo;service is no longer active&rdquo;
-              warnings alone and would have produced nothing without a human noticing.
+              warnings alone and needed human intervention to produce anything.
             </li>
             <li>
               <strong>Anchor watchdog</strong> (anchor mode only, and only while <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.anchor-poisoned</code> doesn&apos;t
               already exist): detects if the anchor EL silently dropped out of sync (service down, or{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing</code> no longer reporting caught-up). &ldquo;Caught-up&rdquo; allows the anchor to trail
-              the network head by up to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_ANCHOR_LAG_BLOCKS</code> (default 128) &mdash; some ELs
-              keep returning an <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing</code> object at tip with <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">highestBlock</code> set to the network
-              head, so while a CL is still warming up and nothing drives forkchoice the anchor legitimately trails by
-              a few blocks. Demanding an exact catch-up there poisoned healthy rows. A real re-snap drops 
+              the network head by up to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_ANCHOR_LAG_BLOCKS</code> (default 128). Some ELs return an <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing</code> object at tip with <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">highestBlock</code> set to the network
+              head. While a CL warms up, nothing drives forkchoice, so the anchor can legitimately trail a few blocks. Demanding an exact catch-up there poisoned healthy rows. A real re-snap drops{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">currentBlock</code> to ~0, so it still trips far inside the tolerance. Two consecutive misses (
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">anchor_miss_streak -ge 2</code>) touches <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.anchor-poisoned</code> and logs
-              an error — <strong>detection only, it never restarts or kills anything</strong>, because the anchor EL
-              is shared state across the whole CL sweep and killing it would invalidate every remaining candidate in
-              the rotation.
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">anchor_miss_streak -ge 2</code>) touches <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.anchor-poisoned</code> and logs an error. <strong>It never restarts or kills anything</strong>: killing the shared EL would invalidate every remaining CL candidate.
             </li>
             <li>
               <strong>Stall watchdog</strong> (opt-in via <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_STALL_RESTART=yes</code>, inert otherwise):
@@ -861,54 +887,51 @@ export default function BakeoffHarnessPage() {
               10) consecutive non-advancing samples triggers <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">sudo systemctl restart</code> on the stalled unit,
               up to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">stall_max_restarts</code> (default 3) times; exceeding that touches{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.stalled</code>, writes <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">stall_restarts=</code>/
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">stall_failed=yes</code> to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">env.txt</code>, and breaks the loop — the row
-              is invalid past that point but the harness still finalizes cleanly rather than hanging forever on a
-              genuinely dead node.
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">stall_failed=yes</code> to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">env.txt</code>, and breaks out of the sampling window early. The row is invalid past that point, but teardown still runs cleanly rather than hanging forever on a genuinely dead node.
             </li>
             <li>
               <strong>Synced-streak check</strong>: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced</code> (§5.4) must return true on{' '}
               <strong>two consecutive</strong> samples (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">synced_streak -ge 2</code>) before the row is accepted
-              as synced — a single true reading can be a race between the EL and CL heads. On that streak, it
+              as synced. One true reading can reflect a race between EL and CL heads. On that streak, it
               snapshots <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">disk-synced.tsv</code>, writes <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">synced_at_utc=</code>/
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">fully_synced=yes</code>, and breaks out of the window early (no need to wait for the full
-              72h cap once synced).
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">fully_synced=yes</code>, and breaks out of the sampling window early, before the 72h cap.
             </li>
           </ol>
           <p className="mt-3 text-sm text-muted-foreground">
-            After the loop (whether by break — from a crash-loop trip, a stall-watchdog exhaustion, a synced streak,
-            or a timeout), one final <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_write_sample</code> call captures
+            After any loop exit (crash-loop, exhausted stall watchdog, synced streak, or timeout), a final <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_write_sample</code> call captures
             the end state, then <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">env.txt</code> gets <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">fully_synced=no</code> if nothing set
             it, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">service_crash_observed=</code>, and (anchor mode only){' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'anchor_synced=yes|no'}</code> depending on whether <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.anchor-poisoned</code> exists.
             A <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">window_capped_unsynced</code> warn-level advisor alert (§5.2) fires only when install
             succeeded, the window expired without <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">fully_synced=yes</code>, and neither the crash-loop
-            nor the stall watchdog already alerted this same row — it&apos;s the third and last of the three
-            &ldquo;give up&rdquo; paths a row can take, after crash-loop and stall, so a dead candidate never fires
-            more than one give-up alert.
+            nor the stall watchdog already alerted this same row. This is the third and last of the three give-up paths, after crash-loop and stall, ensuring at most one give-up alert per dead candidate.
           </p>
           </Details>
 
           <Details id="teardown" summary="3.6 Teardown — journalctl tails, findings.md, exit code" className="mt-3">
           <p className="text-sm text-muted-foreground">
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">journalctl</code> tails (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">-u eth1 -n 700</code>,{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">-u cl -n 700</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">-u validator -n 300</code>) and{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">./scripts/eth2qs.sh repair</code> preview are captured regardless of outcome. A{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">findings.md</code> skeleton is seeded with the install/crash verdict for a human reviewer
-            to fill in (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Result: TBD-by-reviewer</code>).{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'bakeoff_snapshot_disk "$out/disk-final.tsv"'}</code> captures the footprint pre-cleanup
-            (synced or capped — this is what <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">summarize.sh</code> falls back to when{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">disk-synced.tsv</code> doesn&apos;t exist). Then <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">apply_resource_caps.sh clear</code>,
-            then <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">clean-data</code> again (scoped the same way as pre-install), then a final{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">disk-after-cleanup.tsv</code> snapshot, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ended_at_utc</code>,{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">touch .done</code>, and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'exit "$install_rc"'}</code> —{' '}
-            <strong>unless the crash-loop watchdog tripped</strong>, in which case the script exits{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">4</code> regardless of <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">install_rc</code>. A crash-looped row can still have{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">install_exit_code=0</code> (the install itself succeeded; the client only started
-            flapping afterward), so exiting 0 here would let <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code>/
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_queue.sh</code> record an invalid measurement as a clean run. All cleanup and
-            artifact capture above still runs unconditionally — only the terminal exit status changes.{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">4</code> is distinct from <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">2</code> (operator-confirm gate) and{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">3</code> (anchor-mode precondition/disk-floor failures).
+            Teardown captures evidence and cleans up regardless of outcome:
+          </p>
+          <ol className="mt-3 space-y-2 text-sm text-muted-foreground list-decimal list-inside">
+            <li>
+              Capture <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">journalctl</code> tails (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">-u eth1 -n 700</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">-u cl -n 700</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">-u validator -n 300</code>)
+              and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">./scripts/eth2qs.sh repair</code> preview. Seed <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">findings.md</code> with the install/crash verdict
+              (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Result: TBD-by-reviewer</code>) for human completion.
+            </li>
+            <li>
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'bakeoff_snapshot_disk "$out/disk-final.tsv"'}</code> records the pre-cleanup footprint, synced or capped.{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">summarize.sh</code> uses it when <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">disk-synced.tsv</code> is absent.
+            </li>
+            <li>
+              Run <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">apply_resource_caps.sh clear</code>, then <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">clean-data</code> with the pre-install scope.
+              Record <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">disk-after-cleanup.tsv</code> and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ended_at_utc</code>; run <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">touch .done</code>.
+            </li>
+          </ol>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Normally, teardown ends with <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'exit "$install_rc"'}</code>. A crash-loop instead forces exit <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">4</code>,
+            preserving all cleanup and artifacts. Even <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">install_exit_code=0</code> can precede later flapping;
+            exit 0 would make <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code>/<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_queue.sh</code> record an invalid measurement as clean.
+            Exit <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">4</code> differs from <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">2</code> (operator-confirm gate) and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">3</code> (anchor precondition/disk-floor failure).
           </p>
           </Details>
         </section>
@@ -919,8 +942,8 @@ export default function BakeoffHarnessPage() {
             4. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">apply_resource_caps.sh</code> — systemd runtime caps
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            Usage: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'apply_resource_caps.sh <apply|clear>'}</code>. Purpose: keep the bake-off from
-            starving co-resident work on a shared host by capping the node stack to roughly 8 cores / 36G total.
+            Runtime caps limit the node stack to roughly 8 cores / 36G total, protecting other work on the shared host.
+            Usage: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'apply_resource_caps.sh <apply|clear>'}</code>.
           </p>
           <ul className="mt-4 space-y-3 text-sm text-muted-foreground list-disc list-inside">
             <li>
@@ -938,9 +961,8 @@ export default function BakeoffHarnessPage() {
             <li>
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">clear</code>: resets both units&apos; <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">CPUQuota</code>/
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">MemoryMax</code>/<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">MemoryHigh</code>/<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">IOWeight</code> back
-              to infinity/infinity/infinity/100 — deliberately <strong>not</strong>{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">systemctl revert</code>, because these are custom units and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">revert</code> can
-              strip unit overrides/definitions entirely, not just the runtime properties this script set. In anchor
+              to infinity/infinity/infinity/100. It avoids{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">systemctl revert</code>, which can strip custom unit overrides/definitions, beyond the runtime properties set here. In anchor
               mode, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">clear</code> explicitly skips reverting <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth1.service</code> (
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_ANCHOR_EL</code> set) so the anchor&apos;s caps stay consistent for the rest
               of the CL sweep; only <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">cl.service</code> reverts.
@@ -954,7 +976,7 @@ export default function BakeoffHarnessPage() {
             5. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">lib.sh</code> — the shared probe/sample/gate library
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            Sourced by <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code>,{' '}
+            This library shares probes, sampling, and configuration checks. Sourced by <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code>,{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_queue.sh</code> (§7), and the CI guard{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">test_data_dirs_sync.sh</code>. Never executed directly.
           </p>
@@ -973,11 +995,8 @@ export default function BakeoffHarnessPage() {
 
           <Details id="bakeoff-advisor-alert" summary={<>5.2 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'bakeoff_advisor_alert()'}</code> — the structured alert channel</>} className="mt-3">
           <p className="text-sm text-muted-foreground">
-            The single structured &ldquo;surface the problem&rdquo; channel for the whole harness. The harness
-            already detects trouble in a dozen different places (crash-loop, anchor poison, stall, install failure,
-            window-capped-without-sync, malformed/timed-out queue rows) — this gives an operator or a supervising AI
-            one thing to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">tail -f</code> instead of a log line buried somewhere inside a multi-hour
-            run.
+            Operators and supervising AI can <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">tail -f</code> one alert channel throughout a multi-hour run.
+            It collects crash-loop, anchor-poison, stall, install-failure, window-capped-without-sync, and malformed/timed-out queue alerts.
           </p>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground list-disc list-inside">
             <li>
@@ -1048,9 +1067,7 @@ export default function BakeoffHarnessPage() {
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_snapshot_processes</code> — <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ps -eo pid=,comm=,%cpu=,%mem=,rss=,vsz=,etime=,args=</code>{' '}
               piped to an <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">awk</code> regex over known client names; the pattern matches against the{' '}
               <strong>whole formatted <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ps</code> row</strong> (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">comm</code> <em>and</em>{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">args</code> columns together), not just the <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">comm</code> field — so any
-              process whose <em>arguments</em> happen to contain one of those tokens is picked up too, not only ones
-              named after a client binary. Matching lines are converted to a JSON array via{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">args</code> columns together), not just the <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">comm</code> field. Processes with matching <em>arguments</em> are included, even if their binary names differ. Matching lines are converted to a JSON array via{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{`jq -R -s 'split("\\n")[:-1]'`}</code>.
             </li>
             <li>
@@ -1061,17 +1078,13 @@ export default function BakeoffHarnessPage() {
 
           <Details id="bakeoff-is-synced" summary={<>5.4 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_execution_synced</code> / <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced</code></>} className="mt-3">
           <p className="text-sm text-muted-foreground">
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_execution_synced</code> checks the EXECUTION client alone:{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing</code> result is boolean <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">false</code>, OR a progress
-            object where <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">currentBlock == highestBlock</code> <strong>and</strong>{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">highestBlock != &quot;0x0&quot;</code> (the <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">!= &quot;0x0&quot;</code> guard rejects
-            the pre-sync zero state, where an EL that hasn&apos;t started downloading anything yet would otherwise
-            read as trivially &ldquo;caught up&rdquo;). It is split out from <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced</code> specifically
-            so an anchor-mode caller can check the preserved EL without also requiring a live beacon: between
-            anchor-mode candidates the CL is stopped and its datadir purged, so any beacon-inclusive predicate could
-            never pass there.{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_queue.sh</code>&apos;s anchor precondition (§7) calls this function directly for
-            exactly that reason.
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_execution_synced</code> checks the execution client alone. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth_syncing</code> must return
+            boolean <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">false</code>, or a progress object with <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">currentBlock == highestBlock</code> and{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">highestBlock != &quot;0x0&quot;</code>. The <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">!= &quot;0x0&quot;</code> guard rejects pre-sync zero state: an EL that hasn&apos;t started downloading would otherwise look trivially caught up.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Between anchor-mode candidates, the CL is stopped and its datadir purged. A beacon-inclusive check cannot pass.
+            This separate function lets callers check the preserved EL alone; <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_queue.sh</code>&apos;s anchor precondition (§7) uses it directly.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced</code> returns 0 only when <strong>both</strong> layers report
@@ -1090,26 +1103,30 @@ export default function BakeoffHarnessPage() {
 
           <Details id="bakeoff-write-sample" summary={<>5.5 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'bakeoff_write_sample()'}</code> — the per-tick sampling routine</>} className="mt-3">
           <p className="text-sm text-muted-foreground">
-            The per-tick sampling routine. Writes disk/execution-sync/beacon-sync/process snapshots plus{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">./scripts/eth2qs.sh doctor --json</code> and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">stats --json</code> (each{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">timeout 30</code>, best-effort) into a <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">tmp/</code> scratch dir, determines{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">alive=&quot;up&quot;/&quot;down&quot;</code> via <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_services_alive</code>, and assembles one JSON
-            object per call with <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">jq -cn --rawfile</code> (each raw file parsed with{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'fromjson?  // {raw: ...}'}</code> so a malformed sub-output degrades to a raw-string field
-            instead of aborting the whole sample — with one exception: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">processes</code> degrades to an empty
-            array <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'(($processes | fromjson?) // [])'}</code>, not a{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'{raw: ...}'}</code> object, since it&apos;s already expected to be a JSON array) appended
-            as one line to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">samples.jsonl</code>. A <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">jq</code> failure on the whole assembly is
-            caught and logged (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">log_warn</code>) rather than propagated — one bad sample should never kill
-            the observation loop.
+            Each tick appends one JSON object to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">samples.jsonl</code>:
+          </p>
+          <ol className="mt-3 space-y-2 text-sm text-muted-foreground list-decimal list-inside">
+            <li>
+              Write disk, execution-sync, beacon-sync, and process snapshots into <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">tmp/</code>.
+              Add <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">./scripts/eth2qs.sh doctor --json</code> and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">stats --json</code>, each best-effort with <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">timeout 30</code>.
+            </li>
+            <li>Determine <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">alive=&quot;up&quot;/&quot;down&quot;</code> through <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_services_alive</code>.</li>
+            <li>
+              Assemble with <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">jq -cn --rawfile</code>. Malformed sub-outputs fall back to raw-string fields through{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'fromjson?  // {raw: ...}'}</code>.
+              Exception: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">processes</code> expects an array, so <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'(($processes | fromjson?) // [])'}</code>{' '}
+              produces <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'[]'}</code>, rather than a <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'{raw: ...}'}</code> object.
+            </li>
+          </ol>
+          <p className="mt-3 text-sm text-muted-foreground">
+            An assembly-wide <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">jq</code> failure logs <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">log_warn</code> without propagating. One bad sample cannot kill the observation loop.
           </p>
           </Details>
 
           <Details id="bakeoff-check-config-optimal" summary={<>5.6 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'bakeoff_check_config_optimal()'}</code> — the config-optimality gate</>} className="mt-3">
           <p className="text-sm text-muted-foreground">
-            The config-optimality gate. A disk-footprint benchmark is meaningless if you can&apos;t prove the client
-            was actually running in its most disk-efficient mode, so this non-blocking gate (always returns 0)
-            stamps every row with a verdict that later filters the results tables.
+            This gate checks disk-efficient configuration before a footprint enters the ranked results.
+            It stamps each row with a verdict, always returns 0, and never blocks a run.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">Mechanism:</p>
           <ol className="mt-2 space-y-3 text-sm text-muted-foreground list-decimal list-inside">
@@ -1122,18 +1139,14 @@ export default function BakeoffHarnessPage() {
               the running process.
             </li>
             <li>
-              Extract the first config file path referenced on that line — the extraction pipes through{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">grep -oP | head -1</code>, so only the first match is kept even if more than one flag
-              appears on the line. Three flag styles are matched in one <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">grep -oP</code> alternation:{' '}
+              Extract only the first referenced config path using <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">grep -oP | head -1</code>, even with multiple flags.
+              One <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">grep -oP</code> alternation matches three styles:{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--config-file=</code>/<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--config-file </code>,{' '}
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--rcConfig=</code>/<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--rcConfig </code> (lodestar), and{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--config=</code>/<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--config </code> (erigon). The comment in the source
-              notes why the <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--config</code> alternative doesn&apos;t falsely match a{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--config-file=x</code> line: PCRE lookbehind is position-anchored, so{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'(?<=--config[= ])'}</code> only fires when the character immediately after{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--config</code> is <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">=</code> or a space — for{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--config-file=x</code> that character is <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">-</code>, so the lookbehind never
-              fires there.
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--config=</code>/<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--config </code> (erigon).
+              As the source comment explains, PCRE lookbehind checks preceding text at a specific position.{' '}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'(?<=--config[= ])'}</code> requires <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">=</code> or a space immediately after <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--config</code>.
+              In <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">--config-file=x</code>, that character is <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">-</code>, so this alternative cannot falsely match.
             </li>
             <li>
               If the extracted path exists as a file, its contents are appended to the &ldquo;combined&rdquo;
@@ -1178,8 +1191,7 @@ export default function BakeoffHarnessPage() {
             </li>
             <li>
               Any client not in the table falls through to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">unchecked</code> (counted as found, not a
-              miss) — the gate is additive; adding a new client without a token entry doesn&apos;t silently fail
-              existing runs.
+              miss). Adding clients without token entries cannot silently fail existing runs.
             </li>
             <li>
               Writes <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'config_optimal=yes|no'}</code> and{' '}
@@ -1202,24 +1214,21 @@ export default function BakeoffHarnessPage() {
             6. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code> — multi-EL anchor rotation
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            Usage: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'run_anchor_rotation.sh <anchors_csv> [<cls_csv>]'}</code> (CLs default to{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">lighthouse,teku,nimbus,lodestar,grandine</code>). This is how the CL matrix gets measured against more than one EL anchor without re-syncing every EL from scratch for every
-            CL.
+            Reuse each synced EL anchor across CLs, avoiding a fresh EL sync for every pair.
+            Usage: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'run_anchor_rotation.sh <anchors_csv> [<cls_csv>]'}</code>.
+            CLs default to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">lighthouse,teku,nimbus,lodestar,grandine</code>.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             Per anchor in <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'<anchors_csv>'}</code>:
           </p>
           <ol className="mt-2 space-y-3 text-sm text-muted-foreground list-decimal list-inside">
             <li>
-              <strong>Establish</strong>: unset <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_ANCHOR_EL</code>, set{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_KEEP_EL=yes</code>, call{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'run_candidate.sh <anchor> prysm'}</code> — a normal full-mode candidate run (wipes any
-              prior EL, installs fresh, syncs to tip) except that teardown preserves the EL datadir instead of
-              purging it. The script also overrides <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_SYNC_WINDOW_SECONDS</code> to{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">259200</code> (72h) by default even for what looks like a &ldquo;just establish
-              it&rdquo; step — the source comment explains why: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>&apos;s own default window
-              is 5400s (a 90-minute smoke-test default), which would make a genuine multi-hour EL sync report{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">fully_synced=no</code> and silently skip the entire CL sweep for that anchor.
+              <strong>Establish</strong>: unset <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_ANCHOR_EL</code>, set <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_KEEP_EL=yes</code>,
+              and call <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'run_candidate.sh <anchor> prysm'}</code>.
+              This wipes the prior EL, installs fresh, and syncs to tip, preserving the EL datadir at teardown.
+              The rotation driver defaults <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_SYNC_WINDOW_SECONDS</code> to <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">259200</code> (72h), even for what looks like a &ldquo;just establish it&rdquo; step.
+              As the source comment explains, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>&apos;s 5400s (90-minute smoke-test) default
+              would mark multi-hour EL syncs <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">fully_synced=no</code> and silently skip that anchor&apos;s entire CL sweep.
             </li>
             <li>
               <strong>Tip check</strong>: reads <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'artifacts/<run-id>/<anchor>__prysm/env.txt'}</code> and
@@ -1254,12 +1263,10 @@ export default function BakeoffHarnessPage() {
             7. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_queue.sh</code> — async rerun-queue drain
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            Usage: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'ETH2QS_BAKEOFF_CONFIRMED=yes test/bakeoff/run_queue.sh [--dry-run]'}</code>. A
-            third way to drive <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>, alongside{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code> and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code> — this one
-            drains a queue of candidates that need (re-)measuring instead of a fixed manifest, waiting until it&apos;s
-            safe to run each one. Designed to be left running (tmux/systemd) while other bake-off activity — a
-            still-running candidate, an anchor EL still catching up — finishes elsewhere.
+            The queue waits until each candidate can run safely, then calls <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>.
+            It complements <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code> and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code> with queued measurements instead of a fixed manifest.
+            Leave it running in tmux/systemd while another candidate finishes or an anchor EL catches up.
+            Usage: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'ETH2QS_BAKEOFF_CONFIRMED=yes test/bakeoff/run_queue.sh [--dry-run]'}</code>.
           </p>
 
           <Details id="queue-file-format" summary="7.1 Queue file format" className="mt-4">
@@ -1287,17 +1294,13 @@ export default function BakeoffHarnessPage() {
           <ol className="mt-3 space-y-3 text-sm text-muted-foreground list-decimal list-inside">
             <li>
               <strong>No other candidate running</strong>: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{"pgrep -f 'run_candidate\\.sh'"}</code>,
-              excluding this process&apos;s own PID (a pure safety net — a synchronously-invoked child has already
-              exited by the time the next row&apos;s check runs, so it&apos;s never load-bearing in practice).
+              excluding this process&apos;s PID. This safety net is never load-bearing in practice: synchronous children already exit before the next row&apos;s check.
             </li>
             <li>
-              <strong>Anchor readiness</strong>, only when <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_ANCHOR_EL</code> is set:{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth1.service</code> active <strong>and</strong>{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_execution_synced</code> — deliberately{' '}
-              <strong>execution-only</strong>, not the beacon-inclusive <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced</code>, which
-              can never pass against a shared anchor (§5.4) — requiring it here would make every queued row wait
-              out the timeout and be skipped for no reason. This matches <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>&apos;s own anchor preflight
-              (§3.1), which also checks the EL only.
+              <strong>Anchor readiness</strong>: when <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_ANCHOR_EL</code> is set,
+              require active <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">eth1.service</code> and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_execution_synced</code>.
+              Like the candidate preflight (§3.1), this checks only the EL. The beacon-inclusive <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_is_synced</code>{' '}
+              cannot pass between shared-anchor candidates (§5.4); using it would time out and skip every queued row.
             </li>
           </ol>
           <p className="mt-3 text-sm text-muted-foreground">
@@ -1308,17 +1311,15 @@ export default function BakeoffHarnessPage() {
 
           <Details id="queue-force" summary="7.3 Force and the FORCE default" className="mt-3">
           <p className="text-sm text-muted-foreground">
-            Once preconditions hold, the row runs as{' '}
+            Reruns default to FORCE=yes so existing <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.done</code> markers cannot turn measurements into no-op successes.
+            After preconditions pass, the invocation is{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'ETH2QS_BAKEOFF_FORCE="${ETH2QS_BAKEOFF_QUEUE_FORCE:-yes}" run_candidate.sh <execution> <consensus>'}</code>.{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_QUEUE_FORCE</code> defaults to <strong>&ldquo;yes&rdquo;</strong> —
-            deliberately, because the entire point of a <em>rerun</em> queue is to re-measure pairs that already
-            have a <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.done</code> marker, and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code> otherwise exits 0
-            without taking any measurement at all when <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.done</code> exists and{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">FORCE</code> is unset (§3.2). Without this default, the queue would record a
-            &ldquo;successful&rdquo; rerun while measuring nothing.{' '}
-            <strong>Forcing overwrites that pair&apos;s previous artifacts</strong> — set{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_QUEUE_FORCE=no</code> to skip already-complete pairs instead of
-            re-measuring (and destroying) them.
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_QUEUE_FORCE</code> defaults to <strong>&ldquo;yes&rdquo;</strong>.
+            Otherwise, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code> exits 0 without measuring when <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.done</code> exists and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">FORCE</code> is unset (§3.2).
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            <strong>Forcing overwrites that pair&apos;s previous artifacts.</strong> Set <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_QUEUE_FORCE=no</code>{' '}
+            to skip completed pairs and preserve their measurements.
           </p>
           </Details>
 
@@ -1361,10 +1362,11 @@ export default function BakeoffHarnessPage() {
             8. <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">summarize.sh</code> — aggregation
           </AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            Reads every <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'artifacts/<run-id>/<el>__<cl>/'}</code> directory and produces four outputs,
-            none of which overwrite the hand-curated <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">docs/CLIENT_BAKEOFF_RESULTS.md</code> (that file is
-            the blog&apos;s source of truth and this script never touches it):
+            Four generated outputs aggregate every <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{'artifacts/<run-id>/<el>__<cl>/'}</code> directory.
+            The script never touches the hand-curated <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">docs/CLIENT_BAKEOFF_RESULTS.md</code>, the blog&apos;s source of truth.
           </p>
+          <ResultClassificationFigure />
+          <Details summary="Four output files, columns, and derivation rules" className="mt-4">
           <ul className="mt-4 space-y-3 text-sm text-muted-foreground list-disc list-inside">
             <li>
               <strong><code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">summary.csv</code></strong> — one row per candidate:
@@ -1436,6 +1438,7 @@ export default function BakeoffHarnessPage() {
               </p>
             </li>
           </ul>
+          </Details>
         </section>
 
         {/* 9. Data model reference */}
@@ -1479,9 +1482,10 @@ export default function BakeoffHarnessPage() {
         <section className="mt-10 sm:mt-16 border-t border-border pt-6">
           <AnchorHeading id="hardening-fixes" className="text-lg sm:text-xl font-semibold text-foreground">10. Hardening fixes</AnchorHeading>
           <p className="mt-2 text-sm text-muted-foreground">
-            These are defensive patterns baked into the harness as a result of real failures during the campaign
-            (see <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">CLIENT_BAKEOFF_ISSUES_LOG.md</code> for the incidents that motivated them):
+            Real campaign failures drove these defenses. See <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">CLIENT_BAKEOFF_ISSUES_LOG.md</code> for the incidents:
           </p>
+          <WatchdogActionsFigure />
+          <Details summary="Failure patterns and the fixes they motivated" className="mt-4">
           <ul className="mt-4 space-y-3 text-sm text-muted-foreground list-disc list-inside">
             <li>
               <strong className="text-foreground"><code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">du</code>/pipefail resilience</strong> (
@@ -1508,15 +1512,11 @@ export default function BakeoffHarnessPage() {
               window cap.
             </li>
             <li>
-              <strong className="text-foreground">Crash-loop watchdog</strong> (§3.5): always-on, not opt-in — a
-              unit flapping under systemd&apos;s own <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Restart=</code> looks &ldquo;active&rdquo; again within
-              seconds of each crash, so the plain <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_services_alive</code> check can miss it
-              entirely if a sample doesn&apos;t happen to land during the brief down window.{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">NRestarts</code> is cumulative and monotonic, so comparing it against a
-              pre-loop baseline catches the pattern regardless of sample timing; exceeding{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_MAX_RESTARTS</code> (default 20) touches{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.crash-looped</code> and forces the row to exit{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">4</code> instead of a possibly-zero <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">install_exit_code</code>.
+              <strong className="text-foreground">Crash-loop watchdog</strong> (§3.5): always on.
+              A flapping unit looks active again seconds after systemd&apos;s <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Restart=</code>, so <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">bakeoff_services_alive</code> can miss a crash if no sample lands during the brief down window.
+              Cumulative, monotonic <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">NRestarts</code> catches them regardless of sample timing by comparison with the pre-loop baseline.
+              Exceeding <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">ETH2QS_BAKEOFF_MAX_RESTARTS</code> (default 20) touches <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">.crash-looped</code>{' '}
+              and forces exit <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">4</code>, overriding a possibly-zero <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">install_exit_code</code>.
             </li>
             <li>
               <strong className="text-foreground">Structured advisor-alert channel</strong> (
@@ -1551,6 +1551,7 @@ export default function BakeoffHarnessPage() {
               shared anchor can never pass.
             </li>
           </ul>
+          </Details>
         </section>
 
         {/* Bottom line */}
@@ -1558,27 +1559,20 @@ export default function BakeoffHarnessPage() {
           <AnchorHeading id="bottom-line" className="text-lg sm:text-xl font-semibold text-foreground">Bottom line</AnchorHeading>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground list-disc list-inside">
             <li>
-              Three entry points (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code>,{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code>,{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_queue.sh</code>) all funnel into one state machine,{' '}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code> — every candidate row in the results tables, however it was
-              launched, produced its artifacts the same way.
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_bakeoff.sh</code>, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_anchor_rotation.sh</code>, and <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_queue.sh</code>{' '}
+              share <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">run_candidate.sh</code>: every results row follows the same state machine and artifact format.
             </li>
             <li>
-              Two of the three watchdogs (crash-loop, anchor-drift) are detection-only by design: they touch a marker
-              file and log, never restart or kill a service, because the thing they&apos;re watching — a flapping
-              client, a shared anchor EL — is either not theirs to fix or shared across the whole run. Only the
-              opt-in stall watchdog restarts anything, and even that is capped.
+              Crash-loop and anchor-drift watchdogs are detection-only by design: they only mark state and log. They watch a flapping client or a shared EL,
+              outside their repair scope. Only the opt-in stall watchdog restarts services, within a cap.
             </li>
             <li>
-              The config-optimality gate (§5.6) is what keeps a disk-footprint number honest: a client synced with
-              history-pruning silently off gets filed under &ldquo;Superseded — non-optimal config,&rdquo; not into
-              the ranked results.
+              The config-optimality gate (§5.6) files synced clients with history-pruning silently off under
+              &ldquo;Superseded — non-optimal config,&rdquo; excluding their footprints from rankings.
             </li>
             <li>
-              Every failure mode the harness detects — crash-loop, anchor-poisoned, stall, a malformed queue row —
-              funnels into one file, <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">advisor-alerts.jsonl</code>, regardless of which of the three
-              drivers produced the row.
+              Every detected failure, including crash-loop, anchor-poisoned, stall, and malformed queue rows,
+              reaches <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">advisor-alerts.jsonl</code> from any driver.
             </li>
           </ul>
         </section>
