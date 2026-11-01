@@ -362,12 +362,6 @@ harden_network() {
         log_error "✗ Network security hardening failed"
         return 1
     fi
-
-    # CVE-2026-98432 interim mitigation (opt out: ENABLE_CVE_2026_98432_MITIGATION=false)
-    if ! "$SCRIPT_DIR/cve_2026_98432_mitigation.sh"; then
-        log_error "✗ CVE-2026-98432 mitigation failed"
-        return 1
-    fi
 }
 
 # Security Monitoring Module

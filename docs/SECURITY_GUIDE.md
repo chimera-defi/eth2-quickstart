@@ -72,27 +72,48 @@ mev-boost, commit-boost...) built with a recent Go likely listens with MPTCP on 
 (30303 for geth). A newer geth is therefore more exposed than an old one. The Go team says the bug
 is not MPTCP-specific, so all three layers below are applied together.
 
-**What Phase 1 does** (`run_1.sh`, also `harden_server.sh` network module), idempotently and
-persisting across reboots:
+**What Phase 1 does.** `apply_network_security()` (used by `run_1.sh` and `harden_server.sh`)
+applies it idempotently, persisting across reboots:
 
-| Layer | Files | Effect |
+| Layer | Where | Effect |
 |-------|-------|--------|
-| Kernel MPTCP off | `/etc/sysctl.d/90-disable-mptcp.conf` + `sysctl -w net.mptcp.enabled=0` | No new MPTCP sockets; Go falls back to plain TCP |
-| Drop TCP with IPv4 options | `/etc/nftables-cve-2026-98432.nft`, loaded by `cve-2026-98432-nft.service` | Separate `ip cve_2026_98432` table at prerouting priority -300 drops TCP packets whose IP header is longer than 20 bytes (`ip hdrlength gt 5`). ufw and Docker rules are untouched |
-| No MPTCP listeners from Go | `/etc/systemd/{system,user}.conf.d/90-godebug-mptcp.conf`, `/etc/environment`, and `Environment="GODEBUG=multipathtcp=0"` in every unit eth2-quickstart generates | Go programs open plain TCP listeners. An existing `GODEBUG` in `/etc/environment` gets `,multipathtcp=0` appended; a conflicting `multipathtcp=` value is left alone with a warning |
+| Kernel MPTCP off | `net.mptcp.enabled = 0` in `/etc/sysctl.d/99-eth2-hardening.conf` | No new MPTCP sockets in the host network namespace; Go falls back to plain TCP |
+| Drop TCP with IPv4 options | `/etc/nftables-cve-2026-98432.nft`, loaded by `cve-2026-98432-nft.service` | Separate `ip cve_2026_98432` table at prerouting priority -300 drops TCP packets whose IP header is longer than 20 bytes (`ip hdrlength gt 5`). ufw and Docker rules are untouched. The unit loads before any interface comes up and follows `nftables.service` (whose `/etc/nftables.conf` starts with `flush ruleset`), re-adding the table when nftables starts, restarts or reloads |
+| No MPTCP listeners from Go | `/etc/systemd/{system,user}.conf.d/90-godebug-mptcp.conf` and `Environment="GODEBUG=multipathtcp=0"` in every unit eth2-quickstart generates | Go services open plain TCP listeners |
 
-At the end the step prints the MPTCP sysctl value, whether the nft table is loaded, the systemd
-manager `GODEBUG`, and any MPTCP listeners still open. Restart the services it lists (or reboot)
-so they reopen their sockets as plain TCP. Check at any time, read-only:
+The rest of the mitigation lives in `install/security/cve_2026_98432_mitigation.sh`. At the end
+of Phase 1 it prints the MPTCP sysctl value, whether the nft table is loaded, the systemd manager
+`GODEBUG`, and any MPTCP listeners still open. Restart the services it lists (or reboot) so they
+reopen their sockets as plain TCP. To check at any time (read-only; exits non-zero if a layer is
+missing):
 
 ```bash
 sudo ./install/security/cve_2026_98432_mitigation.sh --verify
 ss -Mltnp | grep ^mptcp     # should print nothing
 ```
 
+**Docker containers.** `net.mptcp.enabled` is a per-network-namespace sysctl, initialised to 1 in
+every new namespace. The host setting does **not** cover containers on their own (bridge)
+networks, and containers do not inherit the host's `GODEBUG`. The host nft prerouting drop does
+cover traffic DNAT'd to published container ports. For any container running a Go service, set
+both:
+
+```yaml
+# docker compose
+services:
+  geth:
+    sysctls:
+      net.mptcp.enabled: 0
+    environment:
+      GODEBUG: multipathtcp=0
+```
+
+(`docker run --sysctl net.mptcp.enabled=0 -e GODEBUG=multipathtcp=0 ...`). Containers on
+`--network host` share the host namespace, so the host sysctl applies; Docker rejects `net.*`
+sysctls there. The only container eth2-quickstart starts, ETHGas in `docker` mode, runs on the
+host network and gets `-e GODEBUG=multipathtcp=0`.
+
 **Limits.**
-- Docker containers do not inherit the host's `GODEBUG`; set it in the container's environment
-  yourself. Kernel MPTCP off still applies to them.
 - The nft rule reduces exposure but does not fully prevent it; it only covers IPv4 options on TCP.
   It also drops the rare legitimate TCP traffic that uses IP options.
 - **The real fix is the distro's patched kernel plus a reboot** (Ubuntu 24.04: expected in
@@ -110,10 +131,9 @@ Once a patched kernel is booted, remove it:
 sudo ./install/security/cve_2026_98432_mitigation.sh --remove
 ```
 
-This deletes the sysctl, nft and systemd drop-in files, disables the unit, drops the nft table and
-removes `multipathtcp=0` from `/etc/environment`. MPTCP stays off until the next reboot. Units
-already generated keep their harmless `GODEBUG=multipathtcp=0` line until they are regenerated
-with the opt-out set.
+This disables the unit, drops the nft table, and deletes the nft and systemd drop-in files and the
+`net.mptcp.enabled` line. MPTCP stays off until the next reboot. Units already generated keep their
+harmless `GODEBUG=multipathtcp=0` line until they are regenerated with the opt-out set.
 
 ## Security Workflow
 
