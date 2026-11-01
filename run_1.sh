@@ -123,6 +123,10 @@ chmod +x "$SCRIPT_DIR/install/security/consolidated_security.sh"
 apply_network_security
 setup_security_monitoring
 
+# CVE-2026-98432 interim mitigation (opt out: ENABLE_CVE_2026_98432_MITIGATION=false)
+chmod +x "$SCRIPT_DIR/install/security/cve_2026_98432_mitigation.sh"
+"$SCRIPT_DIR/install/security/cve_2026_98432_mitigation.sh"
+
 # Update AIDE db to include all files we just installed (security_monitor.sh, etc.)
 # So the first aide_check won't report false changes
 if command -v aide &>/dev/null && [[ -f /var/lib/aide/aide.db ]]; then
