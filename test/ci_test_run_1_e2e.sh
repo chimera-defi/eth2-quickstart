@@ -130,6 +130,18 @@ else
     record_test "Network hardening (sysctl) applied" "FAIL"
 fi
 
+# Verify CVE-2026-98432 mitigation ran for real in Phase 1 (privileged systemd container)
+log_info "CVE-2026-98432 mitigation --verify output:"
+CVE_VERIFY_OUT=$("$PROJECT_ROOT/install/security/cve_2026_98432_mitigation.sh" --verify 2>&1 || true)
+printf '%s\n' "$CVE_VERIFY_OUT"
+for cve_check in "net.mptcp.enabled = 0" "nft table ip cve_2026_98432 = loaded" "systemd GODEBUG = multipathtcp=0"; do
+    if grep -qF "CVE-2026-98432: $cve_check" <<< "$CVE_VERIFY_OUT"; then
+        record_test "CVE-2026-98432: $cve_check" "PASS"
+    else
+        record_test "CVE-2026-98432: $cve_check" "FAIL"
+    fi
+done
+
 # Verify security monitoring script exists
 if [[ -f /usr/local/bin/security_monitor.sh ]]; then
     record_test "Security monitoring script installed" "PASS"

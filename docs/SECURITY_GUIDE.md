@@ -39,6 +39,7 @@ This guide provides comprehensive security information for the Ethereum node set
 ### Core Security Scripts
 - **`install/security/consolidated_security.sh`** - Main security setup (firewall, fail2ban, Snort, AIDE)
 - **`install/security/nginx_harden.sh`** - Nginx proxy abuse protection
+- **`install/security/cve_2026_98432_mitigation.sh`** - CVE-2026-98432 interim mitigation (see below)
 - **`install/security/test_security_fixes.sh`** - Security testing suite
 
 ### Testing Scripts
@@ -57,6 +58,82 @@ This guide provides comprehensive security information for the Ethereum node set
 # Safe validation (no root required)
 ./docs/validate_security_safe.sh
 ```
+
+## CVE-2026-98432 Interim Mitigation
+
+**What it is.** CVE-2026-98432 is a remote, unauthenticated use-after-free in the Linux IPv4
+TCP stack. It fires during the handshake when the SYN carries the IPv4 Record Route or Timestamp
+options, and affects kernels from 4.4 on that lack the fix. As of 2026-11-01 Ubuntu lists noble
+(24.04) `linux` as vulnerable, with the fix in progress for 6.8.0-149, and no USN yet.
+
+**Why it matters for Go clients.** The only known working exploit needs a public multipath TCP
+(MPTCP) listener. Since Go 1.24, Go programs open MPTCP listeners by default, so a geth (or prysm,
+mev-boost, commit-boost...) built with a recent Go likely listens with MPTCP on its public p2p port
+(30303 for geth). A newer geth is therefore more exposed than an old one. The Go team says the bug
+is not MPTCP-specific, so all three layers below are applied together.
+
+**What Phase 1 does.** `apply_network_security()` (used by `run_1.sh` and `harden_server.sh`)
+applies it idempotently, persisting across reboots:
+
+| Layer | Where | Effect |
+|-------|-------|--------|
+| Kernel MPTCP off | `net.mptcp.enabled = 0` in `/etc/sysctl.d/99-eth2-hardening.conf` | No new MPTCP sockets in the host network namespace; Go falls back to plain TCP |
+| Drop TCP with IPv4 options | `/etc/nftables-cve-2026-98432.nft`, loaded by `cve-2026-98432-nft.service` | Separate `ip cve_2026_98432` table at prerouting priority -300 drops TCP packets whose IP header is longer than 20 bytes (`ip hdrlength gt 5`). ufw and Docker rules are untouched. The unit loads before any interface comes up and follows `nftables.service` (whose `/etc/nftables.conf` starts with `flush ruleset`), re-adding the table when nftables starts, restarts or reloads |
+| No MPTCP listeners from Go | `/etc/systemd/{system,user}.conf.d/90-godebug-mptcp.conf` and `Environment="GODEBUG=multipathtcp=0"` in every unit eth2-quickstart generates | Go services open plain TCP listeners |
+
+The rest of the mitigation lives in `install/security/cve_2026_98432_mitigation.sh`. At the end
+of Phase 1 it prints the MPTCP sysctl value, whether the nft table is loaded, the systemd manager
+`GODEBUG`, and any MPTCP listeners still open. Restart the services it lists (or reboot) so they
+reopen their sockets as plain TCP. To check at any time (read-only; exits non-zero if a layer is
+missing):
+
+```bash
+sudo ./install/security/cve_2026_98432_mitigation.sh --verify
+ss -Mltnp | grep ^mptcp     # should print nothing
+```
+
+**Docker containers.** `net.mptcp.enabled` is a per-network-namespace sysctl, initialised to 1 in
+every new namespace. The host setting does **not** cover containers on their own (bridge)
+networks, and containers do not inherit the host's `GODEBUG`. The host nft prerouting drop does
+cover traffic DNAT'd to published container ports. For any container running a Go service, set
+both:
+
+```yaml
+# docker compose
+services:
+  geth:
+    sysctls:
+      net.mptcp.enabled: 0
+    environment:
+      GODEBUG: multipathtcp=0
+```
+
+(`docker run --sysctl net.mptcp.enabled=0 -e GODEBUG=multipathtcp=0 ...`). Containers on
+`--network host` share the host namespace, so the host sysctl applies; Docker rejects `net.*`
+sysctls there. The only container eth2-quickstart starts, ETHGas in `docker` mode, runs on the
+host network and gets `-e GODEBUG=multipathtcp=0`.
+
+**Limits.**
+- The nft rule reduces exposure but does not fully prevent it; it only covers IPv4 options on TCP.
+  It also drops the rare legitimate TCP traffic that uses IP options.
+- **The real fix is the distro's patched kernel plus a reboot** (Ubuntu 24.04: expected in
+  `6.8.0-149` or later). Check with `uname -r` after `apt full-upgrade` and a reboot.
+
+**Opt out / undo.** To skip it on install, set in `config/user_config.env` (or the environment):
+
+```bash
+export ENABLE_CVE_2026_98432_MITIGATION='false'
+```
+
+Once a patched kernel is booted, remove it:
+
+```bash
+sudo ./install/security/cve_2026_98432_mitigation.sh --remove
+```
+
+This disables the unit, drops the nft table, and deletes the nft and systemd drop-in files and the
+`net.mptcp.enabled` line. MPTCP stays off until the next reboot. Units already generated keep their
+harmless `GODEBUG=multipathtcp=0` line until they are regenerated with the opt-out set.
 
 ## Security Workflow
 

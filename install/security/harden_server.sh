@@ -344,7 +344,7 @@ harden_network() {
     log_info "=== Network Security Hardening Module ==="
 
     if [[ "$INTERACTIVE" == "true" ]]; then
-        if ! whiptail_yesno "Network Security" "Apply network security hardening?\n\nThis will:\n- Restrict shared memory\n- Disable unnecessary services\n- Configure kernel security parameters\n- Apply sysctl hardening\n\nContinue?" 12 70; then
+        if ! whiptail_yesno "Network Security" "Apply network security hardening?\n\nThis will:\n- Restrict shared memory\n- Disable unnecessary services\n- Configure kernel security parameters\n- Apply sysctl hardening\n- CVE-2026-98432 mitigation (MPTCP off)\n\nContinue?" 12 70; then
             log_info "Network security hardening skipped by user"
             return 0
         fi

@@ -59,6 +59,7 @@ bash install/test/test_repair_safe_actions.sh
 bash install/test/test_stats_json_contract.sh
 bash install/test/test_monitor_contracts.sh
 bash install/test/test_host_cleanup.sh
+bash install/test/test_cve_2026_98432_mitigation.sh
 bash install/test/test_doctor_service_drift.sh
 bash install/test/test_ensure_dispatch.sh
 bash install/test/test_plan_json.sh

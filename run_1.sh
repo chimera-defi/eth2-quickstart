@@ -119,7 +119,7 @@ log_info "Running consolidated security setup..."
 chmod +x "$SCRIPT_DIR/install/security/consolidated_security.sh"
 "$SCRIPT_DIR/install/security/consolidated_security.sh"
 
-# OS hardening: sysctl, shared memory, disable unnecessary services
+# OS hardening: sysctl, shared memory, disable unnecessary services, CVE-2026-98432 mitigation
 apply_network_security
 setup_security_monitoring
 
