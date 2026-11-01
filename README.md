@@ -148,6 +148,7 @@ This is a repo-backed operations skill, not a standalone blockchain package.
    - Upgrades Ubuntu and programs
    - Sets up firewalls and security hardening
    - Snort IDS profile (enabled by default; disable via `ENABLE_SNORT=false` in `config/user_config.env`)
+   - CVE-2026-98432 interim mitigation: MPTCP off, IPv4-options TCP drop, `GODEBUG=multipathtcp=0` (disable via `ENABLE_CVE_2026_98432_MITIGATION=false`; see [docs/SECURITY_GUIDE.md](docs/SECURITY_GUIDE.md#cve-2026-98432-interim-mitigation))
    - Creates non-root user (SSH key-only, migrates root's keys)
    - Installs required programs
 

@@ -413,6 +413,13 @@ create_systemd_service() {
     local after="${10:-network-online.target}"
     
     local service_file="$HOME/${service_name}.service"
+
+    # CVE-2026-98432: keep Go clients (geth, prysm, mev-boost...) off MPTCP listeners.
+    # Set in the unit itself so it holds even if the manager-wide default is missing.
+    local env_line=""
+    if [[ "${ENABLE_CVE_2026_98432_MITIGATION:-true}" == "true" ]]; then
+        env_line='Environment="GODEBUG=multipathtcp=0"'
+    fi
     
     cat > "$service_file" <<EOF
 [Unit]
@@ -422,6 +429,7 @@ After=$after
 
 [Service]
 User=$user
+${env_line}
 ExecStart=$exec_start
 Restart=$restart
 TimeoutStopSec=$timeout_stop

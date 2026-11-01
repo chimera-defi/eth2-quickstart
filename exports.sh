@@ -38,6 +38,14 @@ export SNORT_HOME_NET=''                    # auto-detect CIDR from interface wh
 export SNORT_STARTUP='boot'                 # boot | manual
 export SNORT_DISABLE_PROMISCUOUS='true'     # true = inspect traffic for host interface only
 
+# CVE-2026-98432 interim mitigation (enabled by default; Phase 1 / harden_server.sh).
+# Turns off kernel MPTCP, drops TCP packets carrying IPv4 options (own nft table), and sets
+# GODEBUG=multipathtcp=0 so Go clients (geth, prysm, mev-boost...) open plain TCP listeners.
+# Set to 'false' once a patched kernel is booted; undo with:
+#   sudo ./install/security/cve_2026_98432_mitigation.sh --remove
+# See docs/SECURITY_GUIDE.md "CVE-2026-98432".
+export ENABLE_CVE_2026_98432_MITIGATION="${ENABLE_CVE_2026_98432_MITIGATION:-true}"  # env or config/user_config.env can override
+
 # Server name used for nginx, caddy & ssl setup
 export SERVER_NAME="rpc.sharedtools.org"
 
