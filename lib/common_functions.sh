@@ -413,6 +413,13 @@ create_systemd_service() {
     local after="${10:-network-online.target}"
     
     local service_file="$HOME/${service_name}.service"
+
+    # CVE-2026-98432: keep Go clients (geth, prysm, mev-boost...) off MPTCP listeners.
+    # Set in the unit itself so it holds even if the manager-wide default is missing.
+    local env_line=""
+    if [[ "${ENABLE_CVE_2026_98432_MITIGATION:-true}" == "true" ]]; then
+        env_line='Environment="GODEBUG=multipathtcp=0"'
+    fi
     
     cat > "$service_file" <<EOF
 [Unit]
@@ -422,6 +429,7 @@ After=$after
 
 [Service]
 User=$user
+${env_line}
 ExecStart=$exec_start
 Restart=$restart
 TimeoutStopSec=$timeout_stop
@@ -1298,9 +1306,16 @@ net.ipv4.conf.default.rp_filter = 1
 net.ipv6.conf.all.accept_redirects = 0
 net.ipv6.conf.default.accept_redirects = 0
 EOF
+    # CVE-2026-98432: the known exploit needs an MPTCP listener (per-namespace sysctl)
+    if [[ "${ENABLE_CVE_2026_98432_MITIGATION:-true}" == "true" ]]; then
+        echo "net.mptcp.enabled = 0" >> "$sysctl_file"
+    fi
 
     # Apply sysctl settings
     sysctl --system >/dev/null 2>&1 || true
+
+    # CVE-2026-98432: nft IPv4-options drop + GODEBUG=multipathtcp=0 (no-op when opted out)
+    "$(dirname "${BASH_SOURCE[0]}")/../install/security/cve_2026_98432_mitigation.sh"
 
     log_info "Network security applied"
 }
