@@ -62,6 +62,7 @@ net.mptcp.enabled = 0"
 
 # --- Part 2: drop TCP packets carrying IPv4 options ---------------------------
 # Separate table at prerouting priority -300 so ufw/Docker rules are untouched.
+# Ordered before network-pre.target (like nftables.service) so no interface is up unfiltered.
 apply_nft() {
     write_if_changed "$NFT_FILE" "# CVE-2026-98432 interim mitigation (eth2-quickstart): drop TCP with IPv4 options
 table ip $NFT_TABLE
@@ -76,8 +77,7 @@ table ip $NFT_TABLE {
 Description=CVE-2026-98432 mitigation: drop TCP packets with IPv4 options
 DefaultDependencies=no
 Wants=network-pre.target
-After=network-pre.target
-Before=network.target
+Before=network-pre.target network.target
 
 [Service]
 Type=oneshot
@@ -104,11 +104,20 @@ merge_environment_godebug() {
     local line value quoted=""
     line=$(grep -E '^GODEBUG=' "$ENV_FILE" | tail -n1 || true)
     if [[ -z "$line" ]]; then
+        # Keep an unterminated last line from swallowing ours
+        if [[ -s "$ENV_FILE" ]] && [[ -n "$(tail -c1 "$ENV_FILE")" ]]; then
+            printf '\n' >> "$ENV_FILE"
+        fi
         printf '%s\n' "GODEBUG=$GODEBUG_TOKEN" >> "$ENV_FILE"
         log_info "Added GODEBUG=$GODEBUG_TOKEN to $ENV_FILE"
         return 0
     fi
     value="${line#GODEBUG=}"
+    # Only merge plain KEY=VAL lists; comments or odd quoting are left for a human
+    if ! [[ "$value" =~ ^\"?[A-Za-z0-9_.=,-]*\"?$ ]]; then
+        log_warn "$ENV_FILE has a GODEBUG line this script cannot merge safely ($line); add $GODEBUG_TOKEN by hand"
+        return 0
+    fi
     if [[ "$value" == \"*\" ]]; then
         quoted='"'
         value="${value#\"}"
@@ -193,8 +202,12 @@ verify_mitigation() {
         log_warn "nft table ip $NFT_TABLE: NOT loaded"
     fi
     log_info "systemd manager GODEBUG: $(systemctl show-environment 2>/dev/null | grep '^GODEBUG=' || echo 'unset')"
-    local listeners
-    listeners=$(ss -Mltnp 2>/dev/null | grep '^mptcp' || true)
+    local listeners ss_out
+    if ! ss_out=$(ss -Mltnp 2>/dev/null); then
+        log_warn "MPTCP listeners: unknown (ss -Mltnp failed or is unavailable)"
+        return 0
+    fi
+    listeners=$(grep '^mptcp' <<< "$ss_out" || true)
     if [[ -n "$listeners" ]]; then
         log_warn "MPTCP listeners still open; restart these services to pick up GODEBUG:"
         printf '%s\n' "$listeners"

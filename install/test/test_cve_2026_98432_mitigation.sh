@@ -68,8 +68,8 @@ test_apply_writes_all_files() {
     grep -qx 'RemainAfterExit=yes' "$unit"
     grep -qx 'ExecStart=/usr/sbin/nft -f /etc/nftables-cve-2026-98432.nft' "$unit"
     grep -qx 'ExecStop=/usr/sbin/nft delete table ip cve_2026_98432' "$unit"
-    grep -qx 'After=network-pre.target' "$unit"
-    grep -qx 'Before=network.target' "$unit"
+    grep -qx 'Wants=network-pre.target' "$unit"
+    grep -qx 'Before=network-pre.target network.target' "$unit"
     grep -qx 'WantedBy=multi-user.target' "$unit"
     local d
     for d in system user; do
@@ -112,6 +112,37 @@ test_existing_quoted_godebug_is_appended() {
     run_mitigation "$root"
     grep -qx 'GODEBUG="x509sha1=1,multipathtcp=0"' "$root/etc/environment"
     rm -rf "$root"
+}
+
+test_env_without_trailing_newline() {
+    local root
+    root=$(new_root)
+    printf 'PATH="/usr/bin:/bin"' > "$root/etc/environment"
+    run_mitigation "$root"
+    [[ "$(cat "$root/etc/environment")" == $'PATH="/usr/bin:/bin"\nGODEBUG=multipathtcp=0' ]]
+    rm -rf "$root"
+}
+
+test_commented_godebug_left_alone() {
+    local root out
+    root=$(new_root)
+    printf 'GODEBUG=http2client=0 # keep\n' > "$root/etc/environment"
+    out=$(CVE_MITIGATION_ROOT="$root" CVE_MITIGATION_SKIP_RUNTIME=true bash "$MITIGATION" 2>&1)
+    [[ "$(cat "$root/etc/environment")" == 'GODEBUG=http2client=0 # keep' ]]
+    grep -q 'cannot merge safely' <<< "$out"
+    rm -rf "$root"
+}
+
+test_verify_reports_unknown_when_ss_fails() {
+    local stub out
+    stub=$(mktemp -d)
+    printf '#!/bin/sh\nexit 1\n' > "$stub/ss"
+    printf '#!/bin/sh\nexit 1\n' > "$stub/nft"
+    chmod +x "$stub/ss" "$stub/nft"
+    out=$(PATH="$stub:$PATH" bash "$MITIGATION" --verify 2>&1)
+    grep -q 'MPTCP listeners: unknown' <<< "$out"
+    if grep -q 'No MPTCP listeners open' <<< "$out"; then return 1; fi
+    rm -rf "$stub"
 }
 
 test_conflicting_godebug_left_alone() {
@@ -199,6 +230,9 @@ run_test "apply writes sysctl, nft, unit and GODEBUG files" test_apply_writes_al
 run_test "apply is idempotent across re-runs" test_apply_is_idempotent
 run_test "existing GODEBUG gets ,multipathtcp=0 appended" test_existing_godebug_is_appended
 run_test "existing quoted GODEBUG appended once" test_existing_quoted_godebug_is_appended
+run_test "/etc/environment without trailing newline stays intact" test_env_without_trailing_newline
+run_test "commented GODEBUG line is left alone with a warning" test_commented_godebug_left_alone
+run_test "--verify reports unknown when ss fails" test_verify_reports_unknown_when_ss_fails
 run_test "conflicting multipathtcp value is left alone with a warning" test_conflicting_godebug_left_alone
 run_test "ENABLE_CVE_2026_98432_MITIGATION=false writes nothing" test_opt_out_writes_nothing
 run_test "--remove undoes apply and keeps other GODEBUG settings" test_remove_undoes_apply
