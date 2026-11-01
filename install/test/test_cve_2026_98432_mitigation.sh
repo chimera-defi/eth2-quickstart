@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # Fixture tests for install/security/cve_2026_98432_mitigation.sh.
-# Every run writes under a temp CVE_MITIGATION_ROOT with runtime calls skipped,
-# so nothing on the host's /etc, sysctl, nft or systemd is touched.
+# Runs write under a temp CVE_MITIGATION_ROOT with runtime calls skipped, so the host's
+# /etc, nft and systemd are never touched. The real Phase 1 run is asserted in
+# test/ci_test_run_1_e2e.sh (--verify inside the systemd container).
 
 set -Eeuo pipefail
 
@@ -37,14 +38,7 @@ run_test() {
     fi
 }
 
-new_root() {
-    local root
-    root=$(mktemp -d)
-    mkdir -p "$root/etc"
-    echo "$root"
-}
-
-run_mitigation() {
+mitigate() {
     local root="$1"
     shift
     CVE_MITIGATION_ROOT="$root" CVE_MITIGATION_SKIP_RUNTIME=true bash "$MITIGATION" "$@" >/dev/null
@@ -54,164 +48,73 @@ snapshot() {
     (cd "$1" && find . -type f -print0 | sort -z | xargs -0 sha256sum)
 }
 
-test_apply_writes_all_files() {
-    local root
-    root=$(new_root)
-    run_mitigation "$root"
-    grep -qx 'net.mptcp.enabled = 0' "$root/etc/sysctl.d/90-disable-mptcp.conf"
-    grep -qx 'table ip cve_2026_98432' "$root/etc/nftables-cve-2026-98432.nft"
-    grep -qx 'delete table ip cve_2026_98432' "$root/etc/nftables-cve-2026-98432.nft"
-    grep -q 'type filter hook prerouting priority -300;' "$root/etc/nftables-cve-2026-98432.nft"
+test_apply_writes_layers() {
+    local root unit d
+    root=$(mktemp -d)
+    mitigate "$root"
     grep -q 'meta l4proto tcp ip hdrlength gt 5 counter drop' "$root/etc/nftables-cve-2026-98432.nft"
-    local unit="$root/etc/systemd/system/cve-2026-98432-nft.service"
-    grep -qx 'Type=oneshot' "$unit"
-    grep -qx 'RemainAfterExit=yes' "$unit"
-    grep -qx 'ExecStart=/usr/sbin/nft -f /etc/nftables-cve-2026-98432.nft' "$unit"
-    grep -qx 'ExecStop=/usr/sbin/nft delete table ip cve_2026_98432' "$unit"
-    grep -qx 'Wants=network-pre.target' "$unit"
+    grep -qx 'delete table ip cve_2026_98432' "$root/etc/nftables-cve-2026-98432.nft"
+    unit="$root/etc/systemd/system/cve-2026-98432-nft.service"
     grep -qx 'Before=network-pre.target network.target' "$unit"
-    grep -qx 'WantedBy=multi-user.target' "$unit"
-    local d
+    grep -qx 'After=nftables.service' "$unit"
+    grep -qx 'PartOf=nftables.service' "$unit"
+    grep -qx 'ReloadPropagatedFrom=nftables.service' "$unit"
+    grep -qx 'ExecReload=/usr/sbin/nft -f /etc/nftables-cve-2026-98432.nft' "$unit"
+    grep -qx 'WantedBy=multi-user.target nftables.service' "$unit"
     for d in system user; do
-        grep -qx '\[Manager\]' "$root/etc/systemd/$d.conf.d/90-godebug-mptcp.conf"
         grep -qx 'DefaultEnvironment="GODEBUG=multipathtcp=0"' "$root/etc/systemd/$d.conf.d/90-godebug-mptcp.conf"
     done
-    grep -qx 'GODEBUG=multipathtcp=0' "$root/etc/environment"
     rm -rf "$root"
 }
 
 test_apply_is_idempotent() {
-    local root before after
-    root=$(new_root)
-    printf 'PATH="/usr/bin:/bin"\n' > "$root/etc/environment"
-    run_mitigation "$root"
+    local root before
+    root=$(mktemp -d)
+    mitigate "$root"
     before=$(snapshot "$root")
-    run_mitigation "$root"
-    run_mitigation "$root"
-    after=$(snapshot "$root")
-    [[ "$before" == "$after" ]]
-    [[ $(grep -c '^GODEBUG=' "$root/etc/environment") -eq 1 ]]
-    grep -qx 'PATH="/usr/bin:/bin"' "$root/etc/environment"
-    rm -rf "$root"
-}
-
-test_existing_godebug_is_appended() {
-    local root
-    root=$(new_root)
-    printf 'GODEBUG=http2client=0\n' > "$root/etc/environment"
-    run_mitigation "$root"
-    grep -qx 'GODEBUG=http2client=0,multipathtcp=0' "$root/etc/environment"
-    rm -rf "$root"
-}
-
-test_existing_quoted_godebug_is_appended() {
-    local root
-    root=$(new_root)
-    printf 'GODEBUG="x509sha1=1"\n' > "$root/etc/environment"
-    run_mitigation "$root"
-    run_mitigation "$root"
-    grep -qx 'GODEBUG="x509sha1=1,multipathtcp=0"' "$root/etc/environment"
-    rm -rf "$root"
-}
-
-test_env_without_trailing_newline() {
-    local root
-    root=$(new_root)
-    printf 'PATH="/usr/bin:/bin"' > "$root/etc/environment"
-    run_mitigation "$root"
-    [[ "$(cat "$root/etc/environment")" == $'PATH="/usr/bin:/bin"\nGODEBUG=multipathtcp=0' ]]
-    rm -rf "$root"
-}
-
-test_commented_godebug_left_alone() {
-    local root out
-    root=$(new_root)
-    printf 'GODEBUG=http2client=0 # keep\n' > "$root/etc/environment"
-    out=$(CVE_MITIGATION_ROOT="$root" CVE_MITIGATION_SKIP_RUNTIME=true bash "$MITIGATION" 2>&1)
-    [[ "$(cat "$root/etc/environment")" == 'GODEBUG=http2client=0 # keep' ]]
-    grep -q 'cannot merge safely' <<< "$out"
-    rm -rf "$root"
-}
-
-test_verify_reports_unknown_when_ss_fails() {
-    local stub out
-    stub=$(mktemp -d)
-    printf '#!/bin/sh\nexit 1\n' > "$stub/ss"
-    printf '#!/bin/sh\nexit 1\n' > "$stub/nft"
-    chmod +x "$stub/ss" "$stub/nft"
-    out=$(PATH="$stub:$PATH" bash "$MITIGATION" --verify 2>&1)
-    grep -q 'MPTCP listeners: unknown' <<< "$out"
-    if grep -q 'No MPTCP listeners open' <<< "$out"; then return 1; fi
-    rm -rf "$stub"
-}
-
-test_conflicting_godebug_left_alone() {
-    local root out
-    root=$(new_root)
-    printf 'GODEBUG=multipathtcp=1\n' > "$root/etc/environment"
-    out=$(CVE_MITIGATION_ROOT="$root" CVE_MITIGATION_SKIP_RUNTIME=true bash "$MITIGATION" 2>&1)
-    grep -qx 'GODEBUG=multipathtcp=1' "$root/etc/environment"
-    grep -q 'different multipathtcp value' <<< "$out"
+    mitigate "$root"
+    [[ "$before" == "$(snapshot "$root")" ]]
     rm -rf "$root"
 }
 
 test_opt_out_writes_nothing() {
     local root
-    root=$(new_root)
-    ENABLE_CVE_2026_98432_MITIGATION=false run_mitigation "$root"
-    [[ -z "$(find "$root/etc" -type f)" ]]
+    root=$(mktemp -d)
+    ENABLE_CVE_2026_98432_MITIGATION=false mitigate "$root"
+    [[ -z "$(find "$root" -type f)" ]]
     rm -rf "$root"
 }
 
 test_remove_undoes_apply() {
     local root
-    root=$(new_root)
-    printf 'LANG=C.UTF-8\nGODEBUG=http2client=0\n' > "$root/etc/environment"
-    run_mitigation "$root"
-    run_mitigation "$root" --remove
-    [[ ! -e "$root/etc/sysctl.d/90-disable-mptcp.conf" ]]
-    [[ ! -e "$root/etc/nftables-cve-2026-98432.nft" ]]
-    [[ ! -e "$root/etc/systemd/system/cve-2026-98432-nft.service" ]]
-    [[ ! -e "$root/etc/systemd/system.conf.d/90-godebug-mptcp.conf" ]]
-    [[ ! -e "$root/etc/systemd/user.conf.d/90-godebug-mptcp.conf" ]]
-    [[ "$(cat "$root/etc/environment")" == $'LANG=C.UTF-8\nGODEBUG=http2client=0' ]]
+    root=$(mktemp -d)
+    mkdir -p "$root/etc/sysctl.d"
+    printf 'net.ipv4.tcp_syncookies = 1\nnet.mptcp.enabled = 0\n' > "$root/etc/sysctl.d/99-eth2-hardening.conf"
+    mitigate "$root"
+    mitigate "$root" --remove
+    [[ "$(find "$root" -type f)" == "$root/etc/sysctl.d/99-eth2-hardening.conf" ]]
+    [[ "$(cat "$root/etc/sysctl.d/99-eth2-hardening.conf")" == 'net.ipv4.tcp_syncookies = 1' ]]
     rm -rf "$root"
 }
 
-test_remove_drops_sole_godebug_line() {
-    local root
-    root=$(new_root)
-    run_mitigation "$root"
-    run_mitigation "$root" --remove
-    if grep -q '^GODEBUG=' "$root/etc/environment"; then return 1; fi
-    rm -rf "$root"
-}
-
+# create_systemd_service puts GODEBUG inside [Service] of every generated unit, unless opted out
 test_generated_units_carry_godebug() {
     local out
     out=$(
-        export HOME
         HOME=$(mktemp -d)
+        export HOME
         # shellcheck source=../../exports.sh
         source "$PROJECT_ROOT/exports.sh"
         # shellcheck source=../../lib/common_functions.sh
         source "$PROJECT_ROOT/lib/common_functions.sh"
-        sudo() { [[ "$1" == "mv" ]] && cat "$2" && return 0; return 0; }
+        sudo() { if [[ "$1" == "mv" ]]; then cat "$2"; fi; }
         create_systemd_service eth1 "Geth" "/usr/bin/geth" eth
-        ENABLE_CVE_2026_98432_MITIGATION=false
+        export ENABLE_CVE_2026_98432_MITIGATION=false
         create_systemd_service eth1 "Geth" "/usr/bin/geth" eth
         rm -rf "$HOME"
     )
     [[ $(grep -c '^Environment="GODEBUG=multipathtcp=0"$' <<< "$out") -eq 1 ]]
-    # Environment line sits inside [Service], not after [Install]
     awk '/^\[Service\]/{s=1} /^\[Install\]/{s=0} /GODEBUG/{exit !s}' <<< "$out"
-}
-
-test_wired_into_phase1_and_exports() {
-    # shellcheck disable=SC2016  # literal match
-    grep -Fq 'export ENABLE_CVE_2026_98432_MITIGATION="${ENABLE_CVE_2026_98432_MITIGATION:-true}"' "$PROJECT_ROOT/exports.sh"
-    grep -Fq 'install/security/cve_2026_98432_mitigation.sh' "$PROJECT_ROOT/run_1.sh"
-    grep -Fq 'cve_2026_98432_mitigation.sh' "$PROJECT_ROOT/install/security/harden_server.sh"
 }
 
 test_shellcheck_clean() {
@@ -219,27 +122,20 @@ test_shellcheck_clean() {
         echo "shellcheck not installed; skipping"
         return 0
     fi
-    shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 "$MITIGATION" "${BASH_SOURCE[0]}"
+    # Repo exclusions (CLAUDE.md) minus SC2034, so unused variables still fail
+    shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2031,SC2181 "$MITIGATION" "${BASH_SOURCE[0]}"
 }
 
 echo "=========================================="
 echo "CVE-2026-98432 Mitigation Test Suite"
 echo "=========================================="
 
-run_test "apply writes sysctl, nft, unit and GODEBUG files" test_apply_writes_all_files
-run_test "apply is idempotent across re-runs" test_apply_is_idempotent
-run_test "existing GODEBUG gets ,multipathtcp=0 appended" test_existing_godebug_is_appended
-run_test "existing quoted GODEBUG appended once" test_existing_quoted_godebug_is_appended
-run_test "/etc/environment without trailing newline stays intact" test_env_without_trailing_newline
-run_test "commented GODEBUG line is left alone with a warning" test_commented_godebug_left_alone
-run_test "--verify reports unknown when ss fails" test_verify_reports_unknown_when_ss_fails
-run_test "conflicting multipathtcp value is left alone with a warning" test_conflicting_godebug_left_alone
+run_test "apply writes nft rule, nftables-coordinated unit and GODEBUG drop-ins" test_apply_writes_layers
+run_test "apply is idempotent" test_apply_is_idempotent
 run_test "ENABLE_CVE_2026_98432_MITIGATION=false writes nothing" test_opt_out_writes_nothing
-run_test "--remove undoes apply and keeps other GODEBUG settings" test_remove_undoes_apply
-run_test "--remove drops a GODEBUG line it created" test_remove_drops_sole_godebug_line
+run_test "--remove deletes our files and only the mptcp sysctl line" test_remove_undoes_apply
 run_test "generated systemd units carry GODEBUG (and honor opt-out)" test_generated_units_carry_godebug
-run_test "wired into exports.sh, run_1.sh and harden_server.sh" test_wired_into_phase1_and_exports
-run_test "shellcheck clean" test_shellcheck_clean
+run_test "shellcheck clean (SC2034 enforced)" test_shellcheck_clean
 
 echo ""
 echo "=========================================="

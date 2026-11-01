@@ -63,6 +63,8 @@ PHASE1_PACKAGES=(
     python3-pip
     chrony
     ufw
+    nftables         # CVE-2026-98432 mitigation table (install/security/cve_2026_98432_mitigation.sh)
+    iproute2         # ss -Mltnp in the mitigation's --verify
     aide
     cron
     fail2ban
