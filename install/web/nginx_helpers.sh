@@ -12,7 +12,13 @@ NGINX_ORG_KEY_FPR="573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62"
 
 # Account nginx workers run as: nginx.org packages use "nginx", distro packages "www-data"
 nginx_run_user() {
-    if id -u nginx >/dev/null 2>&1; then echo nginx; else echo www-data; fi
+    local u=""
+    if [[ -r /etc/nginx/nginx.conf ]]; then
+        u="$(sed -n 's/^[[:space:]]*user[[:space:]]\+\([A-Za-z0-9_-]\+\).*;.*/\1/p' /etc/nginx/nginx.conf | head -1)"
+    fi
+    if [[ -n "$u" ]] && id -u "$u" >/dev/null 2>&1; then echo "$u"
+    elif id -u nginx >/dev/null 2>&1; then echo nginx
+    else echo www-data; fi
 }
 
 # Print the installed nginx version (e.g. 1.30.7), empty if nginx is absent
@@ -33,7 +39,7 @@ setup_nginx_upstream_repo() {
     os_id="$(. /etc/os-release && echo "${ID:-}")"
     codename="$(. /etc/os-release && echo "${VERSION_CODENAME:-}")"
     if [[ "$os_id" != "ubuntu" && "$os_id" != "debian" ]] || [[ -z "$codename" ]]; then
-        log_warn "nginx.org repo supports Ubuntu/Debian only (found: ${os_id:-unknown}); using distro nginx"
+        log_warn "nginx.org repo supports Ubuntu/Debian only (found: ${os_id:-unknown})"
         return 1
     fi
 
@@ -43,7 +49,9 @@ setup_nginx_upstream_repo() {
         log_error "Failed to download nginx.org signing key"
         return 1
     fi
-    if ! gpg --show-keys --with-colons "$key_tmp" 2>/dev/null | grep -q "^fpr:::::::::${NGINX_ORG_KEY_FPR}:"; then
+    local key_fprs
+    key_fprs="$(gpg --show-keys --with-colons "$key_tmp" 2>/dev/null || true)"
+    if ! grep -q "^fpr:::::::::${NGINX_ORG_KEY_FPR}:" <<< "$key_fprs"; then
         rm -f "$key_tmp"
         log_error "nginx.org signing key fingerprint mismatch (expected $NGINX_ORG_KEY_FPR)"
         return 1
@@ -82,13 +90,17 @@ install_nginx() {
     log_info "Installing Nginx web server (source: $source)..."
 
     if [[ "$source" == "upstream" ]] && setup_nginx_upstream_repo; then
-        sudo apt-get update
-        # Replace a distro-packaged nginx (config files are kept; only packages removed)
-        if dpkg -s nginx-common >/dev/null 2>&1; then
-            sudo apt-get remove -y nginx nginx-core nginx-common nginx-full nginx-light nginx-extras 2>/dev/null || true
+        if ! sudo apt-get update; then
+            sudo rm -f /etc/apt/sources.list.d/nginx.list /etc/apt/preferences.d/99nginx
+            log_error "apt-get update failed with the nginx.org repo; removed it, nothing was changed"
+            return 1
         fi
+        # nginx.org's nginx conflicts with the distro packages, so apt replaces them in one
+        # transaction (config files are kept); the old server stays if the install fails.
         sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y \
             -o Dpkg::Options::=--force-confold nginx
+        # The distro nginx.conf (kept) may name a different worker user than the new package
+        sudo sed -i 's/^\([[:space:]]*user[[:space:]]\+\)www-data;/\1nginx;/' /etc/nginx/nginx.conf
         adapt_nginx_upstream_layout
     elif ! command_exists nginx; then
         sudo apt-get update

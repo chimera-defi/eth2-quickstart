@@ -45,10 +45,13 @@ checksum (HTTPS only).
   distro `openssh-server` and do not use `AuthorizedPrincipalsFile`/certificates. Distro backports
   apply; unattended upgrades now enabled.
 - fail2ban: CVE-2026-109786 (sshd filter log injection can ban arbitrary IPs), fix upstream commit
-  ddd879d, distro status unconfirmed. Mitigation: keep `ignoreip` for operator addresses and update fail2ban when the distro ships it.
+  ddd879d, distro status unconfirmed. No mitigation in this repo (we set no `ignoreip`): an attacker could get any IP, including the operator's, banned; update fail2ban once the distro ships the fix.
 - sudo: CVE-2026-35535 (privilege drop before mailer, fixed after 1.9.17p2) and CVE-2025-32463
   (chroot, fixed 1.9.17p1). We never use `sudo -R`/chroot; sudo comes from distro security updates.
 - certbot/acme.sh: no advisory found. Gap: `install_acme_ssl.sh` clones acme.sh `master` unpinned.
+
+Note: nginx.org packages are not covered by the default unattended-upgrades origins (distro
+security pocket only); run `apt-get upgrade nginx` or add the `o=nginx` origin to keep it current.
 
 ## Hardening review
 
@@ -68,3 +71,6 @@ Not changed (recommend): pin acme.sh to a release tag; checksum for the Caddy cu
 - Caddy in the test image: v2.11.9 (above the 2.11.4 floor).
 - `ci_test_run_1.sh` (as root) and `run_tests.sh --lint-only`: pass.
 - Not covered: `listen ... http2` is deprecated on nginx >= 1.25.1 (warning only; works).
+- Also fixed (already on master): the HTTP-to-HTTPS redirect rendered `https://\$server_name\$request_uri`
+  with literal backslashes. Distro-to-nginx.org replacement happens in one apt transaction; the repo
+  is removed again if `apt-get update` fails.

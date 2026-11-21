@@ -151,7 +151,7 @@ install_caddy() {
         log_info "Caddy installed successfully"
     else
         log_info "Caddy is already installed"
-        sudo apt-get install -y --only-upgrade caddy || log_warn "Could not upgrade the caddy package"
+        sudo apt-get update && sudo apt-get install -y --only-upgrade caddy || log_warn "Could not upgrade the caddy package"
     fi
 
     local caddy_ver

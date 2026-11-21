@@ -33,6 +33,11 @@ if grep -q '\\n' "$tmp_ssl"; then
     rm -f "$tmp_ssl"
     exit 1
 fi
+if ! grep -q 'return 301 https://$server_name$request_uri;' "$tmp_ssl"; then
+    echo "FAIL: HTTPS redirect target malformed" >&2
+    rm -f "$tmp_ssl"
+    exit 1
+fi
 rm -f "$tmp_ssl"
 
 assert_contains() {
