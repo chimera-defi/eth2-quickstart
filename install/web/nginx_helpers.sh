@@ -23,8 +23,11 @@ nginx_run_user() {
 
 # Print the installed nginx version (e.g. 1.30.7), empty if nginx is absent
 nginx_installed_version() {
-    command_exists nginx || return 0
-    nginx -v 2>&1 | sed -n 's|.*nginx/\([0-9][0-9.]*\).*|\1|p' | head -1
+    local bin
+    bin="$(command -v nginx 2>/dev/null || true)"
+    [[ -z "$bin" && -x /usr/sbin/nginx ]] && bin=/usr/sbin/nginx   # Debian: /usr/sbin is not on a user's PATH
+    [[ -n "$bin" ]] || return 0
+    "$bin" -v 2>&1 | sed -n 's|.*nginx/\([0-9][0-9.]*\).*|\1|p' | head -1
 }
 
 # True when $1 >= $2 (dotted versions)
@@ -102,7 +105,7 @@ install_nginx() {
         # The distro nginx.conf (kept) may name a different worker user than the new package
         sudo sed -i 's/^\([[:space:]]*user[[:space:]]\+\)www-data;/\1nginx;/' /etc/nginx/nginx.conf
         adapt_nginx_upstream_layout
-    elif ! command_exists nginx; then
+    elif [[ -z "$(nginx_installed_version)" ]]; then
         sudo apt-get update
         sudo apt-get install -y nginx
     else

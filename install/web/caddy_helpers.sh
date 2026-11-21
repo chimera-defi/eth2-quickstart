@@ -156,16 +156,16 @@ install_caddy() {
         fi
     fi
 
-    local caddy_ver
-    caddy_ver="$(caddy version 2>/dev/null | sed -n 's/^v\{0,1\}\([0-9][0-9.]*\).*/\1/p' | head -1)"
-    local caddy_min="${CADDY_MIN_VERSION:-2.11.4}"
-    if [[ -n "$caddy_ver" && "$(printf '%s\n%s\n' "$caddy_min" "$caddy_ver" | sort -V | head -1)" != "$caddy_min" ]]; then
-        log_error "Caddy $caddy_ver is older than the patched minimum $caddy_min"
+    if ! ensure_caddy_security_modules; then
+        log_error "Failed to prepare Caddy with required security modules"
         return 1
     fi
 
-    if ! ensure_caddy_security_modules; then
-        log_error "Failed to prepare Caddy with required security modules"
+    local caddy_ver
+    caddy_ver="$({ caddy version 2>/dev/null || true; } | sed -n 's/^v\{0,1\}\([0-9][0-9.]*\).*/\1/p' | head -1)"
+    local caddy_min="${CADDY_MIN_VERSION:-2.11.4}"
+    if [[ -n "$caddy_ver" && "$(printf '%s\n%s\n' "$caddy_min" "$caddy_ver" | sort -V | head -1)" != "$caddy_min" ]]; then
+        log_error "Caddy $caddy_ver is older than the patched minimum $caddy_min"
         return 1
     fi
 }
