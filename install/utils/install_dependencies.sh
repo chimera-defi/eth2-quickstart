@@ -76,7 +76,7 @@ PHASE1_PACKAGES=(
     pkg-config
     openjdk-25-jdk
     libclang-dev
-    nginx
+    unattended-upgrades
     apache2-utils
     bmon
     tcptrack
@@ -122,6 +122,19 @@ install_phase1_apt_stack() {
     apt_update
     install_base
     install_packages "${PHASE1_PACKAGES[@]}"
+    enable_unattended_security_upgrades
+}
+
+# Security-only automatic updates (distro security pocket), so patched
+# packages such as openssh/sudo/fail2ban arrive without operator action.
+enable_unattended_security_upgrades() {
+    local conf="/etc/apt/apt.conf.d/20auto-upgrades"
+    local content=$'APT::Periodic::Update-Package-Lists "1";\nAPT::Periodic::Unattended-Upgrade "1";\n'
+    if [[ $EUID -eq 0 ]]; then
+        printf '%s' "$content" > "$conf"
+    else
+        printf '%s' "$content" | sudo tee "$conf" >/dev/null
+    fi
 }
 
 # Go + certbot via snap (skipped in Docker/CI or when snap is unavailable).

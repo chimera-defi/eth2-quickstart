@@ -151,6 +151,15 @@ install_caddy() {
         log_info "Caddy installed successfully"
     else
         log_info "Caddy is already installed"
+        sudo apt-get install -y --only-upgrade caddy || log_warn "Could not upgrade the caddy package"
+    fi
+
+    local caddy_ver
+    caddy_ver="$(caddy version 2>/dev/null | sed -n 's/^v\{0,1\}\([0-9][0-9.]*\).*/\1/p' | head -1)"
+    local caddy_min="${CADDY_MIN_VERSION:-2.11.4}"
+    if [[ -n "$caddy_ver" && "$(printf '%s\n%s\n' "$caddy_min" "$caddy_ver" | sort -V | head -1)" != "$caddy_min" ]]; then
+        log_error "Caddy $caddy_ver is older than the patched minimum $caddy_min"
+        return 1
     fi
 
     if ! ensure_caddy_security_modules; then

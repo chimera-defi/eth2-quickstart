@@ -125,6 +125,11 @@ export EDGE_RPC_CONN_LIMIT_PER_IP='30'
 export EDGE_WS_CONN_LIMIT_PER_IP='20'
 export EDGE_RPC_CACHE_MIN_USES='1'
 
+# Web server patch floor (see docs/CVE_AUDIT_2026-11.md)
+export NGINX_SOURCE='upstream'                 # upstream (nginx.org stable repo) | distro (apt, version lags)
+export NGINX_MIN_VERSION='1.30.7'              # nginx.org advisories: fixes HTTP/2, TLS1.3, map/regex CVEs
+export CADDY_MIN_VERSION='2.11.4'              # GHSA fixes for forward_auth, placeholders, file matcher
+
 # Caddy reverse_proxy resilience knobs
 export CADDY_LB_POLICY='least_conn'
 export CADDY_LB_RETRIES='2'
