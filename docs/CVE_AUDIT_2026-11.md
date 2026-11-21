@@ -56,3 +56,15 @@ Good: SSH key-only, modern KEX/ciphers/MACs, root `prohibit-password`, TLS 1.2/1
 `server_tokens off`, 10m body limit, 30s timeouts, HSTS, RPC upstreams on 127.0.0.1.
 Added: `unattended-upgrades` (security pocket, daily).
 Not changed (recommend): pin acme.sh to a release tag; checksum for the Caddy custom binary.
+
+## Docker verification (ubuntu:24.04 image built from test/Dockerfile)
+
+- Distro nginx 1.24.0 replaced by nginx.org 1.30.7 via `install_nginx`; `nginx -t` passes with the
+  generated edge policy and HTTP and HTTPS site configs; HTTP 301 and HTTP/2 responses served; `Server: nginx` (tokens off).
+- Found and fixed on the way: nginx.org's stock `nginx.conf` sets `keepalive_timeout` (duplicate
+  with our policy), and the generated SSL site config contained a literal `\n` after `ssl_ciphers`
+  (already on master; `nginx -t` failed for every HTTPS setup). Regression check added to
+  `test/validate_proxy_policy_sync.sh`.
+- Caddy in the test image: v2.11.9 (above the 2.11.4 floor).
+- `ci_test_run_1.sh` (as root) and `run_tests.sh --lint-only`: pass.
+- Not covered: `listen ... http2` is deprecated on nginx >= 1.25.1 (warning only; works).

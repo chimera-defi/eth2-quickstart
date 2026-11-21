@@ -65,6 +65,9 @@ adapt_nginx_upstream_layout() {
     if ! grep -rqs "sites-enabled" /etc/nginx/nginx.conf /etc/nginx/conf.d/; then
         echo 'include /etc/nginx/sites-enabled/*;' | sudo tee /etc/nginx/conf.d/00-sites-enabled.conf >/dev/null
     fi
+    # Our edge policy (conf.d/eth2-edge-policy.conf) sets keepalive_timeout; the stock
+    # nginx.org nginx.conf also sets it, and a duplicate directive fails nginx -t.
+    sudo sed -i 's/^\([[:space:]]*\)keepalive_timeout\b/\1#keepalive_timeout/' /etc/nginx/nginx.conf
     if [[ -f /etc/nginx/conf.d/default.conf ]]; then
         sudo mv /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.disabled
     fi
