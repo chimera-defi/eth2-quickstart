@@ -25,6 +25,22 @@ export CI_E2E=true
 create_nginx_config "${SERVER_NAME:-rpc.sharedtools.org}" "$tmp_nginx" "false"
 create_caddy_config_auto_https "${SERVER_NAME:-rpc.sharedtools.org}" "$tmp_caddy"
 
+# Regression: SSL site config must not contain literal "\n" (broke nginx -t on master)
+tmp_ssl="$(mktemp)"
+create_nginx_config "${SERVER_NAME:-rpc.sharedtools.org}" "$tmp_ssl" "true" /tmp/c.pem /tmp/k.pem
+if grep -q '\\n' "$tmp_ssl"; then
+    printf "%s\n" "FAIL: SSL nginx config contains a literal backslash-n" >&2
+    rm -f "$tmp_ssl"
+    exit 1
+fi
+# shellcheck disable=SC2016  # literal nginx variables, not shell expansion
+if ! grep -q 'return 301 https://$server_name$request_uri;' "$tmp_ssl"; then
+    echo "FAIL: HTTPS redirect target malformed" >&2
+    rm -f "$tmp_ssl"
+    exit 1
+fi
+rm -f "$tmp_ssl"
+
 assert_contains() {
     local file="$1"
     local pattern="$2"

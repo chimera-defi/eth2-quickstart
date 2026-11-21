@@ -7,16 +7,123 @@ NGINX_HELPERS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=proxy_config_renderer.sh
 source "$NGINX_HELPERS_DIR/proxy_config_renderer.sh"
 
-# Install Nginx web server
-install_nginx() {
-    log_info "Installing Nginx web server..."
+# nginx.org signing key fingerprint (https://nginx.org/en/linux_packages.html)
+NGINX_ORG_KEY_FPR="573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62"
 
-    if ! command_exists nginx; then
+# Account nginx workers run as: nginx.org packages use "nginx", distro packages "www-data"
+nginx_run_user() {
+    local u=""
+    if [[ -r /etc/nginx/nginx.conf ]]; then
+        u="$(sed -n 's/^[[:space:]]*user[[:space:]]\+\([A-Za-z0-9_-]\+\).*;.*/\1/p' /etc/nginx/nginx.conf | head -1)"
+    fi
+    if [[ -n "$u" ]] && id -u "$u" >/dev/null 2>&1; then echo "$u"
+    elif id -u nginx >/dev/null 2>&1; then echo nginx
+    else echo www-data; fi
+}
+
+# Print the installed nginx version (e.g. 1.30.7), empty if nginx is absent
+nginx_installed_version() {
+    local bin
+    bin="$(command -v nginx 2>/dev/null || true)"
+    [[ -z "$bin" && -x /usr/sbin/nginx ]] && bin=/usr/sbin/nginx   # Debian: /usr/sbin is not on a user's PATH
+    [[ -n "$bin" ]] || return 0
+    "$bin" -v 2>&1 | sed -n 's|.*nginx/\([0-9][0-9.]*\).*|\1|p' | head -1
+}
+
+# True when $1 >= $2 (dotted versions)
+version_at_least() {
+    [[ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -1)" == "$2" ]]
+}
+
+# Add the signed nginx.org stable apt repo, pinned above distro packages.
+# Distro nginx lags upstream security releases (see docs/CVE_AUDIT_2026-11.md).
+setup_nginx_upstream_repo() {
+    local os_id codename key_tmp
+    os_id="$(. /etc/os-release && echo "${ID:-}")"
+    codename="$(. /etc/os-release && echo "${VERSION_CODENAME:-}")"
+    if [[ "$os_id" != "ubuntu" && "$os_id" != "debian" ]] || [[ -z "$codename" ]]; then
+        log_warn "nginx.org repo supports Ubuntu/Debian only (found: ${os_id:-unknown})"
+        return 1
+    fi
+
+    key_tmp="$(mktemp)"
+    if ! curl -fsSL --proto '=https' --tlsv1.2 https://nginx.org/keys/nginx_signing.key -o "$key_tmp"; then
+        rm -f "$key_tmp"
+        log_error "Failed to download nginx.org signing key"
+        return 1
+    fi
+    local key_fprs
+    key_fprs="$(gpg --show-keys --with-colons "$key_tmp" 2>/dev/null || true)"
+    if ! grep -q "^fpr:::::::::${NGINX_ORG_KEY_FPR}:" <<< "$key_fprs"; then
+        rm -f "$key_tmp"
+        log_error "nginx.org signing key fingerprint mismatch (expected $NGINX_ORG_KEY_FPR)"
+        return 1
+    fi
+    sudo gpg --dearmor --yes -o /usr/share/keyrings/nginx-archive-keyring.gpg "$key_tmp"
+    rm -f "$key_tmp"
+
+    echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/${os_id} ${codename} nginx" \
+        | sudo tee /etc/apt/sources.list.d/nginx.list >/dev/null
+    printf 'Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n' \
+        | sudo tee /etc/apt/preferences.d/99nginx >/dev/null
+    return 0
+}
+
+# nginx.org packages only include conf.d/*.conf and ship a conflicting default
+# server; keep our sites-enabled layout working and drop the stock site.
+adapt_nginx_upstream_layout() {
+    sudo mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled /etc/nginx/conf.d
+    if ! grep -rqs "sites-enabled" /etc/nginx/nginx.conf /etc/nginx/conf.d/; then
+        echo 'include /etc/nginx/sites-enabled/*;' | sudo tee /etc/nginx/conf.d/00-sites-enabled.conf >/dev/null
+    fi
+    # Our edge policy (conf.d/eth2-edge-policy.conf) sets keepalive_timeout; the stock
+    # nginx.org nginx.conf also sets it, and a duplicate directive fails nginx -t.
+    sudo sed -i 's/^\([[:space:]]*\)keepalive_timeout\b/\1#keepalive_timeout/' /etc/nginx/nginx.conf
+    if [[ -f /etc/nginx/conf.d/default.conf ]]; then
+        sudo mv /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.disabled
+    fi
+}
+
+# Install Nginx web server (NGINX_SOURCE=upstream|distro, default upstream)
+install_nginx() {
+    local source="${NGINX_SOURCE:-upstream}"
+    local min_version="${NGINX_MIN_VERSION:-1.30.7}"
+    local installed
+
+    log_info "Installing Nginx web server (source: $source)..."
+
+    if [[ "$source" == "upstream" ]] && setup_nginx_upstream_repo; then
+        if ! sudo apt-get update; then
+            sudo rm -f /etc/apt/sources.list.d/nginx.list /etc/apt/preferences.d/99nginx
+            log_error "apt-get update failed with the nginx.org repo; removed it, nothing was changed"
+            return 1
+        fi
+        # nginx.org's nginx conflicts with the distro packages, so apt replaces them in one
+        # transaction (config files are kept); the old server stays if the install fails.
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            -o Dpkg::Options::=--force-confold nginx
+        # The distro nginx.conf (kept) may name a different worker user than the new package
+        sudo sed -i 's/^\([[:space:]]*user[[:space:]]\+\)www-data;/\1nginx;/' /etc/nginx/nginx.conf
+        adapt_nginx_upstream_layout
+    elif [[ -z "$(nginx_installed_version)" ]]; then
         sudo apt-get update
         sudo apt-get install -y nginx
-        log_info "Nginx installed successfully"
     else
-        log_info "Nginx is already installed"
+        sudo apt-get install -y --only-upgrade nginx || true
+    fi
+
+    installed="$(nginx_installed_version)"
+    if [[ -z "$installed" ]]; then
+        log_error "nginx is not installed"
+        return 1
+    fi
+    log_info "Nginx $installed installed"
+    if [[ "$source" == "upstream" ]] && ! version_at_least "$installed" "$min_version"; then
+        log_error "nginx $installed is older than the patched minimum $min_version"
+        return 1
+    fi
+    if [[ "$source" != "upstream" ]]; then
+        log_warn "Distro nginx $installed: version numbers are backported; check your distro's security tracker for the nginx.org advisories"
     fi
 }
 
@@ -28,7 +135,7 @@ setup_nginx_service() {
     sudo mkdir -p /etc/nginx/sites-enabled
     sudo mkdir -p /etc/nginx/conf.d
     sudo mkdir -p /var/log/nginx
-    sudo chown www-data:www-data /var/log/nginx
+    sudo chown "$(nginx_run_user):$(nginx_run_user)" /var/log/nginx
 
     if ! enable_and_start_systemd_service nginx; then
         log_error "Failed to start Nginx service"
@@ -71,7 +178,7 @@ write_nginx_shared_http_policy() {
 prepare_nginx_cache_dirs() {
     sudo mkdir -p /var/cache/nginx/rpc_cache
     sudo mkdir -p /var/cache/nginx/client_temp
-    sudo chown -R www-data:www-data /var/cache/nginx
+    sudo chown -R "$(nginx_run_user):$(nginx_run_user)" /var/cache/nginx
 }
 
 # Add shared policy (rate limiting, connection limits, cache zones)
