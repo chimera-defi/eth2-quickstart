@@ -173,13 +173,17 @@ ensure_caddy_security_modules() {
     fi
 
     missing_modules="$(caddy_missing_required_modules "$required_modules")"
-    if [[ -z "$missing_modules" ]]; then
+    if [[ -z "$missing_modules" ]] && caddy_version_at_least_min; then
         log_info "✓ Caddy already has required modules: $required_modules"
         return 0
     fi
 
-    log_info "Missing Caddy modules detected:"
-    printf '%s\n' "$missing_modules" | sed 's/^/  - /'
+    if [[ -n "$missing_modules" ]]; then
+        log_info "Missing Caddy modules detected:"
+        printf '%s\n' "$missing_modules" | sed 's/^/  - /'
+    else
+        log_info "Caddy is older than the patched minimum ${CADDY_MIN_VERSION:-2.11.4}; rebuilding"
+    fi
     log_info "Installing Caddy binary with required modules..."
 
     if ! install_caddy_with_required_modules "$required_packages"; then
@@ -198,15 +202,20 @@ ensure_caddy_security_modules() {
     return 0
 }
 
+# True when the installed caddy is at or above CADDY_MIN_VERSION.
+caddy_version_at_least_min() {
+    local caddy_ver caddy_min="${CADDY_MIN_VERSION:-2.11.4}"
+    caddy_ver="$({ caddy version 2>/dev/null || true; } | sed -n 's/^v\{0,1\}\([0-9][0-9.]*\).*/\1/p' | head -1)"
+    [[ -n "$caddy_ver" && "$(printf '%s\n%s\n' "$caddy_min" "$caddy_ver" | sort -V | head -1)" == "$caddy_min" ]]
+}
+
 # True when the installed caddy already satisfies the module requirement and the
 # patched minimum version (nothing for apt to "upgrade" into).
 caddy_binary_satisfies_requirements() {
-    local caddy_ver caddy_min="${CADDY_MIN_VERSION:-2.11.4}"
     [[ "${CADDY_ENSURE_MODULES:-true}" == "true" ]] || return 1
     command_exists caddy || return 1
     [[ -z "$(caddy_missing_required_modules "${CADDY_REQUIRED_MODULES:-http.handlers.rate_limit,dns.providers.cloudflare}")" ]] || return 1
-    caddy_ver="$({ caddy version 2>/dev/null || true; } | sed -n 's/^v\{0,1\}\([0-9][0-9.]*\).*/\1/p' | head -1)"
-    [[ -n "$caddy_ver" && "$(printf '%s\n%s\n' "$caddy_min" "$caddy_ver" | sort -V | head -1)" == "$caddy_min" ]]
+    caddy_version_at_least_min
 }
 
 # Install Caddy web server
@@ -235,17 +244,19 @@ install_caddy() {
         return 1
     fi
 
-    # Keep apt (incl. unattended upgrades) from swapping the custom binary for stock Caddy.
-    if [[ "${CADDY_ENSURE_MODULES:-true}" == "true" ]]; then
-        sudo apt-mark hold caddy >/dev/null 2>&1 || log_warn "Could not apt-mark hold caddy"
-    fi
-
     local caddy_ver
     caddy_ver="$({ caddy version 2>/dev/null || true; } | sed -n 's/^v\{0,1\}\([0-9][0-9.]*\).*/\1/p' | head -1)"
     local caddy_min="${CADDY_MIN_VERSION:-2.11.4}"
     if [[ -n "$caddy_ver" && "$(printf '%s\n%s\n' "$caddy_min" "$caddy_ver" | sort -V | head -1)" != "$caddy_min" ]]; then
         log_error "Caddy $caddy_ver is older than the patched minimum $caddy_min"
         return 1
+    fi
+
+    # Keep apt (incl. unattended upgrades) from swapping the custom binary for stock Caddy.
+    if [[ "${CADDY_ENSURE_MODULES:-true}" == "true" ]]; then
+        sudo apt-mark hold caddy >/dev/null 2>&1 || log_warn "Could not apt-mark hold caddy"
+    else
+        sudo apt-mark unhold caddy >/dev/null 2>&1 || true
     fi
 }
 
