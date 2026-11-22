@@ -198,6 +198,17 @@ ensure_caddy_security_modules() {
     return 0
 }
 
+# True when the installed caddy already satisfies the module requirement and the
+# patched minimum version (nothing for apt to "upgrade" into).
+caddy_binary_satisfies_requirements() {
+    local caddy_ver caddy_min="${CADDY_MIN_VERSION:-2.11.4}"
+    [[ "${CADDY_ENSURE_MODULES:-true}" == "true" ]] || return 1
+    command_exists caddy || return 1
+    [[ -z "$(caddy_missing_required_modules "${CADDY_REQUIRED_MODULES:-http.handlers.rate_limit,dns.providers.cloudflare}")" ]] || return 1
+    caddy_ver="$({ caddy version 2>/dev/null || true; } | sed -n 's/^v\{0,1\}\([0-9][0-9.]*\).*/\1/p' | head -1)"
+    [[ -n "$caddy_ver" && "$(printf '%s\n%s\n' "$caddy_min" "$caddy_ver" | sort -V | head -1)" == "$caddy_min" ]]
+}
+
 # Install Caddy web server
 install_caddy() {
     log_info "Installing Caddy web server..."
@@ -208,6 +219,10 @@ install_caddy() {
         sudo apt-get update
         sudo apt-get install -y caddy
         log_info "Caddy installed successfully"
+    elif caddy_binary_satisfies_requirements; then
+        # An apt upgrade would overwrite the custom (module-enabled) /usr/bin/caddy
+        # with stock Caddy, which has no rate_limit.
+        log_info "Caddy already has the required modules and version; skipping apt upgrade"
     else
         log_info "Caddy is already installed"
         if ! { sudo apt-get update && sudo apt-get install -y --only-upgrade caddy; }; then
@@ -218,6 +233,11 @@ install_caddy() {
     if ! ensure_caddy_security_modules; then
         log_error "Failed to prepare Caddy with required security modules"
         return 1
+    fi
+
+    # Keep apt (incl. unattended upgrades) from swapping the custom binary for stock Caddy.
+    if [[ "${CADDY_ENSURE_MODULES:-true}" == "true" ]]; then
+        sudo apt-mark hold caddy >/dev/null 2>&1 || log_warn "Could not apt-mark hold caddy"
     fi
 
     local caddy_ver
