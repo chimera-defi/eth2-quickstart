@@ -8,7 +8,7 @@ CADDY_HELPERS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=proxy_config_renderer.sh
 source "$CADDY_HELPERS_DIR/proxy_config_renderer.sh"
 
-# Map platform arch strings to Caddy download API arch values.
+# Map platform arch strings to Go/xcaddy arch names.
 detect_caddy_arch() {
     local raw_arch
     if command -v dpkg >/dev/null 2>&1; then
@@ -64,7 +64,9 @@ _caddy_rm_work() {
 # Build Caddy with the required plugins using a pinned, checksum-verified
 # toolchain (Go + xcaddy). caddyserver.com/api/download now answers 401 ("Please
 # log in or use an API key to build Caddy"), so it is no longer used.
-# Nothing is fetched without a pinned SHA-256; the toolchain lives in a temp dir.
+# Go (sha256) and xcaddy (sha512) are verified against pinned checksums; Go modules
+# are verified through sum.golang.org. The toolchain lives in a temp dir (~2 GB, 1-3 min).
+# Needs: go.dev, dl.google.com, github.com, proxy.golang.org, sum.golang.org. amd64/arm64 only.
 install_caddy_with_required_modules() {
     local package_csv="$1"
     local caddy_arch go_sha xcaddy_sha # go: sha256, xcaddy: sha512 (as published)
@@ -100,7 +102,7 @@ install_caddy_with_required_modules() {
         package="$(trim_space "$package")"
         [[ -z "$package" ]] && continue
         if [[ "$package" != *@* ]]; then
-            pin="$(printf '%s\n' "${CADDY_PACKAGE_PINS:-}" | tr ',' '\n' | grep -F "${package}@" | head -1 || true)"
+            pin="$(printf '%s\n' "${CADDY_PACKAGE_PINS:-}" | tr ',' '\n' | awk -F@ -v p="$package" '$1==p{print;exit}')"
             [[ -n "$pin" ]] && package="$(trim_space "$pin")"
         fi
         with_args+=(--with "$package")
@@ -109,7 +111,9 @@ install_caddy_with_required_modules() {
     work="$(mktemp -d /tmp/caddy.build.XXXXXX)"
     tmp_binary="$work/caddy"
 
-    log_info "Building Caddy v$caddy_ver (Go $go_ver, xcaddy $xcaddy_ver) with: ${with_args[*]}"
+    trap '_caddy_rm_work "$work"; trap - INT TERM' INT TERM
+    mkdir -p "$work/tmp"
+    log_info "Building Caddy v$caddy_ver (Go $go_ver, xcaddy $xcaddy_ver) with: $(printf '%s ' "${with_args[@]}")"
     if ! curl -fsSL "https://go.dev/dl/go${go_ver}.linux-${caddy_arch}.tar.gz" -o "$work/go.tgz" \
         || ! echo "$go_sha  $work/go.tgz" | sha256sum -c - >/dev/null; then
         _caddy_rm_work "$work"; log_error "Go toolchain download or checksum verification failed"; return 1
@@ -125,7 +129,8 @@ install_caddy_with_required_modules() {
 
     if ! (
         cd "$work"
-        export GOROOT="$work/tools/go" GOPATH="$work/gopath" GOCACHE="$work/gocache" GOFLAGS=-mod=mod GOTOOLCHAIN=local
+        export GOROOT="$work/tools/go" GOPATH="$work/gopath" GOCACHE="$work/gocache" GOFLAGS=-mod=mod GOTOOLCHAIN=local TMPDIR="$work/tmp" CGO_ENABLED=0
+        export GOENV=off GOPROXY=https://proxy.golang.org,direct GOSUMDB=sum.golang.org GONOSUMDB='' GONOSUMCHECK='' GOPRIVATE='' GOINSECURE=''
         export PATH="$GOROOT/bin:$PATH"
         "$work/xc/xcaddy" build "v${caddy_ver}" "${with_args[@]}" --output "$tmp_binary"
     ); then
@@ -150,6 +155,7 @@ install_caddy_with_required_modules() {
         return 1
     fi
     _caddy_rm_work "$work"
+    trap - INT TERM
 
     unset CADDY_MODULE_LIST_CACHE || true
     return 0

@@ -302,8 +302,9 @@ if [[ "$PHASE" == "2" ]]; then
     rm -f "/tmp/caddy_e2e_$$.log"
     record_test "install_caddy" "PASS"
     verify_installed "Caddy" command -v caddy
+    caddy_mods="$(caddy list-modules 2>/dev/null || true)"
     for mod in http.handlers.rate_limit dns.providers.cloudflare; do
-        if caddy list-modules 2>/dev/null | grep -qx "$mod"; then
+        if grep -Fxq "$mod" <<<"$caddy_mods"; then
             record_test "caddy module $mod" "PASS"
         else
             record_test "caddy module $mod" "FAIL"

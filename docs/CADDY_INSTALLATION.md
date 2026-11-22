@@ -258,6 +258,7 @@ The following environment variables are used:
 - `EDGE_RPC_CONN_LIMIT_PER_IP` / `EDGE_WS_CONN_LIMIT_PER_IP`: shared per-IP connection ceilings for Nginx
 - `CADDY_ENSURE_MODULES`: `true|false` (default `true`) bootstrap required Caddy modules during install
 - `CADDY_REQUIRED_MODULES`: comma-separated modules to bootstrap (default `http.handlers.rate_limit,dns.providers.cloudflare`)
+- `CADDY_PACKAGE_PINS` / `CADDY_BUILD_VERSION`: pinned plugin commits and Caddy version for the xcaddy build (needs go.dev, dl.google.com, github.com, proxy.golang.org, sum.golang.org; ~2 GB temp disk, 1-3 min; amd64/arm64 only; bump pins deliberately)
 - `CADDY_REQUIRED_PACKAGES`: comma-separated plugin package imports for the pinned xcaddy build (the caddyserver.com download API now requires login and is no longer used) (default `github.com/mholt/caddy-ratelimit,github.com/caddy-dns/cloudflare`)
 - `CADDY_INSTALL_ENFORCE_RATE_LIMIT`: `true|false` (default `true`) force `install_caddy.sh` to require active rate limiting
 - `CADDY_ENABLE_RATE_LIMIT`: `auto|true|false` (module auto-detect by default)
