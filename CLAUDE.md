@@ -309,7 +309,7 @@ Manual equivalent:
 ```bash
 # Shellcheck with project exclusions
 find . -name "*.sh" -type f ! -path "./.git/*" \
-    -exec shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 {} \;
+    -exec shellcheck -x --exclude=SC2317,SC2329,SC1091,SC1090,SC2034,SC2031,SC2181 {} \;
 
 # Syntax validation
 find . -name "*.sh" -type f ! -path "./.git/*" -exec bash -n {} \;
@@ -384,6 +384,7 @@ Scripts that don't source `exports.sh` must declare these themselves.
 | Code | Reason |
 |------|--------|
 | SC2317 | False positive unreachable code in test scripts |
+| SC2329 | Function never invoked (split out of SC2317 in shellcheck 0.10+; trap handlers and test helpers) |
 | SC1091 | Not following source (relative paths) |
 | SC1090 | Non-constant source (variable paths) |
 | SC2034 | Unused variables in template scripts |
