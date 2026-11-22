@@ -36,7 +36,7 @@ Use this file to preserve context across sessions.
 
 ## Archived Updates (compressed)
 
-**Batteries-included Caddy guardrails (2026-04-20):** `install/web/caddy_helpers.sh` now bootstraps required modules (`http.handlers.rate_limit`, `dns.providers.cloudflare`) via Caddy download API. `CADDY_ENSURE_MODULES`, `CADDY_REQUIRED_MODULES`, `CADDY_REQUIRED_PACKAGES` added to exports.sh. E2E: 29/29 passing.
+**Batteries-included Caddy guardrails (2026-04-20):** `install/web/caddy_helpers.sh` now bootstraps required modules (`http.handlers.rate_limit`, `dns.providers.cloudflare`) via a pinned xcaddy build (Go 1.26.11, xcaddy 0.4.7, checksum-verified; the Caddy download API returns 401 since 2026-11). `CADDY_ENSURE_MODULES`, `CADDY_REQUIRED_MODULES`, `CADDY_REQUIRED_PACKAGES` added to exports.sh. E2E: 29/29 passing.
 
 **Rate-limit dedupe + guardrail hooks (2026-04-20):** `proxy_config_renderer.sh` centralizes shared anti-abuse thresholds (RPM/burst/conn-limit) rendered into both Nginx + Caddy. `config/edge_policy.env` uses `VAR="${VAR:-default}"` semantics. Added `test/validate_review_guardrails.sh`; wired into ci_test_run_2.sh (Test 16) and docker_test.sh. E2E: 29/29.
 
