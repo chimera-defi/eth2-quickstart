@@ -620,7 +620,7 @@ if [[ ${#jwt_content} -eq 64 ]] && [[ "$jwt_content" =~ ^[a-fA-F0-9]+$ ]]; then 
 
 ### Shell Script Validation (.github/workflows/shellcheck.yml)
 Sole shell validation workflow (ci.yml has no shellcheck job). Includes:
-- **Shellcheck** (exclusions: SC2317, SC1091, SC1090, SC2034, SC2031, SC2181)
+- **Shellcheck** (exclusions: SC2317, SC2329, SC1091, SC1090, SC2034, SC2031, SC2181)
 - **Shebang**: All .sh files must have #!/bin/bash on line 1
 - **Executable**: Warning only for non-executable scripts
 - **Dependencies**: Sourced files must exist (./ and ../ from script dir, else project root)
@@ -898,7 +898,7 @@ This allows the TUI wizard to save settings without modifying `exports.sh` direc
 ```bash
 # 1. Shellcheck with project exclusions
 find . -name "*.sh" -type f ! -path "./.git/*" \
-    -exec shellcheck -x --exclude=SC2317,SC1091,SC1090,SC2034,SC2031,SC2181 {} \;
+    -exec shellcheck -x --exclude=SC2317,SC2329,SC1091,SC1090,SC2034,SC2031,SC2181 {} \;
 
 # 2. Syntax validation
 find . -name "*.sh" -type f ! -path "./.git/*" -exec bash -n {} \;

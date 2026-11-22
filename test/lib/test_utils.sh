@@ -8,12 +8,13 @@
 # =============================================================================
 # Exclusions with rationale:
 # SC2317 - Unreachable code (false positive in test scripts)
+# SC2329 - Function never invoked (shellcheck 0.10+ split this out of SC2317)
 # SC1091 - Not following source files (relative paths)
 # SC1090 - Can't follow non-constant source (variable paths)
 # SC2034 - Unused variables (template scripts)
 # SC2031 - Variable modified in subshell (testing pattern)
 # SC2181 - Check exit code directly (common in whiptail/dialog scripts)
-SHELLCHECK_EXCLUDES="SC2317,SC1091,SC1090,SC2034,SC2031,SC2181"
+SHELLCHECK_EXCLUDES="SC2317,SC2329,SC1091,SC1090,SC2034,SC2031,SC2181"
 
 # =============================================================================
 # PATH RESOLUTION

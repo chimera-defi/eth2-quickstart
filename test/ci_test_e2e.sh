@@ -295,6 +295,11 @@ if [[ "$PHASE" == "2" ]]; then
     # caddyserver.com/api/download is blocked from GitHub Actions runners; test
     # with the stock APT-installed Caddy binary instead of the custom module build.
     export CADDY_ENSURE_MODULES=false
+    # exports.sh resets these, so set them where it reads user overrides; stock apt Caddy has no rate_limit module
+    {
+        echo "export CADDY_ENSURE_MODULES=false"
+        echo "export CADDY_INSTALL_ENFORCE_RATE_LIMIT=false"
+    } >> "$PROJECT_ROOT/config/user_config.env"
     if ! run_script_with_log "/tmp/caddy_e2e_$$.log" "$PROJECT_ROOT/install/web/install_caddy.sh"; then
         record_test "install_caddy" "FAIL"
         dump_log_tail "/tmp/caddy_e2e_$$.log" 50 "  "
