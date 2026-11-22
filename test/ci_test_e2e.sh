@@ -292,14 +292,6 @@ if [[ "$PHASE" == "2" ]]; then
 
     # Caddy and Nginx — always install in Docker E2E (no skip)
     log_header "Installing and verifying Caddy"
-    # caddyserver.com/api/download is blocked from GitHub Actions runners; test
-    # with the stock APT-installed Caddy binary instead of the custom module build.
-    export CADDY_ENSURE_MODULES=false
-    # exports.sh resets these, so set them where it reads user overrides; stock apt Caddy has no rate_limit module
-    {
-        echo "export CADDY_ENSURE_MODULES=false"
-        echo "export CADDY_INSTALL_ENFORCE_RATE_LIMIT=false"
-    } >> "$PROJECT_ROOT/config/user_config.env"
     if ! run_script_with_log "/tmp/caddy_e2e_$$.log" "$PROJECT_ROOT/install/web/install_caddy.sh"; then
         record_test "install_caddy" "FAIL"
         dump_log_tail "/tmp/caddy_e2e_$$.log" 50 "  "
@@ -310,6 +302,14 @@ if [[ "$PHASE" == "2" ]]; then
     rm -f "/tmp/caddy_e2e_$$.log"
     record_test "install_caddy" "PASS"
     verify_installed "Caddy" command -v caddy
+    caddy_mods="$(caddy list-modules 2>/dev/null || true)"
+    for mod in http.handlers.rate_limit dns.providers.cloudflare; do
+        if grep -Fxq "$mod" <<<"$caddy_mods"; then
+            record_test "caddy module $mod" "PASS"
+        else
+            record_test "caddy module $mod" "FAIL"
+        fi
+    done
 
     log_header "Caddy edge hardening smoke checks"
     edge_host="${SERVER_NAME:-rpc.sharedtools.org}"

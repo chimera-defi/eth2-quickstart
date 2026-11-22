@@ -8,7 +8,7 @@ CADDY_HELPERS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=proxy_config_renderer.sh
 source "$CADDY_HELPERS_DIR/proxy_config_renderer.sh"
 
-# Map platform arch strings to Caddy download API arch values.
+# Map platform arch strings to Go/xcaddy arch names.
 detect_caddy_arch() {
     local raw_arch
     if command -v dpkg >/dev/null 2>&1; then
@@ -55,35 +55,93 @@ caddy_missing_required_modules() {
     printf '%s\n' "${missing[@]}"
 }
 
+# Go's module cache is read-only; make it writable so rm -rf succeeds.
+_caddy_rm_work() {
+    chmod -R u+w "$1" 2>/dev/null || true
+    rm -rf "$1"
+}
+
+# Build Caddy with the required plugins using a pinned, checksum-verified
+# toolchain (Go + xcaddy). caddyserver.com/api/download now answers 401 ("Please
+# log in or use an API key to build Caddy"), so it is no longer used.
+# Go (sha256) and xcaddy (sha512) are verified against pinned checksums; Go modules
+# are verified through sum.golang.org. The toolchain lives in a temp dir (~2 GB, 1-3 min).
+# Needs: go.dev, dl.google.com, github.com, proxy.golang.org, sum.golang.org. amd64/arm64 only.
 install_caddy_with_required_modules() {
     local package_csv="$1"
-    local caddy_arch
-    local package
-    local tmp_binary
-    local url="https://caddyserver.com/api/download"
-    local curl_args=(--get --data-urlencode "os=linux")
+    local caddy_arch go_sha xcaddy_sha # go: sha256, xcaddy: sha512 (as published)
+    local go_ver="${CADDY_BUILD_GO_VERSION:-1.26.11}"
+    local xcaddy_ver="${CADDY_BUILD_XCADDY_VERSION:-0.4.7}"
+    local caddy_ver="${CADDY_BUILD_VERSION:-2.11.9}"
+    local package pin work tmp_binary
+    local with_args=()
 
     caddy_arch="$(detect_caddy_arch)" || return 1
-    curl_args+=(--data-urlencode "arch=$caddy_arch")
+    case "$caddy_arch" in
+        amd64)
+            go_sha="9849f4e04ee35303714e34fbc3ac8ab44ea3e448a95aa182f91e3b9b79c710ec"
+            xcaddy_sha="99fd895a7b7799b18c43ea0915777d8701aaab2a010035b23495c28b4ae429edccd70adb9a01106180f8d9333d9b5df41e74f9702ce0e1cffcf8840698a9ab93"
+            ;;
+        arm64)
+            go_sha="6c2f29b458b5add0835f18b776f69c8881a6d88428f1484a6da55755e620757e"
+            xcaddy_sha="b4d52ad6db4184fa5366ef225d24b8340a47fc1924d250b329d3b95f416a0b14e16d72cf71f04f57046e8a26bad2b697ac14c833fc5f5607b9e1c838b9898520"
+            ;;
+        *)
+            log_error "No pinned Go/xcaddy toolchain for architecture: $caddy_arch (amd64 and arm64 only)"
+            return 1
+            ;;
+    esac
+    # The pinned checksums above belong to the default versions only.
+    if [[ "$go_ver" != "1.26.11" || "$xcaddy_ver" != "0.4.7" ]]; then
+        log_error "CADDY_BUILD_GO_VERSION/CADDY_BUILD_XCADDY_VERSION overrides need matching checksums in caddy_helpers.sh"
+        return 1
+    fi
 
     IFS=',' read -r -a package_list <<< "$package_csv"
     for package in "${package_list[@]}"; do
         package="$(trim_space "$package")"
         [[ -z "$package" ]] && continue
-        curl_args+=(--data-urlencode "p=$package")
+        if [[ "$package" != *@* ]]; then
+            pin="$(printf '%s\n' "${CADDY_PACKAGE_PINS:-}" | tr ',' '\n' | awk -F@ -v p="$package" '$1==p{print;exit}')"
+            [[ -n "$pin" ]] && package="$(trim_space "$pin")"
+        fi
+        with_args+=(--with "$package")
     done
 
-    tmp_binary="$(mktemp /tmp/caddy.custom.XXXXXX)"
-    if ! curl -fsSL "${curl_args[@]}" "$url" -o "$tmp_binary"; then
-        rm -f "$tmp_binary"
-        log_error "Failed to download custom Caddy binary with required modules"
+    work="$(mktemp -d /tmp/caddy.build.XXXXXX)"
+    tmp_binary="$work/caddy"
+
+    trap '_caddy_rm_work "$work"; trap - INT TERM' INT TERM
+    mkdir -p "$work/tmp"
+    log_info "Building Caddy v$caddy_ver (Go $go_ver, xcaddy $xcaddy_ver) with: $(printf '%s ' "${with_args[@]}")"
+    if ! curl -fsSL "https://go.dev/dl/go${go_ver}.linux-${caddy_arch}.tar.gz" -o "$work/go.tgz" \
+        || ! echo "$go_sha  $work/go.tgz" | sha256sum -c - >/dev/null; then
+        _caddy_rm_work "$work"; log_error "Go toolchain download or checksum verification failed"; return 1
+    fi
+    if ! curl -fsSL "https://github.com/caddyserver/xcaddy/releases/download/v${xcaddy_ver}/xcaddy_${xcaddy_ver}_linux_${caddy_arch}.tar.gz" -o "$work/xcaddy.tgz" \
+        || ! echo "$xcaddy_sha  $work/xcaddy.tgz" | sha512sum -c - >/dev/null; then
+        _caddy_rm_work "$work"; log_error "xcaddy download or checksum verification failed"; return 1
+    fi
+    mkdir -p "$work/tools" "$work/xc"
+    if ! tar -xzf "$work/go.tgz" -C "$work/tools" || ! tar -xzf "$work/xcaddy.tgz" -C "$work/xc" xcaddy; then
+        _caddy_rm_work "$work"; log_error "Failed to unpack Go/xcaddy"; return 1
+    fi
+
+    if ! (
+        cd "$work"
+        export GOROOT="$work/tools/go" GOPATH="$work/gopath" GOCACHE="$work/gocache" GOFLAGS=-mod=mod GOTOOLCHAIN=local TMPDIR="$work/tmp" CGO_ENABLED=0
+        export GOENV=off GOPROXY=https://proxy.golang.org,direct GOSUMDB=sum.golang.org GONOSUMDB='' GONOSUMCHECK='' GOPRIVATE='' GOINSECURE=''
+        export PATH="$GOROOT/bin:$PATH"
+        "$work/xc/xcaddy" build "v${caddy_ver}" "${with_args[@]}" --output "$tmp_binary"
+    ); then
+        _caddy_rm_work "$work"
+        log_error "xcaddy build failed"
         return 1
     fi
-    chmod +x "$tmp_binary"
 
     if ! "$tmp_binary" version >/dev/null 2>&1; then
-        rm -f "$tmp_binary"
-        log_error "Downloaded Caddy binary failed self-check"
+        _caddy_rm_work "$work"
+        log_error "Built Caddy binary failed self-check"
         return 1
     fi
 
@@ -92,11 +150,12 @@ install_caddy_with_required_modules() {
     fi
 
     if ! sudo install -m 0755 "$tmp_binary" /usr/bin/caddy; then
-        rm -f "$tmp_binary"
+        _caddy_rm_work "$work"
         log_error "Failed to install custom Caddy binary to /usr/bin/caddy"
         return 1
     fi
-    rm -f "$tmp_binary"
+    _caddy_rm_work "$work"
+    trap - INT TERM
 
     unset CADDY_MODULE_LIST_CACHE || true
     return 0
