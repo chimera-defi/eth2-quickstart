@@ -295,6 +295,8 @@ if [[ "$PHASE" == "2" ]]; then
     # caddyserver.com/api/download is blocked from GitHub Actions runners; test
     # with the stock APT-installed Caddy binary instead of the custom module build.
     export CADDY_ENSURE_MODULES=false
+    # exports.sh resets the variable, so also set it where exports.sh reads user overrides
+    echo "export CADDY_ENSURE_MODULES=false" >> "$PROJECT_ROOT/config/user_config.env"
     if ! run_script_with_log "/tmp/caddy_e2e_$$.log" "$PROJECT_ROOT/install/web/install_caddy.sh"; then
         record_test "install_caddy" "FAIL"
         dump_log_tail "/tmp/caddy_e2e_$$.log" 50 "  "
